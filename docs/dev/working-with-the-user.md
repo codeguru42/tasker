@@ -137,11 +137,16 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 These rules hold for each reply to the user:
 
 - A reply uses no unordered list, because the user cannot name an item of an unordered list in an answer.
-- Each nested list uses letters (a, b, c), for example the choices of a question or the proposed steps.
+- A nested list uses letters (a, b, c), for example the choices of a question. A nested list of proposed steps uses
+  roman numerals (i, ii, iii) instead. The reason: a step with a letter looks like a choice, and a step with a number
+  looks like a question.
 
 - Before the session sends a reply, it makes sure that the reply holds no unordered list. It changes each unordered list
   into a numbered list or into sentences. If the reply gives open questions, the session also makes sure that question 1
-  gives the full details of the bullet that starts "Question 1 of the list".
+  gives the full details of the bullet that starts "Question 1 of the list". Inside a question, it gives the choices as
+  a nested list with letters and the proposed steps as a nested list with roman numerals. It changes each other list
+  inside a question into sentences. For a list inside a question, these two sentences win over the second sentence of
+  this bullet.
 
 These rules hold for each list of the decisions that the user must make, and for each reply that gives open questions:
 
@@ -165,6 +170,20 @@ These rules hold for each list of the decisions that the user must make, and for
   can answer a question itself. [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) gives the rule and
   the reason for a handoff file.
 
+- Inside a question, only the proposed steps and the choices of the question are lists. Each of them is a nested list,
+  as the bullet that starts "A nested list uses letters" says. The other details of a question are plain sentences or
+  short paragraphs, not a list. Examples are what happened, what the problem is, and the command and the result of each
+  fact. A code block can give a command and its result. The reason: the user reads each item with a letter under a
+  question as a choice.
+
+  Each question of the list of open questions gives its parts in this order: the question, its other details, its
+  proposed steps and its choices. No part of a question goes above the list of open questions, also not under a heading.
+  The bullet that starts "A draft that has a numbered list" still puts a draft above the list, and the proposed steps of
+  a question are not a draft. What each choice does and the recommendation can stand in the item of the choice. A choice
+  can name the steps, for example "a. Do steps i to iii". For each such question, this order wins over the words "first
+  explain in the reply what happened, what the problem is, and what each choice does. Then ask" of the first bullet of
+  [A decision of the user](#a-decision-of-the-user).
+
 - The list holds each question that is still open, also each question of an earlier reply that the user did not answer.
 - Each question has its own number, also when two questions are about the same issue.
 - Do not put a second question inside an item of another question.
@@ -179,8 +198,17 @@ An example:
 
 ```text
 1. New question: do you accept the draft?
-   a. Post it (recommended).
-   b. Drop it.
+
+   The draft adds one bullet to "The form of a reply". The search
+   `gh issue list --state all --search "<words> in:title,body" --limit 1000` found no other issue for this
+   change. The draft waits for your word before the post. For the post, the session takes these steps:
+
+   i. Search the issues again for the same change.
+   ii. Post the issue.
+   iii. Compare the posted body with the draft file.
+
+   a. Do steps i to iii (recommended). The issue goes to its milestone.
+   b. Drop the draft. Nothing goes to GitHub.
 ```
 
 In one case (2026-10-15), a question about the link commands of #117 sat in a sub-bullet of the scope question of #117.
@@ -190,6 +218,14 @@ user asked "why are 3-6 repeated?".
 
 On 2026-11-07, operator-m16 used unordered lists in many replies. The user said: "remember to list questions in a
 numbered list. And give details for the first one".
+
+On 2026-11-07, operator-m16 gave the full details of question 1 as a nested list with letters: "a. What happened", "b.
+The problem" and "c. The choices". The choices stood as 1 and 2 under "c. The choices". The user said: "details in the
+first item should not be lettered, it makes them look like they are the answers".
+
+On the same day, planner-m16 asked the user, through operator-m16, where the proposed steps of a question go. The user
+said: "proposed steps can be numbered with roman numerals i, ii, iii, etc." The user also said: "and keep the details
+with the question, don't move it above".
 
 ## A question of the user
 

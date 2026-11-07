@@ -89,8 +89,8 @@ The operator does these things for the open items:
   Each open question gets its own number in the one list of the operator, from 1. The id of its item stands next to that
   number. The operator numbers the questions again for its list, and it keeps the number of the sender for the later
   send. An answered question gets no number, because the user has nothing to answer. The operator gives it after the
-  list, with the id of its item and the words of the user or the answer of the operator. The choices of a question stay
-  a nested list with letters.
+  list, with the id of its item and the words of the user or the answer of the operator. The operator numbers only the
+  questions again, not the choices or the proposed steps of a question.
 
   For a later question, the bullet of [The form of a reply](working-with-the-user.md#the-form-of-a-reply) that starts
   "Question 1 of the list" wins over the words "with its full text" of the first sentence of this bullet. For a request
