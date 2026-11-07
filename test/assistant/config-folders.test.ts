@@ -6,7 +6,6 @@ function piAgentDir(env: NodeJS.ProcessEnv) {
 }
 
 function piAgentDirs(env: NodeJS.ProcessEnv) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fromPiAgentDirs(env);
 }
 

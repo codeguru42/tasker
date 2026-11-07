@@ -17,17 +17,35 @@ export function codexHome(env: NodeJS.ProcessEnv): string | undefined {
 // The agent folder of pi: TASKER_PI_CODING_AGENT_DIR, else .pi/agent under HOME, else none.
 export function piAgentDir(env: NodeJS.ProcessEnv): string | undefined {
   if (isSet(env.TASKER_PI_CODING_AGENT_DIR)) {
-    const value = env.TASKER_PI_CODING_AGENT_DIR;
-    if (value === "~") return isSet(env.HOME) ? env.HOME : undefined;
-    if (value.startsWith("~/")) return isSet(env.HOME) ? join(env.HOME, value.slice(2)) : undefined;
-    if (value.startsWith("file://")) {
-      try {
-        return fileURLToPath(value);
-      } catch {
-        return value;
-      }
-    }
-    return value;
+    return parsePiAgentValue(env.TASKER_PI_CODING_AGENT_DIR, env);
   }
   return isSet(env.HOME) ? join(env.HOME, ".pi", "agent") : undefined;
+}
+
+// The agent folders of pi: TASKER_PI_CODING_AGENT_DIR, PI_CODING_AGENT_DIR and .pi/agent under HOME.
+export function piAgentDirs(env: NodeJS.ProcessEnv): string[] {
+  const dirs: string[] = [];
+  if (isSet(env.TASKER_PI_CODING_AGENT_DIR)) {
+    const dir = parsePiAgentValue(env.TASKER_PI_CODING_AGENT_DIR, env);
+    if (dir !== undefined) dirs.push(dir);
+  }
+  if (isSet(env.PI_CODING_AGENT_DIR)) {
+    const dir = parsePiAgentValue(env.PI_CODING_AGENT_DIR, env);
+    if (dir !== undefined) dirs.push(dir);
+  }
+  if (isSet(env.HOME)) dirs.push(join(env.HOME, ".pi", "agent"));
+  return dirs;
+}
+
+function parsePiAgentValue(value: string, env: NodeJS.ProcessEnv): string | undefined {
+  if (value === "~") return isSet(env.HOME) ? env.HOME : undefined;
+  if (value.startsWith("~/")) return isSet(env.HOME) ? join(env.HOME, value.slice(2)) : undefined;
+  if (value.startsWith("file://")) {
+    try {
+      return fileURLToPath(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
 }
