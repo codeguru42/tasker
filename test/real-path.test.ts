@@ -6,12 +6,10 @@ import { thrownBy } from "./helpers/errors.js";
 import { useTempDir } from "./helpers/temp.js";
 
 function realPath(path: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return realPathWithMissingParents(path);
 }
 
 function denied(path: string, entries: readonly string[]): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return isDeniedPath(path, entries);
 }
 

@@ -4,7 +4,7 @@ import { relative, resolve, sep } from "node:path";
 import { errnoCode } from "../../errno.js";
 import { errorMessage } from "../../error-message.js";
 import { isObject } from "../../object.js";
-import { isInside } from "../../real-path.js";
+import { isDeniedPath, isInside } from "../../real-path.js";
 import { shellQuote } from "../../shell-quote.js";
 
 // The script that Codex runs as the PreToolUse hook of apply_patch. It does not exist under src/.
@@ -63,14 +63,6 @@ function deny(message: string): string {
   })}\n`;
 }
 
-function isDenied(full: string, denied: readonly string[]): boolean {
-  return denied.some((entry) => {
-    if (!entry.endsWith("/**")) return full === entry;
-    const base = entry.slice(0, -3);
-    return full === base || full.startsWith(`${base}/`);
-  });
-}
-
 // Walks from the worktree down to full. It gives a deny message, or undefined when no part is a link.
 function walk(worktree: string, full: string, path: string): string | undefined {
   let current = worktree;
@@ -110,7 +102,7 @@ export function editHookAnswer(input: string, worktree: string, denied: readonly
     for (const path of paths) {
       if (path.split(/[\\/]/).includes("..")) return deny(`a path with .. is not allowed: ${path}`);
       const full = resolve(worktree, path);
-      if (isDenied(full, denied)) return deny(`the path is denied: ${path}`);
+      if (isDeniedPath(full, denied)) return deny(`the path is denied: ${path}`);
       if (!isInside(full, worktree)) return deny(`the path is outside the worktree: ${path}`);
       const linked = walk(worktree, full, path);
       if (linked !== undefined) return deny(linked);
