@@ -812,6 +812,17 @@ likely edit the same file", which name the planner.
 - The planner also links two issues that will likely edit the same file, so that they do not cause a merge conflict.
   Examples are `skills/tasker/SKILL.md`, `docs/config.md`, `package.json`, the configuration schema,
   `docs/dev/code-conventions.md`, and a provider file with its dev doc.
+- Two issues of different milestones get no blocked-by link for a shared file. This bullet wins over each other bullet
+  of this page that adds a link for a shared file, except the bullet "A ticket that renames a doc ...". A link for a
+  real need of code or docs can still join two issues of different milestones, as the other bullets permit. The bullet
+  "The planner links two issues when one issue needs ..." gives such a link. The link of the bullet "A ticket that
+  renames a doc ..." also stays across milestones, because after the rename a body names a file that does not exist.
+
+  [The overlap rule](land-the-work.md#the-overlap-rule) of land-the-work.md handles a shared file between two tickets of
+  different milestones. On 2026-11-07, the user chose to handle such a file in the work of the orchestrators, not with a
+  link. The reason: such a link can stall a ticket while the milestone of its blocker makes no progress. The milestone
+  of the blocked ticket can often land its own tickets first.
+
 - Two issues that edit one shared doc in different sections get no blocked-by link for that doc, for example two
   sections of `docs/dev/tasks.md`. A link stays for a real need of code or docs, as the bullet "The planner links two
   issues when one issue needs ..." says. A link also stays for a shared file where both issues edit the same place, for
@@ -821,14 +832,12 @@ likely edit the same file", which name the planner.
   names the risk of a conflict in the chat with the user. The planner prefers parallel lines of tickets over one chain.
   The reason: the user wants the tickets of a milestone to run in parallel where possible. On 2026-10-18, for M13, the
   user chose two parallel lines over one chain of six tickets.
-- A ticket that changes the form or the layout of a file goes early in its chain. Each open ticket that edits that file
-  is blocked by it, also a ticket of a later milestone, so that each of them writes the new form. This bullet gives the
-  direction of the link of the bullet "The planner also links two issues that will likely edit the same file". The
-  bullet "An issue of an earlier milestone never waits ..." wins for a ticket of an earlier milestone. A ticket of a
-  later milestone gets this link also when it waits for the last issue of a chain. The planner adds each blocked-by link
-  as [The read in the write call](issues.md#the-read-in-the-write-call) of issues.md says. An issue in flight gets no
-  link, because its task already builds on the old form. The orchestrator of the task decides what the ticket does with
-  the change.
+- A ticket that changes the form or the layout of a file goes early in its chain. Each open ticket of its milestone that
+  edits that file is blocked by it, so that each of them writes the new form. This bullet gives the direction of the
+  link of the bullet "The planner also links two issues that will likely edit the same file". The planner adds each
+  blocked-by link as [The read in the write call](issues.md#the-read-in-the-write-call) of issues.md says. An issue in
+  flight gets no link, because its task already builds on the old form. The orchestrator of the task decides what the
+  ticket does with the change.
 - A ticket that renames a doc blocks each open issue whose body names that doc, not only each open issue that edits the
   doc. After the rename, such a body names a file that does not exist. Before the post of the rename ticket, the planner
   finds each open issue whose body names the old path. The planner adds each link and makes each body edit as
@@ -844,13 +853,16 @@ likely edit the same file", which name the planner.
   moved to another page. Then the planner changes the path to the page that holds the rule today. On 2026-10-24, #400
   renamed `planning.md` and #409 renamed `orchestration.md`. Fourteen open bodies named the old paths. Five of them
   named rules that the split of 2026-10-18 had moved to other pages, and three lines recorded history.
-- Inside a chain of issues that edit one file, the order is by issue number, oldest first. A new issue goes to the end
-  of the chain of its file. The bullet "A ticket that changes the form or the layout of a file goes early in its chain"
-  wins for a ticket that changes the form of a file. The bullet "A ticket that renames a doc ..." wins for a ticket that
-  renames a doc. A link for a real need also wins, for example a ticket that needs the text of another ticket. The
-  bullet "An issue of an earlier milestone never waits ..." also wins. The reason: an older issue most often holds the
-  older decision, and a later issue builds on it. On 2026-10-17, the planner first ordered the chain of the Docs
-  milestone by impact, and then the user chose the order by issue number, oldest first.
+- Inside a chain of issues of one milestone that edit one file, the order is by issue number, oldest first. A new issue
+  goes to the end of the chain of its file. The bullet "A ticket that changes the form or the layout of a file goes
+  early in its chain" wins for a ticket that changes the form of a file. The bullet "A ticket that renames a doc ..."
+  wins for a ticket that renames a doc. A link for a real need also wins, for example a ticket that needs the text of
+  another ticket.
+
+  The reason: an older issue most often holds the older decision, and a later issue builds on it. On 2026-10-17, the
+  planner first ordered the chain of the Docs milestone by impact. Then the user chose the order by issue number, oldest
+  first.
+
 - A ticket that closes a live security gap goes first in its chain, ahead of each ticket that it does not need, as
   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. This bullet wins over the order by issue number.
 - An edit of a file under `test/helpers/` alone gets no blocked-by link.
@@ -859,9 +871,8 @@ likely edit the same file", which name the planner.
 - A line of tickets that edit one provider and its dev doc is one chain. A ticket with its own folder runs in parallel
   and gets a blocked-by link only for a real need.
 - The planner gives each parallel line of work its own dev doc, so that the lines share no doc.
-- An issue of an earlier milestone never waits for an issue of a later milestone. If the earlier milestone is one chain,
-  the planner links a shared-file overlap only to the last issue of that chain. After the links, the planner reads every
-  blocked-by link of both milestones and makes sure of this rule.
+- An issue of an earlier milestone never waits for an issue of a later milestone. After the links, the planner reads
+  every blocked-by link of both milestones and makes sure of this rule.
 - An issue of the milestone "Future" has no blocked-by link to an open issue, in either direction. Such an issue moves
   into another milestone before its work starts. This bullet wins over each other bullet of this page that adds a link.
   For a ticket that renames a doc, the planner still edits the body of such an issue. The session that moves an issue
