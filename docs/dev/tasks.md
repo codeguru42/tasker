@@ -546,9 +546,10 @@ The command has these limits:
 state that the task left when it failed is the origin. A fixed table gives the target and the next command for each
 origin. For `provisioning`, retry does not move the task. `tasker start` moves it from `failed` to `provisioning`.
 
-For `refining`, the origin of the refine picks the row. For `merging` and `pushing`, the state that the task left when
-the command started picks the row. For `quota_blocked`, `awaiting_quota_approval` and `interrupted`, the origin of the
-pause picks a row from the direct retry table. The origin is the `from` value of the last move into that state.
+For `refining`, the origin of the refine picks the row. For `merging`, retry reads the task's stored `merge_origin`
+value. For `pushing`, the state that the task left when the command started picks the row. For `quota_blocked`,
+`awaiting_quota_approval` and `interrupted`, the origin of the pause picks a row from the direct retry table. The origin
+is the `from` value of the last move into that state.
 
 A failure from `accepted`, or from `pushing` after `accepted`, returns to `accepted` and runs `tasker push`. A failure
 from `interrupted` after a push has no retry row and remains refused. A state without a matching row also has no retry
@@ -573,8 +574,14 @@ These reasons explain its rules:
 - A failed reopen needs new feedback from you, so retry prints a hint instead of another assistant run. A pending resync
   can leave the branch and worktree between revisions. Retry restores the recorded starting HEAD before it changes the
   state. Retry and resume share the restore operation so both recovery paths follow the same rules.
-- A merge that failed can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on
-  the base, so a second run lands the task with no second push.
+- A trunk merge that failed can leave the work on the base of origin. The on-base check of `tasker merge` finds the work
+  on the base, so a second run lands the task with no second push.
+- A PR merge can finish before tasker records its result. Retry uses the first status query to detect that completed
+  action and prevent another request. See [Merge](#merge) for the PR operation.
+- Retry reads the `merge_origin` column because the last event into `failed` says that the merge failed, but does not
+  identify whether it started from `accepted` or `in_peer_review`. Only those two saved values give a retry row. NULL or
+  another value makes retry refuse without a move and point to `tasker mark-landed` for an external landing declaration.
+  That command accepts only `accepted`, `pushed` or `in_peer_review`, so it cannot run directly from `failed`.
 - A push can reach `origin` before tasker records the result. Retry calls the provider again with the stored published
   revision as the lease. If `origin` holds the current local task branch revision, the provider reports it without a
   second push.
@@ -599,9 +606,11 @@ for `planning`, `executing`, `verifying`, `reviewing`, `merging`, `pushing`, `op
 
 The origins `verifying`, `merging`, `pushing`, `opening_pr`, `finishing` and `updating_branch` work only from
 `interrupted`. [The Pauses table](../statemachine.md#pauses) gives their targets and next commands. This page does not
-copy that table. For `refining`, the refine origin picks the row, as in [Retry](#retry). For `merging`, the state that
-the task left when the merge started picks the row. For `updating_branch`, the update origin picks the row, and the task
-returns to it. Resume refuses any other origin, a merge origin with no row and an update origin with no row.
+copy that table.
+
+For `refining`, the refine origin picks the row, as in [Retry](#retry). For `merging`, resume reads the task's stored
+`merge_origin` column. For `updating_branch`, the update origin picks the row, and the task returns to it. Resume
+refuses any other origin, a missing or unsupported merge origin, and an update origin with no row.
 
 An interruption from `opening_pr` returns the task to `pushed`, then runs `tasker open-pr`. This lets the lookup find a
 pull request that the earlier run created before it stored the PR number.
@@ -625,8 +634,14 @@ These reasons explain its rules:
 - A review always runs in a new session. The session row of the stopped review names a conversation that the next review
   must not continue, so resume deletes the session of the next review number.
 - A verify run has no session, so the verify runs again from the first command.
-- A merge that stopped can leave the work on the base of origin. The on-base check of `tasker merge` finds the work on
-  the base, so a second run lands the task with no second push.
+- A trunk merge that stopped can leave the work on the base of origin. The on-base check of `tasker merge` finds the
+  work on the base, so a second run lands the task with no second push.
+- A PR merge can complete before tasker records the result. Resume uses the same prior-completion query as
+  [Retry](#retry). The stored origin identifies the path because the pause event only names `merging`. [Merge](#merge)
+  gives the reasons for the PR queries.
+- A missing or unsupported `merge_origin` makes resume refuse without a recovery move. The error points to
+  `tasker mark-landed` for an external landing declaration. That command accepts only `accepted`, `pushed` or
+  `in_peer_review`, so it cannot run directly from `interrupted`.
 - If publication finished before a push stopped, resume runs `tasker push` again. If `origin` holds the current local
   task branch revision, the provider reports it without another push. Tasker records that revision.
 - Each cleanup step of `tasker finish` skips what is done, so a second run finishes the rest. The target of `finishing`
@@ -730,18 +745,24 @@ and publication cycle.
 
 ## Merge
 
-`tasker merge` lands the work of a task in `accepted` on the base branch of `origin`. The task goes through `merging` to
-`landed`.
+`tasker merge` selects a path from the task state. In `accepted`, it lands the work on the base branch of `origin`. In
+`in_peer_review`, it merges the recorded PR. Both paths go through `merging` to `landed`. The paths use separate
+functions because their operations differ.
 
-Its checks cover the task, the state, the landing guard, the branch, the stored base, the tip of the branch and the repo
-lock. The tip check compares the exact ref `refs/heads/<branch>` of the clone with the accepted revision of the task.
-[Landing commands](../../skills/tasker/references/landing.md#tasker-merge) gives its errors. After the checks, the
-command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads the tip of the task
-branch and the tip of the base. If the base does not contain the work, the command pushes it with
-[the land operation of the version control provider](version-control.md#land). The last write is one transaction that
-appends one `landed` event with the data `{ revision, base, pushed, from, to }` and moves the task to `landed`. The
-`landed` event takes the place of the `transition` event for this move. If a step fails after the move to `merging`, the
-task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not wait for CI.
+### Trunk path
+
+For the trunk path, checks cover the task, the state, the landing guard, the branch, the stored base, the tip of the
+branch and the repo lock. The tip check compares the exact ref `refs/heads/<branch>` of the clone with the accepted
+revision of the task. [Landing commands](../../skills/tasker/references/landing.md#tasker-merge) gives its errors.
+
+After the checks, the command takes the repo lock and moves the task to `merging`. Then it fetches `origin` and reads
+the tip of the task branch and the tip of the base. If the base does not contain the work, the command pushes it with
+[the land operation of the version control provider](version-control.md#land).
+
+The last write is one transaction that appends one `landed` event with the data `{ revision, base, pushed, from, to }`
+and moves the task to `landed`. The `landed` event takes the place of the `transition` event for this move. If a step
+fails after the move to `merging`, the task goes to `failed` with `merging failed: <reason>`. `tasker merge` does not
+wait for CI.
 
 These reasons explain its rules:
 
@@ -762,6 +783,17 @@ These reasons explain its rules:
 - The repo lock covers the fetch and the push, because both change the refs of the clone.
   [The locks table](data-root.md#locks-table) requires it.
 - The command takes the repo lock before the move to `merging`, so a busy lock changes no state.
+
+### PR path
+
+For the PR path, the merge request uses the published revision as its expected head. This ties the request to the
+revision that was published for review and makes the forge refuse a changed PR head. Tasker checks the PR status before
+the request and again after it.
+
+The first query avoids a duplicate request when a previous merge completed before tasker recorded the result. The second
+query separates a completed merge from a request that is still waiting in the forge queue. Tasker records `landed` only
+after the forge confirms completion. It does not wait for the queue. See the
+[landing reference](../../skills/tasker/references/landing.md#tasker-merge) for the exact guards, errors and output.
 
 ## Push
 
