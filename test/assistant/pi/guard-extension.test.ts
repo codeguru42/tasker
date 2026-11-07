@@ -94,6 +94,14 @@ function fileToolCall(fake: ReturnType<typeof useFakePiExtension>, name: string,
   return callTool(fake, name, input, cwd);
 }
 
+function beforeAgentStart(fake: ReturnType<typeof useFakePiExtension>, event: unknown) {
+  return fake.dispatch("before_agent_start", event, { cwd: "/work/tree" });
+}
+
+function skillEvent(filePaths: string[]) {
+  return { systemPromptOptions: { skills: filePaths.map((filePath) => ({ filePath })) } };
+}
+
 function expectFileBlock(value: unknown, privatePath?: string): void {
   expect(value).toMatchObject({ block: true, reason: expect.any(String) });
   if (privatePath !== undefined) expect(JSON.stringify(value)).not.toContain(privatePath);
@@ -633,5 +641,116 @@ describe("guard extension file path checks", () => {
     expectFileBlock(await fileToolCall(read.fake, "read", { path: "/proc/self/environ" }, cwd));
     expectFileBlock(await fileToolCall(ls.fake, "ls", { path: "/proc" }, cwd));
     expectFileBlock(await fileToolCall(grep.fake, "grep", { path: "/" }, cwd));
+  });
+});
+
+describe("guard extension skill roots", () => {
+  it("uses initial skill roots from the limits", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const skillRoot = useTempDir("tasker-guard-skill-root-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd], skillRoots: [skillRoot] });
+
+    expect(await fileToolCall(fake, "read", { path: join(skillRoot, "content.txt") }, cwd)).toBe("tool result");
+  });
+
+  it("copies skill folders from before_agent_start", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const skillRoot = useTempDir("tasker-guard-skill-root-");
+    const skills = [{ filePath: join(skillRoot, "SKILL.md") }];
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+
+    await beforeAgentStart(fake, { systemPromptOptions: { skills } });
+    skills.length = 0;
+
+    expect(await fileToolCall(fake, "read", { path: join(skillRoot, "content.txt") }, cwd)).toBe("tool result");
+  });
+
+  it("replaces skill folders when a later event arrives", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const oldRoot = useTempDir("tasker-guard-old-skill-");
+    const newRoot = useTempDir("tasker-guard-new-skill-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+
+    await beforeAgentStart(fake, skillEvent([join(oldRoot, "SKILL.md")]));
+    expect(await fileToolCall(fake, "read", { path: join(oldRoot, "content.txt") }, cwd)).toBe("tool result");
+
+    await beforeAgentStart(fake, skillEvent([join(newRoot, "SKILL.md")]));
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(oldRoot, "content.txt") }, cwd));
+    expect(await fileToolCall(fake, "read", { path: join(newRoot, "content.txt") }, cwd)).toBe("tool result");
+  });
+
+  it("does not grant access from a missing skill root", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const parent = useTempDir("tasker-guard-missing-skill-");
+    const missingRoot = join(parent, "missing-skill");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd], skillRoots: [missingRoot] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(missingRoot, "content.txt") }, cwd));
+  });
+
+  it.each([
+    ["protected", "on"],
+    ["protected", "under"],
+    ["protected", "above"],
+    ["denied", "on"],
+    ["denied", "under"],
+    ["denied", "above"],
+  ])("drops a skill root %s, %s the protected or denied path", async (kind, relation) => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const base = useTempDir("tasker-guard-skill-relationship-");
+    let skillRoot: string;
+    let path: string;
+    if (relation === "on") {
+      skillRoot = join(base, "target");
+      path = skillRoot;
+    } else if (relation === "under") {
+      path = join(base, "target");
+      skillRoot = join(path, "skill");
+    } else {
+      skillRoot = base;
+      path = join(base, "target");
+    }
+    fs.mkdirSync(skillRoot, { recursive: true });
+    fs.mkdirSync(path, { recursive: true });
+    const limits =
+      kind === "protected"
+        ? { protectedPaths: [path] }
+        : relation === "above"
+          ? { denyRead: [join(path, "denied-child")] }
+          : { denyRead: [path] };
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd], skillRoots: [skillRoot], ...limits });
+    const candidate =
+      relation === "above" && kind === "denied"
+        ? join(skillRoot, "outside-denied.txt")
+        : join(skillRoot, "content.txt");
+
+    expectFileBlock(
+      await fileToolCall(fake, "read", { path: candidate }, cwd),
+      kind === "denied" ? limits.denyRead?.[0] : limits.protectedPaths?.[0],
+    );
+  });
+
+  it("drops skill access from proc", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd], skillRoots: ["/proc"] });
+    await beforeAgentStart(fake, skillEvent(["/proc/SKILL.md"]));
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: "/proc/self/environ" }, cwd), "/proc");
+  });
+
+  it("clears event skill roots after a handler error", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const skillRoot = useTempDir("tasker-guard-skill-root-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+    await beforeAgentStart(fake, skillEvent([join(skillRoot, "SKILL.md")]));
+    const invalidEvent = {
+      get systemPromptOptions(): never {
+        throw new Error("SENSITIVE skill event");
+      },
+    };
+
+    expect(await beforeAgentStart(fake, invalidEvent)).toEqual([undefined]);
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(skillRoot, "content.txt") }, cwd));
   });
 });
