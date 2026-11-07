@@ -417,6 +417,23 @@ orchestrator.
   and after the edit. The two counts differ only by the rows that the issue adds or removes. On #738 (2026-11-04), new
   text went into the wrong column of a row with similar cells, and a cell lost the words "and starts the new sender". On
   #739 (2026-11-04), a changed row of "Common mistakes" of the session-review skill became a new row beside the old row.
+- A ticket can give doc text word for word in its Docs section. Then ask the plan for a search step in each todo that
+  adds or changes such text. The step runs in the execute run, after the edits and before `npm run format`. In the task
+  worktree, the step searches the doc of each Docs item of the todo for its new text. It searches for a key word or a
+  short part that only this Docs item adds, and that the doc lacks before the todo. The search follows
+  [the doc-search rule](rules.md#docs).
+
+  An example for one word is `git grep -n -F --untracked '<word>' -- <file>`, and its flag `--untracked` also searches a
+  new doc that git does not track yet. The pass condition of each search is exit code 0. Exit code 1 is an answer: no
+  hit, so the execute session reads the doc at the place of the Docs item. If the text is there, the step passes for
+  that Docs item. Otherwise the execute session adds the text and runs the search again. If the second search also exits
+  with 1, or a search exits with another code, the turn reports `blocked` with the exit code.
+
+  On #816 (2026-11-07), plan v2 listed Docs item 7, a dated paragraph of `docs/dev/land-the-work.md`. The execute run of
+  plan v2 did not add it, and review 1 did not find the gap. [The diff read](run-one-ticket.md#the-diff-read) found it,
+  and a run of [the add-work rule](run-one-ticket.md#the-add-work-rule) added it with plan v3. The fix cost one more
+  plan, execute, verify and review run.
+
 - The red `test:` commit ([rules.md](rules.md#commits)) of a new store method changes only test files and fails the type
   check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
 - In a ticket that adds a method to an interface, tell the plan that the red `test:` commit
