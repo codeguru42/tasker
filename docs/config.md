@@ -93,9 +93,9 @@ these rules:
 - It matches `^[A-Za-z_][A-Za-z0-9_]*$`.
 - It does not start with `TASKER_`. A `TASKER_` variable belongs to tasker and tasker never hands it to a phase.
 - It is not a name that every phase already receives. Those names are: `PATH`, `HOME`, `LANG`, `LC_ALL`, `LC_CTYPE`,
-  `TERM`, `SHELL`, `TMPDIR`, `TZ`, `USER`, `LOGNAME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `PI_CODING_AGENT_DIR`,
-  `PI_CODING_AGENT_SESSION_DIR`, `NVM_DIR`, `ASDF_DIR`, `ASDF_DATA_DIR`, `VOLTA_HOME`, `FNM_DIR`, `N_PREFIX`,
-  `PYENV_ROOT`, `RBENV_ROOT`, `SDKMAN_DIR`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`.
+  `TERM`, `SHELL`, `TMPDIR`, `TZ`, `USER`, `LOGNAME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `NVM_DIR`, `ASDF_DIR`,
+  `ASDF_DATA_DIR`, `VOLTA_HOME`, `FNM_DIR`, `N_PREFIX`, `PYENV_ROOT`, `RBENV_ROOT`, `SDKMAN_DIR`, `XDG_CONFIG_HOME`,
+  `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`.
 
 Tasker always drops `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the environment of a phase, also when a list
 names them.
