@@ -1,55 +1,45 @@
 import { describe, expect, it } from "vitest";
 import { useFakePiExtension } from "./fake-pi-extension.js";
 
-function fakeExtension(
-  tools: {
-    name: string;
-    sourceInfo: { path: string; source: string };
-    execute: (input: unknown, ctx: unknown) => unknown;
-  }[] = [],
-  flags: Record<string, string> = {},
-) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+interface TestTool {
+  name: string;
+  sourceInfo: { path: string; source: string };
+  execute: (input: unknown, ctx: unknown) => unknown;
+}
+
+function fakeExtension(tools: TestTool[] = [], flags: Record<string, string> = {}) {
   return useFakePiExtension(tools, flags);
 }
 
 function on(fake: ReturnType<typeof fakeExtension>, event: string, handler: (event: unknown, ctx: unknown) => unknown) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   fake.pi.on(event, handler);
 }
 
 function registerFlag(fake: ReturnType<typeof fakeExtension>, name: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   fake.pi.registerFlag(name, `description for ${name}`);
 }
 
 function getFlag(fake: ReturnType<typeof fakeExtension>, name: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fake.pi.getFlag(name);
 }
 
-function registerTool(fake: ReturnType<typeof fakeExtension>, tool: Parameters<typeof fakeExtension>[0][number]) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+function registerTool(fake: ReturnType<typeof fakeExtension>, tool: TestTool) {
   fake.pi.registerTool(tool);
 }
 
 async function dispatch(fake: ReturnType<typeof fakeExtension>, event: string, data: unknown) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fake.dispatch(event, data, {});
 }
 
 function allTools(fake: ReturnType<typeof fakeExtension>) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fake.pi.getAllTools();
 }
 
 function registeredFlags(fake: ReturnType<typeof fakeExtension>) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fake.registeredFlags();
 }
 
 async function callTool(fake: ReturnType<typeof fakeExtension>, name: string, input: unknown) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fake.callTool(name, input);
 }
 
