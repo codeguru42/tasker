@@ -10,12 +10,13 @@ import { isObject } from "../../object.js";
 import { runProgramCheck } from "../program-check.js";
 import { upstreamOf } from "../models.js";
 import type { AssistantDoctorRepo } from "../provider.js";
-import { piChildEnv } from "./child-env.js";
+import { piChildEnv, relativeHomeReason } from "./child-env.js";
 import { piProgram } from "./program.js";
 
 const PI_INSTALL_FIX = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
 const PI_AGENT_DIR_FIX = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or unset it.";
 const HOME_FIX = "Set HOME.";
+const RELATIVE_HOME_FIX = "Set HOME to an absolute path, or set TASKER_PI_CODING_AGENT_DIR to an absolute path.";
 const SUPERPOWERS_SOURCE = "git:github.com/obra/superpowers";
 const SUPERPOWERS_INSTALL_FIX = `Run pi install ${SUPERPOWERS_SOURCE}.`;
 const MINIMUM_SUPERPOWERS = [6, 4, 1] as const;
@@ -35,6 +36,10 @@ function environmentRefusal(
   const relativeReason = relativePathReason("TASKER_PI_CODING_AGENT_DIR", env.TASKER_PI_CODING_AGENT_DIR);
   if (relativeReason !== undefined) {
     return { result: { status: "error", detail: relativeReason, remediation: PI_AGENT_DIR_FIX } };
+  }
+  const homeReason = relativeHomeReason(env);
+  if (homeReason !== undefined) {
+    return { result: { status: "error", detail: homeReason, remediation: RELATIVE_HOME_FIX } };
   }
   const piEnv = piChildEnv(env);
   if ("reason" in piEnv) {
