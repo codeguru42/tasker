@@ -185,4 +185,5 @@ WHERE state = 'merging'
      ORDER BY events.id DESC
      LIMIT 1
    ) = 'merging');`,
+  `ALTER TABLE sessions ADD COLUMN trusted_extensions TEXT;`,
 ];

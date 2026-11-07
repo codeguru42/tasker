@@ -729,7 +729,7 @@ describe("trustedExtensionsJsonOf", () => {
       seedPlanSession(store, task.id, { sessionId: "s-1" });
     });
 
-    expect(trustedExtensionsJsonOf(path, "s-1")).toBeNull();
+    expect(trustedExtensionsJsonOf(path, "s-1")).toBe("[]");
     writeTrustedExtensionsJson(path, "s-1", '["pkg","builtin:codemode"]');
     expect(trustedExtensionsJsonOf(path, "s-1")).toBe('["pkg","builtin:codemode"]');
   });

@@ -8,6 +8,7 @@ import { builtInTool, guardLimits, writeGuardLimits } from "../../../src/assista
 import { guardStartArgs } from "../../../src/assistant/pi/guard-start.js";
 import type { RunInput } from "../../../src/assistant/provider.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
+import { runInput as sharedRunInput } from "../../helpers/fake-claude.js";
 
 function makeLimits(input: RunInput, tools: { name: string; path: string; source: string }[]) {
   return guardLimits(input, tools);
@@ -31,6 +32,7 @@ function makeLimitsPath(sessionDir: string, sessionId: string) {
 
 function runInput(access: RunInput["access"] = "read-only"): RunInput {
   return {
+    ...sharedRunInput(),
     sessionId: "session-1",
     resume: false,
     prompt: "prompt",

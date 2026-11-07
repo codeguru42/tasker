@@ -75,6 +75,7 @@ describe("runInput", () => {
       access: "read-only",
       deniedCommands: [],
       deniedEditPaths: [],
+      trustedExtensions: [],
     });
   });
 

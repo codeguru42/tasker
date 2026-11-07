@@ -18,6 +18,7 @@ import type { Config } from "../config/schema.js";
 import { taskSessionsDir } from "../store/layout.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { type AssistantSurface, vcsForRepo } from "../vcs/provider.js";
+import { listPiExtensions } from "../assistant/pi/extensions.js";
 
 export type AssistantSessionRequest =
   { resume: false } | { resume: true; sessionId: string; recorded: RecordedSession };
@@ -112,6 +113,16 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
     ? createSessionProvider(request.recorded)
     : createAssistantProvider(task.repoKey, config.repos[task.repoKey], role);
   const sessionId = request.resume ? request.sessionId : randomUUID();
+  const configuredExtensions = selected.provider.id === "pi" ? listPiExtensions(piAgentDir(env) ?? "", worktree) : [];
+  if (!Array.isArray(configuredExtensions)) throw new Error(configuredExtensions.reason);
+  const trustedExtensions = request.resume
+    ? [
+        ...request.recorded.trustedExtensions,
+        ...configuredExtensions
+          .map((extension) => extension.key)
+          .filter((key) => !request.recorded.trustedExtensions.includes(key)),
+      ]
+    : configuredExtensions.map((extension) => extension.key);
   return {
     worktree,
     surface: assistantSurfaceOf(config, task.repoKey, env),
@@ -121,6 +132,7 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
       provider: selected.provider.id,
       model: selected.model,
       effort: selected.effort,
+      trustedExtensions: request.resume ? request.recorded.trustedExtensions : trustedExtensions,
     },
     resume,
     provider: selected.provider,
@@ -143,6 +155,7 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
         onUsageTotal: (total) => store.setSessionUsageTotal(task.id, sessionId, total),
         model: selected.model,
         effort: selected.effort,
+        trustedExtensions,
         sessionDir,
         // Under "ask", the caller handles paid usage, so the run has no overage stop.
         overageStop:

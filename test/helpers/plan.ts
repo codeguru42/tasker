@@ -35,6 +35,10 @@ import {
 export const OPEN_QUESTION_BLOCK =
   "questions:\n  base-branch: Which branch is the base?\n    The issue names no base branch.\n    open\n";
 
+export function defaultTrustedExtensions(): string[] {
+  return [];
+}
+
 export function validPlanAnswer(change: Partial<PlanAnswer> = {}): PlanAnswer {
   return {
     summary: ["Add the a module and its test."],
@@ -218,6 +222,7 @@ export function seedExecuteSession(
     model: "sonnet",
     effort: "medium",
     ...change,
+    trustedExtensions: change.trustedExtensions ?? defaultTrustedExtensions(),
   });
 }
 
@@ -254,6 +259,7 @@ export function seedPlanSession(store: TaskStore, taskId: number, change: Partia
     model: "opus",
     effort: "high",
     ...change,
+    trustedExtensions: change.trustedExtensions ?? defaultTrustedExtensions(),
   });
 }
 
@@ -271,6 +277,7 @@ export function seedReviewSession(
     model: "opus",
     effort: "high",
     ...change,
+    trustedExtensions: change.trustedExtensions ?? defaultTrustedExtensions(),
   });
 }
 

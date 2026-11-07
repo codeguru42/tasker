@@ -59,7 +59,9 @@ describe("createAssistantProvider", () => {
 describe("createSessionProvider", () => {
   it.each(unavailableIds)("throws a ConfigError for the recorded %s assistant", (id) => {
     expect(
-      configIssuesOf(() => createSessionProvider({ repoKey: "tasker", provider: id, model: "x", effort: "low" })),
+      configIssuesOf(() =>
+        createSessionProvider({ repoKey: "tasker", provider: id, model: "x", effort: "low", trustedExtensions: [] }),
+      ),
     ).toEqual(unavailable("tasker", id));
   });
 
@@ -69,6 +71,7 @@ describe("createSessionProvider", () => {
       provider: "claude-code",
       model: "opus[1m]",
       effort: "low",
+      trustedExtensions: [],
     });
 
     expect(selected.provider.id).toBe("claude-code");
@@ -77,7 +80,13 @@ describe("createSessionProvider", () => {
 });
 
 it("gives the codex provider for a recorded session", () => {
-  const selected = createSessionProvider({ repoKey: "tasker", provider: "codex", model: "gpt-5", effort: "low" });
+  const selected = createSessionProvider({
+    repoKey: "tasker",
+    provider: "codex",
+    model: "gpt-5",
+    effort: "low",
+    trustedExtensions: [],
+  });
 
   expect(selected.provider.id).toBe("codex");
 });
@@ -88,6 +97,7 @@ it("gives the pi provider for a recorded session", () => {
     provider: "pi",
     model: "openrouter/auto",
     effort: "low",
+    trustedExtensions: [],
   });
 
   expect(selected.provider.id).toBe("pi");

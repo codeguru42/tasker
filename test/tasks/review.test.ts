@@ -62,7 +62,7 @@ describe("reviewTask checks", () => {
     const target = await useReviewFixture(CONTROL);
     await callReview(target);
     const task = latestTaskOf(target.dataRoot, KEY);
-    expect(reviewSessionRows(target.dataRoot, task.id)[0]).toMatchObject({ trustedExtensions: [] });
+    expect(reviewSessionRows(target.dataRoot, task.id)[0]).toMatchObject({ trusted_extensions: "[]" });
   });
 
   it("refuses a task that is not in awaiting_work_review", async () => {

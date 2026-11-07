@@ -65,6 +65,8 @@ export interface RunInput {
   deniedCommands: readonly string[];
   // Each entry is an absolute path that the edit tools must not change. An entry that ends in /** covers each path under it.
   deniedEditPaths: readonly string[];
+  // Extension keys that this session trusts.
+  trustedExtensions: string[];
   // No fallback to a shell with no sandbox. The network stays open.
   sandbox?: SandboxLimits;
   model: string;
@@ -129,6 +131,7 @@ export interface SelectedAssistant extends ModelChoice {
 export interface RecordedSession extends ModelChoice {
   repoKey: string;
   provider: AssistantProviderId;
+  trustedExtensions: string[];
 }
 
 /**

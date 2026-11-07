@@ -671,10 +671,21 @@ interface PlanSessionRow {
   model: string;
   effort: string;
   repo_key: string;
+  trusted_extensions: string | null;
 }
 
 // The stored session of a row, or undefined when the query found no row.
 function toStoredSession(row: PlanSessionRow | undefined): StoredSession | undefined {
+  let trustedExtensions: string[] = [];
+  if (row?.trusted_extensions !== null && row?.trusted_extensions !== undefined) {
+    try {
+      const parsed: unknown = JSON.parse(row.trusted_extensions);
+      if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) throw new Error("invalid value");
+      trustedExtensions = parsed as string[];
+    } catch {
+      throw new Error(`invalid trusted extensions for session ${row.session_id}`);
+    }
+  }
   return row === undefined
     ? undefined
     : {
@@ -683,6 +694,7 @@ function toStoredSession(row: PlanSessionRow | undefined): StoredSession | undef
         provider: row.provider as AssistantProviderId,
         model: row.model,
         effort: row.effort as Effort,
+        trustedExtensions,
       };
 }
 
@@ -787,11 +799,11 @@ function setUp(db: DatabaseSync) {
       "SELECT * FROM plan_revisions WHERE task_id = ? ORDER BY version DESC LIMIT 1",
     ),
     insertSession: db.prepare(
-      `INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at, plan_version, review_number)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at, plan_version, review_number, trusted_extensions)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ),
     selectSession: db.prepare(
-      `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key
+      `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key, sessions.trusted_extensions
        FROM sessions JOIN tasks ON tasks.id = sessions.task_id
        WHERE sessions.task_id = ? AND sessions.role = ? AND sessions.plan_version IS ?
          AND sessions.review_number IS ?`,
@@ -983,6 +995,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
             now().toISOString(),
             keyParams(key)[1],
             keyParams(key)[2],
+            JSON.stringify(session.trustedExtensions),
           ),
       );
     });

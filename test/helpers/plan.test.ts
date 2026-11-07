@@ -10,6 +10,7 @@ import {
   recordTestPlanRevision,
   seedExecuteFixTurn,
   seedExecuteSession,
+  defaultTrustedExtensions,
   seedExecuteTodoStates,
   seedPinnedPlanRevision,
   seedPlanReviewTask,
@@ -318,6 +319,7 @@ describe("seedPlanSession", () => {
         provider: "claude-code",
         model: "opus",
         effort: "high",
+        trustedExtensions: defaultTrustedExtensions(),
       });
       expect(store.planSession(task.id)).toEqual(session);
     });
@@ -348,6 +350,7 @@ describe("seedReviewSession", () => {
         provider: "claude-code",
         model: "opus",
         effort: "high",
+        trustedExtensions: defaultTrustedExtensions(),
       });
       return created;
     });
@@ -382,6 +385,7 @@ describe("seedExecuteSession", () => {
         provider: "claude-code",
         model: "sonnet",
         effort: "medium",
+        trustedExtensions: defaultTrustedExtensions(),
       });
       expect(store.executeSession(task.id, 1)).toEqual(session);
     });

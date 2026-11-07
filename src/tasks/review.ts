@@ -75,6 +75,7 @@ async function reviewLocked(store: TaskStore, request: ReviewRequest): Promise<R
     provider: prepared.session.provider,
     model: prepared.session.model,
     effort: prepared.session.effort,
+    trustedExtensions: prepared.session.trustedExtensions,
   });
   const transcriptPath = reviewTranscriptPath(config.dataRoot, task, number);
   return runPlanModeAnswer({

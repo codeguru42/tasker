@@ -202,6 +202,7 @@ describe("task store", () => {
       model: "opus",
       effort: "high",
       ...change,
+      trustedExtensions: change.trustedExtensions ?? [],
     });
   const clearReview = (taskId: number, number: number) => store.clearReviewSession(taskId, number);
 
@@ -1013,7 +1014,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(22);
+        expect(schemaVersion(raw)).toBe(23);
         expect(raw.prepare("SELECT published_revision FROM tasks WHERE id = 1").get()).toEqual({
           published_revision: null,
         });
@@ -1069,7 +1070,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(22);
+        expect(schemaVersion(raw)).toBe(23);
         expect(raw.prepare("SELECT pr_number FROM tasks WHERE id = 1").get()).toEqual({ pr_number: null });
       });
     });
@@ -1129,7 +1130,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(22);
+        expect(schemaVersion(raw)).toBe(23);
         expect(raw.prepare("SELECT reopen_start_head FROM tasks WHERE id = 1").get()).toEqual({
           reopen_start_head: null,
         });
@@ -1326,7 +1327,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(22);
+        expect(migrations.length).toBe(23);
       });
     });
 
@@ -1380,7 +1381,7 @@ describe("task store", () => {
 
       withStoreFile(oldPath, () => {}, { now });
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(22);
+        expect(schemaVersion(raw)).toBe(23);
         expect(raw.prepare("SELECT merge_origin FROM tasks ORDER BY id").all()).toEqual([
           { merge_origin: "in_peer_review" },
           { merge_origin: null },
@@ -2485,6 +2486,7 @@ describe("task store", () => {
         provider: "claude-code",
         model: "opus",
         effort: "low",
+        trustedExtensions: [],
       };
       expect(record(task.id)).toEqual(expected);
       expect(store.planSession(task.id)).toEqual(expected);
@@ -2499,6 +2501,7 @@ describe("task store", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           plan_version: null,
           review_number: null,
+          trusted_extensions: "[]",
           ...NO_SESSION_VALUES,
         },
       ]);
@@ -2578,6 +2581,7 @@ describe("task store", () => {
         provider: "claude-code",
         model: "sonnet",
         effort: "medium",
+        trustedExtensions: [],
       };
       expect(seedExecuteSession(store, task.id, 1, { sessionId: "s-1" })).toEqual(expected);
       expect(store.executeSession(task.id, 1)).toEqual(expected);
@@ -2592,6 +2596,7 @@ describe("task store", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           plan_version: 1,
           review_number: null,
+          trusted_extensions: "[]",
           ...NO_SESSION_VALUES,
         },
       ]);
@@ -2678,6 +2683,7 @@ describe("task store", () => {
         provider: "claude-code",
         model: "opus",
         effort: "high",
+        trustedExtensions: [],
       });
       expect(readReviewRows(task.id)).toEqual([]);
       expect(readSessionRows()).toEqual([
@@ -2691,6 +2697,7 @@ describe("task store", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           plan_version: null,
           review_number: 1,
+          trusted_extensions: "[]",
           ...NO_SESSION_VALUES,
         },
       ]);

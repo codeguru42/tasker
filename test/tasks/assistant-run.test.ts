@@ -1,11 +1,13 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { permissionHookSettings } from "../../src/assistant/claude-code/permission-hook.js";
+import type { Config } from "../../src/config/schema.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
+import type { RunInput } from "../../src/assistant/provider.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { type AssistantSurface, vcsForRepo } from "../../src/vcs/provider.js";
 import {
@@ -103,9 +105,14 @@ const runPlanMode = async (
     task?: (task: Task) => Task;
     jsonSchema?: Record<string, unknown>;
     approvedResetsAt?: number;
+    runConfig?: Config;
+    runEnv?: NodeJS.ProcessEnv;
+    beforeStart?: (prepared: Awaited<ReturnType<typeof prepareTaskPlanModeRun>>) => void;
   } = {},
 ) => {
-  const { config, env, started } = fixture;
+  const { started } = fixture;
+  const config = options.runConfig ?? fixture.config;
+  const env = options.runEnv ?? fixture.env;
   const task = options.task ? options.task(fixture.task) : fixture.task;
   const events: AssistantEvent[] = [];
   return withDataRootStore(started.dataRoot, async (store) => {
@@ -118,6 +125,7 @@ const runPlanMode = async (
       env,
       approvedResetsAt: options.approvedResetsAt,
     });
+    options.beforeStart?.(prepared);
     const outcome = await prepared.start({
       prompt: "p",
       jsonSchema: options.jsonSchema,
@@ -438,6 +446,7 @@ describe("prepareTaskPlanModeRun", () => {
       provider: "claude-code",
       model: models.plan.model,
       effort: models.plan.effort,
+      trustedExtensions: [],
     });
     expect(prepared).not.toHaveProperty("executeCommitText");
   });
@@ -536,7 +545,13 @@ describe("prepareTaskPlanModeRun", () => {
   it("continues a recorded session with its recorded model and effort, not the configured ones", async () => {
     const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("resume") } });
     const { started, claude } = fixture;
-    const recorded = { repoKey: started.repoKey, provider: "claude-code", model: "haiku", effort: "low" } as const;
+    const recorded = {
+      repoKey: started.repoKey,
+      provider: "claude-code",
+      model: "haiku",
+      effort: "low",
+      trustedExtensions: [] as string[],
+    } as const;
     expect(modelsOf(fixture).plan).not.toMatchObject({ model: "haiku" });
 
     const { prepared } = await runPlanMode(fixture, {
@@ -567,6 +582,74 @@ describe("prepareTaskPlanModeRun", () => {
       session: { resume: true, sessionId: TEST_SESSION_ID, recorded },
     });
     expect(prepared.session).toMatchObject({ trustedExtensions });
+  });
+
+  it("passes the ordered current keys on a new pi run and the union on a continued run", async () => {
+    const makeRun = async (continued: boolean) => {
+      const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+      const agentDir = useTempDir("tasker-pi-trusted-run-");
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ extensions: ["current"] }));
+      const repo = fixture.config.repos[fixture.started.repoKey];
+      const piRepo = {
+        ...repo,
+        assistant: {
+          ...repo.assistant,
+          provider: "pi",
+          models: {
+            ...repo.assistant.models,
+            plan: { ...repo.assistant.models.plan, model: "openrouter/auto" },
+          },
+        },
+      };
+      const runConfig = {
+        ...fixture.config,
+        repos: { ...fixture.config.repos, [fixture.started.repoKey]: piRepo },
+      } as Config;
+      const trustedExtensions = ["old", "builtin:codemode"];
+      let captured: RunInput | undefined;
+      const recorded = {
+        repoKey: fixture.started.repoKey,
+        provider: "pi" as const,
+        model: "openrouter/auto",
+        effort: "high" as const,
+        trustedExtensions,
+      };
+      await runPlanMode(fixture, {
+        runConfig,
+        runEnv: { ...fixture.env, TASKER_PI_CODING_AGENT_DIR: agentDir },
+        session: continued ? { resume: true, sessionId: TEST_SESSION_ID, recorded } : { resume: false },
+        beforeStart: (prepared) => {
+          prepared.provider.run = async (input) => {
+            captured = input;
+            return {
+              kind: "success",
+              sessionId: input.sessionId,
+              events: [],
+              permissionDenials: [],
+              usage: "unavailable",
+            };
+          };
+        },
+      });
+      return { captured };
+    };
+
+    const fresh = await makeRun(false);
+    expect(fresh.captured?.trustedExtensions).toEqual([
+      "current",
+      "builtin:llama.cpp",
+      "builtin:codemode",
+      "builtin:tool-search",
+    ]);
+    const continued = await makeRun(true);
+    expect(continued.captured?.trustedExtensions).toEqual([
+      "old",
+      "builtin:codemode",
+      "current",
+      "builtin:llama.cpp",
+      "builtin:tool-search",
+    ]);
   });
 
   it("gives the provider of a new session and the approved window of the request", async () => {
@@ -803,7 +886,13 @@ describe("prepareTaskExecuteRun", () => {
   });
 
   it("continues a recorded session with --resume on every start", async () => {
-    const recorded = { repoKey: "codeguru42/tasker", provider: "claude-code", model: "haiku", effort: "low" } as const;
+    const recorded = {
+      repoKey: "codeguru42/tasker",
+      provider: "claude-code",
+      model: "haiku",
+      effort: "low",
+      trustedExtensions: [] as string[],
+    } as const;
 
     const { claude } = await prepareAndStartExecute(
       { claude: { stream: claudeSample("plain") } },
@@ -972,7 +1061,13 @@ describe("the quota event record of a run", () => {
 });
 
 describe("the values of a session in an execute run", () => {
-  const codexRecorded = { repoKey: "codeguru42/tasker", provider: "codex", model: "haiku", effort: "low" } as const;
+  const codexRecorded = {
+    repoKey: "codeguru42/tasker",
+    provider: "codex",
+    model: "haiku",
+    effort: "low",
+    trustedExtensions: [] as string[],
+  } as const;
 
   it("stores the thread id and the total of the first start, and the second start continues from them", async () => {
     const { codex, outcomes } = await prepareAndStartExecute(

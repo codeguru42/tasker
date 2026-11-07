@@ -135,6 +135,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
       provider: prepared.session.provider,
       model: prepared.session.model,
       effort: prepared.session.effort,
+      trustedExtensions: prepared.session.trustedExtensions,
     });
   }
 

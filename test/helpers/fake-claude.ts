@@ -155,6 +155,7 @@ export function runInput(overrides: Partial<RunInput> = {}): RunInput {
     access: "read-only",
     deniedCommands: [],
     deniedEditPaths: [],
+    trustedExtensions: [],
     ...overrides,
   };
 }
