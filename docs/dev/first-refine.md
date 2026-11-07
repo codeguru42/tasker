@@ -429,10 +429,30 @@ orchestrator.
   that Docs item. Otherwise the execute session adds the text and runs the search again. If the second search also exits
   with 1, or a search exits with another code, the turn reports `blocked` with the exit code.
 
+  Also ask the plan to copy the place of each Docs item word for word into the todo. The todo also holds the exact new
+  text, with its quotation marks. The plan reads the doc and names in the todo the text right before and right after the
+  new text. A new bullet "right after the bullet X" goes after the last paragraph of X, so no indented line of X follows
+  it. A text "at the end of the section" goes right before the next heading of the same or a higher level. In the last
+  section of a file, it goes at the end of the file.
+
+  After each hit, the execute session reads the doc around the new text, for example with
+  `git grep -n -F --untracked -B <n> -A <n> '<word>' -- <file>`. Here `<n>` is the line count of the new text plus two.
+  The execute session compares the last non-blank line before the new text and the first non-blank line after it with
+  the text in the todo. If the lines differ, the execute session moves the new text to the place in the todo and reads
+  the doc again. If the lines still differ, or a read exits with a code other than 0, the turn reports `blocked` with
+  the reason.
+
   On #816 (2026-11-07), plan v2 listed Docs item 7, a dated paragraph of `docs/dev/land-the-work.md`. The execute run of
   plan v2 did not add it, and review 1 did not find the gap. [The diff read](run-one-ticket.md#the-diff-read) found it,
   and a run of [the add-work rule](run-one-ticket.md#the-add-work-rule) added it with plan v3. The fix cost one more
   plan, execute, verify and review run.
+
+  On #818 (2026-11-07), the issue asked for a new bullet right after a bullet of three paragraphs in
+  `docs/dev/working-with-the-user.md`. Plan v1 put the new bullet after the first paragraph of that bullet, and the
+  execute run put it there too. Two new paragraphs "at the end of the section" also went to the end of the file. The
+  search step found the new text, and review 1 did not find the wrong places.
+  [The diff read](run-one-ticket.md#the-diff-read) found them, and the fix cost one more plan, execute, verify and
+  review run.
 
 - The red `test:` commit ([rules.md](rules.md#commits)) of a new store method changes only test files and fails the type
   check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
