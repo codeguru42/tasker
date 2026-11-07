@@ -19,14 +19,19 @@ These limits apply to the orchestrator and to the task subagents, except where a
 - If a `git fetch` of a task subagent fails, also after a `timeout` (exit code 124), and its step gives no failure path,
   the task subagent runs the fetch one more time. If the fetch fails again, the task subagent
   [stops](#the-answer-wait-rule) and reports the command and the error. A step that gives its own failure path keeps it.
-- A new worktree has no `node_modules`, and the local clone can have none. The task worktree lives long, and an update
-  can change `package-lock.json`. The task subagent runs `npm ci` in the task worktree when the worktree has no
-  `node_modules`. The task subagent does this before each npm script and each test that it runs there. Examples are
-  `npm run check`, `npm run format:check` and the test loop of [the measure rule](run-one-ticket.md#the-measure-rule).
-  On #400, `npm run format:check` failed in a new task worktree with `prettier: not found` until `npm ci` ran. The task
-  subagent also runs `npm ci` when `package-lock.json` differs from the copy of the last install. Use the copy of
+- The task subagent installs dependencies in its local task worktree only before a direct npm script or test there. A
+  `tasker` command alone requires no dependency install in that worktree. Examples are `tasker execute`, `tasker verify`
+  and `tasker review`. The local task worktree is the worktree of [the own-worktree rule](#the-own-worktree-rule), not a
+  worktree of tasker.
+
+  Before each direct npm script or test there, the task subagent applies both install cases below. If the worktree has
+  no `node_modules`, the task subagent runs `npm ci` there. If `package-lock.json` differs from the copy of the last
+  install, the task subagent runs `npm ci` there. Examples are `npm run check`, `npm run format:check` and the test loop
+  of [the measure rule](run-one-ticket.md#the-measure-rule). On #400, `npm run format:check` failed in a new task
+  worktree with `prettier: not found` until `npm ci` ran. Use the copy of
   [the commit check](verify-failures.md#the-commit-check):
   `L=$(git rev-parse --git-path npm-ci-lock); cmp -s "$L" package-lock.json || { npm ci && cp package-lock.json "$L"; }`.
+
 - The task subagent uses only the issue, the files of the repo, its own tests on the local machine and the answers of
   the orchestrator as sources. If the issue does not give a detail that the work needs, the task subagent asks the
   orchestrator. Then the task subagent waits for the answer, as [the answer-wait rule](#the-answer-wait-rule) says.
