@@ -38,8 +38,10 @@ A provider must send the prompt on stdin, never in argv. A prompt can be longer 
 ## New and continued sessions
 
 A new session uses the provider, the model and the effort of the configuration. A continued session must use the
-provider, the model and the effort that it recorded when it started, also after the configuration changed. The session
-and its context belong to that assistant and that model. A change of the configuration applies to new sessions only.
+provider, the model and the effort that it recorded when it started, also after the configuration changed. A continued
+session also trusts the extensions that it recorded at its start, and the extensions of the current configuration. The
+session and its context belong to that assistant and that model. A change of the provider, the model or the effort
+applies to new sessions only.
 
 ## The limits of a run
 
@@ -652,6 +654,7 @@ add their items to this list:
 - The rule of the agent folder of `pi`, which `piAgentDir()` and `piAgentDirs()` copy.
 - The model form `provider/id` and the thinking levels of `--model` and `--thinking`.
 - The built-in extension keys, tool sources, `-builtin:<name>` entries and `--no-mcp` behavior.
+- The sources of the extensions of the agent folder and the form of the key of each source.
 - The source and path of tools loaded with `-e`, including tool replacement.
 - The path forms, Unicode-space handling, read variants and default paths of pi file tools.
 - Project file loading under `--no-approve` and relative imports from a built extension loaded with `-e`.
@@ -824,6 +827,43 @@ The reasons for the guard rules:
 - The guard extension reads `process.argv`, because `pi` gives the value of an extension flag only after the load.
 - `/proc` shows the environment, the command line and the open files of the `pi` process and of the other processes of
   the user. The read deny list cannot name each such path.
+
+### The precheck of extensions
+
+The keys of each source and the exact-match rule are in [`trustedExtensions`](../config.md#assistant). The trust list of
+a continued session follows [New and continued sessions](#new-and-continued-sessions).
+
+An `extensions` entry that starts with `-` or `!` gives no key. Only `-builtin:<name>` removes a removable built-in key.
+A `builtin:<name>` or `+builtin:<name>` entry keeps its key, also when the list has `-builtin:<name>`. A missing
+`settings.json` or `extensions/` folder gives no entry.
+
+The precheck refuses when it cannot find a real path of the agent folder or worktree. It refuses an agent folder whose
+real path is in the worktree. It also refuses an unreadable or invalid `settings.json`, invalid `extensions` or
+`packages`, or an extensions folder it cannot list. [The code](../../src/assistant/pi/extensions.ts) gives the text and
+order of each reason.
+
+A user extension loads after the guard extension. Its `tool_call` handler runs after the handler of
+[the guard extension](#the-guard-extension). `--no-approve` covers only the resources of the worktree, not the
+extensions of the agent folder.
+
+An unreadable source can still hold an extension that `pi` loads. A parse error can quote a secret of the file. An exact
+match cannot trust more than the user named. A removed entry of the configuration must not break a session that is under
+way.
+
+The precheck masks the user part of a URL when it prints a key. The URL of a package source can hold a token. The column
+`sessions.trusted_extensions` stores each key unmasked. The same text already stands in the `settings.json` of pi, which
+a run can read.
+
+A built-in extension runs code in the `pi` process, as a user extension does. For example, a script of `codemode` calls
+the other tools of `pi`. It also runs "non-LLM models, such as classifiers and image models", as `docs/codemode.md` of
+`pi` says. So a built-in extension needs trust too.
+
+The precheck must find too many extensions, never too few. So each entry of the folder `extensions/` counts. Each run
+gets `--no-mcp`, so the list has no default key `builtin:mcp`. The entry `-builtin:<name>` removes a key only where
+[the guard-extension measure](#the-guard-extension) records that it stops that built-in extension.
+
+An agent folder in the worktree holds files that come from the repo, and a run in the execute role can change them. So
+such an agent folder refuses each run.
 
 ## The plan answer and the prompts
 
