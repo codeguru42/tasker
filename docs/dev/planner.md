@@ -142,6 +142,16 @@ Another example is the change of the draft into a change of an open issue after 
 comes while the ticket subagent of the draft runs waits for its report. The planner gives the new ticket subagent the
 draft file and the change. The new ticket subagent starts at step 2, and its count of loops starts at 1.
 
+For a change of an open issue, the report of the ticket subagent gives the start hash of
+[Before a post](issues.md#before-a-post). The planner gives that start hash to each later ticket subagent of the same
+change, with the draft file. After the post of the change, or if
+[the read in the write call](issues.md#the-read-in-the-write-call) skips the post because the hash changed, the planner
+drops the start hash. After such a skip, it starts a new ticket subagent with the same change and no start hash.
+
+A ticket subagent of a change of an open issue with no start hash first reads the issue, as
+[Before a post](issues.md#before-a-post) says. It then writes its draft file from that read and the change. If the read
+fails, the ticket subagent ends, and its report says so. Then the planner tells the user.
+
 A ticket subagent waits for the report of each review agent, as [The wait for a report](#the-wait-for-a-report) says. It
 does not end while a review agent runs. If a review agent ends with no report, the ticket subagent starts one new review
 agent for that loop. If that one also ends with no report, the ticket subagent ends, and its report says so. Then the
