@@ -60,9 +60,17 @@ const useSeededTask = (change: { state: string; worktreePath?: string; branch?: 
 describe("reviewTask checks", () => {
   it("records the trusted extension list for a new review session", async () => {
     const target = await useReviewFixture(CONTROL);
+    const repo = target.config.repos[REPO];
+    const trustedExtensions = ["configured-review-key"];
+    target.config = {
+      ...target.config,
+      repos: { ...target.config.repos, [REPO]: { ...repo, assistant: { ...repo.assistant, trustedExtensions } } },
+    };
     await callReview(target);
     const task = latestTaskOf(target.dataRoot, KEY);
-    expect(reviewSessionRows(target.dataRoot, task.id)[0]).toMatchObject({ trusted_extensions: "[]" });
+    expect(reviewSessionRows(target.dataRoot, task.id)[0]).toMatchObject({
+      trusted_extensions: '["configured-review-key"]',
+    });
   });
 
   it("refuses a task that is not in awaiting_work_review", async () => {

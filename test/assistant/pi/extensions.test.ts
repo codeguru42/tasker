@@ -4,35 +4,24 @@ import { describe, expect, it } from "vitest";
 import { useTempDir } from "../../helpers/temp.js";
 import type { PiExtension } from "../../../src/assistant/pi/extensions.js";
 import {
-  listPiExtensions as listExtensions,
-  piExtensionRefusal as refusalFor,
-  maskExtensionKey as maskKey,
+  listPiExtensions,
+  piExtensionRefusal,
+  maskExtensionKey,
+  PI_BUILT_IN_EXTENSIONS,
 } from "../../../src/assistant/pi/extensions.js";
-
-function listPiExtensions(agentDir: string, worktree: string) {
-  return listExtensions(agentDir, worktree);
-}
-
-function piExtensionRefusal(extensions: PiExtension[], trusted: string[]) {
-  return refusalFor(extensions, trusted);
-}
-
-function listed(agentDir: string, worktree: string): PiExtension[] {
-  const result = listPiExtensions(agentDir, worktree);
-  if (!Array.isArray(result)) throw new Error(result.reason);
-  return result;
-}
-
-function maskExtensionKey(key: string) {
-  return maskKey(key);
-}
 
 function writeSettings(agentDir: string, value: unknown) {
   writeFileSync(join(agentDir, "settings.json"), JSON.stringify(value));
 }
 
+function listed(agentDir: string, worktree: string) {
+  const result = listPiExtensions(agentDir, worktree);
+  if (!("extensions" in result)) throw new Error((result as { reason: string }).reason);
+  return (result as { extensions: PiExtension[] }).extensions;
+}
+
 describe("pi extension keys", () => {
-  it("lists folder, settings, package and built-in entries in source order", () => {
+  it("lists sorted folders, settings extensions, packages and built-ins in order", () => {
     const root = useTempDir("tasker-pi-extensions-");
     const agentDir = join(root, "agent");
     mkdirSync(join(agentDir, "extensions"), { recursive: true });
@@ -43,54 +32,143 @@ describe("pi extension keys", () => {
       packages: ["pkg", { source: "https://user:secret@example.com/pkg" }],
     });
 
-    const entries = listed(agentDir, join(root, "repo"));
-    expect(entries.map((entry: { key: string }) => entry.key)).toEqual([
-      join(agentDir, "extensions", "a"),
-      join(agentDir, "extensions", "z.js"),
-      "one",
-      "builtin:codemode",
-      "pkg",
-      "https://user:secret@example.com/pkg",
-      "builtin:llama.cpp",
-      "builtin:tool-search",
+    expect(listed(agentDir, join(root, "repo"))).toEqual([
+      { key: join(agentDir, "extensions", "a"), source: "folder" },
+      { key: join(agentDir, "extensions", "z.js"), source: "folder" },
+      { key: "one", source: "settings-extensions" },
+      { key: "builtin:codemode", source: "builtin" },
+      { key: "pkg", source: "settings-packages" },
+      { key: "https://user:secret@example.com/pkg", source: "settings-packages" },
+      { key: "builtin:llama.cpp", source: "builtin" },
+      { key: "builtin:tool-search", source: "builtin" },
     ]);
   });
 
-  it("keeps exact keys, removes only removable built-ins, and reports untrusted keys", () => {
-    const root = useTempDir("tasker-pi-refusal-");
+  it("deduplicates exact keys, preserves positive built-ins and removes only removable defaults", () => {
+    const root = useTempDir("tasker-pi-builtins-");
     const agentDir = join(root, "agent");
-    mkdirSync(agentDir, { recursive: true });
-    writeSettings(agentDir, { extensions: ["-builtin:codemode", "+builtin:codemode", "pkg"] });
-    const entries = listed(agentDir, join(root, "repo"));
-    expect(entries.map((entry: { key: string }) => entry.key)).toContain("builtin:codemode");
-    expect(piExtensionRefusal(entries, ["pkg"])).toContain("builtin:codemode");
-    expect(piExtensionRefusal(entries, ["pkg-prefix"])).toContain("builtin:codemode");
-    expect(
-      piExtensionRefusal(entries, ["pkg", "builtin:codemode", "builtin:llama.cpp", "builtin:tool-search"]),
-    ).toBeUndefined();
+    mkdirSync(agentDir);
+    writeSettings(agentDir, {
+      extensions: ["-builtin:codemode", "+builtin:codemode", "builtin:mcp", "-pkg", "!ignored", "+pkg"],
+      packages: ["pkg"],
+    });
+    expect(listed(agentDir, join(root, "repo")).map(({ key }) => key)).toEqual([
+      "builtin:codemode",
+      "builtin:mcp",
+      "pkg",
+      "builtin:llama.cpp",
+      "builtin:tool-search",
+    ]);
+    expect(PI_BUILT_IN_EXTENSIONS).toEqual([
+      { key: "builtin:llama.cpp", removable: true },
+      { key: "builtin:codemode", removable: true },
+      { key: "builtin:tool-search", removable: true },
+    ]);
   });
 
-  it("rejects real paths inside the worktree and masks URL user data", () => {
+  it("keeps a non-removable built-in when settings asks to remove it", () => {
+    const root = useTempDir("tasker-pi-fixed-builtins-");
+    const agentDir = join(root, "agent");
+    mkdirSync(agentDir);
+    writeSettings(agentDir, { extensions: ["-builtin:fixed"] });
+    expect(listPiExtensions(agentDir, join(root, "repo"), [{ key: "builtin:fixed", removable: false }])).toEqual({
+      extensions: [{ key: "builtin:fixed", source: "builtin" }],
+    });
+  });
+
+  it("keeps package source text and accepts an empty object source", () => {
+    const root = useTempDir("tasker-pi-packages-");
+    const agentDir = join(root, "agent");
+    mkdirSync(agentDir);
+    writeSettings(agentDir, { packages: ["-literal", { source: "" }] });
+    expect(listed(agentDir, join(root, "repo")).slice(0, 2)).toEqual([
+      { key: "-literal", source: "settings-packages" },
+      { key: "", source: "settings-packages" },
+    ]);
+  });
+
+  it("uses exact key matching for refusal and masks URL user data", () => {
+    const root = useTempDir("tasker-pi-refusal-");
+    const agentDir = join(root, "agent");
+    mkdirSync(join(agentDir, "extensions"), { recursive: true });
+    writeFileSync(join(agentDir, "extensions", "local"), "");
+    writeSettings(agentDir, { packages: ["https://alice:secret@example.com/path"] });
+    const extensions = listed(agentDir, join(root, "repo"));
+    expect(
+      piExtensionRefusal(agentDir, join(root, "repo"), ["local", "https://alice:secret@example.com/path"]),
+    ).toBeUndefined();
+    expect(piExtensionRefusal(agentDir, join(root, "repo"), ["local-prefix"])).toContain(
+      "pi can load extensions that assistant.trustedExtensions does not list:",
+    );
+    expect(extensions).toHaveLength(5);
+    const refusal = piExtensionRefusal(agentDir, join(root, "repo"), []);
+    expect(refusal).toBe(
+      `pi can load extensions that assistant.trustedExtensions does not list: ${join(agentDir, "extensions", "local")} (the extensions folder of the agent folder), https://***@example.com/path (packages of settings.json), builtin:llama.cpp (built-in), builtin:codemode (built-in), builtin:tool-search (built-in). Add each key to assistant.trustedExtensions of the repo.`,
+    );
+    expect(refusal).not.toContain("secret");
+    expect(maskExtensionKey("https://alice:secret@example.com/path")).toBe("https://***@example.com/path");
+    expect(maskExtensionKey("ssh://alice@host")).toBe("ssh://***@host");
+  });
+
+  it("returns exact reasons for real path failures and agent containment", () => {
     const root = useTempDir("tasker-pi-real-path-");
     const repo = join(root, "repo");
     const agentDir = join(root, "agent");
     mkdirSync(repo);
     mkdirSync(agentDir);
+    expect(listPiExtensions(join(root, "missing"), repo)).toEqual({
+      reason: `tasker cannot find the real path of ${join(root, "missing")}: ENOENT`,
+    });
+    expect(listPiExtensions(agentDir, join(root, "missing-worktree"))).toEqual({
+      reason: `tasker cannot find the real path of ${join(root, "missing-worktree")}: ENOENT`,
+    });
     const link = join(root, "agent-link");
     symlinkSync(repo, link);
-    const result = listPiExtensions(link, repo);
-    expect(result).toEqual(expect.objectContaining({ reason: expect.stringContaining("worktree") }));
-    expect(maskExtensionKey("https://alice:secret@example.com/path")).toBe("https://***@example.com/path");
-    expect(maskExtensionKey("ssh://alice@host")).toBe("ssh://***@host");
+    expect(listPiExtensions(link, repo)).toEqual({ reason: `the agent folder of pi is in the worktree: ${link}` });
   });
 
-  it("reports settings and folder failures without exposing file contents", () => {
+  it("reports every settings and folder reason in order without exposing settings content", () => {
     const root = useTempDir("tasker-pi-invalid-");
     const agentDir = join(root, "agent");
     mkdirSync(agentDir);
-    writeFileSync(join(agentDir, "settings.json"), '{"extensions":null,"token":"secret"}');
+    const file = join(agentDir, "settings.json");
+    writeFileSync(file, '{"extensions":null,"packages":[4],"token":"secret"}');
     const result = listPiExtensions(agentDir, join(root, "repo"));
-    expect(result).toEqual(expect.objectContaining({ reason: expect.stringContaining("extensions") }));
+    expect(result).toEqual({
+      reason: [
+        `${file}: extensions is not a list of strings`,
+        `${file}: packages is not a list of strings and objects with a string source`,
+        `tasker cannot list ${join(agentDir, "extensions")}: ENOENT`,
+      ].join("\n"),
+    });
     expect(JSON.stringify(result)).not.toContain("secret");
+  });
+
+  it("reports a settings read error and an extensions path that is not a folder", () => {
+    const root = useTempDir("tasker-pi-read-errors-");
+    const agentDir = join(root, "agent");
+    mkdirSync(agentDir);
+    mkdirSync(join(agentDir, "settings.json"));
+    writeFileSync(join(agentDir, "extensions"), "not a folder");
+    expect(listPiExtensions(agentDir, join(root, "repo"))).toEqual({
+      reason: [
+        `tasker cannot read ${join(agentDir, "settings.json")}: EISDIR`,
+        `tasker cannot list ${join(agentDir, "extensions")}: ENOTDIR`,
+      ].join("\n"),
+    });
+  });
+
+  it.each([
+    ["invalid JSON", "{secret", (file: string) => `${file} is not valid JSON`],
+    ["non-object JSON", "null", (file: string) => `${file} is not a JSON object`],
+  ])("reports %s with exact reason", (_label, content, expected) => {
+    const root = useTempDir("tasker-pi-settings-");
+    const agentDir = join(root, "agent");
+    mkdirSync(agentDir);
+    const file = join(agentDir, "settings.json");
+    writeFileSync(file, content);
+    expect(listPiExtensions(agentDir, join(root, "repo"))).toEqual({
+      reason: `${expected(file)}\ntasker cannot list ${join(agentDir, "extensions")}: ENOENT`,
+    });
   });
 });

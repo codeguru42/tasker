@@ -249,11 +249,18 @@ describe("executeTask turns", () => {
 
   it("records the trusted extension list for a new execute session", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
+    const repoKey = fixture.started.repoKey;
+    const repo = fixture.config.repos[repoKey];
+    const trustedExtensions = ["configured-execute-key"];
+    fixture.config = {
+      ...fixture.config,
+      repos: { ...fixture.config.repos, [repoKey]: { ...repo, assistant: { ...repo.assistant, trustedExtensions } } },
+    };
     await runExecute(fixture);
     expect(
       withDataRootStore(fixture.started.dataRoot, (store) => store.executeSession(fixture.task.id, 1)),
     ).toMatchObject({
-      trustedExtensions: [],
+      trustedExtensions,
     });
   });
 

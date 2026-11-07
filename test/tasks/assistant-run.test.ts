@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { permissionHookSettings } from "../../src/assistant/claude-code/permission-hook.js";
@@ -42,6 +42,8 @@ import {
   quotaEventsOf,
   readRunMarker,
   sessionValuesOf,
+  trustedExtensionsJsonOf,
+  writeTrustedExtensionsJson,
   withDataRootStore,
 } from "../helpers/store.js";
 import { type AssistantRunFixture, useAssistantRunFixture } from "../helpers/task-fixtures.js";
@@ -584,18 +586,17 @@ describe("prepareTaskPlanModeRun", () => {
     expect(prepared.session).toMatchObject({ trustedExtensions });
   });
 
-  it("passes the ordered current keys on a new pi run and the union on a continued run", async () => {
-    const makeRun = async (continued: boolean) => {
+  it("passes repo trust on a new pi session and the ordered union on a continued session", async () => {
+    const makeRun = async (continued: boolean, nullBacked = false) => {
       const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
-      const agentDir = useTempDir("tasker-pi-trusted-run-");
-      mkdirSync(agentDir, { recursive: true });
-      writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ extensions: ["current"] }));
       const repo = fixture.config.repos[fixture.started.repoKey];
+      const configuredTrust = ["current", "builtin:llama.cpp", "builtin:codemode"];
       const piRepo = {
         ...repo,
         assistant: {
           ...repo.assistant,
           provider: "pi",
+          trustedExtensions: configuredTrust,
           models: {
             ...repo.assistant.models,
             plan: { ...repo.assistant.models.plan, model: "openrouter/auto" },
@@ -606,7 +607,7 @@ describe("prepareTaskPlanModeRun", () => {
         ...fixture.config,
         repos: { ...fixture.config.repos, [fixture.started.repoKey]: piRepo },
       } as Config;
-      const trustedExtensions = ["old", "builtin:codemode"];
+      let trustedExtensions = ["old", "builtin:codemode"];
       let captured: RunInput | undefined;
       const recorded = {
         repoKey: fixture.started.repoKey,
@@ -615,9 +616,25 @@ describe("prepareTaskPlanModeRun", () => {
         effort: "high" as const,
         trustedExtensions,
       };
-      await runPlanMode(fixture, {
+      if (nullBacked) {
+        withDataRootStore(fixture.started.dataRoot, (store) => {
+          store.recordPlanSession(fixture.task.id, {
+            sessionId: TEST_SESSION_ID,
+            provider: "pi",
+            model: "openrouter/auto",
+            effort: "high",
+            trustedExtensions: ["discarded"],
+          } as never);
+          const dbPath = dataRootLayout(fixture.started.dataRoot).database;
+          writeTrustedExtensionsJson(dbPath, TEST_SESSION_ID, null);
+          expect(trustedExtensionsJsonOf(dbPath, TEST_SESSION_ID)).toBeNull();
+          trustedExtensions = store.planSession(fixture.task.id)!.trustedExtensions;
+        });
+        recorded.trustedExtensions = trustedExtensions;
+      }
+      const run = await runPlanMode(fixture, {
         runConfig,
-        runEnv: { ...fixture.env, TASKER_PI_CODING_AGENT_DIR: agentDir },
+        runEnv: fixture.env,
         session: continued ? { resume: true, sessionId: TEST_SESSION_ID, recorded } : { resume: false },
         beforeStart: (prepared) => {
           prepared.provider.run = async (input) => {
@@ -632,24 +649,17 @@ describe("prepareTaskPlanModeRun", () => {
           };
         },
       });
-      return { captured };
+      return { captured, trustedExtensions, session: run.prepared.session };
     };
 
     const fresh = await makeRun(false);
-    expect(fresh.captured?.trustedExtensions).toEqual([
-      "current",
-      "builtin:llama.cpp",
-      "builtin:codemode",
-      "builtin:tool-search",
-    ]);
+    expect(fresh.session.trustedExtensions).toEqual(["current", "builtin:llama.cpp", "builtin:codemode"]);
+    expect(fresh.captured?.trustedExtensions).toEqual(["current", "builtin:llama.cpp", "builtin:codemode"]);
     const continued = await makeRun(true);
-    expect(continued.captured?.trustedExtensions).toEqual([
-      "old",
-      "builtin:codemode",
-      "current",
-      "builtin:llama.cpp",
-      "builtin:tool-search",
-    ]);
+    expect(continued.captured?.trustedExtensions).toEqual(["old", "builtin:codemode", "current", "builtin:llama.cpp"]);
+    const nullBacked = await makeRun(true, true);
+    expect(nullBacked.trustedExtensions).toEqual([]);
+    expect(nullBacked.captured?.trustedExtensions).toEqual(["current", "builtin:llama.cpp", "builtin:codemode"]);
   });
 
   it("gives the provider of a new session and the approved window of the request", async () => {

@@ -54,6 +54,8 @@ import {
   rejectEvent,
   withStoreFile,
   writeRunMarker,
+  trustedExtensionsJsonOf,
+  writeTrustedExtensionsJson,
 } from "../helpers/store.js";
 import { useTempDir, useTempFile } from "../helpers/temp.js";
 
@@ -2521,6 +2523,40 @@ describe("task store", () => {
       expect(session).toMatchObject({ trustedExtensions });
       expect(store.planSession(task.id)).toMatchObject({ trustedExtensions });
     });
+
+    it("stores and reads a URL extension key unchanged", () => {
+      const task = store.createTask(newTask);
+      const key = "https://user:token@host/path";
+      const session = store.recordPlanSession(task.id, {
+        sessionId: "s-url",
+        provider: "claude-code",
+        model: "opus",
+        effort: "low",
+        trustedExtensions: [key],
+      } as never);
+      expect(trustedExtensionsJsonOf(dbPath, "s-url")).toBe(JSON.stringify([key]));
+      expect(session.trustedExtensions).toEqual([key]);
+      expect(store.planSession(task.id)?.trustedExtensions).toEqual([key]);
+    });
+
+    it("reads a NULL trusted extension column as an empty list", () => {
+      const task = store.createTask(newTask);
+      record(task.id);
+      writeTrustedExtensionsJson(dbPath, "s-1", null);
+      expect(trustedExtensionsJsonOf(dbPath, "s-1")).toBeNull();
+      expect(store.planSession(task.id)?.trustedExtensions).toEqual([]);
+    });
+
+    it.each(["not json", "null", "[1]"])(
+      "reports the session id when trusted extension JSON is invalid: %s",
+      (value) => {
+        const task = store.createTask(newTask);
+        record(task.id);
+        writeTrustedExtensionsJson(dbPath, "s-1", value);
+        const error = thrownBy(() => store.planSession(task.id));
+        expect((error as Error).message).toBe("invalid trusted extensions for session s-1");
+      },
+    );
 
     it("gives the repo key of the task", () => {
       const task = store.createTask({ ...newTask, repoKey: "other" });

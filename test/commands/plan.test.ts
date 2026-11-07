@@ -163,10 +163,18 @@ describe("plan", () => {
 
   it("records the trusted extension list for a new plan session", async () => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
+    const repoKey = fixture.started.repoKey;
+    const config = fixture.started.config;
+    const repo = config.repos[repoKey];
+    const trustedExtensions = ["configured-plan-key"];
+    fixture.started.config = {
+      ...config,
+      repos: { ...config.repos, [repoKey]: { ...repo, assistant: { ...repo.assistant, trustedExtensions } } },
+    };
     await runPlan();
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const session = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(task.id));
-    expect(session).toMatchObject({ trustedExtensions: [] });
+    expect(session).toMatchObject({ trustedExtensions });
   });
 
   it("continues a recorded plan session and records no second one", async () => {
