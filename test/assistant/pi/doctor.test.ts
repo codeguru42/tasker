@@ -109,9 +109,12 @@ describe("pi doctor check selection", () => {
 
 describe("piVersionCheck", () => {
   it("gives ok with the first line of the version", async () => {
-    const fake = useFakePi([{ args: VERSION_ARGS, stdout: `${VERSION}\nmore\n` }]);
+    const fake = useFakePi([{ args: VERSION_ARGS, stdout: `pi ${VERSION}\nmore\n` }]);
 
-    expect(await piVersionCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({ status: "ok", detail: VERSION });
+    expect(await piVersionCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "ok",
+      detail: `pi ${VERSION}`,
+    });
     expect(fake.calls().map((call) => call.args)).toEqual([VERSION_ARGS]);
   });
 
@@ -230,6 +233,9 @@ describe("pi child refusals in doctor checks", () => {
 });
 
 describe("piAuthCheck", () => {
+  const authExitDetail = (program: string, upstream: string, code: number) =>
+    `${program} auth check --provider ${upstream} --json exited ${code}`;
+
   it("checks auth without secret-printing or no-refresh flags", async () => {
     const upstream = "openrouter";
     const fake = useFakePi([
@@ -241,7 +247,7 @@ describe("piAuthCheck", () => {
 
     expect(await piAuthCheck(upstream).run({ ...fake.env, HOME: "/home/user" })).toEqual({
       status: "ok",
-      detail: "pi has a login for openrouter",
+      detail: "pi has credentials for openrouter (oauth)",
     });
     expect(fake.calls().map((call) => call.args)).toEqual([authArgs(upstream)]);
   });
@@ -256,9 +262,10 @@ describe("piAuthCheck", () => {
       },
     ]);
 
-    expect(await piAuthCheck(upstream).run({ ...fake.env, HOME: "/home/user" })).toMatchObject({
+    expect(await piAuthCheck(upstream).run({ ...fake.env, HOME: "/home/user" })).toEqual({
       status: "error",
-      detail: expect.stringContaining("provider_not_found"),
+      detail: "pi does not know the provider nosuchprov",
+      remediation: "Fix the model of each role that names nosuchprov.",
     });
   });
 
@@ -272,9 +279,66 @@ describe("piAuthCheck", () => {
       },
     ]);
 
-    expect(await piAuthCheck(upstream).run({ ...fake.env, HOME: "/home/user" })).toMatchObject({
+    expect(await piAuthCheck(upstream).run({ ...fake.env, HOME: "/home/user" })).toEqual({
       status: "error",
-      remediation: "Run /login in pi and select openrouter.",
+      detail: "pi has no credentials for openrouter",
+      remediation: "Run pi and log in to openrouter with /login.",
+    });
+  });
+
+  it.each(["null", "[]", "false", "malformed"])("uses exit detail for JSON %s", async (stdout) => {
+    const fake = useFakePi([{ args: authArgs("openrouter"), exitCode: 2, stdout }]);
+
+    expect(await piAuthCheck("openrouter").run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: authExitDetail(fake.env.TASKER_PI_BIN!, "openrouter", 2),
+    });
+  });
+
+  it.each([
+    [{ status: "ready" }, 0, { status: "ok", detail: "pi has credentials for openrouter (unknown auth type)" }],
+    [{ status: "ready", authType: "oauth" }, 0, { status: "ok", detail: "pi has credentials for openrouter (oauth)" }],
+    [
+      { reason: "provider_not_found" },
+      1,
+      {
+        status: "error",
+        detail: "pi does not know the provider openrouter",
+        remediation: "Fix the model of each role that names openrouter.",
+      },
+    ],
+    [
+      { reason: "credentials_not_configured" },
+      1,
+      {
+        status: "error",
+        detail: "pi has no credentials for openrouter",
+        remediation: "Run pi and log in to openrouter with /login.",
+      },
+    ],
+    [
+      { status: "expired", reason: "bad_token" },
+      1,
+      { status: "error", detail: "pi cannot use the credentials for openrouter: expired (bad_token)" },
+    ],
+    [
+      { status: "expired", reason: 7 },
+      1,
+      { status: "error", detail: "pi cannot use the credentials for openrouter: expired" },
+    ],
+    [{ status: "expired" }, 0, { status: "error", detail: "pi cannot use the credentials for openrouter: expired" }],
+  ] as const)("handles auth reply %j", async (reply, exitCode, expected) => {
+    const fake = useFakePi([{ args: authArgs("openrouter"), exitCode, stdout: JSON.stringify(reply) }]);
+
+    expect(await piAuthCheck("openrouter").run({ ...fake.env, HOME: "/home/user" })).toEqual(expected);
+  });
+
+  it("uses exit detail for a ready reply with a nonzero exit", async () => {
+    const fake = useFakePi([{ args: authArgs("openrouter"), exitCode: 1, stdout: '{"status":"ready"}' }]);
+
+    expect(await piAuthCheck("openrouter").run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: authExitDetail(fake.env.TASKER_PI_BIN!, "openrouter", 1),
     });
   });
 });
@@ -285,7 +349,7 @@ describe("superpowersCheck", () => {
 
     expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
       status: "error",
-      detail: "superpowers is not installed",
+      detail: "pi has no superpowers package",
       remediation: superpowersInstall,
     });
   });
@@ -300,7 +364,7 @@ describe("superpowersCheck", () => {
 
     expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
       status: "ok",
-      detail: "superpowers 6.4.1 is installed",
+      detail: `superpowers ${version} at ${folder}`,
     });
   });
 
@@ -314,7 +378,8 @@ describe("superpowersCheck", () => {
     expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
       status: "error",
       detail: "superpowers 6.4.0 is older than 6.4.1",
-      remediation: "Update superpowers with pi install git:github.com/obra/superpowers.",
+      remediation:
+        "Run pi update --extension git:github.com/obra/superpowers. If git:github.com/obra/superpowers names a ref or a version, run pi install with the source that names none.",
     });
   });
 
@@ -325,7 +390,7 @@ describe("superpowersCheck", () => {
 
     expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toMatchObject({
       status: "error",
-      detail: "superpowers is not installed",
+      detail: "pi has no superpowers package",
     });
   });
 
@@ -338,7 +403,93 @@ describe("superpowersCheck", () => {
 
     expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toMatchObject({
       status: "error",
-      detail: "superpowers is not installed",
+      detail: "pi has no superpowers package",
+    });
+  });
+
+  it("finds superpowers by package metadata, not by source", async () => {
+    const folder = useTempDir("tasker-superpowers-match-");
+    writeFileWithParents(
+      join(folder, "package.json"),
+      JSON.stringify({ name: "superpowers", version: "6.4.1-beta.1" }),
+    );
+    const fake = useFakePi([
+      { args: LIST_ARGS, stdout: listOutput("User packages", "git:github.com/acme/tool", folder) },
+    ]);
+
+    expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "ok",
+      detail: `superpowers 6.4.1-beta.1 at ${folder}`,
+    });
+  });
+
+  it("ignores a source whose package metadata names another package", async () => {
+    const folder = useTempDir("tasker-superpowers-wrong-name-");
+    writeFileWithParents(join(folder, "package.json"), JSON.stringify({ name: "@scope/other", version: "6.4.1" }));
+    const fake = useFakePi([
+      { args: LIST_ARGS, stdout: listOutput("User packages", "npm:@scope/superpowers", folder) },
+    ]);
+
+    expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: "pi has no superpowers package",
+      remediation: superpowersInstall,
+    });
+  });
+
+  it.each(['{"name":"superpowers"}', '{"name":"superpowers","version":"v6.4.1"}'])(
+    "reports missing or invalid package version %s",
+    async (packageJson) => {
+      const folder = useTempDir("tasker-superpowers-invalid-");
+      writeFileWithParents(join(folder, "package.json"), packageJson);
+      const fake = useFakePi([
+        { args: LIST_ARGS, stdout: listOutput("User packages", "git:github.com/acme/tool", folder) },
+      ]);
+
+      expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+        status: "error",
+        detail: `cannot read the version of superpowers in ${join(folder, "package.json")}`,
+      });
+    },
+  );
+
+  it.each(["bad", "null", "[]", "{}"])("does not match invalid package metadata %s", async (packageJson) => {
+    const folder = useTempDir("tasker-superpowers-invalid-metadata-");
+    writeFileWithParents(join(folder, "package.json"), packageJson);
+    const fake = useFakePi([
+      { args: LIST_ARGS, stdout: listOutput("User packages", "git:github.com/acme/tool", folder) },
+    ]);
+
+    expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: "pi has no superpowers package",
+      remediation: superpowersInstall,
+    });
+  });
+
+  it("gives a local source a file update fix", async () => {
+    const folder = useTempDir("tasker-superpowers-local-");
+    addSuperpowersPackage(folder, "6.4.0");
+    const fake = useFakePi([{ args: LIST_ARGS, stdout: listOutput("User packages", "file:../superpowers", folder) }]);
+
+    expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: "superpowers 6.4.0 is older than 6.4.1",
+      remediation: `Update the files at ${folder}.`,
+    });
+  });
+
+  it("does not match a filtered source", async () => {
+    const folder = useTempDir("tasker-superpowers-filtered-");
+    addSuperpowersPackage(folder, "6.4.1");
+    const fake = useFakePi([
+      { args: LIST_ARGS, stdout: `User packages:\n  npm:superpowers (filtered)\n    ${folder}\n` },
+    ]);
+
+    expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: "pi has no superpowers package",
+      remediation: superpowersInstall,
     });
   });
 });
@@ -352,7 +503,7 @@ describe("simpleEnglishCheck", () => {
 
     expect(await simpleEnglishCheck().run({ HOME: home })).toEqual({
       status: "ok",
-      detail: "simple-english is installed for pi",
+      detail: `simple-english at ${join(skillFolder, "simple-english", "SKILL.md")}`,
     });
   });
 
@@ -361,8 +512,8 @@ describe("simpleEnglishCheck", () => {
 
     expect(await simpleEnglishCheck().run({ HOME: home })).toEqual({
       status: "error",
-      detail: "simple-english is not installed for pi",
-      remediation: "Install simple-english in $HOME/.agents/skills/ or the pi agent folder.",
+      detail: `simple-english/SKILL.md is in no skill folder of pi: ${join(home, ".pi", "agent", "skills")}, ${join(home, ".agents", "skills")}`,
+      remediation: `Install the skill simple-english in ${join(home, ".agents", "skills")}.`,
     });
   });
 
@@ -372,7 +523,7 @@ describe("simpleEnglishCheck", () => {
 
     expect(await simpleEnglishCheck().run({ HOME: home, TASKER_PI_CODING_AGENT_DIR: "rel/x" })).toEqual({
       status: "ok",
-      detail: "simple-english is installed for pi",
+      detail: `simple-english at ${join(home, ".agents", "skills", "simple-english", "SKILL.md")}`,
     });
   });
 
@@ -386,12 +537,15 @@ describe("simpleEnglishCheck", () => {
       await simpleEnglishCheck().run({ HOME: home, TASKER_PI_CODING_AGENT_DIR: relative(process.cwd(), agentDir) }),
     ).toEqual({
       status: "error",
-      detail: "simple-english is not installed for pi",
-      remediation: "Install simple-english in $HOME/.agents/skills/ or the pi agent folder.",
+      detail: `simple-english/SKILL.md is in no skill folder of pi: ${join(home, ".agents", "skills")}, ${join(agentDir, "skills")}`,
+      remediation: `Install the skill simple-english in ${join(agentDir, "skills")}.`,
     });
   });
 
   it("does not use $HOME/.agents/skills when HOME is unset", async () => {
-    expect(await simpleEnglishCheck().run({})).toMatchObject({ status: "error" });
+    expect(await simpleEnglishCheck().run({})).toEqual({
+      status: "error",
+      detail: "tasker cannot find the skill folders of pi, because HOME is not set",
+    });
   });
 });
