@@ -1,7 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
-import { relative } from "node:path";
 import {
   piAuthCheck as fromPiAuthCheck,
   piVersionCheck as fromPiVersionCheck,
@@ -22,9 +21,11 @@ const VERSION_ARGS = ["--version"];
 const LIST_ARGS = ["list", "--no-approve"];
 const authArgs = (upstream: string) => ["auth", "check", "--provider", upstream, "--json"];
 const relativeFolderReason = "TASKER_PI_CODING_AGENT_DIR must be an absolute path, got rel/x";
+const relativeHomeReason = "HOME must be an absolute path, got rel/h";
 const missingHomeReason = "tasker cannot find the agent folder of pi, because HOME is not set";
 const agentFolderFix = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or unset it.";
 const homeFix = "Set HOME.";
+const relativeHomeFix = "Set HOME to an absolute path, or set TASKER_PI_CODING_AGENT_DIR to an absolute path.";
 const piInstallFix = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
 const superpowersInstall = "Run pi install git:github.com/obra/superpowers.";
 const NOT_INSTALLED = {
@@ -186,6 +187,12 @@ describe("piVersionCheck", () => {
 });
 
 describe("pi child refusals in doctor checks", () => {
+  const programChecks = [
+    ["pi version", () => piVersionCheck(), VERSION_ARGS],
+    ["pi-auth:openrouter", () => piAuthCheck("openrouter"), authArgs("openrouter")],
+    ["superpowers:pi", () => superpowersCheck(), LIST_ARGS],
+  ] as const;
+
   it.each([
     ["pi version", () => piVersionCheck()],
     ["pi auth", () => piAuthCheck("openrouter")],
@@ -203,6 +210,54 @@ describe("pi child refusals in doctor checks", () => {
     ).toEqual({ status: "error", detail: relativeFolderReason, remediation: agentFolderFix });
     expect(fake.calls()).toEqual([]);
   });
+
+  it.each(programChecks)("reports a relative HOME before spawn for %s", async (_name, makeCheck) => {
+    const fake = useFakePi([{ args: VERSION_ARGS, stdout: VERSION }]);
+
+    expect(await makeCheck().run({ ...fake.env, HOME: "rel/h", TASKER_PI_BIN: "/missing/pi" })).toEqual({
+      status: "error",
+      detail: relativeHomeReason,
+      remediation: relativeHomeFix,
+    });
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it.each(programChecks)("reports a relative custom folder before a relative HOME for %s", async (_name, makeCheck) => {
+    const fake = useFakePi([{ args: VERSION_ARGS, stdout: VERSION }]);
+
+    expect(
+      await makeCheck().run({
+        ...fake.env,
+        HOME: "rel/h",
+        TASKER_PI_BIN: "/missing/pi",
+        TASKER_PI_CODING_AGENT_DIR: "rel/p",
+      }),
+    ).toEqual({
+      status: "error",
+      detail: "TASKER_PI_CODING_AGENT_DIR must be an absolute path, got rel/p",
+      remediation: agentFolderFix,
+    });
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it.each(programChecks)(
+    "uses an absolute custom folder with a relative HOME for %s",
+    async (_name, makeCheck, args) => {
+      const fake = useFakePi(
+        [{ args, stdout: args === LIST_ARGS ? "No packages installed.\n" : VERSION }],
+        ["PI_CODING_AGENT_DIR"],
+      );
+
+      await makeCheck().run({
+        ...fake.env,
+        HOME: "rel/h",
+        TASKER_PI_CODING_AGENT_DIR: "/p",
+      });
+
+      expect(fake.calls().map((call) => call.args)).toEqual([args]);
+      expect(fake.calls()[0].env.PI_CODING_AGENT_DIR).toBe("/p");
+    },
+  );
 
   it.each([
     ["pi version", () => piVersionCheck()],
@@ -591,6 +646,19 @@ describe("simpleEnglishCheck", () => {
       status: "error",
       detail: `simple-english/SKILL.md is in no skill folder of pi: ${join(home, ".agents", "skills")}`,
       remediation: `Install the skill simple-english in ${join(home, ".agents", "skills")}.`,
+    });
+  });
+
+  it("checks only the relative HOME skill folder when HOME is relative", async () => {
+    const home = mkdtempSync(join(process.cwd(), ".pi-doctor-relative-home-"));
+    onTestFinished(() => rmSync(home, { recursive: true, force: true }));
+    const relativeHome = relative(process.cwd(), home);
+    addSkill(join(home, ".pi", "agent", "skills"));
+
+    expect(await simpleEnglishCheck().run({ HOME: relativeHome })).toEqual({
+      status: "error",
+      detail: `simple-english/SKILL.md is in no skill folder of pi: ${join(relativeHome, ".agents", "skills")}`,
+      remediation: `Install the skill simple-english in ${join(relativeHome, ".agents", "skills")}.`,
     });
   });
 
