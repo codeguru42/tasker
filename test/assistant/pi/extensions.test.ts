@@ -181,9 +181,11 @@ describe("pi extension keys", () => {
         "builtin:codemode",
         "builtin:tool-search",
       ]),
-    ).toContain("https://***@example.com/path");
-    expect(callPiExtensionRefusal(agentDir, join(root, "repo"), ["BUILTIN:CODEMODE"])).toContain(
-      "builtin:codemode (built-in)",
+    ).toBe(
+      "pi can load extensions that assistant.trustedExtensions does not list: https://***@example.com/path (packages of settings.json). Add each key to assistant.trustedExtensions of the repo.",
+    );
+    expect(callPiExtensionRefusal(agentDir, join(root, "repo"), ["BUILTIN:CODEMODE"])).toBe(
+      `pi can load extensions that assistant.trustedExtensions does not list: ${join(agentDir, "extensions", "local")} (the extensions folder of the agent folder), https://***@example.com/path (packages of settings.json), builtin:llama.cpp (built-in), builtin:codemode (built-in), builtin:tool-search (built-in). Add each key to assistant.trustedExtensions of the repo.`,
     );
     expect(callPiExtensionRefusal(agentDir, join(root, "repo"), ["https://alice:secret@example.com/Path"])).toBe(
       `pi can load extensions that assistant.trustedExtensions does not list: ${join(agentDir, "extensions", "local")} (the extensions folder of the agent folder), https://***@example.com/path (packages of settings.json), builtin:llama.cpp (built-in), builtin:codemode (built-in), builtin:tool-search (built-in). Add each key to assistant.trustedExtensions of the repo.`,
@@ -206,10 +208,10 @@ describe("pi extension keys", () => {
     expect(refusal).not.toContain("secret");
     expect(callMaskExtensionKey("https://alice:secret@example.com/path")).toBe("https://***@example.com/path");
     expect(callMaskExtensionKey("ssh://alice@host")).toBe("ssh://***@host");
-    expect(callMaskExtensionKey("https://a@b@host/path")).toBe("https://***@host/path");
+    expect(callMaskExtensionKey("https://a@b:c@host/path")).toBe("https://***@host/path");
     expect(callMaskExtensionKey("https://host/a@b/path")).toBe("https://host/a@b/path");
     expect(callMaskExtensionKey("https://a@host")).toBe("https://***@host");
-    expect(callMaskExtensionKey("user@host/path")).toBe("user@host/path");
+    expect(callMaskExtensionKey("user@host:path")).toBe("user@host:path");
   });
 
   it("returns only defaults when settings.json is missing", () => {
