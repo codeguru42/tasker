@@ -96,7 +96,12 @@ const RETRY_TABLES: OriginTables<RetryRow> = {
     quota_blocked: { rows: RETRY_TABLE },
     awaiting_quota_approval: { rows: RETRY_TABLE },
     interrupted: { rows: RETRY_TABLE },
-    merging: { rows: { accepted: { target: "accepted", next: "merge", clears: {} } } },
+    merging: {
+      rows: {
+        accepted: { target: "accepted", next: "merge", clears: {} },
+        in_peer_review: { target: "in_peer_review", next: "merge", clears: {} },
+      },
+    },
     pushing: { rows: { accepted: { target: "accepted", next: "push", clears: {} } } },
   },
 };
@@ -120,8 +125,19 @@ async function retryLocked(store: TaskStore, request: RetryRequest): Promise<Ret
   const task = taskInState(store, taskId, "retry");
   const events = store.listEvents(taskId);
   const origin = transitionFromEvents(events, "failed");
-  const row = origin === undefined ? undefined : originRow(events, origin, RETRY_TABLES);
+  const mergeOrigin = task.mergeOrigin;
+  const mergeRow =
+    mergeOrigin === "accepted" || mergeOrigin === "in_peer_review"
+      ? RETRY_TABLES.byOriginOf?.merging?.rows[mergeOrigin]
+      : undefined;
+  const row =
+    origin === "merging" ? mergeRow : origin === undefined ? undefined : originRow(events, origin, RETRY_TABLES);
   if (origin === undefined || row === undefined) {
+    if (origin === "merging") {
+      throw new Error(
+        `the task of ${task.issueKey} has no valid stored merge origin; use tasker mark-landed to record an external landing`,
+      );
+    }
     throw new Error(
       `the task of ${task.issueKey} failed in ${originText(events, "failed")}; tasker retry has no step for it`,
     );

@@ -394,7 +394,10 @@ describe("resumeTask checks", () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => pauseTaskVia(store, task.id, "in_peer_review", "merging"));
 
-    await expectResumeRefused(dataRoot, task, noStep("merging"));
+    const result = await resume(dataRoot, task);
+
+    expect(result).toEqual({ origin: "merging", target: "in_peer_review", next: "merge" });
+    expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: "in_peer_review", mergeOrigin: "in_peer_review" });
   });
 
   it("refuses a refine from accepted", async () => {

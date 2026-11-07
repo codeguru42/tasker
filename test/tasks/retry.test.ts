@@ -96,7 +96,10 @@ describe("retryTask checks", () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => failTaskVia(store, task.id, "in_peer_review", "merging"));
 
-    await expectRetryRefused(dataRoot, task, `the task of ${KEY} failed in merging; tasker retry has no step for it`);
+    const result = await retry(dataRoot, task);
+
+    expect(result).toEqual({ origin: "merging", target: "in_peer_review", next: "merge" });
+    expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: "in_peer_review", mergeOrigin: "in_peer_review" });
   });
 
   it("refuses a task that failed in interrupted after a move from pushing", async () => {

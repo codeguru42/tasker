@@ -156,7 +156,7 @@ describe("tasker resume", () => {
     const result = await runResume(KEY, "--repo", REPO);
 
     expect(result.code).toBe(1);
-    expect(result.err).toContain("tasker resume has no step for it");
+    expect(result.err).toContain(wrongStateError("merging", KEY, "resume", "quota_blocked or interrupted"));
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toMatchObject({ state: "merging" });
   });
 

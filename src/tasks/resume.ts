@@ -105,7 +105,10 @@ const RESUME_TABLES: OriginTables<ResumeRow> = {
     refining: { rows: REFINE_RESUME_TABLE },
     updating_branch: { rows: UPDATE_BRANCH_RESUME_TABLE },
     merging: {
-      rows: { accepted: { target: "accepted", next: "merge", clearReview: false } },
+      rows: {
+        accepted: { target: "accepted", next: "merge", clearReview: false },
+        in_peer_review: { target: "in_peer_review", next: "merge", clearReview: false },
+      },
     },
   },
 };
@@ -174,13 +177,25 @@ function resumeMoveOf(task: Task, events: readonly TaskEvent[], command: "resume
   const pause = task.state as TaskState;
   const origin = transitionFromEvents(events, pause);
   const refineOrigin = origin === "refining" ? transitionFromEvents(events, origin) : undefined;
+  const mergeOrigin = task.mergeOrigin;
+  const mergeRow =
+    mergeOrigin === "accepted" || mergeOrigin === "in_peer_review"
+      ? RESUME_TABLES.byOriginOf?.merging?.rows[mergeOrigin]
+      : undefined;
   const isReopen = (refineOrigin === "accepted" || refineOrigin === "pushed") && refineFeedbackOf(events) !== undefined;
   const row =
     origin === undefined || ((refineOrigin === "accepted" || refineOrigin === "pushed") && !isReopen)
       ? undefined
-      : originRow(events, origin, RESUME_TABLES);
+      : origin === "merging"
+        ? mergeRow
+        : originRow(events, origin, RESUME_TABLES);
   // The state machine has no edge from the origin into this pause, so no run stopped that way.
   if (origin === undefined || row === undefined || !canTransition(origin, pause)) {
+    if (origin === "merging" && mergeRow === undefined) {
+      throw new Error(
+        `the task of ${task.issueKey} has no valid stored merge origin; use tasker mark-landed to record an external landing`,
+      );
+    }
     throw new Error(
       `the task of ${task.issueKey} was paused from ${originText(events, pause)}; tasker ${command} has no step for it`,
     );
