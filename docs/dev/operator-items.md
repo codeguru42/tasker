@@ -30,6 +30,8 @@ This page uses these terms for the questions of an item that needs an answer:
     recommendation" of [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
   - The request of [the request rule](../orchestrator.md#the-request-rule).
   - A choice of [The rules for the user alone](planner.md#the-rules-for-the-user-alone).
+  - A choice of [The state of the user](plan-review.md#the-state-of-the-user): the approval of a measure that changes
+    the state of the user.
   - A choice of the fifth case of [the stop rule](plan-review.md#the-stop-rule).
   - A choice of the security report of [Review findings](review-findings.md#review-findings).
   - A choice of the earlier-blocker offer in [Pick the tickets](pick-the-tickets.md#pick-the-tickets): the orchestrator
