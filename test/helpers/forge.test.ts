@@ -17,6 +17,8 @@ describe("forgeStub", () => {
     expect(fake.calls).toEqual({
       listed: [{ cwd: "/work", head: "task-branch" }],
       created: [{ cwd: "/work", head: "task-branch", base: "main", title: "Title", body: "Body" }],
+      ci: [],
+      merged: [],
     });
   });
 

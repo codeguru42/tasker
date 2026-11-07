@@ -1,8 +1,16 @@
-import type { ForgeProvider, OpenPullRequest, CreatePrInput, PullRequest } from "../../src/forge/provider.js";
+import type {
+  ForgeProvider,
+  OpenPullRequest,
+  CreatePrInput,
+  PullRequest,
+  MergeMethod,
+} from "../../src/forge/provider.js";
 
 export interface ForgeCalls {
   listed: { cwd: string; head: string }[];
   created: CreatePrInput[];
+  ci: { sha: string; cwd: string }[];
+  merged: { number: number; method: MergeMethod; headSha: string; cwd: string }[];
 }
 
 export interface ForgeStub {
@@ -20,13 +28,14 @@ export function forgeStub(
     createdPr?: PullRequest;
   } = {},
 ): ForgeStub {
-  const calls: ForgeCalls = { listed: [], created: [] };
+  const calls: ForgeCalls = { listed: [], created: [], ci: [], merged: [] };
   let listError: Error | undefined;
   let createError: Error | undefined;
   const provider: ForgeProvider = {
     id: options.id ?? "test-forge",
     account: options.account ?? "test-account",
-    async ciStatus() {
+    async ciStatus(sha, cwd) {
+      calls.ci.push({ sha, cwd });
       return "pending";
     },
     async isPrMerged() {
@@ -42,7 +51,9 @@ export function forgeStub(
       if (createError !== undefined) throw createError;
       return options.createdPr ?? { number: 42, url: "https://example.test/pull/42" };
     },
-    async mergePr() {},
+    async mergePr(number, method, headSha, cwd) {
+      calls.merged.push({ number, method, headSha, cwd });
+    },
   };
   return {
     provider,
