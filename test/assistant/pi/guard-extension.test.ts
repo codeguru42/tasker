@@ -1,5 +1,7 @@
 import * as fs from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { thrownBy } from "../../helpers/errors.js";
 import { useFakePiExtension, type FakePiTool } from "../../helpers/fake-pi-extension.js";
@@ -80,6 +82,31 @@ function expectBlock(value: unknown, reason: string): void {
   expect(value).toMatchObject({ block: true, reason: expect.stringContaining(reason) });
   expect(JSON.stringify(value)).not.toContain("SENSITIVE");
 }
+
+function guardedFileTool(name: string, cwd: string, limits: Partial<GuardLimits> = {}) {
+  const current = tool(name, `builtin:${name}`, "builtin");
+  const guard = { ...validLimits(), cwd, tools: [limitTool(current)], ...limits };
+  const fake = invokeGuard(limitsArgs(writeLimits(guard)), [current]);
+  return { fake, cwd };
+}
+
+function fileToolCall(fake: ReturnType<typeof useFakePiExtension>, name: string, input: unknown, cwd: string) {
+  return callTool(fake, name, input, cwd);
+}
+
+function expectFileBlock(value: unknown, privatePath?: string): void {
+  expect(value).toMatchObject({ block: true, reason: expect.any(String) });
+  if (privatePath !== undefined) expect(JSON.stringify(value)).not.toContain(privatePath);
+}
+
+const FILE_TOOL_TABLE = [
+  { name: "read", field: "path", noPath: "Not permitted", kind: "read" },
+  { name: "grep", field: "path", noPath: "The worktree (.)", kind: "read" },
+  { name: "find", field: "path", noPath: "The worktree (.)", kind: "read" },
+  { name: "ls", field: "path", noPath: "The worktree (.)", kind: "read" },
+  { name: "edit", field: "path", noPath: "Not permitted", kind: "write" },
+  { name: "write", field: "path", noPath: "Not permitted", kind: "write" },
+] as const;
 
 function extensionError(args: string[]): string {
   const error = thrownBy(() => invokeGuard(args));
@@ -373,5 +400,230 @@ describe("guard extension tool source checks", () => {
     const result = await callTool(fake, "search");
 
     expectBlock(result, "guard failure");
+  });
+});
+
+describe("guard extension file path checks", () => {
+  it.each(FILE_TOOL_TABLE.filter((entry) => entry.noPath === "Not permitted"))(
+    "requires a path for $name",
+    async ({ name }) => {
+      const cwd = useTempDir("tasker-guard-file-");
+      const { fake } = guardedFileTool(name, cwd, { writeRoots: [cwd] });
+
+      const result = await fileToolCall(fake, name, {}, cwd);
+
+      expectFileBlock(result);
+    },
+  );
+
+  it.each(FILE_TOOL_TABLE.filter((entry) => entry.noPath === "The worktree (.)"))(
+    "uses the worktree when $name has no path",
+    async ({ name, kind }) => {
+      const cwd = useTempDir("tasker-guard-file-");
+      const roots = kind === "read" ? { readRoots: [cwd] } : { writeRoots: [cwd] };
+      const { fake } = guardedFileTool(name, cwd, roots);
+
+      expect(await fileToolCall(fake, name, {}, cwd)).toBe("tool result");
+    },
+  );
+
+  it("blocks a non-string path and a cwd that differs from the limits", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const { fake } = guardedFileTool("read", cwd);
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: 4 }, cwd));
+    expectFileBlock(await fileToolCall(fake, "read", { path: "/tmp/file" }, "/tmp"));
+  });
+
+  it("applies the Unicode-space rule before the cwd rule", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+    const path = join(cwd, `name${String.fromCodePoint(0x00a0)}file`);
+
+    expectBlock(await fileToolCall(fake, "read", { path }, "/tmp"), "Unicode space");
+  });
+
+  it("accepts a cwd alias when both cwd paths resolve to the same directory", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const aliasRoot = useTempDir("tasker-guard-cwd-");
+    const alias = join(aliasRoot, "worktree");
+    fs.symlinkSync(cwd, alias);
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+
+    expect(await fileToolCall(fake, "read", { path: "file.txt" }, alias)).toBe("tool result");
+  });
+
+  it.each([
+    ["@file.txt", "file.txt"],
+    ["@@file.txt", "@file.txt"],
+  ])("drops one leading @ from %s", async (inputPath, resolvedName) => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const denied = join(cwd, resolvedName);
+    const { fake } = guardedFileTool("read", cwd, { denyRead: [denied], readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: inputPath }, cwd), denied);
+  });
+
+  it("expands home paths and file URLs", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const urlFile = join(cwd, "file with space.txt");
+    const { fake } = guardedFileTool("read", cwd, { denyRead: [homedir(), urlFile], readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: "~/tasker-sensitive-home-file" }, cwd), homedir());
+    expectFileBlock(await fileToolCall(fake, "read", { path: "~" }, cwd), homedir());
+    expectFileBlock(await fileToolCall(fake, "read", { path: pathToFileURL(urlFile).href }, cwd), urlFile);
+    expectFileBlock(await fileToolCall(fake, "read", { path: `file://localhost${urlFile}` }, cwd), urlFile);
+  });
+
+  it("blocks a bad file URL and treats uppercase FILE as a relative path", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: "file://example.com/private" }, cwd));
+    expect(await fileToolCall(fake, "read", { path: "FILE://relative.txt" }, cwd)).toBe("tool result");
+  });
+
+  it.each([
+    [
+      "AM spelling",
+      (cwd: string) => join(cwd, "meeting AM.txt"),
+      (cwd: string) => join(cwd, `meeting${String.fromCodePoint(0x202f)}AM.txt`),
+    ],
+    [
+      "lowercase PM spelling",
+      (cwd: string) => join(cwd, "meeting pm.txt"),
+      (cwd: string) => join(cwd, `meeting${String.fromCodePoint(0x202f)}pm.txt`),
+    ],
+    [
+      "NFD spelling",
+      (cwd: string) => join(cwd, `caf${String.fromCodePoint(0x00e9)}.txt`),
+      (cwd: string) => join(cwd, `cafe${String.fromCodePoint(0x0301)}.txt`),
+    ],
+    [
+      "curly apostrophe spelling",
+      (cwd: string) => join(cwd, "person's.txt"),
+      (cwd: string) => join(cwd, `person${String.fromCodePoint(0x2019)}s.txt`),
+    ],
+    [
+      "NFD and curly apostrophe spelling",
+      (cwd: string) => join(cwd, `caf${String.fromCodePoint(0x00e9)}'s PM.txt`),
+      (cwd: string) => join(cwd, `cafe${String.fromCodePoint(0x0301)}${String.fromCodePoint(0x2019)}s PM.txt`),
+    ],
+  ])("checks each missing-read %s variant", async (_label, inputPath, variantPath) => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const denied = variantPath(cwd);
+    const { fake } = guardedFileTool("read", cwd, { denyRead: [denied], readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: inputPath(cwd) }, cwd), denied);
+  });
+
+  it.each([
+    0x00a0, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a, 0x202f, 0x205f,
+    0x3000,
+  ])("blocks Unicode space U+%s in a path", async (codePoint) => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+
+    expectFileBlock(
+      await fileToolCall(fake, "read", { path: join(cwd, `name${String.fromCodePoint(codePoint)}file`) }, cwd),
+    );
+  });
+
+  it("resolves a middle link and missing parents before checking roots", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const outside = useTempDir("tasker-guard-outside-");
+    fs.symlinkSync(outside, join(cwd, "link"));
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: join("link", "missing", "file") }, cwd));
+  });
+
+  it("blocks a dangling link", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    fs.symlinkSync(join(cwd, "missing-target"), join(cwd, "dangling"));
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(cwd, "dangling", "child") }, cwd));
+  });
+
+  it("checks supplied and real paths against read denials", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const target = join(cwd, "private.txt");
+    fs.symlinkSync(target, join(cwd, "link.txt"));
+    const { fake } = guardedFileTool("read", cwd, { denyRead: [target], readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(cwd, "link.txt") }, cwd), target);
+
+    const link = join(cwd, "link.txt");
+    const deniedLink = guardedFileTool("read", cwd, { denyRead: [link], readRoots: [cwd] });
+    expectFileBlock(await fileToolCall(deniedLink.fake, "read", { path: target }, cwd), link);
+  });
+
+  it("lets a deny path take precedence over a read root", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const denied = join(cwd, "private.txt");
+    const { fake } = guardedFileTool("read", cwd, { denyRead: [denied], readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: denied }, cwd), denied);
+  });
+
+  it("blocks read calls outside the read roots", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [join(cwd, "allowed")] });
+    const missingRoot = guardedFileTool("read", cwd, { readRoots: [join(cwd, "missing-root")] });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(cwd, "other.txt") }, cwd));
+    expectFileBlock(await fileToolCall(missingRoot.fake, "read", { path: join(cwd, "other.txt") }, cwd));
+  });
+
+  it.each(["grep", "find"])("blocks %s traversal over a denied child", async (name) => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const denied = join(cwd, "private.txt");
+    const { fake } = guardedFileTool(name, cwd, { denyRead: [denied], readRoots: [cwd] });
+
+    expectFileBlock(await fileToolCall(fake, name, { path: cwd }, cwd), denied);
+  });
+
+  it("does not apply traversal denial to ls", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const denied = join(cwd, "private.txt");
+    const { fake } = guardedFileTool("ls", cwd, { denyRead: [denied], readRoots: [cwd] });
+
+    expect(await fileToolCall(fake, "ls", { path: cwd }, cwd)).toBe("tool result");
+  });
+
+  it("blocks writes with empty roots and honors write roots and denials", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const path = join(cwd, "file.txt");
+    const emptyRoots = guardedFileTool("write", cwd, { writeRoots: [] });
+    const outsideRoot = guardedFileTool("write", cwd, { writeRoots: [join(cwd, "allowed")] });
+    const allowed = guardedFileTool("write", cwd, { writeRoots: [cwd] });
+    const deniedExact = guardedFileTool("edit", cwd, { writeRoots: [cwd], denyWrite: [path] });
+    const deniedTree = guardedFileTool("write", cwd, { writeRoots: [cwd], denyWrite: [join(cwd, "private/**")] });
+
+    expectFileBlock(await fileToolCall(emptyRoots.fake, "write", { path }, cwd));
+    expectFileBlock(await fileToolCall(outsideRoot.fake, "write", { path }, cwd));
+    expect(await fileToolCall(allowed.fake, "write", { path }, cwd)).toBe("tool result");
+    expectFileBlock(await fileToolCall(deniedExact.fake, "edit", { path }, cwd), path);
+    expectFileBlock(await fileToolCall(deniedTree.fake, "write", { path: join(cwd, "private", "file") }, cwd));
+  });
+
+  it("does not apply read denials to writes", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const path = join(cwd, "private.txt");
+    const { fake } = guardedFileTool("edit", cwd, { denyRead: [path], writeRoots: [cwd] });
+
+    expect(await fileToolCall(fake, "edit", { path }, cwd)).toBe("tool result");
+  });
+
+  it("blocks direct and traversed access to proc", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const read = guardedFileTool("read", cwd, { readRoots: null });
+    const ls = guardedFileTool("ls", cwd, { readRoots: null });
+    const grep = guardedFileTool("grep", cwd, { readRoots: null });
+
+    expectFileBlock(await fileToolCall(read.fake, "read", { path: "/proc/self/environ" }, cwd));
+    expectFileBlock(await fileToolCall(ls.fake, "ls", { path: "/proc" }, cwd));
+    expectFileBlock(await fileToolCall(grep.fake, "grep", { path: "/" }, cwd));
   });
 });
