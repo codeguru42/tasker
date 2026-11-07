@@ -33,7 +33,23 @@ the count of a suggestion. The old operator judges when the topic ends, and this
 
 After the start, the old operator does these steps:
 
-1. Before the hold messages, complete each handoff of a sender whose path item arrived. A sender is
+1. Run the rounds of [Session-review rounds](session-review-rounds.md). Send each finding to `planner-<slug>` with
+   `SendMessage`. The orchestrator does the same, as the planner bullet of
+   [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. Then wait until each finding
+   is handled or waits for an answer of the user. Do not wait in a loop.
+
+   If a send fails, or the user asks during the wait, tell the user the state of each finding. The word of the user then
+   decides. After the wait, give the user the report of the rounds in a reply.
+
+   Until the [hold messages](handoff.md#the-hold-of-the-items) of step 2, handle each item of a
+   [sender of the slug](handoff.md#the-hold-of-the-items) as usual. This also covers a report or an item about a finding
+   of the rounds. Do each handoff of an orchestrator or a follow-up planner in this step as
+   [A handoff](operator-start.md#a-handoff) says. If a step of "A handoff" fails in this step, the paragraph of step 2
+   about a failed step of "A handoff" applies. After the wait, run no new round in this handoff, also after the items
+   until the hold messages. The send of the facts and the lessons of [The handoff file](handoff.md#the-handoff-file)
+   covers the lessons of these items.
+
+2. Before the hold messages, complete each handoff of a sender whose path item arrived. A sender is
    `orchestrator-<slug>` or `planner-<slug>`, as [The hold of the items](handoff.md#the-hold-of-the-items) says. A
    handoff of a sender is a handoff of an orchestrator or a follow-up planner, as
    [A handoff](operator-start.md#a-handoff) gives it. The old sender is the sender that hands off, and the new sender
@@ -85,18 +101,22 @@ After the start, the old operator does these steps:
    stops the items. Name each sender of the slug that holds. Say that the hold ends when the new operator is ready or
    when the user [ends the hold](handoff.md#the-end-of-the-hold-by-the-user).
 
-2. Run the rounds of [Session-review rounds](session-review-rounds.md). Send each finding to `planner-<slug>` with
-   `SendMessage`. The orchestrator does the same, as the planner bullet of
-   [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. Then wait until each finding
-   is handled or waits for an answer of the user. Do not wait in a loop.
-
-   If a send fails, or the user asks during the wait, tell the user the state of each finding. The word of the user then
-   decides. After the wait, give the user the report of the rounds in a reply. Then write the handoff file, as
-   [The handoff file](handoff.md#the-handoff-file) says. Put each finding that waits for the user in the file, as
-   [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. If the write or the `date` command fails,
-   [the failure rule](limits.md#the-failure-rule) applies.
+   Then write the handoff file, as [The handoff file](handoff.md#the-handoff-file) says. Put each finding that waits for
+   the user in the file, as [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. If the write or
+   the `date` command fails, [the failure rule](limits.md#the-failure-rule) applies.
 
 3. Do the steps of the old operator in [The start of the new operator](#the-start-of-the-new-operator).
+
+The reason for the order of steps 1 and 2: the hold stops each item of a sender of the slug. This also covers a question
+that a task subagent waits for. The rounds and the wait of step 1 can take a long time. So the hold starts only right
+before the write of the file.
+
+On 2026-11-07, operator-m16 sent the hold messages first and then ran its rounds. The rounds waited for the posts of the
+planner. Meanwhile, the hold stopped the item with the question of the task subagent of #724 about its measures 10
+and 11. So #725, which waits for #724, did not start, while two [slots](quota.md#the-delay-of-each-task-subagent) were
+free. The user ended the hold with the words "tell #724 to continue". Then the user said: "file a ticket to revise the
+handoff proceedure: session review rounds first, notify planner and orchestrator immediately before drafting the handoff
+doc."
 
 No wait follows the write of the file. After the write of the file, the old operator shows no report and sends no
 answer. If an item arrives after the write, the old operator sends a message to the sender with `SendMessage`. The
@@ -130,8 +150,8 @@ handoff file:
 - Each sender of the slug that got the hold message, as [The hold of the items](handoff.md#the-hold-of-the-items) says.
   The new operator sends the ready message to each of these senders in step 10 of
   [The start of the new operator](#the-start-of-the-new-operator).
-- Each handoff of a sender that failed in step 1 of [the steps of the old operator](#the-steps-of-the-old-operator),
-  with its step and its error.
+- Each handoff of a sender that failed in step 1 or step 2 of
+  [the steps of the old operator](#the-steps-of-the-old-operator), with its step and its error.
 - Each entry of [the tab list](../operator.md) of the old operator. So the file holds the tabs that the old operator
   started and the tabs that it took over.
 - The name, the tab id and the pane id of the old operator. The tab id is `$HERDR_TAB_ID`, and the pane id is
@@ -200,7 +220,7 @@ The new operator starts in these steps:
 
 In its first reply, the new operator gives the user the path of the handoff file. It also shows each answered item of
 the file that the old operator did not show, as [The open items](operator-items.md#the-open-items) says. It also gives
-the notice of the hold that step 1 of [the steps of the old operator](#the-steps-of-the-old-operator) gives the old
+the notice of the hold that step 2 of [the steps of the old operator](#the-steps-of-the-old-operator) gives the old
 operator. It also tells the user about each failed handoff of a sender that the handoff file names. The reason: the last
 reply of the old operator shows only in its closed tab.
 
