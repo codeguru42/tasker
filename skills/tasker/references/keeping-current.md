@@ -125,7 +125,9 @@ A stacked task whose parent landed must move first. `tasker merge`, `tasker refi
 `tasker review` and `tasker accept` refuse it with
 `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
 These commands print the loop error or the local-base error of [Errors](#errors) when the walk fails. A cancelled parent
-stops `tasker merge`. Its error is `the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`.
+stops `tasker merge`. For trunk merge, its error is
+`the parent <parent key> of <issue key> is cancelled; <issue key> cannot land on it`. For the PR error, see
+[Merge a pull request](landing.md#tasker-merge).
 
 The new tip depends on the parent:
 
