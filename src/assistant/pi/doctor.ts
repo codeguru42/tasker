@@ -199,19 +199,16 @@ export function superpowersCheck(timeoutMs = 5000): Check {
 
 export function simpleEnglishCheck(timeoutMs = 1000): Check {
   return timedCheck({ name: "simple-english:pi", required: true, timeoutMs }, async (env) => {
-    const folders: string[] = [];
     const piEnv = piChildEnv(env);
-    if ("env" in piEnv) {
-      const agentDir = piEnv.env.PI_CODING_AGENT_DIR ?? "";
-      folders.push(join(agentDir, "skills"));
-    }
-    if (isSet(env.HOME)) folders.push(join(env.HOME, ".agents", "skills"));
-    if (folders.length === 0) {
+    const agentFolder = "env" in piEnv ? join(piEnv.env.PI_CODING_AGENT_DIR, "skills") : undefined;
+    const homeFolder = isSet(env.HOME) ? join(env.HOME, ".agents", "skills") : undefined;
+    const lastFolder = homeFolder ?? agentFolder;
+    if (lastFolder === undefined) {
       return { status: "error", detail: "tasker cannot find the skill folders of pi, because HOME is not set" };
     }
+    const folders = [agentFolder, homeFolder].filter((folder): folder is string => folder !== undefined);
     const skillPath = folders.map((folder) => join(folder, "simple-english", "SKILL.md")).find(isFile);
     if (skillPath !== undefined) return { status: "ok", detail: `simple-english at ${skillPath}` };
-    const lastFolder = folders.at(-1)!;
     return {
       status: "error",
       detail: `simple-english/SKILL.md is in no skill folder of pi: ${folders.join(", ")}`,

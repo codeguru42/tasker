@@ -3,7 +3,9 @@ import { piAgentDir } from "../config-folders.js";
 import { relativePathReason } from "../../config/path.js";
 import { childEnv } from "../../process/child-env.js";
 
-export function piChildEnv(env: NodeJS.ProcessEnv): { env: NodeJS.ProcessEnv } | { reason: string } {
+export function piChildEnv(
+  env: NodeJS.ProcessEnv,
+): { env: NodeJS.ProcessEnv & { PI_CODING_AGENT_DIR: string } } | { reason: string } {
   const relativeReason = relativePathReason("TASKER_PI_CODING_AGENT_DIR", env.TASKER_PI_CODING_AGENT_DIR);
   if (relativeReason !== undefined) return { reason: relativeReason };
 
@@ -13,7 +15,5 @@ export function piChildEnv(env: NodeJS.ProcessEnv): { env: NodeJS.ProcessEnv } |
   }
 
   const resolvedAgentDir = isAbsolute(agentDir) ? agentDir : resolve(agentDir);
-  const result = childEnv(env, []);
-  result.PI_CODING_AGENT_DIR = resolvedAgentDir;
-  return { env: result };
+  return { env: { ...childEnv(env, []), PI_CODING_AGENT_DIR: resolvedAgentDir } };
 }
