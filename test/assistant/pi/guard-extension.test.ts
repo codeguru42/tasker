@@ -35,8 +35,7 @@ function writeLimits(value: unknown): string {
   return path;
 }
 
-function invokeGuard(args: string[], tools: FakePiTool[] = []) {
-  const fake = useFakePiExtension(tools);
+function invokeGuard(args: string[], tools: FakePiTool[] = [], fake = useFakePiExtension(tools)) {
   const previousArgv = process.argv;
   process.argv = [process.execPath, "pi", ...args];
   try {
@@ -128,10 +127,16 @@ function limitsArgs(path: string): string[] {
 describe("guard extension limits validation", () => {
   it("registers its flag and loads a valid limits file", () => {
     const path = writeLimits(validLimits());
+    const fake = useFakePiExtension();
+    const registerFlag = vi.spyOn(fake.pi, "registerFlag");
 
-    const fake = invokeGuard(limitsArgs(path));
+    invokeGuard(limitsArgs(path), [], fake);
 
     expect(fake.registeredFlags()).toEqual(["tasker-guard-limits"]);
+    expect(registerFlag).toHaveBeenCalledWith("tasker-guard-limits", {
+      description: "Path to the limits file for the tasker pi guard",
+      type: "string",
+    });
   });
 
   it("rejects the equals form of its flag", () => {

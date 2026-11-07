@@ -15,8 +15,12 @@ function on(fake: ReturnType<typeof fakeExtension>, event: string, handler: (eve
   fake.pi.on(event, handler);
 }
 
-function registerFlag(fake: ReturnType<typeof fakeExtension>, name: string) {
-  fake.pi.registerFlag(name, `description for ${name}`);
+function registerFlag(
+  fake: ReturnType<typeof fakeExtension>,
+  name: string,
+  options: { description: string; type: "string" },
+) {
+  fake.pi.registerFlag(name, options as unknown as string);
 }
 
 function getFlag(fake: ReturnType<typeof fakeExtension>, name: string) {
@@ -37,6 +41,14 @@ function allTools(fake: ReturnType<typeof fakeExtension>) {
 
 function registeredFlags(fake: ReturnType<typeof fakeExtension>) {
   return fake.registeredFlags();
+}
+
+function registeredFlagOptions(fake: ReturnType<typeof fakeExtension>) {
+  return (
+    fake as ReturnType<typeof fakeExtension> & {
+      registeredFlagOptions: () => Record<string, unknown>;
+    }
+  ).registeredFlagOptions();
 }
 
 async function callTool(fake: ReturnType<typeof fakeExtension>, name: string, input: unknown) {
@@ -60,9 +72,11 @@ describe("useFakePiExtension", () => {
 
   it("registers flags and provides their configured values", () => {
     const fake = fakeExtension([], { "tasker-guard-limits": "/tmp/limits.json" });
-    registerFlag(fake, "tasker-guard-limits");
+    const options = { description: "Path to the limits file for the tasker pi guard", type: "string" as const };
+    registerFlag(fake, "tasker-guard-limits", options);
 
     expect(registeredFlags(fake)).toEqual(["tasker-guard-limits"]);
+    expect(registeredFlagOptions(fake)).toEqual({ "tasker-guard-limits": options });
     expect(getFlag(fake, "tasker-guard-limits")).toBe("/tmp/limits.json");
   });
 
