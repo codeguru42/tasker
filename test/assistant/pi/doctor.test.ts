@@ -26,7 +26,7 @@ const missingHomeReason = "tasker cannot find the agent folder of pi, because HO
 const agentFolderFix = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or unset it.";
 const homeFix = "Set HOME.";
 const piInstallFix = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
-const superpowersInstall = "Install superpowers with pi install git:github.com/obra/superpowers.";
+const superpowersInstall = "Run pi install git:github.com/obra/superpowers.";
 const NOT_INSTALLED = {
   status: "error",
   detail: "pi is not installed or not on PATH",
