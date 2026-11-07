@@ -117,4 +117,5 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   steps to install a pre-release, the step for an untracked path, the reason that the installed tasker does not change,
   the hold before an install and the npm facts of the package file.
 - [docs/dev/setup.md](docs/dev/setup.md): the steps to set up a new machine for an orchestrator: the tools, the local
-  clone, the installed tasker and its configuration, the Claude Code settings, skills and plugin, and the Codex section.
+  clone, the installed tasker and its configuration, the Claude Code settings, skills and plugin, the Codex section and
+  the pi section.
