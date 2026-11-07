@@ -46,12 +46,14 @@ const EXPECTED = [
 
 // The bwrap arguments: / read-only, each path of writable open for writes.
 function bwrapArgs(writable: readonly string[], cwd: string, command: readonly string[]): string[] {
+  const restoresSharedMemory = writable.some((path) => isInside(path, "/dev/shm"));
   return [
     "--ro-bind",
     "/",
     "/",
     "--dev",
     "/dev",
+    ...(restoresSharedMemory ? ["--ro-bind", "/dev/shm", "/dev/shm"] : []),
     ...writable.flatMap((path) => ["--bind", path, path]),
     "--chdir",
     cwd,
