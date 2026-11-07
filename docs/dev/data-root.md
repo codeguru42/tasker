@@ -100,6 +100,20 @@ there is no record. Schema version 21 adds it. Existing task rows get NULL. `tas
 keeps the PR number, event, state and marker in sync. Later code reads `pr_number`, not the event, because events are an
 audit log and not data.
 
+The nullable text column `merge_origin` holds the state that a merge started from: `accepted` for a trunk merge, or
+`in_peer_review` for a PR merge. Schema version 22 adds it. The migration backfills only tasks still in `merging`, and
+tasks in `failed` or `interrupted` whose latest move into that state came from `merging`. For each task, it reads the
+latest transition into `merging` and copies its `from` value only when it is `accepted` or `in_peer_review`. If the
+latest transition is missing or has another `from` value, the column stays NULL, even when an earlier merge start had a
+valid origin. Other tasks keep NULL.
+
+Merge start writes `merge_origin`, the move into `merging`, its `transition` event and the run marker in one
+transaction. If the run fails or is interrupted, later state changes keep `merge_origin`, so retry and resume can read
+the saved source from this column. Merge completion writes `landed`, clears `merge_origin`, removes the run marker and
+appends its completion event in one transaction. A trunk merge writes `landed`; a completed PR merge writes `merged`.
+The PR completion event records the forge's confirmed result for audit. Code reads `merge_origin` from the task row, not
+from the event log.
+
 If a database of version 3 holds two active rows for one pair, the upgrade to version 4 fails and the file stays at
 version 3.
 
@@ -385,6 +399,7 @@ that open a new database at the same time do not both run the same migration.
 
 The store writes each event in the same transaction as its row change: the `created` event with the new task row, and
 the `transition` event with the state change. Some commands write their own event with `from` and `to` in place of the
-`transition` event, in the same transaction. [tasks.md](tasks.md) gives each such event and its data in the section of
-its command. The state machine checks the edge inside the same transaction as the write. As a result, the read, the
-write of the state and the event happen in one step, and an illegal edge writes no state change and no event.
+`transition` event, in the same transaction. The PR completion event `merged` follows this rule. [tasks.md](tasks.md)
+gives each such event and its data in the section of its command. The state machine checks the edge inside the same
+transaction as the write. As a result, the read, the write of the state and the event happen in one step, and an illegal
+edge writes no state change and no event.
