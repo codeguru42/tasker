@@ -1,6 +1,7 @@
+import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-// @ts-expect-error The pi doctor module is added by the green todo.
+import { describe, expect, it, onTestFinished } from "vitest";
+import { relative } from "node:path";
 import {
   piAuthCheck as fromPiAuthCheck,
   piVersionCheck as fromPiVersionCheck,
@@ -37,23 +38,19 @@ function createPiProvider(): AssistantProvider {
 }
 
 function piVersionCheck(timeoutMs?: number): Check {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  return fromPiVersionCheck(timeoutMs) as Check;
+  return fromPiVersionCheck(timeoutMs);
 }
 
 function piAuthCheck(upstream: string, timeoutMs?: number): Check {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  return fromPiAuthCheck(upstream, timeoutMs) as Check;
+  return fromPiAuthCheck(upstream, timeoutMs);
 }
 
 function superpowersCheck(timeoutMs?: number): Check {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  return fromSuperpowersCheck(timeoutMs) as Check;
+  return fromSuperpowersCheck(timeoutMs);
 }
 
 function simpleEnglishCheck(timeoutMs?: number): Check {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  return fromSimpleEnglishCheck(timeoutMs) as Check;
+  return fromSimpleEnglishCheck(timeoutMs);
 }
 
 function piRepo(key: string, models: [string, string, string]): AssistantDoctorRepo {
@@ -124,6 +121,15 @@ describe("piVersionCheck", () => {
     expect(await piVersionCheck().run({ PATH: emptyBin, HOME: "/home/user" })).toEqual(NOT_INSTALLED);
   });
 
+  it("uses the first line of stderr for a nonzero exit", async () => {
+    const fake = useFakePi([{ args: VERSION_ARGS, exitCode: 3, stderr: "broken install\nmore detail\n" }]);
+
+    expect(await piVersionCheck().run({ ...fake.env, TASKER_PI_BIN: undefined, HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: "pi --version exited 3: broken install",
+    });
+  });
+
   it("uses TASKER_PI_BIN to start pi", async () => {
     const fake = useFakePi([{ args: VERSION_ARGS, stdout: `${VERSION}\n` }]);
     const emptyBin = useTempDir("tasker-empty-pi-bin-");
@@ -163,7 +169,7 @@ describe("piVersionCheck", () => {
   it("names the signal that stopped pi", async () => {
     const fake = useFakePi([{ args: VERSION_ARGS, killWith: "TERM" }]);
 
-    expect(await piVersionCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+    expect(await piVersionCheck().run({ ...fake.env, TASKER_PI_BIN: undefined, HOME: "/home/user" })).toEqual({
       status: "error",
       detail: "pi --version was killed by SIGTERM",
     });
@@ -178,11 +184,14 @@ describe("pi child refusals in doctor checks", () => {
   ])("reports a relative folder before spawn for %s", async (_name, makeCheck) => {
     const fake = useFakePi([{ args: VERSION_ARGS, stdout: VERSION }]);
 
-    expect(await makeCheck().run({ ...fake.env, HOME: "/home/user", TASKER_PI_CODING_AGENT_DIR: "rel/x" })).toEqual({
-      status: "error",
-      detail: relativeFolderReason,
-      remediation: agentFolderFix,
-    });
+    expect(
+      await makeCheck().run({
+        ...fake.env,
+        HOME: "/home/user",
+        TASKER_PI_BIN: "/missing/pi",
+        TASKER_PI_CODING_AGENT_DIR: "rel/x",
+      }),
+    ).toEqual({ status: "error", detail: relativeFolderReason, remediation: agentFolderFix });
     expect(fake.calls()).toEqual([]);
   });
 
@@ -193,7 +202,7 @@ describe("pi child refusals in doctor checks", () => {
   ])("reports missing HOME before spawn for %s", async (_name, makeCheck) => {
     const fake = useFakePi([{ args: VERSION_ARGS, stdout: VERSION }]);
 
-    expect(await makeCheck().run(fake.env)).toEqual({
+    expect(await makeCheck().run({ ...fake.env, HOME: undefined, TASKER_PI_BIN: "/missing/pi" })).toEqual({
       status: "error",
       detail: missingHomeReason,
       remediation: homeFix,
@@ -364,6 +373,21 @@ describe("simpleEnglishCheck", () => {
     expect(await simpleEnglishCheck().run({ HOME: home, TASKER_PI_CODING_AGENT_DIR: "rel/x" })).toEqual({
       status: "ok",
       detail: "simple-english is installed for pi",
+    });
+  });
+
+  it("skips a refused agent folder when it holds the skill", async () => {
+    const home = useTempDir("tasker-simple-english-home-");
+    const agentDir = mkdtempSync(join(process.cwd(), ".pi-doctor-agent-"));
+    onTestFinished(() => rmSync(agentDir, { recursive: true, force: true }));
+    addSkill(join(agentDir, "skills"));
+
+    expect(
+      await simpleEnglishCheck().run({ HOME: home, TASKER_PI_CODING_AGENT_DIR: relative(process.cwd(), agentDir) }),
+    ).toEqual({
+      status: "error",
+      detail: "simple-english is not installed for pi",
+      remediation: "Install simple-english in $HOME/.agents/skills/ or the pi agent folder.",
     });
   });
 
