@@ -27,11 +27,27 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
 - When the user must decide something, first explain in the reply what happened, what the problem is, and what each
   choice does. Then ask, and give a recommendation.
-- Before a decision of the user, each fact about an outside tool that the decision rests on comes from
-  [a fact test](plan-review.md#the-fact-test). The session gives the command and the result. If the session did not test
-  a fact, it says so next to the fact. On 2026-10-24, before a fact test, the Docs orchestrator told the user that
-  Claude Code blocks each write to `.claude/`. The test showed that in `dontAsk`, Claude Code denies the Write tool
-  under `.claude/`, and the sandbox blocks a shell write only under `.claude/skills/`.
+- Before a decision of the user or a recommendation to the user, the session measures each fact that the decision or the
+  recommendation rests on. A fact about an outside tool comes from [a fact test](plan-review.md#the-fact-test). A fact
+  about the code or the docs comes from a read of the ref that holds the fact, for example `origin/main`. The bullet
+  about `git show origin/main:<path>` of [A question of the user](#a-question-of-the-user) gives the read. A fact about
+  a task comes from a read-only `tasker` command, for example `tasker show-plan`. The session gives the command and the
+  result, and next to each fact that it did not measure, it says so.
+
+  This bullet also covers a question to the user about a fact, for example whether a gap is a
+  [live security gap](pick-the-tickets.md#pick-the-tickets). A cheap read-only measure comes before such a question.
+  Whether a measure is cheap is a judgment. The judgment is open on purpose, and the session makes it.
+
+  A measure that changes [the state of the user](planner.md#the-state-of-the-user) waits for the word of the user. The
+  recommendation mode of this section does not cover such a measure.
+
+  On 2026-11-01, in the plan of #660, the user said "let's measure, not guess". On 2026-10-24, before a fact test, the
+  Docs orchestrator told the user that Claude Code blocks each write to `.claude/`. The test showed that in `dontAsk`,
+  Claude Code denies the Write tool under `.claude/`, and the sandbox blocks a shell write only under `.claude/skills/`.
+  On 2026-11-03, planner-m14 asked the user whether a missing deny rule for `acli` was a live security gap. The user
+  said "Measure this". A `claude -p` run with a copy of the sandbox configuration, built by hand as `sandboxSettings()`
+  of `src/assistant/claude-code/sandbox.ts` builds it, then settled the question (#715).
+
 - Before the session tells the user that a rule of the repo bans or requires an action, it reads the rule on
   `origin/main`. It reads the rule as the bullet about `git show origin/main:<path>` of
   [A question of the user](#a-question-of-the-user) says. Then the session quotes the rule and names its doc and its
@@ -158,6 +174,23 @@ user asked "why are 3-6 repeated?".
 - In one case (2026-10-17), the user asked the Docs orchestrator questions about its handoff. The orchestrator answered
   and also offered next steps. After one message of the user, the orchestrator left the handoff and started a ticket
   without the word of the user. The user wrote: "When I ask questions, just answer. Do not anticipate what I want."
+- A process question is a question of the user about how the sessions must do their work from now on. An example is the
+  question "Do we need another session review iteration in planner?". The answer to a process question gives the
+  recommendation and its reason first, and then the facts. The answer marks each guess as a guess, as
+  [A side conversation](operator-conversations.md#a-side-conversation) says for a reading of the operator. If the user
+  must choose, the answer ends with a numbered list of questions, as [The form of a reply](#the-form-of-a-reply) says.
+  Otherwise it asks no question.
+
+  The recommendation is a part of the answer, so the first bullet of this section does not ban it. A question about what
+  the code or the docs say today is not a process question. Whether a question is a process question is a judgment. The
+  judgment is open on purpose, and the session makes it. A guess is fine for a process question, but not for a fact that
+  a read or a command can settle. The bullet of [A decision of the user](#a-decision-of-the-user) that starts "Before a
+  decision of the user or a recommendation" gives the rule for such a fact.
+
+  On 2026-10-31, operator-m26 answered the question of the example with the rules of the docs, and it said that the
+  answer was a guess. The user said: "guesses are good here...better yet, recommendations. We are developing what this
+  process should be as we do it now."
+
 - Before the session answers a question about the code or the docs of the repo, it runs `git fetch origin` in its local
   clone. Then it reads each file on `origin/main` that the answer depends on, with `git show origin/main:<path>` in a
   Bash call. This read is an exception to the Read-tool bullet of [The tools of a session](#the-tools-of-a-session). The
@@ -166,6 +199,20 @@ user asked "why are 3-6 repeated?".
   false. In one case (2026-10-18), the planner of M13 said that `tasker update-branch` did not exist in the rebuild. The
   session answered after all the M13 tickets landed. It answered from the code as it read it at its start, one day
   earlier. The user corrected it.
+- When the session looks for a change of Claude Code or of the subscription of the user, it does not search the program
+  file of Claude Code. The program file is the executable file that runs Claude Code. An example of such a search is a
+  `grep` over the program file. The session searches the web for recent public news of the change instead, for example
+  the release notes of Claude Code. If the user names a tool for this search, the session runs that tool.
+
+  If a value is missing from the data that Claude Code reports, the session first saves a copy of that data in a scratch
+  folder. After the save, it searches for a change of the subscription or of Claude Code. For the cause of a change of
+  Claude Code, this bullet wins over the bullet of [A decision of the user](#a-decision-of-the-user) that starts "Before
+  a decision of the user or a recommendation". A fact test of the behavior of Claude Code still applies. This bullet
+  covers each such search, also a search that is not for an answer to a question of the user.
+
+  On 2026-10-30, a session ran a slow `grep` over the program file of Claude Code to explain a missing value of the
+  status line. The user said "wait...what are you searching?" and "no, don't do that".
+
 - When the user names a rule, the session first runs `git fetch origin` in its local clone, as the bullet about
   `git show origin/main:<path>` of this section says. Then it searches the headings of the docs on `origin/main` for the
   exact words of the name. An example search is `git grep -n -i "^#.*<name>" origin/main -- docs AGENTS.md`. The `-i`
