@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { shellQuote } from "../../src/shell-quote.js";
+import { useProcessEnv, useTempDir } from "./temp.js";
 import {
   answerChecks,
   type FakeAnswer,
@@ -24,6 +25,42 @@ export interface ForgeGh {
   assertAnswered(): void;
   setRemoteHead(head: string): void;
   setMergeState(state: string): void;
+}
+
+export const OPEN_PR_FORGE_ACCOUNT = "forge-team";
+export const OPEN_PR_FORGE_TOKEN = "forge-token-private";
+
+export function openPrTokenAnswer() {
+  return {
+    args: ["auth", "token", "--user", OPEN_PR_FORGE_ACCOUNT],
+    stdout: `${OPEN_PR_FORGE_TOKEN}\n`,
+  };
+}
+
+export function openPrListArgs(head: string): string[] {
+  return [
+    "pr",
+    "list",
+    "--head",
+    head,
+    "--state",
+    "open",
+    "--json",
+    "number,url,baseRefName,isCrossRepository",
+    "--limit",
+    "100",
+  ];
+}
+
+export function installOpenPrForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
+  const fake = forgeGh(useTempDir(prefix), OPEN_PR_FORGE_TOKEN, answers);
+  useProcessEnv({
+    TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
+    TASKER_PATH: `${String(fake.env.PATH)}:${String(process.env.PATH)}`,
+    TASKER_GH_CONFIG_DIR: "/tasker/open-pr-forge-gh-config",
+    TASKER_HOME: "/tasker/open-pr-forge-home",
+  });
+  return fake;
 }
 
 export function forgeGh(

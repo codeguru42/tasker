@@ -3,28 +3,20 @@ import { run } from "../../src/cli.js";
 import { openPr } from "../../src/commands/open-pr.js";
 import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
 import { copyCloneBranchToOrigin } from "../helpers/git.js";
-import { forgeGh } from "../helpers/forge-gh.js";
+import {
+  installOpenPrForgeGh,
+  openPrListArgs,
+  openPrTokenAnswer,
+  OPEN_PR_FORGE_ACCOUNT as ACCOUNT,
+  OPEN_PR_FORGE_TOKEN as TOKEN,
+} from "../helpers/forge-gh.js";
 import { databasePathOf, latestTaskOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { useAcceptedTask } from "../helpers/task-fixtures.js";
-import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
-const ACCOUNT = "forge-team";
-const TOKEN = "forge-token-private";
 
-function installForgeGh(answers: Parameters<typeof forgeGh>[2]) {
-  const fake = forgeGh(useTempDir("tasker-open-pr-forge-gh-"), TOKEN, answers);
-  useProcessEnv({
-    TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
-    TASKER_PATH: `${String(fake.env.PATH)}:${String(process.env.PATH)}`,
-    TASKER_GH_CONFIG_DIR: "/tasker/forge-gh-config",
-    TASKER_HOME: "/tasker/forge-home",
-  });
-  return fake;
-}
-
-const tokenAnswer = { args: ["auth", "token", "--user", ACCOUNT], stdout: `${TOKEN}\n` };
+const tokenAnswer = openPrTokenAnswer();
 
 describe("tasker open-pr", () => {
   it("shows its issue argument and repo option", async () => {
@@ -38,25 +30,17 @@ describe("tasker open-pr", () => {
   it("publishes through push, then adopts the matching PR without creating another", async () => {
     const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: ACCOUNT } } });
     const url = "https://github.com/codeguru42/tasker/pull/42";
-    const listArgs = [
-      "pr",
-      "list",
-      "--head",
-      accepted.task.branch!,
-      "--state",
-      "open",
-      "--json",
-      "number,url,baseRefName,isCrossRepository",
-      "--limit",
-      "100",
-    ];
-    const fake = installForgeGh([
-      tokenAnswer,
-      {
-        args: listArgs,
-        stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]),
-      },
-    ]);
+    const listArgs = openPrListArgs(accepted.task.branch!);
+    const fake = installOpenPrForgeGh(
+      [
+        tokenAnswer,
+        {
+          args: listArgs,
+          stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]),
+        },
+      ],
+      "tasker-open-pr-forge-gh-",
+    );
     const publishIo = captureIo();
     const published = await run(["push", KEY, "--repo", REPO], { io: publishIo });
     expect(published).toBe(0);
@@ -86,18 +70,7 @@ describe("tasker open-pr", () => {
     withDataRootStore(accepted.dataRoot, (store) =>
       store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision }),
     );
-    const listArgs = [
-      "pr",
-      "list",
-      "--head",
-      accepted.task.branch!,
-      "--state",
-      "open",
-      "--json",
-      "number,url,baseRefName,isCrossRepository",
-      "--limit",
-      "100",
-    ];
+    const listArgs = openPrListArgs(accepted.task.branch!);
     const url = "https://github.com/codeguru42/tasker/pull/43";
     const createArgs = [
       "pr",
@@ -111,16 +84,19 @@ describe("tasker open-pr", () => {
       "--body",
       `Task: ${KEY}\n\n${accepted.task.title ?? KEY}`,
     ];
-    const fake = installForgeGh([
-      tokenAnswer,
-      {
-        args: listArgs,
-        stdout: JSON.stringify([
-          { number: 55, url: "https://github.com/fork/tasker/pull/55", baseRefName: "main", isCrossRepository: true },
-        ]),
-      },
-      { args: createArgs, stdout: `${url}\n` },
-    ]);
+    const fake = installOpenPrForgeGh(
+      [
+        tokenAnswer,
+        {
+          args: listArgs,
+          stdout: JSON.stringify([
+            { number: 55, url: "https://github.com/fork/tasker/pull/55", baseRefName: "main", isCrossRepository: true },
+          ]),
+        },
+        { args: createArgs, stdout: `${url}\n` },
+      ],
+      "tasker-open-pr-forge-gh-",
+    );
     const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
 
     expect(result).toEqual({ code: 0, out: `opened PR #43: ${url}\nstate: in_peer_review\n`, err: "" });
@@ -143,19 +119,11 @@ describe("tasker open-pr", () => {
     withDataRootStore(accepted.dataRoot, (store) =>
       store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision }),
     );
-    const listArgs = [
-      "pr",
-      "list",
-      "--head",
-      accepted.task.branch!,
-      "--state",
-      "open",
-      "--json",
-      "number,url,baseRefName,isCrossRepository",
-      "--limit",
-      "100",
-    ];
-    const fake = installForgeGh([tokenAnswer, { args: listArgs, stderr: `lookup failed with ${TOKEN}`, exitCode: 1 }]);
+    const listArgs = openPrListArgs(accepted.task.branch!);
+    const fake = installOpenPrForgeGh(
+      [tokenAnswer, { args: listArgs, stderr: `lookup failed with ${TOKEN}`, exitCode: 1 }],
+      "tasker-open-pr-forge-gh-",
+    );
 
     const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
 

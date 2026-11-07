@@ -4,7 +4,12 @@ import { push } from "../../src/commands/push.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom, type TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
-import { forgeGh } from "../helpers/forge-gh.js";
+import {
+  installOpenPrForgeGh,
+  openPrListArgs,
+  openPrTokenAnswer,
+  OPEN_PR_FORGE_ACCOUNT as FORGE_ACCOUNT,
+} from "../helpers/forge-gh.js";
 import { commitInWorktree, copyCloneBranchToOrigin, gitRecorderEnv, recordedPushCalls } from "../helpers/git.js";
 import { argAfter, TEST_EXECUTE_SESSION_ID, TEST_REVIEW_SESSION_ID } from "../helpers/fake-claude.js";
 import {
@@ -53,19 +58,6 @@ const REPO = "codeguru42/tasker";
 const TODOS = [planTodo("a"), planTodo("b", ["a"])];
 
 const runRetry = (key = KEY, ...extra: string[]) => runCommand(retry, "retry", key, ...extra);
-const FORGE_ACCOUNT = "forge-team";
-const FORGE_TOKEN = "forge-token-private";
-
-function installForgeGh(answers: Parameters<typeof forgeGh>[2]) {
-  const fake = forgeGh(useTempDir("tasker-retry-open-pr-gh-"), FORGE_TOKEN, answers);
-  useProcessEnv({
-    TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
-    TASKER_PATH: `${String(fake.env.PATH)}:${String(process.env.PATH)}`,
-    TASKER_GH_CONFIG_DIR: "/tasker/retry-forge-gh-config",
-    TASKER_HOME: "/tasker/retry-forge-home",
-  });
-  return fake;
-}
 
 // The first line of the output of tasker retry.
 const firstLine = (origin: string, target: string) => `retried ${KEY}: failed in ${origin}, back in ${target}\n`;
@@ -79,23 +71,18 @@ describe("tasker retry", () => {
       failTaskVia(store, accepted.task.id, "pushed", "opening_pr");
     });
     const head = accepted.task.branch!;
-    const tokenAnswer = { args: ["auth", "token", "--user", FORGE_ACCOUNT], stdout: `${FORGE_TOKEN}\n` };
-    const listArgs = [
-      "pr",
-      "list",
-      "--head",
-      head,
-      "--state",
-      "open",
-      "--json",
-      "number,url,baseRefName,isCrossRepository",
-      "--limit",
-      "100",
-    ];
-    const fake = installForgeGh([
-      tokenAnswer,
-      { args: listArgs, stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]) },
-    ]);
+    const tokenAnswer = openPrTokenAnswer();
+    const listArgs = openPrListArgs(head);
+    const fake = installOpenPrForgeGh(
+      [
+        tokenAnswer,
+        {
+          args: listArgs,
+          stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]),
+        },
+      ],
+      "tasker-retry-open-pr-gh-",
+    );
 
     const result = await runRetry(KEY, "--repo", REPO);
 

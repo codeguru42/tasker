@@ -43,6 +43,7 @@ import {
   NO_SESSION_VALUES,
   sessionValuesOf,
   refuseBranchUpdated,
+  rejectPrOpenedEvent,
   rejectPublishedEvent,
   rejectRetryEvent,
   rejectFinishedEvent,
@@ -65,6 +66,26 @@ import {
   writeBootstrapLog,
   writeRunMarker,
 } from "./store.js";
+
+describe("rejectPrOpenedEvent", () => {
+  it("adds and removes the pr_opened rejection trigger", () => {
+    const { dataRoot } = seedOneTask("opening_pr", "a/b#1", "a/b");
+    const dbPath = databasePathOf(dataRoot);
+    const release = rejectPrOpenedEvent(dbPath);
+
+    expect(
+      withRawDatabase(dbPath, (db) =>
+        db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'reject_pr_opened_event'").all(),
+      ),
+    ).toEqual([{ name: "reject_pr_opened_event" }]);
+    release();
+    expect(
+      withRawDatabase(dbPath, (db) =>
+        db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'reject_pr_opened_event'").all(),
+      ),
+    ).toEqual([]);
+  });
+});
 
 describe("seedTasks", () => {
   it("returns the tasks in input order with their times", () => {

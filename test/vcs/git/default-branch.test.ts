@@ -6,6 +6,21 @@ import { readArgLog } from "../../helpers/fake-commands.js";
 import { fakeSsh } from "../../helpers/fake-ssh.js";
 import { makeGitOrigin, sshKeyArgs, type GitOrigin } from "../../helpers/git.js";
 
+async function makeUnfetchedClone(
+  origin: GitOrigin,
+  remote = origin.path,
+  env = origin.env,
+  configureFetch = true,
+): Promise<string> {
+  const clone = join(origin.dir, "clone");
+  await runGit(["init", "--bare", clone], { cwd: origin.dir, env: origin.env });
+  await runGit(["remote", "add", "origin", remote], { gitDir: clone, env });
+  if (configureFetch) {
+    await runGit(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"], { gitDir: clone, env });
+  }
+  return clone;
+}
+
 describe("remoteDefaultBranch", () => {
   let origin: GitOrigin;
 
@@ -74,13 +89,7 @@ describe("fetchRemoteDefaultBranch", () => {
   afterEach(() => origin.remove());
 
   it("fetches origin before resolving and returns its symbolic HEAD branch name", async () => {
-    const clone = join(origin.dir, "clone");
-    await runGit(["init", "--bare", clone], { cwd: origin.dir, env: origin.env });
-    await runGit(["remote", "add", "origin", origin.path], { gitDir: clone, env: origin.env });
-    await runGit(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"], {
-      gitDir: clone,
-      env: origin.env,
-    });
+    const clone = await makeUnfetchedClone(origin);
     await origin.createBranch("trunk");
     await runGit(["symbolic-ref", "HEAD", "refs/heads/trunk"], { gitDir: origin.path, env: origin.env });
 
@@ -98,13 +107,7 @@ describe("fetchRemoteDefaultBranch", () => {
   });
 
   it("does not fall back when the remote has no symbolic HEAD", async () => {
-    const clone = join(origin.dir, "clone");
-    await runGit(["init", "--bare", clone], { cwd: origin.dir, env: origin.env });
-    await runGit(["remote", "add", "origin", origin.path], { gitDir: clone, env: origin.env });
-    await runGit(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"], {
-      gitDir: clone,
-      env: origin.env,
-    });
+    const clone = await makeUnfetchedClone(origin);
     const head = await origin.branchHead("main");
     await runGit(["update-ref", "--no-deref", "HEAD", head!], {
       gitDir: origin.path,
@@ -117,9 +120,7 @@ describe("fetchRemoteDefaultBranch", () => {
   });
 
   it("rejects a symbolic HEAD that names no branch, even when main exists", async () => {
-    const clone = join(origin.dir, "clone");
-    await runGit(["init", "--bare", clone], { cwd: origin.dir, env: origin.env });
-    await runGit(["remote", "add", "origin", origin.path], { gitDir: clone, env: origin.env });
+    const clone = await makeUnfetchedClone(origin, origin.path, origin.env, false);
     await runGit(["symbolic-ref", "HEAD", "refs/heads/missing"], { gitDir: origin.path, env: origin.env });
 
     await expect(
@@ -129,13 +130,7 @@ describe("fetchRemoteDefaultBranch", () => {
 
   it("passes the ssh key and environment through fetch and symbolic-HEAD lookup", async () => {
     const ssh = fakeSsh(origin.dir, origin.env, "serve");
-    const clone = join(origin.dir, "clone");
-    await runGit(["init", "--bare", clone], { cwd: origin.dir, env: origin.env });
-    await runGit(["remote", "add", "origin", ssh.remote(origin.path)], { gitDir: clone, env: ssh.env });
-    await runGit(["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"], {
-      gitDir: clone,
-      env: ssh.env,
-    });
+    const clone = await makeUnfetchedClone(origin, ssh.remote(origin.path), ssh.env);
     const key = join(origin.dir, "id key");
     const env = { ...ssh.env, TASKER_TEST_ENV: "passed" };
 
@@ -149,9 +144,8 @@ describe("fetchRemoteDefaultBranch", () => {
   });
 
   it("rejects when fetching origin fails", async () => {
-    const clone = join(origin.dir, "clone");
-    await runGit(["init", "--bare", clone], { cwd: origin.dir, env: origin.env });
-    await runGit(["remote", "add", "origin", join(origin.dir, "missing.git")], { gitDir: clone, env: origin.env });
+    const missing = join(origin.dir, "missing.git");
+    const clone = await makeUnfetchedClone(origin, missing, origin.env, false);
 
     await expect(
       fetchRemoteDefaultBranch({ clone, remote: join(origin.dir, "missing.git"), sshKey: undefined, env: origin.env }),

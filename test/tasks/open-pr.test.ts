@@ -2,7 +2,7 @@ import { renameSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { openPrTask } from "../../src/tasks/open-pr.js";
 import { LockBusyError, repoLockName, taskLockName } from "../../src/store/locks.js";
-import { openStore, type TaskStore } from "../../src/store/store.js";
+import type { TaskStore } from "../../src/store/store.js";
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
 import { copyCloneBranchToOrigin } from "../helpers/git.js";
@@ -13,8 +13,8 @@ import {
   eventsOf,
   latestTaskOf,
   readRunMarker,
+  rejectPrOpenedEvent,
   withDataRootStore,
-  withRawDatabase,
 } from "../helpers/store.js";
 import { taskRefOf, useAcceptedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
 
@@ -53,22 +53,13 @@ async function callOpenPr(
   return { result, io };
 }
 
-async function withOpenPrStore<T>(fixture: AcceptedTask, call: (store: TaskStore) => Promise<T>): Promise<T> {
-  const store = openStore(databasePathOf(fixture.dataRoot));
-  try {
-    return await call(store);
-  } finally {
-    store.close();
-  }
-}
-
 describe("openPrTask", () => {
   it("creates the PR with the stored title and exact body, then records the result", async () => {
     const fixture = await pushedTask();
     const fake = forgeStub();
     const before = eventsOf(fixture.dataRoot, KEY);
 
-    const { result, io } = await withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake));
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(result).toEqual({ pullRequest: { number: 42, url: "https://example.test/pull/42" }, adopted: false });
     expect(fake.calls.created).toEqual([
@@ -110,7 +101,7 @@ describe("openPrTask", () => {
       openPrs: [{ number: 19, url: "https://example.test/pull/19", base: "main" }],
     });
 
-    await withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake));
+    await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(fake.calls.created).toEqual([]);
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 19 });
@@ -127,14 +118,14 @@ describe("openPrTask", () => {
     const before = eventsOf(fixture.dataRoot, KEY);
 
     const failure = await failureOf(
-      withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake)),
+      withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake)),
       Error,
     );
 
     expect(failure.message).toContain("refs/heads/topic");
     expect(failure.message).toContain("main");
     expect(failure.message.toLowerCase()).toContain("correct");
-    expect(fake.calls).toEqual({ listed: [], created: [] });
+    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
     expect(eventsOf(fixture.dataRoot, KEY)).toEqual(before);
   });
@@ -150,12 +141,12 @@ describe("openPrTask", () => {
       const fake = forgeStub();
 
       const failure = await failureOf(
-        withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake)),
+        withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake)),
         Error,
       );
 
       expect(failure.message).toContain(message);
-      expect(fake.calls).toEqual({ listed: [], created: [] });
+      expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
       expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
     }
   });
@@ -169,7 +160,7 @@ describe("openPrTask", () => {
     let failure: Error | undefined;
     try {
       failure = await failureOf(
-        withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake)),
+        withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake)),
         Error,
       );
     } finally {
@@ -177,7 +168,7 @@ describe("openPrTask", () => {
     }
 
     expect(failure?.message).toBeTruthy();
-    expect(fake.calls).toEqual({ listed: [], created: [] });
+    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
   });
@@ -187,7 +178,7 @@ describe("openPrTask", () => {
     withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.task.id, { title: null }));
     const fake = forgeStub();
 
-    await withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake));
+    await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(fake.calls.created[0]).toMatchObject({ title: `${KEY} (${KEY})`, body: `Task: ${KEY}\n\n${KEY}` });
   });
@@ -198,7 +189,7 @@ describe("openPrTask", () => {
       openPrs: [{ number: 28, url: "https://example.test/pull/28", base: "release" }],
     });
 
-    const { result, io } = await withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake));
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(result).toEqual({ exitCode: 1 });
     expect(io.err.join("")).toContain("#28");
@@ -214,7 +205,7 @@ describe("openPrTask", () => {
     const fake = forgeStub();
     fake.failList(new Error("lookup denied"));
 
-    const { result, io } = await withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake));
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(result).toEqual({ exitCode: 1 });
     expect(io.err.join("")).toContain("lookup denied");
@@ -228,7 +219,7 @@ describe("openPrTask", () => {
     const fake = forgeStub();
     fake.failCreate(new Error("create denied"));
 
-    const { result, io } = await withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake));
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(result).toEqual({ exitCode: 1 });
     expect(io.err.join("")).toContain("create denied");
@@ -239,13 +230,10 @@ describe("openPrTask", () => {
   it("fails the run if the PR record transaction fails and reports the created PR", async () => {
     const fixture = await pushedTask();
     const fake = forgeStub();
-    withRawDatabase(databasePathOf(fixture.dataRoot), (db) =>
-      db.exec(
-        "CREATE TRIGGER reject_pr_opened BEFORE INSERT ON events WHEN NEW.type = 'pr_opened' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
-      ),
-    );
+    const releaseRejectedEvent = rejectPrOpenedEvent(databasePathOf(fixture.dataRoot));
 
-    const { result, io } = await withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake));
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
+    releaseRejectedEvent();
 
     expect(result).toEqual({ exitCode: 1 });
     expect(io.err.join("")).toContain("#42");
@@ -261,22 +249,22 @@ describe("openPrTask", () => {
     const taskHolder = startLockHolder(dbPath, taskLockName(fixture.repoKey, KEY));
     await taskHolder.attempt;
     const taskFailure = await failureOf(
-      withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake)),
+      withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake)),
       LockBusyError,
     );
     expect(taskFailure).toBeInstanceOf(LockBusyError);
-    expect(fake.calls).toEqual({ listed: [], created: [] });
+    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
 
     process.kill(taskHolder.pid, "SIGKILL");
     await taskHolder.exited;
     const repoHolder = startLockHolder(dbPath, repoLockName(fixture.repoKey));
     await repoHolder.attempt;
     const repoFailure = await failureOf(
-      withOpenPrStore(fixture, (store) => callOpenPr(fixture, store, fake, 0)),
+      withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake, 0)),
       LockBusyError,
     );
     expect(repoFailure).toBeInstanceOf(LockBusyError);
-    expect(fake.calls).toEqual({ listed: [], created: [] });
+    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
     process.kill(repoHolder.pid, "SIGKILL");
     await repoHolder.exited;
   });

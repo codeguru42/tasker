@@ -2,10 +2,41 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runFakeGh } from "./fake-gh.js";
-import { forgeGh } from "./forge-gh.js";
+import {
+  forgeGh,
+  installOpenPrForgeGh,
+  openPrListArgs,
+  openPrTokenAnswer,
+  OPEN_PR_FORGE_ACCOUNT,
+  OPEN_PR_FORGE_TOKEN,
+} from "./forge-gh.js";
 import { useTempDir } from "./temp.js";
 
 describe("the forge gh helper", () => {
+  it("shares the open-pr account, token answer, list arguments, and installer", () => {
+    const token = openPrTokenAnswer();
+    const args = openPrListArgs("branch-name");
+    const fake = installOpenPrForgeGh([token, { args, stdout: "[]" }], "tasker-open-pr-gh-helper-");
+
+    expect(OPEN_PR_FORGE_ACCOUNT).toBe("forge-team");
+    expect(OPEN_PR_FORGE_TOKEN).toBe("forge-token-private");
+    expect(token).toEqual({ args: ["auth", "token", "--user", "forge-team"], stdout: "forge-token-private\n" });
+    expect(args).toEqual([
+      "pr",
+      "list",
+      "--head",
+      "branch-name",
+      "--state",
+      "open",
+      "--json",
+      "number,url,baseRefName,isCrossRepository",
+      "--limit",
+      "100",
+    ]);
+    expect(runFakeGh({ ...fake.env, GH_TOKEN: OPEN_PR_FORGE_TOKEN }, args)).toMatchObject({ status: 0, stdout: "[]" });
+    fake.assertAnswered();
+  });
+
   it("records environment values and whether the token matches without saving the token", () => {
     const dir = useTempDir("tasker-forge-gh-helper-");
     const token = "synthetic-token-value";

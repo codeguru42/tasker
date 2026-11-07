@@ -48,6 +48,7 @@ import {
   tableRowCount,
   withRawDatabase,
   rejectPublishedEvent,
+  rejectPrOpenedEvent,
   withStoreFile,
   writeRunMarker,
 } from "../helpers/store.js";
@@ -999,11 +1000,7 @@ describe("task store", () => {
 
     it("rolls back the PR number, state, event, and marker when event insertion fails", () => {
       const task = runningTask("opening_pr");
-      withRawDatabase(dbPath, (raw) =>
-        raw.exec(
-          "CREATE TRIGGER reject_pr_opened BEFORE INSERT ON events WHEN NEW.type = 'pr_opened' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
-        ),
-      );
+      const releaseRejectedEvent = rejectPrOpenedEvent(dbPath);
       const events = store.listEvents(task.id);
 
       expect(() =>
@@ -1019,6 +1016,7 @@ describe("task store", () => {
       expect(store.getTask(task.id)).toMatchObject({ state: "opening_pr", prNumber: null });
       expect(store.listEvents(task.id)).toEqual(events);
       expect(readRunMarker(dbPath, task.id)).toMatchObject({ state: "opening_pr" });
+      releaseRejectedEvent();
     });
   });
 
