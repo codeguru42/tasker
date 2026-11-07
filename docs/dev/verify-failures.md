@@ -17,12 +17,13 @@ finds the cause of the failure. Then the task subagent does the first case of th
 
 - If the failure comes from the code and the task subagent already sent the refine of the next case, the task subagent
   [stops](limits.md#the-answer-wait-rule).
-- If the failure comes from the code, the task subagent runs one `tasker refine <issue> "<feedback>"`. `tasker refine`
-  accepts a task in `failed` only when the task has a plan revision. The feedback gives the cause of the failure. It
-  tells the plan to go through the commits of the task branch one at a time. It also tells the plan to fix each broken
-  commit in that commit, not in a new commit on top. More than one commit can be broken, so the refine fixes all of
-  them. The broken-commit steps give the git commands for this feedback. The task subagent adds
-  [the repo-files rule](plan-review.md#the-repo-files-rule) to the feedback text. The task goes to
+- If the failure comes from the code, the task subagent finds the cause with
+  [the bisect diagnosis](#the-bisect-diagnosis) before repair. Then the task subagent runs one
+  `tasker refine <issue> "<feedback>"`. `tasker refine` accepts a task in `failed` only when the task has a plan
+  revision. The feedback gives the cause of the failure. It tells the plan to fix each cause commit in that commit, not
+  in a new commit on top. More than one commit can be broken, so the refine covers all observed broken revisions. The
+  feedback links to the bisect diagnosis. The broken-commit steps give the git commands for this feedback. The task
+  subagent adds [the repo-files rule](plan-review.md#the-repo-files-rule) to the feedback text. The task goes to
   `awaiting_plan_review`. Then the task subagent does steps 3 and 4 for the new plan, and steps 5 to 8 again, starting
   with `tasker approve`. As the other choice, the task subagent does not refine. The task subagent stops for a manual
   fix. If the orchestrator then tells the task subagent to do the manual fix, the task subagent follows the
@@ -47,37 +48,110 @@ To find the next command, use these:
 - `tasker <command> --help` shows the states where the command is valid.
 - `tasker show <issue>` shows the state of the task and the next commands.
 
+## The bisect diagnosis
+
+Diagnosis uses `git bisect` to find revisions that show the reported failure before the first repair. It does not change
+commits or move the task branch. A passing ancestor bounds a search without replaying the whole branch before the first
+repair. Expected test failures and nonmonotonic histories prevent bisect from certifying every required revision. The
+exhaustive final audit preserves the commit contract after each repair.
+
+For an exhaustive audit, the task subagent uses “The commit check”, and the execute session uses “The session check” in
+its place.
+
+The task subagent diagnoses in the local task worktree. The execute session diagnoses in its own worktree. Neither
+creates another worktree or reads tasker data files. Each git command below runs in the named worktree.
+
+1. On resumption, use the earlier run's saved values. Finish cleanup under “Cleanup” before new preparation.
+2. In the named worktree, make sure that it is clean and no rebase is active. Use “Cleanup” to make sure that no bisect
+   is active. If a bisect is active, finish cleanup before preparation. Run steps 1–4 of
+   [the commit check](#the-commit-check). In an execute session, use the base commit from refine feedback instead of the
+   base from step 4. Stop after any failed preparation command.
+3. In the applicable worktree, run the dependency guard from step 5 of [the commit check](#the-commit-check). Then save
+   the full branch name, current tip, base hash, and original `HEAD` attachment. If the guard or preparation fails, stop
+   without a new search.
+4. At the saved tip, run `npm run check` with the dependency guard. Record its command, result, and hash. An install
+   failure or unrelated command error does not show the target failure.
+5. If the target failure does not reproduce, run the exhaustive audit. Use that result as the first audit in the repair
+   loop. If its list is empty, use the non-code cases of the [verify-failure rule](#the-verify-failure-rule). Do not
+   continue diagnosis or run bisect.
+6. Prefer the nearest known passing ancestor as the good bound. Reuse a passing verify revision only when its exact hash
+   stays an ancestor on the same base and unchanged history. Record its pass and ancestry evidence.
+7. In the active worktree, run `git merge-base --is-ancestor <good> <bad>` and
+   `git merge-base --is-ancestor <base> <good>`. Exit 0 accepts a bound. Exit 1 rejects it. Any other exit stops
+   diagnosis. An untested or failing base is not a good bound. A passing tip says nothing about untested ancestors.
+
+### Bisect command results
+
+After each `git bisect start`, `git bisect good`, `git bisect bad`, or `git bisect skip`, read the output before another
+bisect command. Apply these results to all four commands:
+
+- The line `<hash> is the first bad commit` has exit code 0. Record that hash as a candidate for one reproducer, then
+  run “Cleanup”.
+- The lines `There are only 'skip'ped commits left to test.` and `The first bad commit could be any of:` give a
+  candidate set. Record every listed hash, then run “Cleanup”. For measured `skip` and `good` paths, exit code 2 with
+  these lines is a result, not an unclassified failure. This rule assigns no exit code to that result from
+  `git bisect bad`.
+
+Stop after any other unclassified command failure, then follow “Cleanup”.
+
+8. If no passing bound is valid, say that bisect cannot start. Run the exhaustive audit as the pre-repair fallback. Use
+   its result as the first audit in the repair loop. If its list is empty, use the non-code cases of the verify-failure
+   rule. Do not continue diagnosis or run bisect. If a bound is valid, run `git bisect start <bad> <good>` in the active
+   worktree. Apply “Bisect command results”. At each selected hash, apply the dependency guard before direct commands.
+   Use the same command or a smaller reproducer. After an observed pass, run `git bisect good` and apply “Bisect command
+   results”. After the target failure, run `git bisect bad` and apply “Bisect command results”. If `git bisect start`
+   fails, stop. Clean up under “Cleanup” if a search started.
+9. In the active worktree, run `git bisect skip` for an untestable revision or unrelated failure. A skipped `test:`
+   commit remains a possible cause commit. A skip is neither a pass nor proof of cause. Apply “Bisect command results”.
+   Record tested hashes, commands, outcomes, skips, and all candidates. Clean up under “Cleanup” after normal,
+   interrupted, or failed searches.
+
+### Cleanup
+
+- (a) In the active worktree, run `git rev-parse --git-path BISECT_START`. If it fails, stop without another git
+  operation. Run `test -e <path>` on its output. If the file is absent, cleanup is complete.
+- (b) If saved evidence is absent, stop without cleanup. Read the file. For an originally attached `HEAD`, make sure
+  that its short name matches the saved branch. For an originally detached `HEAD`, make sure that its hash matches the
+  saved original `HEAD`. If either differs, stop without cleanup.
+- (c) Run `git rev-parse refs/heads/<task branch>` and make sure that it matches the saved tip. If the branch or tip is
+  absent or differs, stop without cleanup.
+- (d) Run `git bisect reset` in the active worktree. Then make sure that the branch, tip, and `HEAD` attachment match
+  their saved values. If cleanup fails, report the exact state. Run no repair or tasker command.
+
+A bisect result is a candidate transition for one reproducer. A skipped interval stays a candidate set. If observations
+show failure, pass, then failure, record nonmonotonic history without claiming an earliest failure. A history rewrite or
+base change invalidates reuse of a passing result. Inspect candidate diffs and relevant skipped commits to establish the
+cause. Extend inspection to the base if a latent cause predates the preferred good bound. Report observed broken
+revisions and cause candidates, a failure that did not reproduce, or an incomplete diagnosis. An incomplete diagnosis is
+not a pass and permits no rewrite without an established cause. If the task subagent cannot establish a cause, it stops
+and reports the failure.
+
 ## The broken-commit steps
 
 These steps give the git commands for a failure from the code in the verify-failure rule. A broken commit is an
 implementation commit that fails `npm run check`, or the tip of the task branch when it fails `npm run check`. The tip
 has no next commit, so it must pass, whatever its prefix. The cause commit of a broken commit is the commit that adds
 the cause of its failure. It is the broken commit itself, an earlier broken commit, or an earlier commit that the check
-skips, for example a `test:` commit that adds a test configuration. It is never under the last commit that passed the
-check, or under the base commit. The Commits section of [docs/dev/rules.md](rules.md) defines an implementation commit
-and gives the rule. The fix of a broken commit goes into its cause commit, not into a new commit on top. The steps do
-not change the limits or the cases of the verify-failure rule.
+skips, for example a `test:` commit that adds a test configuration. The cause stays in the task commits after their
+base. The Commits section of [docs/dev/rules.md](rules.md) defines an implementation commit and gives the rule. The fix
+of a broken commit goes into its cause commit, not into a new commit on top. The steps do not change the limits or the
+cases of the verify-failure rule.
 
 The base commit is the commit under the first commit of the task branch. `tasker update-branch` moves the task branch
-onto a newer base, so the base commit changes. For this reason, each [commit check](#the-commit-check) of the task
-subagent finds the base commit again. The refine feedback gives the base commit of the last commit check, and the
-session steps use the base commit of the feedback. The one exception is the refine of step 4 of
-[Run one ticket](run-one-ticket.md#run-one-ticket) after a `tasker update-branch`: there the task subagent finds the
-base commit directly, as the next paragraph says, not from a commit check.
+onto a newer base, so the base commit changes. For this reason, diagnosis preparation finds the base commit again. The
+refine feedback gives the base commit found during diagnosis preparation, and the session steps use that base. The one
+exception is the refine of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket) after a `tasker update-branch`:
+there the task subagent finds the base commit directly, as the next paragraph says, not from a commit check.
 
-In the refine of the verify-failure rule, the task subagent first does the commit check on the local task branch, in the
-task worktree. If the commit check finds no broken commit, each implementation commit and the tip pass, so the failure
-does not come from the code. The task subagent does not send the refine. It follows the cases of the verify-failure rule
-for a failure that does not come from the code. Otherwise, the feedback names each broken commit of the check, by its
-hash and its subject. The commit check names each broken commit, but not its cause commit. A named `feat:`, `fix:` or
-`refactor:` commit is not the cause when its failure comes from an earlier commit that the check skips. For this reason,
-the feedback also names the commits that the check skipped under each broken commit, back to the last commit that passed
-the check or to the base commit. These commits and the earlier broken commits of the list are the other candidates for
-the cause commit. It gives the base commit of the check. If the task subagent runs `tasker update-branch` after it sends
-the refine and before `tasker approve`, the task subagent does not run the commit check again. The hashes and the base
-commit in the feedback are then out of date. The session finds the broken commits again with its own commit check, so
-the names in the feedback only describe the failure. In the refine of step 4, the task subagent gives the new base
-commit. If the task stays stacked after `tasker update-branch`, the base commit is the start base of the last read, as
+In the refine of the verify-failure rule, the task subagent uses [the bisect diagnosis](#the-bisect-diagnosis) on the
+reproduced failure before repair. Feedback gives the observed failure, bounds, candidates, skipped revisions, and
+current base hash. It does not call this a complete broken-commit list. If diagnosis uses the exhaustive audit fallback,
+feedback gives that audit's broken-commit list. The task subagent adds
+[the repo-files rule](plan-review.md#the-repo-files-rule) to the feedback text. If the task subagent runs
+`tasker update-branch` after it sends the refine and before `tasker approve`, the hashes and bounds become stale. The
+session diagnoses again on its current history and base. A history rewrite or base change also invalidates the diagnosis
+hashes and bounds. In the refine of step 4, the task subagent gives the new base commit. If the task stays stacked after
+`tasker update-branch`, the base commit is the start base of the last read, as
 [the same-patch rule](review-findings.md#review-findings) defines it, and the task subagent runs no `git merge-base`. If
 the task subagent holds no start base for a stacked task, the task subagent [stops](limits.md#the-answer-wait-rule). A
 task stays stacked when the `base:` line of `tasker show <issue>` still has the form `refs/heads/<parent branch>`.
@@ -85,34 +159,36 @@ Otherwise, the task subagent runs `git fetch --multiple tasker origin`, then
 `git merge-base tasker/<task branch> origin/<base branch>`. If a command fails, the task subagent
 [stops](limits.md#the-answer-wait-rule). This refine of step 4 is part of the same fix, not a new refine of the
 verify-failure rule, so the limits of that rule do not change. Then the task subagent continues as usual.
-`tasker verify` runs after `tasker approve` and `tasker execute`, as the steps of "Run one ticket" say. If that
-`tasker verify` fails, the task subagent follows the verify-failure rule, which looks for broken commits again. If it
-passes, the task subagent continues as usual. The feedback tells the session (the execute session that tasker starts) to
-fix the cause commits with these steps:
+`tasker verify` runs after `tasker approve` and `tasker execute`, as the steps of "Run one ticket" say. The feedback
+tells the session (the execute session that tasker starts) to diagnose again on its current history and base, then fix
+established cause commits with these steps:
 
-1. Do [the session check](#the-session-check). The result is the list of broken commits, oldest first. If the session
-   check stops, stop and report, as the session check says.
-2. If the list is empty, the session ends. Each commit passes, whatever repaired it, for example an earlier fix or
-   `tasker update-branch`.
-3. On the task branch, take the oldest commit on the list. In the first round, find its position. The position of a
-   commit is the number that `git rev-list --count <base commit>..<commit>` prints (1 for the first commit after the
-   base commit). A later commit has a higher position. The hashes change after each autosquash, so the session compares
-   positions, not hashes. If the command fails, stop and report. The task branch stays as it was. In later rounds, keep
-   the position that step 5 found. Then read the failure of the oldest commit and find its cause commit, as the
-   definition above says. Stage the fix and run `git commit --fixup=<cause commit>`. This also applies when the cause
-   commit is the tip or a `test:` commit. If the command fails, stop and report. The staged fix stays, and git makes no
-   fixup commit.
+1. Diagnose the current failure as [the bisect diagnosis](#the-bisect-diagnosis) says. If diagnosis is incomplete, stop
+   without rewriting history.
+2. If diagnosis used a fallback, use its exhaustive result as the first audit result. If the list is empty, end the
+   session. If diagnosis establishes a cause after reproduction, repair that failure before the first full audit.
+3. On the task branch, find the broken revision's position with `git rev-list --count <base commit>..<broken revision>`.
+   Position 1 is the first task commit after the base. If the command fails, stop and report. Find its cause commit from
+   the failure and diagnosis or audit candidates. Stage the repair and run `git commit --fixup=<cause commit>`. This
+   also applies when the cause commit is the tip or a `test:` commit. If the command fails, stop and report. The staged
+   repair stays, and git makes no fixup commit.
 4. At once, run `GIT_SEQUENCE_EDITOR=: git rebase --autosquash <base commit>` on the task branch.
    `GIT_SEQUENCE_EDITOR=:` makes sure that the rebase does not wait for an editor. With git 2.47.3, the `--autosquash`
    flag works without `-i`, and the rebase does not depend on the `rebase.autoSquash` configuration. The rebase squashes
    the fixup commit into the commit that it names. As a result, the fix is part of the history before the session looks
    at the next commit. If the rebase fails, for example with a conflict, run `git rebase --abort`, then stop and report.
-   The branch goes back to its state before the rebase, with the fixup commit on top.
-5. Do step 1 again. A commit that is not on the new list needs no fix. If the new list is empty, go to step 2.
-   Otherwise, find the position of the oldest commit on the new list with the command of step 3, and keep it for the
-   next round. If the oldest commit on the new list is not later on the branch than the oldest commit of the list
-   before, the session stops and reports. The fixes so far stay in their commits. Otherwise, do steps 2 to 5 again. The
-   position test ends the session after at most as many rounds as the task branch has commits after the base commit.
+   If abort succeeds, the branch returns to its pre-rebase state with the fixup commit on top. If abort fails, report
+   the exact state.
+5. After `git rebase --autosquash`, invalidate old hashes and bounds. Never reuse an audit list from before a rewrite.
+6. Use the exhaustive audit result as the first audit result after a fallback. After every repair, run the full
+   [session check](#the-session-check) on current history and base. The audit lists broken commits oldest first. If it
+   stops, stop and report as the session check says. If the list is empty, end the session.
+7. If the list is not empty, find the oldest broken revision's position with the command in step 3. Keep that position
+   until the next audit. Do not compare the first audit result's position. For each later result, require its position
+   to exceed the prior result's position. If it does not, stop and report; fixes so far stay in their commits. Then
+   repair its cause by repeating steps 3–6. An audit with another failure cannot report success from a repaired bisect
+   result. Allow one initial diagnosis repair, followed by at most the number of task commits after the base in audit
+   rounds. Stop after an empty result, audit error, failed fixup, failed rebase, or a position that does not increase.
 
 If the session stops, the execute run fails. The task subagent then follows the verify-failure rule as it already says.
 For a task in `failed` after a command other than `tasker verify` or `tasker retry`, that rule sends the task subagent
@@ -179,10 +255,13 @@ task branch again, step 21 of that page finds exit code 2 in
 
 ## The session check
 
-The session check runs the rebase of the commit check directly on the task branch. The check commands only run the tests
-and change no commit. The last paragraph of [the commit check](#the-commit-check) gives the facts of this rebase during
-and after its run. At the end, HEAD is on the task branch. If the rebase stops for another reason, `git rebase --abort`
-puts the task branch back at its tip, with HEAD on the task branch.
+The session check runs `git rebase --exec` to certify history after repair. It covers every implementation commit and
+the tip, even when [the bisect diagnosis](#the-bisect-diagnosis) used a passing bound. The non-reproduction and
+no-passing-bound cases run this audit before repair. An expected failure in a `test:` commit stays outside the passing
+set. The audit requires a passing tip. The check commands do not change commit contents. The last paragraph of
+[the commit check](#the-commit-check) gives the facts of this rebase during and after its run. At the end, HEAD is on
+the task branch. If the rebase stops for another reason, `git rebase --abort` puts the task branch back at its tip, with
+HEAD on the task branch.
 
 If the session stops in the middle of the rebase, the worktree stays in the rebase. Step 2 covers this case when the
 session goes on.
@@ -211,25 +290,24 @@ verify-failure rule. The task subagent never changes the tasker clone (the clone
    [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The task subagent works in the task worktree. Step 6 of that
    page uses it. [The local-commit rule](limits.md#the-local-commit-rule) holds from step 2 of this list. If a step
    fails, [stop](limits.md#the-answer-wait-rule).
-2. Do the commit check on the local `<task branch>` to find the broken commits and the base commit. If the check finds
-   no broken commit, stop and report this. If the check stops with an error, stop. In both cases, the worktree and the
-   local task branch stay.
-3. In the worktree, do the session steps of [the broken-commit steps](#the-broken-commit-steps) on the local
-   `<task branch>`, with the base commit of the last commit check. If the session steps stop, stop. The worktree and the
-   local task branch stay.
-4. Do the commit check on the local `<task branch>` again. This check also covers step 8 of
-   [docs/dev/rebase-conflicts.md](rebase-conflicts.md), because it checks the tip. If the check lists a broken commit,
-   fix the cause commits of the listed commits one time with step 3, with the base commit of this check. Then do the
-   commit check one more time. If that check still lists a broken commit, stop and report the list. If a check stops
-   with an error, stop. In each of these cases, the worktree and the local task branch stay. Nothing reached tasker yet.
+2. Diagnose the failure as [the bisect diagnosis](#the-bisect-diagnosis) says. Use the base commit from step 4 of
+   [the commit check](#the-commit-check). If diagnosis is incomplete, stop. The worktree and local task branch stay.
+3. Repair each established cause by following [the broken-commit steps](#the-broken-commit-steps). Run the full audit
+   after each repair. Invalidate bounds after any history rewrite or base change. If a step stops, stop. The worktree
+   and local task branch stay.
+4. Run the full audit once more after the repair loop. If it lists a broken commit, repair its cause one additional
+   time, using the base commit of that audit. Then run the full audit one more time. If it still lists a broken commit,
+   stop and report the list. If an audit stops with an error, stop. In each case, the worktree and local task branch
+   stay. Nothing reached tasker.
 5. Do steps 9 to 21 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md): the push to `origin`,
    `tasker update-branch <issue> --take-remote`, the next commands, and the cleanup after `tasker finish`.
 
 ## The commit check
 
-The commit check makes sure that each implementation commit and the tip of the task branch pass `npm run check`. It
-gives the list of broken commits and the base commit. The task subagent does it in the task worktree, on the local task
-branch:
+The commit check uses `git rebase --exec` to certify history in the exhaustive audit after each repair. It covers each
+implementation commit and the tip. It also runs before repair when a failure does not reproduce or
+[the bisect diagnosis](#the-bisect-diagnosis) finds no passing bound. It gives the list of broken commits and the base
+commit. The task subagent does it in the task worktree, on the local task branch:
 
 1. Do steps 1 to 4 of [the remote setup](run-one-ticket.md#the-diff-read). If a step fails,
    [stop](limits.md#the-answer-wait-rule). Nothing changes.
@@ -248,8 +326,9 @@ branch:
    The command runs after each commit. It runs `npm ci` when `package-lock.json` differs from the copy of the last
    install. It keeps that copy in the git folder of the worktree (`git rev-parse --git-path npm-ci-lock`), so
    `git status` stays clean. Then it runs `npm run check` after each implementation commit. The rebase skips `test:` and
-   `docs:` commits. If `npm ci` fails, the command fails after that commit, and step 6 notes that commit. Because the
-   branch already starts on the base commit, the rebase keeps the same commits.
+   `docs:` commits. A `test:` commit can fail only for its new tests. An expected failure stays outside the passing set.
+   The audit requires a passing tip. If `npm ci` fails, the command fails after that commit, and step 6 notes that
+   commit. Because the branch already starts on the base commit, the rebase keeps the same commits.
 6. If the rebase stops and prints `warning: execution failed`, the command failed after the commit that
    `git log -1 --format='%h %s'` names. Note that commit as a broken commit. Then run `git rebase --continue`, and the
    rebase checks the next commits. Do this step again each time the rebase stops this way. A commit after a broken
@@ -259,8 +338,9 @@ branch:
    tip. Then stop and report the error. If the abort fails, the ref of the branch is still at the old tip, and the
    worktree stays in the rebase. Stop and report the output of `git -C <path> status`.
 8. When the rebase exits with 0, it kept the same commits, and the worktree is at the tip. If the tip is not an
-   implementation commit, run `npm run check` one time in the worktree. The worktree already has the packages of the
-   tip, because the rebase ran the command after the tip too. If `npm run check` fails, note the tip as a broken commit.
+   implementation commit, including a `docs:` tip, run `npm run check` one time in the worktree. The worktree already
+   has the packages of the tip, because the rebase ran the command after the tip too. If `npm run check` fails, note the
+   tip as a broken commit.
 9. The commit check passes when it noted no broken commit. Otherwise, the check fails and gives the list of broken
    commits and the base commit of step 4. The step that ran the check gives the next step.
 
