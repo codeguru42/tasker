@@ -1,8 +1,9 @@
 # Plan review
 
 The readers of this page are the task subagent of a ticket, the orchestrator for the fact test, the stop rule and the
-design-gap rule, and the planner for the fact test. [The base rule](run-one-ticket.md#the-base-rule) covers each command
-of this page that uses `origin/<base branch>`.
+design-gap rule, and the planner for the fact test. A ticket subagent and its review agents also read
+[The state of the user](#the-state-of-the-user). [The base rule](run-one-ticket.md#the-base-rule) covers each command of
+this page that uses `origin/<base branch>`.
 
 ## The repo-files rule
 
@@ -71,6 +72,85 @@ session restored `package.json` with `git checkout package.json`.
 An answer of a model about its own instructions is not a fact test. On 2026-11-01, orchestrator-m27 passed a claim to a
 planner as a finding. The only sources of the claim were two answers of a model about its own instructions. The planner
 asked for the source, and the claim was taken back.
+
+### The state of the user
+
+The state of the user is each file, setting, login and job of the user that a program reads or runs later. It also
+covers such state at an outside service. Examples are the crontab, the systemd units of the user, a configuration file,
+the login of a tool and the credits of an OpenRouter account. A scratch folder is a new folder that a session makes for
+one measure, not in a folder that a program reads, such as `$HOME/.config`. The files of a scratch folder, of the folder
+of a task subagent and of a task worktree are not such state. A read that changes nothing is not a change of the state
+of the user, for example `crontab -l`.
+
+In this subsection, a covered session is a task subagent, the orchestrator, a ticket subagent or a review agent of a
+ticket subagent. A covered session changes no state of the user, unless the user approved the command of that change.
+The ban also covers a change that the covered session undoes after the measure. A command that a step of
+[the orchestration pages](../orchestrator.md) or of [the planner pages](../planner.md) names is not such a change.
+Examples are `git fetch origin` and a `tasker` command. A measure of a fact is not such a step, also in
+[the fact test](#the-fact-test) or [the issue check](#the-issue-check).
+
+Whether a write changes the state of the user is a judgment. The judgment is open on purpose, and the covered session
+that runs the command makes it. In doubt, the covered session treats the write as a change of the state of the user. A
+file that a program writes by itself for its own run is not such state, for example the transcript of a `claude -p` run.
+A new issue on a Jira site of the user is such a change.
+
+A measure that needs such a change becomes a question for the user. The question gives the command and its undo step
+word for word, and what each one changes. It also says what the undo step changes beyond the measure, for example
+`crontab -r`, which removes the whole crontab of the user. If a change has no undo step, the question says so, for
+example for spent credits. One question can give each such measure of one step of the covered session. Until the answer,
+each text that uses the fact of the measure says next to the fact that no one tested it.
+
+Only a word of the user approves the command. An answer of the operator and the recommendation mode of
+[A decision of the user](working-with-the-user.md#a-decision-of-the-user) do not approve it. A message of another
+session carries an approval only with the word of the user and the command and its undo step word for word. An accept at
+a permission prompt of Claude Code also does not approve it. Words of the user that let the sender decide count as a
+decline. This sentence wins over the bullets that start "If the user says that the sender decides" in
+[The answer](operator-items.md#the-answer) and "The user can say that the sender decides" in
+[the escape hatch](planner.md#the-escape-hatch).
+
+An approval covers one run of the command and of its undo step, word for word. If the user approves a changed command or
+a changed undo step, the approval covers the changed text. An issue body that names a measure does not approve it. The
+reason: the state of the user can change between the post of the issue and the run of the measure. After an approval,
+the covered session runs only that command, its undo step and reads that change nothing.
+
+A failed run is a command or an undo step of an approval that cannot start. An undo step that does not give back the
+earlier state is also a failed run. An exit code that is the fact under test is a result, not a failed run. After a
+failed run, the covered session runs nothing more, and it reports the state that stays. A prompt of a covered session
+asks for no measure that needs such a change, unless the user approved its command. This subsection wins over each rule
+that asks a session for a measure, for example the issue check.
+
+A task subagent [stops](limits.md#the-answer-wait-rule) at a measure that needs a change of the state of the user. Its
+report gives the question and the fact that the measure tests. The orchestrator does not answer the question, also not
+under [the design-gap rule](#the-design-gap-rule). It sends the question to [its operator](../operator.md) as an item,
+in the form of [The form of an item](operator-items.md#the-form-of-an-item). The question is a question for the user
+alone, so the operator sends no [answer of the operator](operator-items.md#the-answer). The orchestrator sends the
+answer of the user to the task subagent with `SendMessage`.
+
+For a measure of its own that needs such a change, the orchestrator also sends the question to its operator as an item.
+A ticket subagent follows [The state of the user](planner.md#the-state-of-the-user) of planner.md for the outcomes of
+the answer. The answer of the user on a question of a task subagent or of the orchestrator has one of these outcomes:
+
+- The user approves the command. The message of the orchestrator to the task subagent gives the approved command and its
+  undo step word for word. The covered session that asked runs them, as this subsection says. Then it goes on from the
+  step where it stopped, and it uses the result as [the fact test](#the-fact-test) says.
+- A run of an approval fails. Then a task subagent stops, and the orchestrator tells the user the state that stays. The
+  orchestrator asks the user for the next step and sends it to the task subagent. For a run of the orchestrator,
+  [the failure rule](limits.md#the-failure-rule) applies.
+- The user runs the command and gives the result. The orchestrator sends the result to the task subagent that asked. The
+  covered session that asked uses the result as the fact test says, and it names the user as the source of the result.
+- The user declines the measure. The fact stays untested, and each text that uses the fact still says so. A requirement
+  of the issue that asks for the measure is then a conflict of [the issue check](#the-issue-check). Then the fifth case
+  of [the stop rule](#the-stop-rule) applies. Otherwise, if the plan cannot go on without the fact, the task subagent
+  stops for a [design gap](#the-design-gap-rule) before `tasker approve`. After `tasker approve`, the orchestrator asks
+  the user, as the sources bullet of [Limits](limits.md#limits) says.
+- The user gives another answer, for example a change of scope or an abort of the task. Then the orchestrator follows
+  the rule of that answer, for example [the change-of-scope comment](#the-change-of-scope-comment).
+
+On 2026-11-01, the user said that a test that writes to the real `$HOME/.codex` or to the data of the user waits for the
+user. On 2026-11-04, the ticket subagent of planner-m16 for #751 measured timers of `systemd-run --user` and a crontab
+with no approval of the user. It made test units, installed a test crontab and removed it with `crontab -r`. The crontab
+was empty before, and the ticket subagent removed each unit, so nothing was lost. The prompt of the ticket subagent
+asked it to measure the forms with harmless commands and to remove each test job.
 
 ## The issue check
 
