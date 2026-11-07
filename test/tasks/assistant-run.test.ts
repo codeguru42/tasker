@@ -262,9 +262,62 @@ describe("sandboxReadDenyPaths", () => {
       "/pi/custom/auth.json",
       "/pi/custom/mcp-auth.json",
       "/pi/custom/models.json",
+      "/h/.pi/agent/auth.json",
+      "/h/.pi/agent/mcp-auth.json",
+      "/h/.pi/agent/models.json",
       "/p",
       "/h/.config/tasker/config.json",
     ]);
+  });
+
+  it.each([
+    ["HOME default", { HOME: "/h" }, ["/h/.pi/agent"]],
+    ["PI_CODING_AGENT_DIR", { HOME: "/h", PI_CODING_AGENT_DIR: "/u" }, ["/u", "/h/.pi/agent"]],
+    ["tilde path", { HOME: "/h", PI_CODING_AGENT_DIR: "~/u" }, ["/h/u", "/h/.pi/agent"]],
+    ["file URL", { HOME: "/h", PI_CODING_AGENT_DIR: "file:///u" }, ["/u", "/h/.pi/agent"]],
+    ["relative PI path", { HOME: "/h", PI_CODING_AGENT_DIR: "rel/u" }, ["/h/.pi/agent"]],
+    ["file URL with host", { HOME: "/h", PI_CODING_AGENT_DIR: "file://host/u" }, ["/h/.pi/agent"]],
+    ["blank PI path", { HOME: "/h", PI_CODING_AGENT_DIR: " " }, ["/h/.pi/agent"]],
+    ["duplicate HOME path", { HOME: "/h", PI_CODING_AGENT_DIR: "/h/.pi/agent" }, ["/h/.pi/agent"]],
+    ["Tasker source", { HOME: "/h", TASKER_PI_CODING_AGENT_DIR: "/p" }, ["/p", "/h/.pi/agent"]],
+    [
+      "all sources",
+      { HOME: "/h", TASKER_PI_CODING_AGENT_DIR: "/p", PI_CODING_AGENT_DIR: "/u" },
+      ["/p", "/u", "/h/.pi/agent"],
+    ],
+    [
+      "duplicate sources",
+      { HOME: "/h", TASKER_PI_CODING_AGENT_DIR: "/p", PI_CODING_AGENT_DIR: "/p" },
+      ["/p", "/h/.pi/agent"],
+    ],
+    [
+      "relative Tasker source",
+      { HOME: "/h", TASKER_PI_CODING_AGENT_DIR: "rel/p", PI_CODING_AGENT_DIR: "/u" },
+      ["/u", "/h/.pi/agent"],
+    ],
+    ["no HOME", { PI_CODING_AGENT_DIR: "/u" }, ["/u"]],
+    ["tilde without HOME", { PI_CODING_AGENT_DIR: "~/u" }, []],
+    ["relative HOME", { HOME: "rel/h" }, []],
+    [
+      "relative HOME with Tasker source",
+      { HOME: "rel/h", TASKER_PI_CODING_AGENT_DIR: "/p", PI_CODING_AGENT_DIR: "~/u" },
+      ["/p"],
+    ],
+  ] as const)("denies pi files in order for %s", (_name, env, folders) => {
+    const paths = denyPaths(env);
+    const expected = folders.flatMap((folder) => [
+      `${folder}/auth.json`,
+      `${folder}/mcp-auth.json`,
+      `${folder}/models.json`,
+    ]);
+    expect(
+      paths.filter(
+        (path) =>
+          !path.includes("/.codex/") &&
+          ["auth.json", "mcp-auth.json", "models.json"].some((file) => path.endsWith(`/${file}`)),
+      ),
+    ).toEqual(expected);
+    for (const path of expected) expect(paths.filter((item) => item === path)).toHaveLength(1);
   });
 
   it.each(["rel/pi", "~user/x", "file://host/x"])(
@@ -319,6 +372,9 @@ describe("sandboxReadDenyPaths", () => {
       "/pi/auth.json",
       "/pi/mcp-auth.json",
       "/pi/models.json",
+      "/h/.pi/agent/auth.json",
+      "/h/.pi/agent/mcp-auth.json",
+      "/h/.pi/agent/models.json",
       "/p",
       "/h/.config/tasker/config.json",
     ]);
@@ -773,6 +829,21 @@ describe("prepareTaskExecuteRun", () => {
             "/pi/custom/mcp-auth.json",
             "/pi/custom/models.json",
           ]),
+        },
+      },
+    });
+  });
+
+  it("denies PI_CODING_AGENT_DIR files to the shell of a claude-code run", async () => {
+    const { claude } = await prepareAndStartExecute(
+      { claude: { stream: claudeSample("plain") } },
+      { env: (env) => ({ ...env, PI_CODING_AGENT_DIR: "/u" }) },
+    );
+
+    expect(claude.calls()[0].settings).toMatchObject({
+      sandbox: {
+        filesystem: {
+          denyRead: expect.arrayContaining(["/u/auth.json", "/u/mcp-auth.json", "/u/models.json"]),
         },
       },
     });
