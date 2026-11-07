@@ -164,7 +164,8 @@ control. Its read deny list holds these paths:
 - The git credentials file and the `.netrc` file.
 - The credentials file of Claude Code.
 - The credentials file of Codex.
-- The files `auth.json`, `mcp-auth.json` and `models.json` in the agent folder of `pi`.
+- The files `auth.json`, `mcp-auth.json` and `models.json` in up to three agent folders of `pi`, as
+  [The agent folder](#the-agent-folder) says.
 - The folder of the publish tokens of every configured repo. The version control gives it.
 - The configuration of tasker.
 
@@ -648,7 +649,7 @@ add their items to this list:
 - The output and the exit codes of `pi auth check --json`.
 - The skill folders of the user that `pi` reads.
 - The forms of a package source, and the rule that `pi update` does not move a configured ref.
-- The rule of the agent folder of `pi`, which `piAgentDir()` copies.
+- The rule of the agent folder of `pi`, which `piAgentDir()` and `piAgentDirs()` copy.
 - The model form `provider/id` and the thinking levels of `--model` and `--thinking`.
 - The built-in extension keys, tool sources, `-builtin:<name>` entries and `--no-mcp` behavior.
 - The source and path of tools loaded with `-e`, including tool replacement.
@@ -673,6 +674,12 @@ holds the saved API keys and OAuth credentials of `pi`. `mcp-auth.json` holds th
 `models.json` can hold an API key of an endpoint as plain text. The shell and the read tools of a run need none of the
 three files.
 
+The list holds the three files in up to three folders: the folder of `TASKER_PI_CODING_AGENT_DIR`, the folder of
+`PI_CODING_AGENT_DIR` and `.pi/agent` under `HOME`. `piAgentDirs()` gives these folders, with the rules of
+`piAgentDir()` for each value. The first folder is the agent folder of the `pi` of tasker. The other two are agent
+folders that a `pi` of the user can use. Without `TASKER_PI_CODING_AGENT_DIR`, `.pi/agent` under `HOME` is also the
+agent folder of the `pi` of tasker. Tasker passes no `PI_CODING_AGENT_DIR` of its own environment to a `pi` child.
+
 `TASKER_PI_CODING_AGENT_DIR` and `TASKER_PI_CODING_AGENT_SESSION_DIR` are the two inputs of tasker for the agent folder
 and the session folder of `pi`. The filter of the phases drops each name that starts with `TASKER_`, so no child gets
 them. This follows `TASKER_GH_CONFIG_DIR`, which the forge child gets as `GH_CONFIG_DIR`. The pi provider must pass the
@@ -690,8 +697,9 @@ full run of `pi` in a sandbox, or the cwd that tasker gives a `pi` child.
 With no `TASKER_PI_CODING_AGENT_DIR`, a run of the pi provider and each doctor check that starts `pi` also refuse a set
 `HOME` that is not absolute. The reason: the agent folder is then `.pi/agent` under `HOME`, so a relative `HOME` gives a
 relative agent folder. The deny list holds no pi entry for a relative folder, so `piChildEnv()` refuses such a folder
-and does not make it absolute. A set `TASKER_PI_CODING_AGENT_DIR` names the agent folder, so a relative `HOME` then
-changes no pi entry of the deny list.
+and does not make it absolute. A set `TASKER_PI_CODING_AGENT_DIR` names the agent folder of the `pi` of tasker. A
+relative `HOME` then gives no deny entry for `.pi/agent` under `HOME`, and none for a `PI_CODING_AGENT_DIR` of `~` or
+`~/...`.
 
 ### The program
 
