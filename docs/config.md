@@ -195,9 +195,10 @@ For the `claude-code` provider, `model` must have one of these forms:
 - A full id: `claude-` followed by lowercase letters, digits, `.` and `-`. For example, `claude-opus-5-5`.
 - Either form with the suffix `[1m]`. For example, `opus[1m]`.
 
-Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`. For
-the `pi` provider, `model` must have the form `<provider>/<model-id>`. tasker splits the model at its first `/`. Both
-parts must not be empty, and the model must hold no white space. The part before the first `/` is the upstream. The
+Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`.
+
+For the `pi` provider, `model` must have the form `<provider>/<model-id>`. tasker splits the model at its first `/`.
+Both parts must not be empty, and the model must hold no white space. The part before the first `/` is the upstream. The
 upstream is the model service that `pi` calls and that bills the task. For example, `openrouter/openrouter/auto` has the
 upstream `openrouter` and the model id `openrouter/auto`.
 
