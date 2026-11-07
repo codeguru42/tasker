@@ -75,7 +75,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   the operator, a decision of the user, the form of a reply, a question of the user, a note for later, the issue-link
   rule, core features first and the work that waits, simplify over special rules, and the tools of a session.
 - [docs/dev/operator-start.md](docs/dev/operator-start.md): the order of a milestone, the start of a session, the start
-  prompts, the stop of a session, the close of a milestone, a handoff and a blocked session.
+  prompts, the stop of a session, the close of a milestone, a handoff, a denied command of the operator and a blocked
+  session.
 - [docs/dev/operator-items.md](docs/dev/operator-items.md): the form of an item, the open items, the answer and the
   states of an item.
 - [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): a side conversation and the word of the
