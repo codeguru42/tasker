@@ -32,4 +32,16 @@ describe("forgeStub", () => {
       fake.provider.createPr({ cwd: "/work", head: "task-branch", base: "main", title: "Title", body: "Body" }, {}),
     ).rejects.toThrow("create refused");
   });
+
+  it("records CI status and merge calls", async () => {
+    const fake = forgeStub();
+
+    await expect(fake.provider.ciStatus("head-sha", "/work", {})).resolves.toBe("pending");
+    await expect(fake.provider.mergePr(42, "squash", "head-sha", "/work", {})).resolves.toBeUndefined();
+
+    expect(fake.calls).toMatchObject({
+      ci: [{ sha: "head-sha", cwd: "/work" }],
+      merged: [{ number: 42, method: "squash", headSha: "head-sha", cwd: "/work" }],
+    });
+  });
 });
