@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { errnoCode } from "../../errno.js";
 import { isDeniedPath, isInside, realPathWithMissingParents } from "../../real-path.js";
@@ -39,7 +39,7 @@ const RIGHT_SINGLE_QUOTE = String.fromCodePoint(0x2019);
 interface PiApi {
   registerFlag(name: string, description: string): void;
   getAllTools(): PiTool[];
-  on(event: "tool_call", handler: (event: unknown, context: PiContext) => unknown): void;
+  on(event: "tool_call" | "before_agent_start", handler: (event: unknown, context: PiContext) => unknown): void;
 }
 
 interface PiTool {
@@ -54,14 +54,27 @@ interface PiContext {
 
 export default function guardExtension(pi: PiApi): void {
   pi.registerFlag("tasker-guard-limits", "Path to the limits file for the tasker pi guard");
-  const state: { limits: GuardLimits | undefined } = { limits: undefined };
+  const state: { limits: GuardLimits | undefined; eventSkillRoots: string[] } = {
+    limits: undefined,
+    eventSkillRoots: [],
+  };
   pi.on("tool_call", (event, context) => {
     try {
       if (state.limits === undefined) return blocked("the guard has no validated limits");
-      return checkToolCall(event, context, pi, state.limits);
+      return checkToolCall(event, context, pi, state.limits, state.eventSkillRoots);
     } catch {
       return blocked("the pi guard failure blocked the tool call");
     }
+  });
+  pi.on("before_agent_start", (event) => {
+    try {
+      if (state.limits === undefined) return undefined;
+      const roots = skillFolders(event);
+      state.eventSkillRoots = skillRootsWithoutDeniedPaths(roots, state.limits.protectedPaths, state.limits.denyRead);
+    } catch {
+      state.eventSkillRoots = [];
+    }
+    return undefined;
   });
 
   const path = limitsFileArg(process.argv);
@@ -86,6 +99,7 @@ function checkToolCall(
   context: PiContext,
   pi: PiApi,
   limits: GuardLimits,
+  eventSkillRoots: readonly string[],
 ): { block: true; reason: string } | undefined {
   if (!isRecord(event) || typeof event.toolName !== "string" || event.toolName.length === 0) {
     return blocked("the guard cannot check a tool call with no tool name");
@@ -105,7 +119,7 @@ function checkToolCall(
     ? FILE_TOOLS[event.toolName as keyof typeof FILE_TOOLS]
     : undefined;
   if (fileRule === undefined) return undefined;
-  return checkFileCall(event, context, limits, fileRule);
+  return checkFileCall(event, context, limits, eventSkillRoots, fileRule);
 }
 
 interface ResolvedPath {
@@ -117,6 +131,7 @@ function checkFileCall(
   event: Record<string, unknown>,
   context: PiContext,
   limits: GuardLimits,
+  eventSkillRoots: readonly string[],
   rule: (typeof FILE_TOOLS)[keyof typeof FILE_TOOLS],
 ): { block: true; reason: string } | undefined {
   // 1. Require a path unless grep, find or ls uses the worktree by default.
@@ -216,7 +231,12 @@ function checkFileCall(
     if (limits.readRoots !== null) {
       let allowedRoots: string[];
       try {
-        allowedRoots = existingRealRoots([...limits.readRoots, ...limits.skillRoots]);
+        const skillRoots = skillRootsWithoutDeniedPaths(
+          [...limits.skillRoots, ...eventSkillRoots],
+          limits.protectedPaths,
+          limits.denyRead,
+        );
+        allowedRoots = existingRealRoots([...limits.readRoots, ...skillRoots]);
       } catch (error) {
         return pathResolutionBlock(error);
       }
@@ -271,6 +291,49 @@ function existingRealRoots(roots: readonly string[]): string[] {
       throw error;
     }
   });
+}
+
+function skillFolders(event: unknown): string[] {
+  if (!isRecord(event) || !isRecord(event.systemPromptOptions)) return [];
+  const skills = event.systemPromptOptions.skills;
+  if (skills === undefined) return [];
+  if (!Array.isArray(skills)) throw new Error("invalid skill folders");
+  return skills.map((skill) => {
+    if (!isRecord(skill) || typeof skill.filePath !== "string" || !isAbsolute(skill.filePath)) {
+      throw new Error("invalid skill folder");
+    }
+    return dirname(skill.filePath);
+  });
+}
+
+function skillRootsWithoutDeniedPaths(
+  roots: readonly string[],
+  protectedPaths: readonly string[],
+  denyRead: readonly string[],
+): string[] {
+  const entries = [...protectedPaths, ...denyRead, "/proc"];
+  const resolvedEntries = entries.map((supplied) => ({ supplied, real: realPathWithMissingParents(supplied) }));
+  const allowed: string[] = [];
+
+  for (const supplied of roots) {
+    let real: string;
+    try {
+      statSync(supplied);
+      real = realPathWithMissingParents(supplied);
+    } catch (error) {
+      if (errnoCode(error) === "ENOENT") continue;
+      throw error;
+    }
+    const rootPaths = [supplied, real];
+    const overlapsDenied = resolvedEntries.some((entry) => {
+      const entryPaths = [entry.supplied, entry.real];
+      return rootPaths.some((rootPath) =>
+        entryPaths.some((entryPath) => isInside(rootPath, entryPath) || isInside(entryPath, rootPath)),
+      );
+    });
+    if (!overlapsDenied) allowed.push(supplied);
+  }
+  return allowed;
 }
 
 function pathResolutionBlock(error: unknown): { block: true; reason: string } {
