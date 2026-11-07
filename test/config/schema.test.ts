@@ -839,12 +839,6 @@ describe.each(["verify", "bootstrap"])("parseConfig %s.env", (phase) => {
     );
   });
 
-  it.each(["PI_CODING_AGENT_DIR", "PI_CODING_AGENT_SESSION_DIR"])("rejects %s, which every phase receives", (name) => {
-    expect(issuesOf(withEnv([name]))).toContain(
-      `${at}: must not be a name every phase already receives (such as HOME); remove it from env`,
-    );
-  });
-
   it.each(["HOME", "NVM_DIR"])("rejects the name %s that every phase receives", (name) => {
     expect(issuesOf(withEnv([name]))).toContain(
       `${at}: must not be a name every phase already receives (such as HOME); remove it from env`,

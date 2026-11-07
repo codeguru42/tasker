@@ -87,10 +87,6 @@ describe("childEnv", () => {
     expect(childEnv({ CODEX_HOME: "/codex" }, [])).toEqual({ CODEX_HOME: "/codex" });
   });
 
-  it.each(["PI_CODING_AGENT_DIR", "PI_CODING_AGENT_SESSION_DIR"])("passes %s", (name) => {
-    expect(childEnv({ [name]: "/pi/path" }, [])).toEqual({ [name]: "/pi/path" });
-  });
-
   it("does not change env", () => {
     const env = { HOME: "/home/me", NPM_TOKEN: "npm-secret", ANTHROPIC_API_KEY: "key", TASKER_CONFIG: "x" };
     const before = structuredClone(env);

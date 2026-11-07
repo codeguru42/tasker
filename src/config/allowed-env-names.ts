@@ -13,8 +13,6 @@ export const ALLOWED_ENV_NAMES: readonly string[] = [
   "LOGNAME",
   "CLAUDE_CONFIG_DIR",
   "CODEX_HOME",
-  "PI_CODING_AGENT_DIR",
-  "PI_CODING_AGENT_SESSION_DIR",
   "NVM_DIR",
   "ASDF_DIR",
   "ASDF_DATA_DIR",
