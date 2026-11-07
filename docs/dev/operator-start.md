@@ -239,10 +239,10 @@ state of the session and tells the user, as [A blocked session](#a-blocked-sessi
 closes the pane with no report, keeps the wait, or ends the stop. After an end of the stop, the entry stays in the tab
 list.
 
-In step 1 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), the old operator waits
-for each such report before its hold messages. That report is the report again, because the old sender ran its rounds
-before its handoff file. If no report arrives, the old operator tells the user, and the word of the user decides. After
-the hold messages, the old operator starts no stop of a sender of the slug.
+In steps 1 and 2 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), the old operator
+waits for each such report before its hold messages. That report is the report again, because the old sender ran its
+rounds before its handoff file. If no report arrives, the old operator tells the user, and the word of the user decides.
+After the hold messages, the old operator starts no stop of a sender of the slug.
 [The hold of the items](handoff.md#the-hold-of-the-items) defines the hold messages and a sender of the slug.
 
 1. The operator sends this message to the session with the tool `SendMessage`: "Operator: stop. Run the rounds of
@@ -359,8 +359,8 @@ The operator does these steps for each handoff of an orchestrator or a follow-up
 that the user started in a tab of the user. The old session is the orchestrator or the follow-up planner that hands off
 its work. The new session takes the work, with the same name as the old session.
 
-If a handoff of an orchestrator or a follow-up planner is in progress at the start of a handoff of the operator, step 1
-of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) says what each operator does.
+If a handoff of an orchestrator or a follow-up planner is in progress at the start of a handoff of the operator, steps 1
+and 2 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) say what each operator does.
 
 1. A recommendation "hand off now" of the old session arrives. This recommendation is a suggestion of a handoff, as
    [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. The operator sends the go to the session
