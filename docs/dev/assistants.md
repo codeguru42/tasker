@@ -769,8 +769,9 @@ home folder and an empty `PI_CODING_AGENT_DIR`. Each run set `PI_TELEMETRY=0` an
 faux provider and no real model.
 
 1. Pi loaded these built-in extensions by default: `builtin:llama.cpp`, `builtin:mcp`, `builtin:codemode` and
-   `builtin:tool-search`. The tools `llama`, `mcp`, `codemode` and `tool_search` used those matching paths. An unknown
-   built-in extension made pi exit with code 1. Those four built-in extension tools reported source `builtin`.
+   `builtin:tool-search`. The commands `llama` and `mcp` came from `builtin:llama.cpp` and `builtin:mcp`. The tools
+   `codemode` and `tool_search` came from `builtin:codemode` and `builtin:tool-search`. An unknown built-in extension
+   made pi exit with code 1. The tools `codemode` and `tool_search` reported source `builtin`.
 2. A `-builtin:<name>` entry in the extensions list of the agent configuration stopped each of those built-in extensions
    from loading.
 3. `--no-mcp` stopped `builtin:mcp`, including when the command also named `-e builtin:mcp`.
