@@ -20,6 +20,18 @@ how to do it on GitHub.
   the user, [The escape hatch](planner.md#the-escape-hatch) of planner.md says what the answer of the item does. The
   planner also makes sure of the kinds of GitHub objects to make, as
   [The order of the work](planner.md#the-order-of-the-work) of planner.md says.
+- For a change of the title or the body of an open issue, the session reads both at the start of the draft. The draft
+  starts from that read, not from an older draft file. The same read gives the start hash, the output of `sha256sum`
+  over the JSON of the read. An example of such a read is
+  `json=$(gh issue view <number> --json title,body) && printf '%s\n' "$json" | sha256sum && printf '%s\n' "$json" | jq -r '.title, .body'`.
+  If the read fails, the session does not start the draft, and it tells the user.
+  [The read in the write call](#the-read-in-the-write-call) compares the start hash with a new hash of the issue right
+  before the write.
+
+  Other sessions can change an open issue after a post, and a post of an older text undoes their change. On 2026-11-04,
+  the body of #766 changed about 15 minutes after its post, while the draft file of the planner still held the older
+  paragraph.
+
 - Right before each post, the session that posts the issue searches all the issues of the repo, open and closed, by
   title and by body, for the same change. Other sessions file issues at the same time, so the list changes between two
   turns. An example search is `gh issue list --state all --search "<words> in:title,body" --limit 1000`. The session
@@ -66,11 +78,20 @@ session runs one Bash call with these steps, in this order:
 
 1. Run `tasker status`.
 2. Read the state of the issue, for example with `gh issue view <number> --json state -q .state`.
-3. If `tasker status` lists no task for the full key of the issue and the state is `OPEN`, do the write.
+3. For a change of the title or the body, run
+   `json=$(gh issue view <number> --json title,body) && printf '%s\n' "$json" | sha256sum`. If the command prints a hash
+   that is not the [start hash](#before-a-post), skip step 4.
+4. If `tasker status` lists no task for the full key of the issue and the state is `OPEN`, do the write.
 
 If the issue is in flight or closed, the call skips the write, and the session tells the user. The issue is in flight
-when `tasker status` lists a task for the full key of the issue. If `tasker status` or the read of the state fails, the
+when `tasker status` lists a task for the full key of the issue. If `tasker status` or a read of the issue fails, the
 call skips the write, and the session tells the user.
+
+If step 3 prints a hash that is not the start hash, the call skips the write, and the session tells the user. In that
+case, the issue changed after the start of the draft. The session starts the draft again from the new title and body, as
+[Before a post](#before-a-post) says. A second post after a failed compare of [Before a post](#before-a-post) skips step
+3, because the issue then holds the text of the failed post. A change of both the title and the body goes in one write,
+because a first write changes the hash for a second write.
 
 Before this call for a new blocked-by link, the session does a walk of the open blockers. The walk starts at the blocker
 of the new link. The session reads the blockers of each issue with `--paginate` and the read command of
