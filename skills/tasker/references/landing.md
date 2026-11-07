@@ -140,22 +140,29 @@ external PR is open. It does not mean that someone approved it or that CI passed
 
 ## `tasker merge`
 
-Lands the work of a task in the state `accepted` on the base branch of `origin`: `tasker merge <issue>`. The task goes
-through the state `merging` to the state `landed`. tasker does not wait for CI.
+Merges work by state: `tasker merge <issue> [--repo <key>]`. For a task in `accepted`, it lands the accepted work on the
+base branch of `origin`. For a task in `in_peer_review`, it merges the recorded PR. Both paths go through `merging` and
+end in `landed`. The command does not wait for CI.
 
-The command fetches `origin`. Then it reads the tip of the task branch in the clone and the tip of the base on `origin`.
-If the tip of the base contains the task branch, the work is on the base already, and the command pushes nothing. If
-not, the command pushes the tip of the task branch to the base on `origin` with one publish token. The command moves the
-task to `merging` before the fetch, and to `landed` after the push.
+### Accepted work
+
+The task must have a branch, a base and an accepted revision. It must not have an unlanded parent. A local base is not
+allowed. Before the task enters `merging`, the command reads the exact local task branch ref, `refs/heads/<branch>`, and
+checks that it matches the accepted revision. This check makes no fetch and writes no event or run marker.
+
+The command takes the repo lock, then moves the task to `merging`. It fetches `origin` and checks the task branch again
+because a commit can happen in the worktree while the command waits. It reads the base tip on `origin`. If that tip
+already contains the task branch, the command pushes nothing. Otherwise it pushes the task branch to the base on
+`origin` with one publish token. On success, tasker records `landed` and clears the run marker and merge origin.
 
 On success, the command prints the line `merged <issue key>` on stdout. Then it prints one of these lines:
 
 - `landed: <revision> on origin/<base>` after a push.
 - `already on origin/<base>: <revision>. Nothing pushed.` when the work was on the base already.
 
-The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state
-and nothing is written. The shared errors of no task, of [the wrong state](../SKILL.md#shared-errors), of the task lock
-and of the clone lock belong to this group:
+Before the task enters `merging`, the command stops with exit code 1 and prints the error on stderr. The task keeps its
+state and no event or run marker is written. The shared errors of no task, of
+[the wrong state](../SKILL.md#shared-errors), of the task lock and of the repo lock belong to this group:
 
 - The task is stacked, so it has a parent task. The error depends on the parent:
   - The parent landed. The error is
@@ -178,11 +185,10 @@ and of the clone lock belong to this group:
   `the tip of <branch> (<tip>) is not the accepted revision (<accepted revision>); run tasker update-branch and review the work again`.
   The accepted revision is the revision that the last `tasker accept` stored.
 
-The command makes this compare before the move to `merging`. It reads the exact ref `refs/heads/<branch>` of the clone,
-with no fetch. The task keeps its state. A commit after `tasker accept` has no review, so the command lands only the
-accepted revision. To recover, run `tasker update-branch`. It moves the task to `executed`, as
-[the demotion table](keeping-current.md#the-state-after-the-command) says. Then run `tasker verify`, `tasker review`,
-`tasker accept` and `tasker merge` again.
+The first branch check happens before the move to `merging`. A commit after `tasker accept` has no review, so the
+command lands only the accepted revision. To recover a stale or changed branch, run `tasker update-branch`. It moves the
+task to `executed`, as [the demotion table](keeping-current.md#the-state-after-the-command) says. Then run
+`tasker verify`, `tasker review`, `tasker accept` and `tasker merge` again.
 
 The task goes to `failed` with the error `merging failed: <reason>` when one of these steps fails after the move to
 `merging`. The command prints the same error on stderr and stops with exit code 1:
@@ -198,10 +204,63 @@ The task goes to `failed` with the error `merging failed: <reason>` when one of 
   on `origin`.
 
 The base can move on `origin` after `tasker accept`. Then the land fails, nothing moves on `origin`, and the task goes
-to `failed` from `merging`.
+to `failed` from `merging`. The landed event records the revision, base, whether tasker pushed, and the move to
+`landed`.
 
-A crash during the command leaves the task in `merging` with its run marker. The next command that reads the task moves
-it to `interrupted`.
+### Recorded PR
+
+For a task in `in_peer_review`, the command needs a branch, a remote base, a configured forge, a recorded PR number and
+a published revision. It needs no worktree and reads no worktree HEAD. A recorded parent refuses before the local-base
+guard. The parent must land, then the task must move with `tasker update-branch` before PR merging.
+
+Each guard runs before `merging`. A refusal keeps the task and events unchanged and sends no forge request:
+
+- A missing branch reports `the task of <issue key> has no branch`.
+- A missing base reports `the task of <issue key> has no base`.
+- A local base reports
+  `the base of <issue key> is a local branch of the clone: <base>; tasker merge requires a remote base for a PR`.
+- A missing PR number or published revision reports
+  `cannot merge <issue key>: recorded PR number and published revision are required. If the work merged externally, run tasker mark-landed <issue key>`.
+- A missing forge configuration reports `repo "<repo key>" has no forge configuration at repos.<repo key>.forge`.
+
+For a parent that has not landed, the error is
+`the parent <parent key> of <issue key> has not landed; land the parent first, then run tasker update-branch <issue key> before merging its PR`.
+For a cancelled parent, the error is
+`the parent <parent key> of <issue key> is cancelled; this PR needs a landed parent and an updated base before it can be merged`.
+The cancelled-parent text describes prerequisites. It does not offer an executable recovery step for that parent. For a
+landed parent that still requires a base move, the accepted-work landed-parent error applies.
+
+After both locks are held, tasker stores the origin and enters `merging`. It asks the configured forge whether the
+recorded PR is merged. If the PR is already merged, tasker sends no merge request.
+
+Otherwise, tasker requests `forge.mergeMethod` at the stored published SHA, then asks whether the PR merged. The forge
+refuses a different head atomically. A failed query fails the operation. Tasker lands only after a merged result. It
+does not wait for CI or a forge queue. Forge authentication uses `forge.account` independently of the issue tracker
+account.
+
+The completion transaction moves the task to `landed`, clears `merge_origin` and the run marker, and appends `merged`.
+Its data is exactly `{ forge, number, method, expectedHead, requested, from: "merging", to: "landed" }`. `forge` is the
+configured provider id, `number` is the recorded PR number, and `expectedHead` is the published SHA. `requested` is true
+only when this invocation sent a merge request. Tasker keeps the PR number and published SHA.
+
+If the PR remains unmerged, including after queue acceptance, the operation fails with
+`merging failed: PR #<number> is not merged. Retry after the merge completes. CAUTION: tasker abort deletes the PR head branch`.
+A query or merge-request failure preserves its reason after `merging failed: `. If the forge confirms a merge but tasker
+cannot record it, the error is `merging failed: PR #<number> is merged, but tasker cannot record the result: <error>`.
+The task fails from `merging` with its origin preserved. Run `tasker retry <issue key>` after a failure. Its first query
+detects a completed PR and prevents another merge request.
+
+PR success prints these lines for a new request and for an already completed merge:
+
+```text
+merged <issue key>
+landed PR #<number> through <forge>
+state: landed
+```
+
+A crash during either path leaves the run marker and stored origin. Dead-run collection moves the task to `interrupted`.
+Run `tasker resume <issue key>` after an interruption. Recovery returns a PR task to `in_peer_review` and asks the forge
+for its status before it can send another request.
 
 ## `tasker mark-landed`
 
