@@ -139,9 +139,32 @@ These rules hold for each reply to the user:
 - A reply uses no unordered list, because the user cannot name an item of an unordered list in an answer.
 - Each nested list uses letters (a, b, c), for example the choices of a question or the proposed steps.
 
+- Before the session sends a reply, it makes sure that the reply holds no unordered list. It changes each unordered list
+  into a numbered list or into sentences. If the reply gives open questions, the session also makes sure that question 1
+  gives the full details of the bullet that starts "Question 1 of the list".
+
 These rules hold for each list of the decisions that the user must make, and for each reply that gives open questions:
 
 - A reply gives all open questions in one numbered list.
+- Question 1 of the list gives the full details. These are what happened, what the problem is, what each choice does and
+  a recommendation, as the first bullet of [A decision of the user](#a-decision-of-the-user) says. Question 1 also gives
+  the command and the result of each fact, as the bullet that starts "Before a decision of the user" says. For question
+  1, this bullet wins over the words "in short" of the bullet that starts "When the session reminds the user".
+
+  Each later question can be short: the question in one or two sentences, its choices and the recommendation. The other
+  bullets of this list and the bullet that starts "Define each term" still hold for a later question. For a later
+  question, this bullet wins over the words "first explain in the reply what happened, what the problem is, and what
+  each choice does" of [A decision of the user](#a-decision-of-the-user). It also wins over the words "give each item
+  what happened, why it matters and a recommendation" of the bullet that starts "When you list open items or proposed
+  issues". It also wins over the words "The session gives the command and the result" of the bullet that starts "Before
+  a decision of the user". The session still measures each fact of a later question, because the recommendation rests on
+  it.
+
+  The short form of a later question holds only in a reply to the user. It does not hold for an item to the operator or
+  for a handoff file. The reason: the operator gives the questions of all items in one list with its own numbers, and it
+  can answer a question itself. [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) gives the rule and
+  the reason for a handoff file.
+
 - The list holds each question that is still open, also each question of an earlier reply that the user did not answer.
 - Each question has its own number, also when two questions are about the same issue.
 - Do not put a second question inside an item of another question.
@@ -164,6 +187,9 @@ In one case (2026-10-15), a question about the link commands of #117 sat in a su
 The user answered only the scope question. On 2026-10-24, a reply of planner-m14 numbered its answers 3 and 6 by the
 items of the user. Then it gave open questions 1 to 6. It also gave a code block with proposed steps 3 to 6, and the
 user asked "why are 3-6 repeated?".
+
+On 2026-11-07, operator-m16 used unordered lists in many replies. The user said: "remember to list questions in a
+numbered list. And give details for the first one".
 
 ## A question of the user
 

@@ -92,6 +92,10 @@ The operator does these things for the open items:
   list, with the id of its item and the words of the user or the answer of the operator. The choices of a question stay
   a nested list with letters.
 
+  For a later question, the bullet of [The form of a reply](working-with-the-user.md#the-form-of-a-reply) that starts
+  "Question 1 of the list" wins over the words "with its full text" of the first sentence of this bullet. For a request
+  of one item, that bullet does not hold, and each question gives its full details.
+
 - When the operator shows an item to the user, it writes each issue key of the item as a link, as
   [the issue-link rule](working-with-the-user.md#the-issue-link-rule) says. A key inside a code span or a code block
   stays as it is.
