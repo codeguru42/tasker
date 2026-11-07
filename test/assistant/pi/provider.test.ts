@@ -9,6 +9,7 @@ describe("createPiProvider", () => {
       { TASKER_PI_CODING_AGENT_DIR: "rel/x" },
       "TASKER_PI_CODING_AGENT_DIR must be an absolute path, got rel/x",
     ],
+    ["a relative HOME", { HOME: "rel/h" }, "HOME must be an absolute path, got rel/h"],
     ["a missing HOME", {}, "tasker cannot find the agent folder of pi, because HOME is not set"],
   ])("refuses %s before it starts a child", async (_name, env, reason) => {
     const onSpawn = vi.fn();

@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { piChildEnv as fromPiChildEnv } from "../../../src/assistant/pi/child-env.js";
 
@@ -13,9 +12,39 @@ describe("piChildEnv", () => {
     });
   });
 
-  it("resolves a relative agent folder and HOME from the working folder", () => {
-    expect(piChildEnv({ HOME: "home/user" })).toEqual({
-      env: { HOME: "home/user", PI_CODING_AGENT_DIR: resolve("home/user/.pi/agent") },
+  it("refuses a relative HOME when the custom folder is unset", () => {
+    expect(piChildEnv({ HOME: "rel/h" })).toEqual({
+      reason: "HOME must be an absolute path, got rel/h",
+    });
+  });
+
+  it("refuses a relative HOME when the custom folder is blank", () => {
+    expect(piChildEnv({ HOME: "rel/h", TASKER_PI_CODING_AGENT_DIR: " " })).toEqual({
+      reason: "HOME must be an absolute path, got rel/h",
+    });
+  });
+
+  it("uses an absolute custom folder with a relative HOME", () => {
+    expect(piChildEnv({ HOME: "rel/h", TASKER_PI_CODING_AGENT_DIR: "/p" })).toEqual({
+      env: { HOME: "rel/h", PI_CODING_AGENT_DIR: "/p" },
+    });
+  });
+
+  it("refuses a relative custom folder before a relative HOME", () => {
+    expect(piChildEnv({ HOME: "rel/h", TASKER_PI_CODING_AGENT_DIR: "rel/p" })).toEqual({
+      reason: "TASKER_PI_CODING_AGENT_DIR must be an absolute path, got rel/p",
+    });
+  });
+
+  it("uses an absolute HOME when the custom folder is unset", () => {
+    expect(piChildEnv({ HOME: "/h" })).toEqual({
+      env: { HOME: "/h", PI_CODING_AGENT_DIR: "/h/.pi/agent" },
+    });
+  });
+
+  it("reports a missing HOME when it is blank", () => {
+    expect(piChildEnv({ HOME: " " })).toEqual({
+      reason: "tasker cannot find the agent folder of pi, because HOME is not set",
     });
   });
 
