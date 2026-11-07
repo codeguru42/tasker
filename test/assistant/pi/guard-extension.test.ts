@@ -1,11 +1,16 @@
 import * as fs from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { thrownBy } from "../../helpers/errors.js";
 import { useFakePiExtension } from "../../helpers/fake-pi-extension.js";
 import { useTempDir } from "../../helpers/temp.js";
 import type { GuardLimits } from "../../../src/assistant/pi/guard-limits.js";
 import guardExtension from "../../../src/assistant/pi/guard-extension.js";
+
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return { ...actual, readFileSync: vi.fn(actual.readFileSync) };
+});
 
 function validLimits(): GuardLimits {
   return {
@@ -33,7 +38,6 @@ function invokeGuard(args: string[]) {
   const previousArgv = process.argv;
   process.argv = [process.execPath, "pi", ...args];
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     guardExtension(fake.pi);
   } finally {
     process.argv = previousArgv;
@@ -216,11 +220,9 @@ describe("guard extension limits validation", () => {
 
   it("reads the limits file once", () => {
     const path = writeLimits(validLimits());
-    const read = vi.spyOn(fs, "readFileSync");
-    onTestFinished(() => read.mockRestore());
 
     invokeGuard(limitsArgs(path));
 
-    expect(read.mock.calls.filter(([readPath]) => readPath === path)).toHaveLength(1);
+    expect(vi.mocked(fs.readFileSync).mock.calls.filter(([readPath]) => readPath === path)).toHaveLength(1);
   });
 });
