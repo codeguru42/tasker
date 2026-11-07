@@ -17,7 +17,7 @@ const PI_INSTALL_FIX = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
 const PI_AGENT_DIR_FIX = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or unset it.";
 const HOME_FIX = "Set HOME.";
 const SUPERPOWERS_SOURCE = "git:github.com/obra/superpowers";
-const SUPERPOWERS_INSTALL_FIX = `Install superpowers with pi install ${SUPERPOWERS_SOURCE}.`;
+const SUPERPOWERS_INSTALL_FIX = `Run pi install ${SUPERPOWERS_SOURCE}.`;
 const MINIMUM_SUPERPOWERS = [6, 4, 1] as const;
 const ROLES = ["plan", "execute", "review"] as const;
 
