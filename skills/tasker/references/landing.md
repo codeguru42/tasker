@@ -100,17 +100,19 @@ concurrent changes.
 Opens or adopts a pull request (PR) for a task in `pushed`: `tasker open-pr <issue> [--repo <key>]`. A PR asks for
 external review. The repo must have a configured forge. The task must have a branch, worktree and stored base.
 
-Tasker fetches `origin` and reads the branch named by its symbolic `HEAD`. If that default base cannot be resolved, or
-if it differs from the task's stored base, the command stops before it enters `opening_pr`. Correct the task base before
-trying again. This check also refuses a task based on a local or stacked branch.
+Tasker fetches `origin` and resolves its symbolic default branch before it enters `opening_pr`. If the default cannot be
+resolved, or it differs from the stored task base, the command exits with code 1 and leaves the task state and events
+unchanged. The fetch can update or prune clone refs before this refusal. A local or stacked task base also fails this
+check.
 
-After the task enters `opening_pr`, tasker lists open origin PRs for the exact task branch. It adopts a PR whose base
-matches the resolved default base. If open PRs exist only for another base, the command names a PR number, URL and base,
-then fails without creating another PR. If lookup fails, tasker fails the run and does not treat the error as an empty
-list.
+After the task enters `opening_pr`, tasker lists open origin PRs for the exact task branch. A PR on the resolved default
+base takes precedence, even when another open PR uses a different base. Tasker adopts the matching PR and does not edit
+its title or body. If no PR matches and an open PR exists on another base, tasker exits with code 1 and names its
+number, URL and actual base. Correct that PR base and run `tasker retry`.
 
-If no open origin PR exists, tasker creates one with title `<summary> (<issue key>)` and body `Task: <issue key>`, a
-blank line, then the summary. The summary is the stored task title, or the issue key when the title is missing.
+An empty successful lookup means that no open origin PR exists, so tasker creates one with title
+`<summary> (<issue key>)` and body `Task: <issue key>`, a blank line, then the summary. The summary is the stored task
+title, or the issue key when the title is missing. A lookup error is a failure, not an empty result.
 
 On success, tasker prints one of these forms on stdout:
 
@@ -125,9 +127,13 @@ state: in_peer_review
 ```
 
 The PR number, `pr_opened` event and move to `in_peer_review` share one database transaction. The task stores the PR
-number for later use. If tasker creates a PR but cannot record it, it reports the PR number and URL, then moves the task
-to `failed`. A lookup, create or record failure after `opening_pr` also moves the task to `failed` and prints the error
-on stderr. Retry with `tasker retry` to look up and adopt an existing PR.
+number for later use. A later push keeps that number and moves the task to `pushed`. Running `tasker open-pr` then
+adopts the same open PR again without changing its title or body.
+
+A lookup, create, other-base conflict or record failure after `opening_pr` moves the task to `failed`, clears its run
+marker and exits with code 1. The error starts with the exact text `opening_pr failed: <reason>`. If tasker created a PR
+but could not record it, the reason includes the PR number, URL and store error. Run `tasker retry` to look up and adopt
+the existing PR.
 
 The command does not push the branch, start an assistant, wait for CI or merge the PR. `in_peer_review` records that an
 external PR is open. It does not mean that someone approved it or that CI passed.
