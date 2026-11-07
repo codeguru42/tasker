@@ -13,7 +13,6 @@ import type { AssistantDoctorRepo } from "../provider.js";
 import { piChildEnv } from "./child-env.js";
 import { piProgram } from "./program.js";
 
-const PI_NOT_INSTALLED = "pi is not installed or not on PATH";
 const PI_INSTALL_FIX = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
 const PI_AGENT_DIR_FIX = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or unset it.";
 const HOME_FIX = "Set HOME.";
@@ -59,7 +58,7 @@ function piProgramCheck(
       args,
       env: checked.env,
       signal,
-      notInstalled: PI_NOT_INSTALLED,
+      notInstalled: `${program} is not installed or not on PATH`,
       remediation: PI_INSTALL_FIX,
       readChild,
     });
