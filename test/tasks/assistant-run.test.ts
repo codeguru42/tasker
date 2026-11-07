@@ -250,8 +250,8 @@ describe("sandboxReadDenyPaths", () => {
     expect(denyPaths({ HOME: "/h" })).toContain("/h/.codex/auth.json");
   });
 
-  it("takes the credentials of pi from PI_CODING_AGENT_DIR", () => {
-    expect(denyPaths({ HOME: "/h", PI_CODING_AGENT_DIR: "/pi/custom" })).toEqual([
+  it("takes the credentials of pi from TASKER_PI_CODING_AGENT_DIR", () => {
+    expect(denyPaths({ HOME: "/h", TASKER_PI_CODING_AGENT_DIR: "/pi/custom" })).toEqual([
       "/k/id",
       "/h/.ssh",
       "/h/.config/gh",
@@ -267,12 +267,15 @@ describe("sandboxReadDenyPaths", () => {
     ]);
   });
 
-  it("makes a relative PI_CODING_AGENT_DIR absolute, against the cwd of tasker", () => {
-    const paths = denyPaths({ PI_CODING_AGENT_DIR: "rel/pi" });
-    expect(paths).toContain(resolve(process.cwd(), "rel/pi/auth.json"));
-    expect(paths).toContain(resolve(process.cwd(), "rel/pi/mcp-auth.json"));
-    expect(paths).toContain(resolve(process.cwd(), "rel/pi/models.json"));
-    expect(paths).not.toContain("rel/pi/auth.json");
+  it.each(["rel/pi", "~user/x", "file://host/x"])(
+    "gives no pi entries for a non-absolute TASKER_PI_CODING_AGENT_DIR value: %s",
+    (folder) => {
+      expect(denyPaths({ TASKER_PI_CODING_AGENT_DIR: folder }).some((path) => path.includes(".pi/agent/"))).toBe(false);
+    },
+  );
+
+  it("gives no pi entries when TASKER_PI_CODING_AGENT_DIR and HOME are unset", () => {
+    expect(denyPaths({}).some((path) => path.includes(".pi/agent/"))).toBe(false);
   });
 
   it("gives no pi entries when PI_CODING_AGENT_DIR and HOME are unset", () => {
@@ -313,7 +316,7 @@ describe("sandboxReadDenyPaths", () => {
   });
 
   it("gives the pi files after the Codex credentials", () => {
-    expect(denyPaths({ HOME: "/h", CODEX_HOME: "/cx", PI_CODING_AGENT_DIR: "/pi" })).toEqual([
+    expect(denyPaths({ HOME: "/h", CODEX_HOME: "/cx", TASKER_PI_CODING_AGENT_DIR: "/pi" })).toEqual([
       "/k/id",
       "/h/.ssh",
       "/h/.config/gh",
@@ -767,7 +770,7 @@ describe("prepareTaskExecuteRun", () => {
   it("denies each pi credential file to the shell of a claude-code run", async () => {
     const { claude } = await prepareAndStartExecute(
       { claude: { stream: claudeSample("plain") } },
-      { env: (env) => ({ ...env, PI_CODING_AGENT_DIR: "/pi/custom" }) },
+      { env: (env) => ({ ...env, TASKER_PI_CODING_AGENT_DIR: "/pi/custom" }) },
     );
 
     expect(claude.calls()[0].settings).toMatchObject({
