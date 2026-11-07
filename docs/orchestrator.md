@@ -63,8 +63,8 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   change-of-scope comment, the design-gap rule and the quote check.
 - [docs/dev/tasker-commands.md](dev/tasker-commands.md): the plain-form rule, the tool-block rule, the command rules,
   the facts of the installed tasker and the run times.
-- [docs/dev/verify-failures.md](dev/verify-failures.md): the verify-failure rule, the broken-commit steps, the session
-  check, the manual fix and the commit check.
+- [docs/dev/verify-failures.md](dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the broken-commit
+  steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](dev/ci-wait.md): the CI wait and "A failed CI run".
 - [docs/dev/review-findings.md](dev/review-findings.md): "Review findings" and the docs-only update.
 - [docs/dev/land-the-work.md](dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the section rule,

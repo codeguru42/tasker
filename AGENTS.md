@@ -45,8 +45,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   rule, the change-of-scope comment, the design-gap rule and the quote check.
 - [docs/dev/tasker-commands.md](docs/dev/tasker-commands.md): the plain-form rule, the tool-block rule, the command
   rules, the facts of the installed tasker and the run times.
-- [docs/dev/verify-failures.md](docs/dev/verify-failures.md): the verify-failure rule, the broken-commit steps, the
-  session check, the manual fix and the commit check.
+- [docs/dev/verify-failures.md](docs/dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the
+  broken-commit steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the CI wait and "A failed CI run".
 - [docs/dev/review-findings.md](docs/dev/review-findings.md): "Review findings" and the docs-only update.
 - [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the section
