@@ -2,6 +2,7 @@ import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { useTempDir } from "../../helpers/temp.js";
+import type { PiExtension } from "../../../src/assistant/pi/extensions.js";
 import {
   listPiExtensions as listExtensions,
   piExtensionRefusal as refusalFor,
@@ -9,20 +10,20 @@ import {
 } from "../../../src/assistant/pi/extensions.js";
 
 function listPiExtensions(agentDir: string, worktree: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return listExtensions(agentDir, worktree);
 }
 
-function piExtensionRefusal(
-  extensions: Parameters<typeof listPiExtensions>[0] extends never ? never : unknown[],
-  trusted: string[],
-) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+function piExtensionRefusal(extensions: PiExtension[], trusted: string[]) {
   return refusalFor(extensions, trusted);
 }
 
+function listed(agentDir: string, worktree: string): PiExtension[] {
+  const result = listPiExtensions(agentDir, worktree);
+  if (!Array.isArray(result)) throw new Error(result.reason);
+  return result;
+}
+
 function maskExtensionKey(key: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return maskKey(key);
 }
 
@@ -42,13 +43,13 @@ describe("pi extension keys", () => {
       packages: ["pkg", { source: "https://user:secret@example.com/pkg" }],
     });
 
-    const entries = listPiExtensions(agentDir, join(root, "repo"));
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const entries = listed(agentDir, join(root, "repo"));
     expect(entries.map((entry: { key: string }) => entry.key)).toEqual([
       join(agentDir, "extensions", "a"),
       join(agentDir, "extensions", "z.js"),
       "one",
       "builtin:codemode",
+      "pkg",
       "https://user:secret@example.com/pkg",
       "builtin:llama.cpp",
       "builtin:tool-search",
@@ -60,12 +61,13 @@ describe("pi extension keys", () => {
     const agentDir = join(root, "agent");
     mkdirSync(agentDir, { recursive: true });
     writeSettings(agentDir, { extensions: ["-builtin:codemode", "+builtin:codemode", "pkg"] });
-    const entries = listPiExtensions(agentDir, join(root, "repo"));
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const entries = listed(agentDir, join(root, "repo"));
     expect(entries.map((entry: { key: string }) => entry.key)).toContain("builtin:codemode");
     expect(piExtensionRefusal(entries, ["pkg"])).toContain("builtin:codemode");
     expect(piExtensionRefusal(entries, ["pkg-prefix"])).toContain("builtin:codemode");
-    expect(piExtensionRefusal(entries, ["pkg", "builtin:codemode"])).toBeUndefined();
+    expect(
+      piExtensionRefusal(entries, ["pkg", "builtin:codemode", "builtin:llama.cpp", "builtin:tool-search"]),
+    ).toBeUndefined();
   });
 
   it("rejects real paths inside the worktree and masks URL user data", () => {
