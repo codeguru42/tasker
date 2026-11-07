@@ -394,6 +394,19 @@ describe("superpowersCheck", () => {
     });
   });
 
+  it("ignores a package entry when its package file is missing", async () => {
+    const folder = useTempDir("tasker-superpowers-missing-package-file-");
+    const fake = useFakePi([
+      { args: LIST_ARGS, stdout: listOutput("User packages", "git:github.com/obra/superpowers", folder) },
+    ]);
+
+    expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+      status: "error",
+      detail: "pi has no superpowers package",
+      remediation: superpowersInstall,
+    });
+  });
+
   it("ignores a project package even when it has an install path", async () => {
     const folder = useTempDir("tasker-superpowers-project-");
     addSuperpowersPackage(folder, "6.4.1");
@@ -479,7 +492,7 @@ describe("superpowersCheck", () => {
     });
   });
 
-  it("does not match a filtered source", async () => {
+  it("removes the filtered marker from a source", async () => {
     const folder = useTempDir("tasker-superpowers-filtered-");
     addSuperpowersPackage(folder, "6.4.1");
     const fake = useFakePi([
@@ -487,9 +500,8 @@ describe("superpowersCheck", () => {
     ]);
 
     expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
-      status: "error",
-      detail: "pi has no superpowers package",
-      remediation: superpowersInstall,
+      status: "ok",
+      detail: `superpowers 6.4.1 at ${folder}`,
     });
   });
 });
@@ -537,8 +549,8 @@ describe("simpleEnglishCheck", () => {
       await simpleEnglishCheck().run({ HOME: home, TASKER_PI_CODING_AGENT_DIR: relative(process.cwd(), agentDir) }),
     ).toEqual({
       status: "error",
-      detail: `simple-english/SKILL.md is in no skill folder of pi: ${join(home, ".agents", "skills")}, ${join(agentDir, "skills")}`,
-      remediation: `Install the skill simple-english in ${join(agentDir, "skills")}.`,
+      detail: `simple-english/SKILL.md is in no skill folder of pi: ${join(home, ".agents", "skills")}`,
+      remediation: `Install the skill simple-english in ${join(home, ".agents", "skills")}.`,
     });
   });
 

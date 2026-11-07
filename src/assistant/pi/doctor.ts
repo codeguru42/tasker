@@ -1,10 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isSet } from "../../config/path.js";
+import { isSet, relativePathReason } from "../../config/path.js";
 import type { Check, CheckResult } from "../../doctor/check.js";
+import { firstLine } from "../../doctor/first-line.js";
 import { isOlderVersion } from "../../doctor/version-compare.js";
 import { ProgramFileError } from "../../process/resolve-program.js";
 import { timedCheck } from "../../doctor/timed-check.js";
+import { isObject } from "../../object.js";
 import { runProgramCheck } from "../program-check.js";
 import { upstreamOf } from "../models.js";
 import type { AssistantDoctorRepo } from "../provider.js";
@@ -17,17 +19,19 @@ const PI_AGENT_DIR_FIX = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or
 const HOME_FIX = "Set HOME.";
 const SUPERPOWERS_SOURCE = "git:github.com/obra/superpowers";
 const SUPERPOWERS_INSTALL_FIX = `Install superpowers with pi install ${SUPERPOWERS_SOURCE}.`;
-const SUPERPOWERS_UPDATE_FIX = `Update superpowers with pi install ${SUPERPOWERS_SOURCE}.`;
 const MINIMUM_SUPERPOWERS = [6, 4, 1] as const;
 const ROLES = ["plan", "execute", "review"] as const;
 
 function environmentRefusal(
   env: NodeJS.ProcessEnv,
 ): { result: CheckResult; env?: undefined } | { env: NodeJS.ProcessEnv; result?: undefined } {
+  const relativeReason = relativePathReason("TASKER_PI_CODING_AGENT_DIR", env.TASKER_PI_CODING_AGENT_DIR);
+  if (relativeReason !== undefined) {
+    return { result: { status: "error", detail: relativeReason, remediation: PI_AGENT_DIR_FIX } };
+  }
   const piEnv = piChildEnv(env);
   if ("reason" in piEnv) {
-    const relativeReason = piEnv.reason.startsWith("TASKER_PI_CODING_AGENT_DIR") ? PI_AGENT_DIR_FIX : HOME_FIX;
-    return { result: { status: "error", detail: piEnv.reason, remediation: relativeReason } };
+    return { result: { status: "error", detail: piEnv.reason, remediation: HOME_FIX } };
   }
   return { env: piEnv.env };
 }
@@ -64,44 +68,41 @@ function piProgramCheck(
 
 export function piVersionCheck(timeoutMs = 5000): Check {
   return piProgramCheck("pi version", ["--version"], timeoutMs, (child, exitDetail) =>
-    child.code === 0
-      ? { status: "ok", detail: firstVersionLine(child.stdout) }
-      : { status: "error", detail: exitDetail },
+    child.code === 0 ? { status: "ok", detail: firstLine(child.stdout) } : { status: "error", detail: exitDetail },
   );
-}
-
-function firstVersionLine(output: string): string {
-  const line = output.split("\n")[0].replace(/\r$/, "");
-  return line.startsWith("pi ") ? line.slice(3) : line;
-}
-
-interface AuthReply {
-  status?: unknown;
-  provider?: unknown;
-  reason?: unknown;
 }
 
 export function piAuthCheck(upstream: string, timeoutMs = 10_000): Check {
   const args = ["auth", "check", "--provider", upstream, "--json"];
   return piProgramCheck(`pi-auth:${upstream}`, args, timeoutMs, (child, exitDetail) => {
-    let reply: AuthReply;
+    let parsed: unknown;
     try {
-      reply = JSON.parse(child.stdout) as AuthReply;
+      parsed = JSON.parse(child.stdout);
     } catch {
       return { status: "error", detail: exitDetail };
     }
-    if (child.code === 0 && reply.status === "ready" && reply.provider === upstream) {
-      return { status: "ok", detail: `pi has a login for ${upstream}` };
+    if (!isObject(parsed)) return { status: "error", detail: exitDetail };
+    if (child.code === 0 && parsed.status === "ready") {
+      const authType = typeof parsed.authType === "string" ? parsed.authType : "unknown auth type";
+      return { status: "ok", detail: `pi has credentials for ${upstream} (${authType})` };
     }
-    if (reply.reason === "provider_not_found") {
-      return { status: "error", detail: `pi auth check reported provider_not_found for ${upstream}` };
-    }
-    if (reply.reason === "credentials_not_configured") {
+    if (parsed.reason === "provider_not_found") {
       return {
         status: "error",
-        detail: `pi is not logged in for ${upstream}`,
-        remediation: `Run /login in pi and select ${upstream}.`,
+        detail: `pi does not know the provider ${upstream}`,
+        remediation: `Fix the model of each role that names ${upstream}.`,
       };
+    }
+    if (parsed.reason === "credentials_not_configured") {
+      return {
+        status: "error",
+        detail: `pi has no credentials for ${upstream}`,
+        remediation: `Run pi and log in to ${upstream} with /login.`,
+      };
+    }
+    if (typeof parsed.status === "string" && parsed.status !== "ready") {
+      const reason = typeof parsed.reason === "string" ? ` (${parsed.reason})` : "";
+      return { status: "error", detail: `pi cannot use the credentials for ${upstream}: ${parsed.status}${reason}` };
     }
     return { status: "error", detail: exitDetail };
   });
@@ -114,63 +115,49 @@ interface PackageEntry {
 
 function packageEntries(output: string): PackageEntry[] {
   const entries: PackageEntry[] = [];
-  let userPackages = false;
+  let inUserPackages = false;
   let source: string | undefined;
   for (const line of output.split(/\r?\n/)) {
     if (line === "User packages:") {
-      userPackages = true;
-      source = undefined;
+      inUserPackages = true;
       continue;
     }
-    if (line === "Project packages:") {
-      userPackages = false;
-      source = undefined;
-      continue;
-    }
-    const sourceMatch = /^ {2}(\S.*)$/.exec(line);
+    if (!inUserPackages) continue;
+    if (!line.startsWith("  ")) break;
+    const sourceMatch = /^ {2}(?! )(\S.*)$/.exec(line);
     if (sourceMatch) {
-      source = userPackages ? sourceMatch[1] : undefined;
+      source = sourceMatch[1].replace(/ \(filtered\)$/, "");
       continue;
     }
-    const pathMatch = /^ {4}(\S.*)$/.exec(line);
+    const pathMatch = /^ {4}(?! )(\S.*)$/.exec(line);
     if (pathMatch && source !== undefined) {
       entries.push({ source, installPath: pathMatch[1] });
+    }
+    if (pathMatch || !sourceMatch) {
       source = undefined;
     }
   }
   return entries;
 }
 
-function sourceNamesSuperpowers(source: string): boolean {
-  if (source.startsWith("git:")) {
-    const refPath = source
-      .slice("git:".length)
-      .split("#", 1)[0]
-      .replace(/\.git$/, "");
-    return refPath.split("/").at(-1) === "superpowers";
-  }
-  if (source.startsWith("npm:")) {
-    const packageName = source.slice("npm:".length).split("@", 1)[0];
-    return packageName === "superpowers" || packageName.endsWith("/superpowers");
-  }
-  return false;
+interface InstalledSuperpowers extends PackageEntry {
+  version: unknown;
 }
 
-function installedSuperpowers(output: string): { version: string } | undefined {
+function installedSuperpowers(output: string): InstalledSuperpowers | undefined {
   for (const entry of packageEntries(output)) {
-    if (!sourceNamesSuperpowers(entry.source)) continue;
     try {
-      const info = JSON.parse(readFileSync(join(entry.installPath, "package.json"), "utf8")) as { version?: unknown };
-      if (typeof info.version === "string") return { version: info.version };
+      const info: unknown = JSON.parse(readFileSync(join(entry.installPath, "package.json"), "utf8"));
+      if (isObject(info) && info.name === "superpowers") return { ...entry, version: info.version };
     } catch {
-      // A package without an install path or readable package file is not installed.
+      // An unreadable package file does not identify a package.
     }
   }
   return undefined;
 }
 
 function versionParts(version: string): number[] | undefined {
-  const match = /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(version);
+  const match = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
   return match ? match.slice(1, 4).map(Number) : undefined;
 }
 
@@ -179,34 +166,58 @@ export function superpowersCheck(timeoutMs = 5000): Check {
     if (child.code !== 0) return { status: "error", detail: exitDetail };
     const installed = installedSuperpowers(child.stdout);
     if (installed === undefined) {
-      return { status: "error", detail: "superpowers is not installed", remediation: SUPERPOWERS_INSTALL_FIX };
+      return { status: "error", detail: "pi has no superpowers package", remediation: SUPERPOWERS_INSTALL_FIX };
     }
-    const parts = versionParts(installed.version);
-    if (parts === undefined || isOlderVersion(parts, MINIMUM_SUPERPOWERS)) {
+    if (typeof installed.version !== "string") {
       return {
         status: "error",
-        detail: `superpowers ${installed.version} is older than 6.4.1`,
-        remediation: SUPERPOWERS_UPDATE_FIX,
+        detail: `cannot read the version of superpowers in ${join(installed.installPath, "package.json")}`,
       };
     }
-    return { status: "ok", detail: `superpowers ${installed.version} is installed` };
+    const parts = versionParts(installed.version);
+    if (parts === undefined) {
+      return {
+        status: "error",
+        detail: `cannot read the version of superpowers in ${join(installed.installPath, "package.json")}`,
+      };
+    }
+    if (!isOlderVersion(parts, MINIMUM_SUPERPOWERS)) {
+      return { status: "ok", detail: `superpowers ${installed.version} at ${installed.installPath}` };
+    }
+    const local = !/^(?:npm:|git:|github:|http:|https:|ssh:|builtin:)/.test(installed.source);
+    const remediation = local
+      ? `Update the files at ${installed.installPath}.`
+      : `Run pi update --extension ${installed.source}. If ${installed.source} names a ref or a version, run pi install with the source that names none.`;
+    return {
+      status: "error",
+      detail: `superpowers ${installed.version} is older than 6.4.1`,
+      remediation,
+    };
   });
 }
 
 export function simpleEnglishCheck(timeoutMs = 1000): Check {
   return timedCheck({ name: "simple-english:pi", required: true, timeoutMs }, async (env) => {
     const folders: string[] = [];
-    if (isSet(env.HOME)) folders.push(join(env.HOME, ".agents", "skills"));
     const piEnv = piChildEnv(env);
-    if ("env" in piEnv) folders.push(join(piEnv.env.PI_CODING_AGENT_DIR!, "skills"));
-    const found = folders.some((folder) => existsSync(join(folder, "simple-english", "SKILL.md")));
-    return found
-      ? { status: "ok", detail: "simple-english is installed for pi" }
-      : {
-          status: "error",
-          detail: "simple-english is not installed for pi",
-          remediation: "Install simple-english in $HOME/.agents/skills/ or the pi agent folder.",
-        };
+    if ("env" in piEnv && isSet(piEnv.env.PI_CODING_AGENT_DIR)) {
+      folders.push(join(piEnv.env.PI_CODING_AGENT_DIR, "skills"));
+    }
+    if (isSet(env.HOME)) folders.push(join(env.HOME, ".agents", "skills"));
+    if (folders.length === 0) {
+      return { status: "error", detail: "tasker cannot find the skill folders of pi, because HOME is not set" };
+    }
+    const skillPath = folders.map((folder) => join(folder, "simple-english", "SKILL.md")).find(existsSync);
+    if (skillPath !== undefined) return { status: "ok", detail: `simple-english at ${skillPath}` };
+    const lastFolder = folders.at(-1);
+    if (lastFolder === undefined) {
+      return { status: "error", detail: "tasker cannot find the skill folders of pi, because HOME is not set" };
+    }
+    return {
+      status: "error",
+      detail: `simple-english/SKILL.md is in no skill folder of pi: ${folders.join(", ")}`,
+      remediation: `Install the skill simple-english in ${lastFolder}.`,
+    };
   });
 }
 
