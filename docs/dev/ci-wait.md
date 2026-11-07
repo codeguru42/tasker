@@ -130,11 +130,11 @@ priority. [The project board](issues.md#the-project-board) gives the commands of
    and [the failure rule](limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task stays in
    `landed`.
 
-   If `gh issue create` worked, set the priority `P0` on the card of the new issue. First, read the item id of the card:
-   `timeout 90 bash -c 'while :; do id=$(gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq ".items[] | select(.content.type == \"Issue\" and .content.number == <number>) | .id") || exit 2; [ -n "$id" ] && { echo "$id"; exit 0; }; sleep 15; done'`.
+   If `gh issue create` worked, set the priority `P0` on the card of the new issue. First, wait for the card:
+   `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`.
    `<number>` is the number of the new issue, from the URL that `gh issue create` prints. The workflow of the board adds
-   a new issue within a minute. So the command reads the board every 15 seconds for at most 90 seconds. It prints the
-   item id and exits with 0.
+   a new issue within a minute. So the command reads the card every 15 seconds for at most 90 seconds. When a card of
+   the issue has a status, the command exits with 0.
 
    Exit code 124 means that the card did not show, and exit code 2 means that the read failed. After exit code 0, set
    the option `P0` with the set command of [The project board](issues.md#the-project-board). If the read exits with 124
