@@ -78,6 +78,24 @@ orchestrator.
   left out `npm run format:check` with the reason "a todo runs no check of the whole repo", and it cost one more refine.
   In the first refine, give this format-check text, which worked on #577 (2026-11-01) after a refusal: "Each todo runs
   `npm run format`, then `npm run format:check`, with the pass condition exit code 0."
+
+  In the first refine, also give the requests that follow. Ask the plan to remove each sentence that says that a todo
+  runs no check of the whole repo. Also ask it to remove each sentence that says that tasker runs that check after the
+  execute run. If plan v1 holds such a sentence, name it word for word. If a sentence of plan v1 leaves the order of the
+  checks open, ask the plan to remove it. Also ask for this sentence in each todo, right before the commit: "Run
+  `npm run check`, with the pass condition exit code 0."
+
+  On #782 (2026-11-06), refine 1 named the Check rule and asked for the format checks and `npm run check` in a todo.
+  Plan v2 still said that no todo runs a check of the whole repo. Refine 2 gave the same requests with the format-check
+  text of this hint, and asked the plan to remove that sentence. Plan v3 then asked a plan question about the check of
+  the whole repo. Plan v3 also held the sentence "Tasker runs whole-repository verification after execution." in its
+  Tests section.
+
+  Refine 3 answered the plan question with yes and named the Check rule again. It gave the two todo sentences of this
+  hint word for word. It also asked the plan to remove the sentence of the Tests section and the last sentence of the
+  Risks section. That last sentence left the order of the checks open. Plan v4 was clean. No one measured which of these
+  words made plan v4 clean, or whether they work in the first refine.
+
 - In a docs ticket, ask the plan to run `npm run format:check`, not `npx prettier` ([the Check rule](rules.md#check)).
   The plans of #245 and #254 used `npx prettier`. A plan that runs `npm run format` and then `npm run format:check` is
   fine. On #266, plan v1 already used `npm run format`.
