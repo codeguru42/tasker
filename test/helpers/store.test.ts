@@ -915,6 +915,7 @@ describe("failTaskVia", () => {
       expect(store.getTask(task.id)?.state).toBe("failed");
       expect(failedFrom(store, task.id)).toBe("merging");
       expect(transitionFromEvents(store.listEvents(task.id), "merging")).toBe("accepted");
+      expect(store.getTask(task.id)?.mergeOrigin).toBe("accepted");
       expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("merging failed: test");
     });
   });
@@ -940,6 +941,7 @@ describe("pauseTaskVia", () => {
       expect(store.getTask(task.id)?.state).toBe("interrupted");
       expect(transitionFromEvents(store.listEvents(task.id), "interrupted")).toBe("merging");
       expect(transitionFromEvents(store.listEvents(task.id), "merging")).toBe("accepted");
+      expect(store.getTask(task.id)?.mergeOrigin).toBe("accepted");
     });
   });
 

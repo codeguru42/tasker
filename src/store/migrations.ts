@@ -160,4 +160,29 @@ ALTER TABLE sessions ADD COLUMN usage_total_cache_read_input_tokens INTEGER;`,
   `ALTER TABLE tasks ADD COLUMN published_revision TEXT;`,
   `ALTER TABLE tasks ADD COLUMN reopen_start_head TEXT;`,
   `ALTER TABLE tasks ADD COLUMN pr_number INTEGER;`,
+  `ALTER TABLE tasks ADD COLUMN merge_origin TEXT;
+UPDATE tasks
+SET merge_origin = (
+  SELECT CASE
+    WHEN json_extract(events.data, '$.from') IN ('accepted', 'in_peer_review')
+      THEN json_extract(events.data, '$.from')
+    ELSE NULL
+  END
+  FROM events
+  WHERE events.task_id = tasks.id
+    AND events.type = 'transition'
+    AND json_extract(events.data, '$.to') = 'merging'
+  ORDER BY events.id DESC
+  LIMIT 1
+)
+WHERE state = 'merging'
+   OR (state IN ('failed', 'interrupted') AND (
+     SELECT json_extract(events.data, '$.from')
+     FROM events
+     WHERE events.task_id = tasks.id
+       AND events.type = 'transition'
+       AND json_extract(events.data, '$.to') = tasks.state
+     ORDER BY events.id DESC
+     LIMIT 1
+   ) = 'merging');`,
 ];

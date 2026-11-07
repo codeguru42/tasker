@@ -216,6 +216,14 @@ export function transitionTask(store: TaskStore, id: number, to: TaskState, deta
   return isSpawningState(to) ? store.startRun(id, to, check) : store.endRun(id, to, check);
 }
 
+// Starts a merge from its recorded source and writes its marker and transition together.
+export function transitionWithMergeStart(store: TaskStore, id: number, origin: "accepted" | "in_peer_review"): Task {
+  return store.startMerge(id, origin, (current) => ({
+    type: "transition",
+    data: legalMove(current, "merging"),
+  }));
+}
+
 // Starts a reopen run with its recovery head and feedback in one transaction.
 export function transitionWithReopenStart(store: TaskStore, id: number, head: string, feedback: string): Task {
   return store.startReopen(id, head, (current) => ({
@@ -425,7 +433,7 @@ export function transitionWithLanding(
   id: number,
   landing: { revision: string; base: string; pushed: boolean },
 ): Task {
-  return store.endRun(id, "landed", transitionCheck("landed", "landed", landing));
+  return store.completeMerge(id, transitionCheck("landed", "landed", landing));
 }
 
 // Appends the marked_landed event { from, to } and moves the task to landed, in one transaction.

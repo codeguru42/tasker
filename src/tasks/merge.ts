@@ -2,7 +2,7 @@ import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
-import { transitionTask, transitionWithLanding } from "../state/machine.js";
+import { transitionWithLanding, transitionWithMergeStart } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
@@ -52,7 +52,7 @@ async function mergeLocked(store: TaskStore, request: MergeRequest): Promise<Mer
   const baseRevision = vcs.baseRevision(base);
   requireAcceptedTip(task, branch, await vcs.taskRefRevision(ctx, { taskRef: branch }));
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
-    transitionTask(store, task.id, "merging");
+    transitionWithMergeStart(store, task.id, "accepted");
     let revision: string;
     let pushed: boolean;
     try {

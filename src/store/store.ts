@@ -66,6 +66,7 @@ export interface Task {
   acceptedRevision: string | null;
   publishedRevision: string | null;
   prNumber: number | null;
+  mergeOrigin: string | null;
   trackerMarked: boolean;
   parentTaskId: number | null;
   attempt: number;
@@ -107,6 +108,7 @@ export interface TaskChanges {
   acceptedRevision?: string | null;
   publishedRevision?: string | null;
   prNumber?: number | null;
+  mergeOrigin?: string | null;
   trackerMarked?: boolean;
   parentTaskId?: number | null;
 }
@@ -289,6 +291,8 @@ export interface TaskStore extends LockStore {
   // Moves the task into a spawning state and writes its run marker with the pid of this process,
   // in one transaction. The event that check returns is appended in the same transaction.
   startRun(id: number, state: string, check?: (current: Task) => NewEvent | undefined): Task;
+  startMerge(id: number, origin: string, check?: (current: Task) => NewEvent | undefined): Task;
+  completeMerge(id: number, check?: (current: Task) => NewEvent | undefined): Task;
   // Starts a reopen run and stores the head to restore in the same transaction.
   startReopen(id: number, head: string, check?: (current: Task) => NewEvent | undefined): Task;
   // Stores the base tip and clears reopen recovery and branch-update undo data in one transaction.
@@ -518,6 +522,7 @@ interface TaskRow {
   accepted_revision: string | null;
   published_revision: string | null;
   pr_number: number | null;
+  merge_origin: string | null;
   tracker_marked: number;
   parent_task_id: number | null;
   attempt: number;
@@ -567,6 +572,7 @@ function rowToTask(row: TaskRow): Task {
     acceptedRevision: row.accepted_revision,
     publishedRevision: row.published_revision,
     prNumber: row.pr_number,
+    mergeOrigin: row.merge_origin,
     trackerMarked: row.tracker_marked === 1,
     parentTaskId: row.parent_task_id,
     attempt: row.attempt,
@@ -752,7 +758,7 @@ function setUp(db: DatabaseSync) {
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
            synced_base_tip = ?, undo_before_head = ?, undo_after_head = ?, undo_synced_base_tip = ?,
-           reopen_start_head = ?, accepted_revision = ?, published_revision = ?, pr_number = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
+           reopen_start_head = ?, accepted_revision = ?, published_revision = ?, pr_number = ?, merge_origin = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -1046,6 +1052,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.acceptedRevision !== undefined) next.acceptedRevision = changes.acceptedRevision;
     if (changes.publishedRevision !== undefined) next.publishedRevision = changes.publishedRevision;
     if (changes.prNumber !== undefined) next.prNumber = changes.prNumber;
+    if (changes.mergeOrigin !== undefined) next.mergeOrigin = changes.mergeOrigin;
     if (changes.trackerMarked !== undefined) next.trackerMarked = changes.trackerMarked;
     if (changes.parentTaskId !== undefined) next.parentTaskId = changes.parentTaskId;
     const row = statements.updateTask.get(
@@ -1063,6 +1070,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.acceptedRevision,
       next.publishedRevision,
       next.prNumber,
+      next.mergeOrigin,
       next.trackerMarked ? 1 : 0,
       next.parentTaskId,
       at,
@@ -1339,6 +1347,29 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         // A dead process also keeps its marker. A later recovery clears it.
         insertRunMarkerStep(id, state, at);
       });
+    },
+
+    startMerge(id, origin, check) {
+      return writeTask(
+        id,
+        { state: "merging", mergeOrigin: origin },
+        (current) => {
+          if (origin !== "accepted" && origin !== "in_peer_review") {
+            throw new Error(`unsupported merge origin: ${origin}`);
+          }
+          if (current.state !== origin) {
+            throw new Error(`merge origin ${origin} does not match task state ${current.state}`);
+          }
+          return check?.(current);
+        },
+        (at) => {
+          insertRunMarkerStep(id, "merging", at);
+        },
+      );
+    },
+
+    completeMerge(id, check) {
+      return writeTask(id, { state: "landed", mergeOrigin: null }, check, () => endRunStep(id, "landed"));
     },
 
     startReopen(id, head, check) {

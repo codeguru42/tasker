@@ -21,6 +21,8 @@ import { createDataRoot } from "../../src/store/layout.js";
 import {
   TERMINAL_STATES,
   transitionWithPrOpened,
+  transitionWithMergeStart,
+  transitionWithLanding,
   transitionWithPublication,
   transitionWithReopenStart,
 } from "../../src/state/machine.js";
@@ -221,6 +223,7 @@ describe("task store", () => {
       acceptedRevision: null,
       publishedRevision: null,
       prNumber: null,
+      mergeOrigin: null,
       trackerMarked: false,
       parentTaskId: null,
       attempt: 1,
@@ -923,6 +926,45 @@ describe("task store", () => {
       expect(readRunMarker(dbPath, task.id)).toEqual(marker);
     });
 
+    it("rolls back a merge start when its transition event fails", () => {
+      const task = store.createTask({ ...newTask, state: "accepted" });
+      const events = store.listEvents(task.id);
+      withRawDatabase(dbPath, (raw) =>
+        raw.exec(
+          "CREATE TRIGGER reject_merge_start BEFORE INSERT ON events WHEN NEW.type = 'transition' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+        ),
+      );
+
+      expect(thrownBy(() => transitionWithMergeStart(store, task.id, "accepted"))).toMatchObject({
+        message: "event rejected",
+      });
+
+      expect(store.getTask(task.id)).toEqual(task);
+      expect(store.listEvents(task.id)).toEqual(events);
+      expect(readRunMarker(dbPath, task.id)).toBeUndefined();
+    });
+
+    it("rolls back merge completion when its landing event fails", () => {
+      const task = store.createTask({ ...newTask, state: "accepted" });
+      transitionWithMergeStart(store, task.id, "accepted");
+      const merging = store.getTask(task.id)!;
+      const events = store.listEvents(task.id);
+      const marker = readRunMarker(dbPath, task.id);
+      withRawDatabase(dbPath, (raw) =>
+        raw.exec(
+          "CREATE TRIGGER reject_merge_landing BEFORE INSERT ON events WHEN NEW.type = 'landed' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+        ),
+      );
+
+      expect(
+        thrownBy(() => transitionWithLanding(store, task.id, { revision: "r", base: "main", pushed: true })),
+      ).toMatchObject({ message: "event rejected" });
+
+      expect(store.getTask(task.id)).toEqual(merging);
+      expect(store.listEvents(task.id)).toEqual(events);
+      expect(readRunMarker(dbPath, task.id)).toEqual(marker);
+    });
+
     it("adds migration 19 with a null published revision for existing tasks", () => {
       const oldPath = join(dir, "old18.db");
       makeOldDatabase(oldPath, 18);
@@ -938,7 +980,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(21);
+        expect(schemaVersion(raw)).toBe(22);
         expect(raw.prepare("SELECT published_revision FROM tasks WHERE id = 1").get()).toEqual({
           published_revision: null,
         });
@@ -994,7 +1036,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(21);
+        expect(schemaVersion(raw)).toBe(22);
         expect(raw.prepare("SELECT pr_number FROM tasks WHERE id = 1").get()).toEqual({ pr_number: null });
       });
     });
@@ -1054,7 +1096,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(21);
+        expect(schemaVersion(raw)).toBe(22);
         expect(raw.prepare("SELECT reopen_start_head FROM tasks WHERE id = 1").get()).toEqual({
           reopen_start_head: null,
         });
@@ -1259,15 +1301,18 @@ describe("task store", () => {
       const oldPath = join(dir, "old21.db");
       makeOldDatabase(oldPath, 21);
       withRawDatabase(oldPath, (raw) => {
-        raw
-          .prepare("INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES (?, ?, ?, 't', 't')")
-          .run("a/b#1", "tasker", "merging");
-        raw
-          .prepare("INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES (?, ?, ?, 't', 't')")
-          .run("a/b#2", "tasker", "failed");
-        raw
-          .prepare("INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES (?, ?, ?, 't', 't')")
-          .run("a/b#3", "tasker", "accepted");
+        const insertTask = raw.prepare(
+          "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES (?, ?, ?, 't', 't')",
+        );
+        const tasks = [
+          ["a/b#1", "merging"],
+          ["a/b#2", "failed"],
+          ["a/b#3", "failed"],
+          ["a/b#4", "interrupted"],
+          ["a/b#5", "merging"],
+          ["a/b#6", "merging"],
+        ] as const;
+        for (const [issueKey, state] of tasks) insertTask.run(issueKey, "tasker", state);
         raw
           .prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'transition', ?)")
           .run(1, JSON.stringify({ from: "accepted", to: "merging" }));
@@ -1280,12 +1325,33 @@ describe("task store", () => {
         raw
           .prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'transition', ?)")
           .run(2, JSON.stringify({ from: "failed", to: "merging" }));
+        raw
+          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'transition', ?)")
+          .run(3, JSON.stringify({ from: "accepted", to: "merging" }));
+        raw
+          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'transition', ?)")
+          .run(3, JSON.stringify({ from: "merging", to: "failed" }));
+        raw
+          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'transition', ?)")
+          .run(4, JSON.stringify({ from: "in_peer_review", to: "merging" }));
+        raw
+          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'transition', ?)")
+          .run(4, JSON.stringify({ from: "merging", to: "interrupted" }));
+        raw
+          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'transition', ?)")
+          .run(5, JSON.stringify({ from: "accepted", to: "merging" }));
+        raw
+          .prepare("INSERT INTO events (task_id, at, type, data) VALUES (?, 't', 'transition', ?)")
+          .run(5, JSON.stringify({ from: "invalid", to: "merging" }));
       });
 
       withStoreFile(oldPath, () => {}, { now });
       withRawDatabase(oldPath, (raw) => {
         expect(schemaVersion(raw)).toBe(22);
         expect(raw.prepare("SELECT merge_origin FROM tasks ORDER BY id").all()).toEqual([
+          { merge_origin: "in_peer_review" },
+          { merge_origin: null },
+          { merge_origin: "accepted" },
           { merge_origin: "in_peer_review" },
           { merge_origin: null },
           { merge_origin: null },

@@ -87,9 +87,8 @@ describe("mergeTask", () => {
     const { result, io } = await withDataRootStore(accepted.dataRoot, (store) => {
       const failing: TaskStore = {
         ...store,
-        endRun(id, state, check) {
-          if (state === "landed") throw new Error("disk full");
-          return store.endRun(id, state, check);
+        completeMerge() {
+          throw new Error("disk full");
         },
       };
       return callMerge(accepted, failing);

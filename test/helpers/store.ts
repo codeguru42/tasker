@@ -8,6 +8,7 @@ import {
   isTaskState,
   lastTransitionError,
   transitionTask,
+  transitionWithMergeStart,
   transitionWithVerifyRun,
 } from "../../src/state/machine.js";
 import type { TaskState, TransitionDetail } from "../../src/state/machine.js";
@@ -438,6 +439,10 @@ export function failVerifyRun(
 
 // Moves the task to state with no edge check. A spawning state starts a run, so the run marker exists as in a real run.
 export function placeTask(store: TaskStore, taskId: number, state: TaskState): Task {
+  if (state === "merging") {
+    store.updateTask(taskId, { state: "accepted" });
+    return store.startMerge(taskId, "accepted");
+  }
   return isSpawningState(state) ? store.startRun(taskId, state) : store.endRun(taskId, state);
 }
 
@@ -463,6 +468,12 @@ function enterVia(
   detail?: TransitionDetail,
 ): Task {
   placeTask(store, taskId, before);
+  if (origin === "merging") {
+    if (before !== "accepted" && before !== "in_peer_review") {
+      throw new Error(`unsupported merge origin: ${before}`);
+    }
+    return transitionWithMergeStart(store, taskId, before);
+  }
   return transitionTask(store, taskId, origin, detail);
 }
 
