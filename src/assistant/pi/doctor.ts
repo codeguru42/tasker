@@ -131,12 +131,12 @@ function packageEntries(output: string): PackageEntry[] {
     }
     if (!inUserPackages) continue;
     if (!line.startsWith("  ")) break;
-    const sourceMatch = /^ {2}(?! )(\S.*)$/.exec(line);
+    const sourceMatch = /^ {2}(\S.*)$/.exec(line);
     if (sourceMatch) {
       source = sourceMatch[1].replace(/ \(filtered\)$/, "");
       continue;
     }
-    const pathMatch = /^ {4}(?! )(\S.*)$/.exec(line);
+    const pathMatch = /^ {4}(\S.*)$/.exec(line);
     if (pathMatch && source !== undefined) {
       entries.push({ source, installPath: pathMatch[1] });
     }
