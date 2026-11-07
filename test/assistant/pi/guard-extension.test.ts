@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { thrownBy } from "../../helpers/errors.js";
-import { useFakePiExtension } from "../../helpers/fake-pi-extension.js";
+import { useFakePiExtension, type FakePiTool } from "../../helpers/fake-pi-extension.js";
 import { useTempDir } from "../../helpers/temp.js";
 import type { GuardLimits } from "../../../src/assistant/pi/guard-limits.js";
 import guardExtension from "../../../src/assistant/pi/guard-extension.js";
@@ -33,8 +33,8 @@ function writeLimits(value: unknown): string {
   return path;
 }
 
-function invokeGuard(args: string[]) {
-  const fake = useFakePiExtension();
+function invokeGuard(args: string[], tools: FakePiTool[] = []) {
+  const fake = useFakePiExtension(tools);
   const previousArgv = process.argv;
   process.argv = [process.execPath, "pi", ...args];
   try {
@@ -43,6 +43,42 @@ function invokeGuard(args: string[]) {
     process.argv = previousArgv;
   }
   return fake;
+}
+
+function guardedFake(limitsTools: GuardLimits["tools"], tools: FakePiTool[]) {
+  const path = writeLimits({ ...validLimits(), tools: limitsTools });
+  return invokeGuard(limitsArgs(path), tools);
+}
+
+function tool(
+  name: string,
+  path: string,
+  source: string,
+  execute: FakePiTool["execute"] = () => "tool result",
+): FakePiTool {
+  return { name, sourceInfo: { path, source }, execute };
+}
+
+function limitTool(current: FakePiTool): GuardLimits["tools"][number] {
+  return { name: current.name, path: current.sourceInfo.path, source: current.sourceInfo.source };
+}
+
+async function callTool(
+  fake: ReturnType<typeof useFakePiExtension>,
+  name: string,
+  input: unknown = {},
+  cwd = "/work/tree",
+) {
+  return fake.callTool(name, input, { cwd });
+}
+
+function dispatchToolCall(fake: ReturnType<typeof useFakePiExtension>, event: unknown) {
+  return fake.dispatch("tool_call", event, { cwd: "/work/tree" });
+}
+
+function expectBlock(value: unknown, reason: string): void {
+  expect(value).toMatchObject({ block: true, reason: expect.stringContaining(reason) });
+  expect(JSON.stringify(value)).not.toContain("SENSITIVE");
 }
 
 function extensionError(args: string[]): string {
@@ -224,5 +260,118 @@ describe("guard extension limits validation", () => {
     invokeGuard(limitsArgs(path));
 
     expect(vi.mocked(fs.readFileSync).mock.calls.filter(([readPath]) => readPath === path)).toHaveLength(1);
+  });
+});
+
+describe("guard extension tool source checks", () => {
+  it("blocks a call with no tool name", async () => {
+    const current = tool("read", "builtin:read", "builtin");
+    const fake = guardedFake([limitTool(current)], [current]);
+
+    const [result] = await dispatchToolCall(fake, { input: {} });
+
+    expectBlock(result, "tool name");
+  });
+
+  it("blocks a tool that is absent from the limits", async () => {
+    const current = tool("extra", "/tmp/extra.js", "cli");
+    const fake = guardedFake([], [current]);
+
+    const result = await callTool(fake, "extra");
+
+    expectBlock(result, "limits");
+  });
+
+  it("blocks a tool that pi no longer lists", async () => {
+    const current = tool("read", "builtin:read", "builtin");
+    const fake = guardedFake([limitTool(current)], []);
+
+    const result = await callTool(fake, "read");
+
+    expectBlock(result, "available");
+  });
+
+  it("blocks a tool after another extension replaces its source", async () => {
+    const current = tool("read", "builtin:read", "builtin");
+    const replacement = tool("read", "/tmp/SENSITIVE-extension.js", "cli");
+    const fake = guardedFake([limitTool(current)], [current]);
+    fake.pi.registerTool(replacement);
+
+    const result = await callTool(fake, "read");
+
+    expectBlock(result, "source");
+    expect(JSON.stringify(result)).not.toContain(replacement.sourceInfo.path);
+  });
+
+  it.each([
+    ["path", "/tmp/SENSITIVE-path.js"],
+    ["source", "cli"],
+  ])("blocks a %s that differs from the limits", async (field, value) => {
+    const current = tool("read", "builtin:read", "builtin");
+    const mismatch = { ...limitTool(current), [field]: value };
+    const fake = guardedFake([mismatch], [current]);
+
+    const result = await callTool(fake, "read");
+
+    expectBlock(result, "source");
+  });
+
+  it("looks up current tools for every call", async () => {
+    const current = tool("search", "/tmp/search.js", "cli");
+    const fake = guardedFake([limitTool(current)], [current]);
+    const lookup = vi.spyOn(fake.pi, "getAllTools");
+    onTestFinished(() => lookup.mockRestore());
+
+    await callTool(fake, "search");
+    await callTool(fake, "search");
+
+    expect(lookup).toHaveBeenCalledTimes(2);
+  });
+
+  it("checks nested calls through tool_call", async () => {
+    const nestedCalls: string[] = [];
+    const inner = tool("inner", "/tmp/inner.js", "cli", () => "inner result");
+    const outer = tool("outer", "/tmp/outer.js", "cli", (_input, context) => context.executeTool("inner", {}));
+    const fake = guardedFake([limitTool(outer), limitTool(inner)], [outer, inner]);
+    const lookup = vi.spyOn(fake.pi, "getAllTools");
+    onTestFinished(() => lookup.mockRestore());
+    fake.pi.on("tool_call", (event) => {
+      nestedCalls.push((event as { toolName: string }).toolName);
+    });
+
+    const result = await callTool(fake, "outer");
+
+    expect(result).toBe("inner result");
+    expect(nestedCalls).toEqual(["outer", "inner"]);
+    expect(lookup).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["bash", "powershell"])("blocks shell tool %s without testing a command", async (name) => {
+    const shell = tool(name, `builtin:${name}`, "builtin");
+    const fake = guardedFake([limitTool(shell)], [shell]);
+
+    const result = await callTool(fake, name, { command: "SENSITIVE" });
+
+    expectBlock(result, "command test");
+  });
+
+  it("passes a named non-file, non-shell tool", async () => {
+    const search = tool("search", "/tmp/search.js", "cli", () => "search result");
+    const fake = guardedFake([limitTool(search)], [search]);
+
+    expect(await callTool(fake, "search")).toBe("search result");
+  });
+
+  it("returns a fixed safe block when its handler throws", async () => {
+    const current = tool("search", "/tmp/search.js", "cli");
+    const fake = guardedFake([limitTool(current)], [current]);
+    const lookup = vi.spyOn(fake.pi, "getAllTools").mockImplementation(() => {
+      throw new Error("SENSITIVE handler error");
+    });
+    onTestFinished(() => lookup.mockRestore());
+
+    const result = await callTool(fake, "search");
+
+    expectBlock(result, "guard failure");
   });
 });
