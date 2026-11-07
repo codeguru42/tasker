@@ -6,7 +6,7 @@ const PI_THINKING_LEVEL = /:(?:off|minimal|low|medium|high|xhigh|max)$/;
 
 function piModelParts(model: string): { upstream: string; modelId: string } | undefined {
   const slash = model.indexOf("/");
-  const modelId = model.slice(slash + 1).replace(PI_THINKING_LEVEL, "");
+  const modelId = model.slice(slash + 1);
   if (slash < 1 || modelId.length === 0 || /\s/.test(model)) return undefined;
   return { upstream: model.slice(0, slash), modelId };
 }
