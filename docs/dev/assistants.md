@@ -862,8 +862,8 @@ The precheck must find too many extensions, never too few. So each entry of the 
 gets `--no-mcp`, so the list has no default key `builtin:mcp`. The entry `-builtin:<name>` removes a key only where
 [the guard-extension measure](#the-guard-extension) records that it stops that built-in extension.
 
-An agent folder in the worktree holds files that come from the repo, and a run in the execute role can change them. So
-such an agent folder refuses each run.
+An agent folder in the worktree holds files that come from the repo, and a run in the execute role can change them. The
+extension precheck rejects such a folder.
 
 ## The plan answer and the prompts
 

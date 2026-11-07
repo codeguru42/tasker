@@ -189,10 +189,9 @@ or `"high"`).
 The model and the effort of a role apply to new sessions only. A continued session keeps the provider, the model and the
 effort that it started with.
 
-`trustedExtensions` lists the keys of the extensions that a pi run of each role can load. An extension is a code file
-that pi loads into its own process. Before each start, a pi run refuses while pi can load an extension whose key the
-list does not hold. A key matches only an equal string. A continued session trusts the list that it recorded at its
-start, and the current list.
+`trustedExtensions` lists the keys of extensions that a pi session can trust. An extension is a code file that pi loads
+into its own process. A key matches only an equal string. A continued session keeps its recorded list and adds keys from
+the current list. Task runs do not call the pi extension check in this version.
 
 The key of each source:
 

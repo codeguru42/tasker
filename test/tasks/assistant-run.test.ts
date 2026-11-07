@@ -590,7 +590,9 @@ describe("prepareTaskPlanModeRun", () => {
     const makeRun = async (continued: boolean, nullBacked = false) => {
       const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
       const repo = fixture.config.repos[fixture.started.repoKey];
-      const configuredTrust = ["current", "builtin:llama.cpp", "builtin:codemode"];
+      const configuredTrust = continued
+        ? ["current", "builtin:llama.cpp", "current", "builtin:codemode"]
+        : ["current", "builtin:llama.cpp", "builtin:codemode"];
       const piRepo = {
         ...repo,
         assistant: {

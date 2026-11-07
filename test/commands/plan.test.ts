@@ -1,13 +1,13 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
-import { plan } from "../../src/commands/plan.js";
+import { plan, planIssue } from "../../src/commands/plan.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
 import { PLAN_PROMPT, PLAN_PROMPT_NAME } from "../../src/prompts/plan.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
-import { runCommand } from "../helpers/cli.js";
+import { captureIo, runCommand } from "../helpers/cli.js";
 import {
   TEST_SESSION_ID,
   useFakeClaudeOnPath,
@@ -164,14 +164,14 @@ describe("plan", () => {
   it("records the trusted extension list for a new plan session", async () => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     const repoKey = fixture.started.repoKey;
-    const config = fixture.started.config;
-    const repo = config.repos[repoKey];
+    const baseConfig = fixture.started.config;
+    const repo = baseConfig.repos[repoKey];
     const trustedExtensions = ["configured-plan-key"];
-    fixture.started.config = {
-      ...config,
-      repos: { ...config.repos, [repoKey]: { ...repo, assistant: { ...repo.assistant, trustedExtensions } } },
+    const config = {
+      ...baseConfig,
+      repos: { ...baseConfig.repos, [repoKey]: { ...repo, assistant: { ...repo.assistant, trustedExtensions } } },
     };
-    await runPlan();
+    await planIssue(captureIo(), config, KEY, {});
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const session = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(task.id));
     expect(session).toMatchObject({ trustedExtensions });
