@@ -650,6 +650,10 @@ add their items to this list:
 - The forms of a package source, and the rule that `pi update` does not move a configured ref.
 - The rule of the agent folder of `pi`, which `piAgentDir()` copies.
 - The model form `provider/id` and the thinking levels of `--model` and `--thinking`.
+- The built-in extension keys, tool sources, `-builtin:<name>` entries and `--no-mcp` behavior.
+- The source and path of tools loaded with `-e`, including tool replacement.
+- The path forms, Unicode-space handling, read variants and default paths of pi file tools.
+- Project file loading under `--no-approve` and relative imports from a built extension loaded with `-e`.
 
 ### The agent folder
 
@@ -736,6 +740,81 @@ The reasons for the checks:
   `pi install`.
 - `pi` loads a skill of the worktree only with the trust of the project, and each run of tasker refuses that trust. So
   `simple-english:pi` does not look there.
+
+### The guard extension
+
+The guard extension checks each tool call before the tool runs. It defines limits for a pi run. The pi provider does not
+load it yet.
+
+The guard trusts a tool only when its name and source match the limits file and pi still reports that source. It checks
+the current source on each call, including a call made through `ctx.executeTool()`.
+
+The fields and their meanings are in [guard-limits.ts](../../src/assistant/pi/guard-limits.ts). The path checks run in
+the order shown in [guard-extension.ts](../../src/assistant/pi/guard-extension.ts). They resolve real paths through
+[real-path.ts](../../src/real-path.ts). The guard compares supplied paths and real paths. A deny path takes priority
+over an allowed root.
+
+Before valid limits exist, each tool call blocks. An unreadable or invalid limits file stops pi before its first
+provider request. A tool-handler error blocks the call with a fixed reason. A skill-handler error removes all skill
+folders supplied by pi.
+
+`skillRoots` adds read roots only when `readRoots` is a list. The guard drops a skill root on, under or above a
+protected or denied path. Missing roots grant no access. The guard blocks shell tools.
+
+The guard has one limit. A later extension can change a call's input after the guard passes it. Pi loads extensions
+named with `-e` first. The limit applies to each extension that pi loads after the guard.
+
+A task subagent measured facts 1–11 on 2026-11-07 with pi 1.1.0 on Linux. Each run used a new scratch folder, a scratch
+home folder and an empty `PI_CODING_AGENT_DIR`. Each run set `PI_TELEMETRY=0` and used `-p --mode json --offline`, a
+faux provider and no real model.
+
+1. Pi loaded these built-in extensions by default: `builtin:llama.cpp`, `builtin:mcp`, `builtin:codemode` and
+   `builtin:tool-search`. The tools `llama`, `mcp`, `codemode` and `tool_search` used those matching paths. An unknown
+   built-in extension made pi exit with code 1. Those four built-in extension tools reported source `builtin`.
+2. A `-builtin:<name>` entry in the extensions list of the agent configuration stopped each of those built-in extensions
+   from loading.
+3. `--no-mcp` stopped `builtin:mcp`, including when the command also named `-e builtin:mcp`.
+4. Built-in tools reported source `builtin` and paths `builtin:<tool name>`. Tools from a file named with `-e` reported
+   source `cli` and that file's absolute path. No built-in extension tool shared a built-in tool's name. By default, pi
+   enabled `read`, `bash`, `edit` and `write`. The tools `grep`, `find` and `ls` needed `--tools`.
+5. A tool from an extension named with `-e` replaced the built-in `read`. `pi.getAllTools()` reported the source of the
+   replacement tool, and that tool ran.
+6. A factory error made pi exit with code 1 before the faux provider received a request. The error text appeared on
+   stderr, so factory errors must not include limits-file values.
+7. The factory saw `--tasker-guard-limits` and its path as separate `process.argv` entries. The
+   `--tasker-guard-limits=<path>` form was one entry and failed validation. `pi.getFlag()` had no value during factory
+   load; `session_start` had the path.
+8. A `before_agent_start` event gave each skill's `filePath`, `baseDir` and `sourceInfo`.
+9. Pi dropped one leading `@`: `@at.txt` opened `at.txt`, and `@@at.txt` opened `@at.txt`. It expanded `~` and `~/`. It
+   converted lowercase `file://` paths and decoded `%20`. `file://localhost` worked.
+
+   A file URL with another host failed. Pi treated uppercase `FILE://` as a relative path. It changed U+00A0, U+202F and
+   U+3000 to plain spaces. A file with U+00A0 in its name did not open from a path with U+00A0.
+
+   For a missing `read` path, pi tried the narrow no-break space in ` AM.` and ` PM.` matches, NFD, right apostrophes,
+   and NFD with right apostrophes. The case of `AM` or `PM` stayed the same, and pi did not try NFC. `read` without a
+   path failed before the guard event. `grep`, `find` and `ls` without a path used the worktree.
+
+10. The project held `.pi/extensions/probe.ts` and `.pi` configuration entries `../pe.ts`, `+builtin:mcp` and package
+    `../pkg`. The user configuration disabled `builtin:mcp`. Under `--no-approve`, nothing from the project loaded, and
+    `builtin:mcp` stayed off. With `--approve`, the three project extensions ran and `builtin:mcp` loaded. An earlier
+    try used `./pe.ts` and `./pkg`; they resolved against `.pi` and did not load.
+11. A built extension loaded with `-e` imported a relative module from a scratch built-file layout and `node:fs`. Pi ran
+    its factory, and the imported function returned its value. Pi exited with code 0. This measure did not use tasker's
+    actual `dist/` folder.
+
+The reasons for the guard rules:
+
+- An extension can register a tool with the name of a built-in tool, and it can do this during a run. So the guard
+  extension finds the source of the tool again on each call.
+- `--no-mcp` turns off the built-in MCP support of `pi`, so no server of `mcp.json` connects. Such a server can start a
+  process outside the limits of tasker.
+- For a missing `read` path, `pi` opens a variant of the path. So the guard extension tests each variant.
+- `pi` changes a Unicode space to a plain space, so the text of the path and the opened file can disagree.
+- A write through a dangling symbolic link makes a file where the link points.
+- The guard extension reads `process.argv`, because `pi` gives the value of an extension flag only after the load.
+- `/proc` shows the environment, the command line and the open files of the `pi` process and of the other processes of
+  the user. The read deny list cannot name each such path.
 
 ## The plan answer and the prompts
 
