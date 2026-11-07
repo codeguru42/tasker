@@ -34,9 +34,9 @@ The command reads the origin. The origin is the state that the task left when it
   fix turn.
 - `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review
   number, so that the next run starts a new session. Then it runs `tasker review`.
-- `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs
-  `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to
-  `landed`.
+- `merging`, when the stored merge origin is `accepted` or `in_peer_review`: the task returns to that state, and the
+  command runs `tasker merge`. The saved origin selects the recovery path. The first PR query detects a completed merge
+  and prevents another request. See [`tasker merge`](landing.md#tasker-merge) for operation details and results.
 - `accepted`: the task goes to `accepted`, and the command runs `tasker push`.
 - `opening_pr`: the task goes to `pushed`, and the command runs `tasker open-pr`. This row also covers a failed record
   after tasker created the pull request. `tasker open-pr` looks for a matching open pull request and adopts it before it
@@ -62,8 +62,8 @@ move and retry event. The restore ends any unfinished resync and removes uncommi
 including edits made after the failure. If `reopen_start_head` is NULL, resync finished. Retry keeps the branch movement
 and makes no Git call.
 
-The origin of a refine is the state that the task left when the last refine started. The state before the merge is the
-state that the task left when the last merge started.
+The origin of a refine is the state that the task left when the last refine started. Retry reads a merge origin from the
+task's stored `merge_origin` value. It accepts only `accepted` and `in_peer_review`.
 
 The deleted session matters because a run that failed before its first turn recorded a session id that names no
 conversation. A new run must not continue it.
@@ -106,10 +106,14 @@ and the command writes no task data or event. The shared errors of no task, of
 [the wrong state](../SKILL.md#shared-errors) and of the task lock belong to this group:
 
 - The task failed in a state that retry has no step for. The error is
-  `the task of <issue key> failed in <state>; tasker retry has no step for it`. A task that failed in `merging` after a
-  move from a state other than `accepted` gets this error too. So does a task that failed in a pause after a move from
-  each other state, for example `refining`, `merging` or `pushing`. The error then names the pause as the state. A
-  failure from `interrupted` after a push remains refused.
+  `the task of <issue key> failed in <state>; tasker retry has no step for it`. A task that failed in a pause after a
+  move from a state with no retry row gets this error too. The error then names the pause as the state. A failure from
+  `interrupted` after a push remains refused.
+- The task failed in `merging`, but `merge_origin` is NULL or is not `accepted` or `in_peer_review`. Retry makes no move
+  and reports
+  `the task of <issue key> has no valid stored merge origin; use tasker mark-landed to record an external landing`. The
+  hint names [`tasker mark-landed`](landing.md#tasker-mark-landed), but that command accepts only `accepted`, `pushed`
+  or `in_peer_review`, so it cannot run directly from `failed`.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is
   `--resume-execute applies only to a task that failed in verifying`.
 - The repo lock is busy, or Git cannot restore the saved reopen head. Retry leaves the task in `failed` and keeps
@@ -145,9 +149,9 @@ origin in this table:
   `tasker verify`. The verify run starts again from the first command, because a verify run has no session.
 - `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review
   number, and then runs `tasker review`, which starts a new session.
-- `merging`, when the state before the merge is `accepted`: the task goes to `accepted`, and the command runs
-  `tasker merge`. If the work is already on the base branch of `origin`, the merge pushes nothing and moves the task to
-  `landed`.
+- `merging`, when the stored merge origin is `accepted` or `in_peer_review`: the task returns to that state, and the
+  command runs `tasker merge`. The saved origin selects the recovery path. The first PR query detects a completed merge
+  and prevents another request. See [`tasker merge`](landing.md#tasker-merge) for operation details and results.
 - `pushing`: the task goes to `accepted`, and the command runs `tasker push`.
 - `opening_pr`: only a task in `interrupted` can have this origin. The task goes to `pushed`, and the command runs
   `tasker open-pr`. If tasker created the pull request before it stored its number, `tasker open-pr` finds and adopts
@@ -185,6 +189,15 @@ The command makes its move before it runs the next command. If the guard of a st
 task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`. Then
 read the state and the `next:` or `commands:` line that it prints. Run a command that the state allows.
 
+For a merge recovery, resume reads the task's stored `merge_origin` value. It accepts only `accepted` and
+`in_peer_review`. A NULL value or any other value makes resume stop without a move. It reports
+`the task of <issue key> has no valid stored merge origin; use tasker mark-landed to record an external landing`. The
+hint names [`tasker mark-landed`](landing.md#tasker-mark-landed), but that command accepts only `accepted`, `pushed` or
+`in_peer_review`, so it cannot run directly from `interrupted`.
+
+The first PR status check detects a merge that completed before the stop, so resume does not request it again. See
+[`tasker merge`](landing.md#tasker-merge) for the PR merge checks and results.
+
 The command does not wait for the reset time of a quota limit. You decide when to run it. If the run of the task is
 dead, the note of the dead run comes on stderr first. See [A dead run](../SKILL.md#a-dead-run).
 
@@ -197,11 +210,13 @@ of the task lock belong to this group:
   `the task of <issue key> is in <state>; tasker resume needs quota_blocked or interrupted`, then the commands that the
   state accepts. For a task in `awaiting_quota_approval`, run [`tasker approve-credits`](#tasker-approve-credits).
 - The task paused from a state that resume has no step for. The error is
-  `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task that paused in `merging`
-  after a move from a state other than `accepted` gets this error too. A task in `quota_blocked` that paused from
-  `updating_branch` gets this error, and so does an update whose origin has no record. Resume refuses a quota pause from
-  `opening_pr`; only an interrupted task can resume from that state. A refine pause from `accepted` or `pushed` with no
-  recorded feedback has no resume row.
+  `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task in `quota_blocked` that
+  paused from `updating_branch` gets this error, and so does an update whose origin has no record. Resume refuses a
+  quota pause from `opening_pr`; only an interrupted task can resume from that state. A refine pause from `accepted` or
+  `pushed` with no recorded feedback has no resume row.
+- The task paused in `merging`, but `merge_origin` is NULL or is not `accepted` or `in_peer_review`. Resume makes no
+  recovery move and reports
+  `the task of <issue key> has no valid stored merge origin; use tasker mark-landed to record an external landing`.
 - The move into `updating_branch` recorded no start head. The error is
   `the update of <issue key> recorded no start head; tasker resume cannot restore the worktree`. The task stays in
   `interrupted` and the command writes nothing.
