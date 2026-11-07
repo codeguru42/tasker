@@ -132,9 +132,7 @@ function packageEntries(output: string): PackageEntry[] {
     if (pathMatch && source !== undefined) {
       entries.push({ source, installPath: pathMatch[1] });
     }
-    if (pathMatch || !sourceMatch) {
-      source = undefined;
-    }
+    source = undefined;
   }
   return entries;
 }
@@ -167,21 +165,17 @@ export function superpowersCheck(timeoutMs = 5000): Check {
     if (installed === undefined) {
       return { status: "error", detail: "pi has no superpowers package", remediation: SUPERPOWERS_INSTALL_FIX };
     }
-    if (typeof installed.version !== "string") {
-      return {
-        status: "error",
-        detail: `cannot read the version of superpowers in ${join(installed.installPath, "package.json")}`,
-      };
-    }
-    const parts = versionParts(installed.version);
+    const version = installed.version;
+    const parts = typeof version === "string" ? versionParts(version) : undefined;
     if (parts === undefined) {
       return {
         status: "error",
         detail: `cannot read the version of superpowers in ${join(installed.installPath, "package.json")}`,
       };
     }
+    const versionText = String(version);
     if (!isOlderVersion(parts, MINIMUM_SUPERPOWERS)) {
-      return { status: "ok", detail: `superpowers ${installed.version} at ${installed.installPath}` };
+      return { status: "ok", detail: `superpowers ${versionText} at ${installed.installPath}` };
     }
     const local = !/^(?:npm:|git:|github:|http:|https:|ssh:|builtin:)/.test(installed.source);
     const remediation = local
@@ -189,7 +183,7 @@ export function superpowersCheck(timeoutMs = 5000): Check {
       : `Run pi update --extension ${installed.source}. If ${installed.source} names a ref or a version, run pi install with the source that names none.`;
     return {
       status: "error",
-      detail: `superpowers ${installed.version} is older than 6.4.1`,
+      detail: `superpowers ${versionText} is older than 6.4.1`,
       remediation,
     };
   });
@@ -199,8 +193,9 @@ export function simpleEnglishCheck(timeoutMs = 1000): Check {
   return timedCheck({ name: "simple-english:pi", required: true, timeoutMs }, async (env) => {
     const folders: string[] = [];
     const piEnv = piChildEnv(env);
-    if ("env" in piEnv && isSet(piEnv.env.PI_CODING_AGENT_DIR)) {
-      folders.push(join(piEnv.env.PI_CODING_AGENT_DIR, "skills"));
+    if ("env" in piEnv) {
+      const agentDir = piEnv.env.PI_CODING_AGENT_DIR ?? "";
+      folders.push(join(agentDir, "skills"));
     }
     if (isSet(env.HOME)) folders.push(join(env.HOME, ".agents", "skills"));
     if (folders.length === 0) {
@@ -210,10 +205,7 @@ export function simpleEnglishCheck(timeoutMs = 1000): Check {
       .map((folder) => join(folder, "simple-english", "SKILL.md"))
       .find((path) => statSync(path, { throwIfNoEntry: false })?.isFile() === true);
     if (skillPath !== undefined) return { status: "ok", detail: `simple-english at ${skillPath}` };
-    const lastFolder = folders.at(-1);
-    if (lastFolder === undefined) {
-      return { status: "error", detail: "tasker cannot find the skill folders of pi, because HOME is not set" };
-    }
+    const lastFolder = folders.at(-1)!;
     return {
       status: "error",
       detail: `simple-english/SKILL.md is in no skill folder of pi: ${folders.join(", ")}`,

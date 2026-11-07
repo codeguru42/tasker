@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { createPiProvider as fromCreatePiProvider } from "../../../src/assistant/pi/provider.js";
-import type { AssistantProvider } from "../../../src/assistant/provider.js";
+import { createPiProvider } from "../../helpers/pi-provider.js";
 import { TEST_SESSION_ID, runInput } from "../../helpers/fake-claude.js";
-
-function createPiProvider(): AssistantProvider {
-  return fromCreatePiProvider();
-}
 
 describe("createPiProvider", () => {
   it.each([

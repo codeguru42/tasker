@@ -8,10 +8,10 @@ import {
   simpleEnglishCheck as fromSimpleEnglishCheck,
   superpowersCheck as fromSuperpowersCheck,
 } from "../../../src/assistant/pi/doctor.js";
-import { createPiProvider as fromCreatePiProvider } from "../../../src/assistant/pi/provider.js";
-import type { AssistantDoctorRepo, AssistantProvider } from "../../../src/assistant/provider.js";
+import type { AssistantDoctorRepo } from "../../../src/assistant/provider.js";
 import type { Check } from "../../../src/doctor/check.js";
 import { checkSummaries } from "../../helpers/doctor.js";
+import { createPiProvider } from "../../helpers/pi-provider.js";
 import { useFakePi } from "../../helpers/fake-pi.js";
 import { validConfig } from "../../helpers/config.js";
 import { parseConfig } from "../../../src/config/schema.js";
@@ -32,10 +32,6 @@ const NOT_INSTALLED = {
   detail: "pi is not installed or not on PATH",
   remediation: piInstallFix,
 };
-
-function createPiProvider(): AssistantProvider {
-  return fromCreatePiProvider();
-}
 
 function piVersionCheck(timeoutMs?: number): Check {
   return fromPiVersionCheck(timeoutMs);
