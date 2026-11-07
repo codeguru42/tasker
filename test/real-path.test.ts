@@ -89,6 +89,7 @@ describe("isDeniedPath", () => {
   it("matches the base and descendants of a /** denial", () => {
     expect(denied("/work/private", ["/work/private/**"])).toBe(true);
     expect(denied("/work/private/file", ["/work/private/**"])).toBe(true);
+    expect(denied("/work/private/file", ["/**"])).toBe(true);
   });
 
   it("does not match a sibling that shares the denied path prefix", () => {

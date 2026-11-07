@@ -576,6 +576,14 @@ describe("guard extension file path checks", () => {
     expectFileBlock(await fileToolCall(missingRoot.fake, "read", { path: join(cwd, "other.txt") }, cwd));
   });
 
+  it("does not limit reads when readRoots is null", async () => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const outside = useTempDir("tasker-guard-outside-");
+    const { fake } = guardedFileTool("read", cwd, { readRoots: null });
+
+    expect(await fileToolCall(fake, "read", { path: join(outside, "file.txt") }, cwd)).toBe("tool result");
+  });
+
   it.each(["grep", "find"])("blocks %s traversal over a denied child", async (name) => {
     const cwd = useTempDir("tasker-guard-file-");
     const denied = join(cwd, "private.txt");

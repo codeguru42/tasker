@@ -42,7 +42,7 @@ export function realPathWithMissingParents(path: string): string {
 export function isDeniedPath(path: string, denied: readonly string[]): boolean {
   return denied.some((entry) => {
     if (!entry.endsWith("/**")) return path === entry;
-    const base = entry.slice(0, -3);
+    const base = entry.slice(0, -3) || "/";
     return path === base || isInside(path, base);
   });
 }

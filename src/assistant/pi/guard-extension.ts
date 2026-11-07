@@ -1,5 +1,9 @@
-import { readFileSync } from "node:fs";
-import { isAbsolute } from "node:path";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { homedir } from "node:os";
+import { isAbsolute, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { errnoCode } from "../../errno.js";
+import { isDeniedPath, isInside, realPathWithMissingParents } from "../../real-path.js";
 import type { GuardLimits, GuardTool } from "./guard-limits.js";
 
 const LIMITS_FLAG = "--tasker-guard-limits";
@@ -15,6 +19,22 @@ const LIMITS_FIELD_NAMES = [
   "denyWrite",
   "deniedCommands",
 ] as const;
+const FILE_TOOLS = {
+  read: { field: "path", noPath: "Not permitted", kind: "read" },
+  grep: { field: "path", noPath: "The worktree (.)", kind: "read" },
+  find: { field: "path", noPath: "The worktree (.)", kind: "read" },
+  ls: { field: "path", noPath: "The worktree (.)", kind: "read" },
+  edit: { field: "path", noPath: "Not permitted", kind: "write" },
+  write: { field: "path", noPath: "Not permitted", kind: "write" },
+} as const;
+const UNICODE_SPACES = new Set(
+  [
+    0x00a0, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a, 0x202f, 0x205f,
+    0x3000,
+  ].map((codePoint) => String.fromCodePoint(codePoint)),
+);
+const NARROW_NO_BREAK_SPACE = String.fromCodePoint(0x202f);
+const RIGHT_SINGLE_QUOTE = String.fromCodePoint(0x2019);
 
 interface PiApi {
   registerFlag(name: string, description: string): void;
@@ -28,16 +48,17 @@ interface PiTool {
 }
 
 interface PiContext {
-  executeTool(name: string, input: unknown): Promise<unknown>;
+  cwd?: unknown;
+  [key: string]: unknown;
 }
 
 export default function guardExtension(pi: PiApi): void {
   pi.registerFlag("tasker-guard-limits", "Path to the limits file for the tasker pi guard");
   const state: { limits: GuardLimits | undefined } = { limits: undefined };
-  pi.on("tool_call", (event) => {
+  pi.on("tool_call", (event, context) => {
     try {
       if (state.limits === undefined) return blocked("the guard has no validated limits");
-      return checkToolCall(event, pi, state.limits);
+      return checkToolCall(event, context, pi, state.limits);
     } catch {
       return blocked("the pi guard failure blocked the tool call");
     }
@@ -60,7 +81,12 @@ export default function guardExtension(pi: PiApi): void {
   state.limits = validateLimits(value);
 }
 
-function checkToolCall(event: unknown, pi: PiApi, limits: GuardLimits): { block: true; reason: string } | undefined {
+function checkToolCall(
+  event: unknown,
+  context: PiContext,
+  pi: PiApi,
+  limits: GuardLimits,
+): { block: true; reason: string } | undefined {
   if (!isRecord(event) || typeof event.toolName !== "string" || event.toolName.length === 0) {
     return blocked("the guard cannot check a tool call with no tool name");
   }
@@ -75,7 +101,180 @@ function checkToolCall(event: unknown, pi: PiApi, limits: GuardLimits): { block:
   if (event.toolName === "bash" || event.toolName === "powershell") {
     return blocked("the guard has no command test for shell tools");
   }
+  const fileRule = Object.hasOwn(FILE_TOOLS, event.toolName)
+    ? FILE_TOOLS[event.toolName as keyof typeof FILE_TOOLS]
+    : undefined;
+  if (fileRule === undefined) return undefined;
+  return checkFileCall(event, context, limits, fileRule);
+}
+
+interface ResolvedPath {
+  supplied: string;
+  real: string;
+}
+
+function checkFileCall(
+  event: Record<string, unknown>,
+  context: PiContext,
+  limits: GuardLimits,
+  rule: (typeof FILE_TOOLS)[keyof typeof FILE_TOOLS],
+): { block: true; reason: string } | undefined {
+  // 1. Require a path unless grep, find or ls uses the worktree by default.
+  const input = isRecord(event.input) ? event.input : {};
+  const rawPath = input[rule.field];
+  let path: string;
+  if (rawPath === undefined && rule.noPath === "The worktree (.)") path = ".";
+  else if (typeof rawPath === "string") path = rawPath;
+  else return blocked("the file tool needs a string path");
+
+  // 2. Reject spaces that pi changes to plain spaces.
+  if (Array.from(path).some((character) => UNICODE_SPACES.has(character))) {
+    return blocked("the file path contains a Unicode space");
+  }
+
+  // 3. The tool context and limits must name the same real worktree.
+  if (typeof context.cwd !== "string") return blocked("the tool has no valid worktree path");
+  let realCwd: string;
+  let realLimitsCwd: string;
+  try {
+    realCwd = realPathWithMissingParents(context.cwd);
+    realLimitsCwd = realPathWithMissingParents(limits.cwd);
+  } catch (error) {
+    return pathResolutionBlock(error);
+  }
+  if (realCwd !== realLimitsCwd) return blocked("the tool worktree does not match the guard limits");
+
+  // 4. Apply pi path forms, then make the path absolute from the tool worktree.
+  let resolved: string;
+  try {
+    let normalized = path.startsWith("@") ? path.slice(1) : path;
+    if (normalized === "~") normalized = homedir();
+    else if (normalized.startsWith("~/")) normalized = join(homedir(), normalized.slice(2));
+    if (normalized.startsWith("file://")) normalized = fileURLToPath(normalized);
+    resolved = resolve(context.cwd, normalized);
+  } catch {
+    return blocked("the file path form is invalid");
+  }
+
+  // 5. A missing read tries the forms below as well as the path itself.
+  const suppliedCandidates = [resolved];
+  if (rule.kind === "read" && !existsSync(resolved)) {
+    const narrow = resolved.replace(
+      / (AM|PM)\./giu,
+      (_match, meridiem: string) => `${NARROW_NO_BREAK_SPACE}${meridiem}.`,
+    );
+    const nfd = resolved.normalize("NFD");
+    const apostrophe = resolved.replace(/'/gu, RIGHT_SINGLE_QUOTE);
+    const nfdApostrophe = nfd.replace(/'/gu, RIGHT_SINGLE_QUOTE);
+    for (const candidate of [narrow, nfd, apostrophe, nfdApostrophe]) {
+      if (!suppliedCandidates.includes(candidate)) suppliedCandidates.push(candidate);
+    }
+  }
+
+  // 6. Resolve every path component, including links in the middle of a path.
+  const candidates: ResolvedPath[] = [];
+  try {
+    for (const supplied of suppliedCandidates) {
+      candidates.push({ supplied, real: realPathWithMissingParents(supplied) });
+    }
+  } catch (error) {
+    return pathResolutionBlock(error);
+  }
+
+  const denyReadEntries = [...limits.denyRead, "/proc"];
+  if (rule.kind === "read") {
+    // 7. A deny entry wins over a root. Compare both supplied and real path forms.
+    const denied: ResolvedPath[] = [];
+    try {
+      for (const supplied of denyReadEntries) {
+        denied.push({ supplied, real: realPathWithMissingParents(supplied) });
+      }
+    } catch (error) {
+      return pathResolutionBlock(error);
+    }
+    if (
+      candidates.some((candidate) =>
+        denied.some((entry) =>
+          [candidate.supplied, candidate.real].some((candidatePath) =>
+            [entry.supplied, entry.real].some((entryPath) => isInside(candidatePath, entryPath)),
+          ),
+        ),
+      )
+    ) {
+      return blocked("the file path is denied");
+    }
+
+    // 8. grep and find traverse the search tree. ls does not.
+    if (
+      (event.toolName === "grep" || event.toolName === "find") &&
+      candidates.some((candidate) => denied.some((entry) => isInside(entry.real, candidate.real)))
+    ) {
+      return blocked("the search path contains a denied entry");
+    }
+
+    // 9. A read root grants access only when it exists and contains the real candidate.
+    if (limits.readRoots !== null) {
+      let allowedRoots: string[];
+      try {
+        allowedRoots = existingRealRoots([...limits.readRoots, ...limits.skillRoots]);
+      } catch (error) {
+        return pathResolutionBlock(error);
+      }
+      if (candidates.some((candidate) => !allowedRoots.some((root) => isInside(candidate.real, root)))) {
+        return blocked("the file path is outside the read roots");
+      }
+    }
+  } else {
+    // 10. Writes ignore read denials. They still obey write denials and roots.
+    let denied: ResolvedPath[];
+    try {
+      denied = limits.denyWrite.map((supplied) => {
+        const glob = supplied.endsWith("/**");
+        const base = glob ? supplied.slice(0, -3) || "/" : supplied;
+        const realBase = realPathWithMissingParents(base);
+        return { supplied, real: glob ? `${realBase.replace(/\/$/u, "")}/**` : realBase };
+      });
+    } catch (error) {
+      return pathResolutionBlock(error);
+    }
+    if (
+      candidates.some((candidate) =>
+        denied.some((entry) =>
+          [candidate.supplied, candidate.real].some((candidatePath) =>
+            [entry.supplied, entry.real].some((entryPath) => isDeniedPath(candidatePath, [entryPath])),
+          ),
+        ),
+      )
+    ) {
+      return blocked("the file path is denied for writes");
+    }
+    let allowedRoots: string[];
+    try {
+      allowedRoots = existingRealRoots(limits.writeRoots);
+    } catch (error) {
+      return pathResolutionBlock(error);
+    }
+    if (candidates.some((candidate) => !allowedRoots.some((root) => isInside(candidate.real, root)))) {
+      return blocked("the file path is outside the write roots");
+    }
+  }
   return undefined;
+}
+
+function existingRealRoots(roots: readonly string[]): string[] {
+  return roots.flatMap((root) => {
+    try {
+      statSync(root);
+      return [realPathWithMissingParents(root)];
+    } catch (error) {
+      if (errnoCode(error) === "ENOENT") return [];
+      throw error;
+    }
+  });
+}
+
+function pathResolutionBlock(error: unknown): { block: true; reason: string } {
+  return blocked(`the file path could not be resolved (${errnoCode(error) ?? "unknown error"})`);
 }
 
 function blocked(reason: string): { block: true; reason: string } {
