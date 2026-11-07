@@ -35,6 +35,12 @@ describe("expectedStateCommands", () => {
     });
   });
 
+  it("offers merge for a peer-review task without a primary command", () => {
+    expect(expectedStateCommands("in_peer_review")).toEqual({
+      commands: ["merge", "mark-landed", "update-branch", "abort"],
+    });
+  });
+
   it("lists open-pr before landing for a pushed task", () => {
     expect(expectedShowLines("pushed", "codeguru42/tasker#5")).toBe(
       "commands: tasker open-pr codeguru42/tasker#5, tasker mark-landed codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker reopen codeguru42/tasker#5, tasker abort codeguru42/tasker#5\n",

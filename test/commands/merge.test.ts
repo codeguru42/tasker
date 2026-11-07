@@ -7,6 +7,7 @@ import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { commitInWorktree, gitOutput } from "../helpers/git.js";
+import { installMergeForgeGh, openPrTokenAnswer } from "../helpers/forge-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -23,6 +24,7 @@ import {
   seedAcceptedTask,
   unacceptedTipError,
   useAcceptedTask,
+  usePeerReviewTask,
   useAcceptedTaskWithNoRevision,
   useStartFixture,
   useWorkReviewTask,
@@ -46,6 +48,73 @@ const expectRefused = async (fixture: Pick<StartFixture, "dataRoot" | "origin">,
 };
 
 describe("tasker merge", () => {
+  it("prints the exact success lines after a newly requested merge", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const forge = installMergeForgeGh(
+      [
+        openPrTokenAnswer(),
+        { args: ["pr", "merge", "42", "--merge", "--match-head-commit", fixture.publishedRevision] },
+      ],
+      "tasker-merge-requested-",
+    );
+    forge.setMergeStates(["OPEN", "MERGED"]);
+    const result = await runMerge();
+    expect(result).toEqual({ code: 0, out: `merged ${KEY}\nlanded PR #42 through github\nstate: landed\n`, err: "" });
+    expect(forge.calls().filter(({ args }) => args[1] === "merge")).toHaveLength(1);
+    expect(eventsOf(fixture.dataRoot, KEY).at(-1)).toMatchObject({
+      type: "merged",
+      data: { forge: "github", expectedHead: fixture.publishedRevision, requested: true },
+    });
+  });
+
+  it("refuses an atomic expected-head mismatch without landing", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const forge = installMergeForgeGh([openPrTokenAnswer()], "tasker-merge-head-");
+    forge.setMergeState("OPEN");
+    forge.setRemoteHead("changed-remote-head");
+    const result = await runMerge();
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("--match-head-commit does not match the current remote head");
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "failed", mergeOrigin: "in_peer_review" });
+    expect(eventsOf(fixture.dataRoot, KEY).some(({ type }) => type === "merged")).toBe(false);
+    expect(forge.calls().filter(({ args }) => args[1] === "merge")).toHaveLength(1);
+  });
+
+  it("names the independent forge account when authentication fails without printing its token", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const forge = installMergeForgeGh(
+      [{ args: openPrTokenAnswer().args, exitCode: 1, stderr: "fixture authentication refused" }],
+      "tasker-merge-auth-",
+    );
+    const result = await runMerge();
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("forge-team");
+    expect(result.out + result.err).not.toContain("forge-token-private");
+    expect(forge.calls().map(({ args }) => args)).toEqual([openPrTokenAnswer().args]);
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("failed");
+  });
+
+  it("reports an already merged PR and lands the peer-review task", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const forge = installMergeForgeGh([openPrTokenAnswer()], "tasker-merge-command-forge-");
+    forge.setMergeState("MERGED");
+    withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.task.id, { worktreePath: null }));
+
+    const result = await runMerge();
+
+    expect(result.code).toBe(0);
+    expect(result.out).toBe(`merged ${KEY}\nlanded PR #42 through github\nstate: landed\n`);
+    expect(result.err).toBe("");
+    expect(forge.calls().map(({ args }) => args)).toEqual([
+      ["auth", "token", "--user", "forge-team"],
+      ["pr", "view", "42", "--json", "state"],
+    ]);
+    expect(forge.calls().every(({ tokenMatches }) => tokenMatches)).toBe(true);
+    expect(JSON.stringify(forge.calls())).not.toContain("forge-token-private");
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("landed");
+    forge.assertAnswered();
+  });
+
   it("lands the work on the base of origin and moves the task to landed", async () => {
     const accepted = await useAcceptedTask();
     const before = eventsOf(accepted.dataRoot, KEY);

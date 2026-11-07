@@ -5,7 +5,7 @@ import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
 import { copyCloneBranchToOrigin, gitRecorderEnv, recordedPushCalls } from "../helpers/git.js";
 import { useFakeClaudeOnPath } from "../helpers/fake-claude.js";
 import {
-  installOpenPrForgeGh,
+  installMergeForgeGh,
   openPrListArgs,
   openPrTokenAnswer,
   OPEN_PR_FORGE_ACCOUNT as ACCOUNT,
@@ -43,7 +43,7 @@ describe("tasker open-pr", () => {
     const url = "https://github.com/codeguru42/tasker/pull/42";
     withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { prNumber: 42 }));
     const listArgs = openPrListArgs(accepted.task.branch!);
-    const fake = installOpenPrForgeGh(
+    const fake = installMergeForgeGh(
       [
         tokenAnswer,
         {
@@ -84,7 +84,7 @@ describe("tasker open-pr", () => {
     );
     const listArgs = openPrListArgs(accepted.task.branch!);
     const url = "https://github.com/codeguru42/tasker/pull/44";
-    const fake = installOpenPrForgeGh(
+    const fake = installMergeForgeGh(
       [
         tokenAnswer,
         {
@@ -115,7 +115,7 @@ describe("tasker open-pr", () => {
     writeRunMarker(markerPath, accepted.task.id, "opening_pr", process.pid);
     const before = eventsOf(accepted.dataRoot, KEY);
     const marker = readRunMarker(markerPath, accepted.task.id);
-    const fake = installOpenPrForgeGh([], "tasker-open-pr-forge-gh-");
+    const fake = installMergeForgeGh([], "tasker-open-pr-forge-gh-");
 
     const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
 
@@ -130,7 +130,7 @@ describe("tasker open-pr", () => {
   it("moves a dead opening marker to interrupted and gives recovery guidance", async () => {
     const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: ACCOUNT } } });
     seedDeadRun(accepted.dataRoot, accepted.task.id, "opening_pr");
-    const fake = installOpenPrForgeGh([], "tasker-open-pr-forge-gh-");
+    const fake = installMergeForgeGh([], "tasker-open-pr-forge-gh-");
 
     const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
 
@@ -168,7 +168,7 @@ describe("tasker open-pr", () => {
       "--body",
       `Task: ${KEY}\n\n${accepted.task.title ?? KEY}`,
     ];
-    const fake = installOpenPrForgeGh(
+    const fake = installMergeForgeGh(
       [
         tokenAnswer,
         {
@@ -204,7 +204,7 @@ describe("tasker open-pr", () => {
       store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision }),
     );
     const listArgs = openPrListArgs(accepted.task.branch!);
-    const fake = installOpenPrForgeGh(
+    const fake = installMergeForgeGh(
       [tokenAnswer, { args: listArgs, stderr: `lookup failed with ${TOKEN}`, exitCode: 1 }],
       "tasker-open-pr-forge-gh-",
     );

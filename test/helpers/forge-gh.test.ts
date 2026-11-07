@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { thrownBy } from "./errors.js";
 import { runFakeGh } from "./fake-gh.js";
 import {
   forgeGh,
-  installOpenPrForgeGh,
+  installMergeForgeGh,
   openPrListArgs,
   openPrTokenAnswer,
   OPEN_PR_FORGE_ACCOUNT,
@@ -13,10 +14,32 @@ import {
 import { useTempDir } from "./temp.js";
 
 describe("the forge gh helper", () => {
+  it("returns configured merge states in order and repeats the last state", () => {
+    const fake = forgeGh(useTempDir("tasker-forge-states-"), "test-token", []);
+    fake.setMergeStates(["OPEN", "MERGED"]);
+    const args = ["pr", "view", "42", "--json", "state"];
+    for (const state of ["OPEN", "MERGED", "MERGED"]) {
+      expect(runFakeGh(fake.env, args)).toMatchObject({ status: 0, stdout: JSON.stringify({ state }) });
+    }
+    fake.setMergeState("CLOSED");
+    expect(runFakeGh(fake.env, args)).toMatchObject({ status: 0, stdout: JSON.stringify({ state: "CLOSED" }) });
+    expect(thrownBy(() => fake.setMergeStates([]))).toMatchObject({ message: "merge states must not be empty" });
+  });
+  it("installs a merge fixture with shared token and environment setup", () => {
+    const token = openPrTokenAnswer();
+    const fake = installMergeForgeGh([token], "tasker-merge-forge-gh-helper-");
+
+    expect(fake.env.TASKER_GH_BIN).toBeTruthy();
+    expect(process.env.TASKER_GH_BIN).toBe(fake.env.TASKER_GH_BIN);
+    expect(process.env.TASKER_GH_CONFIG_DIR).toBe("/tasker/open-pr-forge-gh-config");
+    expect(process.env.TASKER_HOME).toBe("/tasker/open-pr-forge-home");
+    expect(openPrTokenAnswer()).toEqual(token);
+  });
+
   it("shares the open-pr account, token answer, list arguments, and installer", () => {
     const token = openPrTokenAnswer();
     const args = openPrListArgs("branch-name");
-    const fake = installOpenPrForgeGh([token, { args, stdout: "[]" }], "tasker-open-pr-gh-helper-");
+    const fake = installMergeForgeGh([token, { args, stdout: "[]" }], "tasker-open-pr-gh-helper-");
 
     expect(OPEN_PR_FORGE_ACCOUNT).toBe("forge-team");
     expect(OPEN_PR_FORGE_TOKEN).toBe("forge-token-private");

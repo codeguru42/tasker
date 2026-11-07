@@ -43,7 +43,7 @@ import {
   NO_SESSION_VALUES,
   sessionValuesOf,
   refuseBranchUpdated,
-  rejectPrOpenedEvent,
+  rejectEvent,
   rejectPublishedEvent,
   rejectRetryEvent,
   rejectFinishedEvent,
@@ -67,21 +67,21 @@ import {
   writeRunMarker,
 } from "./store.js";
 
-describe("rejectPrOpenedEvent", () => {
-  it("adds and removes the pr_opened rejection trigger", () => {
+describe("rejectEvent", () => {
+  it.each(["pr_opened", "merged"] as const)("adds and removes the %s rejection trigger", (type) => {
     const { dataRoot } = seedOneTask("opening_pr", "a/b#1", "a/b");
     const dbPath = databasePathOf(dataRoot);
-    const release = rejectPrOpenedEvent(dbPath);
+    const release = rejectEvent(dbPath, type);
 
     expect(
       withRawDatabase(dbPath, (db) =>
-        db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'reject_pr_opened_event'").all(),
+        db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = ?").all(`reject_${type}_event`),
       ),
-    ).toEqual([{ name: "reject_pr_opened_event" }]);
+    ).toEqual([{ name: `reject_${type}_event` }]);
     release();
     expect(
       withRawDatabase(dbPath, (db) =>
-        db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = 'reject_pr_opened_event'").all(),
+        db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name = ?").all(`reject_${type}_event`),
       ),
     ).toEqual([]);
   });

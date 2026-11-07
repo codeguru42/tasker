@@ -19,6 +19,7 @@ describe("forgeStub", () => {
       created: [{ cwd: "/work", head: "task-branch", base: "main", title: "Title", body: "Body" }],
       ci: [],
       merged: [],
+      queried: [],
     });
   });
 
@@ -45,5 +46,23 @@ describe("forgeStub", () => {
       ci: [{ sha: "head-sha", cwd: "/work" }],
       merged: [{ number: 42, method: "squash", headSha: "head-sha", cwd: "/work" }],
     });
+  });
+
+  it("records merge status queries and can reject queries and merge requests", async () => {
+    const fake = forgeStub({ mergedStatuses: [false, true] });
+
+    await expect(fake.provider.isPrMerged(42, "/work", {})).resolves.toBe(false);
+    await expect(fake.provider.isPrMerged(42, "/work", {})).resolves.toBe(true);
+    fake.failQuery(new Error("query refused"));
+    await expect(fake.provider.isPrMerged(42, "/work", {})).rejects.toThrow("query refused");
+    fake.failMerge(new Error("merge refused"));
+    await expect(fake.provider.mergePr(42, "merge", "head-sha", "/work", {})).rejects.toThrow("merge refused");
+
+    expect(fake.calls.queried).toEqual([
+      { number: 42, cwd: "/work" },
+      { number: 42, cwd: "/work" },
+      { number: 42, cwd: "/work" },
+    ]);
+    expect(fake.calls.merged).toEqual([{ number: 42, method: "merge", headSha: "head-sha", cwd: "/work" }]);
   });
 });

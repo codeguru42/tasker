@@ -27,7 +27,7 @@ const ACCEPTED: Record<TaskCommand, readonly string[]> = {
   review: ["awaiting_work_review"],
   "dismiss-review": ["reviewed"],
   accept: ["awaiting_work_review"],
-  merge: ["accepted"],
+  merge: ["accepted", "in_peer_review"],
   "open-pr": ["pushed"],
   push: ["accepted"],
   "mark-landed": ["accepted", "pushed", "in_peer_review"],
@@ -69,6 +69,13 @@ describe("stateCommands", () => {
     expect(stateCommands("accepted")).toEqual({
       commands: ["merge", "push", "mark-landed", "update-branch", "reopen", "abort"],
     });
+  });
+
+  it("offers merge from peer review without a primary command", () => {
+    expect(stateCommands("in_peer_review")).toEqual({
+      commands: ["merge", "mark-landed", "update-branch", "abort"],
+    });
+    expect(acceptsState("merge", "in_peer_review")).toBe(true);
   });
 
   it("offers reopen beside landing commands for accepted and pushed tasks", () => {
@@ -149,6 +156,12 @@ describe("showLines", () => {
     ]);
   });
 
+  it("shows merge alongside landing and branch choices in peer review", () => {
+    expect(showLines("in_peer_review", key)).toEqual([
+      "commands: tasker merge codeguru42/tasker#5, tasker mark-landed codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+    ]);
+  });
+
   it("gives the abort line for a state that only aborts", () => {
     expect(showLines("executing", key)).toEqual(["commands: tasker abort codeguru42/tasker#5"]);
   });
@@ -189,6 +202,12 @@ describe("errorSentence", () => {
   it("gives the commands for a state with no primary command", () => {
     expect(errorSentence("awaiting_plan_review", key)).toBe(
       "commands: tasker refine codeguru42/tasker#5, tasker approve codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+    );
+  });
+
+  it("includes merge in peer-review wrong-state choices", () => {
+    expect(errorSentence("in_peer_review", key)).toBe(
+      "commands: tasker merge codeguru42/tasker#5, tasker mark-landed codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
     );
   });
 

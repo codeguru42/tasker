@@ -51,6 +51,7 @@ import {
   taskWorkspaceState,
   TO_WORK_REVIEW,
   useAcceptedTask,
+  usePeerReviewTask,
   useAcceptedTaskWithNoRevision,
   useAssistantRunFixture,
   useExecuteFixture,
@@ -714,6 +715,22 @@ describe("useAcceptedTaskWithNoRevision", () => {
     expect(work.task.state).toBe("accepted");
     expect(latestTaskOf(work.dataRoot, work.key).state).toBe("accepted");
     expect(acceptedRevisionOf(work.dataRoot, work.key)).toBeNull();
+  });
+});
+
+describe("usePeerReviewTask", () => {
+  it("records the PR number and published revision in peer review", async () => {
+    const peerReview = await usePeerReviewTask();
+
+    expect(peerReview.task.state).toBe("in_peer_review");
+    expect(peerReview.task.prNumber).toBe(peerReview.prNumber);
+    expect(peerReview.task.publishedRevision).toBe(peerReview.publishedRevision);
+    expect(latestTaskOf(peerReview.dataRoot, peerReview.key)).toMatchObject({
+      state: "in_peer_review",
+      prNumber: peerReview.prNumber,
+      publishedRevision: peerReview.publishedRevision,
+    });
+    expect(eventsOf(peerReview.dataRoot, peerReview.key).some((event) => event.type === "accepted")).toBe(true);
   });
 });
 

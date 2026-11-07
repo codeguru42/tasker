@@ -51,6 +51,7 @@ import {
   withRawDatabase,
   rejectPublishedEvent,
   rejectPrOpenedEvent,
+  rejectEvent,
   withStoreFile,
   writeRunMarker,
 } from "../helpers/store.js";
@@ -924,6 +925,38 @@ describe("task store", () => {
       expect(store.getTask(task.id)).toEqual(task);
       expect(store.listEvents(task.id)).toEqual(events);
       expect(readRunMarker(dbPath, task.id)).toEqual(marker);
+    });
+
+    it("rolls back the PR completion state, origin, event and marker together", () => {
+      const task = store.createTask({ ...newTask, state: "in_peer_review" });
+      transitionWithMergeStart(store, task.id, "in_peer_review");
+      const before = store.getTask(task.id);
+      const events = store.listEvents(task.id);
+      const marker = readRunMarker(dbPath, task.id);
+      const release = rejectEvent(dbPath, "merged");
+      try {
+        expect(
+          thrownBy(() =>
+            store.completeMerge(task.id, () => ({
+              type: "merged",
+              data: {
+                forge: "github",
+                number: 42,
+                method: "merge",
+                expectedHead: "head",
+                requested: true,
+                from: "merging",
+                to: "landed",
+              },
+            })),
+          ),
+        ).toMatchObject({ message: "event rejected" });
+        expect(store.getTask(task.id)).toEqual(before);
+        expect(store.listEvents(task.id)).toEqual(events);
+        expect(readRunMarker(dbPath, task.id)).toEqual(marker);
+      } finally {
+        release();
+      }
     });
 
     it("rolls back a merge start when its transition event fails", () => {

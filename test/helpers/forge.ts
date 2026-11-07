@@ -11,6 +11,7 @@ export interface ForgeCalls {
   created: CreatePrInput[];
   ci: { sha: string; cwd: string }[];
   merged: { number: number; method: MergeMethod; headSha: string; cwd: string }[];
+  queried: { number: number; cwd: string }[];
 }
 
 export interface ForgeStub {
@@ -18,6 +19,8 @@ export interface ForgeStub {
   calls: ForgeCalls;
   failList(error: Error): void;
   failCreate(error: Error): void;
+  failQuery(error: Error): void;
+  failMerge(error: Error): void;
 }
 
 export function forgeStub(
@@ -26,11 +29,15 @@ export function forgeStub(
     account?: string;
     openPrs?: OpenPullRequest[];
     createdPr?: PullRequest;
+    mergedStatuses?: boolean[];
   } = {},
 ): ForgeStub {
-  const calls: ForgeCalls = { listed: [], created: [], ci: [], merged: [] };
+  const calls: ForgeCalls = { listed: [], created: [], ci: [], merged: [], queried: [] };
   let listError: Error | undefined;
   let createError: Error | undefined;
+  let queryError: Error | undefined;
+  let mergeError: Error | undefined;
+  const statuses = [...(options.mergedStatuses ?? [])];
   const provider: ForgeProvider = {
     id: options.id ?? "test-forge",
     account: options.account ?? "test-account",
@@ -38,8 +45,10 @@ export function forgeStub(
       calls.ci.push({ sha, cwd });
       return "pending";
     },
-    async isPrMerged() {
-      return false;
+    async isPrMerged(number, cwd) {
+      calls.queried.push({ number, cwd });
+      if (queryError !== undefined) throw queryError;
+      return statuses.shift() ?? false;
     },
     async listOpenPrs(target) {
       calls.listed.push({ cwd: target.cwd, head: target.head });
@@ -53,6 +62,7 @@ export function forgeStub(
     },
     async mergePr(number, method, headSha, cwd) {
       calls.merged.push({ number, method, headSha, cwd });
+      if (mergeError !== undefined) throw mergeError;
     },
   };
   return {
@@ -63,6 +73,12 @@ export function forgeStub(
     },
     failCreate(error) {
       createError = error;
+    },
+    failQuery(error) {
+      queryError = error;
+    },
+    failMerge(error) {
+      mergeError = error;
     },
   };
 }

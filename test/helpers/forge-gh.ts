@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { shellQuote } from "../../src/shell-quote.js";
 import { useProcessEnv, useTempDir } from "./temp.js";
@@ -25,6 +26,7 @@ export interface ForgeGh {
   assertAnswered(): void;
   setRemoteHead(head: string): void;
   setMergeState(state: string): void;
+  setMergeStates(states: readonly string[]): void;
 }
 
 export const OPEN_PR_FORGE_ACCOUNT = "forge-team";
@@ -53,6 +55,14 @@ export function openPrListArgs(head: string): string[] {
 }
 
 export function installOpenPrForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
+  return installForgeGh(answers, prefix);
+}
+
+export function installMergeForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
+  return installForgeGh(answers, prefix);
+}
+
+function installForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
   const fake = forgeGh(useTempDir(prefix), OPEN_PR_FORGE_TOKEN, answers);
   useProcessEnv({
     TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
@@ -74,6 +84,8 @@ export function forgeGh(
   const safeEnvNames = envNames.filter((name) => name !== "GH_TOKEN");
   const currentAnswers = [...answers];
   let remoteHead: string | undefined;
+  let mergeStates: readonly string[] | undefined;
+  const stateIndexPath = join(dir, "state-index");
   const encodedToken = Buffer.from(token).toString("base64");
   const decodedToken = `$(printf '%s' ${shellQuote(encodedToken)} | ${shellQuote(realCommandPath("base64"))} -d)`;
   const tokenMatch = `"$(if [ "\${GH_TOKEN-}" = "${decodedToken}" ]; then printf set:true; else printf set:false; fi)"`;
@@ -86,27 +98,46 @@ export function forgeGh(
       ...(stderr ? { stderrBase64: Buffer.from(stderr).toString("base64") } : { stderr: "" }),
     }));
     const script = fakeAnswerScript("gh", logPath, encodedAnswers, extra);
-    if (remoteHead === undefined) {
-      writeFakeCommand(binDir, "gh", script);
-      return;
-    }
-    const guard = [
-      'if [ "$1" = "pr" ] && [ "$2" = "merge" ]; then',
-      "  has_match_head=0",
-      "  match_head=",
-      "  previous_arg=",
-      "  for arg do",
-      '    if [ "$previous_arg" = "--match-head-commit" ]; then has_match_head=1; match_head="$arg"; break; fi',
-      '    previous_arg="$arg"',
-      "  done",
-      `  if [ "$has_match_head" = "1" ] && [ "$match_head" != ${shellQuote(remoteHead)} ]; then`,
-      "    printf '%s\\n' 'fake gh: --match-head-commit does not match the current remote head' >&2",
-      "    exit 1",
-      "  fi",
-      "fi",
-    ].join("\n");
+    const stateScript =
+      mergeStates === undefined
+        ? ""
+        : [
+            'if [ "$1" = "pr" ] && [ "$2" = "view" ] && [ "$3" = "42" ] && [ "$4" = "--json" ] && [ "$5" = "state" ]; then',
+            `  read -r state_index < ${shellQuote(stateIndexPath)}`,
+            '  case "$state_index" in',
+            ...mergeStates.map(
+              (state, index) => `    ${index}) printf '%s' ${shellQuote(JSON.stringify({ state }))} ;;`,
+            ),
+            `    *) printf '%s' ${shellQuote(JSON.stringify({ state: mergeStates.at(-1) }))} ;;`,
+            "  esac",
+            `  printf '%s\n' "$((state_index + 1))" > ${shellQuote(stateIndexPath)}`,
+            "  exit 0",
+            "fi",
+          ].join("\n");
+    const guard =
+      remoteHead === undefined
+        ? ""
+        : [
+            'if [ "$1" = "pr" ] && [ "$2" = "merge" ]; then',
+            "  has_match_head=0",
+            "  match_head=",
+            "  previous_arg=",
+            "  for arg do",
+            '    if [ "$previous_arg" = "--match-head-commit" ]; then has_match_head=1; match_head="$arg"; break; fi',
+            '    previous_arg="$arg"',
+            "  done",
+            `  if [ "$has_match_head" = "1" ] && [ "$match_head" != ${shellQuote(remoteHead)} ]; then`,
+            "    printf '%s\\n' 'fake gh: --match-head-commit does not match the current remote head' >&2",
+            "    exit 1",
+            "  fi",
+            "fi",
+          ].join("\n");
     const logLineEnd = script.indexOf(logLine(logPath, extra)) + logLine(logPath, extra).length;
-    writeFakeCommand(binDir, "gh", `${script.slice(0, logLineEnd)}\n${guard}${script.slice(logLineEnd)}`);
+    writeFakeCommand(
+      binDir,
+      "gh",
+      `${script.slice(0, logLineEnd)}\n${stateScript}\n${guard}${script.slice(logLineEnd)}`,
+    );
   };
   const setAnswer = (args: readonly string[], stdout: string) => {
     const index = currentAnswers.findIndex((answer) => answer.args.join("\0") === args.join("\0"));
@@ -131,6 +162,15 @@ export function forgeGh(
       remoteHead = head;
       setAnswer(["pr", "view", "42", "--json", "headRefOid"], head);
     },
-    setMergeState: (state) => setAnswer(["pr", "view", "42", "--json", "state"], JSON.stringify({ state })),
+    setMergeState: (state) => {
+      mergeStates = undefined;
+      setAnswer(["pr", "view", "42", "--json", "state"], JSON.stringify({ state }));
+    },
+    setMergeStates: (states) => {
+      if (states.length === 0) throw new Error("merge states must not be empty");
+      mergeStates = [...states];
+      writeFileSync(stateIndexPath, "0\n");
+      write();
+    },
   };
 }

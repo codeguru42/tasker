@@ -8,6 +8,7 @@ import { captureIo, runCommand } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
 import { gitBeforeCommandEnv } from "../helpers/git.js";
+import { forgeStub } from "../helpers/forge.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
@@ -23,25 +24,89 @@ import {
   taskRefOf,
   unacceptedTipError,
   useAcceptedTask,
+  usePeerReviewTask,
   type AcceptedTask,
+  type PeerReviewTask,
 } from "../helpers/task-fixtures.js";
 import { useTempDir } from "../helpers/temp.js";
 
 // Calls mergeTask for the task of the fixture with a store, and gives the result and the io.
-const callMerge = async (fixture: AcceptedTask, store: TaskStore, waitMs = 300, env = process.env) => {
+const callMerge = async (
+  fixture: AcceptedTask | PeerReviewTask,
+  store: TaskStore,
+  waitMs = 300,
+  env = process.env,
+  forge?: ReturnType<typeof forgeStub>,
+) => {
   const io = captureIo();
-  const result = await mergeTask(store, {
+  const request = {
     config: fixture.config,
     ref: taskRefOf(fixture),
     taskId: fixture.task.id,
     env,
     io,
     repoLockWaitMs: waitMs,
-  });
+    forge: forge?.provider,
+  };
+  const result = await mergeTask(store, request);
   return { result, io };
 };
 
 describe("mergeTask", () => {
+  it("requests the configured PR merge at the published head and records completion", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const fake = forgeStub({ mergedStatuses: [false, true] });
+    withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.task.id, { worktreePath: null }));
+    const events = eventsOf(fixture.dataRoot, fixture.key);
+
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) =>
+      callMerge(fixture, store, 300, fixture.env, fake),
+    );
+
+    expect(result).not.toEqual({ exitCode: 1 });
+    expect(io.out).toEqual([]);
+    expect(io.err).toEqual([]);
+    expect(fake.calls.queried).toEqual([
+      { number: fixture.prNumber, cwd: fixture.clone },
+      { number: fixture.prNumber, cwd: fixture.clone },
+    ]);
+    expect(fake.calls.merged).toEqual([
+      { number: fixture.prNumber, method: "merge", headSha: fixture.publishedRevision, cwd: fixture.clone },
+    ]);
+    expect(latestTaskOf(fixture.dataRoot, fixture.key)).toMatchObject({ state: "landed", mergeOrigin: null });
+    expect(eventsOf(fixture.dataRoot, fixture.key).slice(events.length).at(-1)).toMatchObject({
+      type: "merged",
+      data: {
+        forge: "github",
+        number: fixture.prNumber,
+        method: "merge",
+        expectedHead: fixture.publishedRevision,
+        requested: true,
+        from: "merging",
+        to: "landed",
+      },
+    });
+    expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
+  });
+
+  it("uses the exact external-landing guidance when both PR fields are absent", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const fake = forgeStub();
+    withDataRootStore(fixture.dataRoot, (store) =>
+      store.updateTask(fixture.task.id, { prNumber: null, publishedRevision: null }),
+    );
+    const before = eventsOf(fixture.dataRoot, fixture.key);
+    const error = await failureOf(
+      withDataRootStore(fixture.dataRoot, (store) => callMerge(fixture, store, 300, fixture.env, fake)),
+      Error,
+    );
+    expect(error.message).toBe(
+      `cannot merge ${fixture.key}: recorded PR number and published revision are required. If the work merged externally, run tasker mark-landed ${fixture.key}`,
+    );
+    expect(eventsOf(fixture.dataRoot, fixture.key)).toEqual(before);
+    expect(fake.calls.queried).toEqual([]);
+  });
+
   it("keeps the trunk landing result and clears its stored origin", async () => {
     const accepted = await useAcceptedTask();
 

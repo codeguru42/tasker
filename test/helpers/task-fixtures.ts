@@ -800,6 +800,22 @@ export async function useAcceptedTask(options?: Parameters<typeof useWorkReviewT
   return { ...work, task: latestTaskOf(work.dataRoot, work.key), revision };
 }
 
+export interface PeerReviewTask extends WorkReviewTask {
+  prNumber: number;
+  publishedRevision: string;
+}
+
+// Runs useAcceptedTask(options), then records the PR and its published head for merge-path tests.
+export async function usePeerReviewTask(options?: Parameters<typeof useWorkReviewTask>[0]): Promise<PeerReviewTask> {
+  const accepted = await useAcceptedTask(options);
+  const prNumber = 42;
+  const publishedRevision = accepted.revision;
+  withDataRootStore(accepted.dataRoot, (store) =>
+    store.updateTask(accepted.task.id, { state: "in_peer_review", prNumber, publishedRevision }),
+  );
+  return { ...accepted, task: latestTaskOf(accepted.dataRoot, accepted.key), prNumber, publishedRevision };
+}
+
 // Runs useWorkReviewTask(options), then places the task in accepted with placeTask(), so that the task has no accepted
 // revision. Call it inside a test.
 export async function useAcceptedTaskWithNoRevision(

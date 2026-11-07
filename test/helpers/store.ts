@@ -70,9 +70,9 @@ export function refuseBranchUpdated(dataRoot: string): void {
   );
 }
 
-function rejectEvent(
+export function rejectEvent(
   dbPath: string,
-  type: "published" | "finished" | "marked_landed" | "retry" | "pr_opened",
+  type: "published" | "finished" | "marked_landed" | "retry" | "pr_opened" | "merged",
 ): () => void {
   const trigger = `reject_${type}_event`;
   withRawDatabase(dbPath, (db) =>
