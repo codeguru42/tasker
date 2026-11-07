@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { relativePathReason as fromRelativePathReason, resolveConfigPath } from "../../src/config/path.js";
 
 function relativePathReason(name: string, value: string | undefined): string | undefined {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fromRelativePathReason(name, value);
 }
 

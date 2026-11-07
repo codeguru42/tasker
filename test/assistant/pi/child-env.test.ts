@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { piChildEnv as fromPiChildEnv } from "../../../src/assistant/pi/child-env.js";
 
 function piChildEnv(env: NodeJS.ProcessEnv) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return fromPiChildEnv(env);
 }
 
@@ -14,19 +13,13 @@ describe("piChildEnv", () => {
     });
   });
 
-  it("resolves a relative agent folder from an absolute HOME", () => {
-    expect(piChildEnv({ HOME: "/home/user", TASKER_PI_CODING_AGENT_DIR: "rel/x" })).toEqual({
-      env: { HOME: "/home/user", PI_CODING_AGENT_DIR: "/home/user/rel/x" },
-    });
-  });
-
   it("resolves a relative agent folder and HOME from the working folder", () => {
-    expect(piChildEnv({ HOME: "home/user", TASKER_PI_CODING_AGENT_DIR: "rel/x" })).toEqual({
-      env: { HOME: "home/user", PI_CODING_AGENT_DIR: resolve("home/user", "rel/x") },
+    expect(piChildEnv({ HOME: "home/user" })).toEqual({
+      env: { HOME: "home/user", PI_CODING_AGENT_DIR: resolve("home/user/.pi/agent") },
     });
   });
 
-  it.each(["~/x", "file:///x"])("rejects a non-absolute custom folder %s", (folder) => {
+  it.each(["rel/x", "~/x", "file:///x"])("rejects a non-absolute custom folder %s", (folder) => {
     expect(piChildEnv({ HOME: "/home/user", TASKER_PI_CODING_AGENT_DIR: folder })).toEqual({
       reason: `TASKER_PI_CODING_AGENT_DIR must be an absolute path, got ${folder}`,
     });
