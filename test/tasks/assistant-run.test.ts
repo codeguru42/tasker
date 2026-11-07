@@ -553,6 +553,22 @@ describe("prepareTaskPlanModeRun", () => {
     expect(prepared.provider.id).toBe("claude-code");
   });
 
+  it("keeps the recorded trusted extension list on a continued run", async () => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("resume") } });
+    const trustedExtensions = ["old-package", "builtin:codemode"];
+    const recorded = {
+      repoKey: fixture.started.repoKey,
+      provider: "claude-code",
+      model: "haiku",
+      effort: "low",
+      trustedExtensions,
+    } as never;
+    const { prepared } = await runPlanMode(fixture, {
+      session: { resume: true, sessionId: TEST_SESSION_ID, recorded },
+    });
+    expect(prepared.session).toMatchObject({ trustedExtensions });
+  });
+
   it("gives the provider of a new session and the approved window of the request", async () => {
     const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
     const { prepared } = await runPlanMode(fixture, { approvedResetsAt: 1792206000 });

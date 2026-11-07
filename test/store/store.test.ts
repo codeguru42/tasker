@@ -2504,6 +2504,21 @@ describe("task store", () => {
       ]);
     });
 
+    it("records the trusted extension keys with the session", () => {
+      const task = store.createTask(newTask);
+      const trustedExtensions = ["pkg", "builtin:codemode"];
+      const session = store.recordPlanSession(task.id, {
+        sessionId: "s-trusted",
+        provider: "claude-code",
+        model: "opus",
+        effort: "low",
+        trustedExtensions,
+      } as never);
+
+      expect(session).toMatchObject({ trustedExtensions });
+      expect(store.planSession(task.id)).toMatchObject({ trustedExtensions });
+    });
+
     it("gives the repo key of the task", () => {
       const task = store.createTask({ ...newTask, repoKey: "other" });
       expect(record(task.id).repoKey).toBe("other");

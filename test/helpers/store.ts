@@ -210,6 +210,22 @@ export function sessionValuesOf(dbPath: string, sessionId: string): SessionValue
   });
 }
 
+// The raw trusted extension JSON of a session, or undefined when the session has no row.
+export function trustedExtensionsJsonOf(dbPath: string, sessionId: string): string | null | undefined {
+  return withRawDatabase(dbPath, (db) => {
+    const row = db.prepare("SELECT trusted_extensions FROM sessions WHERE session_id = ?").get(sessionId) as
+      { trusted_extensions: string | null } | undefined;
+    return row?.trusted_extensions;
+  });
+}
+
+// Writes a raw trusted extension JSON value for a session.
+export function writeTrustedExtensionsJson(dbPath: string, sessionId: string, value: string | null): void {
+  withRawDatabase(dbPath, (db) => {
+    db.prepare("UPDATE sessions SET trusted_extensions = ? WHERE session_id = ?").run(value, sessionId);
+  });
+}
+
 // Writes a raw run marker row for a task in the database file at path. The marker holds no check of the state.
 export function writeRunMarker(
   dbPath: string,

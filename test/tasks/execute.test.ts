@@ -247,6 +247,16 @@ describe("executeTask turns", () => {
     expect(result).toMatchObject({ version: 1, todosDone: 2, todosTotal: 2, fixTurnDone: false, denials: 0 });
   });
 
+  it("records the trusted extension list for a new execute session", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
+    await runExecute(fixture);
+    expect(
+      withDataRootStore(fixture.started.dataRoot, (store) => store.executeSession(fixture.task.id, 1)),
+    ).toMatchObject({
+      trustedExtensions: [],
+    });
+  });
+
   it("continues a recorded session and skips a done todo", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
     withDataRootStore(fixture.config.dataRoot, (store) => {

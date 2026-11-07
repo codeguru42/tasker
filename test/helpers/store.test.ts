@@ -42,6 +42,8 @@ import {
   readRunMarker,
   NO_SESSION_VALUES,
   sessionValuesOf,
+  trustedExtensionsJsonOf,
+  writeTrustedExtensionsJson,
   refuseBranchUpdated,
   rejectEvent,
   rejectPublishedEvent,
@@ -716,6 +718,20 @@ describe("sessionValuesOf", () => {
     withStoreFile(path, () => {});
 
     expect(sessionValuesOf(path, "missing")).toBeUndefined();
+  });
+});
+
+describe("trustedExtensionsJsonOf", () => {
+  it("reads and writes the raw JSON value", () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    withStoreFile(path, (store) => {
+      const task = store.createTask({ issueKey: "codeguru42/tasker#6", repoKey: "tasker", state: "approved" });
+      seedPlanSession(store, task.id, { sessionId: "s-1" });
+    });
+
+    expect(trustedExtensionsJsonOf(path, "s-1")).toBeNull();
+    writeTrustedExtensionsJson(path, "s-1", '["pkg","builtin:codemode"]');
+    expect(trustedExtensionsJsonOf(path, "s-1")).toBe('["pkg","builtin:codemode"]');
   });
 });
 

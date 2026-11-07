@@ -161,6 +161,14 @@ describe("plan", () => {
     expect(session).toMatchObject({ provider: "claude-code", model: "opus", effort: "high" });
   });
 
+  it("records the trusted extension list for a new plan session", async () => {
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
+    await runPlan();
+    const task = latestTaskOf(fixture.started.dataRoot, KEY);
+    const session = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(task.id));
+    expect(session).toMatchObject({ trustedExtensions: [] });
+  });
+
   it("continues a recorded plan session and records no second one", async () => {
     const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
     withDataRootStore(fixture.started.dataRoot, (store) =>

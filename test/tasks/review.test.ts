@@ -58,6 +58,13 @@ const useSeededTask = (change: { state: string; worktreePath?: string; branch?: 
   useSharedSeededTask(CONTROL, change);
 
 describe("reviewTask checks", () => {
+  it("records the trusted extension list for a new review session", async () => {
+    const target = await useReviewFixture(CONTROL);
+    await callReview(target);
+    const task = latestTaskOf(target.dataRoot, KEY);
+    expect(reviewSessionRows(target.dataRoot, task.id)[0]).toMatchObject({ trustedExtensions: [] });
+  });
+
   it("refuses a task that is not in awaiting_work_review", async () => {
     const target = await useSeededTask({ state: "executed" });
 
