@@ -116,13 +116,27 @@ export const ASSISTANT_ROLES = ModelsSchema.keyof().options;
 
 const AssistantProviderSchema = z.enum(["claude-code", "copilot", "pi", "codex"]);
 
-const AssistantSchema = z.strictObject({
-  provider: AssistantProviderSchema,
-  models: ModelsSchema,
-  trustedExtensions: z.array(nonEmpty).default([]),
-  account: nonEmpty.optional(),
-  correctiveTurns: z.number().int().min(0).default(1),
-});
+function checkTrustedExtensions(assistant: unknown, ctx: z.RefinementCtx): void {
+  if (!isObject(assistant) || !Object.hasOwn(assistant, "trustedExtensions")) return;
+  const provider = AssistantProviderSchema.safeParse(assistant.provider);
+  if (!provider.success || provider.data === "pi") return;
+  ctx.addIssue({
+    code: "custom",
+    path: ["trustedExtensions"],
+    message: "only the pi provider accepts this key",
+  });
+}
+
+const AssistantSchema = z
+  .strictObject({
+    provider: AssistantProviderSchema,
+    models: ModelsSchema,
+    trustedExtensions: z.array(nonEmpty).optional(),
+    account: nonEmpty.optional(),
+    correctiveTurns: z.number().int().min(0).default(1),
+  })
+  .superRefine(checkTrustedExtensions, { when: () => true })
+  .transform((assistant) => ({ ...assistant, trustedExtensions: assistant.trustedExtensions ?? [] }));
 
 // Adds an issue for each role whose model is not a model of the provider. models is raw input,
 // so each read goes through a guard. at is the path of models from the object that zod refines.

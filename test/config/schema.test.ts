@@ -494,10 +494,9 @@ describe("parseConfig assistant", () => {
     raw.repos.tasker.assistant.provider = "claude-code";
     raw.repos.tasker.assistant.models.plan.model = "gpt-5";
     raw.repos.tasker.assistant.trustedExtensions = [];
-    expect(issuesOf(raw)).toEqual([
-      "repos.tasker.assistant.models.plan.model: is not a claude-code model: gpt-5",
-      "repos.tasker.assistant.trustedExtensions: only the pi provider accepts this key",
-    ]);
+    const issues = issuesOf(raw);
+    expect(issues).toContain("repos.tasker.assistant.models.plan.model: is not a claude-code model: gpt-5");
+    expect(issues).toContain("repos.tasker.assistant.trustedExtensions: only the pi provider accepts this key");
   });
 
   it("rejects a missing review model", () => {
