@@ -202,32 +202,20 @@ function checkFileCall(
   }
 
   const denyReadEntries = [...limits.denyRead, "/proc"];
-  if (rule.kind === "read") {
-    // 7. A deny entry wins over a root. Compare both supplied and real path forms.
-    const denied: ResolvedPath[] = [];
-    try {
-      for (const supplied of denyReadEntries) {
-        denied.push({ supplied, real: realPathWithMissingParents(supplied) });
-      }
-    } catch (error) {
-      return pathResolutionBlock(error);
-    }
-    if (
-      candidates.some((candidate) =>
-        denied.some((entry) =>
-          [candidate.supplied, candidate.real].some((candidatePath) =>
-            [entry.supplied, entry.real].some((entryPath) => isInside(candidatePath, entryPath)),
-          ),
-        ),
-      )
-    ) {
-      return blocked("the file path is denied");
-    }
+  // 7. Read denials apply to reads and writes before their roots.
+  let readDenials: { entries: ResolvedPath[]; denied: boolean };
+  try {
+    readDenials = checkReadDenials(candidates, denyReadEntries);
+  } catch (error) {
+    return pathResolutionBlock(error);
+  }
+  if (readDenials.denied) return blocked("the file path is denied");
 
+  if (rule.kind === "read") {
     // 8. grep and find traverse the search tree. ls does not.
     if (
       (event.toolName === "grep" || event.toolName === "find") &&
-      candidates.some((candidate) => denied.some((entry) => isInside(entry.real, candidate.real)))
+      candidates.some((candidate) => readDenials.entries.some((entry) => isInside(entry.real, candidate.real)))
     ) {
       return blocked("the search path contains a denied entry");
     }
@@ -250,7 +238,7 @@ function checkFileCall(
       }
     }
   } else {
-    // 10. Writes ignore read denials. They still obey write denials and roots.
+    // 10. Writes also obey read denials. They then obey write denials and roots.
     let denied: ResolvedPath[];
     try {
       denied = limits.denyWrite.map((supplied) => {
@@ -284,6 +272,21 @@ function checkFileCall(
     }
   }
   return undefined;
+}
+
+function checkReadDenials(
+  candidates: readonly ResolvedPath[],
+  suppliedEntries: readonly string[],
+): { entries: ResolvedPath[]; denied: boolean } {
+  const entries = suppliedEntries.map((supplied) => ({ supplied, real: realPathWithMissingParents(supplied) }));
+  const denied = candidates.some((candidate) =>
+    entries.some((entry) =>
+      [candidate.supplied, candidate.real].some((candidatePath) =>
+        [entry.supplied, entry.real].some((entryPath) => isInside(candidatePath, entryPath)),
+      ),
+    ),
+  );
+  return { entries, denied };
 }
 
 function existingRealRoots(roots: readonly string[]): string[] {
