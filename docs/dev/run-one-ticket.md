@@ -160,6 +160,8 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   [the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). For each such fact, the
   bullet gives the fact and the reason that the task subagent cannot test it. The bullet covers only a fact that the
   issue does not state. The bullet of the issue check covers a fact that the issue states.
+- Each measure that changes [the state of the user](plan-review.md#the-state-of-the-user) and that the user declined,
+  with the fact that stays untested.
 - Each task worktree or local task branch that stays, with its path.
   [The own-worktree rule](limits.md#the-own-worktree-rule) says when one stays.
 - The lessons. For each fact of a lesson, the report names the command or the read that measured it. The report marks
