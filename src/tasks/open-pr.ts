@@ -76,7 +76,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
           store,
           task,
           request.io,
-          `opening PR failed: open PR #${conflict.number} (${conflict.url}) for ${branch} has base ${conflict.base}; correct the PR base before trying again`,
+          `opening_pr failed: open PR #${conflict.number} (${conflict.url}) for ${branch} has base ${conflict.base}; correct that PR base and run tasker retry`,
         );
       } else {
         const summary = task.title ?? task.issueKey;
@@ -93,7 +93,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
         adopted = false;
       }
     } catch (error) {
-      return failRun(store, task, request.io, `opening PR failed: ${errorMessage(error)}`);
+      return failRun(store, task, request.io, `opening_pr failed: ${errorMessage(error)}`);
     }
 
     try {
@@ -110,7 +110,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
         store,
         task,
         request.io,
-        `opening PR failed: ${description} PR #${pullRequest.number} (${pullRequest.url}), but tasker cannot record it: ${errorMessage(error)}`,
+        `opening_pr failed: ${description} PR #${pullRequest.number} (${pullRequest.url}), but tasker cannot record it: ${errorMessage(error)}`,
       );
     }
 
