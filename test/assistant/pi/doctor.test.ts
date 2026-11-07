@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join, relative } from "node:path";
-import { describe, expect, it, onTestFinished } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   piAuthCheck as fromPiAuthCheck,
   piVersionCheck as fromPiVersionCheck,
@@ -636,13 +636,12 @@ describe("simpleEnglishCheck", () => {
 
   it("skips a refused agent folder when it holds the skill", async () => {
     const home = useTempDir("tasker-simple-english-home-");
-    const agentDir = mkdtempSync(join(process.cwd(), ".pi-doctor-agent-"));
-    onTestFinished(() => rmSync(agentDir, { recursive: true, force: true }));
+    const agentDir = useTempDir("tasker-pi-doctor-agent-");
+    const relativeAgentDir = relative(process.cwd(), agentDir);
     addSkill(join(agentDir, "skills"));
+    expect(existsSync(join(relativeAgentDir, "skills", "simple-english", "SKILL.md"))).toBe(true);
 
-    expect(
-      await simpleEnglishCheck().run({ HOME: home, TASKER_PI_CODING_AGENT_DIR: relative(process.cwd(), agentDir) }),
-    ).toEqual({
+    expect(await simpleEnglishCheck().run({ HOME: home, TASKER_PI_CODING_AGENT_DIR: relativeAgentDir })).toEqual({
       status: "error",
       detail: `simple-english/SKILL.md is in no skill folder of pi: ${join(home, ".agents", "skills")}`,
       remediation: `Install the skill simple-english in ${join(home, ".agents", "skills")}.`,
@@ -650,10 +649,10 @@ describe("simpleEnglishCheck", () => {
   });
 
   it("checks only the relative HOME skill folder when HOME is relative", async () => {
-    const home = mkdtempSync(join(process.cwd(), ".pi-doctor-relative-home-"));
-    onTestFinished(() => rmSync(home, { recursive: true, force: true }));
+    const home = useTempDir("tasker-pi-doctor-relative-home-");
     const relativeHome = relative(process.cwd(), home);
     addSkill(join(home, ".pi", "agent", "skills"));
+    expect(existsSync(join(relativeHome, ".pi", "agent", "skills", "simple-english", "SKILL.md"))).toBe(true);
 
     expect(await simpleEnglishCheck().run({ HOME: relativeHome })).toEqual({
       status: "error",
