@@ -192,10 +192,9 @@ describe("openPrTask", () => {
     const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(result).toEqual({ exitCode: 1 });
-    expect(io.err.join("")).toContain("#28");
-    expect(io.err.join("")).toContain("https://example.test/pull/28");
-    expect(io.err.join("")).toContain("release");
-    expect(io.err.join("").toLowerCase()).toContain("correct");
+    expect(io.err.join("")).toBe(
+      `opening_pr failed: open PR #28 (https://example.test/pull/28) for ${fixture.task.branch!} has base release; correct that PR base and run tasker retry\n`,
+    );
     expect(fake.calls.created).toEqual([]);
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("failed");
   });
@@ -208,7 +207,7 @@ describe("openPrTask", () => {
     const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(result).toEqual({ exitCode: 1 });
-    expect(io.err.join("")).toContain("lookup denied");
+    expect(io.err.join("")).toBe("opening_pr failed: lookup denied\n");
     expect(fake.calls.created).toEqual([]);
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("failed");
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
@@ -222,7 +221,7 @@ describe("openPrTask", () => {
     const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(result).toEqual({ exitCode: 1 });
-    expect(io.err.join("")).toContain("create denied");
+    expect(io.err.join("")).toBe("opening_pr failed: create denied\n");
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("failed");
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
   });
@@ -236,8 +235,9 @@ describe("openPrTask", () => {
     releaseRejectedEvent();
 
     expect(result).toEqual({ exitCode: 1 });
-    expect(io.err.join("")).toContain("#42");
-    expect(io.err.join("")).toContain("https://example.test/pull/42");
+    expect(io.err.join("")).toBe(
+      "opening_pr failed: opened PR #42 (https://example.test/pull/42), but tasker cannot record it: event rejected\n",
+    );
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "failed", prNumber: null });
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
   });
