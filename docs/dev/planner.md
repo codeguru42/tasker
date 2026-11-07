@@ -5,6 +5,12 @@ on GitHub. The [user](../sessions.md) works with the planner. The readers of thi
 session that [Before a post](issues.md#before-a-post) of issues.md sends to
 [The blocked-by links](#the-blocked-by-links) also reads that section.
 
+An ad hoc planner is a session that drafts issues for the user outside initial or follow-up milestone planning. For each
+draft, it follows [The ticket subagent](#the-ticket-subagent) and
+[The review loop of a draft](#the-review-loop-of-a-draft). It also follows [Before a post](issues.md#before-a-post),
+including the approval, duplicate search, and blocked-by link steps. This case changes no rule that names only the
+initial planner or the follow-up planner.
+
 The page does not cover the work of the orchestrator and of the task subagents of the tickets.
 [The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines
 "orchestrator" and "ticket". [sessions.md](../sessions.md) defines the terms "task subagent" and "ticket subagent".
@@ -91,11 +97,11 @@ The reason: each review loop costs at least one review agent. On 2026-11-04, the
 of about 120,000 tokens of context.
 
 The prompt of a ticket subagent gives the source of the draft word for word, the milestone and the path of the draft
-file. It says whether the planner is the initial planner or the follow-up planner. It gives each decision of the user on
-the draft. It tells the ticket subagent to read this page, [Before a post](issues.md#before-a-post) and the
-simple-english skill. It bans each command that reads the login of the user, each write to GitHub and each change of
-[the state of the user](plan-review.md#the-state-of-the-user). It asks for the report through the tool
-`SubagentHandback`.
+file. It says whether the planner is the initial planner, the follow-up planner, or an ad hoc planner. It gives each
+decision of the user on the draft. It tells the ticket subagent to read this page,
+[Before a post](issues.md#before-a-post) and the simple-english skill. It bans each command that reads the login of the
+user, each write to GitHub and each change of [the state of the user](plan-review.md#the-state-of-the-user). It asks for
+the report through the tool `SubagentHandback`.
 
 The ticket subagent also writes its report to the path of the draft file, with `-report.md` in place of `.md`. A rule of
 the planner pages that names a finding that the planner dismissed means a finding of this report. A rule of the planner

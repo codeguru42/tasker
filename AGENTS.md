@@ -66,9 +66,9 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   steps of the old operator", "The handoff file of the operator" and "The start of the new operator".
 - [docs/dev/limits.md](docs/dev/limits.md): "Limits", the own-worktree rule, the update rule, the local-commit rule, the
   shared-clone rule, the address rule, the answer-wait rule and the failure rule.
-- [docs/dev/planner.md](docs/dev/planner.md): the rules for a planner that plans a milestone and writes its issues: the
-  initial planner and the follow-up planner, the order of the work, the ticket subagent, the review loop of a draft, the
-  body of an issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the user.
+- [docs/dev/planner.md](docs/dev/planner.md): the rules for milestone planning and ad hoc drafts: the initial planner
+  and the follow-up planner, the order of the work, the ticket subagent, the review loop of a draft, the body of an
+  issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the user.
 - [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, "A recurrence", and the steps
   of the planner for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user:
