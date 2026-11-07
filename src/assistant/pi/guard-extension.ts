@@ -178,7 +178,7 @@ function checkFileCall(
 
   // 5. A missing read tries the forms below as well as the path itself.
   const suppliedCandidates = [resolved];
-  if (rule.kind === "read" && !existsSync(resolved)) {
+  if (event.toolName === "read" && !existsSync(resolved)) {
     const narrow = resolved.replace(
       / (AM|PM)\./giu,
       (_match, meridiem: string) => `${NARROW_NO_BREAK_SPACE}${meridiem}.`,
