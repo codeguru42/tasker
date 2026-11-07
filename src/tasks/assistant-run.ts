@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
-import { claudeConfigDir, codexHome, piAgentDir } from "../assistant/config-folders.js";
+import { claudeConfigDir, codexHome, piAgentDirs } from "../assistant/config-folders.js";
 import {
   type AssistantEvent,
   type AssistantProvider,
@@ -258,6 +258,7 @@ export interface RepoReadDenyPaths {
 export function sandboxReadDenyPaths(o: { env: NodeJS.ProcessEnv; repos: readonly RepoReadDenyPaths[] }): string[] {
   const { env, repos } = o;
   const home = isSet(env.HOME) ? env.HOME : undefined;
+  const absolute = (paths: readonly string[]) => paths.map((path) => resolve(path));
   const fromEnv: string[] = [];
   if (home) fromEnv.push(join(home, ".ssh"));
   if (isSet(env.GH_CONFIG_DIR)) fromEnv.push(env.GH_CONFIG_DIR);
@@ -268,9 +269,15 @@ export function sandboxReadDenyPaths(o: { env: NodeJS.ProcessEnv; repos: readonl
   if (claudeDir !== undefined) fromEnv.push(join(claudeDir, ".credentials.json"));
   const codexDir = codexHome(env);
   if (codexDir !== undefined) fromEnv.push(join(codexDir, "auth.json"));
-  const piDir = piAgentDir(env);
-  if (piDir !== undefined && isAbsolute(piDir))
-    fromEnv.push(join(piDir, "auth.json"), join(piDir, "mcp-auth.json"), join(piDir, "models.json"));
+  const piFolders = piAgentDirs(env).filter(isAbsolute);
+  const piPaths = absolute(
+    piFolders.flatMap((folder) => [
+      join(folder, "auth.json"),
+      join(folder, "mcp-auth.json"),
+      join(folder, "models.json"),
+    ]),
+  );
+  fromEnv.push(...new Set(piPaths));
   // resolveConfigPath() reads its homedir argument only when TASKER_CONFIG and XDG_CONFIG_HOME are
   // unset, and the default of that argument is the home folder of the host. So the entry goes in
   // only when the env names the file or a folder for it, and the call never passes undefined.
@@ -279,7 +286,6 @@ export function sandboxReadDenyPaths(o: { env: NodeJS.ProcessEnv; repos: readonl
       ? [resolveConfigPath(env, home ?? "")]
       : [];
   // The shell runs in the worktree, so a relative path from the env would name a different file there.
-  const absolute = (paths: readonly string[]) => paths.map((path) => resolve(path));
   return [
     ...repos.flatMap((repo) => repo.denyReadPaths),
     ...absolute(fromEnv),
