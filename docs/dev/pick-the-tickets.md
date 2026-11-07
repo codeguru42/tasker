@@ -129,8 +129,9 @@ The orchestrator does all the steps of this section.
   that moving ticket and that task in flight, the answer of the user wins over the sentence "Start the second ticket
   after the first one lands." of the shared-file bullet above. For a task in flight of another milestone,
   [the overlap rule](land-the-work.md#the-overlap-rule) applies.
-- When a ticket starts, the orchestrator moves its card to In progress. `tasker start` does not move the card. The board
-  moves the card to Done when `tasker finish` closes the issue.
+- When a ticket starts, the orchestrator moves its card to In progress, with the move command of
+  [The project board](issues.md#the-project-board). `tasker start` does not move the card. The board moves the card to
+  Done when `tasker finish` closes the issue.
 - When the Todo column of the milestone is empty, the orchestrator waits until the last ticket of the milestone closes
   and no task of the milestone is in flight. If the orchestrator did not send the report that the close started yet, it
   now sends this report to the operator, as step 1 of
@@ -484,7 +485,8 @@ orchestrator does these steps:
 2. Leave the task in its state. Do not run `tasker abort`, unless the user tells you to.
 3. Delete the jobs of the task subagent, as ["Delete the job" in "Quota"](quota.md#delete-the-job) says.
 4. Move the issue to the milestone that the user names: `gh issue edit <number> --milestone "<milestone>"`.
-5. Move the card of the ticket to Todo. The ticket waits in Todo of its new milestone.
+5. Move the card of the ticket to Todo, with the move command of [The project board](issues.md#the-project-board). The
+   ticket waits in Todo of its new milestone.
 6. Post a comment on the issue that starts with `## Parked task`, with the findings of the final report. The next task
    subagent can start from them. Examples are the state of the task, the open plan questions, the answers so far and the
    facts that the task subagent tested. For a stacked task, the comment gives the start base of the last read when the
