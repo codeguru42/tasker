@@ -641,6 +641,16 @@ text. Nobody measured a host where the sandbox cannot start. Nobody measured a h
 
 ## The pi provider
 
+After each upgrade of `pi`, a person measures these facts again, because no test shows a change of them. Later tickets
+add their items to this list:
+
+- The output of `pi list --no-approve`.
+- The output and the exit codes of `pi auth check --json`.
+- The skill folders of the user that `pi` reads.
+- The forms of a package source, and the rule that `pi update` does not move a configured ref.
+- The rule of the agent folder of `pi`, which `piAgentDir()` copies.
+- The model form `provider/id` and the thinking levels of `--model` and `--thinking`.
+
 ### The agent folder
 
 The agent folder of `pi` holds its credentials, its `settings.json` and its extensions. `pi` takes the folder from
@@ -666,11 +676,60 @@ two values to its child as `PI_CODING_AGENT_DIR` and `PI_CODING_AGENT_SESSION_DI
 Without `PI_CODING_AGENT_DIR`, the child uses `$HOME/.pi/agent`, not the folder that the user set.
 `PI_CODING_AGENT_SESSION_DIR` locates the sessions of a `pi` command that names no `--session-dir`.
 
-The pi provider must refuse a run before it starts `pi` when `TASKER_PI_CODING_AGENT_DIR` is nonblank and relative. The
-doctor does not refuse it. The reason: `pi` uses a relative value as it stands, and the file that it opens follows the
-cwd of the `pi` process. The deny path of tasker is absolute, so the two can name different files. The deny list adds no
-pi entry for such a value, and it never refuses a run of another provider. Nobody measured a full run of `pi` in a
-sandbox, or the cwd that tasker gives a `pi` child.
+A run of the pi provider and each doctor check that starts `pi` refuse a `TASKER_PI_CODING_AGENT_DIR` that is set and
+not absolute, before `pi` starts. The rule also refuses `~`, `~/...` and a `file://` URL, so that each `TASKER_` folder
+name has one check and one text. The reason: `pi` uses a relative value as it stands, and the file that it opens follows
+the cwd of the `pi` process. The deny path of tasker is absolute, so the two can name different files. The deny list
+adds no pi entry for a folder that is not absolute, and it never refuses a run of another provider. Nobody measured a
+full run of `pi` in a sandbox, or the cwd that tasker gives a `pi` child.
+
+### The program
+
+The variable `TASKER_PI_BIN` names the `pi` program. For the rule of the resolve, see
+[TASKER_ACLI_BIN](jira.md#tasker_acli_bin) in `docs/dev/jira.md`.
+
+### The environment of a pi child
+
+Each `pi` child gets the agent folder as `PI_CODING_AGENT_DIR`. `piChildEnv()` gives a reason in two cases, in this
+order. In the first case, `TASKER_PI_CODING_AGENT_DIR` is set and not absolute. In the second case, `piAgentDir()` gives
+no folder. On a reason, a run refuses before the spawn, and each doctor check that starts `pi` fails. For the reason of
+the refusal of a relative value, see [The agent folder](#the-agent-folder).
+
+### The model forms
+
+tasker splits a `pi` model at its first `/`. The part before it is the upstream. The upstream is the model service that
+`pi` calls and that bills the task. The part after it is the model id.
+
+### The doctor checks of pi
+
+The checks run in this order: `pi version`, one `pi-auth:<upstream>` for each upstream, `superpowers:pi` and
+`simple-english:pi`. `pi version` makes sure that `pi` runs. `pi-auth:<upstream>` makes sure that `pi` has a login for
+the upstream. `superpowers:pi` makes sure that the superpowers package is installed and is version 6.4.1 or later.
+`simple-english:pi` makes sure that the skill `simple-english` is in a skill folder of the user.
+
+A task subagent measured these facts on 2026-11-07 with `pi` 1.1.0 on Linux. No measure called a model.
+
+- `pi --version` printed `1.1.0`.
+- `pi auth check --provider openrouter --json --no-refresh` with a login exited 0 and printed
+  `{"status":"ready","provider":"openrouter","authType":"oauth"}`.
+- The same command for `nosuchprov` exited 1 and printed
+  `{"status":"not_ready","provider":"nosuchprov","reason":"provider_not_found"}`.
+- The same command for `openrouter` with an empty folder as `PI_CODING_AGENT_DIR` and no variable that ends in
+  `_API_KEY` exited 1 and printed
+  `{"status":"not_ready","provider":"openrouter","reason":"credentials_not_configured"}`.
+- `pi list --no-approve` with an empty folder as `PI_CODING_AGENT_DIR` exited 0 and printed `No packages installed.`.
+- `pi list --no-approve` with a package of the user printed `User packages:`, a line with two spaces and the source, and
+  a line with four spaces and the path.
+
+The reasons for the checks:
+
+- The timeout of `pi-auth:<upstream>` allows a refresh of an OAuth login over the network.
+- `--credentials` prints the secret.
+- With no `--no-refresh`, the check gives the same answer as a run.
+- `pi update` does not move a configured ref and keeps the range of an `npm:` source, so the remediation also names
+  `pi install`.
+- `pi` loads a skill of the worktree only with the trust of the project, and each run of tasker refuses that trust. So
+  `simple-english:pi` does not look there.
 
 ## The plan answer and the prompts
 
