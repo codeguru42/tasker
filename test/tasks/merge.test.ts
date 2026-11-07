@@ -42,6 +42,26 @@ const callMerge = async (fixture: AcceptedTask, store: TaskStore, waitMs = 300, 
 };
 
 describe("mergeTask", () => {
+  it("keeps the trunk landing result and clears its stored origin", async () => {
+    const accepted = await useAcceptedTask();
+
+    const { result, io } = await withDataRootStore(accepted.dataRoot, (store) => callMerge(accepted, store));
+
+    expect(result).toEqual({
+      issueKey: accepted.task.issueKey,
+      base: "main",
+      revision: accepted.revision,
+      pushed: true,
+    });
+    expect(io.out).toEqual([]);
+    expect(io.err).toEqual([]);
+    expect(eventsOf(accepted.dataRoot, accepted.key).at(-1)).toMatchObject({
+      type: "landed",
+      data: { revision: accepted.revision, base: "main", pushed: true },
+    });
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).mergeOrigin).toBeNull();
+  });
+
   it("leaves everything and releases the task lock when the repo lock is busy", async () => {
     const accepted = await useAcceptedTask();
     const events = eventsOf(accepted.dataRoot, accepted.key);

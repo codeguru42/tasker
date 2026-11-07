@@ -193,6 +193,16 @@ describe("placeTask", () => {
 
     expect(readRunMarker(databasePathOf(dataRoot), task.id)).toMatchObject({ state: "updating_branch" });
   });
+
+  it("starts a synthetic merge from accepted", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      const merging = placeTask(store, task.id, "merging");
+
+      expect(merging).toMatchObject({ state: "merging", mergeOrigin: "accepted" });
+    });
+  });
 });
 
 describe("eventsOf", () => {
@@ -882,6 +892,17 @@ describe("failTaskFrom", () => {
       expect(lastTransitionError(store.listEvents(task.id), "failed")).toBe("boom");
     });
   });
+
+  it("fails a synthetic merge from accepted", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      failTaskFrom(store, task.id, "merging");
+
+      expect(failedFrom(store, task.id)).toBe("merging");
+      expect(store.getTask(task.id)?.mergeOrigin).toBe("accepted");
+    });
+  });
 });
 
 describe("failTaskVia", () => {
@@ -986,6 +1007,18 @@ describe("pauseTaskFrom", () => {
         { cause: "rate_limit", from: "planning", to: "quota_blocked" },
         { cause: "dead_run", childPid: null, from: "executing", to: "interrupted" },
       ]);
+    });
+  });
+
+  it("pauses a synthetic merge with its accepted origin", () => {
+    const { dataRoot, task } = seedTaskIn("workspace_ready");
+
+    withDataRootStore(dataRoot, (store) => {
+      pauseTaskFrom(store, task.id, "merging", "interrupted");
+
+      expect(store.getTask(task.id)?.state).toBe("interrupted");
+      expect(store.getTask(task.id)?.mergeOrigin).toBe("accepted");
+      expect(transitionFromEvents(store.listEvents(task.id), "interrupted")).toBe("merging");
     });
   });
 
