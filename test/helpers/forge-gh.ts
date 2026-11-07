@@ -54,15 +54,7 @@ export function openPrListArgs(head: string): string[] {
   ];
 }
 
-export function installOpenPrForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
-  return installForgeGh(answers, prefix);
-}
-
-export function installMergeForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
-  return installForgeGh(answers, prefix);
-}
-
-function installForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
+export function installForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
   const fake = forgeGh(useTempDir(prefix), OPEN_PR_FORGE_TOKEN, answers);
   useProcessEnv({
     TASKER_GH_BIN: fake.env.TASKER_GH_BIN,

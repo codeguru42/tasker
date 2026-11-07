@@ -5,7 +5,7 @@ import { thrownBy } from "./errors.js";
 import { runFakeGh } from "./fake-gh.js";
 import {
   forgeGh,
-  installMergeForgeGh,
+  installForgeGh,
   openPrListArgs,
   openPrTokenAnswer,
   OPEN_PR_FORGE_ACCOUNT,
@@ -27,7 +27,7 @@ describe("the forge gh helper", () => {
   });
   it("installs a merge fixture with shared token and environment setup", () => {
     const token = openPrTokenAnswer();
-    const fake = installMergeForgeGh([token], "tasker-merge-forge-gh-helper-");
+    const fake = installForgeGh([token], "tasker-merge-forge-gh-helper-");
 
     expect(fake.env.TASKER_GH_BIN).toBeTruthy();
     expect(process.env.TASKER_GH_BIN).toBe(fake.env.TASKER_GH_BIN);
@@ -39,7 +39,7 @@ describe("the forge gh helper", () => {
   it("shares the open-pr account, token answer, list arguments, and installer", () => {
     const token = openPrTokenAnswer();
     const args = openPrListArgs("branch-name");
-    const fake = installMergeForgeGh([token, { args, stdout: "[]" }], "tasker-open-pr-gh-helper-");
+    const fake = installForgeGh([token, { args, stdout: "[]" }], "tasker-open-pr-gh-helper-");
 
     expect(OPEN_PR_FORGE_ACCOUNT).toBe("forge-team");
     expect(OPEN_PR_FORGE_TOKEN).toBe("forge-token-private");

@@ -92,7 +92,7 @@ describe("retryTask checks", () => {
     await expectRetryRefused(dataRoot, task, `the task of ${KEY} failed in approved; tasker retry has no step for it`);
   });
 
-  it("refuses a task that failed in merging after a move from in_peer_review", async () => {
+  it("recovers a task that failed in merging after a move from in_peer_review", async () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => failTaskVia(store, task.id, "in_peer_review", "merging"));
 
@@ -259,6 +259,44 @@ describe("retryTask origins", () => {
         : { origin, target, resumeExecute: false, from: "failed", to: target };
     expect(eventsOf(dataRoot, KEY).slice(before.length)).toEqual([{ type: "retry", data }]);
   });
+
+  it.each(["accepted", "in_peer_review"] as const)(
+    "uses stored %s origin to recover a merge failure",
+    async (origin) => {
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
+      withDataRootStore(dataRoot, (store) => {
+        if (origin === "accepted") failTaskFrom(store, task.id, "merging");
+        else failTaskVia(store, task.id, origin, "merging");
+      });
+      expect(latestTaskOf(dataRoot, KEY).mergeOrigin).toBe(origin);
+
+      const result = await retry(dataRoot, task);
+
+      expect(result).toEqual({ origin: "merging", target: origin, next: "merge" });
+      expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: origin, mergeOrigin: origin });
+    },
+  );
+
+  it.each([null, "unsupported"] as const)(
+    "refuses merging recovery with stored origin %s without writes",
+    async (origin) => {
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
+      withDataRootStore(dataRoot, (store) => {
+        failTaskFrom(store, task.id, "merging");
+        store.updateTask(task.id, { mergeOrigin: origin });
+      });
+      const beforeTask = latestTaskOf(dataRoot, KEY);
+      const beforeEvents = eventsOf(dataRoot, KEY);
+      const beforeSessions = sessionsOf(dataRoot, task);
+
+      const error = await failureOf(retry(dataRoot, task), Error);
+
+      expect(error.message).toContain("tasker mark-landed");
+      expect(latestTaskOf(dataRoot, KEY)).toEqual(beforeTask);
+      expect(eventsOf(dataRoot, KEY)).toEqual(beforeEvents);
+      expect(sessionsOf(dataRoot, task)).toEqual(beforeSessions);
+    },
+  );
 
   it.each(["accepted", "pushed"] as const)("prints a reopen hint for a failed reopen from %s", async (origin) => {
     const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);

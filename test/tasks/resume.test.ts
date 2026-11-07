@@ -5,6 +5,7 @@ import type { Config } from "../../src/config/schema.js";
 import type { Task } from "../../src/store/store.js";
 import { resumeTask } from "../../src/tasks/resume.js";
 import { configWithTrackers } from "../helpers/config.js";
+import { failureOf } from "../helpers/errors.js";
 import { gitOutput } from "../helpers/git.js";
 import { startConflictedReopenResync } from "../helpers/reopen-resync.js";
 import { seedApprovedTaskWithSessions, sessionsOf } from "../helpers/plan.js";
@@ -173,6 +174,44 @@ describe("resumeTask origins", () => {
     expect(sessionsOf(dataRoot, task)).toEqual(sessions);
   });
 
+  it.each(["accepted", "in_peer_review"] as const)(
+    "uses stored %s origin to recover an interrupted merge",
+    async (origin) => {
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
+      withDataRootStore(dataRoot, (store) => {
+        if (origin === "accepted") pauseTaskFrom(store, task.id, "merging", "interrupted");
+        else pauseTaskVia(store, task.id, origin, "merging");
+      });
+      expect(latestTaskOf(dataRoot, KEY).mergeOrigin).toBe(origin);
+
+      const result = await resume(dataRoot, task);
+
+      expect(result).toEqual({ origin: "merging", target: origin, next: "merge" });
+      expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ state: origin, mergeOrigin: origin });
+    },
+  );
+
+  it.each([null, "unsupported"] as const)(
+    "refuses merging recovery with stored origin %s without writes",
+    async (origin) => {
+      const { dataRoot, task } = seedApprovedTaskWithSessions();
+      withDataRootStore(dataRoot, (store) => {
+        pauseTaskFrom(store, task.id, "merging", "interrupted");
+        store.updateTask(task.id, { mergeOrigin: origin });
+      });
+      const beforeTask = latestTaskOf(dataRoot, KEY);
+      const beforeEvents = eventsOf(dataRoot, KEY);
+      const beforeSessions = sessionsOf(dataRoot, task);
+
+      const error = await failureOf(resume(dataRoot, task), Error);
+
+      expect(error.message).toContain("tasker mark-landed");
+      expect(latestTaskOf(dataRoot, KEY)).toEqual(beforeTask);
+      expect(eventsOf(dataRoot, KEY)).toEqual(beforeEvents);
+      expect(sessionsOf(dataRoot, task)).toEqual(beforeSessions);
+    },
+  );
+
   it.each(UPDATE_ORIGINS)(
     "restores the worktree and moves a task paused in interrupted from updating_branch after a move from %s",
     async (origin) => {
@@ -315,6 +354,19 @@ describe("resumeTask opening PR recovery", () => {
 });
 
 describe("resumeTask checks", () => {
+  it("keeps the normal no-step error for a quota pause with a valid merge origin", async () => {
+    const { dataRoot, task } = seedApprovedTaskWithSessions();
+    withDataRootStore(dataRoot, (store) => {
+      store.updateTask(task.id, { mergeOrigin: "accepted" });
+      store.endRun(task.id, "quota_blocked");
+      store.appendEvent(task.id, "transition", { from: "merging", to: "quota_blocked" });
+    });
+    await expectRefusedWithoutChange(
+      { dataRoot, key: KEY },
+      () => resume(dataRoot, task),
+      `the task of ${KEY} was paused from merging; tasker resume has no step for it`,
+    );
+  });
   // Expects that resume refuses with message, and that the state, the events and the sessions stay the same.
   async function expectResumeRefused(dataRoot: string, task: Task, message: string) {
     const sessions = sessionsOf(dataRoot, task);
@@ -338,7 +390,7 @@ describe("resumeTask checks", () => {
     await expectResumeRefused(dataRoot, task, wrongStateError("awaiting_quota_approval", KEY, "resume", NEEDS));
   });
 
-  it("refuses merging after a move from in_peer_review", async () => {
+  it("recovers merging after a move from in_peer_review", async () => {
     const { dataRoot, task } = seedApprovedTaskWithSessions();
     withDataRootStore(dataRoot, (store) => pauseTaskVia(store, task.id, "in_peer_review", "merging"));
 

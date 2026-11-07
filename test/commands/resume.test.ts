@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { resume } from "../../src/commands/resume.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { canonicalPath } from "../../src/real-path.js";
-import { transitionWithReopenStart, type TransitionDetail } from "../../src/state/machine.js";
+import { transitionWithMergeStart, transitionWithReopenStart, type TransitionDetail } from "../../src/state/machine.js";
 import { GitError } from "../../src/vcs/git/run.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import {
-  installOpenPrForgeGh,
+  installForgeGh,
   openPrListArgs,
   openPrTokenAnswer,
   OPEN_PR_FORGE_ACCOUNT as FORGE_ACCOUNT,
@@ -56,6 +56,7 @@ import {
   pausePlanFixtureTask,
   taskBranchTipOf,
   useAcceptedTask,
+  usePeerReviewTask,
   useExecuteFixture,
   useLandedTask,
   usePublishedLandedTask,
@@ -92,6 +93,73 @@ const V2_ANSWER = validPlanAnswer({
 });
 
 describe("tasker resume", () => {
+  it("uses the stored peer-review origin and recovers a PR merged before resume", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
+    withDataRootStore(fixture.dataRoot, (store) => {
+      pauseTaskVia(store, fixture.task.id, "accepted", "merging");
+      store.updateTask(fixture.task.id, { mergeOrigin: "in_peer_review" });
+    });
+    const forge = installForgeGh([openPrTokenAnswer()], "tasker-resume-merge-forge-");
+    forge.setMergeState("MERGED");
+
+    const result = await runResume(KEY, "--repo", REPO);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `resumed ${KEY}: paused in merging, back in in_peer_review\nmerged ${KEY}\nlanded PR #42 through github\nstate: landed\n`,
+      err: "",
+    });
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "landed", mergeOrigin: null });
+    expect(forge.calls().map(({ args }) => args)).toEqual([
+      openPrTokenAnswer().args,
+      ["pr", "view", "42", "--json", "state"],
+    ]);
+  });
+
+  it("interrupts a dead merge run and resumes it from the stored peer-review origin", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
+    withDataRootStore(fixture.dataRoot, (store) => transitionWithMergeStart(store, fixture.task.id, "in_peer_review"));
+    withRawDatabase(databasePathOf(fixture.dataRoot), (db) =>
+      db.prepare("DELETE FROM run_markers WHERE task_id = ?").run(fixture.task.id),
+    );
+    seedDeadRun(fixture.dataRoot, fixture.task.id, "merging");
+    const forge = installForgeGh([openPrTokenAnswer()], "tasker-resume-dead-merge-forge-");
+    forge.setMergeState("MERGED");
+
+    const result = await runResume(KEY, "--repo", REPO);
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(`resumed ${KEY}: paused in merging, back in in_peer_review\n`);
+    expect(result.out).toContain(`landed PR #42 through github\nstate: landed\n`);
+    expect(result.err).toContain(deadRunNote(KEY, "merging"));
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "landed", mergeOrigin: null });
+  });
+
+  it("prints the mark-landed hint when an interrupted merge has no stored origin", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
+    withDataRootStore(fixture.dataRoot, (store) => {
+      pauseTaskFrom(store, fixture.task.id, "merging", "interrupted");
+      store.updateTask(fixture.task.id, { mergeOrigin: null });
+    });
+
+    const result = await runResume(KEY, "--repo", REPO);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("tasker mark-landed");
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("interrupted");
+  });
+
+  it("keeps a live merge marker and refuses to resume merging", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
+    withDataRootStore(fixture.dataRoot, (store) => transitionWithMergeStart(store, fixture.task.id, "in_peer_review"));
+
+    const result = await runResume(KEY, "--repo", REPO);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("tasker resume has no step for it");
+    expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toMatchObject({ state: "merging" });
+  });
+
   it("adopts a PR after an interrupted create and passes through open-pr output", async () => {
     const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
     const url = "https://github.com/codeguru42/tasker/pull/42";
@@ -102,7 +170,7 @@ describe("tasker resume", () => {
     const head = accepted.task.branch!;
     const tokenAnswer = openPrTokenAnswer();
     const listArgs = openPrListArgs(head);
-    const fake = installOpenPrForgeGh(
+    const fake = installForgeGh(
       [
         tokenAnswer,
         {
@@ -132,7 +200,7 @@ describe("tasker resume", () => {
     });
     const tokenAnswer = openPrTokenAnswer();
     const listArgs = openPrListArgs(accepted.task.branch!);
-    const fake = installOpenPrForgeGh(
+    const fake = installForgeGh(
       [tokenAnswer, { args: listArgs, stderr: "lookup denied", exitCode: 1 }],
       "tasker-resume-open-pr-gh-",
     );

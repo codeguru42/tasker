@@ -6,7 +6,7 @@ import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom, type TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import {
-  installOpenPrForgeGh,
+  installForgeGh,
   openPrListArgs,
   openPrTokenAnswer,
   OPEN_PR_FORGE_ACCOUNT as FORGE_ACCOUNT,
@@ -44,6 +44,7 @@ import {
   landAcceptedTask,
   unacceptedTipError,
   useAcceptedTask,
+  usePeerReviewTask,
   useExecuteFixture,
   usePlanFixture,
   useReopenFixture,
@@ -66,6 +67,43 @@ const runRetry = (key = KEY, ...extra: string[]) => runCommand(retry, "retry", k
 const firstLine = (origin: string, target: string) => `retried ${KEY}: failed in ${origin}, back in ${target}\n`;
 
 describe("tasker retry", () => {
+  it("uses the stored peer-review origin and recovers a PR merged before retry", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
+    withDataRootStore(fixture.dataRoot, (store) => {
+      failTaskVia(store, fixture.task.id, "accepted", "merging");
+      store.updateTask(fixture.task.id, { mergeOrigin: "in_peer_review" });
+    });
+    const forge = installForgeGh([openPrTokenAnswer()], "tasker-retry-merge-forge-");
+    forge.setMergeState("MERGED");
+
+    const result = await runRetry(KEY, "--repo", REPO);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `retried ${KEY}: failed in merging, back in in_peer_review\nmerged ${KEY}\nlanded PR #42 through github\nstate: landed\n`,
+      err: "",
+    });
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "landed", mergeOrigin: null });
+    expect(forge.calls().map(({ args }) => args)).toEqual([
+      openPrTokenAnswer().args,
+      ["pr", "view", "42", "--json", "state"],
+    ]);
+  });
+
+  it("prints the mark-landed hint when a failed merge has no stored origin", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
+    withDataRootStore(fixture.dataRoot, (store) => {
+      failTaskFrom(store, fixture.task.id, "merging");
+      store.updateTask(fixture.task.id, { mergeOrigin: null });
+    });
+
+    const result = await runRetry(KEY, "--repo", REPO);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("tasker mark-landed");
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("failed");
+  });
+
   it("adopts a PR created before a failed record and passes through open-pr output", async () => {
     const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
     const url = "https://github.com/codeguru42/tasker/pull/42";
@@ -88,7 +126,7 @@ describe("tasker retry", () => {
       `Task: ${KEY}\n\n${accepted.task.title ?? KEY}`,
     ];
     const releaseRejectedEvent = rejectPrOpenedEvent(databasePathOf(accepted.dataRoot));
-    const create = installOpenPrForgeGh(
+    const create = installForgeGh(
       [tokenAnswer, { args: listArgs, stdout: "[]" }, { args: createArgs, stdout: `${url}\n` }],
       "tasker-retry-open-pr-gh-",
     );
@@ -104,7 +142,7 @@ describe("tasker retry", () => {
     expect(eventsOf(accepted.dataRoot, KEY).some((event) => event.type === "pr_opened")).toBe(false);
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
 
-    const retryWhileRejected = installOpenPrForgeGh(
+    const retryWhileRejected = installForgeGh(
       [
         tokenAnswer,
         {
@@ -125,7 +163,7 @@ describe("tasker retry", () => {
 
     releaseRejectedEvent();
 
-    const adoptedAfterFailure = installOpenPrForgeGh(
+    const adoptedAfterFailure = installForgeGh(
       [
         tokenAnswer,
         {

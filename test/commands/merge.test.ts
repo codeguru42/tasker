@@ -1,16 +1,18 @@
 import { renameSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { accept } from "../../src/commands/accept.js";
+import { retry } from "../../src/commands/retry.js";
 import { merge } from "../../src/commands/merge.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom } from "../../src/state/machine.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { commitInWorktree, gitOutput } from "../helpers/git.js";
-import { installMergeForgeGh, openPrTokenAnswer } from "../helpers/forge-gh.js";
+import { installForgeGh, openPrTokenAnswer } from "../helpers/forge-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
+  rejectEvent,
   eventsOf,
   lastErrorOf,
   latestTaskOf,
@@ -50,7 +52,7 @@ const expectRefused = async (fixture: Pick<StartFixture, "dataRoot" | "origin">,
 describe("tasker merge", () => {
   it("prints the exact success lines after a newly requested merge", async () => {
     const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
-    const forge = installMergeForgeGh(
+    const forge = installForgeGh(
       [
         openPrTokenAnswer(),
         { args: ["pr", "merge", "42", "--merge", "--match-head-commit", fixture.publishedRevision] },
@@ -69,7 +71,7 @@ describe("tasker merge", () => {
 
   it("refuses an atomic expected-head mismatch without landing", async () => {
     const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
-    const forge = installMergeForgeGh([openPrTokenAnswer()], "tasker-merge-head-");
+    const forge = installForgeGh([openPrTokenAnswer()], "tasker-merge-head-");
     forge.setMergeState("OPEN");
     forge.setRemoteHead("changed-remote-head");
     const result = await runMerge();
@@ -82,7 +84,7 @@ describe("tasker merge", () => {
 
   it("names the independent forge account when authentication fails without printing its token", async () => {
     const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
-    const forge = installMergeForgeGh(
+    const forge = installForgeGh(
       [{ args: openPrTokenAnswer().args, exitCode: 1, stderr: "fixture authentication refused" }],
       "tasker-merge-auth-",
     );
@@ -94,9 +96,44 @@ describe("tasker merge", () => {
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("failed");
   });
 
+  it("retries a real rejected merged event without another merge request", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const forge = installForgeGh(
+      [
+        openPrTokenAnswer(),
+        { args: ["pr", "merge", "42", "--merge", "--match-head-commit", fixture.publishedRevision] },
+      ],
+      "tasker-merge-record-retry-",
+    );
+    forge.setMergeStates(["OPEN", "MERGED", "MERGED"]);
+    const release = rejectEvent(databasePathOf(fixture.dataRoot), "merged");
+    try {
+      const result = await runMerge();
+      expect(result.code).toBe(1);
+      expect(result.err).toContain("PR #42 is merged, but tasker cannot record the result: event rejected");
+      expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({
+        state: "failed",
+        mergeOrigin: "in_peer_review",
+        prNumber: 42,
+        publishedRevision: fixture.publishedRevision,
+      });
+      expect(eventsOf(fixture.dataRoot, KEY).some(({ type }) => type === "merged")).toBe(false);
+      expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
+    } finally {
+      release();
+    }
+    const recovered = await runCommand(retry, "retry", KEY, "--repo", REPO);
+    expect(recovered).toEqual({
+      code: 0,
+      out: `retried ${KEY}: failed in merging, back in in_peer_review\nmerged ${KEY}\nlanded PR #42 through github\nstate: landed\n`,
+      err: "",
+    });
+    expect(forge.calls().filter(({ args }) => args[1] === "merge")).toHaveLength(1);
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "landed", mergeOrigin: null });
+  });
   it("reports an already merged PR and lands the peer-review task", async () => {
     const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
-    const forge = installMergeForgeGh([openPrTokenAnswer()], "tasker-merge-command-forge-");
+    const forge = installForgeGh([openPrTokenAnswer()], "tasker-merge-command-forge-");
     forge.setMergeState("MERGED");
     withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.task.id, { worktreePath: null }));
 
