@@ -21,6 +21,14 @@ const SUPERPOWERS_INSTALL_FIX = `Run pi install ${SUPERPOWERS_SOURCE}.`;
 const MINIMUM_SUPERPOWERS = [6, 4, 1] as const;
 const ROLES = ["plan", "execute", "review"] as const;
 
+function isFile(path: string): boolean {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
 function environmentRefusal(
   env: NodeJS.ProcessEnv,
 ): { result: CheckResult; env?: undefined } | { env: NodeJS.ProcessEnv; result?: undefined } {
@@ -201,9 +209,7 @@ export function simpleEnglishCheck(timeoutMs = 1000): Check {
     if (folders.length === 0) {
       return { status: "error", detail: "tasker cannot find the skill folders of pi, because HOME is not set" };
     }
-    const skillPath = folders
-      .map((folder) => join(folder, "simple-english", "SKILL.md"))
-      .find((path) => statSync(path, { throwIfNoEntry: false })?.isFile() === true);
+    const skillPath = folders.map((folder) => join(folder, "simple-english", "SKILL.md")).find(isFile);
     if (skillPath !== undefined) return { status: "ok", detail: `simple-english at ${skillPath}` };
     const lastFolder = folders.at(-1)!;
     return {
