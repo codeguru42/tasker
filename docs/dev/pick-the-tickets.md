@@ -124,11 +124,9 @@ The orchestrator does all the steps of this section.
   `awaiting_plan_review`, the orchestrator asks the user. The user decides whether the orchestrator waits or starts the
   moving ticket now. The orchestrator follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
   If the user answers "start now", the orchestrator sets a landing order between the moving ticket and that task in
-  flight, as [Land the work](land-the-work.md#land-the-work) says. For a moving ticket of the milestone "Docs" and a
-  task in flight of a numbered milestone, [the Docs rule](land-the-work.md#the-docs-rule) sets no landing order. For
-  that moving ticket and that task in flight, the answer of the user wins over the sentence "Start the second ticket
-  after the first one lands." of the shared-file bullet above. For a task in flight of another milestone,
-  [the overlap rule](land-the-work.md#the-overlap-rule) applies.
+  flight, as [Land the work](land-the-work.md#land-the-work) says. [The Docs rule](land-the-work.md#the-docs-rule)
+  covers the moving ticket and a task in flight of another milestone, as that rule defines it. For such a task, the
+  orchestrator sets no landing order.
 - When a ticket starts, the orchestrator moves its card to In progress, with the move command of
   [The project board](issues.md#the-project-board). `tasker start` does not move the card. The board moves the card to
   Done when `tasker finish` closes the issue.
@@ -270,10 +268,10 @@ When a stacked ticket starts, the stacked orchestrator does these steps:
 
 These rules apply to a stacked ticket and its parent. The user decided them on 2026-10-16.
 
-- This rule wins over [the Docs rule](land-the-work.md#the-docs-rule) and over the sentence "A ticket of an earlier
-  milestone lands first" of [the overlap rule](land-the-work.md#the-overlap-rule). The stacked orchestrator sets the
-  landing order with the parent first, and the wait rules of [Land the work](land-the-work.md#land-the-work) apply. The
-  Docs rule still covers each other shared file.
+- This rule wins over [the Docs rule](land-the-work.md#the-docs-rule) and over the landing order that
+  [the overlap rule](land-the-work.md#the-overlap-rule) sets. The stacked orchestrator sets the landing order with the
+  parent first, and the wait rules of [Land the work](land-the-work.md#land-the-work) apply. The Docs rule still covers
+  each other shared file.
 - The pair has no swap, because `tasker merge` refuses a stacked task. The bullet "If the orchestrator changes the
   landing order" and the bullet "Only the user changes a landing order of the overlap rule" do not apply to the pair.
 - If the user postpones the parent (see [the defer rule](#the-defer-rule)), the stacked task cannot land. The stacked
