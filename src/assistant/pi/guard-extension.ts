@@ -37,10 +37,12 @@ const NARROW_NO_BREAK_SPACE = String.fromCodePoint(0x202f);
 const RIGHT_SINGLE_QUOTE = String.fromCodePoint(0x2019);
 
 interface PiApi {
-  registerFlag(name: string, description: string): void;
+  registerFlag(name: string, options: PiFlagOptions): void;
   getAllTools(): PiTool[];
   on(event: "tool_call" | "before_agent_start", handler: (event: unknown, context: PiContext) => unknown): void;
 }
+
+type PiFlagOptions = { description: string; type: "string" } | { description: string; type: "boolean" };
 
 interface PiTool {
   name: string;
@@ -53,7 +55,10 @@ interface PiContext {
 }
 
 export default function guardExtension(pi: PiApi): void {
-  pi.registerFlag("tasker-guard-limits", "Path to the limits file for the tasker pi guard");
+  pi.registerFlag("tasker-guard-limits", {
+    description: "Path to the limits file for the tasker pi guard",
+    type: "string",
+  });
   const state: { limits: GuardLimits | undefined; eventSkillRoots: string[] } = {
     limits: undefined,
     eventSkillRoots: [],

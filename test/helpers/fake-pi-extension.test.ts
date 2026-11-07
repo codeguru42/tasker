@@ -20,7 +20,7 @@ function registerFlag(
   name: string,
   options: { description: string; type: "string" },
 ) {
-  fake.pi.registerFlag(name, options as unknown as string);
+  fake.pi.registerFlag(name, options);
 }
 
 function getFlag(fake: ReturnType<typeof fakeExtension>, name: string) {
@@ -44,11 +44,7 @@ function registeredFlags(fake: ReturnType<typeof fakeExtension>) {
 }
 
 function registeredFlagOptions(fake: ReturnType<typeof fakeExtension>) {
-  return (
-    fake as ReturnType<typeof fakeExtension> & {
-      registeredFlagOptions: () => Record<string, unknown>;
-    }
-  ).registeredFlagOptions();
+  return fake.registeredFlagOptions();
 }
 
 async function callTool(fake: ReturnType<typeof fakeExtension>, name: string, input: unknown) {

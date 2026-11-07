@@ -11,9 +11,11 @@ export interface FakePiContext {
 
 export type FakePiEventHandler = (event: unknown, context: FakePiContext) => unknown;
 
+export type FakePiFlagOptions = { description: string; type: "string" } | { description: string; type: "boolean" };
+
 export interface FakePiExtensionApi {
   on(event: string, handler: FakePiEventHandler): void;
-  registerFlag(name: string, description: string): void;
+  registerFlag(name: string, options: FakePiFlagOptions): void;
   getFlag(name: string): string | undefined;
   registerTool(tool: FakePiTool): void;
   getAllTools(): FakePiTool[];
@@ -24,6 +26,7 @@ export interface FakePiExtension {
   dispatch(event: string, data: unknown, context?: Partial<FakePiContext>): Promise<unknown[]>;
   callTool(name: string, input: unknown, context?: Partial<FakePiContext>): Promise<unknown>;
   registeredFlags(): string[];
+  registeredFlagOptions(): Record<string, FakePiFlagOptions>;
 }
 
 export function useFakePiExtension(
@@ -31,7 +34,7 @@ export function useFakePiExtension(
   flags: Record<string, string> = {},
 ): FakePiExtension {
   const handlers = new Map<string, FakePiEventHandler[]>();
-  const registered = new Map<string, string>();
+  const registered = new Map<string, FakePiFlagOptions>();
   const tools = new Map<string, FakePiTool>();
   for (const tool of initialTools) tools.set(tool.name, tool);
 
@@ -41,8 +44,8 @@ export function useFakePiExtension(
       eventHandlers.push(handler);
       handlers.set(event, eventHandlers);
     },
-    registerFlag(name, description) {
-      registered.set(name, description);
+    registerFlag(name, options) {
+      registered.set(name, options);
     },
     getFlag(name) {
       return registered.has(name) ? flags[name] : undefined;
@@ -80,5 +83,11 @@ export function useFakePiExtension(
     return tool.execute(input, eventContext);
   };
 
-  return { pi, dispatch, callTool, registeredFlags: () => [...registered.keys()] };
+  return {
+    pi,
+    dispatch,
+    callTool,
+    registeredFlags: () => [...registered.keys()],
+    registeredFlagOptions: () => Object.fromEntries(registered),
+  };
 }
