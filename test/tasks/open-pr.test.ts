@@ -8,6 +8,7 @@ import { failureOf } from "../helpers/errors.js";
 import { copyCloneBranchToOrigin } from "../helpers/git.js";
 import { forgeStub } from "../helpers/forge.js";
 import { startLockHolder } from "../helpers/processes.js";
+import { runGit } from "../../src/vcs/git/run.js";
 import {
   databasePathOf,
   eventsOf,
@@ -54,6 +55,23 @@ async function callOpenPr(
 }
 
 describe("openPrTask", () => {
+  it("refuses an accepted task before resolving its origin or calling the forge", async () => {
+    const fixture = await useAcceptedTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const fake = forgeStub();
+    const before = eventsOf(fixture.dataRoot, KEY);
+
+    const failure = await failureOf(
+      withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake)),
+      Error,
+    );
+
+    expect(failure.message).toContain("is in accepted; tasker open-pr needs pushed");
+    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("accepted");
+    expect(eventsOf(fixture.dataRoot, KEY)).toEqual(before);
+    expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
+  });
+
   it("creates the PR with the stored title and exact body, then records the result", async () => {
     const fixture = await pushedTask();
     const fake = forgeStub();
@@ -128,6 +146,43 @@ describe("openPrTask", () => {
     expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
     expect(eventsOf(fixture.dataRoot, KEY)).toEqual(before);
+  });
+
+  it("refuses the stored base when origin now has a different default", async () => {
+    const fixture = await pushedTask();
+    await fixture.origin.createBranch("release");
+    await runGit(["symbolic-ref", "HEAD", "refs/heads/release"], { gitDir: fixture.origin.path, env: fixture.env });
+    const fake = forgeStub();
+    const before = eventsOf(fixture.dataRoot, KEY);
+
+    const failure = await failureOf(
+      withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake)),
+      Error,
+    );
+
+    expect(failure.message).toContain("has base main, but origin's default base is release");
+    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
+    expect(eventsOf(fixture.dataRoot, KEY)).toEqual(before);
+    expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
+  });
+
+  it("refuses an unresolved origin default without querying the forge", async () => {
+    const fixture = await pushedTask();
+    await runGit(["symbolic-ref", "HEAD", "refs/heads/missing"], { gitDir: fixture.origin.path, env: fixture.env });
+    const fake = forgeStub();
+    const before = eventsOf(fixture.dataRoot, KEY);
+
+    const failure = await failureOf(
+      withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake)),
+      Error,
+    );
+
+    expect(failure.message).toContain("origin's default base could not be resolved");
+    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [] });
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
+    expect(eventsOf(fixture.dataRoot, KEY)).toEqual(before);
+    expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
   });
 
   it("refuses required task data before calling the forge", async () => {
