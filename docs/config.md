@@ -175,13 +175,13 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 
 ## `assistant`
 
-| Key                 | Type                                              | Default  | Notes                                                                                                                                                             |
-| ------------------- | ------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `provider`          | `"claude-code"`, `"copilot"`, `"pi"` or `"codex"` | required | The assistant to run. The loader accepts `copilot` and `pi`, but they are not available in this version. The loader also accepts `codex`. `codex` runs each step. |
-| `models`            | object                                            | required | Has the keys `plan`, `execute` and `review`. All three are required.                                                                                              |
-| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust.                                                                                                                      |
-| `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                               |
-| `correctiveTurns`   | integer, 0 or more                                | `1`      | How many corrective turns the assistant can take.                                                                                                                 |
+| Key                 | Type                                              | Default  | Notes                                                                                                                                                                                                                                                  |
+| ------------------- | ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `provider`          | `"claude-code"`, `"copilot"`, `"pi"` or `"codex"` | required | The assistant to run. The loader accepts `copilot`, but it is not available in this version. The loader accepts `pi`, and `tasker doctor` checks it. A task run refuses `pi` in this version. The loader also accepts `codex`. `codex` runs each step. |
+| `models`            | object                                            | required | Has the keys `plan`, `execute` and `review`. All three are required.                                                                                                                                                                                   |
+| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust. Only the `pi` provider accepts this key. The loader refuses the key for each other provider.                                                                                                              |
+| `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                                                                                                                    |
+| `correctiveTurns`   | integer, 0 or more                                | `1`      | How many corrective turns the assistant can take.                                                                                                                                                                                                      |
 
 Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"`
 or `"high"`).
@@ -195,8 +195,25 @@ For the `claude-code` provider, `model` must have one of these forms:
 - A full id: `claude-` followed by lowercase letters, digits, `.` and `-`. For example, `claude-opus-5-5`.
 - Either form with the suffix `[1m]`. For example, `opus[1m]`.
 
-Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`. The
-providers `copilot`, `pi` and `codex` have no model check.
+Any other model gives the error `repos.<key>.assistant.models.<role>.model: is not a claude-code model: <value>`. For
+the `pi` provider, `model` must have the form `<provider>/<model-id>`. tasker splits the model at its first `/`. Both
+parts must not be empty, and the model must hold no white space. The part before the first `/` is the upstream. The
+upstream is the model service that `pi` calls and that bills the task. For example, `openrouter/openrouter/auto` has the
+upstream `openrouter` and the model id `openrouter/auto`.
+
+A `pi` model must not end in a thinking level of `pi`. The levels are `:off`, `:minimal`, `:low`, `:medium`, `:high`,
+`:xhigh` and `:max`. Another `:` suffix passes, for example `:free`. The reasons:
+
+- The default provider of pi must never choose the service that runs and bills the task.
+- The effort of the role is the one source of the thinking level, because two sources can disagree.
+
+A model in another form gives the error
+`repos.<key>.assistant.models.<role>.model: is not a pi model in the form <provider>/<model-id>: <value>`. A model that
+ends in a thinking level gives the error
+`repos.<key>.assistant.models.<role>.model: ends in the pi thinking level <level>: <value>`. If a model has both faults,
+only the first error shows.
+
+The providers `copilot` and `codex` have no model check.
 
 The command `tasker model` changes the model and the effort of one assistant role or one session role in the file that
 "Where the file is" names. It keeps the other keys and their order. It writes an indent of two spaces and keeps the line
