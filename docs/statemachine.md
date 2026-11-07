@@ -134,9 +134,10 @@ only when no finding is left unhandled.
 
 ## Landing
 
-`accept` goes to `accepted`. The command you run picks how the task lands: `merge` for the trunk path, or `push` and
-`open-pr` for the pull request path. `mark-landed` records an operator declaration that work in `accepted`, `pushed` or
-`in_peer_review` landed outside tasker. It moves the task to `landed` without Git or forge queries.
+`accept` goes to `accepted`. From `accepted`, `merge` lands the work on the trunk branch. For the pull request path,
+`push` and `open-pr` take the task to `in_peer_review`, where `merge` merges the recorded PR. `mark-landed` records an
+operator declaration that work in `accepted`, `pushed` or `in_peer_review` landed outside tasker. It moves the task to
+`landed` without Git or forge queries.
 
 ### Trunk path
 
@@ -180,6 +181,7 @@ flowchart LR
   PU -->|open-pr| OP[opening_pr]
   OP -->|done| PR[in_peer_review]
   PR -->|merge| MG[back to merging]
+  MG -->|forge confirms merged| L[back to landed]
   PU -->|mark-landed| L[back to landed]
   PR -->|mark-landed| L
 
@@ -193,8 +195,14 @@ flowchart LR
 - `open-pr` does not push. It needs `forge`. It checks for an open pull request from the task branch and adopts a
   matching one before it creates a PR. If tasker creates a PR but cannot store its record, retry or resume runs
   `open-pr` again. The lookup then adopts that PR before tasker can create another one.
-- `merge` from `in_peer_review` merges the PR through the forge with `forge.mergeMethod`, only at the sha that `push`
-  published. It lands the task only when the forge then says that the PR is merged. It does not wait for CI.
+- `merge` from `in_peer_review` merges the recorded PR through the configured forge with `forge.mergeMethod`, only at
+  the revision that `push` published. It first asks whether the PR is merged. If not, it asks the forge to merge only if
+  the PR still has that revision as its head, then asks again. It lands the task only after the forge confirms the
+  merge. If the first query finds a completed PR, it records that result without sending another request. It does not
+  wait for CI or a forge queue.
+
+  See [the landing reference](../skills/tasker/references/landing.md#tasker-merge) for guards, errors and output.
+
 - After `landed`, the path is the same as the trunk path. `finish` refuses a task in `in_peer_review`.
 - `reopen`, from `accepted` or `pushed`, sends a bug found after accept back to `refining` in Plan. It resyncs the
   worktree onto the stored base tip first. The new plan revision must be approved and then go through execution,
@@ -252,22 +260,27 @@ flowchart LR
 - A resume moves the task to the state before the spawn, then runs the same command again, except for `updating_branch`,
   which runs nothing. So the task goes straight back into a spawning state, except after `updating_branch`.
 
-| Paused from                                 | Resumes to                             | Then runs                                                            |
-| ------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------- |
-| `planning`                                  | `workspace_ready`                      | `plan` (continues the session)                                       |
-| `refining` (plain refine, or from `failed`) | `awaiting_plan_review`                 | `refine`, with the recorded feedback                                 |
-| `refining` (reopen from `accepted`)         | `accepted`                             | `reopen`, with the recorded feedback                                 |
-| `refining` (reopen from `pushed`)           | `pushed`                               | `reopen`, with the recorded feedback                                 |
-| `refining` (promoted from `reviewed`)       | `reviewed`                             | `refine`, with the recorded feedback or none                         |
-| `refining` (from `tasker review FEEDBACK`)  | `awaiting_work_review`                 | `review`, with the recorded feedback                                 |
-| `executing`                                 | `approved`                             | `execute` (continues the session)                                    |
-| `verifying` (interrupted only)              | `executed`                             | `verify`                                                             |
-| `reviewing`                                 | `awaiting_work_review`                 | `review` (in a new session)                                          |
-| `pushing` (interrupted only)                | `accepted`                             | `push`. No second push if `origin` already has the sha.              |
-| `opening_pr` (interrupted only)             | `pushed`                               | `open-pr`. It adopts a matching PR from an earlier create.           |
-| `merging` (interrupted only)                | the recorded merge origin (`accepted`) | `merge`. No second push or merge if the work is already on the base. |
-| `finishing` (interrupted only)              | `landed`                               | `finish`. Each cleanup step skips what is already done.              |
-| `updating_branch` (interrupted only)        | its origin state                       | nothing. Run `update-branch` again.                                  |
+| Paused from                                 | Resumes to                                                 | Then runs                                                                                                                    |
+| ------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `planning`                                  | `workspace_ready`                                          | `plan` (continues the session)                                                                                               |
+| `refining` (plain refine, or from `failed`) | `awaiting_plan_review`                                     | `refine`, with the recorded feedback                                                                                         |
+| `refining` (reopen from `accepted`)         | `accepted`                                                 | `reopen`, with the recorded feedback                                                                                         |
+| `refining` (reopen from `pushed`)           | `pushed`                                                   | `reopen`, with the recorded feedback                                                                                         |
+| `refining` (promoted from `reviewed`)       | `reviewed`                                                 | `refine`, with the recorded feedback or none                                                                                 |
+| `refining` (from `tasker review FEEDBACK`)  | `awaiting_work_review`                                     | `review`, with the recorded feedback                                                                                         |
+| `executing`                                 | `approved`                                                 | `execute` (continues the session)                                                                                            |
+| `verifying` (interrupted only)              | `executed`                                                 | `verify`                                                                                                                     |
+| `reviewing`                                 | `awaiting_work_review`                                     | `review` (in a new session)                                                                                                  |
+| `pushing` (interrupted only)                | `accepted`                                                 | `push`. No second push if `origin` already has the sha.                                                                      |
+| `opening_pr` (interrupted only)             | `pushed`                                                   | `open-pr`. It adopts a matching PR from an earlier create.                                                                   |
+| `merging` (interrupted only)                | the recorded merge origin (`accepted` or `in_peer_review`) | `merge`. It checks for a completed PR before another request. The trunk path checks whether the work is already on the base. |
+| `finishing` (interrupted only)              | `landed`                                                   | `finish`. Each cleanup step skips what is already done.                                                                      |
+| `updating_branch` (interrupted only)        | its origin state                                           | nothing. Run `update-branch` again.                                                                                          |
+
+Merge start stores the origin. It stays stored if the task fails or is interrupted. Resume returns the task to
+`accepted` or `in_peer_review` from that value, then runs `merge`. For a PR, the first forge query detects a merge that
+completed before the stop, so tasker records it without another merge request. A missing or unsupported stored origin
+makes resume refuse the recovery move and point to `mark-landed`.
 
 ## Failure and retry
 
@@ -285,24 +298,29 @@ flowchart LR
 
 `tasker retry` picks the target from the state that the task failed in, then runs the command again. See [Code](#code).
 
-| Failed in                                                   | Retries to                                                                                                                | Then runs                                                                                                               |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `provisioning`                                              | `provisioning`. Retry does not move the task. `start` moves it from `failed`.                                             | `start`                                                                                                                 |
-| `planning`                                                  | `workspace_ready`                                                                                                         | `plan` (new session)                                                                                                    |
-| `refining` (refine from `awaiting_plan_review` or `failed`) | `awaiting_plan_review`                                                                                                    | nothing runs. Retry prints a hint, and you give the next feedback to `refine`.                                          |
-| `refining` (promoted from `reviewed`)                       | `reviewed`                                                                                                                | nothing runs. Retry prints a hint: refine again to act on the findings, or dismiss-review.                              |
-| `refining` (from `tasker review FEEDBACK`)                  | `awaiting_work_review`                                                                                                    | nothing runs. Retry prints a hint, and you give the next feedback to `review`.                                          |
-| `refining` (reopen from `accepted`)                         | `accepted`                                                                                                                | nothing runs. Retry prints the reopen hint. No assistant runs.                                                          |
-| `refining` (reopen from `pushed`)                           | `pushed`                                                                                                                  | nothing runs. Retry prints the reopen hint. No assistant runs.                                                          |
-| `approved`                                                  | `approved`                                                                                                                | `execute`                                                                                                               |
-| `executing`                                                 | `approved`                                                                                                                | `execute` (new session). A done todo gets no turn.                                                                      |
-| `verifying`                                                 | `executed`                                                                                                                | `verify`. With `--resume-execute`: `approved`, every todo done, then `execute` continues the session with one fix turn. |
-| `reviewing`                                                 | `awaiting_work_review`                                                                                                    | `review` (new session). Retry deletes the review session of the next review number.                                     |
-| `accepted` (a failed `tasker push`)                         | `accepted`                                                                                                                | `push`                                                                                                                  |
-| `pushing` (a failed `tasker push`)                          | `accepted`                                                                                                                | `push`. No second push if `origin` already has the sha.                                                                 |
-| `opening_pr`                                                | `pushed`                                                                                                                  | `open-pr`. It adopts a matching PR from an earlier create.                                                              |
-| `merging`                                                   | the recorded merge origin (`accepted`)                                                                                    | `merge`. It lands with no second push or merge if the work is already on the base.                                      |
-| `quota_blocked`, `awaiting_quota_approval` or `interrupted` | after `planning`, `executing`, `verifying` or `reviewing`: the target of that row. After each other state, retry refuses. | the command of that row. Nothing runs after a refusal.                                                                  |
+| Failed in                                                   | Retries to                                                                                                                | Then runs                                                                                                                    |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `provisioning`                                              | `provisioning`. Retry does not move the task. `start` moves it from `failed`.                                             | `start`                                                                                                                      |
+| `planning`                                                  | `workspace_ready`                                                                                                         | `plan` (new session)                                                                                                         |
+| `refining` (refine from `awaiting_plan_review` or `failed`) | `awaiting_plan_review`                                                                                                    | nothing runs. Retry prints a hint, and you give the next feedback to `refine`.                                               |
+| `refining` (promoted from `reviewed`)                       | `reviewed`                                                                                                                | nothing runs. Retry prints a hint: refine again to act on the findings, or dismiss-review.                                   |
+| `refining` (from `tasker review FEEDBACK`)                  | `awaiting_work_review`                                                                                                    | nothing runs. Retry prints a hint, and you give the next feedback to `review`.                                               |
+| `refining` (reopen from `accepted`)                         | `accepted`                                                                                                                | nothing runs. Retry prints the reopen hint. No assistant runs.                                                               |
+| `refining` (reopen from `pushed`)                           | `pushed`                                                                                                                  | nothing runs. Retry prints the reopen hint. No assistant runs.                                                               |
+| `approved`                                                  | `approved`                                                                                                                | `execute`                                                                                                                    |
+| `executing`                                                 | `approved`                                                                                                                | `execute` (new session). A done todo gets no turn.                                                                           |
+| `verifying`                                                 | `executed`                                                                                                                | `verify`. With `--resume-execute`: `approved`, every todo done, then `execute` continues the session with one fix turn.      |
+| `reviewing`                                                 | `awaiting_work_review`                                                                                                    | `review` (new session). Retry deletes the review session of the next review number.                                          |
+| `accepted` (a failed `tasker push`)                         | `accepted`                                                                                                                | `push`                                                                                                                       |
+| `pushing` (a failed `tasker push`)                          | `accepted`                                                                                                                | `push`. No second push if `origin` already has the sha.                                                                      |
+| `opening_pr`                                                | `pushed`                                                                                                                  | `open-pr`. It adopts a matching PR from an earlier create.                                                                   |
+| `merging`                                                   | the recorded merge origin (`accepted` or `in_peer_review`)                                                                | `merge`. It checks for a completed PR before another request. The trunk path checks whether the work is already on the base. |
+| `quota_blocked`, `awaiting_quota_approval` or `interrupted` | after `planning`, `executing`, `verifying` or `reviewing`: the target of that row. After each other state, retry refuses. | the command of that row. Nothing runs after a refusal.                                                                       |
+
+For a failed merge, retry returns the task to `accepted` or `in_peer_review` from the stored merge origin, then runs
+`merge`. The value stays in the task record through failure and interruption. If it is NULL or is not one of those two
+states, retry refuses without a move and points to `mark-landed`. Resume uses the same checks for an interrupted merge.
+After either recovery, the PR path checks its status first, so it does not request a second merge for a completed PR.
 
 - If git refuses a merge because the base moved, the task also fails from `merging`. Do not retry it. Run
   `update-branch`, which demotes the task to `executed` (see "Update branch").
@@ -373,7 +391,7 @@ read one table. The table lives in `src/state/commands.ts`.
 | `reviewed`                                                                                                                                                               | none              | `refine`, `dismiss-review`, `update-branch`, `abort`               |
 | `accepted`                                                                                                                                                               | none              | `merge`, `push`, `mark-landed`, `update-branch`, `reopen`, `abort` |
 | `pushed`                                                                                                                                                                 | none              | `open-pr`, `mark-landed`, `update-branch`, `reopen`, `abort`       |
-| `in_peer_review`                                                                                                                                                         | none              | `mark-landed`, `update-branch`, `abort`                            |
+| `in_peer_review`                                                                                                                                                         | none              | `merge`, `mark-landed`, `update-branch`, `abort`                   |
 | `landed`                                                                                                                                                                 | `finish`          | `finish`, `abort`                                                  |
 | `cleanup_failed`                                                                                                                                                         | `finish`          | `finish`, `update-branch`, `abort`                                 |
 | `failed`                                                                                                                                                                 | `retry`           | `retry`, `refine`, `update-branch`, `abort`                        |
@@ -403,6 +421,17 @@ illegal edge.
 
 The event of a failure records the state that the task failed in. `tasker retry` reads that state to pick its target.
 For the origin `refining`, it also reads the `from` of the last move into `refining`. For the origin `merging`, retry
-and resume also read the `from` of the last move into `merging`. For the origins `quota_blocked`,
+and resume read the task's stored `merge_origin` value to choose between `accepted` and `in_peer_review`. They accept no
+other value and write no recovery move when the value is missing or invalid. For the origins `quota_blocked`,
 `awaiting_quota_approval` and `interrupted`, retry also reads the `from` of the last move into the pause, and only
 `planning`, `executing`, `verifying` and `reviewing` give a row.
+
+Merge start stores the origin, enters `merging`, records the transition and creates the run marker in one transaction.
+Failure and interruption keep the origin. Completion moves to `landed`, clears the origin and marker, and records an
+event in one transaction. A trunk merge records `landed` with its revision, base and whether tasker pushed.
+
+A PR merge records `merged` with `{ forge, number, method, expectedHead, requested, from: "merging", to: "landed" }`.
+The configured provider id is `forge`, and the published SHA is `expectedHead`. See
+[the landing reference](../skills/tasker/references/landing.md#tasker-merge) for output and errors. The PR completion
+event is written only after the forge confirms that the PR is merged. If the first status query finds it already merged,
+the event records `requested: false` and tasker sends no merge request.
