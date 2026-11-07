@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { modelIssue } from "../../src/assistant/models.js";
+import { modelIssue, upstreamOf } from "../../src/assistant/models.js";
 
 describe("modelIssue", () => {
   it.each([
@@ -32,7 +32,47 @@ describe("modelIssue", () => {
     expect(modelIssue("claude-code", model)).toBe(`is not a claude-code model: ${model}`);
   });
 
-  it.each(["copilot", "pi", "codex"] as const)("accepts every model for %s", (provider) => {
+  it.each(["copilot", "codex"] as const)("accepts every model for %s", (provider) => {
     expect(modelIssue(provider, "gpt-5")).toBeUndefined();
+  });
+
+  it.each(["openrouter/auto", "openrouter/openrouter/auto", "openrouter/auto:free"])(
+    "accepts the pi model %s",
+    (model) => {
+      expect(modelIssue("pi", model)).toBeUndefined();
+    },
+  );
+
+  it.each(["/auto", "openrouter/", "openrouter", "openrouter/auto now"])("rejects the pi model form %j", (model) => {
+    expect(modelIssue("pi", model)).toBe(`is not a pi model in the form <provider>/<model-id>: ${model}`);
+  });
+
+  it.each([":off", ":minimal", ":low", ":medium", ":high", ":xhigh", ":max"])(
+    "rejects the pi thinking suffix %s",
+    (suffix) => {
+      const model = `openrouter/auto${suffix}`;
+      expect(modelIssue("pi", model)).toBe(`ends in the pi thinking level ${suffix}: ${model}`);
+    },
+  );
+
+  it("reports the model form error before the thinking suffix error", () => {
+    const model = "openrouter/:high";
+    expect(modelIssue("pi", model)).toBe(`is not a pi model in the form <provider>/<model-id>: ${model}`);
+  });
+});
+
+describe("upstreamOf", () => {
+  it.each([
+    ["openrouter/auto", "openrouter"],
+    ["openrouter/openrouter/auto", "openrouter"],
+    ["openrouter/auto:free", "openrouter"],
+  ])("returns the upstream for %s", (model, upstream) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    expect(upstreamOf(model)).toBe(upstream);
+  });
+
+  it.each(["/auto", "openrouter/", "openrouter", "openrouter/auto now"])("returns undefined for %j", (model) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    expect(upstreamOf(model)).toBeUndefined();
   });
 });

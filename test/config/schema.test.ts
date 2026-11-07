@@ -508,11 +508,32 @@ describe("parseConfig assistant", () => {
     expect(() => parseConfig(raw, {}, home)).not.toThrow();
   });
 
-  it.each(["copilot", "pi", "codex"])("accepts any model for %s", (provider) => {
+  it.each(["copilot", "codex"])("accepts any model for %s", (provider) => {
     const raw = validConfig();
     raw.repos.tasker.assistant.provider = provider;
     raw.repos.tasker.assistant.models.plan.model = "gpt-5";
     expect(() => parseConfig(raw, {}, home)).not.toThrow();
+  });
+
+  it.each([
+    ["openrouter/auto", undefined],
+    ["openrouter/openrouter/auto", undefined],
+    ["openrouter/auto:free", undefined],
+    ["openrouter", "is not a pi model in the form <provider>/<model-id>: openrouter"],
+    ["/auto", "is not a pi model in the form <provider>/<model-id>: /auto"],
+    ["openrouter/", "is not a pi model in the form <provider>/<model-id>: openrouter/"],
+    ["openrouter/auto now", "is not a pi model in the form <provider>/<model-id>: openrouter/auto now"],
+    ["openrouter/auto:high", "ends in the pi thinking level :high: openrouter/auto:high"],
+  ])("applies the pi model rule to %s", (model, error) => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.provider = "pi";
+    raw.repos.tasker.assistant.models.plan.model = model;
+    const issues = issuesOf(raw);
+    if (error === undefined) {
+      expect(issues).toEqual([]);
+    } else {
+      expect(issues).toEqual([`repos.tasker.assistant.models.plan.model: ${error}`]);
+    }
   });
 
   it("reports a bad model together with the other errors of the repo", () => {
