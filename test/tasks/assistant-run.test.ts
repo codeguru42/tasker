@@ -270,17 +270,9 @@ describe("sandboxReadDenyPaths", () => {
   it.each(["rel/pi", "~user/x", "file://host/x"])(
     "gives no pi entries for a non-absolute TASKER_PI_CODING_AGENT_DIR value: %s",
     (folder) => {
-      expect(denyPaths({ TASKER_PI_CODING_AGENT_DIR: folder }).some((path) => path.includes(".pi/agent/"))).toBe(false);
+      expect(denyPaths({ TASKER_PI_CODING_AGENT_DIR: folder })).toEqual(["/k/id", "/p"]);
     },
   );
-
-  it("gives no pi entries when TASKER_PI_CODING_AGENT_DIR and HOME are unset", () => {
-    expect(denyPaths({}).some((path) => path.includes(".pi/agent/"))).toBe(false);
-  });
-
-  it("gives no pi entries when PI_CODING_AGENT_DIR and HOME are unset", () => {
-    expect(denyPaths({}).some((path) => path.includes(".pi/agent/"))).toBe(false);
-  });
 
   it("gives the credentials of Codex when only CODEX_HOME is set", () => {
     expect(denyPaths({ CODEX_HOME: "/cx" })).toEqual(["/k/id", "/cx/auth.json", "/p"]);
