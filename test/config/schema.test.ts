@@ -459,6 +459,47 @@ describe("parseConfig assistant", () => {
     expectIssueAt(issuesOf(raw), "repos.tasker.assistant.provider");
   });
 
+  it.each(["claude-code", "codex", "copilot"])("rejects trustedExtensions for %s, even when empty", (provider) => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.provider = provider;
+    raw.repos.tasker.assistant.trustedExtensions = [];
+    expect(issuesOf(raw)).toContain("repos.tasker.assistant.trustedExtensions: only the pi provider accepts this key");
+  });
+
+  it("accepts trustedExtensions for pi", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.provider = "pi";
+    raw.repos.tasker.assistant.trustedExtensions = [];
+    raw.repos.tasker.assistant.models.plan.model = "openrouter/auto";
+    raw.repos.tasker.assistant.models.execute.model = "openrouter/auto";
+    raw.repos.tasker.assistant.models.review.model = "openrouter/auto";
+    expect(() => parseConfig(raw, {}, home)).not.toThrow();
+  });
+
+  it.each(["missing", "invalid"] as const)("does not add a trustedExtensions issue for a %s provider", (state) => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.trustedExtensions = [];
+    if (state === "missing") {
+      delete raw.repos.tasker.assistant.provider;
+    } else {
+      raw.repos.tasker.assistant.provider = "gpt";
+    }
+    const issues = issuesOf(raw);
+    expect(issues.some((line) => line.startsWith("repos.tasker.assistant.trustedExtensions:"))).toBe(false);
+    expectIssueAt(issues, "repos.tasker.assistant.provider");
+  });
+
+  it("reports trustedExtensions with a model error", () => {
+    const raw = validConfig();
+    raw.repos.tasker.assistant.provider = "claude-code";
+    raw.repos.tasker.assistant.models.plan.model = "gpt-5";
+    raw.repos.tasker.assistant.trustedExtensions = [];
+    expect(issuesOf(raw)).toEqual([
+      "repos.tasker.assistant.models.plan.model: is not a claude-code model: gpt-5",
+      "repos.tasker.assistant.trustedExtensions: only the pi provider accepts this key",
+    ]);
+  });
+
   it("rejects a missing review model", () => {
     const raw = validConfig();
     delete raw.repos.tasker.assistant.models.review;
