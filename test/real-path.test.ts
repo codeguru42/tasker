@@ -1,8 +1,19 @@
-import { mkdirSync, realpathSync, symlinkSync } from "node:fs";
+import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { canonicalPath, isInside } from "../src/real-path.js";
+import { canonicalPath, isDeniedPath, isInside, realPathWithMissingParents } from "../src/real-path.js";
+import { thrownBy } from "./helpers/errors.js";
 import { useTempDir } from "./helpers/temp.js";
+
+function realPath(path: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return realPathWithMissingParents(path);
+}
+
+function denied(path: string, entries: readonly string[]): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return isDeniedPath(path, entries);
+}
 
 describe("canonicalPath", () => {
   it("gives the real path of a real folder", () => {
@@ -31,6 +42,60 @@ describe("canonicalPath", () => {
     const path = join(dir, "no", "such", "wt");
 
     expect(canonicalPath(path)).toBe(resolve(path));
+  });
+});
+
+describe("realPathWithMissingParents", () => {
+  it("resolves a missing parent chain after the longest existing parent", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    mkdirSync(join(dir, "real"));
+    symlinkSync(join(dir, "real"), join(dir, "link"));
+    const path = join(dir, "link", "missing", "child");
+
+    expect(realPath(path)).toBe(join(dir, "real", "missing", "child"));
+  });
+
+  it("resolves a link in a middle path component", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    mkdirSync(join(dir, "target", "inner"), { recursive: true });
+    symlinkSync(join(dir, "target"), join(dir, "middle"));
+    writeFileSync(join(dir, "target", "inner", "file"), "x");
+
+    expect(realPath(join(dir, "middle", "inner", "file"))).toBe(join(dir, "target", "inner", "file"));
+  });
+
+  it("throws for a dangling link", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync(join(dir, "missing-target"), join(dir, "dangling"));
+
+    const error = thrownBy(() => realPath(join(dir, "dangling", "child")));
+
+    expect((error as NodeJS.ErrnoException).code).toBe("ENOENT");
+  });
+
+  it("throws for a link loop", () => {
+    const dir = realpathSync(useTempDir("tasker-real-path-"));
+    symlinkSync(join(dir, "loop"), join(dir, "loop"));
+
+    const error = thrownBy(() => realPath(join(dir, "loop", "child")));
+
+    expect((error as NodeJS.ErrnoException).code).toBe("ELOOP");
+  });
+});
+
+describe("isDeniedPath", () => {
+  it("matches an exact denial", () => {
+    expect(denied("/work/private", ["/work/private"])).toBe(true);
+  });
+
+  it("matches the base and descendants of a /** denial", () => {
+    expect(denied("/work/private", ["/work/private/**"])).toBe(true);
+    expect(denied("/work/private/file", ["/work/private/**"])).toBe(true);
+  });
+
+  it("does not match a sibling that shares the denied path prefix", () => {
+    expect(denied("/work/private-old/file", ["/work/private/**"])).toBe(false);
+    expect(denied("/work/private-old", ["/work/private"])).toBe(false);
   });
 });
 
