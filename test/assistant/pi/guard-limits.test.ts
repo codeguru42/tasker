@@ -91,7 +91,7 @@ describe("guardStartArgs", () => {
     expect(makeStartArgs(path)).toEqual([
       "--no-mcp",
       "-e",
-      fileURLToPath(new URL("../../../dist/assistant/pi/guard-extension.js", import.meta.url)),
+      fileURLToPath(new URL("../../../src/assistant/pi/guard-extension.js", import.meta.url)),
       "--tasker-guard-limits",
       path,
     ]);
