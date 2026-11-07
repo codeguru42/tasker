@@ -698,8 +698,8 @@ The variable `TASKER_PI_BIN` names the `pi` program. For the rule of the resolve
 
 Each `pi` child gets the agent folder as `PI_CODING_AGENT_DIR`. `piChildEnv()` gives a reason in three cases, in this
 order. First, `TASKER_PI_CODING_AGENT_DIR` is set and not absolute. Second, it is not set, and `HOME` is set and not
-absolute. [The agent folder](#the-agent-folder) gives the reason for this case. Third, `piAgentDir()` gives no folder.
-On a reason, a run refuses before the spawn, and each doctor check that starts `pi` fails.
+absolute. Third, `piAgentDir()` gives no folder. [The agent folder](#the-agent-folder) gives the reason for the first
+and second cases. On a reason, a run refuses before the spawn, and each doctor check that starts `pi` fails.
 
 ### The model forms
 
