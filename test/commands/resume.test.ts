@@ -124,6 +124,30 @@ describe("tasker resume", () => {
     expect(fake.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs]);
   });
 
+  it("returns the open-pr failure code when resumed PR lookup fails", async () => {
+    const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
+    withDataRootStore(accepted.dataRoot, (store) => {
+      store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision });
+      pauseTaskVia(store, accepted.task.id, "pushed", "opening_pr");
+    });
+    const tokenAnswer = openPrTokenAnswer();
+    const listArgs = openPrListArgs(accepted.task.branch!);
+    const fake = installOpenPrForgeGh(
+      [tokenAnswer, { args: listArgs, stderr: "lookup denied", exitCode: 1 }],
+      "tasker-resume-open-pr-gh-",
+    );
+
+    const result = await runResume(KEY, "--repo", REPO);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toBe(
+      `opening_pr failed: could not list pull requests for head ${accepted.task.branch!}: gh pr list failed with exit code 1: lookup denied\n`,
+    );
+    expect(fake.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs]);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("failed");
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
+  });
+
   it.each(["accepted", "pushed"] as const)(
     "restores a stopped reopen from %s and reuses its feedback",
     async (origin) => {

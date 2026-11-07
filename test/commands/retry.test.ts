@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { retry } from "../../src/commands/retry.js";
 import { push } from "../../src/commands/push.js";
+import { openPr } from "../../src/commands/open-pr.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { failedFrom, type TaskState } from "../../src/state/machine.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
@@ -27,12 +28,14 @@ import {
   eventDataOf,
   eventsOf,
   rejectPublishedEvent,
+  rejectPrOpenedEvent,
   databasePathOf,
   failRefineFrom,
   failTaskFrom,
   failTaskVia,
   failVerifyRun,
   latestTaskOf,
+  readRunMarker,
   reviewSessionRows,
   withDataRootStore,
 } from "../helpers/store.js";
@@ -66,14 +69,42 @@ describe("tasker retry", () => {
   it("adopts a PR created before a failed record and passes through open-pr output", async () => {
     const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: FORGE_ACCOUNT } } });
     const url = "https://github.com/codeguru42/tasker/pull/42";
-    withDataRootStore(accepted.dataRoot, (store) => {
-      store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision });
-      failTaskVia(store, accepted.task.id, "pushed", "opening_pr");
-    });
+    withDataRootStore(accepted.dataRoot, (store) =>
+      store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision }),
+    );
     const head = accepted.task.branch!;
     const tokenAnswer = openPrTokenAnswer();
     const listArgs = openPrListArgs(head);
-    const fake = installOpenPrForgeGh(
+    const createArgs = [
+      "pr",
+      "create",
+      "--head",
+      head,
+      "--base",
+      "main",
+      "--title",
+      `${accepted.task.title ?? KEY} (${KEY})`,
+      "--body",
+      `Task: ${KEY}\n\n${accepted.task.title ?? KEY}`,
+    ];
+    const releaseRejectedEvent = rejectPrOpenedEvent(databasePathOf(accepted.dataRoot));
+    const create = installOpenPrForgeGh(
+      [tokenAnswer, { args: listArgs, stdout: "[]" }, { args: createArgs, stdout: `${url}\n` }],
+      "tasker-retry-open-pr-gh-",
+    );
+
+    const failedOpen = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
+    expect(failedOpen).toEqual({
+      code: 1,
+      out: "",
+      err: `opening_pr failed: opened PR #42 (${url}), but tasker cannot record it: event rejected\n`,
+    });
+    expect(create.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs, createArgs]);
+    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "failed", prNumber: null });
+    expect(eventsOf(accepted.dataRoot, KEY).some((event) => event.type === "pr_opened")).toBe(false);
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
+
+    const retryWhileRejected = installOpenPrForgeGh(
       [
         tokenAnswer,
         {
@@ -83,7 +114,27 @@ describe("tasker retry", () => {
       ],
       "tasker-retry-open-pr-gh-",
     );
+    const failedRetry = await runRetry(KEY, "--repo", REPO);
+    expect(failedRetry.code).toBe(1);
+    expect(failedRetry.err).toContain(
+      `opening_pr failed: found PR #42 (${url}), but tasker cannot record it: event rejected`,
+    );
+    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "failed", prNumber: null });
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
+    expect(retryWhileRejected.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs]);
 
+    releaseRejectedEvent();
+
+    const adoptedAfterFailure = installOpenPrForgeGh(
+      [
+        tokenAnswer,
+        {
+          args: listArgs,
+          stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]),
+        },
+      ],
+      "tasker-retry-open-pr-gh-",
+    );
     const result = await runRetry(KEY, "--repo", REPO);
 
     expect(result).toEqual({
@@ -92,7 +143,7 @@ describe("tasker retry", () => {
       err: "",
     });
     expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
-    expect(fake.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs]);
+    expect(adoptedAfterFailure.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, listArgs]);
   });
 
   it("runs tasker start for a task that failed in provisioning", async () => {
