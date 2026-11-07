@@ -40,12 +40,15 @@ no other `tasker` command and starts no task subagent of a ticket. An installing
 When a step of the operator pages applies [the failure rule](dev/limits.md#the-failure-rule), the rule covers the
 operator in the place of the orchestrator. When the operator gets a notice, the operator follows
 [the notice rule](dev/doc-reads.md#the-notice-rule). For an item with a denied command, the operator follows
-[the tool-block rule](dev/tasker-commands.md#the-tool-block-rule).
+[the tool-block rule](dev/tasker-commands.md#the-tool-block-rule). For a denied command of step 3 of "The order of a
+milestone" or a denied removal of the label "on hold", the operator follows
+[A denied command of the operator](dev/operator-start.md#a-denied-command-of-the-operator).
 
 The operator pages are `docs/operator.md` and the pages of this list, "The pages":
 
 - [docs/dev/operator-start.md](dev/operator-start.md): "The order of a milestone", "Start a session", "The start
-  prompts", "Stop a session", "The close of a milestone", "A handoff" and "A blocked session".
+  prompts", "Stop a session", "The close of a milestone", "A handoff", "A denied command of the operator" and "A blocked
+  session".
 - [docs/dev/operator-items.md](dev/operator-items.md): "The form of an item", "The open items", "The answer" and "The
   states of an item".
 - [docs/dev/operator-conversations.md](dev/operator-conversations.md): "A side conversation" and "The word of the user".
