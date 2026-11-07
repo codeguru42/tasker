@@ -648,21 +648,29 @@ The agent folder of `pi` holds its credentials, its `settings.json` and its exte
 folder. It converts a `file://` URL to a path. It uses a relative value as it stands. A measure on `pi` 1.1.0 on
 2026-11-03 showed these facts.
 
-`piAgentDir()` in `src/assistant/config-folders.ts` is the one home of the agent folder in tasker. It follows the rules
-of `pi`, with three differences. A blank value counts as unset, as for each other variable of tasker. If `HOME` is not
-set, an unset value or a value that starts with `~` gives no folder. The reason: tasker never takes the home folder of
-the host from the system, but `pi` does when `HOME` is unset. For a `file://` URL that `pi` cannot convert, it gives the
-value as it stands, where `pi` throws.
+`piAgentDir()` in `src/assistant/config-folders.ts` is the one home of the agent folder in tasker. It reads
+`TASKER_PI_CODING_AGENT_DIR`, and it follows the rules of `pi` for the value, with three differences. A blank value
+counts as unset, as for each other variable of tasker. If `HOME` is not set, an unset value or a value that starts with
+`~` gives no folder. The reason: tasker never takes the home folder of the host from the system, but `pi` does when
+`HOME` is unset. For a `file://` URL that `pi` cannot convert, it gives the value as it stands, where `pi` throws.
 
 The read deny list holds three files of the agent folder: `auth.json`, `mcp-auth.json` and `models.json`. `auth.json`
 holds the saved API keys and OAuth credentials of `pi`. `mcp-auth.json` holds the OAuth tokens of its MCP servers.
 `models.json` can hold an API key of an endpoint as plain text. The shell and the read tools of a run need none of the
 three files.
 
-`PI_CODING_AGENT_DIR` and `PI_CODING_AGENT_SESSION_DIR` pass [the filter](phases.md#the-environment-of-a-phase) on
-purpose. `PI_CODING_AGENT_DIR` locates the credentials, `settings.json` and the extensions of a `pi` child. Without it,
-the child uses `$HOME/.pi/agent`, not the folder that the user set. `PI_CODING_AGENT_SESSION_DIR` locates the sessions
-of a `pi` command that names no `--session-dir`.
+`TASKER_PI_CODING_AGENT_DIR` and `TASKER_PI_CODING_AGENT_SESSION_DIR` are the two inputs of tasker for the agent folder
+and the session folder of `pi`. The filter of the phases drops each name that starts with `TASKER_`, so no child gets
+them. This follows `TASKER_GH_CONFIG_DIR`, which the forge child gets as `GH_CONFIG_DIR`. The pi provider must pass the
+two values to its child as `PI_CODING_AGENT_DIR` and `PI_CODING_AGENT_SESSION_DIR`, in the form that `pi` expects.
+Without `PI_CODING_AGENT_DIR`, the child uses `$HOME/.pi/agent`, not the folder that the user set.
+`PI_CODING_AGENT_SESSION_DIR` locates the sessions of a `pi` command that names no `--session-dir`.
+
+The pi provider must refuse a run before it starts `pi` when `TASKER_PI_CODING_AGENT_DIR` is nonblank and relative. The
+doctor does not refuse it. The reason: `pi` uses a relative value as it stands, and the file that it opens follows the
+cwd of the `pi` process. The deny path of tasker is absolute, so the two can name different files. The deny list adds no
+pi entry for such a value, and it never refuses a run of another provider. Nobody measured a full run of `pi` in a
+sandbox, or the cwd that tasker gives a `pi` child.
 
 ## The plan answer and the prompts
 
