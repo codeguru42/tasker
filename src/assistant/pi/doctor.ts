@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { isSet, relativePathReason } from "../../config/path.js";
 import type { Check, CheckResult } from "../../doctor/check.js";
@@ -206,7 +206,9 @@ export function simpleEnglishCheck(timeoutMs = 1000): Check {
     if (folders.length === 0) {
       return { status: "error", detail: "tasker cannot find the skill folders of pi, because HOME is not set" };
     }
-    const skillPath = folders.map((folder) => join(folder, "simple-english", "SKILL.md")).find(existsSync);
+    const skillPath = folders
+      .map((folder) => join(folder, "simple-english", "SKILL.md"))
+      .find((path) => statSync(path, { throwIfNoEntry: false })?.isFile() === true);
     if (skillPath !== undefined) return { status: "ok", detail: `simple-english at ${skillPath}` };
     const lastFolder = folders.at(-1);
     if (lastFolder === undefined) {
