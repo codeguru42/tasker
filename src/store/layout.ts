@@ -41,6 +41,11 @@ export function taskSessionsDir(dataRoot: string, task: Pick<Task, "issueKey" | 
   return join(taskArtifactsDir(dataRoot, task), "sessions");
 }
 
+// The limits file for one pi session. It makes no file.
+export function guardLimitsPath(sessionDir: string, sessionId: string): string {
+  return join(sessionDir, `${sessionId}.guard.json`);
+}
+
 // The folder of the logs of one attempt. It makes no folder.
 export function taskLogsDir(dataRoot: string, task: Pick<Task, "issueKey" | "attempt">): string {
   return join(taskArtifactsDir(dataRoot, task), "logs");

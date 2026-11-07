@@ -10,27 +10,22 @@ import type { RunInput } from "../../../src/assistant/provider.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
 
 function makeLimits(input: RunInput, tools: { name: string; path: string; source: string }[]) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return guardLimits(input, tools);
 }
 
 function makeStartArgs(path: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return guardStartArgs(path);
 }
 
 function writeLimits(input: RunInput, limits: ReturnType<typeof makeLimits>) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return writeGuardLimits(input, limits);
 }
 
 function makeBuiltInTool(name: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return builtInTool(name);
 }
 
 function makeLimitsPath(sessionDir: string, sessionId: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return guardLimitsPath(sessionDir, sessionId);
 }
 
