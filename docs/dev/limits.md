@@ -167,8 +167,10 @@ in the task worktree:
 1. Run `git fetch tasker`.
 2. Read `<hash>` with `git rev-parse --verify tasker/<task branch>`. The hash lives only for this update.
 3. Run `git rev-parse --git-path rebase-merge`. If the command fails, or the folder that it names exists,
-   [stop](#the-answer-wait-rule). Nothing changes. For example, the worktree stays in a rebase when `git rebase --abort`
-   fails in step 7 of [the commit check](verify-failures.md#the-commit-check).
+   [stop](#the-answer-wait-rule). Nothing changes. Then run `git rev-parse --git-path BISECT_START`. Make sure that the
+   command succeeds and its named file does not exist. If either condition fails, stop without reset or cleanup. Nothing
+   changes. For example, the worktree stays in a rebase when `git rebase --abort` fails in step 7 of
+   [the commit check](verify-failures.md#the-commit-check).
 4. Run `git status --porcelain`. If it prints a line, stop. Nothing changes. Test the output, because the command exits
    with 0 also when it prints lines. Ignored files such as `node_modules/` do not print.
 5. Run `git reset --keep <hash>`.
