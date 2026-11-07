@@ -3,6 +3,7 @@ import { reposByProvider } from "../config/repo-groups.js";
 import type { Check } from "../doctor/check.js";
 import { createClaudeCodeProvider } from "./claude-code/provider.js";
 import { createCodexProvider } from "./codex/provider.js";
+import { createPiProvider } from "./pi/provider.js";
 
 // The id of an assistant: the value of assistant.provider.
 export type AssistantProviderId = RepoConfig["assistant"]["provider"];
@@ -157,7 +158,7 @@ export interface AssistantProvider {
   shouldSuppressQuotaApprovalPause(warning: QuotaApprovalWarning, approvedResetsAt: number | undefined): boolean;
 }
 
-// The one switch on the provider id. The copilot and pi providers are not available yet.
+// The one switch on the provider id. The copilot provider is not available yet.
 function providerFor(repoKey: string, id: AssistantProviderId): AssistantProvider {
   switch (id) {
     case "claude-code":
@@ -165,10 +166,11 @@ function providerFor(repoKey: string, id: AssistantProviderId): AssistantProvide
     case "codex":
       return createCodexProvider();
     case "copilot":
-    case "pi":
       throw new ConfigError([
         `repos.${repoKey}.assistant.provider: the ${id} assistant is not available in this version`,
       ]);
+    case "pi":
+      return createPiProvider();
   }
 }
 

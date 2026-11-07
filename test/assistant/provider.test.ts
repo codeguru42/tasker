@@ -13,7 +13,7 @@ function repoWith(provider: Id) {
   if (provider === "pi") {
     raw.repos.tasker.assistant.models.plan.model = "openrouter/auto";
     raw.repos.tasker.assistant.models.execute.model = "openrouter/auto";
-    raw.repos.tasker.assistant.models.review.model = "openrouter/auto";
+    raw.repos.tasker.assistant.models.review.model = "openrouter/review";
   }
   return parseConfig(raw, {}, "/home/me").repos.tasker;
 }
@@ -46,7 +46,7 @@ describe("createAssistantProvider", () => {
     const selected = createAssistantProvider("tasker", repoWith("pi"), "review");
 
     expect(selected.provider.id).toBe("pi");
-    expect({ model: selected.model, effort: selected.effort }).toEqual({ model: "opus", effort: "high" });
+    expect({ model: selected.model, effort: selected.effort }).toEqual({ model: "openrouter/review", effort: "high" });
   });
 
   it("names the repo key in the path of the issue", () => {
