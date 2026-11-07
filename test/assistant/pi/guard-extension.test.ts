@@ -629,12 +629,26 @@ describe("guard extension file path checks", () => {
     expectFileBlock(await fileToolCall(deniedTree.fake, "write", { path: join(cwd, "private", "file") }, cwd));
   });
 
-  it("does not apply read denials to writes", async () => {
+  it.each(["edit", "write"] as const)("applies read denials to %s calls", async (name) => {
     const cwd = useTempDir("tasker-guard-file-");
-    const path = join(cwd, "private.txt");
-    const { fake } = guardedFileTool("edit", cwd, { denyRead: [path], writeRoots: [cwd] });
+    const exactPath = join(cwd, "private.txt");
+    const deniedDirectory = join(cwd, "private");
+    const exact = guardedFileTool(name, cwd, { denyRead: [exactPath], writeRoots: [cwd] });
+    const descendant = guardedFileTool(name, cwd, { denyRead: [deniedDirectory], writeRoots: [cwd] });
+    const proc = guardedFileTool(name, cwd, { writeRoots: ["/"] });
 
-    expect(await fileToolCall(fake, "edit", { path }, cwd)).toBe("tool result");
+    expectFileBlock(await fileToolCall(exact.fake, name, { path: exactPath }, cwd), exactPath);
+    expectFileBlock(await fileToolCall(descendant.fake, name, { path: join(deniedDirectory, "child.txt") }, cwd));
+    expectFileBlock(await fileToolCall(proc.fake, name, { path: "/proc/self/environ" }, cwd), "/proc");
+  });
+
+  it.each(["edit", "write"] as const)("keeps write-root checks for %s calls", async (name) => {
+    const cwd = useTempDir("tasker-guard-file-");
+    const outside = useTempDir("tasker-guard-outside-");
+    const { fake } = guardedFileTool(name, cwd, { writeRoots: [cwd] });
+
+    expect(await fileToolCall(fake, name, { path: join(cwd, "allowed.txt") }, cwd)).toBe("tool result");
+    expectFileBlock(await fileToolCall(fake, name, { path: join(outside, "outside.txt") }, cwd));
   });
 
   it("blocks direct and traversed access to proc", async () => {
