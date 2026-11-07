@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import { relative } from "node:path";
@@ -526,6 +526,29 @@ describe("simpleEnglishCheck", () => {
     expect(await simpleEnglishCheck().run({ HOME: home })).toEqual({
       status: "ok",
       detail: `simple-english at ${join(skillFolder, "simple-english", "SKILL.md")}`,
+    });
+  });
+
+  it("uses the user skill file when the agent SKILL.md path is a directory", async () => {
+    const home = useTempDir("tasker-simple-english-home-");
+    const agentSkillPath = join(home, ".pi", "agent", "skills", "simple-english", "SKILL.md");
+    mkdirSync(agentSkillPath, { recursive: true });
+    addSkill(join(home, ".agents", "skills"));
+
+    expect(await simpleEnglishCheck().run({ HOME: home })).toEqual({
+      status: "ok",
+      detail: `simple-english at ${join(home, ".agents", "skills", "simple-english", "SKILL.md")}`,
+    });
+  });
+
+  it("reports missing simple-english when SKILL.md is only a directory", async () => {
+    const home = useTempDir("tasker-simple-english-home-");
+    mkdirSync(join(home, ".pi", "agent", "skills", "simple-english", "SKILL.md"), { recursive: true });
+
+    expect(await simpleEnglishCheck().run({ HOME: home })).toEqual({
+      status: "error",
+      detail: `simple-english/SKILL.md is in no skill folder of pi: ${join(home, ".pi", "agent", "skills")}, ${join(home, ".agents", "skills")}`,
+      remediation: `Install the skill simple-english in ${join(home, ".agents", "skills")}.`,
     });
   });
 
