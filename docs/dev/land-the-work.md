@@ -302,6 +302,12 @@ add-work run. Both tasks started after the prompt. Each time, the task subagent 
 answer was the Docs rule. For a stacked ticket and its parent,
 [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over this rule.
 
+On 2026-11-07, the user widened this rule to any two tickets of different milestones. Before that day, the rule covered
+only a ticket of "Docs" and a ticket of a numbered milestone. For two tickets of two numbered milestones, the ticket of
+the earlier milestone landed first. The reason: under the old order, a ticket of a later milestone can wait for a ticket
+of an earlier milestone that makes no progress. The milestone of the later ticket can often land its own tickets first.
+The rule keeps its name from its first case, a ticket of "Docs" and a ticket of a numbered milestone.
+
 ### The section rule
 
 This rule covers two tickets that edit different sections of a shared doc. A shared doc is a Markdown file under `docs/`
