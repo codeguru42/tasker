@@ -717,26 +717,16 @@ See [Retry](#retry) for recovery after a failed reopen.
 
 ## Open PR
 
-`tasker open-pr <issue>` opens or adopts a pull request for a task in `pushed`. It does not publish the task branch,
-wait for CI or merge the pull request. `in_peer_review` records an external review, not approval or CI success. The
-reason: opening a pull request requests review but does not publish the branch or wait for checks.
+`tasker open-pr` connects a published task to external review. Its base guard keeps the PR tied to origin's default
+branch rather than a configured or learned task-base choice.
 
-The task needs a configured forge, branch, stored base and worktree. Tasker takes the task lock before the repo lock,
-fetches `origin` and resolves its current symbolic default branch. It exits with code 1 before `opening_pr` if the
-command cannot resolve that default or the stored task base differs. The task state and events stay unchanged, but the
-fetch can update or prune clone refs before refusal. The reason: tasker must compare the stored base with the default
-that `origin` names now.
+Lookup precedes creation so recovery adopts a PR that tasker created before its record failed.
 
-After the task enters `opening_pr`, tasker lists open PRs for its exact branch. A PR on the resolved default base takes
-precedence, even when another open PR has a different base. Tasker creates a PR only when lookup succeeds and returns an
-empty list; a lookup error is a failure. See
-[Landing commands](../../skills/tasker/references/landing.md#tasker-open-pr) for the output, error text and adoption
-rules.
+The PR number and state share one transaction so `in_peer_review` always has its PR record. See
+[the tasks table](data-root.md#tasks-table) for storage rules.
 
-The PR number and `pr_opened` event are stored as tasker moves the task to `in_peer_review`, in one transaction. A
-lookup, create, PR base conflict or record failure after `opening_pr` moves the task to `failed`, clears its run marker
-and exits with code 1. The error starts with `opening_pr failed: <reason>`. Run `tasker retry` after failure. Retry and
-interrupted resume use the same open-pr runner to adopt a PR that already exists.
+The [landing reference](../../skills/tasker/references/landing.md#tasker-open-pr) gives the state path, output, failures
+and publication cycle.
 
 ## Merge
 
