@@ -4,12 +4,18 @@ import { parseConfig } from "../../src/config/schema.js";
 import { validConfig } from "../helpers/config.js";
 import { configIssuesOf } from "../helpers/errors.js";
 
-const unavailableIds = ["copilot", "pi"] as const;
-type Id = "claude-code" | "codex" | (typeof unavailableIds)[number];
+const unavailableIds = ["copilot"] as const;
+type Id = "claude-code" | "codex" | "pi" | (typeof unavailableIds)[number];
 
 function repoWith(provider: Id) {
-  const repo = parseConfig(validConfig(), {}, "/home/me").repos.tasker;
-  return { ...repo, assistant: { ...repo.assistant, provider } };
+  const raw = validConfig();
+  raw.repos.tasker.assistant.provider = provider;
+  if (provider === "pi") {
+    raw.repos.tasker.assistant.models.plan.model = "openrouter/auto";
+    raw.repos.tasker.assistant.models.execute.model = "openrouter/auto";
+    raw.repos.tasker.assistant.models.review.model = "openrouter/auto";
+  }
+  return parseConfig(raw, {}, "/home/me").repos.tasker;
 }
 
 const unavailable = (key: string, id: string) => [
@@ -34,6 +40,13 @@ describe("createAssistantProvider", () => {
     const selected = createAssistantProvider("tasker", repoWith("codex"), "plan");
 
     expect(selected.provider.id).toBe("codex");
+  });
+
+  it("gives the pi provider with the model and effort of the role", () => {
+    const selected = createAssistantProvider("tasker", repoWith("pi"), "review");
+
+    expect(selected.provider.id).toBe("pi");
+    expect({ model: selected.model, effort: selected.effort }).toEqual({ model: "opus", effort: "high" });
   });
 
   it("names the repo key in the path of the issue", () => {
@@ -66,6 +79,18 @@ it("gives the codex provider for a recorded session", () => {
   const selected = createSessionProvider({ repoKey: "tasker", provider: "codex", model: "gpt-5", effort: "low" });
 
   expect(selected.provider.id).toBe("codex");
+});
+
+it("gives the pi provider for a recorded session", () => {
+  const selected = createSessionProvider({
+    repoKey: "tasker",
+    provider: "pi",
+    model: "openrouter/auto",
+    effort: "low",
+  });
+
+  expect(selected.provider.id).toBe("pi");
+  expect({ model: selected.model, effort: selected.effort }).toEqual({ model: "openrouter/auto", effort: "low" });
 });
 
 function configWith(providers: Record<string, Id>) {
