@@ -68,6 +68,10 @@ failed `cd`, in the local clone. `npm pkg set` changed `version` in `package.jso
 `npm publish --dry-run` ran the `prepack` script there, which cleans and builds `dist/`. Nothing was published. The
 session restored `package.json` with `git checkout package.json`.
 
+An answer of a model about its own instructions is not a fact test. On 2026-11-01, orchestrator-m27 passed a claim to a
+planner as a finding. The only sources of the claim were two answers of a model about its own instructions. The planner
+asked for the source, and the claim was taken back.
+
 ## The issue check
 
 Before the first refine of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket), the task subagent makes sure
