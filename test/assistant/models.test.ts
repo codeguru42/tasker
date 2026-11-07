@@ -55,8 +55,12 @@ describe("modelIssue", () => {
     },
   );
 
+  it("reports a thinking suffix when the model id is empty after the slash", () => {
+    expect(modelIssue("pi", "openrouter/:high")).toBe("ends in the pi thinking level :high: openrouter/:high");
+  });
+
   it("reports the model form error before the thinking suffix error", () => {
-    const model = "openrouter/:high";
+    const model = "openrouter/auto now:high";
     expect(modelIssue("pi", model)).toBe(`is not a pi model in the form <provider>/<model-id>: ${model}`);
   });
 });
@@ -70,7 +74,14 @@ describe("upstreamOf", () => {
     expect(upstreamOf(model)).toBe(upstream);
   });
 
-  it.each(["/auto", "openrouter/", "openrouter", "openrouter/auto now"])("returns undefined for %j", (model) => {
+  it.each([
+    "/auto",
+    "openrouter/",
+    "openrouter",
+    "openrouter/auto now",
+    "openrouter/:high",
+    "openrouter/auto now:high",
+  ])("returns undefined for %j", (model) => {
     expect(upstreamOf(model)).toBeUndefined();
   });
 });

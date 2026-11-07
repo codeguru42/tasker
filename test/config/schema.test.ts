@@ -563,6 +563,8 @@ describe("parseConfig assistant", () => {
     ["/auto", "is not a pi model in the form <provider>/<model-id>: /auto"],
     ["openrouter/", "is not a pi model in the form <provider>/<model-id>: openrouter/"],
     ["openrouter/auto now", "is not a pi model in the form <provider>/<model-id>: openrouter/auto now"],
+    ["openrouter/:high", "ends in the pi thinking level :high: openrouter/:high"],
+    ["openrouter/auto now:high", "is not a pi model in the form <provider>/<model-id>: openrouter/auto now:high"],
     ["openrouter/auto:high", "ends in the pi thinking level :high: openrouter/auto:high"],
   ])("applies the pi model rule to %s", (model, error) => {
     const raw = validConfig();
