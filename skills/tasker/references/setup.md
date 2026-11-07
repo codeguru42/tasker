@@ -12,8 +12,8 @@ If the repo key of `--repo` does not exist, the command prints an error and exit
 
 ## `tasker doctor`
 
-Makes sure that the configuration, the data root, git, `gh`, `acli`, `claude`, `codex` and the accounts work before you
-start a task. The command has no options.
+Makes sure that the configuration, the data root, git, `gh`, `acli`, `claude`, `codex`, `pi` and the accounts work
+before you start a task. The command has no options.
 
 The command runs these checks one at a time, in this order:
 
@@ -28,7 +28,8 @@ The command runs these checks one at a time, in this order:
   `baseBranchFieldName`.
 - Once for each assistant provider that the configuration uses, in the order of first use: the checks of the provider.
   For `claude-code`, this is `claude version`, and on Linux also `sandbox: bwrap` and `sandbox: socat`. For `codex`,
-  these are `codex version` and `codex login`.
+  these are `codex version` and `codex login`. For `pi`, these are `pi version`, `pi-auth:<upstream>` for each upstream,
+  `superpowers:pi` and `simple-english:pi`.
 
 The command prints one line for each check, with the status (`ok`, `warn` or `error`), the name and the first line of
 the detail. The other lines of the detail and the remediation follow with an indent. The command prints the lines of a
@@ -40,8 +41,9 @@ The command exits with these codes:
 - 1 when a required check gives `error`. The later checks still run.
 - 0 in all other cases. A `warn` never changes the exit code.
 
-The checks never change the remote, GitHub or the clone. The only write is one temporary file in `dataRoot`, which the
-check deletes.
+The checks never change the remote, GitHub or the clone. The writes are one temporary file in `dataRoot`, which the
+check deletes, and the credentials file of pi. `pi-auth:<upstream>` can write the credentials file of pi, because pi
+refreshes an expired OAuth login in that check.
 
 ## `tasker install-skills`
 
