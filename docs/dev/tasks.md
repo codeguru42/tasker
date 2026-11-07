@@ -7,11 +7,16 @@ show their output. [SKILL.md](../../skills/tasker/SKILL.md) links to reference f
 which explain the commands of each phase.
 
 The commands abort, plan, refine, approve, unapprove, execute, accept, reopen, open-pr, resume, approve-credits, merge,
-push, mark-landed, update-branch and finish share a preflight rule. Each checks its guards before its first write, so a
-preflight refusal leaves the task, files and events as they were. A failure after reopen or open-pr starts follows its
-failed-run path. [Accept](#accept) gives an exception for the refs of the clone. A refused approve or unapprove also
-leaves the plan revisions as they were. Each command that changes a task follows the no-wait rule of the task lock in
-[The locks](#the-locks).
+push, mark-landed, update-branch and finish share a preflight rule. Each checks its task guards before its first task-
+state write, so a preflight refusal leaves the task and events unchanged.
+
+[Accept](#accept) and [Open PR](#open-pr) can update or prune clone refs before refusal. Accept fetches origin before it
+checks whether the task branch contains the stored base. The reason for Accept: its guard compares with the fetched base
+tip. Open PR fetches origin before it compares the stored task base with the current default. The reason for Open PR:
+its guard needs that remote default. A failure after reopen or open-pr starts follows its failed-run path.
+
+A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the
+no-wait rule of the task lock in [The locks](#the-locks).
 
 ## Start
 
@@ -712,23 +717,26 @@ See [Retry](#retry) for recovery after a failed reopen.
 
 ## Open PR
 
-`tasker open-pr <issue>` opens or adopts a pull request for a task in `pushed`. The task must have a configured forge,
-branch, stored base and worktree. It does not push the branch, wait for CI or merge the pull request.
+`tasker open-pr <issue>` opens or adopts a pull request for a task in `pushed`. It does not publish the task branch,
+wait for CI or merge the pull request. `in_peer_review` records an external review, not approval or CI success. The
+reason: opening a pull request requests review but does not publish the branch or wait for checks.
 
-The command takes the task lock before the repo lock. Under the repo lock, it fetches `origin` and resolves the default
-base from origin's symbolic `HEAD`. It refuses a task whose stored base differs from that default before it enters
-`opening_pr` or calls the forge. Then it lists open pull requests for the exact task branch. It adopts one whose base
-matches the resolved default, refuses a pull request with a different base, or creates a pull request when none is open.
+The task needs a configured forge, branch, stored base and worktree. Tasker takes the task lock before the repo lock,
+fetches `origin` and resolves its current symbolic default branch. It exits with code 1 before `opening_pr` if the
+command cannot resolve that default or the stored task base differs. The task state and events stay unchanged, but the
+fetch can update or prune clone refs before refusal. The reason: tasker must compare the stored base with the default
+that `origin` names now.
 
-Lookup precedes creation so recovery adopts a PR that tasker created before its record failed.
+After the task enters `opening_pr`, tasker lists open PRs for its exact branch. A PR on the resolved default base takes
+precedence, even when another open PR has a different base. Tasker creates a PR only when lookup succeeds and returns an
+empty list; a lookup error is a failure. See
+[Landing commands](../../skills/tasker/references/landing.md#tasker-open-pr) for the output, error text and adoption
+rules.
 
-The PR number, URL, head, base and adopted status are stored with a `pr_opened` event in one transaction. The task moves
-from `opening_pr` to `in_peer_review` in that transaction. The PR number is read from the task row after this write. The
-PR number and state share one transaction so `in_peer_review` always has its PR record.
-
-If lookup or creation fails after the move to `opening_pr`, tasker moves the task to `failed`. If it creates a PR but
-cannot record it, the error includes the PR number and URL. Retry or an interrupted resume returns the task to `pushed`
-and runs `tasker open-pr`, whose lookup adopts the existing PR.
+The PR number and `pr_opened` event are stored as tasker moves the task to `in_peer_review`, in one transaction. A
+lookup, create, PR base conflict or record failure after `opening_pr` moves the task to `failed`, clears its run marker
+and exits with code 1. The error starts with `opening_pr failed: <reason>`. Run `tasker retry` after failure. Retry and
+interrupted resume use the same open-pr runner to adopt a PR that already exists.
 
 ## Merge
 
