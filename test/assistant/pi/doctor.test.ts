@@ -15,6 +15,7 @@ import { useFakePi } from "../../helpers/fake-pi.js";
 import { validConfig } from "../../helpers/config.js";
 import { parseConfig } from "../../../src/config/schema.js";
 import { useTempDir, writeFileWithParents } from "../../helpers/temp.js";
+import { piNotInstalled } from "../../../src/assistant/pi/program.js";
 
 const VERSION = "1.1.0";
 const VERSION_ARGS = ["--version"];
@@ -49,6 +50,17 @@ function superpowersCheck(timeoutMs?: number): Check {
 function simpleEnglishCheck(timeoutMs?: number): Check {
   return fromSimpleEnglishCheck(timeoutMs);
 }
+
+function makePiNotInstalled(program: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return piNotInstalled(program);
+}
+
+describe("piNotInstalled", () => {
+  it("gives the shared missing-program message", () => {
+    expect(makePiNotInstalled("custom-pi")).toBe("custom-pi is not installed or not on PATH");
+  });
+});
 
 function piRepo(key: string, models: [string, string, string]): AssistantDoctorRepo {
   const raw = validConfig();

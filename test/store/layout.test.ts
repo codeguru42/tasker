@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { basename, dirname, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  codexSchemaPath,
+  assistantSchemaPath,
   createDataRoot,
   dataRootLayout,
   doctorProbePath,
@@ -19,6 +19,11 @@ import {
   verifyRunDir,
 } from "../../src/store/layout.js";
 import { useTempDir } from "../helpers/temp.js";
+
+function makeAssistantSchemaPath(sessionDir: string, sessionId: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return assistantSchemaPath(sessionDir, sessionId);
+}
 
 describe("dataRootLayout", () => {
   it("puts the folders and the database directly under the data root", () => {
@@ -250,8 +255,8 @@ describe("doctorProbePath", () => {
   });
 });
 
-describe("the files of a Codex session", () => {
+describe("the assistant schema file", () => {
   it("puts the schema file in the session folder", () => {
-    expect(codexSchemaPath("/s", "id")).toBe(join("/s", "id.schema.json"));
+    expect(makeAssistantSchemaPath("/s", "id")).toBe(join("/s", "id.schema.json"));
   });
 });

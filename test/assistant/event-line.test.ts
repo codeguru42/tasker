@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { numberOf, parseLine } from "../../src/assistant/event-line.js";
+import { appendEventLine, numberOf, parseLine } from "../../src/assistant/event-line.js";
+import type { AssistantEvent } from "../../src/assistant/provider.js";
 import { claudeSample } from "../helpers/fake-claude.js";
 
 describe("numberOf", () => {
@@ -29,5 +30,36 @@ describe("parseLine", () => {
     ["a list", "[1,2]"],
   ])("gives undefined for %s", (_name, line) => {
     expect(parseLine(line)).toBeUndefined();
+  });
+});
+
+function append(line: string, events: AssistantEvent[], onEvent?: (event: AssistantEvent) => void) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return appendEventLine(line, events, onEvent);
+}
+
+describe("appendEventLine", () => {
+  it("parses and appends events in order", () => {
+    const events: AssistantEvent[] = [];
+    const delivered: AssistantEvent[] = [];
+    const first = { type: "first" };
+    const second = { type: "second" };
+
+    const result = append(JSON.stringify(first), events, (event) => delivered.push(event));
+    append(JSON.stringify(second), events);
+
+    expect(result).toBeUndefined();
+    expect(events).toEqual([first, second]);
+    expect(delivered).toEqual([first]);
+  });
+
+  it("protects event delivery when the listener throws", () => {
+    const events: AssistantEvent[] = [];
+    const listener = () => {
+      throw new Error("listener broke");
+    };
+
+    expect(() => append('{"type":"message"}', events, listener)).not.toThrow();
+    expect(events).toEqual([{ type: "message" }]);
   });
 });

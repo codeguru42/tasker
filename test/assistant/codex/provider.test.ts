@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createCodexProvider } from "../../../src/assistant/codex/provider.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../../../src/assistant/provider.js";
-import { codexSchemaPath } from "../../../src/store/layout.js";
+import { assistantSchemaPath } from "../../../src/store/layout.js";
 import { parseConfig } from "../../../src/config/schema.js";
 import { validConfig } from "../../helpers/config.js";
 import {
@@ -24,6 +24,11 @@ import {
   useFakeCodexRun,
 } from "../../helpers/fake-codex.js";
 import { useTempDir, useTempFile } from "../../helpers/temp.js";
+
+function makeAssistantSchemaPath(sessionDir: string, sessionId: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return assistantSchemaPath(sessionDir, sessionId);
+}
 
 function codexProvider(): AssistantProvider {
   return createCodexProvider();
@@ -227,7 +232,7 @@ describe("createCodexProvider run: the outcome rows", () => {
     expect(outcome.kind).toBe("success");
     const answer = (outcome as { structuredOutput: { findings: unknown[] } }).structuredOutput;
     expect(answer.findings).toHaveLength(2);
-    expect(JSON.parse(readFileSync(codexSchemaPath(sessionDir, TEST_SESSION_ID), "utf8"))).toEqual(jsonSchema);
+    expect(JSON.parse(readFileSync(makeAssistantSchemaPath(sessionDir, TEST_SESSION_ID), "utf8"))).toEqual(jsonSchema);
   });
 
   it("fails with no call when the schema file cannot be written", async () => {
@@ -332,7 +337,7 @@ describe("createCodexProvider run: the arguments and the env", () => {
         model: "haiku",
         effort: "low",
         denyRead: [herdrFolder(fake)],
-        schemaPath: codexSchemaPath(sessionDir, TEST_SESSION_ID),
+        schemaPath: makeAssistantSchemaPath(sessionDir, TEST_SESSION_ID),
       }),
     );
   });
