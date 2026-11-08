@@ -419,14 +419,22 @@ orchestrator.
   #739 (2026-11-04), a changed row of "Common mistakes" of the session-review skill became a new row beside the old row.
 - A ticket can give doc text word for word in its Docs section. Then ask the plan for a search step in each todo that
   adds or changes such text. The step runs in the execute run, after the edits and before `npm run format`. In the task
-  worktree, the step searches the doc of each Docs item of the todo for its new text. It searches for a key word or a
-  short part that only this Docs item adds, and that the doc lacks before the todo. The search follows
-  [the doc-search rule](rules.md#docs).
+  worktree, the step searches the doc of each Docs item of the todo. It searches for each piece of the new text of that
+  Docs item. The search follows [the doc-search rule](rules.md#docs).
+
+  A piece is a paragraph, a heading, a list item, a table or a fenced block of the new text. In a list item with two or
+  more paragraphs, each paragraph is a piece. A nested list item and a fenced block inside a list item are also pieces.
+  The lines inside a fenced block belong to that one piece. New text inside one existing paragraph is one piece.
+
+  For each piece, the step searches for a key word or a short part that only this piece holds. The plan picks a word or
+  part that the doc lacks before the todo. Also ask the plan to list each piece of a Docs item with its key word in the
+  todo. The reason: an execute run can add some pieces of a Docs item and leave out other pieces. A hit for a key word
+  of one piece does not show that another piece is there.
 
   An example for one word is `git grep -n -F --untracked '<word>' -- <file>`, and its flag `--untracked` also searches a
   new doc that git does not track yet. The pass condition of each search is exit code 0. Exit code 1 is an answer: no
-  hit, so the execute session reads the doc at the place of the Docs item. If the text is there, the step passes for
-  that Docs item. Otherwise the execute session adds the text and runs the search again. If the second search also exits
+  hit, so the execute session reads the doc at the place of the Docs item. If the piece is there, the step passes for
+  that piece. Otherwise the execute session adds the piece and runs the search again. If the second search also exits
   with 1, or a search exits with another code, the turn reports `blocked` with the exit code.
 
   Also ask the plan to copy the place of each Docs item word for word into the todo. The todo also holds the exact new
@@ -435,12 +443,12 @@ orchestrator.
   it. A text "at the end of the section" goes right before the next heading of the same or a higher level. In the last
   section of a file, it goes at the end of the file.
 
-  After each hit, the execute session reads the doc around the new text, for example with
-  `git grep -n -F --untracked -B <n> -A <n> '<word>' -- <file>`. Here `<n>` is the line count of the new text plus two.
-  The execute session compares the last non-blank line before the new text and the first non-blank line after it with
-  the text in the todo. If the lines differ, the execute session moves the new text to the place in the todo and reads
-  the doc again. If the lines still differ, or a read exits with a code other than 0, the turn reports `blocked` with
-  the reason.
+  When each piece at one place passes, the execute session reads the doc around the new text of that place. An example
+  is `git grep -n -F --untracked -B <n> -A <n> '<word>' -- <file>`, with the key word of a piece at that place that gave
+  a hit. Here `<n>` is the line count of the new text at that place plus two. The execute session compares the last
+  non-blank line before the new text and the first non-blank line after it with the text in the todo. If the lines
+  differ, the execute session moves the new text to the place in the todo and reads the doc again. If the lines still
+  differ, or a read exits with a code other than 0, the turn reports `blocked` with the reason.
 
   On #816 (2026-11-07), plan v2 listed Docs item 7, a dated paragraph of `docs/dev/land-the-work.md`. The execute run of
   plan v2 did not add it, and review 1 did not find the gap. [The diff read](run-one-ticket.md#the-diff-read) found it,
@@ -453,6 +461,16 @@ orchestrator.
   search step found the new text, and review 1 did not find the wrong places.
   [The diff read](run-one-ticket.md#the-diff-read) found them, and the fix cost one more plan, execute, verify and
   review run.
+
+  On #822 (2026-11-07), Docs item 1 asked for a paragraph, a fenced block and three more paragraphs in
+  `docs/dev/working-with-the-user.md`. The execute run of plan v2 added only the first paragraph and the block. Review 1
+  did not find the gap, and the verify run passed. [The diff read](run-one-ticket.md#the-diff-read) found it, and a run
+  of [the add-work rule](run-one-ticket.md#the-add-work-rule) added the other paragraphs with plan v3. By 2026-11-07,
+  the fix cost one more plan, execute, verify and review run.
+
+  The search step of plan v2 searched only for words of the first paragraph and the block. On 2026-11-07, a search of
+  the commit of plan v2 for "short reply rules", a key word that only Docs item 1 adds, exits with 0. So one search for
+  each Docs item does not find the gap.
 
 - The red `test:` commit ([rules.md](rules.md#commits)) of a new store method changes only test files and fails the type
   check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
