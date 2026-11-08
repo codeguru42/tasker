@@ -4,7 +4,6 @@ import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
 import { piAnswer } from "../../../src/assistant/pi/answer.js";
 
 function callPiAnswer(messages: readonly unknown[]): unknown {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return piAnswer(messages);
 }
 
@@ -99,7 +98,10 @@ describe("piAnswer", () => {
   });
 
   it("prefers an accepted answer call over later assistant text", () => {
-    const valid = measures.valid.session.slice(3).map((entry) => (entry as { message: unknown }).message);
+    const valid = measures.valid.stdout
+      .filter((event) => event.type === "message_end")
+      .map((event) => event.message)
+      .filter((message) => message !== undefined);
     const messages = [...valid, { role: "assistant", content: [{ type: "text", text: '{"findings":["later"]}' }] }];
 
     expect(callPiAnswer(messages)).toEqual({ findings: [] });

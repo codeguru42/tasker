@@ -17,8 +17,11 @@ vi.mock("node:fs", async (importOriginal) => {
   };
 });
 
-function callPiMessages(events: readonly AssistantEvent[], sessionPath: string, startSize: number): unknown[] {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+function callPiMessages(
+  events: readonly AssistantEvent[],
+  sessionPath: string | undefined,
+  startSize: number,
+): unknown[] {
   return piMessages(events, sessionPath, startSize);
 }
 
@@ -35,7 +38,7 @@ function writeSession(entries: readonly unknown[]): { path: string; size: number
 
 describe("piMessages", () => {
   it("keeps message_end messages in stream order", () => {
-    const events = measures.text.stdout;
+    const events = [...measures.text.stdout, { type: "agent_end" }];
 
     expect(callPiMessages(events, "unused", 0)).toEqual(
       events.filter((event) => event.type === "message_end").map((event) => event.message),
@@ -80,7 +83,7 @@ describe("piMessages", () => {
   });
 
   it("returns no fallback messages when the session path is undefined", () => {
-    expect(callPiMessages([], undefined as unknown as string, 0)).toEqual([]);
+    expect(callPiMessages([], undefined, 0)).toEqual([]);
   });
 
   it("returns no fallback messages when the session file is missing", () => {
@@ -114,8 +117,9 @@ describe("piMessages", () => {
       { type: "message", message: { role: "assistant", content: [{ type: "text", text: "session answer" }] } },
     ]);
 
-    expect(callPiMessages(measures.text.stdout, session.path, 0)).toEqual(
-      measures.text.stdout.filter((event) => event.type === "message_end").map((event) => event.message),
+    const events = [...measures.text.stdout, { type: "agent_end" }];
+    expect(callPiMessages(events, session.path, 0)).toEqual(
+      events.filter((event) => event.type === "message_end").map((event) => event.message),
     );
   });
 
