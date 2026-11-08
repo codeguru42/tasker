@@ -1075,8 +1075,10 @@ flight to warn of merge conflicts. A missing file hides a conflict.
 The todos come as red and green steps. The commit rules ask for a commit with the failing test, and then a commit with
 the code.
 
-A todo never runs the full check of the repository. Tasker runs the verify commands itself after the execute run, and
-that run is the one that counts.
+A todo runs each command that the rules of the repository ask for before a commit, also a check of the whole repository.
+The reason: a repository can ask that each commit pass its checks. The verify run of tasker reads only the tip of the
+branch. A todo runs no other check of the whole repository. Tasker runs the verify commands itself after the execute
+run, and that run is the one that counts.
 
 ### The execute prompts
 
@@ -1091,6 +1093,11 @@ The reasons for the design:
 - The todos and the resolved questions go in the prompt. The execute session never sees the planning conversation.
 - The fix prompt spells out the rule texts and does not point at rule numbers. A fix turn can be the first turn of a
   resumed session, and that session never saw an `execute-todo` prompt.
+- If a todo asks for the whole test suite or another check of the whole repository, the execute session runs it. The
+  verify run of tasker runs outside the sandbox of the execute session. A test or a check can fail in the sandbox for a
+  reason other than the change. It can also fail because of the change. So the execute session finds the cause before
+  the commit, and it fixes a failure that the change causes. For another failure, it goes on, also against the pass
+  condition of the todo.
 
 The turn result is a strict object: `result` is `done` or `blocked`, and `reason` is a text or null. An extra key or an
 unknown value is no result, and it is never read as `done`. The read of a result never throws. A `blocked` result with a
