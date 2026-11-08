@@ -175,13 +175,13 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 
 ## `assistant`
 
-| Key                 | Type                                              | Default  | Notes                                                                                                                                                                                                                                                  |
-| ------------------- | ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `provider`          | `"claude-code"`, `"copilot"`, `"pi"` or `"codex"` | required | The assistant to run. The loader accepts `copilot`, but it is not available in this version. The loader accepts `pi`, and `tasker doctor` checks it. A task run refuses `pi` in this version. The loader also accepts `codex`. `codex` runs each step. |
-| `models`            | object                                            | required | Has the keys `plan`, `execute` and `review`. All three are required.                                                                                                                                                                                   |
-| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust. Only the `pi` provider accepts this key. The loader refuses the key for each other provider. See the paragraph that starts '`trustedExtensions` lists'.                                                   |
-| `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                                                                                                                    |
-| `correctiveTurns`   | integer, 0 or more                                | `1`      | How many corrective turns the assistant can take.                                                                                                                                                                                                      |
+| Key                 | Type                                              | Default  | Notes                                                                                                                                                                                                                                                                                                                            |
+| ------------------- | ------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `provider`          | `"claude-code"`, `"copilot"`, `"pi"` or `"codex"` | required | The assistant to run. The loader accepts `copilot`, but it is not available in this version. The loader accepts `pi`, and `tasker doctor` checks it. The `pi` provider runs plan, refine and review only on Linux. tasker refuses `pi` for a task with an execute step. The loader also accepts `codex`. `codex` runs each step. |
+| `models`            | object                                            | required | Has the keys `plan`, `execute` and `review`. All three are required.                                                                                                                                                                                                                                                             |
+| `trustedExtensions` | list of non-empty strings                         | `[]`     | The extensions that the assistant can trust. Only the `pi` provider accepts this key. The loader refuses the key for each other provider. See the paragraph that starts '`trustedExtensions` lists'.                                                                                                                             |
+| `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                                                                                                                                                                                              |
+| `correctiveTurns`   | integer, 0 or more                                | `1`      | How many corrective turns the assistant can take.                                                                                                                                                                                                                                                                                |
 
 Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"`
 or `"high"`).
@@ -191,7 +191,7 @@ effort that it started with.
 
 `trustedExtensions` lists the keys of extensions that a pi session can trust. An extension is a code file that pi loads
 into its own process. A key matches only an equal string. A continued session keeps its recorded list and adds keys from
-the current list. Task runs do not call the pi extension check in this version.
+the current list. Before a pi task run starts pi, it checks this list in a precheck.
 
 The key of each source:
 
