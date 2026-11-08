@@ -1,10 +1,10 @@
 import * as os from "node:os";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { assistantSchemaPath } from "../../../src/store/layout.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
-import { PI_READ_TOOL_NAMES } from "../../../src/assistant/pi/args.js";
+import { PI_READ_TOOL_NAMES, piArgs } from "../../../src/assistant/pi/args.js";
 import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
 import type { PiFiles } from "../../../src/assistant/pi/args.js";
 import { createPiProvider as fromCreatePiProvider } from "../../../src/assistant/pi/provider.js";
@@ -39,8 +39,24 @@ function validInput(overrides: Partial<RunInput> = {}): RunInput {
     trustedExtensions: TRUSTED,
     model: "openrouter/openrouter/auto",
     effort: "low",
+    checkAnswer: () => ({ ok: true }),
     ...overrides,
   };
+}
+
+function expectedArgs(input: RunInput, files: PiFiles, withSchema = input.jsonSchema !== undefined): string[] {
+  return piArgs(
+    input,
+    files,
+    guardLimitsPath(input.sessionDir, input.sessionId),
+    withSchema ? assistantSchemaPath(input.sessionDir, input.sessionId) : undefined,
+  );
+}
+
+function expectOneCall(fake: ReturnType<typeof useFakePi>, input: RunInput, args: string[]): void {
+  const calls = fake.calls();
+  expect(calls).toHaveLength(1);
+  expect(calls[0]).toMatchObject({ args, stdin: input.prompt });
 }
 
 function makeFiles(): PiFiles {
@@ -64,6 +80,25 @@ function expectReadOnlyTools(args: string[]) {
 }
 
 describe("createPiProvider pre-spawn refusals", () => {
+  it("refuses a JSON Schema without a caller check before spawn", async () => {
+    const fake = useFakePi([]);
+    const input = validInput({ jsonSchema: planAnswerJsonSchema(), checkAnswer: undefined });
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, makeFiles());
+
+    rmSync(`${fake.logPath}.unanswered`, { force: true });
+    expect(fake.calls()).toEqual([]);
+    expect(outcome).toMatchObject({
+      kind: "failure",
+      reason: "a run with a JSON Schema needs RunInput.checkAnswer",
+      exitCode: null,
+      signal: null,
+      events: [],
+      permissionDenials: [],
+    });
+  });
+
   it("refuses a non-Linux host before execute and child environment checks", async () => {
     vi.mocked(os.platform).mockReturnValue("darwin");
     const onSpawn = vi.fn();
@@ -737,8 +772,104 @@ describe("createPiProvider outcomes", () => {
 
     const outcome = await callPi(input, files);
 
-    expect(refusalOf(outcome).reason).toBe("the assistant gave no structured answer");
+    expectOneCall(fake, input, args);
+    expect(refusalOf(outcome).reason).toBe(
+      "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+    );
     expectReadOnlyTools(args);
+  });
+
+  it("uses the final text when the accepted call fails the caller check", async () => {
+    const input = validInput({ jsonSchema: reviewAnswerJsonSchema() });
+    const files = makeFiles();
+    const args = expectedArgs(input, files);
+    const events = [
+      ...measures.valid.stdout,
+      {
+        type: "message_end",
+        message: { role: "assistant", content: [{ type: "text", text: '{"source":"final text"}' }] },
+      },
+    ];
+    input.checkAnswer = (output) =>
+      typeof output === "object" && output !== null && "source" in output
+        ? { ok: true }
+        : { ok: false, problems: ["source: rejected call"] };
+    const matchingSessionFile = measures.valid.sessionFile.replace(/_[^_]+\.jsonl$/u, `_${input.sessionId}.jsonl`);
+    const fake = useFakePi([
+      { args, stream: events, session: measures.valid.session, sessionFile: matchingSessionFile },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expectOneCall(fake, input, args);
+    expect(outcome).toMatchObject({ kind: "success", structuredOutput: { source: "final text" } });
+  });
+
+  it("reports rejected candidates in order", async () => {
+    const input = validInput({ jsonSchema: reviewAnswerJsonSchema() });
+    const files = makeFiles();
+    const args = expectedArgs(input, files);
+    const events = [
+      ...measures.valid.stdout,
+      {
+        type: "message_end",
+        message: { role: "assistant", content: [{ type: "text", text: '{"source":"final text"}' }] },
+      },
+    ];
+    input.checkAnswer = (output) =>
+      typeof output === "object" && output !== null && "findings" in output
+        ? { ok: false, problems: ["findings: rejected"] }
+        : { ok: false, problems: ["source: rejected"] };
+    const matchingSessionFile = measures.valid.sessionFile.replace(/_[^_]+\.jsonl$/u, `_${input.sessionId}.jsonl`);
+    const fake = useFakePi([
+      { args, stream: events, session: measures.valid.session, sessionFile: matchingSessionFile },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expectOneCall(fake, input, args);
+    expect(refusalOf(outcome).reason).toBe(
+      "the assistant gave no structured answer:\n  - submit_answer: findings: rejected\n  - final text: source: rejected",
+    );
+  });
+
+  it("reports a thrown caller check as a rejected candidate", async () => {
+    const input = validInput({
+      jsonSchema: reviewAnswerJsonSchema(),
+      checkAnswer: () => {
+        throw new Error("check exploded");
+      },
+    });
+    const files = makeFiles();
+    const args = expectedArgs(input, files);
+    const matchingSessionFile = measures.valid.sessionFile.replace(/_[^_]+\.jsonl$/u, `_${input.sessionId}.jsonl`);
+    const fake = useFakePi([
+      { args, stream: measures.valid.stdout, session: measures.valid.session, sessionFile: matchingSessionFile },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expectOneCall(fake, input, args);
+    expect(refusalOf(outcome).reason).toBe(
+      "the assistant gave no structured answer:\n  - submit_answer: the check of the answer threw: check exploded",
+    );
+  });
+
+  it("ignores the caller check when the run has no schema", async () => {
+    const input = validInput({ checkAnswer: () => ({ ok: false, problems: ["unexpected rejection"] }) });
+    const files = makeFiles();
+    const args = expectedArgs(input, files, false);
+    const fake = useFakePi([{ args, stream: measures.text.stdout, session: measures.text.session }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("success");
+    expect(outcome).not.toHaveProperty("structuredOutput");
+    expectOneCall(fake, input, args);
   });
 
   it("refuses a bad pi program before the fake logs a call", async () => {

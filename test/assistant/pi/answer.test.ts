@@ -3,8 +3,17 @@ import { describe, expect, it } from "vitest";
 import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
 import { piAnswer } from "../../../src/assistant/pi/answer.js";
 
-function callPiAnswer(messages: readonly unknown[]): unknown {
-  return piAnswer(messages);
+type CheckedAnswer = { ok: true; answer: unknown } | { ok: false; problems: string[] };
+
+function callPiAnswer(
+  messages: readonly unknown[],
+  checkAnswer: (output: unknown) => { ok: true } | { ok: false; problems: string[] } = () => ({ ok: true }),
+): CheckedAnswer {
+  const check = piAnswer as unknown as (
+    messages: readonly unknown[],
+    checkAnswer: (output: unknown) => { ok: true } | { ok: false; problems: string[] },
+  ) => CheckedAnswer;
+  return check(messages, checkAnswer);
 }
 
 const measures = JSON.parse(
@@ -25,7 +34,7 @@ describe("piAnswer", () => {
       { role: "assistant", content: [{ type: "text", text: "later plain text" }] },
     ];
 
-    expect(callPiAnswer(messages)).toEqual({ findings: [{ file: "last" }] });
+    expect(callPiAnswer(messages)).toEqual({ ok: true, answer: { findings: [{ file: "last" }] } });
   });
 
   it("uses a submit_answer call only when its matching toolResult succeeded", () => {
@@ -50,19 +59,22 @@ describe("piAnswer", () => {
       { role: "toolResult", toolCallId: "accepted", toolName: PI_ANSWER_TOOL_NAME, isError: false },
     ];
 
-    expect(callPiAnswer(messages)).toEqual({ answer: "accepted" });
+    expect(callPiAnswer(messages)).toEqual({ ok: true, answer: { answer: "accepted" } });
   });
 
   it("parses JSON from the whole assistant text", () => {
     const messages = [{ role: "assistant", content: [{ type: "text", text: '{"summary":"all text"}' }] }];
 
-    expect(callPiAnswer(messages)).toEqual({ summary: "all text" });
+    expect(callPiAnswer(messages)).toEqual({ ok: true, answer: { summary: "all text" } });
   });
 
   it.each(["[1]", "5", '"x"'])("does not accept scalar or array assistant text %s", (text) => {
     const messages = [{ role: "assistant", content: [{ type: "text", text }] }];
 
-    expect(callPiAnswer(messages)).toBeUndefined();
+    expect(callPiAnswer(messages)).toEqual({
+      ok: false,
+      problems: ["no accepted call of submit_answer and no JSON object in the final text"],
+    });
   });
 
   it("uses the last valid JSON fence", () => {
@@ -78,7 +90,68 @@ describe("piAnswer", () => {
       },
     ];
 
-    expect(callPiAnswer(messages)).toEqual({ answer: "last" });
+    expect(callPiAnswer(messages)).toEqual({ ok: true, answer: { answer: "last" } });
+  });
+
+  it("uses the last untagged JSON fence when it holds an object", () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [{ type: "text", text: '```\n{"answer":"first"}\n``` then ```\n{"answer":"last"}\n```' }],
+      },
+    ];
+
+    expect(callPiAnswer(messages)).toEqual({ ok: true, answer: { answer: "last" } });
+  });
+
+  it("uses the text when the accepted call fails the caller check", () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", id: "c1", name: PI_ANSWER_TOOL_NAME, arguments: { answer: "call" } }],
+      },
+      { role: "toolResult", toolCallId: "c1", toolName: PI_ANSWER_TOOL_NAME, isError: false },
+      { role: "assistant", content: [{ type: "text", text: '{"answer":"text"}' }] },
+    ];
+    const check = (output: unknown) =>
+      (output as { answer: string }).answer === "text"
+        ? { ok: true as const }
+        : { ok: false as const, problems: ["answer: rejected"] };
+
+    expect(callPiAnswer(messages, check)).toEqual({ ok: true, answer: { answer: "text" } });
+  });
+
+  it("returns prefixed problems in candidate order when neither candidate passes", () => {
+    const messages = [
+      {
+        role: "assistant",
+        content: [{ type: "toolCall", id: "c1", name: PI_ANSWER_TOOL_NAME, arguments: { answer: "call" } }],
+      },
+      { role: "toolResult", toolCallId: "c1", toolName: PI_ANSWER_TOOL_NAME, isError: false },
+      { role: "assistant", content: [{ type: "text", text: '{"answer":"text"}' }] },
+    ];
+    const check = (output: unknown) => ({
+      ok: false as const,
+      problems: [`${(output as { answer: string }).answer}: rejected`],
+    });
+
+    expect(callPiAnswer(messages, check)).toEqual({
+      ok: false,
+      problems: ["submit_answer: call: rejected", "final text: text: rejected"],
+    });
+  });
+
+  it("turns a thrown caller check into one problem", () => {
+    const messages = [{ role: "assistant", content: [{ type: "text", text: '{"answer":"text"}' }] }];
+
+    expect(
+      callPiAnswer(messages, () => {
+        throw new Error("bad check");
+      }),
+    ).toEqual({
+      ok: false,
+      problems: ["final text: the check of the answer threw: bad check"],
+    });
   });
 
   it("keeps the object when an array follows it in JSON fences", () => {
@@ -86,7 +159,7 @@ describe("piAnswer", () => {
       { role: "assistant", content: [{ type: "text", text: '```json\n{"answer":"object"}\n```\n```json\n[1]\n```' }] },
     ];
 
-    expect(callPiAnswer(messages)).toEqual({ answer: "object" });
+    expect(callPiAnswer(messages)).toEqual({ ok: true, answer: { answer: "object" } });
   });
 
   it("keeps the object when it follows an array in JSON fences", () => {
@@ -94,7 +167,7 @@ describe("piAnswer", () => {
       { role: "assistant", content: [{ type: "text", text: '```json\n[1]\n```\n```json\n{"answer":"object"}\n```' }] },
     ];
 
-    expect(callPiAnswer(messages)).toEqual({ answer: "object" });
+    expect(callPiAnswer(messages)).toEqual({ ok: true, answer: { answer: "object" } });
   });
 
   it("prefers an accepted answer call over later assistant text", () => {
@@ -104,6 +177,6 @@ describe("piAnswer", () => {
       .filter((message) => message !== undefined);
     const messages = [...valid, { role: "assistant", content: [{ type: "text", text: '{"findings":["later"]}' }] }];
 
-    expect(callPiAnswer(messages)).toEqual({ findings: [] });
+    expect(callPiAnswer(messages)).toEqual({ ok: true, answer: { findings: [] } });
   });
 });
