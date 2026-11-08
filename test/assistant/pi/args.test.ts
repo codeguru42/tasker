@@ -5,7 +5,6 @@ import type { RunInput } from "../../../src/assistant/provider.js";
 import { runInput as sharedRunInput } from "../../helpers/fake-claude.js";
 
 function callPiArgs(input: RunInput, files: PiFiles, limitsPath: string, schemaPath: string | undefined): string[] {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return piArgs(input, files, limitsPath, schemaPath);
 }
 
