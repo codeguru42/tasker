@@ -117,7 +117,7 @@ export function doctorProbePath(dataRoot: string): string {
   return join(dataRoot, `.doctor-probe-${process.pid}-${randomUUID()}`);
 }
 
-// The file that holds the JSON schema of a Codex run, for --output-schema.
-export function codexSchemaPath(sessionDir: string, sessionId: string): string {
+// The file that holds the JSON schema of an assistant run.
+export function assistantSchemaPath(sessionDir: string, sessionId: string): string {
   return join(sessionDir, `${sessionId}.schema.json`);
 }

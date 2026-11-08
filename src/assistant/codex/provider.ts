@@ -3,8 +3,8 @@ import { errorMessage } from "../../error-message.js";
 import { replaceFile } from "../../replace-file.js";
 import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
-import { codexSchemaPath } from "../../store/layout.js";
-import { parseLine } from "../event-line.js";
+import { assistantSchemaPath } from "../../store/layout.js";
+import { appendEventLine } from "../event-line.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { codexArgs } from "./args.js";
 import { CODEX_NOT_INSTALLED, codexLoginCheck, codexVersionCheck } from "./doctor.js";
@@ -104,7 +104,7 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
       }
       let schemaPath: string | undefined;
       if (input.jsonSchema !== undefined) {
-        schemaPath = codexSchemaPath(input.sessionDir, input.sessionId);
+        schemaPath = assistantSchemaPath(input.sessionDir, input.sessionId);
         try {
           replaceFile(schemaPath, JSON.stringify(input.jsonSchema));
         } catch (error) {
@@ -140,26 +140,21 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
           prompt: input.prompt,
           deadline: Date.now() + input.timeoutMs,
           onLine: (line) => {
-            const event = parseLine(line);
-            if (event === undefined) return;
-            events.push(event);
-            try {
-              const id = threadIdOf(event);
-              if (id !== undefined) input.onProviderSessionId?.(id);
-            } catch {
-              // A failed write only means that a later continued run fails.
-            }
-            try {
-              const total = usageTotalOf(event);
-              if (total !== undefined) input.onUsageTotal?.(total);
-            } catch {
-              // A failed write only means that the next run counts too much.
-            }
-            try {
+            appendEventLine(line, events, (event) => {
+              try {
+                const id = threadIdOf(event);
+                if (id !== undefined) input.onProviderSessionId?.(id);
+              } catch {
+                // A failed write only means that a later continued run fails.
+              }
+              try {
+                const total = usageTotalOf(event);
+                if (total !== undefined) input.onUsageTotal?.(total);
+              } catch {
+                // A failed write only means that the next run counts too much.
+              }
               input.onEvent?.(event);
-            } catch {
-              // onLine must not throw, and a broken listener must not stop the run.
-            }
+            });
           },
           onSpawn: input.onSpawn ?? (() => {}),
         });

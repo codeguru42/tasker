@@ -26,7 +26,6 @@ import {
 import { useTempDir, useTempFile } from "../../helpers/temp.js";
 
 function makeAssistantSchemaPath(sessionDir: string, sessionId: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return assistantSchemaPath(sessionDir, sessionId);
 }
 

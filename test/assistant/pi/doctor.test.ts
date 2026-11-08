@@ -52,7 +52,6 @@ function simpleEnglishCheck(timeoutMs?: number): Check {
 }
 
 function makePiNotInstalled(program: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return piNotInstalled(program);
 }
 

@@ -11,7 +11,7 @@ import { runProgramCheck } from "../program-check.js";
 import { upstreamOf } from "../models.js";
 import type { AssistantDoctorRepo } from "../provider.js";
 import { piChildEnv, relativeHomeReason } from "./child-env.js";
-import { piProgram } from "./program.js";
+import { piNotInstalled, piProgram } from "./program.js";
 
 const PI_INSTALL_FIX = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
 const PI_AGENT_DIR_FIX = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or unset it.";
@@ -71,7 +71,7 @@ function piProgramCheck(
       args,
       env: checked.env,
       signal,
-      notInstalled: `${program} is not installed or not on PATH`,
+      notInstalled: piNotInstalled(program),
       remediation: PI_INSTALL_FIX,
       readChild,
     });

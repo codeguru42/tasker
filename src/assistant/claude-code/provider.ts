@@ -3,7 +3,7 @@ import { detailSuffix } from "../../detail-suffix.js";
 import { errorMessage } from "../../error-message.js";
 import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
-import { parseLine } from "../event-line.js";
+import { appendEventLine } from "../event-line.js";
 import { removePlaceholders } from "../placeholders.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
@@ -149,18 +149,13 @@ export function createClaudeCodeProvider(
           deadline: Date.now() + input.timeoutMs,
           signal: stop.signal,
           onLine: (line) => {
-            const event = parseLine(line);
-            if (event === undefined) return;
-            events.push(event);
-            if (input.overageStop !== undefined && overage === undefined) {
-              overage = overageStopOf(event, input.overageStop);
-              if (overage !== undefined) stop.abort();
-            }
-            try {
+            appendEventLine(line, events, (event) => {
+              if (input.overageStop !== undefined && overage === undefined) {
+                overage = overageStopOf(event, input.overageStop);
+                if (overage !== undefined) stop.abort();
+              }
               input.onEvent?.(event);
-            } catch {
-              // onLine must not throw, and a broken listener must not stop the run.
-            }
+            });
           },
           onSpawn: input.onSpawn ?? (() => {}),
         });

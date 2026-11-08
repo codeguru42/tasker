@@ -33,11 +33,6 @@ describe("parseLine", () => {
   });
 });
 
-function append(line: string, events: AssistantEvent[], onEvent?: (event: AssistantEvent) => void) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  return appendEventLine(line, events, onEvent);
-}
-
 describe("appendEventLine", () => {
   it("parses and appends events in order", () => {
     const events: AssistantEvent[] = [];
@@ -45,12 +40,19 @@ describe("appendEventLine", () => {
     const first = { type: "first" };
     const second = { type: "second" };
 
-    const result = append(JSON.stringify(first), events, (event) => delivered.push(event));
-    append(JSON.stringify(second), events);
+    appendEventLine(JSON.stringify(first), events, (event) => delivered.push(event));
+    appendEventLine(JSON.stringify(second), events);
 
-    expect(result).toBeUndefined();
     expect(events).toEqual([first, second]);
     expect(delivered).toEqual([first]);
+  });
+
+  it("ignores a bad line", () => {
+    const events: AssistantEvent[] = [];
+
+    appendEventLine("not json", events);
+
+    expect(events).toEqual([]);
   });
 
   it("protects event delivery when the listener throws", () => {
@@ -59,7 +61,7 @@ describe("appendEventLine", () => {
       throw new Error("listener broke");
     };
 
-    expect(() => append('{"type":"message"}', events, listener)).not.toThrow();
+    expect(() => appendEventLine('{"type":"message"}', events, listener)).not.toThrow();
     expect(events).toEqual([{ type: "message" }]);
   });
 });
