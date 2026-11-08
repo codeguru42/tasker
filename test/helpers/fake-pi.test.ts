@@ -23,6 +23,54 @@ describe("useFakePi", () => {
     expect([result.stdout, result.stderr, result.status]).toEqual(["pi 1.1.0\n", "note\n", 4]);
   });
 
+  it("reuses one matching answer for later calls", () => {
+    const fake = useFakePi([{ args: ["same"], stdout: "single\n" }]);
+
+    const first = runPi(fake.env, ["same"]);
+    const second = runPi(fake.env, ["same"]);
+    const unanswered = fake.unanswered();
+    rmSync(`${fake.logPath}.unanswered`, { force: true });
+
+    expect([first.stdout, second.stdout]).toEqual(["single\n", "single\n"]);
+    expect([first.status, second.status]).toEqual([0, 0]);
+    expect(unanswered).toEqual([]);
+  });
+
+  it("reuses the last matching answer after the configured answers run out", () => {
+    const fake = useFakePi([
+      { args: ["same"], stdout: "first\n" },
+      { args: ["same"], stdout: "second\n" },
+    ]);
+
+    const first = runPi(fake.env, ["same"]);
+    const second = runPi(fake.env, ["same"]);
+    const third = runPi(fake.env, ["same"]);
+    const unanswered = fake.unanswered();
+    rmSync(`${fake.logPath}.unanswered`, { force: true });
+
+    expect([first.stdout, second.stdout, third.stdout]).toEqual(["first\n", "second\n", "second\n"]);
+    expect([first.status, second.status, third.status]).toEqual([0, 0, 0]);
+    expect(unanswered).toEqual([]);
+  });
+
+  it("uses matching answers in order and still rejects unmatched calls", () => {
+    const fake = useFakePi([
+      { args: ["same"], stdout: "first\n" },
+      { args: ["same"], stdout: "second\n" },
+    ]);
+
+    const first = runPi(fake.env, ["same"]);
+    const second = runPi(fake.env, ["same"]);
+    const unmatched = runPi(fake.env, ["other"]);
+    const unanswered = fake.unanswered();
+    rmSync(`${fake.logPath}.unanswered`);
+
+    expect([first.stdout, second.stdout]).toEqual(["first\n", "second\n"]);
+    expect(unmatched.status).toBe(99);
+    expect(unmatched.stderr).toBe("fake pi: no answer for: other\n");
+    expect(unanswered).toEqual([["other"]]);
+  });
+
   it("waits for the configured delay", () => {
     const fake = useFakePi([{ args: ["slow"], stdout: "done", delaySeconds: 0.1 }]);
     const startedAt = Date.now();
