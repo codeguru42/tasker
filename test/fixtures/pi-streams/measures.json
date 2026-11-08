@@ -3,18 +3,122 @@
     "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
     "stdout": [
       {
-        "type": "message_end",
-        "message": { "role": "assistant", "content": [{ "type": "text", "text": "faux answer" }], "stopReason": "stop" }
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
       },
-      { "type": "agent_end", "willRetry": false }
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794104434305
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "faux answer"
+            }
+          ],
+          "api": "faux:1794104434265:x39vrme7duj",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 1234,
+            "output": 3,
+            "cacheRead": 0,
+            "cacheWrite": 1234,
+            "totalTokens": 2471,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104434310,
+          "durationMs": 1,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
     ],
     "session": [
-      { "type": "session", "version": 3, "id": "s1", "timestamp": "2026-11-08T02:20:34.100Z", "cwd": "/scratch/work" },
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
       {
         "type": "message",
-        "id": "14aee8a5",
-        "parentId": "0bf46837",
-        "message": { "role": "assistant", "content": [{ "type": "text", "text": "faux answer" }], "stopReason": "stop" }
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": "2026-11-08T02:20:34.307Z"
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "faux answer"
+            }
+          ],
+          "api": "faux:1794104434265:x39vrme7duj",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 1234,
+            "output": 3,
+            "cacheRead": 0,
+            "cacheWrite": 1234,
+            "totalTokens": 2471,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104434310,
+          "durationMs": 1,
+          "thinkingLevel": "off"
+        }
       }
     ]
   },
@@ -22,36 +126,167 @@
     "sessionFile": "2026-11-08T02-21-45-167Z_m7b.jsonl",
     "stdout": [
       {
+        "type": "session",
+        "version": 3,
+        "id": "m7b",
+        "timestamp": "2026-11-08T02:21:45.167Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hi"
+            }
+          ],
+          "timestamp": 1794104505224
+        }
+      },
+      {
         "type": "message_end",
         "message": {
           "role": "assistant",
-          "content": [{ "type": "toolCall", "id": "c1", "name": "submit_answer", "arguments": { "findings": [] } }],
-          "stopReason": "stop"
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "c1",
+              "name": "submit_answer",
+              "arguments": {
+                "findings": []
+              }
+            }
+          ],
+          "api": "faux:1794104505199:kw96jy2b4pd",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 1447,
+            "output": 8,
+            "cacheRead": 0,
+            "cacheWrite": 1447,
+            "totalTokens": 2902,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104505229,
+          "durationMs": 1,
+          "thinkingLevel": "off"
         }
       },
       {
         "type": "tool_execution_end",
         "toolCallId": "c1",
         "toolName": "submit_answer",
-        "result": { "content": [{ "type": "text", "text": "Answer accepted." }], "details": {}, "terminate": true },
-        "isError": false
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Answer accepted."
+            }
+          ],
+          "details": {},
+          "terminate": true
+        },
+        "isError": false,
+        "durationMs": 0
       },
       {
         "type": "message_end",
-        "message": { "role": "toolResult", "toolCallId": "c1", "toolName": "submit_answer", "isError": false }
+        "message": {
+          "role": "toolResult",
+          "toolCallId": "c1",
+          "toolName": "submit_answer",
+          "content": [
+            {
+              "type": "text",
+              "text": "Answer accepted."
+            }
+          ],
+          "details": {},
+          "isError": false,
+          "durationMs": 0,
+          "timestamp": 1794104505232
+        }
       },
-      { "type": "agent_end", "willRetry": false }
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
     ],
     "session": [
-      { "type": "session", "version": 3, "id": "m7b", "timestamp": "2026-11-08T02:21:45.167Z", "cwd": "/scratch/work" },
+      {
+        "type": "session",
+        "version": 3,
+        "id": "m7b",
+        "timestamp": "2026-11-08T02:21:45.167Z",
+        "cwd": "/scratch/work"
+      },
       {
         "type": "message",
-        "id": "3c971078",
-        "parentId": "ed117840",
+        "id": "u-m7b",
+        "parentId": "parent-m7b",
+        "timestamp": "2026-11-08T02:21:45.227Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hi"
+            }
+          ],
+          "timestamp": "2026-11-08T02:21:45.227Z"
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-m7b",
+        "parentId": "u-m7b",
+        "timestamp": "2026-11-08T02:21:45.229Z",
         "message": {
           "role": "assistant",
-          "content": [{ "type": "toolCall", "id": "c1", "name": "submit_answer", "arguments": { "findings": [] } }],
-          "stopReason": "stop"
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "c1",
+              "name": "submit_answer",
+              "arguments": {
+                "findings": []
+              }
+            }
+          ],
+          "api": "faux:1794104505199:kw96jy2b4pd",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 1447,
+            "output": 8,
+            "cacheRead": 0,
+            "cacheWrite": 1447,
+            "totalTokens": 2902,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104505229,
+          "durationMs": 1,
+          "thinkingLevel": "off"
         }
       }
     ]
@@ -60,21 +295,198 @@
     "sessionFile": "2026-11-08T02-21-52-732Z_m8.jsonl",
     "stdout": [
       {
+        "type": "session",
+        "version": 3,
+        "id": "m8",
+        "timestamp": "2026-11-08T02:21:52.732Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hi"
+            }
+          ],
+          "timestamp": 1794104512787
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "c1",
+              "name": "submit_answer",
+              "arguments": {
+                "findings": "x"
+              }
+            }
+          ],
+          "api": "faux:1794104512762:z41blavt9m",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 1234,
+            "output": 3,
+            "cacheRead": 0,
+            "cacheWrite": 1234,
+            "totalTokens": 2471,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104512792,
+          "durationMs": 1,
+          "thinkingLevel": "off"
+        }
+      },
+      {
         "type": "tool_execution_end",
         "toolCallId": "c1",
         "toolName": "submit_answer",
-        "result": { "content": [{ "type": "text", "text": "Validation failed for tool submit_answer" }] },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Validation failed for tool \"submit_answer\":\n  - findings: must be array\n\nReceived arguments:\n{\n  \"findings\": \"x\"\n}"
+            }
+          ],
+          "details": {}
+        },
         "isError": true
       },
-      { "type": "agent_end", "willRetry": false }
+      {
+        "type": "message_end",
+        "message": {
+          "role": "toolResult",
+          "toolCallId": "c1",
+          "toolName": "submit_answer",
+          "content": [
+            {
+              "type": "text",
+              "text": "Validation failed for tool \"submit_answer\":\n  - findings: must be array\n\nReceived arguments:\n{\n  \"findings\": \"x\"\n}"
+            }
+          ],
+          "details": {},
+          "isError": true,
+          "timestamp": 1794104512796
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "gave up"
+            }
+          ],
+          "api": "faux:1794104512762:z41blavt9m",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 46,
+            "output": 2,
+            "cacheRead": 1447,
+            "cacheWrite": 46,
+            "totalTokens": 1541,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104512797,
+          "durationMs": 0,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
     ],
     "session": [
-      { "type": "session", "version": 3, "id": "m8", "timestamp": "2026-11-08T02:21:52.732Z", "cwd": "/scratch/work" },
+      {
+        "type": "session",
+        "version": 3,
+        "id": "m8",
+        "timestamp": "2026-11-08T02:21:52.732Z",
+        "cwd": "/scratch/work"
+      },
       {
         "type": "message",
-        "id": "215728e9",
-        "parentId": "6eacb789",
-        "message": { "role": "assistant", "content": [{ "type": "text", "text": "gave up" }], "stopReason": "stop" }
+        "id": "u-m8",
+        "parentId": "parent-m8",
+        "timestamp": "2026-11-08T02:21:52.790Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hi"
+            }
+          ],
+          "timestamp": "2026-11-08T02:21:52.790Z"
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-m8",
+        "parentId": "u-m8",
+        "timestamp": "2026-11-08T02:21:52.792Z",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "c1",
+              "name": "submit_answer",
+              "arguments": {
+                "findings": "x"
+              }
+            }
+          ],
+          "api": "faux:1794104512762:z41blavt9m",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 1234,
+            "output": 3,
+            "cacheRead": 0,
+            "cacheWrite": 1234,
+            "totalTokens": 2471,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104512792,
+          "durationMs": 1,
+          "thinkingLevel": "off"
+        }
       }
     ]
   },
@@ -82,15 +494,62 @@
     "sessionFile": "2026-11-08T02-22-15-613Z_m10r.jsonl",
     "stdout": [
       {
+        "type": "session",
+        "version": 3,
+        "id": "m10r",
+        "timestamp": "2026-11-08T02:22:15.613Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hi"
+            }
+          ],
+          "timestamp": 1794104549800
+        }
+      },
+      {
         "type": "message_end",
         "message": {
           "role": "assistant",
-          "content": [{ "type": "text", "text": "partial" }],
+          "content": [
+            {
+              "type": "text",
+              "text": "partial"
+            }
+          ],
+          "api": "faux:1794104535748:nrspovbh0rh",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 2,
+            "cacheRead": 1448,
+            "cacheWrite": 0,
+            "totalTokens": 1450,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
           "stopReason": "error",
+          "timestamp": 1794104549805,
+          "durationMs": 1,
+          "thinkingLevel": "off",
           "errorMessage": "429 rate limit exceeded, overloaded"
         }
       },
-      { "type": "agent_end", "willRetry": true },
+      {
+        "type": "agent_end"
+      },
       {
         "type": "auto_retry_start",
         "attempt": 1,
@@ -98,7 +557,9 @@
         "delayMs": 2000,
         "errorMessage": "429 rate limit exceeded, overloaded"
       },
-      { "type": "agent_end", "willRetry": true },
+      {
+        "type": "agent_end"
+      },
       {
         "type": "auto_retry_start",
         "attempt": 2,
@@ -106,7 +567,9 @@
         "delayMs": 4000,
         "errorMessage": "429 rate limit exceeded, overloaded"
       },
-      { "type": "agent_end", "willRetry": true },
+      {
+        "type": "agent_end"
+      },
       {
         "type": "auto_retry_start",
         "attempt": 3,
@@ -114,8 +577,19 @@
         "delayMs": 8000,
         "errorMessage": "429 rate limit exceeded, overloaded"
       },
-      { "type": "agent_end", "willRetry": false },
-      { "type": "auto_retry_end", "success": false, "attempt": 3, "finalError": "429 rate limit exceeded, overloaded" }
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "auto_retry_end",
+        "success": false,
+        "attempt": 3,
+        "finalError": "429 rate limit exceeded, overloaded"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
     ],
     "session": [
       {
@@ -127,12 +601,54 @@
       },
       {
         "type": "message",
-        "id": "2aa36e24",
-        "parentId": "6059aa83",
+        "id": "u-m10r",
+        "parentId": "parent-m10r",
+        "timestamp": "2026-11-08T02:22:15.787Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hi"
+            }
+          ],
+          "timestamp": "2026-11-08T02:22:15.787Z"
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-m10r",
+        "parentId": "u-m10r",
+        "timestamp": "2026-11-08T02:22:29.805Z",
         "message": {
           "role": "assistant",
-          "content": [{ "type": "text", "text": "partial" }],
+          "content": [
+            {
+              "type": "text",
+              "text": "partial"
+            }
+          ],
+          "api": "faux:1794104535748:nrspovbh0rh",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 2,
+            "cacheRead": 1448,
+            "cacheWrite": 0,
+            "totalTokens": 1450,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
           "stopReason": "error",
+          "timestamp": 1794104549805,
+          "durationMs": 1,
+          "thinkingLevel": "off",
           "errorMessage": "429 rate limit exceeded, overloaded"
         }
       }
@@ -142,50 +658,249 @@
     "sessionFile": "2026-11-08T02-22-36-062Z_m11.jsonl",
     "stdout": [
       {
+        "type": "session",
+        "version": 3,
+        "id": "m11",
+        "timestamp": "2026-11-08T02:22:36.062Z",
+        "cwd": "/scratch/work"
+      },
+      {
         "type": "message_end",
         "message": {
-          "role": "assistant",
+          "role": "user",
           "content": [
-            { "type": "toolCall", "id": "r1", "name": "read", "arguments": { "path": "readable.txt" } },
-            { "type": "toolCall", "id": "c1", "name": "submit_answer", "arguments": { "findings": [] } }
+            {
+              "type": "text",
+              "text": "hi"
+            }
           ],
-          "stopReason": "stop"
+          "timestamp": 1794104556123
         }
       },
-      { "type": "tool_execution_end", "toolCallId": "c1", "toolName": "submit_answer", "isError": false },
       {
         "type": "message_end",
         "message": {
           "role": "assistant",
-          "content": [{ "type": "text", "text": "after both calls" }],
-          "stopReason": "stop"
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "r1",
+              "name": "read",
+              "arguments": {
+                "path": "readable.txt"
+              }
+            },
+            {
+              "type": "toolCall",
+              "id": "c1",
+              "name": "submit_answer",
+              "arguments": {
+                "findings": []
+              }
+            }
+          ],
+          "api": "faux:1794104556098:ffsaljd9sio",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 1447,
+            "output": 15,
+            "cacheRead": 0,
+            "cacheWrite": 1447,
+            "totalTokens": 2909,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104556128,
+          "durationMs": 1,
+          "thinkingLevel": "off"
         }
       },
-      { "type": "agent_end", "willRetry": false }
+      {
+        "type": "tool_execution_end",
+        "toolCallId": "c1",
+        "toolName": "submit_answer",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Answer accepted."
+            }
+          ],
+          "details": {},
+          "terminate": true
+        },
+        "isError": false,
+        "durationMs": 0
+      },
+      {
+        "type": "tool_execution_end",
+        "toolCallId": "r1",
+        "toolName": "read",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "readable content\n"
+            }
+          ],
+          "structuredContent": "readable content\n"
+        },
+        "isError": false,
+        "durationMs": 2
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "toolResult",
+          "toolCallId": "r1",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "readable content\n"
+            }
+          ],
+          "isError": false,
+          "durationMs": 2,
+          "timestamp": 1794104556133
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "toolResult",
+          "toolCallId": "c1",
+          "toolName": "submit_answer",
+          "content": [
+            {
+              "type": "text",
+              "text": "Answer accepted."
+            }
+          ],
+          "details": {},
+          "isError": false,
+          "durationMs": 0,
+          "timestamp": 1794104556134
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "after both calls"
+            }
+          ],
+          "api": "faux:1794104556098:ffsaljd9sio",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 37,
+            "output": 4,
+            "cacheRead": 1447,
+            "cacheWrite": 37,
+            "totalTokens": 1525,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104556135,
+          "durationMs": 0,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
     ],
     "session": [
-      { "type": "session", "version": 3, "id": "m11", "timestamp": "2026-11-08T02:22:36.062Z", "cwd": "/scratch/work" },
+      {
+        "type": "session",
+        "version": 3,
+        "id": "m11",
+        "timestamp": "2026-11-08T02:22:36.062Z",
+        "cwd": "/scratch/work"
+      },
       {
         "type": "message",
-        "id": "76598d2e",
-        "parentId": "8a297d71",
+        "id": "u-m11",
+        "parentId": "parent-m11",
+        "timestamp": "2026-11-08T02:22:36.125Z",
         "message": {
-          "role": "assistant",
+          "role": "user",
           "content": [
-            { "type": "toolCall", "id": "r1", "name": "read", "arguments": { "path": "readable.txt" } },
-            { "type": "toolCall", "id": "c1", "name": "submit_answer", "arguments": { "findings": [] } }
+            {
+              "type": "text",
+              "text": "hi"
+            }
           ],
-          "stopReason": "stop"
+          "timestamp": "2026-11-08T02:22:36.125Z"
         }
       },
       {
         "type": "message",
-        "id": "462f0c89",
-        "parentId": "34db787f",
+        "id": "a-m11",
+        "parentId": "u-m11",
+        "timestamp": "2026-11-08T02:22:36.128Z",
         "message": {
           "role": "assistant",
-          "content": [{ "type": "text", "text": "after both calls" }],
-          "stopReason": "stop"
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "r1",
+              "name": "read",
+              "arguments": {
+                "path": "readable.txt"
+              }
+            },
+            {
+              "type": "toolCall",
+              "id": "c1",
+              "name": "submit_answer",
+              "arguments": {
+                "findings": []
+              }
+            }
+          ],
+          "api": "faux:1794104556098:ffsaljd9sio",
+          "provider": "fauxp",
+          "model": "m",
+          "usage": {
+            "input": 1447,
+            "output": 15,
+            "cacheRead": 0,
+            "cacheWrite": 1447,
+            "totalTokens": 2909,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794104556128,
+          "durationMs": 1,
+          "thinkingLevel": "off"
         }
       }
     ]
