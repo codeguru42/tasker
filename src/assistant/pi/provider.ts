@@ -11,6 +11,7 @@ import { appendEventLine } from "../event-line.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { assistantModelCheck } from "../model-check.js";
 import { piAnswer } from "./answer.js";
+import { correctivePrompt } from "./corrective-prompt.js";
 import { type PiFiles, piArgs } from "./args.js";
 import { piChildEnv } from "./child-env.js";
 import { piDoctorChecks } from "./doctor.js";
@@ -70,13 +71,18 @@ function fileSize(path: string | undefined): number {
   }
 }
 
+interface ProcessOutcome {
+  outcome: RunOutcome;
+  noAnswerProblems?: string[];
+}
+
 function outcomeOfRun(
   input: RunInput,
   run: Extract<AssistantResult, { started: true }>,
   events: AssistantEvent[],
   sessionPath: string | undefined,
   startSize: number,
-): RunOutcome {
+): ProcessOutcome {
   const messages = piMessages(events, sessionPath, startSize);
   const lastAssistant = messages
     .filter((message): message is Record<string, unknown> => isObject(message) && message.role === "assistant")
@@ -96,62 +102,82 @@ function outcomeOfRun(
     reason,
   });
 
-  if (run.passedSignal !== null) return { ...base, kind: "interrupted", signal: run.passedSignal };
-  if (run.timedOut) return { ...base, kind: "timeout" };
-  if (run.signal !== null) return fail(`pi was killed by ${run.signal}${detailSuffix(run.stderrTail.trim())}`);
+  if (run.passedSignal !== null) return { outcome: { ...base, kind: "interrupted", signal: run.passedSignal } };
+  if (run.timedOut) return { outcome: { ...base, kind: "timeout" } };
+  if (run.signal !== null)
+    return { outcome: fail(`pi was killed by ${run.signal}${detailSuffix(run.stderrTail.trim())}`) };
   if (lastAssistant?.stopReason === "error" || lastAssistant?.stopReason === "aborted") {
     const message = typeof lastAssistant.errorMessage === "string" ? lastAssistant.errorMessage.slice(0, 500) : "";
-    return fail(message || `pi ended its turn with ${lastAssistant.stopReason}`);
+    return { outcome: fail(message || `pi ended its turn with ${lastAssistant.stopReason}`) };
   }
-  if (run.code !== 0) return fail(`pi exited ${String(run.code)}${detailSuffix(run.stderrTail.trim())}`);
-  if (lastAssistant === undefined) return fail("the assistant ended with no result");
+  if (run.code !== 0) return { outcome: fail(`pi exited ${String(run.code)}${detailSuffix(run.stderrTail.trim())}`) };
+  if (lastAssistant === undefined) return { outcome: fail("the assistant ended with no result") };
   if (input.jsonSchema !== undefined) {
     const checked = piAnswer(messages, input.checkAnswer!);
     if (!checked.ok) {
-      return fail(
-        ["the assistant gave no structured answer:", ...checked.problems.map((problem) => `  - ${problem}`)].join("\n"),
-      );
+      return {
+        outcome: fail(
+          ["the assistant gave no structured answer:", ...checked.problems.map((problem) => `  - ${problem}`)].join(
+            "\n",
+          ),
+        ),
+        noAnswerProblems: checked.problems,
+      };
     }
-    return { ...base, kind: "success", structuredOutput: checked.answer };
+    return { outcome: { ...base, kind: "success", structuredOutput: checked.answer } };
   }
-  return { ...base, kind: "success" };
+  return { outcome: { ...base, kind: "success" } };
 }
 
 export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvider {
   return {
     id: "pi",
     async run(input) {
-      if (os.platform() !== "linux") {
-        return failed(input, `the pi assistant runs only on Linux; this host is ${os.platform()}`);
-      }
-      if (input.access !== "read-only") {
-        return failed(input, "the pi assistant cannot run the execute role in this version");
-      }
+      const checkBeforeSpawn = (
+        processInput: RunInput,
+      ): { failure: Failure } | { childEnvironment: NodeJS.ProcessEnv; previousSession?: string } => {
+        if (os.platform() !== "linux") {
+          return { failure: failed(input, `the pi assistant runs only on Linux; this host is ${os.platform()}`) };
+        }
+        if (processInput.access !== "read-only") {
+          return { failure: failed(input, "the pi assistant cannot run the execute role in this version") };
+        }
 
-      const childEnvironment = piChildEnv(input.env);
-      if ("reason" in childEnvironment) return failed(input, childEnvironment.reason);
-      const extensionReason = piExtensionRefusal(
-        childEnvironment.env.PI_CODING_AGENT_DIR,
-        input.cwd,
-        input.trustedExtensions,
-      );
-      if (extensionReason !== undefined) return failed(input, extensionReason);
+        const childEnvironment = piChildEnv(processInput.env);
+        if ("reason" in childEnvironment) return { failure: failed(input, childEnvironment.reason) };
+        const extensionReason = piExtensionRefusal(
+          childEnvironment.env.PI_CODING_AGENT_DIR,
+          processInput.cwd,
+          processInput.trustedExtensions,
+        );
+        if (extensionReason !== undefined) return { failure: failed(input, extensionReason) };
 
-      const previousSession = input.resume ? sessionFile(input.sessionDir, input.sessionId) : undefined;
-      if (input.resume && previousSession === undefined) {
-        return failed(input, `the pi session ${input.sessionId} has no session file, so the run cannot continue it`);
-      }
-      const startSize = fileSize(previousSession);
+        const previousSession = processInput.resume
+          ? sessionFile(processInput.sessionDir, processInput.sessionId)
+          : undefined;
+        if (processInput.resume && previousSession === undefined) {
+          return {
+            failure: failed(
+              input,
+              `the pi session ${processInput.sessionId} has no session file, so the run cannot continue it`,
+            ),
+          };
+        }
+        if (!isFile(files.guardFile)) {
+          return { failure: failed(input, `pi guard extension is not a file: ${files.guardFile}`) };
+        }
+        if (!isFile(files.answerFile)) {
+          return { failure: failed(input, `pi answer extension is not a file: ${files.answerFile}`) };
+        }
+        if (processInput.jsonSchema !== undefined && processInput.checkAnswer === undefined) {
+          return { failure: failed(input, "a run with a JSON Schema needs RunInput.checkAnswer") };
+        }
+        return { childEnvironment: childEnvironment.env, previousSession };
+      };
 
-      if (!isFile(files.guardFile)) return failed(input, `pi guard extension is not a file: ${files.guardFile}`);
-      if (!isFile(files.answerFile)) {
-        return failed(input, `pi answer extension is not a file: ${files.answerFile}`);
-      }
-      if (input.jsonSchema !== undefined && input.checkAnswer === undefined) {
-        return failed(input, "a run with a JSON Schema needs RunInput.checkAnswer");
-      }
+      const initialCheck = checkBeforeSpawn(input);
+      if ("failure" in initialCheck) return initialCheck.failure;
 
-      const events: AssistantEvent[] = [];
       const schemaPath =
         input.jsonSchema === undefined ? undefined : assistantSchemaPath(input.sessionDir, input.sessionId);
       let limitsPath: string;
@@ -174,30 +200,91 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
       }
 
       let args: string[];
+      let continuedArgs: string[];
       try {
         args = piArgs(input, files, limitsPath, schemaPath);
+        continuedArgs = piArgs({ ...input, resume: true }, files, limitsPath, schemaPath);
       } catch (error) {
         return failed(input, errorMessage(error));
       }
 
-      let run: AssistantResult;
-      try {
-        run = await runAssistant(program, args, {
-          cwd: input.cwd,
-          env: childEnvironment.env,
-          prompt: input.prompt,
-          deadline: Date.now() + input.timeoutMs,
-          onLine: (line) => appendEventLine(line, events, input.onEvent),
-          onSpawn: input.onSpawn ?? (() => {}),
-        });
-      } catch (error) {
-        return failed(input, errorMessage(error));
+      const deadline = Date.now() + input.timeoutMs;
+      const allEvents: AssistantEvent[] = [];
+      const permissionDenials = [] as RunOutcome["permissionDenials"];
+      const cleanupErrors: string[] = [];
+      let path = initialCheck.previousSession;
+      let corrections = 0;
+      let prompt = input.prompt;
+      let priorOutcome: RunOutcome | undefined;
+      let childEnvironment = initialCheck.childEnvironment;
+
+      const combined = (chosen: RunOutcome): RunOutcome => ({
+        ...chosen,
+        sessionId: input.sessionId,
+        events: allEvents,
+        permissionDenials,
+        usage: "unavailable",
+        ...(path !== undefined && isFile(path) ? { transcriptPath: path } : {}),
+        ...(cleanupErrors.length > 0 ? { sandboxCleanup: { error: cleanupErrors.join("\n") } } : {}),
+      });
+
+      while (true) {
+        const processInput = corrections === 0 ? input : { ...input, resume: true };
+        if (corrections > 0) {
+          const check = checkBeforeSpawn(processInput);
+          if ("failure" in check) return combined(priorOutcome!);
+          childEnvironment = check.childEnvironment;
+          path = check.previousSession;
+        }
+        const processArgs = corrections === 0 ? args : continuedArgs;
+
+        const startSize = fileSize(path);
+        const processEvents: AssistantEvent[] = [];
+        let run: AssistantResult;
+        try {
+          run = await runAssistant(program, processArgs, {
+            cwd: input.cwd,
+            env: childEnvironment,
+            prompt,
+            deadline,
+            onLine: (line) => appendEventLine(line, processEvents, input.onEvent),
+            onSpawn: input.onSpawn ?? (() => {}),
+          });
+        } catch (error) {
+          const failedProcess = failed(input, errorMessage(error));
+          return priorOutcome === undefined
+            ? failedProcess
+            : { ...priorOutcome, events: [...allEvents, ...processEvents], permissionDenials };
+        }
+
+        allEvents.push(...processEvents);
+        path ??= sessionFile(input.sessionDir, input.sessionId);
+        if (!run.started) {
+          const failedProcess = failed(input, run.notFound ? piNotInstalled(program) : run.error);
+          return priorOutcome === undefined
+            ? { ...failedProcess, events: allEvents, permissionDenials }
+            : { ...priorOutcome, events: allEvents, permissionDenials };
+        }
+
+        const processResult = outcomeOfRun(input, run, processEvents, path, startSize);
+        const current = processResult.outcome;
+        permissionDenials.push(...current.permissionDenials);
+        if (current.sandboxCleanup !== undefined && "error" in current.sandboxCleanup) {
+          cleanupErrors.push(current.sandboxCleanup.error);
+        }
+
+        if (processResult.noAnswerProblems === undefined) {
+          if (corrections > 0 && (current.kind === "failure" || current.kind === "timeout")) {
+            return combined(priorOutcome!);
+          }
+          return combined(current);
+        }
+
+        priorOutcome = combined(current);
+        if (corrections >= input.correctiveTurns || Date.now() >= deadline) return priorOutcome;
+        corrections += 1;
+        prompt = correctivePrompt(processResult.noAnswerProblems, input.jsonSchema!);
       }
-
-      if (!run.started) return failed(input, run.notFound ? piNotInstalled(program) : run.error);
-
-      const path = previousSession ?? sessionFile(input.sessionDir, input.sessionId);
-      return outcomeOfRun(input, run, events, path, startSize);
     },
     doctorChecks: (repos) => piDoctorChecks(repos),
     modelChecks: (model) => [assistantModelCheck("pi", `pi model: ${model}`, model)],

@@ -1232,7 +1232,14 @@ describe("pi corrective turns", () => {
 
   it("uses correction text after a rejected call", async () => {
     const input = correctiveInput({
-      checkAnswer: (value) => (value === "good" ? { ok: true } : { ok: false, problems: ["bad call"] }),
+      checkAnswer: (value) =>
+        typeof value === "object" &&
+        value !== null &&
+        "findings" in value &&
+        Array.isArray(value.findings) &&
+        value.findings[0] === "good"
+          ? { ok: true }
+          : { ok: false, problems: ["bad call"] },
     });
     const files = makeFiles();
     const first = firstCallStream(input, { findings: ["bad"] });
@@ -1290,7 +1297,7 @@ describe("pi corrective turns", () => {
 
   it("uses the plan check problem for a placeholder answer", async () => {
     const plan = validPlanAnswer();
-    const placeholder = { ...plan, todos: plan.todos.map((todo) => ({ ...todo, title: "TODO" })) };
+    const placeholder = { ...plan, todos: plan.todos.map((todo) => ({ ...todo, title: "x" })) };
     const input = correctiveInput({
       jsonSchema: planAnswerJsonSchema(),
       checkAnswer: (value) => checkPlanAnswer(value),
@@ -1306,7 +1313,10 @@ describe("pi corrective turns", () => {
 
     expect(outcome.kind).toBe("success");
     expect(fake.calls()).toHaveLength(2);
-    expect(fake.calls().map((call) => call.stdin)).toEqual([input.prompt, expect.stringContaining("TODO")]);
+    expect(fake.calls().map((call) => call.stdin)).toEqual([
+      input.prompt,
+      expect.stringContaining("todos.0.title: is a placeholder, not real text"),
+    ]);
     expect(fake.calls().map((call) => call.args)).toEqual([
       expectedArgs({ ...input, resume: false }, files),
       expectedArgs({ ...input, resume: true }, files),
@@ -1391,7 +1401,7 @@ describe("pi corrective turns", () => {
 
     const outcome = await callPi(input, files);
 
-    expect(outcome.kind).toBe("success");
+    expect(outcome.kind).toBe("failure");
     expectProcessSequence(fake, input, files, [
       input.prompt,
       correctivePrompt(["submit_answer: the check of the answer threw: check exploded"], input.jsonSchema!),
@@ -1434,9 +1444,22 @@ describe("pi corrective turns", () => {
   });
 
   it("does not correct after an interrupt of the first process", async () => {
-    const input = correctiveInput({ onSpawn: (pid) => process.kill(pid, "SIGINT") });
+    const fakeRef: { current?: ReturnType<typeof useFakePi> } = {};
+    const input = correctiveInput({
+      onSpawn: () => {
+        const timer = setInterval(() => {
+          if (fakeRef.current?.calls().length === 1) {
+            clearInterval(timer);
+            process.kill(process.pid, "SIGINT");
+          }
+        }, 10);
+      },
+    });
     const files = makeFiles();
-    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    const fake = processScripts(input, files, [
+      { delaySeconds: 1, stream: firstTextStream(input), session: firstSession(input) },
+    ]);
+    fakeRef.current = fake;
     input.env = { ...input.env, ...fake.env };
 
     const outcome = await callPi(input, files);
@@ -1474,7 +1497,9 @@ describe("pi corrective turns", () => {
       },
     });
     const files = makeFiles();
-    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    const fake = processScripts(input, files, [
+      { stream: firstCallStream(input, { findings: [] }), session: firstSession(input) },
+    ]);
     input.env = { ...input.env, ...fake.env };
 
     await callPi(input, files);
@@ -1484,23 +1509,32 @@ describe("pi corrective turns", () => {
 
   it("passes an interrupt from a correction through", async () => {
     let processNumber = 0;
+    const fakeRef: { current?: ReturnType<typeof useFakePi> } = {};
     const input = correctiveInput({
-      onSpawn: (pid) => {
+      onSpawn: () => {
         processNumber += 1;
-        if (processNumber === 2) process.kill(pid, "SIGINT");
+        if (processNumber === 2) {
+          const timer = setInterval(() => {
+            if (fakeRef.current?.calls().length === 2) {
+              clearInterval(timer);
+              process.kill(process.pid, "SIGINT");
+            }
+          }, 10);
+        }
       },
     });
     const files = makeFiles();
     const fake = processScripts(input, files, [
       { stream: firstTextStream(input), session: firstSession(input) },
-      { stream: continuationTextStream("wait"), session: continuationSession() },
+      { delaySeconds: 1, stream: continuationTextStream("wait"), session: continuationSession() },
     ]);
+    fakeRef.current = fake;
     input.env = { ...input.env, ...fake.env };
 
     const outcome = await callPi(input, files);
 
-    expect(outcome.kind).toBe("interrupted");
     expectProcessSequence(fake, input, files, [input.prompt, expect.any(String)]);
+    expect(outcome.kind).toBe("interrupted");
   });
 
   it("starts with a fresh rejected-call count on the correction", async () => {
@@ -1515,7 +1549,10 @@ describe("pi corrective turns", () => {
     const outcome = await callPi(input, files);
 
     expect(outcome.kind).toBe("success");
-    expectProcessSequence(fake, input, files, [input.prompt, expect.stringContaining("findings: must be array")]);
+    expectProcessSequence(fake, input, files, [
+      input.prompt,
+      expect.stringContaining("no accepted call of submit_answer"),
+    ]);
     expect(fake.calls()[1].args).toContain(files.answerFile);
   });
 
