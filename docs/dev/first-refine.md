@@ -291,6 +291,32 @@ orchestrator.
   check on the real path. In review loop 1, the rule had a gap with a symbolic link to a path that does not exist.
   Review loop 3 found that the text `..` and the kernel read of a symbolic link disagree. The user then changed the rule
   to a check on the text.
+
+- A ticket can build or change code that reads an input. Its issue can give the shapes of that input. An example of a
+  shape is the form of the lines of a file in a section "Facts" of the issue. Then ask the plan to build the test data
+  of each test from those shapes. An example of test data is a file that the test writes. In each todo of the tests, ask
+  the plan to name the shape that the test data copies.
+
+  If the code is a script, for example a script of `scripts/`, the task subagent also runs it end to end. The run comes
+  after the first `tasker verify` that passes, and before the first `tasker review`. The task subagent runs the script
+  file of the task worktree. Before the run, it applies [the update rule](limits.md#the-update-rule). If a step of the
+  update rule fails, the task subagent [stops](limits.md#the-answer-wait-rule).
+
+  The task subagent makes up input in those shapes. The hint that starts "For
+  [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder of that input. The run starts in that
+  folder, and it writes only in that folder. If the script reads files under `$HOME`, the task subagent sets `HOME` to a
+  new folder inside that folder. A run that needs a change of
+  [the state of the user](plan-review.md#the-state-of-the-user) follows the rules of that subsection.
+
+  If the run finds a gap, the task subagent adds the work with [the add-work rule](run-one-ticket.md#the-add-work-rule).
+  Otherwise it runs `tasker review`, as step 5 of [Run one ticket](run-one-ticket.md#run-one-ticket) says. The reason:
+  if the tests and the code share one wrong form of the input, `tasker verify` still passes.
+
+  On #831 (2026-11-08), the section "Facts" of the issue gave the form of the lines of a transcript. The first execute
+  run invented another form, and the tests used that invented form, so `tasker verify` passed. Right after the first
+  execute run, the task subagent ran the script end to end on a made-up folder. The run found 8 or more defects, and
+  their fix cost about 4 hours and 6 plan and execute cycles. No one measured whether this hint prevents such a gap.
+
 - If a ticket depends on the loaded copy of a skill that the task subagent must not run, the task subagent measures
   which copy loads. An example is `/session-review`, which [Limits](limits.md#limits) bans for a task subagent. The task
   subagent uses a scratch run of `claude -p` in a scratch repo that starts no skill. The hint that starts "For
