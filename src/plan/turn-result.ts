@@ -1,8 +1,18 @@
 import { z } from "zod";
+import type { AnswerCheck } from "../assistant/provider.js";
 import { formatIssues } from "../zod-issues.js";
 import { jsonSchemaOf } from "../json-schema.js";
 
 const turnResultSchema = z.strictObject({ result: z.enum(["done", "blocked"]), reason: z.string().nullable() });
+
+export function checkTurnResult(output: unknown): AnswerCheck {
+  if (output === undefined || output === null) {
+    return { ok: false, problems: ["(root): the assistant returned no result"] };
+  }
+  const parsed = turnResultSchema.safeParse(output);
+  if (!parsed.success) return { ok: false, problems: formatIssues(parsed.error.issues, "(root)") };
+  return { ok: true };
+}
 
 export function turnResultJsonSchema(): Record<string, unknown> {
   return jsonSchemaOf(turnResultSchema);

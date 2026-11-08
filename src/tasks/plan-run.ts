@@ -97,6 +97,7 @@ export async function runPlanModeAnswer<A, R>(request: PlanModeAnswerRequest<A, 
       outcome = await prepared.start({
         prompt,
         jsonSchema,
+        checkAnswer: check,
         onEvent: (event) => writeSync(fd, `${JSON.stringify(event)}\n`),
       });
     } finally {

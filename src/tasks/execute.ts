@@ -7,7 +7,7 @@ import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import type { PlanAnswer } from "../plan/answer.js";
 import { orderTodos } from "../plan/todo-order.js";
-import { readTurnResult, turnResultJsonSchema } from "../plan/turn-result.js";
+import { checkTurnResult, readTurnResult, turnResultJsonSchema } from "../plan/turn-result.js";
 import { archivePrompt } from "../prompts/archive.js";
 import {
   currentTodoText,
@@ -192,6 +192,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
         const outcome = await prepared.start({
           prompt,
           jsonSchema: turnResultJsonSchema(),
+          checkAnswer: checkTurnResult,
           onEvent: (event) => writeSync(fd, `${JSON.stringify(event)}\n`),
           timeoutMs: left,
         });

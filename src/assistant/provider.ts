@@ -10,6 +10,9 @@ export type AssistantProviderId = RepoConfig["assistant"]["provider"];
 export type AssistantRole = keyof RepoConfig["assistant"]["models"];
 export type Effort = RepoConfig["assistant"]["models"]["plan"]["effort"];
 
+// The result of the check of an answer. Each problem has the form "<path>: <message>".
+export type AnswerCheck = { ok: true } | { ok: false; problems: string[] };
+
 export interface SandboxLimits {
   allowWrite: string[];
   denyRead: string[];
@@ -59,6 +62,10 @@ export interface RunInput {
   // Belongs to tasker.
   sessionDir: string;
   jsonSchema?: Record<string, unknown>;
+  // The check that the caller runs on the answer after the run. A provider with no corrective turns ignores it.
+  checkAnswer?: (output: unknown) => AnswerCheck;
+  // The most corrective turns that a provider starts in one run. A provider with no corrective turns ignores it.
+  correctiveTurns: number;
   // Whether the edit tools can change files of the worktree.
   access: "read-only" | "workspace-write";
   // Each entry is the leading words of a shell command that the assistant must not run, for example "git push".

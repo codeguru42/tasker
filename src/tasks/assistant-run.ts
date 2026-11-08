@@ -44,6 +44,7 @@ export interface PlanModeRunRequest extends TaskRunRequest {
 interface StartInput {
   prompt: string;
   jsonSchema?: Record<string, unknown>;
+  checkAnswer?: RunInput["checkAnswer"];
   onEvent?: (event: AssistantEvent) => void;
 }
 
@@ -141,6 +142,8 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
         env,
         prompt: input.prompt,
         jsonSchema: input.jsonSchema,
+        checkAnswer: input.checkAnswer,
+        correctiveTurns: config.repos[task.repoKey].assistant.correctiveTurns,
         sessionId,
         resume,
         providerSessionId: store.providerSessionId(task.id, sessionId),
