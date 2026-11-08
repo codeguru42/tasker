@@ -6,7 +6,7 @@ import { planAnswerJsonSchema } from "../../../src/plan/answer.js";
 import { reviewAnswerJsonSchema } from "../../../src/review/answer.js";
 import { thrownBy } from "../../helpers/errors.js";
 import { useTempDir } from "../../helpers/temp.js";
-import { answerExtension } from "../../../src/assistant/pi/answer-extension.js";
+import answerExtension from "../../../src/assistant/pi/answer-extension.js";
 import { useFakePiExtension } from "../../helpers/fake-pi-extension.js";
 
 function loadAnswerExtension(schemaPath: string) {
@@ -14,7 +14,6 @@ function loadAnswerExtension(schemaPath: string) {
   const previousArgv = process.argv;
   process.argv = [...previousArgv, "--tasker-answer-schema", schemaPath];
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     answerExtension(extension.pi);
   } finally {
     process.argv = previousArgv;

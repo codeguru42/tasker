@@ -1,7 +1,26 @@
 export interface FakePiTool {
   name: string;
+  label?: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+  exposure?: "direct" | "model-only" | "codemode" | "deferred" | "hidden";
   sourceInfo: { path: string; source: string };
   execute(input: unknown, context: FakePiContext): unknown;
+}
+
+export interface FakePiAnswerTool {
+  name: string;
+  label: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  exposure?: "direct" | "model-only" | "codemode" | "deferred" | "hidden";
+  execute(
+    toolCallId: string,
+    params: unknown,
+    signal: AbortSignal | undefined,
+    onUpdate: (result: unknown) => void,
+    context: FakePiContext,
+  ): Promise<unknown>;
 }
 
 export interface FakePiContext {
@@ -11,13 +30,34 @@ export interface FakePiContext {
 
 export type FakePiEventHandler = (event: unknown, context: FakePiContext) => unknown;
 
-export type FakePiFlagOptions = { description: string; type: "string" } | { description: string; type: "boolean" };
+interface FakePiEvents {
+  tool_call: unknown;
+  before_agent_start: {
+    prompt: string;
+    readonly systemPrompt: string;
+    systemPromptOptions: { sections: Record<string, string> };
+  };
+  tool_execution_end: {
+    type: "tool_execution_end";
+    toolCallId: string;
+    toolName: string;
+    result: unknown;
+    isError: boolean;
+    durationMs?: number;
+    parentToolCallId?: string;
+  };
+}
+
+type FakePiEvent<K extends string> = K extends keyof FakePiEvents ? FakePiEvents[K] : unknown;
+
+export type FakePiFlagOptions =
+  { description?: string; type: "string"; default?: string } | { description: string; type: "boolean" };
 
 export interface FakePiExtensionApi {
-  on(event: string, handler: FakePiEventHandler): void;
+  on<K extends string>(event: K, handler: (event: FakePiEvent<K>, context: FakePiContext) => unknown): void;
   registerFlag(name: string, options: FakePiFlagOptions): void;
   getFlag(name: string): string | undefined;
-  registerTool(tool: FakePiTool): void;
+  registerTool(tool: FakePiTool | FakePiAnswerTool): void;
   getAllTools(): FakePiTool[];
 }
 
@@ -39,9 +79,9 @@ export function useFakePiExtension(
   for (const tool of initialTools) tools.set(tool.name, tool);
 
   const pi: FakePiExtensionApi = {
-    on(event, handler) {
+    on<K extends string>(event: K, handler: (event: FakePiEvent<K>, context: FakePiContext) => unknown) {
       const eventHandlers = handlers.get(event) ?? [];
-      eventHandlers.push(handler);
+      eventHandlers.push(handler as FakePiEventHandler);
       handlers.set(event, eventHandlers);
     },
     registerFlag(name, options) {
@@ -51,7 +91,7 @@ export function useFakePiExtension(
       return registered.has(name) ? flags[name] : undefined;
     },
     registerTool(tool) {
-      tools.set(tool.name, tool);
+      tools.set(tool.name, tool as FakePiTool);
     },
     getAllTools() {
       return [...tools.values()];
@@ -80,6 +120,10 @@ export function useFakePiExtension(
 
     const tool = tools.get(name);
     if (!tool) throw new Error(`fake pi: unknown tool ${name}`);
+    if (name === "submit_answer") {
+      const execute = tool.execute.bind(tool);
+      return Reflect.apply(execute, undefined, ["fake-tool-call", input, undefined, undefined, eventContext]);
+    }
     return tool.execute(input, eventContext);
   };
 
