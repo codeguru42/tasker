@@ -68,6 +68,19 @@ tells the user these facts. The orchestrator does not run the blocked action for
 tells it to. The recommendation mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) does
 not cover a tool block: the orchestrator always waits for the user.
 
+Each report of a denial quotes the exact denied call word for word, as the transcript of the session that ran the call
+holds it. A short form or a description of the call does not take its place. This also applies to an item, a later
+correction of a report, a summary of past denials and a short question to the user. If a report of a denial gives no
+exact call, the session that gets the report asks the sender for the exact call. It asks before it states or changes a
+conclusion that rests on the call, for example before the operator tells the user such a conclusion. In the quote, a
+token, a key or a password becomes `[redacted]`, and on GitHub, `$HOME` replaces the path of the home folder.
+
+On 2026-11-07, planner-m16 first gave a denied call to operator-m16 as "a plain comment with no guard". The exact call
+was
+`tail -n +3 /tmp/tasker/m16/drafts/768-comment.md > /tmp/tasker/m16/drafts/768-comment-body.md && gh issue comment 768 --body-file /tmp/tasker/m16/drafts/768-comment-body.md`.
+On that short form, operator-m16 told the user that the denials of that day did not fit the guess that a chain caused
+them. Then operator-m16 withdrew that guess. The exact call later showed that the denied call was a chain.
+
 The classifier of auto mode can deny a `gh` write of a follow-up planner or an orchestrator. That session sends the
 operator an item with the exact command, the folder and the exact text of the denial. The operator gives the user the
 exact command and the folder, with the `!` prefix of Claude Code.
@@ -115,6 +128,62 @@ The user saw "auto mode check unavailable" and "bash denied by auto mode". The c
 example `git show origin/main:<path>` and `gh issue list`. At the same time, https://status.claude.com/ showed the
 incident "Elevated errors for Claude Sonnet 5.5" from 06:14 UTC, and Claude Code in "Partial Outage". No incident named
 auto mode. The user then ran `gh issue create` with the `!` prefix, and the posts of #482 and #483 worked.
+
+### The denial records
+
+The script `scripts/denial-records.ts` finds each denial of the classifier of auto mode in the transcripts of Claude
+Code on the machine of the user. It makes one record for each denial. It keeps the records in a file outside any
+session, `$HOME/Documents/tasker/denials/store.jsonl`. The reason: a transcript is a file of one session, and no session
+reads all of them. The file holds the text of the assistant, so it stays on the machine of the user.
+
+The script replaces each known form of a token, a key or a password with the mark `[redacted]`. It does this before it
+writes a record. The script holds the list of the forms. The list is a guard, not a proof, because a token of another
+form stays in the record. A form can also replace text that is no token.
+
+The script makes a record only for a session that started in the local clone of this repo.
+
+The script reads the transcripts in the form of Claude Code 2.1.318, which a planner measured on 2026-11-07. It keeps
+the fields `serverClassifierContext` and `serverClassifierRequest` out of each record, because they can hold the text
+that Claude Code sends to the classifier. The script also says whether an allow rule matches each part of a denied call.
+That match is a guess of the script, not the match of Claude Code.
+
+A planner makes the records on the word of the user, with these steps:
+
+1. In the local clone, run
+   `node scripts/denial-records.ts scan --store $HOME/Documents/tasker/denials/store.jsonl --out /tmp/tasker/<slug>/denials`.
+   The scan prints one line for each new record, a record that is not in the store file yet.
+2. If the scan exits with an error, tell the user the output and stop.
+3. If the scan lists no new record, tell the user so and stop.
+4. Show the user the lines of the new records and the path of `/tmp/tasker/<slug>/denials/records.jsonl`. Also show the
+   `store` command of step 5 with the id of each new record, and its undo step. A follow-up planner sends one item with
+   these parts.
+5. On the word of the user, run
+   `node scripts/denial-records.ts store --store $HOME/Documents/tasker/denials/store.jsonl --out /tmp/tasker/<slug>/denials <id>...`,
+   with the id of each new record that the user keeps. If the user keeps no record, run no `store`.
+6. If `store` exits with an error, tell the user the output and stop.
+7. Tell the user the output `<new> stored`. A follow-up planner sends it as a report.
+
+Before step 4, the planner runs `stat -c %s $HOME/Documents/tasker/denials/store.jsonl`. It also runs `test -d` on
+`$HOME/Documents/tasker/denials`, `$HOME/Documents/tasker` and `$HOME/Documents`. It keeps the results. If the store
+file exists, the undo step of the `store` is `truncate -s <size> $HOME/Documents/tasker/denials/store.jsonl`. If no
+store file exists, the undo step is `rm $HOME/Documents/tasker/denials/store.jsonl`. Then the undo step runs `rmdir` on
+each of the three folders that did not exist, the deepest folder first.
+
+Before step 5, the user can change a line of `records.jsonl`. Then `store` keeps the changed line, after it replaces
+each known form again. `<slug>` is the slug of the planner, as [docs/sessions.md](../sessions.md) defines it.
+
+The store file is state of the user, as [The state of the user](plan-review.md#the-state-of-the-user) defines it. Only a
+planner runs `store` on this file, and only the user approves step 5. So the item of step 4 is a question for the user
+alone, as [The open items](operator-items.md#the-open-items) says. A task subagent, the orchestrator, a ticket subagent
+and a review agent run no `store` on this file.
+
+If the classifier denies `scan` or `store`, the planner runs that step in no other form and in no part. It tells the
+user the exact command and the exact text of the denial, and a follow-up planner sends them as an item. The planner
+gives the user no command with the `!` prefix for these steps.
+
+An issue that uses the records says that its task subagent reads the store file. A record goes to no issue, no comment
+and no doc. An issue, a comment or a doc gives only counts and conclusions from the records. A count or a conclusion can
+name a list `form.kinds` or a write key. It names no write key of a record with `otherProject` `true`.
 
 ## The command rules
 
