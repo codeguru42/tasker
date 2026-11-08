@@ -43,8 +43,9 @@ when one function serves several cases.
   fixture that loads a file under `test/helpers/` at run time starts 2 to 3 times slower, too slowly for the deadline
   tests.
 - `test/helpers/` holds the shared test helpers, one file for each kind of helper, and the tests of each file.
-- `scripts/` holds the scripts that `package.json` runs with `node`. Each script imports only `node:` modules. The
-  reason: `scripts/install-global.ts` runs `npm ci` itself, so Node runs it when `node_modules` can be missing.
+- `scripts/` holds the scripts that run with `node`, for example the scripts that `package.json` runs. Each script
+  imports only `node:` modules. The reason: `scripts/install-global.ts` runs `npm ci` itself, so Node runs it when
+  `node_modules` can be missing.
 - `dist/` holds the build output. Git ignores it.
 
 ## Add a command
