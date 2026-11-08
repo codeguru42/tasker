@@ -1,0 +1,193 @@
+{
+  "text": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "message_end",
+        "message": { "role": "assistant", "content": [{ "type": "text", "text": "faux answer" }], "stopReason": "stop" }
+      },
+      { "type": "agent_end", "willRetry": false }
+    ],
+    "session": [
+      { "type": "session", "version": 3, "id": "s1", "timestamp": "2026-11-08T02:20:34.100Z", "cwd": "/scratch/work" },
+      {
+        "type": "message",
+        "id": "14aee8a5",
+        "parentId": "0bf46837",
+        "message": { "role": "assistant", "content": [{ "type": "text", "text": "faux answer" }], "stopReason": "stop" }
+      }
+    ]
+  },
+  "valid": {
+    "sessionFile": "2026-11-08T02-21-45-167Z_m7b.jsonl",
+    "stdout": [
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [{ "type": "toolCall", "id": "c1", "name": "submit_answer", "arguments": { "findings": [] } }],
+          "stopReason": "stop"
+        }
+      },
+      {
+        "type": "tool_execution_end",
+        "toolCallId": "c1",
+        "toolName": "submit_answer",
+        "result": { "content": [{ "type": "text", "text": "Answer accepted." }], "details": {}, "terminate": true },
+        "isError": false
+      },
+      {
+        "type": "message_end",
+        "message": { "role": "toolResult", "toolCallId": "c1", "toolName": "submit_answer", "isError": false }
+      },
+      { "type": "agent_end", "willRetry": false }
+    ],
+    "session": [
+      { "type": "session", "version": 3, "id": "m7b", "timestamp": "2026-11-08T02:21:45.167Z", "cwd": "/scratch/work" },
+      {
+        "type": "message",
+        "id": "3c971078",
+        "parentId": "ed117840",
+        "message": {
+          "role": "assistant",
+          "content": [{ "type": "toolCall", "id": "c1", "name": "submit_answer", "arguments": { "findings": [] } }],
+          "stopReason": "stop"
+        }
+      }
+    ]
+  },
+  "rejected": {
+    "sessionFile": "2026-11-08T02-21-52-732Z_m8.jsonl",
+    "stdout": [
+      {
+        "type": "tool_execution_end",
+        "toolCallId": "c1",
+        "toolName": "submit_answer",
+        "result": { "content": [{ "type": "text", "text": "Validation failed for tool submit_answer" }] },
+        "isError": true
+      },
+      { "type": "agent_end", "willRetry": false }
+    ],
+    "session": [
+      { "type": "session", "version": 3, "id": "m8", "timestamp": "2026-11-08T02:21:52.732Z", "cwd": "/scratch/work" },
+      {
+        "type": "message",
+        "id": "215728e9",
+        "parentId": "6eacb789",
+        "message": { "role": "assistant", "content": [{ "type": "text", "text": "gave up" }], "stopReason": "stop" }
+      }
+    ]
+  },
+  "failedRetry": {
+    "sessionFile": "2026-11-08T02-22-15-613Z_m10r.jsonl",
+    "stdout": [
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [{ "type": "text", "text": "partial" }],
+          "stopReason": "error",
+          "errorMessage": "429 rate limit exceeded, overloaded"
+        }
+      },
+      { "type": "agent_end", "willRetry": true },
+      {
+        "type": "auto_retry_start",
+        "attempt": 1,
+        "maxAttempts": 3,
+        "delayMs": 2000,
+        "errorMessage": "429 rate limit exceeded, overloaded"
+      },
+      { "type": "agent_end", "willRetry": true },
+      {
+        "type": "auto_retry_start",
+        "attempt": 2,
+        "maxAttempts": 3,
+        "delayMs": 4000,
+        "errorMessage": "429 rate limit exceeded, overloaded"
+      },
+      { "type": "agent_end", "willRetry": true },
+      {
+        "type": "auto_retry_start",
+        "attempt": 3,
+        "maxAttempts": 3,
+        "delayMs": 8000,
+        "errorMessage": "429 rate limit exceeded, overloaded"
+      },
+      { "type": "agent_end", "willRetry": false },
+      { "type": "auto_retry_end", "success": false, "attempt": 3, "finalError": "429 rate limit exceeded, overloaded" }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "m10r",
+        "timestamp": "2026-11-08T02:22:15.613Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "2aa36e24",
+        "parentId": "6059aa83",
+        "message": {
+          "role": "assistant",
+          "content": [{ "type": "text", "text": "partial" }],
+          "stopReason": "error",
+          "errorMessage": "429 rate limit exceeded, overloaded"
+        }
+      }
+    ]
+  },
+  "twoCalls": {
+    "sessionFile": "2026-11-08T02-22-36-062Z_m11.jsonl",
+    "stdout": [
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [
+            { "type": "toolCall", "id": "r1", "name": "read", "arguments": { "path": "readable.txt" } },
+            { "type": "toolCall", "id": "c1", "name": "submit_answer", "arguments": { "findings": [] } }
+          ],
+          "stopReason": "stop"
+        }
+      },
+      { "type": "tool_execution_end", "toolCallId": "c1", "toolName": "submit_answer", "isError": false },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [{ "type": "text", "text": "after both calls" }],
+          "stopReason": "stop"
+        }
+      },
+      { "type": "agent_end", "willRetry": false }
+    ],
+    "session": [
+      { "type": "session", "version": 3, "id": "m11", "timestamp": "2026-11-08T02:22:36.062Z", "cwd": "/scratch/work" },
+      {
+        "type": "message",
+        "id": "76598d2e",
+        "parentId": "8a297d71",
+        "message": {
+          "role": "assistant",
+          "content": [
+            { "type": "toolCall", "id": "r1", "name": "read", "arguments": { "path": "readable.txt" } },
+            { "type": "toolCall", "id": "c1", "name": "submit_answer", "arguments": { "findings": [] } }
+          ],
+          "stopReason": "stop"
+        }
+      },
+      {
+        "type": "message",
+        "id": "462f0c89",
+        "parentId": "34db787f",
+        "message": {
+          "role": "assistant",
+          "content": [{ "type": "text", "text": "after both calls" }],
+          "stopReason": "stop"
+        }
+      }
+    ]
+  }
+}
