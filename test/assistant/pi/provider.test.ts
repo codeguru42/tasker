@@ -34,7 +34,7 @@ function validInput(overrides: Partial<RunInput> = {}): RunInput {
     ...runInput(),
     sessionId: TEST_SESSION_ID,
     env: { HOME: "/home/user" },
-    cwd: "/work/tree",
+    cwd: useTempDir("tasker-pi-worktree-"),
     sessionDir: useTempDir("tasker-pi-provider-session-"),
     trustedExtensions: TRUSTED,
     model: "openrouter/openrouter/auto",
@@ -104,16 +104,18 @@ describe("createPiProvider pre-spawn refusals", () => {
 
   it("refuses an extension precheck failure before checking a resume file", async () => {
     const sessionDir = useTempDir("tasker-pi-no-session-");
+    const cwd = useTempDir("tasker-pi-denied-worktree-");
     const outcome = await callPi(
       validInput({
-        env: { HOME: "/home/user", TASKER_PI_CODING_AGENT_DIR: "/work/tree/.pi-agent" },
+        env: { HOME: "/home/user", TASKER_PI_CODING_AGENT_DIR: join(cwd, ".pi-agent") },
         resume: true,
         sessionDir,
+        cwd,
       }),
       makeFiles(),
     );
 
-    expect(refusalOf(outcome).reason).toBe("the agent folder of pi is in the worktree: /work/tree/.pi-agent");
+    expect(refusalOf(outcome).reason).toBe(`the agent folder of pi is in the worktree: ${join(cwd, ".pi-agent")}`);
   });
 
   it("refuses a continued session with no session file", async () => {
@@ -225,6 +227,7 @@ describe("createPiProvider runs", () => {
     const files = makeFiles();
     const schemaPath = assistantSchemaPath(sessionDir, input.sessionId);
     const limitsPath = guardLimitsPath(sessionDir, input.sessionId);
+    const matchingSessionFile = measures.valid.sessionFile.replace(/_[^_]+\.jsonl$/u, `_${input.sessionId}.jsonl`);
     const args = [
       "-p",
       "--mode",
@@ -258,7 +261,7 @@ describe("createPiProvider runs", () => {
           args,
           stream: measures.valid.stdout,
           session: measures.valid.session,
-          sessionFile: measures.valid.sessionFile,
+          sessionFile: matchingSessionFile,
         },
       ],
       ["OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN", "GH_TOKEN", "OPENAI_API_KEY", "TASKER_PRIVATE_VALUE"],
@@ -269,7 +272,7 @@ describe("createPiProvider runs", () => {
 
     expect(outcome.kind).toBe("success");
     expect(outcome).toMatchObject({ structuredOutput: { findings: [] }, usage: "unavailable", permissionDenials: [] });
-    expect(outcome.transcriptPath).toBe(join(sessionDir, measures.valid.sessionFile));
+    expect(outcome.transcriptPath).toBe(join(sessionDir, matchingSessionFile));
     expect(existsSync(outcome.transcriptPath!)).toBe(true);
     expect(JSON.parse(readFileSync(schemaPath, "utf8"))).toEqual(reviewAnswerJsonSchema());
     expectReadOnlyTools(args);
@@ -305,7 +308,7 @@ describe("createPiProvider runs", () => {
     const sessionDir = useTempDir("tasker-pi-resume-");
     const input = validInput({ sessionDir, resume: true });
     const files = makeFiles();
-    const priorSession = join(sessionDir, "prior-session.jsonl");
+    const priorSession = join(sessionDir, `prior_${input.sessionId}.jsonl`);
     writeFileSync(priorSession, "old session\n");
     const args = [
       "-p",

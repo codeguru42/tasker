@@ -56,6 +56,9 @@
         }
       },
       {
+        "type": "agent_end"
+      },
+      {
         "type": "agent_settled",
         "aborted": false
       }
