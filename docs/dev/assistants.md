@@ -77,6 +77,9 @@ same write paths and the same read deny list. Under `claude-code`, their shell a
 `git push`, and one blocks each `herdr` command. Under `codex`, the run gets no deny rule (see
 [The codex provider](#the-codex-provider)). The deadline is the plan deadline of the configuration.
 
+Under `pi`, the run has no shell and no sandbox. The guard of tasker keeps the read tools away from the read deny list
+(see [The pi provider](#the-pi-provider)).
+
 The plan mode blocks `Edit` and `Write`, but it does not block a shell command that writes. A host test on `claude`
 2.1.300 showed this. The sandbox keeps the writes of the shell in the write paths of the sandbox. The provider refuses
 these roles in the same cases as the execute role (see [Sandbox](#sandbox)).
@@ -721,6 +724,12 @@ and second cases. On a reason, a run refuses before the spawn, and each doctor c
 tasker splits a `pi` model at its first `/`. The part before it is the upstream. The upstream is the model service that
 `pi` calls and that bills the task. The part after it is the model id.
 
+tasker gives pi the arguments `--provider <upstream> --model <upstream>/<model>`. With `--provider <upstream>`, pi
+removes one prefix `<upstream>/` from `--model`. Then pi first matches a model by its provider and its id together, and
+only after that by its id alone. So `--model <model>` runs the wrong model when the model id starts with `<upstream>/`:
+the pattern `<upstream>/<id>` matches the model `<id>` first. tasker gives `--model <upstream>/<model>`, so the pattern
+is `<model>`, which names one model.
+
 ### The doctor checks of pi
 
 The checks run in this order: `pi version`, one `pi-auth:<upstream>` for each upstream, `superpowers:pi` and
@@ -752,10 +761,170 @@ The reasons for the checks:
 - `pi` loads a skill of the worktree only with the trust of the project, and each run of tasker refuses that trust. So
   `simple-english:pi` does not look there.
 
+### The arguments
+
+For a new session, tasker runs `pi` with these arguments, in this order:
+
+```text
+-p --mode json --no-approve --provider <upstream> --model <upstream>/<model> --thinking <effort> --session-id <sessionId> --session-dir <sessionDir> --tools read,grep,find,ls,submit_answer --no-mcp -e <guard file> --tasker-guard-limits <limits path> -e <answer extension file> --tasker-answer-schema <schema path>
+```
+
+For a continued session, tasker uses `--session <sessionId>` in place of `--session-id <sessionId>`. If the run has no
+answer schema, `--tools` lists only `read,grep,find,ls`. The command also leaves out the answer extension and
+`--tasker-answer-schema`.
+
+`--no-approve` keeps pi from loading extensions of the worktree. `--tools` gives pi only the read tools and, when the
+run has a schema, `submit_answer`. Pi trims the prompt before it makes the user message. `--no-mcp`, `-e <guard file>`
+and `--tasker-guard-limits <limits path>` load and configure [the guard extension](#the-guard-extension).
+
+The run never gives pi `bash`, `edit` or `write`. It never gives `--no-skills`, `-ns`, `--no-tools`, `-nt`,
+`--no-builtin-tools` or `-nbt`. When the model reads the `SKILL.md` of a skill, pi loads the skill, so the run keeps the
+`read` tool and the discovery of skills. The run never gives `--no-extensions` or `-ne`, because this flag also turns
+off the built-in extensions of pi. The run loads each extension that the user trusts in `assistant.trustedExtensions`.
+
+### The limits of the plan and review roles
+
+Pi runs the plan and review roles with read-only access. It has no shell tool and no sandbox. It gets the tools `read`,
+`grep`, `find` and `ls`. The guard limits have no read roots, skill roots, protected paths, write roots or denied write
+paths. The guard gets the read deny list and denied commands from tasker. The read tools cannot read a path on the deny
+list. The guard checks each tool's name and source against its limits. See [the guard extension](#the-guard-extension).
+
+### The answer tool
+
+When a run has a plan or review schema, tasker writes it to `<sessionDir>/<sessionId>.schema.json`. The answer extension
+reads it from `--tasker-answer-schema` and registers `submit_answer` with that schema. Pi checks the call arguments
+against the schema. The plan and review callers check the raw returned answer against their own schemas.
+
+The tool returns `Answer accepted.` and `terminate: true` for a valid call. pi ends the turn after the calls of one
+message only when each call returns `terminate: true`. So a valid call alone ends the run with no other request to the
+model. With another call in the same message, the model gets another request (measure 11), and the answer is still the
+last accepted call. The guard limits name the tool with source `cli`, because pi reports tools from `-e` extensions with
+source `cli`. A valid call has a `toolResult` with `isError` false. Tasker takes the raw arguments of the last accepted
+top-level call. Tasker takes the arguments as the model sent them, not the form that pi changed. pi changes some types
+of the arguments before its own test, and tasker trusts only its own test. The matching `toolResult` must have `isError`
+false. This call takes priority over later assistant text.
+
+If no call is accepted, tasker reads the text of the last assistant message. It parses the whole text as JSON first. If
+that fails, it takes the last valid JSON code fence. The answer extension adds the `tasker-answer` section to the system
+prompt in its `before_agent_start` handler. The section tells the model three things: call `submit_answer` one time, as
+the last action; after three rejected calls, the tool goes away; with no tool, end the reply with the answer as one JSON
+object in a fenced `json` block. The prompts of the steps do not change, so they stay the same for every provider. The
+rule is in a section of its own, because pi leaves the description and the prompt guidelines of a hidden tool out of the
+request. After three rejected top-level `submit_answer` calls, the extension registers the tool again with
+`exposure: "hidden"`. Nested calls do not count.
+
+### The session file
+
+Pi stores a session at `<sessionDir>/<timestamp>_<sessionId>.jsonl`. A new run uses `--session-id <sessionId>`. A
+continued run uses `--session <sessionId> --session-dir <sessionDir>` and keeps the existing file. If that file is
+missing, tasker refuses with `the pi session <sessionId> has no session file, so the run cannot continue it`.
+
+Tasker records the file size before the run starts. If the stream has an `agent_end` event, tasker reads its ordered
+`message_end` events. If the stream has no `agent_end`, tasker reads only the session-file bytes added after the
+recorded size. This keeps earlier messages out of the answer. When the file exists after the run starts, tasker returns
+its path as `transcriptPath`.
+
+### The outcome
+
+The pi provider runs only on Linux. It refuses a run that has an execute step. It runs its checks before it starts pi:
+the host, access mode, child environment, extension trust, continued-session file and injected extension files.
+
+After it starts pi, the first matching result sets the outcome:
+
+1. A missing program gives `failure` with `<program> is not installed or not on PATH`.
+2. A failed start gives `failure` with the start error.
+3. A signal that tasker passed gives `interrupted`.
+4. The deadline gives `timeout`.
+5. A signal that stopped pi gives `failure` with `pi was killed by <signal>` and the end of stderr.
+6. A final assistant message with `stopReason` `error` or `aborted` gives `failure`. The reason is its `errorMessage`,
+   capped at 500 characters. If there is no `errorMessage`, the reason is `pi ended its turn with <stopReason>`.
+7. A nonzero exit gives `failure` with `pi exited <code>` and the end of stderr.
+8. No final assistant message gives `failure` with `the assistant ended with no result`.
+9. A run with a schema and no structured answer gives `failure` with `the assistant gave no structured answer`.
+10. Each other run gives `success`.
+
+pi exits with 0 when a turn fails in JSON mode, so the row of `stopReason` comes before the row of the exit code.
+
+The last assistant message controls the result after retries. A stream can have more than one `agent_end` event. Usage
+is `unavailable`, permission denials are `[]`, and tasker reports no model. There is no quota outcome, and `overageStop`
+has no effect.
+
+### The measures of the plan and review roles
+
+These measures ran with pi 1.1.0 on Linux on 2026-11-07. Each run used a new scratch folder, a new empty folder as
+`PI_CODING_AGENT_DIR`, a scratch `HOME`, `PI_TELEMETRY=0`, `--offline`, a scripted `fauxp` provider and no real model.
+
+1. The faux provider exited with 0, and the assistant text was `faux answer`. Pi made `auth.json` and
+   `models-store.json`, each with `{}`, in the empty agent folder. A new `--session-id` prints this on stderr:
+   `Warning: No project session found with id '<id>'; creating a new session with that id.`
+2. The user message is not exactly the text of stdin. pi trims leading and trailing whitespace. Stdin
+   `  lead\n\nmid  line\ntail \n\n` gave the content `[{"type":"text","text":"lead\n\nmid  line\ntail"}]`. Stdin
+   `no newline` gave `no newline`.
+3. `--session-id s3` made `<dir>/2026-11-08T02-21-01-485Z_s3.jsonl` with 6 lines. A later run with
+   `--session s3 --session-dir <dir>` kept that file and added the user message and assistant message at its end (9
+   lines). The stream of the later run started with a `session` record, then `agent_start`, `turn_start` and
+   `message_start` with role `user`.
+4. A missing session exited with 1. Stderr was `No session found matching 'nosuch'`, stdout was empty, and pi made no
+   session file.
+5. With `--tools read,grep,find,ls,submit_answer`, `toolsAdded` of the first system message was
+   `["read","grep","find","ls","submit_answer"]`. With `--tools read,grep,find,ls`, it was
+   `["read","grep","find","ls"]`.
+6. The plan schema and review schema both started with exit 0. A schema file with text `not json {` gave exit 1, empty
+   stdout and no session file. Stderr had `Error: Unknown option: --tasker-answer-schema` and
+   `Error: Failed to load extension "<path>": Failed to load extension: the answer extension cannot read its schema file`.
+   A schema file `[1]` gave the same results with `the answer extension schema is not a JSON object`.
+7. A valid call had a `toolResult` with `isError` false and text `Answer accepted.`. The model got no other request (1
+   request), and pi exited with 0. The final assistant message had `stopReason` `stop`, the default of the faux
+   provider. The limits entry needs source `cli`. With source `local`, the guard blocked the valid call with
+   `the tool source does not match the guard limits`. `pi.getAllTools()` reported
+   `{"path":"<absolute path of the -e file>","source":"cli","scope":"temporary","origin":"top-level"}` for a tool of an
+   `-e` extension.
+8. A rejected call had a `toolResult` with `isError` true and this text:
+
+   ```text
+   Validation failed for tool "submit_answer":
+     - findings: must be array
+
+   Received arguments:
+   {
+     "findings": "x"
+   }
+   ```
+
+   The model got another request (2 requests).
+
+9. Three rejected calls were followed by a fourth call with valid arguments. The request after the third rejected call
+   had this extra system message at the end of its messages:
+   `{"role":"system","content":"","toolsRemoved":[{"name":"submit_answer"}]}`. That request still had the
+   `tasker-answer` section in the first system message's sections: preamble, tools, rules, docs, cwd, tasker-answer. The
+   fourth call had `isError` true and text `Tool submit_answer not found`. The prototype added the section with
+   `event.systemPromptOptions.sections["tasker-answer"] = text` in the `before_agent_start` handler. It withdrew the
+   tool with `pi.registerTool({... exposure: "hidden"})` after the third `tool_execution_end` event with `isError` true
+   and no `parentToolCallId`.
+10. A final assistant message with `stopReason` `error` and `errorMessage` `scripted provider failure` made pi exit
+    with 0. The `message_end` event held the `stopReason` and `errorMessage`. Pi made no `auto_retry_*` event and made 1
+    request. With `errorMessage` `429 rate limit exceeded, overloaded`, pi made 4 requests. Events were
+    `auto_retry_start` `{"attempt":1,"maxAttempts":3,"delayMs":2000,"errorMessage":...}`, then attempt 2 with `delayMs`
+    4000, then attempt 3 with `delayMs` 8000. An `entry_appended` event followed each `auto_retry_start`, and an
+    `agent_end` event followed each failed turn. Then came `auto_retry_end`
+    `{"success":false,"attempt":3,"finalError":"429 rate limit exceeded, overloaded"}` and `agent_settled`. Pi exited
+    with 0. The script gave the same error on each retry. A stream can hold more than one `agent_end` event.
+11. Two calls in one message, a `read` call and a valid `submit_answer` call, both ran. Both `toolResult` messages had
+    `isError` false, and the model got another request (2 requests). The text of the second assistant message ended the
+    run.
+12. The `read` call for the denied file had `isError` true and text `the file path is denied`.
+13. Models `m` and `fauxp/m` were used with `--provider fauxp`. `--model fauxp/fauxp/m` ran model `m`, not `fauxp/m`.
+    `--model fauxp/fauxp/fauxp/m` ran model `fauxp/m`. `--model fauxp/m` ran `m`, and `--model m` ran `m`. The cause is
+    `findExactModelReferenceMatch()` in `dist/core/model-resolver.js` of pi. After pi removes the prefix `<provider>/`
+    from `--model`, it first matches a model whose `<provider>/<id>` equals the pattern. It then matches a model whose
+    id equals the pattern.
+14. A scripted `bash` call and a scripted `write` call each had `isError` true, with text `Tool bash not found` and
+    `Tool write not found`. No file appeared in the run folder.
+
 ### The guard extension
 
-The guard extension checks each tool call before the tool runs. It defines limits for a pi run. The pi provider does not
-load it yet.
+The guard extension checks each tool call before the tool runs. It defines limits for a pi run. The pi provider loads it
+with `-e` for the plan and review roles.
 
 The guard trusts a tool only when its name and source match the limits file and pi still reports that source. It checks
 the current source on each call, including a call made through `ctx.executeTool()`.
