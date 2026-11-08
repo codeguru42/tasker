@@ -101,6 +101,21 @@ describe("EXECUTE_PROMPT", () => {
 
     expect(rulesOf(filled)[4]).toBe("5. Commit as the repository does.");
   });
+
+  it("runs the checks of the todo as rule 10", () => {
+    expect(rulesOf(EXECUTE_PROMPT)[9]).toBe(
+      "10. Run the tests of the todo at hand: the new test, to read its failure, then again after the change. If the todo asks for the whole test suite or another check of the whole repository, run it too. The commit of the failing test of a red/green pair can fail such a check where the rules of the repository permit it. The verify run of tasker runs outside your sandbox, and its result is the one that counts. If a test that you did not touch fails in your sandbox, find out whether your change causes the failure. The same holds for a check that fails in your sandbox. If your change causes the failure, fix it before the commit. Otherwise, name the test or the check in your final summary and go on. For such a failure, this rule wins over the pass condition of the todo.",
+    );
+  });
+
+  it("runs each check alone as rule 11", () => {
+    const rule = rulesOf(EXECUTE_PROMPT)[10];
+
+    expect(rule).toContain(
+      "Run each check alone. If the todo asks for a script that also runs the tests, run that script before the commit, as rule 10 says. Do not run that script for the baseline.",
+    );
+    expect(rule).not.toContain("never a script that also runs the tests");
+  });
 });
 
 describe.each(TURN_PROMPTS)("$name, the shared turn rules", ({ template }) => {
@@ -118,6 +133,20 @@ describe("EXECUTE_FIX_PROMPT", () => {
     const { noQuestionSkill, fileAccess, workingFolder } = EXECUTE_TURN_RULES;
 
     expect(rulesOf(EXECUTE_FIX_PROMPT)[4]).toBe(`5. ${noQuestionSkill} ${fileAccess} ${workingFolder}`);
+  });
+
+  it("runs the fix checks as rule 4", () => {
+    expect(rulesOf(EXECUTE_FIX_PROMPT)[3]).toBe(
+      "4. This failure belongs to no single todo. Every todo of the plan is already recorded as done. Find the cause, fix it, and run the tests that the fix touches. Before you commit the fix, run each command that the todos of the plan run before a commit. Then commit the fix. tasker runs its own checks again afterwards.",
+    );
+  });
+});
+
+describe("EXECUTE_TODO_PROMPT", () => {
+  it("runs the todo checks as rule 4", () => {
+    expect(rulesOf(EXECUTE_TODO_PROMPT)[3]).toBe(
+      "4. Run only the tests of this todo. If this todo asks for the whole test suite or another check of the whole repository, run it too.",
+    );
   });
 });
 
