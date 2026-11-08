@@ -9,10 +9,11 @@ import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
 import type { PiFiles } from "../../../src/assistant/pi/args.js";
 import { createPiProvider as fromCreatePiProvider } from "../../../src/assistant/pi/provider.js";
 import type { RunInput, RunOutcome } from "../../../src/assistant/provider.js";
-import { planAnswerJsonSchema } from "../../../src/plan/answer.js";
+import { checkPlanAnswer, planAnswerJsonSchema } from "../../../src/plan/answer.js";
 import { reviewAnswerJsonSchema } from "../../../src/review/answer.js";
 import { failureOutcomeOf, runInput, TEST_SESSION_ID } from "../../helpers/fake-claude.js";
-import { useFakePi } from "../../helpers/fake-pi.js";
+import { type FakePiAnswer, useFakePi } from "../../helpers/fake-pi.js";
+import { validPlanAnswer } from "../../helpers/plan.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 vi.mock("node:os", async (importOriginal) => {
@@ -57,6 +58,249 @@ function expectOneCall(fake: ReturnType<typeof useFakePi>, input: RunInput, args
   const calls = fake.calls();
   expect(calls).toHaveLength(1);
   expect(calls[0]).toMatchObject({ args, stdin: input.prompt });
+}
+
+const CORRECTIVE_SCHEMA = reviewAnswerJsonSchema();
+const CORRECTIVE_ID = "m1id";
+const CORRECTIVE_SESSION_EVENT = {
+  type: "session",
+  version: 3,
+  id: "m1id",
+  timestamp: "2026-11-08T02:21:45.167Z",
+  cwd: "/scratch/work",
+};
+const TOOL_ADDED_SYSTEM_MESSAGE = {
+  role: "system",
+  content: "",
+  timestamp: 1794104505223,
+  toolsAdded: [{ name: "submit_answer" }],
+};
+const TOOL_REMOVED_SYSTEM_MESSAGE = {
+  role: "system",
+  content: "",
+  timestamp: 1794104512793,
+  toolsRemoved: [{ name: "submit_answer" }],
+};
+
+function correctiveInput(overrides: Partial<RunInput> = {}): RunInput {
+  return validInput({
+    sessionId: CORRECTIVE_ID,
+    jsonSchema: CORRECTIVE_SCHEMA,
+    correctiveTurns: 1,
+    ...overrides,
+  });
+}
+
+function correctivePrompt(problems: string[], schema: Record<string, unknown>): string {
+  return [
+    "Tasker refuses your last answer. Tasker found these problems:",
+    "",
+    problems.map((problem) => `- ${problem}`).join("\n"),
+    "",
+    "Give the whole answer again. Call the tool `submit_answer` one time, as your last action. If the tool is gone, end",
+    "your reply with one JSON object in a fenced `json` block. The answer must match this JSON Schema:",
+    "",
+    "```json",
+    JSON.stringify(schema, null, 2),
+    "```",
+  ].join("\n");
+}
+
+function continuationUserMessage() {
+  return {
+    role: "user",
+    content: [{ type: "text", text: "Tasker refuses your last answer. Fix it." }],
+    timestamp: 1794104505224,
+  };
+}
+
+function continuationSession(messages: unknown[] = []): unknown[] {
+  return [
+    CORRECTIVE_SESSION_EVENT,
+    ...messages.map((message, index) => ({
+      type: "message",
+      id: `m1-${index}`,
+      parentId: index === 0 ? "parent-m1" : `m1-${index - 1}`,
+      timestamp: `2026-11-08T02:21:45.${String(227 + index).padStart(3, "0")}Z`,
+      message,
+    })),
+  ];
+}
+
+function firstSession(input: RunInput, messages: unknown[] = []): unknown[] {
+  return [
+    { ...CORRECTIVE_SESSION_EVENT },
+    ...messages.map((message, index) => ({
+      type: "message",
+      id: `m0-${index}`,
+      parentId: index === 0 ? "parent-m1" : `m0-${index - 1}`,
+      timestamp: `2026-11-08T02:20:34.${String(300 + index).padStart(3, "0")}Z`,
+      message,
+    })),
+    {
+      type: "message",
+      id: "m0-prompt",
+      parentId: "parent-m1",
+      timestamp: "2026-11-08T02:20:34.301Z",
+      message: { role: "user", content: [{ type: "text", text: input.prompt }], timestamp: "2026-11-08T02:20:34.301Z" },
+    },
+  ];
+}
+
+function firstTextStream(input: RunInput): unknown[] {
+  const stream = structuredClone(measures.text.stdout);
+  stream[0] = { ...CORRECTIVE_SESSION_EVENT };
+  const user = stream.find(
+    (event) => event.type === "message_end" && (event.message as { role?: string }).role === "user",
+  );
+  if (user !== undefined) {
+    (user.message as { content: { text: string }[] }).content[0].text = input.prompt;
+  }
+  return stream;
+}
+
+function firstCallStream(input: RunInput, answer?: unknown): unknown[] {
+  const stream = structuredClone(measures.valid.stdout);
+  stream[0] = { ...CORRECTIVE_SESSION_EVENT };
+  const user = stream.find(
+    (event) => event.type === "message_end" && (event.message as { role?: string }).role === "user",
+  );
+  if (user !== undefined) {
+    (user.message as { content: { text: string }[] }).content[0].text = input.prompt;
+  }
+  if (answer !== undefined) {
+    const assistant = stream.find(
+      (event) => event.type === "message_end" && (event.message as { role?: string }).role === "assistant",
+    );
+    if (assistant !== undefined) {
+      const message = assistant.message as { content: { type: string; arguments?: unknown }[] };
+      const call = message.content.find((item) => item.type === "toolCall");
+      if (call !== undefined) call.arguments = answer;
+    }
+  }
+  return stream;
+}
+
+function firstThreeRejectedStream(input: RunInput): unknown[] {
+  const user = { role: "user", content: [{ type: "text", text: input.prompt }], timestamp: 1794104512787 };
+  const calls = ["c1", "c2", "c3"].flatMap((id) => [
+    {
+      type: "message_end",
+      message: {
+        role: "assistant",
+        content: [{ type: "toolCall", id, name: PI_ANSWER_TOOL_NAME, arguments: { findings: "x" } }],
+      },
+    },
+    {
+      type: "message_end",
+      message: { role: "toolResult", toolCallId: id, toolName: PI_ANSWER_TOOL_NAME, isError: true },
+    },
+  ]);
+  const assistant = { role: "assistant", content: [{ type: "text", text: "gave up" }], stopReason: "stop" };
+  return [
+    { ...CORRECTIVE_SESSION_EVENT },
+    { type: "agent_start" },
+    { type: "turn_start" },
+    { type: "message_start", message: user },
+    { type: "message_end", message: user },
+    ...calls,
+    { type: "message_start", message: TOOL_REMOVED_SYSTEM_MESSAGE },
+    { type: "message_end", message: TOOL_REMOVED_SYSTEM_MESSAGE },
+    { type: "message_start", message: assistant },
+    { type: "message_end", message: assistant },
+    { type: "turn_end" },
+    { type: "agent_end", messages: [user, assistant], willRetry: false },
+    { type: "agent_settled", aborted: false },
+  ];
+}
+
+function continuationTextStream(text: string, options: { agentEnd?: boolean } = {}) {
+  const user = continuationUserMessage();
+  const assistant = { role: "assistant", content: [{ type: "text", text }], stopReason: "stop" };
+  return [
+    { ...CORRECTIVE_SESSION_EVENT },
+    { type: "agent_start" },
+    { type: "turn_start" },
+    { type: "message_start", message: TOOL_ADDED_SYSTEM_MESSAGE },
+    { type: "message_end", message: TOOL_ADDED_SYSTEM_MESSAGE },
+    { type: "message_start", message: user },
+    { type: "message_end", message: user },
+    { type: "message_start", message: { role: "assistant", content: [] } },
+    { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: text.slice(0, 1) } },
+    { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: text.slice(1, 2) } },
+    { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: text.slice(2) } },
+    { type: "message_end", message: assistant },
+    { type: "turn_end" },
+    ...(options.agentEnd === false ? [] : [{ type: "agent_end", messages: [user, assistant], willRetry: false }]),
+    { type: "agent_settled", aborted: false },
+  ];
+}
+
+function continuationCallStream(answer: unknown, options: { accepted?: boolean; text?: string } = {}) {
+  const user = continuationUserMessage();
+  const call = {
+    role: "assistant",
+    content: [{ type: "toolCall", id: "c2", name: PI_ANSWER_TOOL_NAME, arguments: answer }],
+    stopReason: "stop",
+  };
+  const result = {
+    role: "toolResult",
+    toolCallId: "c2",
+    toolName: PI_ANSWER_TOOL_NAME,
+    content: [{ type: "text", text: options.accepted === false ? "Validation failed" : "Answer accepted." }],
+    isError: options.accepted === false,
+  };
+  const text =
+    options.text === undefined ? undefined : { role: "assistant", content: [{ type: "text", text: options.text }] };
+  return [
+    { ...CORRECTIVE_SESSION_EVENT },
+    { type: "agent_start" },
+    { type: "turn_start" },
+    { type: "message_start", message: TOOL_ADDED_SYSTEM_MESSAGE },
+    { type: "message_end", message: TOOL_ADDED_SYSTEM_MESSAGE },
+    { type: "message_start", message: user },
+    { type: "message_end", message: user },
+    { type: "message_start", message: call },
+    { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "call" } },
+    { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: " arguments" } },
+    { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: " ready" } },
+    { type: "message_end", message: call },
+    {
+      type: "tool_execution_end",
+      toolCallId: "c2",
+      toolName: PI_ANSWER_TOOL_NAME,
+      isError: options.accepted === false,
+    },
+    { type: "message_end", message: result },
+    ...(text === undefined ? [] : [{ type: "message_end", message: text }]),
+    { type: "turn_end" },
+    { type: "agent_end", messages: text === undefined ? [user, call] : [user, call, text], willRetry: false },
+    { type: "agent_settled", aborted: false },
+  ];
+}
+
+type PiScript = Omit<FakePiAnswer, "args">;
+
+function processScripts(input: RunInput, files: PiFiles, scripts: PiScript[]): ReturnType<typeof useFakePi> {
+  const firstArgs = expectedArgs({ ...input, resume: false }, files);
+  const continuedArgs = expectedArgs({ ...input, resume: true }, files);
+  return useFakePi(scripts.map((script, index) => ({ ...script, args: index === 0 ? firstArgs : continuedArgs })));
+}
+
+function expectProcessSequence(
+  fake: ReturnType<typeof useFakePi>,
+  input: RunInput,
+  files: PiFiles,
+  prompts: string[],
+): void {
+  const calls = fake.calls();
+  const firstArgs = expectedArgs({ ...input, resume: false }, files);
+  const continuedArgs = expectedArgs({ ...input, resume: true }, files);
+  expect(calls).toHaveLength(prompts.length);
+  expect(calls.map((call) => call.stdin)).toEqual(prompts);
+  expect(calls.map((call) => call.args)).toEqual(
+    prompts.map((_prompt, index) => (index === 0 ? firstArgs : continuedArgs)),
+  );
 }
 
 function makeFiles(): PiFiles {
@@ -936,5 +1180,386 @@ describe("createPiProvider outcomes", () => {
     const outcome = await callPi(input, files);
 
     expect(refusalOf(outcome).reason).toBe("429 rate limit exceeded, overloaded");
+  });
+});
+
+describe("pi corrective turns", () => {
+  it("reruns extension refusals before a corrective turn", async () => {
+    const agentDir = join(useTempDir("tasker-pi-agent-"), "agent");
+    const input = correctiveInput({
+      env: { HOME: "/home/user", TASKER_PI_CODING_AGENT_DIR: agentDir },
+      checkAnswer: () => {
+        mkdirSync(join(agentDir, "extensions"), { recursive: true });
+        writeFileSync(join(agentDir, "extensions", "untrusted.js"), "");
+        return { ok: false, problems: [] };
+      },
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstCallStream(input), session: firstSession(input) },
+      { stream: continuationCallStream({ findings: [] }), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(fake.calls()).toHaveLength(1);
+    expect(refusalOf(outcome).reason).toBe(
+      "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+    );
+  });
+
+  it("uses a valid answer call from the correction", async () => {
+    const input = correctiveInput();
+    const files = makeFiles();
+    const schema = input.jsonSchema!;
+    const first = firstTextStream(input);
+    const second = continuationCallStream({ findings: [] });
+    const fake = processScripts(input, files, [
+      { stream: first, session: firstSession(input) },
+      { stream: second, session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "success", structuredOutput: { findings: [] } });
+    expectProcessSequence(fake, input, files, [
+      input.prompt,
+      correctivePrompt(["no accepted call of submit_answer and no JSON object in the final text"], schema),
+    ]);
+  });
+
+  it("uses correction text after a rejected call", async () => {
+    const input = correctiveInput({
+      checkAnswer: (value) => (value === "good" ? { ok: true } : { ok: false, problems: ["bad call"] }),
+    });
+    const files = makeFiles();
+    const first = firstCallStream(input, { findings: ["bad"] });
+    const second = continuationCallStream({ findings: ["bad"] }, { accepted: false, text: '{"findings":["good"]}' });
+    const fake = processScripts(input, files, [
+      { stream: first, session: firstSession(input) },
+      { stream: second, session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "success", structuredOutput: { findings: ["good"] } });
+    expectProcessSequence(fake, input, files, [
+      input.prompt,
+      correctivePrompt(["submit_answer: bad call"], input.jsonSchema!),
+    ]);
+  });
+
+  it("puts only call problems in the corrective prompt", async () => {
+    const input = correctiveInput({ checkAnswer: () => ({ ok: false, problems: ["findings: rejected"] }) });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstCallStream(input, { findings: [] }), session: firstSession(input) },
+      { stream: continuationTextStream('{"findings":[]}'), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("failure");
+    expectProcessSequence(fake, input, files, [
+      input.prompt,
+      correctivePrompt(["submit_answer: findings: rejected"], input.jsonSchema!),
+    ]);
+  });
+
+  it("preserves schema placeholders inside corrective problems", async () => {
+    const input = correctiveInput({
+      checkAnswer: () => ({ ok: false, problems: ["<schema>: unrecognized key"] }),
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstCallStream(input, { findings: [] }), session: firstSession(input) },
+      { stream: continuationCallStream({ findings: [] }), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    await callPi(input, files);
+
+    const correctiveStdin = fake.calls()[1]?.stdin;
+    expect(correctiveStdin).toBe(correctivePrompt(["submit_answer: <schema>: unrecognized key"], input.jsonSchema!));
+    expect(correctiveStdin).toContain("- submit_answer: <schema>: unrecognized key");
+  });
+
+  it("uses the plan check problem for a placeholder answer", async () => {
+    const plan = validPlanAnswer();
+    const placeholder = { ...plan, todos: plan.todos.map((todo) => ({ ...todo, title: "TODO" })) };
+    const input = correctiveInput({
+      jsonSchema: planAnswerJsonSchema(),
+      checkAnswer: (value) => checkPlanAnswer(value),
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstCallStream(input, placeholder), session: firstSession(input) },
+      { stream: continuationTextStream(JSON.stringify(plan)), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("success");
+    expect(fake.calls()).toHaveLength(2);
+    expect(fake.calls().map((call) => call.stdin)).toEqual([input.prompt, expect.stringContaining("TODO")]);
+    expect(fake.calls().map((call) => call.args)).toEqual([
+      expectedArgs({ ...input, resume: false }, files),
+      expectedArgs({ ...input, resume: true }, files),
+    ]);
+  });
+
+  it.each([0, 2])("starts corrections up to the configured limit %i", async (limit) => {
+    const checkAnswer =
+      limit === 2
+        ? (output: unknown) => {
+            const findings =
+              typeof output === "object" && output !== null && "findings" in output && Array.isArray(output.findings)
+                ? output.findings[0]
+                : undefined;
+            return {
+              ok: false as const,
+              problems: [findings === "last" ? "last process problem" : "second process problem"],
+            };
+          }
+        : undefined;
+    const input = correctiveInput({ correctiveTurns: limit, ...(checkAnswer === undefined ? {} : { checkAnswer }) });
+    const files = makeFiles();
+    const scripts: PiScript[] = Array.from({ length: limit + 1 }, (_value, index) => ({
+      stream:
+        index === 0
+          ? firstTextStream(input)
+          : continuationTextStream(index === 1 ? '{"findings":["second"]}' : '{"findings":["last"]}'),
+      session: index === 0 ? firstSession(input) : continuationSession(),
+    }));
+    const fake = processScripts(input, files, scripts);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("failure");
+    if (limit === 2) {
+      expect(refusalOf(outcome).reason).toBe(
+        "the assistant gave no structured answer:\n  - final text: last process problem",
+      );
+      expectProcessSequence(fake, input, files, [
+        input.prompt,
+        correctivePrompt(["no accepted call of submit_answer and no JSON object in the final text"], input.jsonSchema!),
+        correctivePrompt(["final text: second process problem"], input.jsonSchema!),
+      ]);
+      expect(fake.calls()[2]?.stdin).toContain("- final text: second process problem");
+    } else {
+      expect(refusalOf(outcome).reason).toBe(
+        "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+      );
+      expectProcessSequence(fake, input, files, [input.prompt]);
+    }
+  });
+
+  it("does not correct a run without a schema", async () => {
+    const input = validInput({
+      jsonSchema: undefined,
+      correctiveTurns: 2,
+      checkAnswer: () => ({ ok: false, problems: ["ignored"] }),
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("success");
+    expectProcessSequence(fake, input, files, [input.prompt]);
+  });
+
+  it("includes a thrown answer check in the correction prompt", async () => {
+    const input = correctiveInput({
+      checkAnswer: () => {
+        throw new Error("check exploded");
+      },
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstCallStream(input, { findings: [] }), session: firstSession(input) },
+      { stream: continuationTextStream('{"findings":[]}'), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("success");
+    expectProcessSequence(fake, input, files, [
+      input.prompt,
+      correctivePrompt(["submit_answer: the check of the answer threw: check exploded"], input.jsonSchema!),
+    ]);
+  });
+
+  it.each([
+    ["first process failure", { exitCode: 2 }],
+    ["first process timeout", { delaySeconds: 2 }],
+  ])("does not correct after a %s", async (label, script) => {
+    const input = correctiveInput({ timeoutMs: label === "first process timeout" ? 1_000 : 5_000 });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { ...script, stream: firstTextStream(input), session: firstSession(input) },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    await callPi(input, files);
+
+    expectProcessSequence(fake, input, files, [input.prompt]);
+  });
+
+  it.each(["failure", "timeout"] as const)("returns the preceding outcome after a correction %s", async (kind) => {
+    const input = correctiveInput({ timeoutMs: kind === "timeout" ? 1_000 : 5_000 });
+    const files = makeFiles();
+    const correction = kind === "failure" ? { exitCode: 2 } : { delaySeconds: 2 };
+    const fake = processScripts(input, files, [
+      { stream: firstTextStream(input), session: firstSession(input) },
+      { ...correction, stream: continuationTextStream("no result"), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("failure");
+    expect(refusalOf(outcome).reason).toBe(
+      "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+    );
+    expectProcessSequence(fake, input, files, [input.prompt, expect.any(String)]);
+  });
+
+  it("does not correct after an interrupt of the first process", async () => {
+    const input = correctiveInput({ onSpawn: (pid) => process.kill(pid, "SIGINT") });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("interrupted");
+    expectProcessSequence(fake, input, files, [input.prompt]);
+  });
+
+  it("uses the run deadline during a correction", async () => {
+    const input = correctiveInput({ timeoutMs: 1_000 });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstTextStream(input), session: firstSession(input) },
+      { delaySeconds: 2, stream: continuationTextStream("late"), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+    const started = Date.now();
+
+    const outcome = await callPi(input, files);
+
+    expect(Date.now() - started).toBeLessThan(1_800);
+    expect(outcome.kind).toBe("failure");
+    expect(refusalOf(outcome).reason).toBe(
+      "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+    );
+    expectProcessSequence(fake, input, files, [input.prompt, expect.any(String)]);
+  });
+
+  it("does not start a correction when the check uses the remaining time", async () => {
+    const input = correctiveInput({
+      timeoutMs: 500,
+      checkAnswer: (value) => {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 600);
+        return value === null ? { ok: false, problems: ["no answer"] } : { ok: false, problems: ["rejected"] };
+      },
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    await callPi(input, files);
+
+    expectProcessSequence(fake, input, files, [input.prompt]);
+  });
+
+  it("passes an interrupt from a correction through", async () => {
+    let processNumber = 0;
+    const input = correctiveInput({
+      onSpawn: (pid) => {
+        processNumber += 1;
+        if (processNumber === 2) process.kill(pid, "SIGINT");
+      },
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstTextStream(input), session: firstSession(input) },
+      { stream: continuationTextStream("wait"), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("interrupted");
+    expectProcessSequence(fake, input, files, [input.prompt, expect.any(String)]);
+  });
+
+  it("starts with a fresh rejected-call count on the correction", async () => {
+    const input = correctiveInput();
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstThreeRejectedStream(input), session: firstSession(input) },
+      { stream: continuationCallStream({ findings: [] }), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("success");
+    expectProcessSequence(fake, input, files, [input.prompt, expect.stringContaining("findings: must be array")]);
+    expect(fake.calls()[1].args).toContain(files.answerFile);
+  });
+
+  it("does not reuse an earlier answer from the session file", async () => {
+    const input = correctiveInput();
+    const files = makeFiles();
+    const earlierAnswer = {
+      role: "assistant",
+      content: [{ type: "toolCall", id: "old", name: PI_ANSWER_TOOL_NAME, arguments: { findings: [] } }],
+    };
+    const fake = processScripts(input, files, [
+      { stream: firstTextStream(input), session: firstSession(input, [earlierAnswer]) },
+      {
+        stream: continuationTextStream("plain text", { agentEnd: false }),
+        session: continuationSession([continuationUserMessage(), earlierAnswer]),
+      },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("failure");
+    expect(refusalOf(outcome).reason).toBe(
+      "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+    );
+    expectProcessSequence(fake, input, files, [input.prompt, expect.any(String)]);
+  });
+
+  it("combines process events in order", async () => {
+    const input = correctiveInput();
+    const files = makeFiles();
+    const first = firstTextStream(input);
+    const second = continuationTextStream('{"findings":[]}');
+    const fake = processScripts(input, files, [
+      { stream: first, session: firstSession(input) },
+      { stream: second, session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "success", structuredOutput: { findings: [] } });
+    expect(outcome.events).toEqual([...first, ...second]);
+    expect(outcome.permissionDenials).toEqual([]);
+    expectProcessSequence(fake, input, files, [input.prompt, expect.any(String)]);
   });
 });
