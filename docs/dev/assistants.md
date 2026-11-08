@@ -41,7 +41,8 @@ A new session uses the provider, the model and the effort of the configuration. 
 provider, the model and the effort that it recorded when it started, also after the configuration changed. A continued
 session also trusts the extensions that it recorded at its start, and the extensions of the current configuration. The
 session and its context belong to that assistant and that model. A change of the provider, the model or the effort
-applies to new sessions only.
+applies to new sessions only. Other values of the configuration, for example `assistant.correctiveTurns`, apply to each
+run.
 
 ## The limits of a run
 
@@ -793,7 +794,8 @@ list. The guard checks each tool's name and source against its limits. See [the 
 
 When a run has a plan or review schema, tasker writes it to `<sessionDir>/<sessionId>.schema.json`. The answer extension
 reads it from `--tasker-answer-schema` and registers `submit_answer` with that schema. Pi checks the call arguments
-against the schema. The plan and review callers check the raw returned answer against their own schemas.
+against the schema. Tasker tests the answer again with `RunInput.checkAnswer`, as
+[the corrective turns](#corrective-turns) say.
 
 The tool returns `Answer accepted.` and `terminate: true` for a valid call. pi ends the turn after the calls of one
 message only when each call returns `terminate: true`. So a valid call alone ends the run with no other request to the
@@ -802,16 +804,51 @@ last accepted call. The guard limits name the tool with source `cli`, because pi
 source `cli`. A valid call has a `toolResult` with `isError` false. Tasker takes the raw arguments of the last accepted
 top-level call. Tasker takes the arguments as the model sent them, not the form that pi changed. pi changes some types
 of the arguments before its own test, and tasker trusts only its own test. The matching `toolResult` must have `isError`
-false. This call takes priority over later assistant text.
+false. The provider tests this call first with `RunInput.checkAnswer`. If the call fails the test, the provider tests
+the text object next. The first candidate that passes wins.
 
-If no call is accepted, tasker reads the text of the last assistant message. It parses the whole text as JSON first. If
-that fails, it takes the last valid JSON code fence. The answer extension adds the `tasker-answer` section to the system
+Tasker reads the text of the last assistant message for the text object. It parses the whole text as JSON first. If that
+fails, it takes the last valid JSON code fence. The answer extension adds the `tasker-answer` section to the system
 prompt in its `before_agent_start` handler. The section tells the model three things: call `submit_answer` one time, as
 the last action; after three rejected calls, the tool goes away; with no tool, end the reply with the answer as one JSON
 object in a fenced `json` block. The prompts of the steps do not change, so they stay the same for every provider. The
 rule is in a section of its own, because pi leaves the description and the prompt guidelines of a hidden tool out of the
 request. After three rejected top-level `submit_answer` calls, the extension registers the tool again with
 `exposure: "hidden"`. Nested calls do not count.
+
+### Corrective turns
+
+A run with a schema can end with no usable answer, because pi has no flag for a JSON Schema of the answer. A usable
+answer is a value that passes the answer test. The answer test calls `RunInput.checkAnswer` on at most two candidates:
+the arguments of the last accepted call, then the text object. The first candidate that passes is the answer.
+
+A clean end with no usable answer can start a corrective turn, while the limit and the time of the run allow it. A clean
+end is defined in [the outcome](#the-outcome). A corrective turn is a pi process that continues the session of the run
+with a corrective prompt on stdin. The prompt names the problems and gives the schema again. The provider starts at most
+`assistant.correctiveTurns` corrective turns in one run.
+
+Each caller that sets `jsonSchema` also sets `checkAnswer`, as this table says:
+
+| Role               | The code that fills `checkAnswer`                                                 | The function                                                                                |
+| ------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| plan, refine       | `runPlanModeAnswer()` in `src/tasks/plan-run.ts`, from its field `check`          | `checkPlanAnswer` of `src/plan/answer.ts`, which `runPlanRevision()` gives as `check`       |
+| review             | `runPlanModeAnswer()` in `src/tasks/plan-run.ts`, from its field `check`          | `checkReviewAnswer` of `src/review/answer.ts`, which `src/tasks/review.ts` gives as `check` |
+| execute, each turn | `executeLocked()` in `src/tasks/execute.ts`, right after `turnResultJsonSchema()` | The new `checkTurnResult` of `src/plan/turn-result.ts`                                      |
+
+The corrective turns have these reasons:
+
+- Pi tests the arguments of a call with its own rules, and these rules can differ from the check of the caller. So
+  tasker trusts only the answer test.
+- The answer test is the check that the caller runs after the run. So the corrective prompt gives the same rules and the
+  same messages as that check.
+- One short correction often makes the answer usable.
+- The corrective turns share the one time limit of the run, so a correction never gives the run a second full time
+  limit.
+- A failed or timed-out corrective turn gives the outcome of the process before it. So a failed correction never hides
+  the first problem.
+- A quota stop or an interrupt of a corrective turn passes on, so tasker can resume the session.
+- The corrective turns live in the pi provider, because no other provider needs them.
+- The corrective prompt gets no prompt version, because the transcript of the run holds its exact text.
 
 ### The session file
 
@@ -827,7 +864,9 @@ its path as `transcriptPath`.
 ### The outcome
 
 The pi provider runs only on Linux. It refuses a run that has an execute step. It runs its checks before it starts pi:
-the host, access mode, child environment, extension trust, continued-session file and injected extension files.
+the host, access mode, child environment, extension trust, continued-session file, injected extension files and, for a
+run with a schema, `RunInput.checkAnswer`. A run with a schema and no `RunInput.checkAnswer` gives `failure` with the
+reason `a run with a JSON Schema needs RunInput.checkAnswer`.
 
 After it starts pi, the first matching result sets the outcome:
 
@@ -840,7 +879,9 @@ After it starts pi, the first matching result sets the outcome:
    capped at 500 characters. If there is no `errorMessage`, the reason is `pi ended its turn with <stopReason>`.
 7. A nonzero exit gives `failure` with `pi exited <code>` and the end of stderr.
 8. No final assistant message gives `failure` with `the assistant ended with no result`.
-9. A run with a schema and no structured answer gives `failure` with `the assistant gave no structured answer`.
+9. A clean end with no usable answer gives `failure`. A clean end is the end of a pi process that matches none of rows 1
+   to 8. The reason is `the assistant gave no structured answer:`, then one line `  - <problem>` for each problem.
+   [The corrective turns](#corrective-turns) give the problems.
 10. Each other run gives `success`.
 
 pi exits with 0 when a turn fails in JSON mode, so the row of `stopReason` comes before the row of the exit code.
