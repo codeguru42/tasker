@@ -106,9 +106,13 @@ function outcomeOfRun(
   if (run.code !== 0) return fail(`pi exited ${String(run.code)}${detailSuffix(run.stderrTail.trim())}`);
   if (lastAssistant === undefined) return fail("the assistant ended with no result");
   if (input.jsonSchema !== undefined) {
-    const answer = piAnswer(messages);
-    if (answer === undefined) return fail("the assistant gave no structured answer");
-    return { ...base, kind: "success", structuredOutput: answer };
+    const checked = piAnswer(messages, input.checkAnswer!);
+    if (!checked.ok) {
+      return fail(
+        ["the assistant gave no structured answer:", ...checked.problems.map((problem) => `  - ${problem}`)].join("\n"),
+      );
+    }
+    return { ...base, kind: "success", structuredOutput: checked.answer };
   }
   return { ...base, kind: "success" };
 }
@@ -142,6 +146,9 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
       if (!isFile(files.guardFile)) return failed(input, `pi guard extension is not a file: ${files.guardFile}`);
       if (!isFile(files.answerFile)) {
         return failed(input, `pi answer extension is not a file: ${files.answerFile}`);
+      }
+      if (input.jsonSchema !== undefined && input.checkAnswer === undefined) {
+        return failed(input, "a run with a JSON Schema needs RunInput.checkAnswer");
       }
 
       const events: AssistantEvent[] = [];

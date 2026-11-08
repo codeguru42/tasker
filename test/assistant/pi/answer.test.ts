@@ -3,17 +3,11 @@ import { describe, expect, it } from "vitest";
 import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
 import { piAnswer } from "../../../src/assistant/pi/answer.js";
 
-type CheckedAnswer = { ok: true; answer: unknown } | { ok: false; problems: string[] };
-
 function callPiAnswer(
   messages: readonly unknown[],
   checkAnswer: (output: unknown) => { ok: true } | { ok: false; problems: string[] } = () => ({ ok: true }),
-): CheckedAnswer {
-  const check = piAnswer as unknown as (
-    messages: readonly unknown[],
-    checkAnswer: (output: unknown) => { ok: true } | { ok: false; problems: string[] },
-  ) => CheckedAnswer;
-  return check(messages, checkAnswer);
+): ReturnType<typeof piAnswer> {
+  return piAnswer(messages, checkAnswer);
 }
 
 const measures = JSON.parse(

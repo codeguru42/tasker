@@ -1,5 +1,7 @@
 import { isObject } from "../../object.js";
+import { errorMessage } from "../../error-message.js";
 import { PI_ANSWER_TOOL_NAME } from "./answer-tool.js";
+import type { AnswerCheck } from "../provider.js";
 
 interface AnswerCall {
   id: string;
@@ -15,9 +17,9 @@ function answerCalls(message: Record<string, unknown>): AnswerCall[] {
   });
 }
 
-function acceptedAnswer(messages: readonly unknown[]): unknown {
+function acceptedAnswer(messages: readonly unknown[]): { found: boolean; answer: unknown } {
   const calls = new Map<string, unknown>();
-  let answer: unknown;
+  let answer: { found: boolean; answer: unknown } = { found: false, answer: undefined };
   for (const message of messages) {
     if (!isObject(message)) continue;
     for (const call of answerCalls(message)) calls.set(call.id, call.arguments);
@@ -28,7 +30,7 @@ function acceptedAnswer(messages: readonly unknown[]): unknown {
       message.isError === false &&
       calls.has(message.toolCallId)
     ) {
-      answer = calls.get(message.toolCallId);
+      answer = { found: true, answer: calls.get(message.toolCallId) };
     }
   }
   return answer;
@@ -62,13 +64,39 @@ function lastJsonFence(text: string): unknown {
   return answer;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-export function piAnswer(messages: readonly unknown[]): unknown | undefined {
+type PiAnswerResult = { ok: true; answer: unknown } | { ok: false; problems: string[] };
+
+export function piAnswer(messages: readonly unknown[], checkAnswer: (output: unknown) => AnswerCheck): PiAnswerResult {
+  const problems: string[] = [];
+  const checkCandidate = (source: "submit_answer" | "final text", candidate: unknown): PiAnswerResult | undefined => {
+    try {
+      const checked = checkAnswer(candidate);
+      if (checked.ok) return { ok: true, answer: candidate };
+      problems.push(...checked.problems.map((problem) => `${source}: ${problem}`));
+    } catch (error) {
+      problems.push(`${source}: the check of the answer threw: ${errorMessage(error)}`);
+    }
+    return undefined;
+  };
+
   const accepted = acceptedAnswer(messages);
-  if (accepted !== undefined) return accepted;
+  if (accepted.found) {
+    const checked = checkCandidate("submit_answer", accepted.answer);
+    if (checked !== undefined) return checked;
+  }
 
   const text = assistantText(messages);
-  if (text === undefined) return undefined;
-  const wholeText = parseJson(text.trim());
-  return wholeText === undefined ? lastJsonFence(text) : wholeText;
+  if (text !== undefined) {
+    const wholeText = parseJson(text.trim());
+    const candidate = wholeText === undefined ? lastJsonFence(text) : wholeText;
+    if (candidate !== undefined) {
+      const checked = checkCandidate("final text", candidate);
+      if (checked !== undefined) return checked;
+    }
+  }
+
+  if (problems.length === 0) {
+    problems.push("no accepted call of submit_answer and no JSON object in the final text");
+  }
+  return { ok: false, problems };
 }
