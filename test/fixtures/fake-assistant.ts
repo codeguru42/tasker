@@ -46,14 +46,25 @@ const piControl = control as FakeClaudeControl & {
 };
 if (piControl.answers) {
   const envNames = Object.keys(process.env).sort();
+  const earlierMatchingCalls = existsSync(control.logPath)
+    ? readFileSync(control.logPath, "utf8")
+        .split("\n")
+        .filter((line) => line !== "")
+        .map((line) => (JSON.parse(line) as { args: string[] }).args)
+        .filter(
+          (previousArgs) =>
+            previousArgs.length === args.length && previousArgs.every((value, index) => value === args[index]),
+        ).length
+    : 0;
   appendFileSync(
     control.logPath,
     `${JSON.stringify({ args, stdin, envNames, env: Object.fromEntries((piControl.logEnv ?? []).map((name) => [name, process.env[name]])) })}\n`,
   );
-  const answer = piControl.answers.find(
+  const matchingAnswers = piControl.answers.filter(
     (candidate) =>
       candidate.args.length === args.length && candidate.args.every((value, index) => value === args[index]),
   );
+  const answer = matchingAnswers[Math.min(earlierMatchingCalls, matchingAnswers.length - 1)];
   if (!answer) {
     appendFileSync(`${control.logPath}.unanswered`, `${args.length}\0${args.join("\0")}\0`);
     await write(process.stderr, `fake pi: no answer for: ${args.join(" ")}\n`);
