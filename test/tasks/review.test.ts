@@ -1,10 +1,12 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { checkReviewAnswer } from "../../src/review/answer.js";
 import type { Config } from "../../src/config/schema.js";
 import { reviewTranscriptPath } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { reviewTask } from "../../src/tasks/review.js";
 import { captureIo } from "../helpers/cli.js";
+import { captureAssistantStartInputs } from "../helpers/assistant-run.js";
 import { withTrustedExtensions } from "../helpers/config.js";
 import { answerStream } from "../helpers/plan.js";
 import { startLockHolder } from "../helpers/processes.js";
@@ -59,6 +61,16 @@ const useSeededTask = (change: { state: string; worktreePath?: string; branch?: 
   useSharedSeededTask(CONTROL, change);
 
 describe("reviewTask checks", () => {
+  it("passes the review answer check to the provider", async () => {
+    const inputs = captureAssistantStartInputs("prepareTaskPlanModeRun");
+    const target = await useReviewFixture(CONTROL);
+
+    await callReview(target);
+
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0].checkAnswer).toBe(checkReviewAnswer);
+  });
+
   it("records the trusted extension list for a new review session", async () => {
     const target = await useReviewFixture(CONTROL);
     const trustedExtensions = ["configured-review-key"];

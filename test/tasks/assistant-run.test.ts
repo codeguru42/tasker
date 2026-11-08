@@ -604,6 +604,7 @@ describe("prepareTaskPlanModeRun", () => {
             assistant: {
               ...repo.assistant,
               provider: "pi",
+              correctiveTurns: 2,
               models: {
                 ...repo.assistant.models,
                 plan: { ...repo.assistant.models.plan, model: "openrouter/auto" },
@@ -661,8 +662,10 @@ describe("prepareTaskPlanModeRun", () => {
     const fresh = await makeRun(false);
     expect(fresh.session.trustedExtensions).toEqual(["current", "builtin:llama.cpp", "builtin:codemode"]);
     expect(fresh.captured?.trustedExtensions).toEqual(["current", "builtin:llama.cpp", "builtin:codemode"]);
+    expect(fresh.captured?.correctiveTurns).toBe(2);
     const continued = await makeRun(true);
     expect(continued.captured?.trustedExtensions).toEqual(["old", "builtin:codemode", "current", "builtin:llama.cpp"]);
+    expect(continued.captured?.correctiveTurns).toBe(2);
     const nullBacked = await makeRun(true, true);
     expect(nullBacked.trustedExtensions).toEqual([]);
     expect(nullBacked.captured?.trustedExtensions).toEqual(["current", "builtin:llama.cpp", "builtin:codemode"]);

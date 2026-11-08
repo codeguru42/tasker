@@ -1,8 +1,10 @@
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { checkTurnResult } from "../../src/plan/turn-result.js";
 import type { Config } from "../../src/config/schema.js";
 import { promptVersion } from "../../src/prompts/archive.js";
+import { captureAssistantStartInputs } from "../helpers/assistant-run.js";
 import {
   currentTodoText,
   EXECUTE_FIX_PROMPT,
@@ -220,6 +222,17 @@ const eventTypes = (fixture: ExecuteFixture, types: string[]) =>
 const doneStream = turnResultStream("done");
 
 describe("executeTask turns", () => {
+  it("passes the turn-result check to every execute turn", async () => {
+    const inputs = captureAssistantStartInputs("prepareTaskExecuteRun");
+    const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
+
+    await runExecute(fixture);
+
+    expect(inputs).toHaveLength(2);
+    expect(inputs.map((input) => typeof input.checkAnswer)).toEqual(["function", "function"]);
+    expect(inputs.map((input) => input.checkAnswer)).toEqual([checkTurnResult, checkTurnResult]);
+  });
+
   it("puts the local base of the task in the commit rules of the first turn", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
     appendBaseEvent({ dataRoot: fixture.started.dataRoot, task: fixture.task }, "refs/heads/x", "refs/heads/x");

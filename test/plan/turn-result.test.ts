@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
+import { checkTurnResult, readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
 
 function read(output: unknown) {
   return readTurnResult(output);
@@ -62,5 +62,38 @@ describe("turnResultJsonSchema", () => {
 
     expect(schema).not.toHaveProperty("$schema");
     expect(schema).toMatchObject({ additionalProperties: false, required: ["result", "reason"] });
+  });
+});
+
+describe("checkTurnResult", () => {
+  it.each([
+    [{ result: "done", reason: null }, { ok: true }],
+    [{ result: "blocked", reason: "No disk." }, { ok: true }],
+  ])("accepts a usable result", (output, expected) => {
+    expect(checkTurnResult(output)).toEqual(expected);
+  });
+
+  it.each([undefined, null])("rejects %s with the missing-result problem", (output) => {
+    expect(checkTurnResult(output)).toEqual({
+      ok: false,
+      problems: ["(root): the assistant returned no result"],
+    });
+  });
+
+  it("reports the schema issues for an empty object", () => {
+    expect(checkTurnResult({})).toEqual({
+      ok: false,
+      problems: [
+        'result: Invalid option: expected one of "done"|"blocked"',
+        "reason: Invalid input: expected string, received undefined",
+      ],
+    });
+  });
+
+  it("reports an unknown key", () => {
+    expect(checkTurnResult({ result: "done", reason: null, extra: true })).toEqual({
+      ok: false,
+      problems: ["extra: unrecognized key"],
+    });
   });
 });

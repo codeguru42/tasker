@@ -1,6 +1,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
+import { checkPlanAnswer } from "../../src/plan/answer.js";
 import { plan, planIssue } from "../../src/commands/plan.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
 import { PLAN_PROMPT, PLAN_PROMPT_NAME } from "../../src/prompts/plan.js";
@@ -8,6 +9,7 @@ import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { captureIo, runCommand } from "../helpers/cli.js";
+import { captureAssistantStartInputs } from "../helpers/assistant-run.js";
 import { withTrustedExtensions } from "../helpers/config.js";
 import {
   TEST_SESSION_ID,
@@ -92,6 +94,16 @@ const expectNoRun = (fixture: Fixture) => {
 };
 
 describe("plan", () => {
+  it("passes the plan answer check to the provider", async () => {
+    const inputs = captureAssistantStartInputs("prepareTaskPlanModeRun");
+    await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
+
+    await runPlan();
+
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0].checkAnswer).toBe(checkPlanAnswer);
+  });
+
   it("records revision v1 and moves the task to awaiting_plan_review", async () => {
     const answer = validPlanAnswer();
     const fixture = await usePlanFixture({ stream: answerStream(answer) });

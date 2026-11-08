@@ -1,6 +1,7 @@
 import { chmodSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
+import { checkPlanAnswer } from "../../src/plan/answer.js";
 import { refine } from "../../src/commands/refine.js";
 import { archivePrompt, promptVersion } from "../../src/prompts/archive.js";
 import {
@@ -15,6 +16,7 @@ import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js"
 import { taskLockName } from "../../src/store/locks.js";
 import { NO_OWN_COMMITS } from "../../src/vcs/git/changes.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { captureAssistantStartInputs } from "../helpers/assistant-run.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
 import {
   TEST_SESSION_ID,
@@ -111,6 +113,16 @@ const expectNoWrite = (
 };
 
 describe("refine", () => {
+  it("passes the plan answer check to the provider", async () => {
+    const inputs = captureAssistantStartInputs("prepareTaskPlanModeRun");
+    await useRefineFixture({ stream: answerStream(V2_ANSWER) }, { answer: V1_ANSWER });
+
+    await runRefine();
+
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0].checkAnswer).toBe(checkPlanAnswer);
+  });
+
   it("records revision v2 with the feedback and moves the task back to awaiting_plan_review", async () => {
     const stream = answerStream(V2_ANSWER);
     const fixture = await useRefineFixture({ stream }, { answer: V1_ANSWER });

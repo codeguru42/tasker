@@ -69,6 +69,7 @@ describe("runInput", () => {
       cwd: "/work",
       env: {},
       timeoutMs: 20_000,
+      correctiveTurns: 0,
       sessionDir: "/sessions",
       model: "haiku",
       effort: "low",
