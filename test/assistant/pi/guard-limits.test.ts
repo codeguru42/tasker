@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { thrownBy } from "../../helpers/errors.js";
 import { useTempDir } from "../../helpers/temp.js";
 import { builtInTool, guardLimits, writeGuardLimits } from "../../../src/assistant/pi/guard-limits.js";
+import * as guardStartModule from "../../../src/assistant/pi/guard-start.js";
 import { guardStartArgs } from "../../../src/assistant/pi/guard-start.js";
 import type { RunInput } from "../../../src/assistant/provider.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
@@ -14,8 +15,8 @@ function makeLimits(input: RunInput, tools: { name: string; path: string; source
   return guardLimits(input, tools);
 }
 
-function makeStartArgs(path: string) {
-  return guardStartArgs(path);
+function makeStartArgs(path: string, guardFile?: string) {
+  return guardStartArgs(path, guardFile);
 }
 
 function writeLimits(input: RunInput, limits: ReturnType<typeof makeLimits>) {
@@ -96,6 +97,26 @@ describe("guardStartArgs", () => {
       fileURLToPath(new URL("../../../src/assistant/pi/guard-extension.js", import.meta.url)),
       "--tasker-guard-limits",
       path,
+    ]);
+  });
+
+  it("exports the default guard extension path used by its arguments", () => {
+    const limitsPath = "/sessions/session-1.guard.json";
+    const args = makeStartArgs(limitsPath);
+
+    expect(guardStartModule).toHaveProperty("guardExtensionPath", args[2]);
+  });
+
+  it("uses an injected guard extension path", () => {
+    const limitsPath = "/sessions/session-1.guard.json";
+    const guardFile = "/temporary/guard.js";
+
+    expect(makeStartArgs(limitsPath, guardFile)).toEqual([
+      "--no-mcp",
+      "-e",
+      guardFile,
+      "--tasker-guard-limits",
+      limitsPath,
     ]);
   });
 });
