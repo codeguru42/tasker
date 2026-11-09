@@ -1,4 +1,13 @@
-import { existsSync, readdirSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readlinkSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkTurnResult } from "../../src/plan/turn-result.js";
@@ -24,6 +33,7 @@ import { resumeTask } from "../../src/tasks/resume.js";
 import { requireBaseRevision } from "../../src/tasks/task-state.js";
 import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
+import { retryTask } from "../../src/tasks/retry.js";
 import { captureIo } from "../helpers/cli.js";
 import { withTrustedExtensions } from "../helpers/config.js";
 import {
@@ -34,7 +44,7 @@ import {
   shell,
   signalTasker,
 } from "../helpers/remote-push.js";
-import { gitProvider } from "../helpers/git.js";
+import { commitIndexChanges, gitOutput, gitProvider } from "../helpers/git.js";
 import {
   argAfter,
   claudeApprovalWarningEvent,
@@ -220,6 +230,31 @@ const eventTypes = (fixture: ExecuteFixture, types: string[]) =>
   eventsOf(fixture.config.dataRoot, fixture.started.key).filter((event) => types.includes(event.type));
 
 const doneStream = turnResultStream("done");
+
+const protectedSkillPath = ".agents/skills/request.md";
+const protectedSkillContent = "requested skill\n";
+const protectedRequestScript = [
+  "export GIT_AUTHOR_NAME='Tasker Test' GIT_COMMITTER_NAME='Tasker Test' GIT_AUTHOR_EMAIL='tasker-test@example.com' GIT_COMMITTER_EMAIL='tasker-test@example.com'",
+  `oid=$(printf 'requested skill\\n' | git hash-object -w --stdin)`,
+  `git update-index --add --cacheinfo 100644,$oid,${protectedSkillPath}`,
+  "tree=$(git write-tree)",
+  "parent=$(git rev-parse HEAD)",
+  `commit=$(printf 'protected skill request\\n' | git commit-tree "$tree" -p "$parent")`,
+  "branch=$(git branch --show-current)",
+  'git update-ref "refs/heads/$branch" "$commit" "$parent"',
+].join(" && ");
+
+const protectedTurnOf = (fixture: ExecuteFixture, turnId = "todo:a") =>
+  withDataRootStore(fixture.config.dataRoot, (store) => store.protectedExecuteTurn(fixture.task.id, 1, turnId));
+
+const branchHeadOf = (fixture: ExecuteFixture) =>
+  gitOutput({ gitDir: fixture.started.clone }, fixture.env, "rev-parse", `refs/heads/${fixture.started.branch}`);
+
+const indexTreeOf = (fixture: ExecuteFixture) =>
+  gitOutput({ cwd: fixture.started.worktree }, fixture.env, "write-tree");
+
+const headTreeOf = (fixture: ExecuteFixture) =>
+  gitOutput({ cwd: fixture.started.worktree }, fixture.env, "rev-parse", "HEAD^{tree}");
 
 describe("executeTask turns", () => {
   it("passes the turn-result check to every execute turn", async () => {
@@ -461,6 +496,600 @@ describe("executeTask turns", () => {
       ...doneStream,
     ]);
   });
+});
+
+describe("executeTask protected workspace recovery", () => {
+  const oneTodo = { answer: { todos: [planTodo("a")] } };
+  const requestExec = shell(protectedRequestScript);
+  const warnedDone = () => withEventBeforeResult(claudeApprovalWarningEvent(), doneStream);
+  const ask = { repo: { overagePolicy: "ask" } };
+  const assertIndexMatchesHead = async (fixture: ExecuteFixture) => {
+    expect(await indexTreeOf(fixture)).toBe(await headTreeOf(fixture));
+  };
+
+  const startRecord = (fixture: ExecuteFixture, startingRevision: string, turnId = "todo:a") =>
+    withDataRootStore(fixture.config.dataRoot, (store) =>
+      store.beginProtectedExecuteTurn({
+        taskId: fixture.task.id,
+        planVersion: 1,
+        turnId,
+        startingRevision,
+      }),
+    );
+
+  const rejectCompletionEvent = (fixture: ExecuteFixture, type: "todo_done" | "fix_turn_done") => {
+    const trigger = `reject_${type}`;
+    withRawDatabase(databasePathOf(fixture.config.dataRoot), (db) =>
+      db.exec(
+        `CREATE TRIGGER ${trigger} BEFORE INSERT ON events WHEN NEW.type = '${type}' BEGIN SELECT RAISE(ABORT, 'event rejected'); END`,
+      ),
+    );
+    return () => withRawDatabase(databasePathOf(fixture.config.dataRoot), (db) => db.exec(`DROP TRIGGER ${trigger}`));
+  };
+
+  const completeRecord = (fixture: ExecuteFixture, turnId: string, startingRevision: string, endingRevision: string) =>
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      store.beginProtectedExecuteTurn({ taskId: fixture.task.id, planVersion: 1, turnId, startingRevision });
+      store.recordProtectedExecuteTurnOutcome(fixture.task.id, 1, turnId, "succeeded", endingRevision);
+      store.completeProtectedExecuteTurn(fixture.task.id, 1, turnId);
+    });
+
+  it("records and materializes a successful protected request before todo completion", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream, exec: requestExec }, oneTodo);
+    const beforeRevision = await branchHeadOf(fixture);
+
+    const { result } = await runExecute(fixture);
+
+    const record = protectedTurnOf(fixture);
+    const afterRevision = await branchHeadOf(fixture);
+    expect(result).toMatchObject({ todosDone: 1, todosTotal: 1 });
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("executed");
+    expect(todoStates(fixture)).toEqual([["a", "done"]]);
+    expect(record).toMatchObject({
+      startingRevision: beforeRevision,
+      endingRevision: afterRevision,
+      outcome: "succeeded",
+      phase: "complete",
+    });
+    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+    await assertIndexMatchesHead(fixture);
+    expect(await gitOutput({ cwd: fixture.started.worktree }, fixture.env, "status", "--porcelain")).toBe("");
+    expect(fixture.claude.calls()).toHaveLength(1);
+  });
+
+  it("keeps live todo progress pending when its done event fails", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const release = rejectCompletionEvent(fixture, "todo_done");
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toContain("event rejected");
+    expect(todoStates(fixture)).toEqual([["a", "in_progress"]]);
+    expect(eventTypes(fixture, ["todo_done"])).toEqual([]);
+    release();
+  });
+
+  it("keeps a live fix turn queued when its done event fails", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      store.markExecuteTodosDone(fixture.task.id, 1);
+      seedExecuteFixTurn(store, fixture.task.id, 1, "queued");
+    });
+    const release = rejectCompletionEvent(fixture, "fix_turn_done");
+
+    const { result, io } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toContain("event rejected");
+    expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
+      "queued",
+    );
+    expect(eventTypes(fixture, ["fix_turn_done"])).toEqual([]);
+    release();
+  });
+
+  it("records a protected request during a continued session", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream, exec: requestExec }, oneTodo);
+    const beforeRevision = await branchHeadOf(fixture);
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      seedExecuteSession(store, fixture.task.id, 1);
+      seedExecuteTodoStates(store, fixture.task.id, 1, { a: "in_progress" });
+    });
+
+    await runExecute(fixture);
+
+    expect(argAfter(fixture.claude.calls()[0].argv, "--resume")).toBe(TEST_EXECUTE_SESSION_ID);
+    expect(protectedTurnOf(fixture)).toMatchObject({
+      startingRevision: beforeRevision,
+      endingRevision: await branchHeadOf(fixture),
+      phase: "complete",
+    });
+    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+  });
+
+  it("refuses an unknown starting revision before a model starts", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const beforeRevision = await branchHeadOf(fixture);
+    startRecord(fixture, "d".repeat(40));
+
+    await expect(runExecute(fixture)).rejects.toThrow(/starting revision/);
+
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("approved");
+    expect(todoStates(fixture)).toEqual([["a", "not_started"]]);
+    expect(await branchHeadOf(fixture)).toBe(beforeRevision);
+    expect(fixture.claude.calls()).toEqual([]);
+  });
+
+  it("recovers a committed request after retrying a failed assistant turn", async () => {
+    const fixture = await useExecuteFixture(
+      {
+        turns: [
+          { stream: doneStream, exec: requestExec, exitCode: 1, stderr: "stopped after commit" },
+          { stream: doneStream, exec: shell("test -f .agents/skills/request.md") },
+        ],
+      },
+      oneTodo,
+    );
+    const beforeRevision = await branchHeadOf(fixture);
+
+    const first = await runExecute(fixture);
+
+    expect(first.result).toEqual({ exitCode: 1 });
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+    expect(protectedTurnOf(fixture)).toMatchObject({
+      startingRevision: beforeRevision,
+      endingRevision: null,
+      outcome: "failed",
+      phase: "failed",
+    });
+    expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(false);
+    await assertIndexMatchesHead(fixture);
+
+    const retried = await withDataRootStore(fixture.config.dataRoot, (store) =>
+      retryTask(store, {
+        config: fixture.config,
+        ref: taskRefOf(fixture.started),
+        taskId: fixture.task.id,
+        resumeExecute: false,
+        env: fixture.env,
+        repoLockWaitMs: 1000,
+      }),
+    );
+    const second = await runExecute(fixture);
+
+    expect(retried.next).toBe("execute");
+    expect(second.result).toMatchObject({ todosDone: 1, todosTotal: 1 });
+    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+    expect(protectedTurnOf(fixture)).toMatchObject({
+      endingRevision: await branchHeadOf(fixture),
+      outcome: "failed",
+      phase: "complete",
+    });
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("executed");
+    expect(fixture.claude.calls()).toHaveLength(2);
+  });
+
+  it("recovers an interrupted request before resuming the recorded session", async () => {
+    const fixture = await useExecuteFixture(
+      {
+        turns: [
+          {
+            stream: doneStream,
+            exec: shell(`${protectedRequestScript} && ${signalTasker("SIGINT")}`),
+            untilStopped: true,
+          },
+          { stream: doneStream, exec: shell("test -f .agents/skills/request.md") },
+        ],
+      },
+      oneTodo,
+    );
+    const beforeRevision = await branchHeadOf(fixture);
+
+    await runExecute(fixture);
+
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("interrupted");
+    expect(protectedTurnOf(fixture)).toMatchObject({
+      startingRevision: beforeRevision,
+      endingRevision: null,
+      outcome: "interrupted",
+      phase: "interrupted",
+    });
+    expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(false);
+    const resumed = await withDataRootStore(fixture.config.dataRoot, (store) =>
+      resumeTask(store, {
+        ref: taskRefOf(fixture.started),
+        taskId: fixture.task.id,
+        config: fixture.config,
+        env: fixture.env,
+        repoLockWaitMs: 1000,
+      }),
+    );
+    await runExecute(fixture);
+
+    expect(resumed.next).toBe("execute");
+    expect(argAfter(fixture.claude.calls()[1].argv, "--resume")).toBe(
+      argAfter(fixture.claude.calls()[0].argv, "--session-id"),
+    );
+    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+    expect(protectedTurnOf(fixture)).toMatchObject({ outcome: "interrupted", phase: "complete" });
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("executed");
+  });
+
+  it("refuses a changed branch when a crash happened before the outcome was recorded", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: doneStream, exec: shell("test -f .agents/skills/request.md") },
+      oneTodo,
+    );
+    const { beforeRevision, afterRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: protectedSkillPath, content: protectedSkillContent }],
+    );
+    startRecord(fixture, beforeRevision);
+
+    await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
+    expect(await branchHeadOf(fixture)).toBe(afterRevision);
+    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+    expect(protectedTurnOf(fixture)).toMatchObject({
+      startingRevision: beforeRevision,
+      endingRevision: null,
+      phase: "started",
+    });
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(todoStates(fixture)).toEqual([["a", "not_started"]]);
+  });
+
+  it("refuses an unchanged branch when a started todo has no saved result", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const beforeRevision = await branchHeadOf(fixture);
+    startRecord(fixture, beforeRevision);
+
+    await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
+
+    expect(await branchHeadOf(fixture)).toBe(beforeRevision);
+    expect(protectedTurnOf(fixture)).toMatchObject({
+      startingRevision: beforeRevision,
+      endingRevision: null,
+      phase: "started",
+    });
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(todoStates(fixture)).toEqual([["a", "not_started"]]);
+  });
+
+  it("refuses a started fix turn before a continued model call", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const { beforeRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: protectedSkillPath, content: protectedSkillContent }],
+    );
+    const turnId = withDataRootStore(fixture.config.dataRoot, (store) => {
+      seedExecuteSession(store, fixture.task.id, 1);
+      store.markExecuteTodosDone(fixture.task.id, 1);
+      seedExecuteFixTurn(store, fixture.task.id, 1, "queued");
+      return `fix:${store.queuedExecuteFixTurn(fixture.task.id, 1)!.queuedAt}`;
+    });
+    startRecord(fixture, beforeRevision, turnId);
+
+    await expect(runExecute(fixture)).rejects.toThrow(
+      new RegExp(`unknown result for protected execute turn ${turnId}`),
+    );
+
+    expect(protectedTurnOf(fixture, turnId)).toMatchObject({ endingRevision: null, phase: "started" });
+    expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
+      "queued",
+    );
+    expect(fixture.claude.calls()).toEqual([]);
+  });
+
+  it("replays a successful request after a crash with its ending revision recorded", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const { beforeRevision, afterRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: protectedSkillPath, content: protectedSkillContent }],
+    );
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      store.beginProtectedExecuteTurn({
+        taskId: fixture.task.id,
+        planVersion: 1,
+        turnId: "todo:a",
+        startingRevision: beforeRevision,
+      });
+      store.recordProtectedExecuteTurnOutcome(fixture.task.id, 1, "todo:a", "succeeded", afterRevision);
+      store.setExecuteTodoState(fixture.task.id, 1, "a", "in_progress");
+    });
+
+    const { result } = await runExecute(fixture);
+
+    expect(result).toMatchObject({ todosDone: 1, todosTotal: 1 });
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(protectedTurnOf(fixture)).toMatchObject({
+      startingRevision: beforeRevision,
+      endingRevision: afterRevision,
+      outcome: "succeeded",
+      phase: "complete",
+    });
+    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+    await assertIndexMatchesHead(fixture);
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("executed");
+  });
+
+  it("keeps recovered todo progress pending when its done event fails", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const { beforeRevision, afterRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: protectedSkillPath, content: protectedSkillContent }],
+    );
+    withDataRootStore(fixture.config.dataRoot, (store) =>
+      store.setExecuteTodoState(fixture.task.id, 1, "a", "in_progress"),
+    );
+    completeRecord(fixture, "todo:a", beforeRevision, afterRevision);
+    const release = rejectCompletionEvent(fixture, "todo_done");
+
+    await expect(runExecute(fixture)).rejects.toThrow("event rejected");
+
+    expect(todoStates(fixture)).toEqual([["a", "in_progress"]]);
+    expect(eventTypes(fixture, ["todo_done"])).toEqual([]);
+    expect(fixture.claude.calls()).toEqual([]);
+    release();
+  });
+
+  it("keeps a recovered fix turn queued when its done event fails", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const { beforeRevision, afterRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: protectedSkillPath, content: protectedSkillContent }],
+    );
+    const turnId = withDataRootStore(fixture.config.dataRoot, (store) => {
+      store.markExecuteTodosDone(fixture.task.id, 1);
+      seedExecuteFixTurn(store, fixture.task.id, 1, "queued");
+      return `fix:${store.queuedExecuteFixTurn(fixture.task.id, 1)!.queuedAt}`;
+    });
+    completeRecord(fixture, turnId, beforeRevision, afterRevision);
+    const release = rejectCompletionEvent(fixture, "fix_turn_done");
+
+    await expect(runExecute(fixture)).rejects.toThrow("event rejected");
+
+    expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
+      "queued",
+    );
+    expect(eventTypes(fixture, ["fix_turn_done"])).toEqual([]);
+    expect(fixture.claude.calls()).toEqual([]);
+    release();
+  });
+
+  it("recovers pending todo progress from a completed row in a continued run", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const { beforeRevision, afterRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: protectedSkillPath, content: protectedSkillContent }],
+    );
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      seedExecuteSession(store, fixture.task.id, 1);
+      store.setExecuteTodoState(fixture.task.id, 1, "a", "in_progress");
+    });
+    completeRecord(fixture, "todo:a", beforeRevision, afterRevision);
+
+    const { result } = await runExecute(fixture);
+
+    expect(result).toMatchObject({ todosDone: 1, todosTotal: 1 });
+    expect(eventTypes(fixture, ["todo_done"]).map((event) => event.type)).toEqual(["todo_done"]);
+    expect(todoStates(fixture)).toEqual([["a", "done"]]);
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(protectedTurnOf(fixture)).toMatchObject({ phase: "complete", outcome: "succeeded" });
+
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      transitionTask(store, fixture.task.id, "updating_branch");
+      transitionTask(store, fixture.task.id, "approved");
+    });
+    const repeated = await runExecute(fixture);
+
+    expect(repeated.result).toMatchObject({ todosDone: 1, todosTotal: 1 });
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(eventTypes(fixture, ["todo_done"]).map((event) => event.type)).toEqual(["todo_done"]);
+  });
+
+  it("recovers pending fix-turn progress from a completed row in a continued run", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const { beforeRevision, afterRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: protectedSkillPath, content: protectedSkillContent }],
+    );
+    const turnId = withDataRootStore(fixture.config.dataRoot, (store) => {
+      seedExecuteSession(store, fixture.task.id, 1);
+      store.markExecuteTodosDone(fixture.task.id, 1);
+      seedExecuteFixTurn(store, fixture.task.id, 1, "queued");
+      return `fix:${store.queuedExecuteFixTurn(fixture.task.id, 1)!.queuedAt}`;
+    });
+    completeRecord(fixture, turnId, beforeRevision, afterRevision);
+
+    const { result } = await runExecute(fixture);
+
+    expect(result).toMatchObject({ todosDone: 1, todosTotal: 1, fixTurnDone: true });
+    expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
+      "done",
+    );
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(protectedTurnOf(fixture, turnId)).toMatchObject({ phase: "complete", outcome: "succeeded" });
+    expect(eventTypes(fixture, ["fix_turn_done"]).map((event) => event.type)).toEqual(["fix_turn_done"]);
+
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      transitionTask(store, fixture.task.id, "updating_branch");
+      transitionTask(store, fixture.task.id, "approved");
+    });
+    await runExecute(fixture);
+
+    expect(eventTypes(fixture, ["fix_turn_done"]).map((event) => event.type)).toEqual(["fix_turn_done"]);
+  });
+
+  const missingResultStream = claudeSampleWithResult("json-schema", (event) => {
+    delete event.structured_output;
+  }).map((event) => JSON.stringify(event));
+  const nonDoneResults = [
+    { name: "blocked", stream: turnResultStream("blocked", "No disk.") },
+    { name: "missing", stream: missingResultStream },
+  ] as const;
+
+  it.each(nonDoneResults)("does not record a protected todo as succeeded for a $name result", async ({ stream }) => {
+    const fixture = await useExecuteFixture({ stream, exec: requestExec }, oneTodo);
+
+    const { result } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(protectedTurnOf(fixture)).not.toMatchObject({ outcome: "succeeded" });
+    expect(todoStates(fixture)).toEqual([["a", "in_progress"]]);
+    expect(fixture.claude.calls()).toHaveLength(1);
+  });
+
+  it.each(nonDoneResults)(
+    "does not record a protected fix turn as succeeded for a $name result",
+    async ({ stream }) => {
+      const fixture = await useExecuteFixture({ stream, exec: requestExec }, oneTodo);
+      withDataRootStore(fixture.config.dataRoot, (store) => {
+        store.markExecuteTodosDone(fixture.task.id, 1);
+        seedExecuteFixTurn(store, fixture.task.id, 1, "queued");
+      });
+      const turnId = withDataRootStore(
+        fixture.config.dataRoot,
+        (store) => `fix:${store.queuedExecuteFixTurn(fixture.task.id, 1)!.queuedAt}`,
+      );
+
+      const { result } = await runExecute(fixture);
+
+      expect(result).toEqual({ exitCode: 1 });
+      expect(protectedTurnOf(fixture, turnId)).not.toMatchObject({ outcome: "succeeded" });
+      expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
+        "queued",
+      );
+      expect(fixture.claude.calls()).toHaveLength(1);
+    },
+  );
+
+  it("refuses a crash request with a partial index before another model starts", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const { beforeRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: protectedSkillPath, content: protectedSkillContent }],
+    );
+    startRecord(fixture, beforeRevision);
+    await gitOutput(
+      { cwd: fixture.started.worktree },
+      fixture.env,
+      "update-index",
+      "--force-remove",
+      "--",
+      protectedSkillPath,
+    );
+    const beforeWorktree = existsSync(join(fixture.started.worktree, protectedSkillPath));
+
+    await expect(runExecute(fixture)).rejects.toThrow(/index/);
+
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("approved");
+    expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(beforeWorktree);
+    expect(fixture.claude.calls()).toEqual([]);
+  });
+
+  it("materializes and records the request before a quota pause", async () => {
+    const fixture = await useExecuteFixture(
+      { stream: warnedDone(), exec: requestExec },
+      { answer: { todos: [planTodo("a")] }, ...ask },
+    );
+
+    const { result } = await runExecute(fixture);
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("awaiting_quota_approval");
+    expect(todoStates(fixture)).toEqual([["a", "done"]]);
+    expect(protectedTurnOf(fixture)).toMatchObject({ phase: "complete", outcome: "succeeded" });
+    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+    expect(fixture.claude.calls()).toHaveLength(1);
+  });
+
+  it("preflights a pending record before no-turn completion", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
+    const startingRevision = await branchHeadOf(fixture);
+    withDataRootStore(fixture.config.dataRoot, (store) => {
+      store.markExecuteTodosDone(fixture.task.id, 1);
+      store.beginProtectedExecuteTurn({
+        taskId: fixture.task.id,
+        planVersion: 1,
+        turnId: "todo:a",
+        startingRevision,
+      });
+    });
+
+    await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
+
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("approved");
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(eventTypes(fixture, ["executed"])).toEqual([]);
+    expect(protectedTurnOf(fixture)).toMatchObject({ phase: "started", outcome: null });
+  });
+
+  it("keeps the exact Claude link on the worktree route and tracks mode 120000", async () => {
+    const fixture = await useExecuteFixture(
+      {
+        stream: doneStream,
+        exec: shell(
+          "mkdir -p .agents/skills .claude && ln -s ../.agents/skills .claude/skills && git add -- .claude/skills && git -c user.name='Tasker Test' -c user.email='tasker-test@example.com' commit -m 'track Claude skills link'",
+        ),
+      },
+      oneTodo,
+    );
+
+    await runExecute(fixture);
+
+    expect(readlinkSync(join(fixture.started.worktree, ".claude/skills"))).toBe("../.agents/skills");
+    expect(
+      await gitOutput({ cwd: fixture.started.worktree }, fixture.env, "ls-tree", "HEAD", ".claude/skills"),
+    ).toMatch(/^120000 blob /);
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("executed");
+  });
+
+  it.each(["linked parent", "unrelated destination"])(
+    "refuses a request with an %s before a later turn starts",
+    async (blocker) => {
+      const fixture = await useExecuteFixture(
+        { stream: doneStream, exec: requestExec },
+        { answer: { todos: [planTodo("a"), planTodo("b", ["a"])] } },
+      );
+      if (blocker === "linked parent") {
+        const outside = join(fixture.started.dataRoot, "linked-parent-target");
+        mkdirSync(outside);
+        symlinkSync(outside, join(fixture.started.worktree, ".agents"));
+      } else {
+        mkdirSync(join(fixture.started.worktree, ".agents/skills"), { recursive: true });
+        writeFileSync(join(fixture.started.worktree, protectedSkillPath), "unrelated content\n");
+      }
+
+      await runExecute(fixture);
+
+      expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+      expect(todoStates(fixture)).toContainEqual(["a", "in_progress"]);
+      expect(todoStates(fixture)).toContainEqual(["b", "not_started"]);
+      expect(protectedTurnOf(fixture)).toMatchObject({ outcome: "succeeded", phase: "succeeded" });
+      expect(fixture.claude.calls()).toHaveLength(1);
+      if (blocker === "unrelated destination") {
+        expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe("unrelated content\n");
+      }
+      await assertIndexMatchesHead(fixture);
+    },
+  );
 });
 
 describe("executeTask with a signal of tasker", () => {

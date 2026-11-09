@@ -772,6 +772,15 @@ describe("prepareTaskExecuteRun", () => {
     expect(prepared.approvedResetsAt).toBeUndefined();
   });
 
+  it("passes the exact shell read deny list to execute recovery", async () => {
+    const { claude, prepared } = await prepareAndStartExecute({
+      claude: { stream: claudeSample("plain") },
+    });
+    const settings = claude.calls()[0].settings as { sandbox: { filesystem: { denyRead: string[] } } };
+
+    expect(prepared.deniedReadPaths).toEqual(settings.sandbox.filesystem.denyRead);
+  });
+
   it("runs the assistant in the default mode with the execute model and the file tools of the worktree", async () => {
     const { claude, env, models, started } = await prepareAndStartExecute({
       claude: { stream: claudeSample("plain") },

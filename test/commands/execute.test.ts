@@ -5,6 +5,7 @@ import { executeTranscriptPath } from "../../src/store/layout.js";
 import { runCommand } from "../helpers/cli.js";
 import { planTodo, seedExecuteFixTurn, turnResultStream } from "../helpers/plan.js";
 import { eventsOf, latestTaskOf, seedDeadRun, withDataRootStore } from "../helpers/store.js";
+import { commitIndexChanges } from "../helpers/git.js";
 import { type ExecuteFixture, expectNoAssistantRun, useExecuteFixture } from "../helpers/task-fixtures.js";
 import { deadRunNote, wrongStateError } from "../helpers/state-commands.js";
 
@@ -54,6 +55,49 @@ describe("tasker execute", () => {
         "",
       ].join("\n"),
     );
+  });
+
+  it("prints the fix turn line when recovery finishes a saved fix turn without an assistant call", async () => {
+    const fixture = await useExecuteFixture({ stream: turnResultStream("done") }, { answer: { todos: [TODOS[0]] } });
+    const { beforeRevision, afterRevision } = commitIndexChanges(
+      fixture.started.worktree,
+      fixture.started.branch,
+      fixture.started.env,
+      [{ path: ".agents/skills/request.md", content: "saved skill\n" }],
+    );
+    const turnId = withDataRootStore(fixture.started.dataRoot, (store) => {
+      store.markExecuteTodosDone(fixture.task.id, 1);
+      seedExecuteFixTurn(store, fixture.task.id, 1, "queued");
+      const queuedAt = store.queuedExecuteFixTurn(fixture.task.id, 1)!.queuedAt;
+      const id = `fix:${queuedAt}`;
+      store.beginProtectedExecuteTurn({
+        taskId: fixture.task.id,
+        planVersion: 1,
+        turnId: id,
+        startingRevision: beforeRevision,
+      });
+      store.recordProtectedExecuteTurnOutcome(fixture.task.id, 1, id, "succeeded", afterRevision);
+      return id;
+    });
+
+    const result = await runExecute();
+
+    expect(result).toEqual({
+      code: 0,
+      out: [
+        `executed ${KEY} at revision v1`,
+        "todos: 1 of 1 done",
+        "fix turn: done",
+        "denials: 0",
+        `transcript: ${transcriptOf(fixture)}`,
+        "",
+      ].join("\n"),
+      err: "",
+    });
+    expect(fixture.claude.calls()).toEqual([]);
+    expect(
+      withDataRootStore(fixture.started.dataRoot, (store) => store.protectedExecuteTurn(fixture.task.id, 1, turnId)),
+    ).toMatchObject({ phase: "complete", outcome: "succeeded" });
   });
 
   it("refuses a task that is not in approved, with the message on stderr and no write", async () => {

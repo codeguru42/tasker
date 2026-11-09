@@ -109,6 +109,82 @@ describe("materializeProtectedWorkspaceChanges", () => {
     expect(await gitOutput({ cwd: work.path }, fixture.context.env, "status", "--porcelain")).toBe("");
   });
 
+  it("moves every tracked legacy Claude file to the matching canonical path", async () => {
+    await fixture.origin.addCommit("main", {
+      file: ".claude/skills/session-review/SKILL.md",
+      content: "legacy skill\n",
+    });
+    await fixture.origin.addCommit("main", { file: "keep.txt", content: "unrelated\n" });
+    const work = await workspace();
+    const revisions = commitIndexChanges(work.path, work.taskRef, fixture.context.env, [
+      { path: ".claude/skills/session-review/SKILL.md", content: null },
+      { path: ".agents/skills/session-review/SKILL.md", content: "legacy skill\n" },
+      { path: ".claude/skills", content: "../.agents/skills", mode: "120000" },
+    ]);
+    rmSync(join(work.path, ".claude/skills"), { recursive: true });
+    symlinkSync("../.agents/skills", join(work.path, ".claude/skills"));
+
+    await materializeProtectedWorkspaceChanges(options(work, revisions));
+
+    const beforeOld = await gitOutput(
+      { gitDir: paths().clone },
+      fixture.context.env,
+      "ls-tree",
+      revisions.beforeRevision,
+      ".claude/skills/session-review/SKILL.md",
+    );
+    const afterOld = await gitOutput(
+      { gitDir: paths().clone },
+      fixture.context.env,
+      "ls-tree",
+      revisions.afterRevision,
+      ".claude/skills/session-review/SKILL.md",
+    );
+    const beforeCanonical = await gitOutput(
+      { gitDir: paths().clone },
+      fixture.context.env,
+      "ls-tree",
+      revisions.beforeRevision,
+      ".agents/skills/session-review/SKILL.md",
+    );
+    const afterCanonical = await gitOutput(
+      { gitDir: paths().clone },
+      fixture.context.env,
+      "ls-tree",
+      revisions.afterRevision,
+      ".agents/skills/session-review/SKILL.md",
+    );
+    const afterClaudeLink = await gitOutput(
+      { gitDir: paths().clone },
+      fixture.context.env,
+      "ls-tree",
+      revisions.afterRevision,
+      ".claude/skills",
+    );
+    const indexTree = await gitOutput({ cwd: work.path }, fixture.context.env, "write-tree");
+    const afterTree = await gitOutput(
+      { gitDir: paths().clone },
+      fixture.context.env,
+      "rev-parse",
+      `${revisions.afterRevision}^{tree}`,
+    );
+
+    expect(beforeOld).toMatch(/^100644 blob /);
+    expect(afterOld).toBe("");
+    expect(beforeCanonical).toBe("");
+    expect(afterCanonical).toMatch(/^100644 blob /);
+    expect(afterCanonical.split("\t")[0].split(" ")[2]).toBe(beforeOld.split("\t")[0].split(" ")[2]);
+    expect(afterClaudeLink).toMatch(/^120000 blob /);
+    expect(
+      await gitOutput({ cwd: work.path }, fixture.context.env, "show", `${revisions.afterRevision}:.claude/skills`),
+    ).toBe("../.agents/skills");
+    expect(indexTree).toBe(afterTree);
+    expect(readFileSync(join(work.path, ".agents/skills/session-review/SKILL.md"), "utf8")).toBe("legacy skill\n");
+    expect(readlinkSync(join(work.path, ".claude/skills"))).toBe("../.agents/skills");
+    expect(readFileSync(join(work.path, "keep.txt"), "utf8")).toBe("unrelated\n");
+    expect(await gitOutput({ cwd: work.path }, fixture.context.env, "status", "--porcelain")).toBe("");
+  });
+
   it("refuses a tracked legacy Claude file without a matching canonical move", async () => {
     await fixture.origin.addCommit("main", {
       file: ".claude/skills/session-review/SKILL.md",
