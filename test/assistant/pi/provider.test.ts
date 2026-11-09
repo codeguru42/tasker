@@ -802,6 +802,7 @@ describe("createPiProvider outcomes", () => {
     const files = makeFiles();
     const input = validInput();
     const fixture = piQuotaStream("quotaDelay");
+    fixture.sessionFile = fixture.sessionFile.replace("_s1.jsonl", `_${input.sessionId}.jsonl`);
     const stream = fixture.stdout.filter(
       (event) =>
         event.type !== "agent_end" &&
@@ -820,7 +821,11 @@ describe("createPiProvider outcomes", () => {
 
   it("gives quota priority over a passed SIGTERM", async () => {
     const files = makeFiles();
-    const input = validInput({ onSpawn: () => process.kill(process.pid, "SIGTERM") });
+    const input = validInput({
+      onEvent: (event) => {
+        if (event.type === "agent_end") process.kill(process.pid, "SIGTERM");
+      },
+    });
     const fixture = piQuotaStream("quotaDelay");
     const fake = useFakePi([{ args: expectedArgs(input, files), stream: fixture.stdout, delaySeconds: 0.2 }]);
     input.env = { ...input.env, ...fake.env };

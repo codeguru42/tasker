@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import { plan } from "../../src/commands/plan.js";
 import { resume } from "../../src/commands/resume.js";
 import { withTrustedExtensions } from "../helpers/config.js";
-import { TEST_SESSION_ID } from "../helpers/fake-claude.js";
 import { useFakePi } from "../helpers/fake-pi.js";
 import { piQuotaStream } from "../helpers/pi-quota-streams.js";
 import { eventDataOf, latestTaskOf, withDataRootStore } from "../helpers/store.js";
@@ -51,10 +50,9 @@ describe("pi plan quota pause", () => {
     const trusted = withTrustedExtensions(fixture.started.config, REPO, TRUSTED);
     writeFileSync(fixture.started.configPath, JSON.stringify(trusted));
     const record = piQuotaStream("quotaDelay");
-    record.sessionFile = record.sessionFile.replace("_s1.jsonl", `_${TEST_SESSION_ID}.jsonl`);
     const fake = useFakePi([
-      { args: [], stream: record.stdout, session: record.session, sessionFile: record.sessionFile },
-      { args: [], stream: record.stdout, session: record.session, sessionFile: record.sessionFile },
+      { args: [], stream: record.stdout, session: record.session },
+      { args: [], stream: record.stdout, session: record.session },
     ]);
     const path = [fake.env.PATH, ...(process.env.PATH === undefined ? [] : [process.env.PATH])].join(":");
     useProcessEnv({ ...fake.env, PATH: path });
@@ -76,10 +74,10 @@ describe("pi plan quota pause", () => {
       firstCall.args.slice(firstCall.args.indexOf("--session-id"), firstCall.args.indexOf("--session-id") + 2),
     ).toEqual(["--session-id", session?.sessionId]);
 
-    await runCommand(resume, "resume", KEY, "--repo", REPO);
+    const resumeResult = await runCommand(resume, "resume", KEY, "--repo", REPO);
     const secondTask = latestTaskOf(fixture.started.dataRoot, KEY);
     const calls = fake.calls();
-    expect(secondTask.state).toBe("quota_blocked");
+    expect(secondTask.state, JSON.stringify({ resumeResult, calls })).toBe("quota_blocked");
     expect(calls).toHaveLength(2);
     expect(calls[1].args.slice(calls[1].args.indexOf("--session"), calls[1].args.indexOf("--session") + 2)).toEqual([
       "--session",

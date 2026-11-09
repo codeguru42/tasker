@@ -22,6 +22,7 @@ import { PI_ANSWER_TOOL_NAME } from "./answer-tool.js";
 import { piNotInstalled, piProgram } from "./program.js";
 import { piMessages } from "./stream.js";
 import { guardExtensionPath } from "./guard-start.js";
+import { quotaStopOf } from "./quota.js";
 
 type Failure = Extract<RunOutcome, { kind: "failure" }>;
 
@@ -102,8 +103,13 @@ function outcomeOfRun(
     reason,
   });
 
-  if (run.passedSignal !== null) return { outcome: { ...base, kind: "interrupted", signal: run.passedSignal } };
+  const quotaStop = quotaStopOf(lastAssistant);
+  if (run.passedSignal !== null) {
+    if (quotaStop) return { outcome: { ...base, kind: "quota", cause: "rate_limit", ...quotaStop } };
+    return { outcome: { ...base, kind: "interrupted", signal: run.passedSignal } };
+  }
   if (run.timedOut) return { outcome: { ...base, kind: "timeout" } };
+  if (quotaStop) return { outcome: { ...base, kind: "quota", cause: "rate_limit", ...quotaStop } };
   if (run.signal !== null)
     return { outcome: fail(`pi was killed by ${run.signal}${detailSuffix(run.stderrTail.trim())}`) };
   if (lastAssistant?.stopReason === "error" || lastAssistant?.stopReason === "aborted") {
