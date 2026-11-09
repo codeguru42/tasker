@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as programCheckModule from "../../../src/assistant/program-check.js";
 import {
   claudeModelCheck,
   claudeVersionCheck,
@@ -11,6 +12,20 @@ import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const VERSION = "2.1.299 (Claude Code)";
+
+interface SharedProgramCheck {
+  name: string;
+  required: boolean;
+  timeoutMs: number;
+  run(env: NodeJS.ProcessEnv): Promise<unknown>;
+}
+
+async function sharedSandboxProgramCheck(program: string, pkg: string): Promise<SharedProgramCheck> {
+  const module = programCheckModule as unknown as {
+    sandboxProgramCheck(program: string, pkg: string): SharedProgramCheck;
+  };
+  return module.sandboxProgramCheck(program, pkg);
+}
 
 describe("claudeVersionCheck", () => {
   it("has the name, required and timeoutMs of the version check", () => {
@@ -64,6 +79,19 @@ describe("claudeVersionCheck", () => {
       status: "error",
       detail: "the check did not finish in 300 ms",
     });
+  });
+});
+
+describe("shared sandboxProgramCheck", () => {
+  it("gives the package check for a program on PATH", async () => {
+    const check = await sharedSandboxProgramCheck("bwrap", "bubblewrap");
+
+    expect({ name: check.name, required: check.required, timeoutMs: check.timeoutMs }).toEqual({
+      name: "sandbox: bubblewrap",
+      required: true,
+      timeoutMs: 1000,
+    });
+    expect(await check.run({ PATH: useFakeSandboxBin() })).toEqual({ status: "ok", detail: "bwrap is on PATH" });
   });
 });
 

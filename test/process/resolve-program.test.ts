@@ -1,11 +1,20 @@
 import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { join, relative } from "node:path";
+import { join, relative, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
 import { isRunnableFile, ProgramFileError, resolveProgram } from "../../src/process/resolve-program.js";
 import { thrownBy } from "../helpers/errors.js";
 import { writeFakeCommand } from "../helpers/fake-commands.js";
 import { useTempDir } from "../helpers/temp.js";
+
+interface PathPrograms {
+  findOnPath(program: string, env: NodeJS.ProcessEnv): string | undefined;
+  isOnPath(program: string, env: NodeJS.ProcessEnv): boolean;
+}
+
+async function pathPrograms(): Promise<PathPrograms> {
+  return (await import("../../src/process/resolve-program.js")) as unknown as PathPrograms;
+}
 
 describe("isRunnableFile", () => {
   it("gives true for a script that the user can run", () => {
@@ -126,5 +135,35 @@ describe("resolveProgram", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toBe("selected\n");
+  });
+});
+
+describe("findOnPath and isOnPath", () => {
+  it("finds an executable under a relative PATH entry and gives its absolute path", async () => {
+    const dir = useTempDir("tasker-relative-path-");
+    const relativeBin = relative(process.cwd(), dir);
+    writeFakeCommand(dir, "bwrap", "exit 0");
+    const programs = await pathPrograms();
+
+    expect(programs.findOnPath("bwrap", { PATH: relativeBin })).toBe(resolvePath(relativeBin, "bwrap"));
+  });
+
+  it("moves isOnPath here and gives false when PATH has no program", async () => {
+    const dir = useTempDir("tasker-relative-path-");
+    const relativeBin = relative(process.cwd(), dir);
+    writeFakeCommand(dir, "bwrap", "exit 0");
+    const programs = await pathPrograms();
+
+    expect(programs.isOnPath("bwrap", { PATH: relativeBin })).toBe(true);
+    expect(programs.isOnPath("bwrap", { PATH: "" })).toBe(false);
+  });
+
+  it("gives nothing and false for a blank or missing PATH", async () => {
+    const programs = await pathPrograms();
+
+    for (const env of [{ PATH: "" }, {}]) {
+      expect(programs.findOnPath("bwrap", env)).toBeUndefined();
+      expect(programs.isOnPath("bwrap", env)).toBe(false);
+    }
   });
 });
