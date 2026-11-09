@@ -5,9 +5,10 @@ import { childEnv } from "../../process/child-env.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
 import { appendEventLine } from "../event-line.js";
 import { removePlaceholders } from "../placeholders.js";
+import { sandboxProgramCheck } from "../program-check.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { claudeArgs } from "./args.js";
-import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck, sandboxProgramCheck } from "./doctor.js";
+import { CLAUDE_NOT_INSTALLED, claudeModelCheck, claudeVersionCheck } from "./doctor.js";
 import { permissionHookSettings } from "./permission-hook.js";
 import { CLAUDE_PLACEHOLDERS } from "./placeholders.js";
 import {

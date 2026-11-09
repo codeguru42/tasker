@@ -1,8 +1,7 @@
-import { chmodSync, mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { chmodSync, mkdirSync, realpathSync, symlinkSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, onTestFinished } from "vitest";
 import {
-  isOnPath,
   sandboxHostRefusal,
   sharedFolderRefusal,
   sandboxSettings,
@@ -148,32 +147,6 @@ describe("sandboxSocketFolder", () => {
 
     expect(message).toBe("cannot resolve the sandbox temp folder: EACCES");
     expect(message).not.toContain(base);
-  });
-});
-
-describe("isOnPath", () => {
-  it("finds an executable file in a folder of PATH", () => {
-    expect(isOnPath("bwrap", { PATH: ["/nonexistent-folder", useFakeSandboxBin()].join(delimiter) })).toBe(true);
-  });
-
-  it("does not count a file that is not executable", () => {
-    const bin = useTempDir("tasker-bin-");
-    writeFileSync(join(bin, "bwrap"), "#!/bin/sh\n", { mode: 0o644 });
-
-    expect(isOnPath("bwrap", { PATH: bin })).toBe(false);
-  });
-
-  it("does not count a folder with the name", () => {
-    const bin = useTempDir("tasker-bin-");
-    mkdirSync(join(bin, "bwrap"));
-
-    expect(isOnPath("bwrap", { PATH: bin })).toBe(false);
-  });
-
-  it("gives false for an empty PATH, no PATH and a missing folder", () => {
-    expect(isOnPath("bwrap", { PATH: "" })).toBe(false);
-    expect(isOnPath("bwrap", {})).toBe(false);
-    expect(isOnPath("bwrap", { PATH: join(useTempDir("tasker-bin-"), "missing") })).toBe(false);
   });
 });
 

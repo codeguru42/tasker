@@ -2,8 +2,8 @@ import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { codexSocketDenyPaths } from "../../../src/assistant/codex/sockets.js";
+import { DOCKER_SOCKET_PATH, herdrPath, runtimePath } from "../../../src/assistant/shared-sandbox-paths.js";
 import { useTempDir } from "../../helpers/temp.js";
-import { sharedSandboxPaths } from "../../helpers/shared-sandbox-paths.js";
 
 describe("codexSocketDenyPaths", () => {
   it("gives the folder under XDG_CONFIG_HOME, and under HOME/.config when that name is not set", () => {
@@ -120,18 +120,17 @@ describe("codexSocketDenyPaths", () => {
     ]);
   });
 
-  it("uses the shared Docker path by default and keeps real path order", async () => {
-    const paths = await sharedSandboxPaths();
+  it("uses the shared Docker path by default and keeps real path order", () => {
     const dir = realpathSync(useTempDir("tasker-sockets-shared-"));
-    const herdr = paths.herdrPath({ HOME: dir })!;
-    const runtime = paths.runtimePath({ XDG_RUNTIME_DIR: join(dir, "runtime") })!;
+    const herdr = herdrPath({ HOME: dir })!;
+    const runtime = runtimePath({ XDG_RUNTIME_DIR: join(dir, "runtime") })!;
     const agent = join(dir, "agent");
     mkdirSync(herdr, { recursive: true });
     mkdirSync(runtime);
     writeFileSync(agent, "");
     let docker: string[] = [];
     try {
-      docker = [realpathSync(paths.DOCKER_SOCKET_PATH)];
+      docker = [realpathSync(DOCKER_SOCKET_PATH)];
     } catch {
       // The default Docker socket can be absent on the test host.
     }

@@ -1,9 +1,8 @@
 import { lstatSync, realpathSync } from "node:fs";
-import { resolve } from "node:path";
-import { isSet } from "../../config/path.js";
 import { hasErrnoCode } from "../../errno.js";
 import { canonicalPath, isInside } from "../../real-path.js";
 import type { RunInput } from "../provider.js";
+import { childTempRoot } from "../shared-sandbox-paths.js";
 import { codexSocketDenyPaths } from "./sockets.js";
 
 // The name of the permission profile that every run defines for itself.
@@ -57,7 +56,7 @@ function filesystemTable(input: RunInput): string {
   const table = new Map<string, string>([["/", "read"]]);
   const denied = realKeys([...(input.sandbox?.denyRead ?? []), ...codexSocketDenyPaths(input.env)]);
   if (input.access === "workspace-write") {
-    const temp = isSet(input.env.TMPDIR) ? resolve(input.env.TMPDIR) : "/tmp";
+    const temp = childTempRoot(input.env);
     for (const path of realKeys([input.cwd, temp, ...(input.sandbox?.allowWrite ?? [])])) {
       if (!denied.some((deny) => isInside(path, deny))) table.set(path, "write");
     }

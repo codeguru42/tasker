@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { isOnPath } from "../../src/assistant/claude-code/sandbox.js";
+import { isOnPath } from "../../src/process/resolve-program.js";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";

@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { DOCKER_SOCKET_PATH } from "../../src/assistant/codex/sockets.js";
+import { DOCKER_SOCKET_PATH } from "../../src/assistant/shared-sandbox-paths.js";
 import {
   CODEX_LOGIN_STATUS_ARGS,
   CODEX_VERSION_ARGS,

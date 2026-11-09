@@ -3,7 +3,7 @@ import { existsSync, lstatSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { childEnv } from "../../src/process/child-env.js";
-import { isOnPath } from "../../src/assistant/claude-code/sandbox.js";
+import { isOnPath } from "../../src/process/resolve-program.js";
 import { createClaudeCodeProvider } from "../../src/assistant/claude-code/provider.js";
 import type { AssistantEvent, RunOutcome } from "../../src/assistant/provider.js";
 import {

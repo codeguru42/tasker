@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { realpathSync } from "node:fs";
-import { DOCKER_SOCKET_PATH } from "../../src/assistant/codex/sockets.js";
+import { DOCKER_SOCKET_PATH } from "../../src/assistant/shared-sandbox-paths.js";
 import type { AssistantEvent, Effort, TokenUsage } from "../../src/assistant/provider.js";
 import {
   answerChecks,

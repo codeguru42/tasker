@@ -1,7 +1,7 @@
 import { realpathSync } from "node:fs";
-import { basename, delimiter, join } from "node:path";
+import { basename, join } from "node:path";
 import { errnoCode } from "../../errno.js";
-import { isRunnableFile } from "../../process/resolve-program.js";
+import { isOnPath } from "../../process/resolve-program.js";
 import { canonicalPath, isInside } from "../../real-path.js";
 import type { SandboxLimits } from "../provider.js";
 
@@ -57,16 +57,6 @@ export function sandboxSocketFolder(o: {
     if (isInside(realPath(shared), folder)) return undefined;
   }
   return folder;
-}
-
-// True when a folder of env.PATH holds an executable file with this name.
-// A missing or unreadable entry counts as "not there". It never throws.
-export function isOnPath(program: string, env: NodeJS.ProcessEnv): boolean {
-  for (const folder of (env.PATH ?? "").split(delimiter)) {
-    if (folder === "") continue;
-    if (isRunnableFile(join(folder, program))) return true;
-  }
-  return false;
 }
 
 // The programs that the sandbox of claude needs on Linux, with the package that holds each one.

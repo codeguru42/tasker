@@ -3,6 +3,7 @@ import type { Check, CheckResult } from "../doctor/check.js";
 import { firstLine } from "../doctor/first-line.js";
 import { timedCheck } from "../doctor/timed-check.js";
 import { childEnv } from "../process/child-env.js";
+import { isOnPath } from "../process/resolve-program.js";
 import { CommandNotFoundError, runChild, type ChildResult } from "../process/run-child.js";
 
 export interface ProgramCheckSpec {
@@ -80,4 +81,17 @@ export function programVersionCheck(spec: VersionCheckSpec): Check {
     readChild: (child, exitDetail) =>
       child.code === 0 ? { status: "ok", detail: firstLine(child.stdout) } : { status: "error", detail: exitDetail },
   });
+}
+
+// A program that a sandbox needs on Linux. Only a missing program gets the package fix.
+export function sandboxProgramCheck(program: string, pkg: string, timeoutMs = 1000): Check {
+  return timedCheck({ name: `sandbox: ${program}`, required: true, timeoutMs }, async (env) =>
+    isOnPath(program, childEnv(env, []))
+      ? { status: "ok", detail: `${program} is on PATH` }
+      : {
+          status: "error",
+          detail: `${program} is not on PATH`,
+          remediation: `Install the ${pkg} package and put ${program} on PATH.`,
+        },
+  );
 }
