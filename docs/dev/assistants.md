@@ -872,23 +872,52 @@ After it starts pi, the first matching result sets the outcome:
 
 1. A missing program gives `failure` with `<program> is not installed or not on PATH`.
 2. A failed start gives `failure` with the start error.
-3. A signal that tasker passed gives `interrupted`.
+3. A signal that tasker passed gives `quota` after a quota stop, else `interrupted`.
 4. The deadline gives `timeout`.
-5. A signal that stopped pi gives `failure` with `pi was killed by <signal>` and the end of stderr.
-6. A final assistant message with `stopReason` `error` or `aborted` gives `failure`. The reason is its `errorMessage`,
-   capped at 500 characters. If there is no `errorMessage`, the reason is `pi ended its turn with <stopReason>`.
-7. A nonzero exit gives `failure` with `pi exited <code>` and the end of stderr.
-8. No final assistant message gives `failure` with `the assistant ended with no result`.
-9. A clean end with no usable answer gives `failure`. A clean end is the end of a pi process that matches none of rows 1
-   to 8. The reason is `the assistant gave no structured answer:`, then one line `  - <problem>` for each problem.
-   [The corrective turns](#corrective-turns) give the problems.
-10. Each other run gives `success`.
+5. A quota stop gives `quota` with the cause `rate_limit`, with any exit code and with any signal of pi that tasker did
+   not pass.
+6. A signal that stopped pi gives `failure` with `pi was killed by <signal>` and the end of stderr.
+7. A final assistant message with `stopReason` `error` or `aborted` gives `failure` unless it is a quota stop (see
+   [The quota stop](#the-quota-stop)). The reason is its `errorMessage`, capped at 500 characters. If there is no
+   `errorMessage`, the reason is `pi ended its turn with <stopReason>`.
+8. A nonzero exit gives `failure` with `pi exited <code>` and the end of stderr.
+9. No final assistant message gives `failure` with `the assistant ended with no result`.
+10. A clean end with no usable answer gives `failure`.
+
+    A clean end is the end of a pi process that matches none of rows 1 to 9. The reason is
+    `the assistant gave no structured answer:`, then one line `  - <problem>` for each problem.
+    [The corrective turns](#corrective-turns) give the problems.
+
+11. Each other run gives `success`.
 
 pi exits with 0 when a turn fails in JSON mode, so the row of `stopReason` comes before the row of the exit code.
 
 The last assistant message controls the result after retries. A stream can have more than one `agent_end` event. Usage
-is `unavailable`, permission denials are `[]`, and tasker reports no model. There is no quota outcome, and `overageStop`
-has no effect.
+is `unavailable`, permission denials are `[]`, and tasker reports no model. `overageStop` has no effect.
+
+### The quota stop
+
+A pi run that the upstream stops with HTTP 402 gives the outcome `quota` with the cause `rate_limit`. The upstream is
+the model service that pi calls. A 402 (Payment Required) means that the account of the upstream has no budget left. The
+provider reads only the final assistant message of each pi process. That message must have `stopReason` `"error"` and an
+`errorMessage` that starts with `402: ` or with `402 `.
+
+In json mode, pi exits 0 after a failed turn. So the provider looks for the quota stop before it looks at the exit code.
+The quota outcome wins over a failure. If tasker passed a signal, the quota outcome also wins over the interrupted
+outcome. If tasker passed no signal, a timeout wins over the quota outcome, as for `claude-code`.
+
+The reset time comes only from a `Retry-After` value, as seconds or as an HTTP date. A guessed reset time resumes the
+task too early or too late. So the provider reads no prose of the body and no field of another provider. In a body that
+parses, the value comes from `metadata.headers` or from `error.metadata.headers`. pi cuts a body after 4000 characters
+and adds `... [truncated <N> chars]`, so the body loses its structure. Then the provider takes a `Retry-After` value
+from anywhere in the text before that marker, only when each value is complete and all values agree.
+
+Only a 402 counts. pi retries most 429 errors itself, so a pause at a 429 can stop work that the next try finishes.
+
+The rules follow the error forms of pi 1.1.0, not a capture of a real upstream. `formatProviderError()` of pi writes
+`402: <body>`. The `anthropic-messages` API of pi writes `402 <body>` with no colon, and its body is the whole response.
+Some other APIs of pi put a label before the status, for example `OpenAI API error (402): <body>`. This labeled form
+gives a failure.
 
 ### The measures of the plan and review roles
 
