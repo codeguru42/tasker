@@ -542,7 +542,7 @@ describe("guard extension tool source checks", () => {
     const shell = tool("bash", guardExtensionPath, "cli");
     const fake = guardedFake([limitTool(shell)], [shell], ["git push"]);
 
-    expect(await callTool(fake, "bash", { command: "git status" })).toBe("tool result");
+    expect(await dispatchToolCall(fake, { toolName: "bash", input: { command: "git status" } })).toEqual([undefined]);
   });
 
   it("blocks a non-string command in a trusted bash call", async () => {
@@ -560,6 +560,8 @@ describe("guard extension tool source checks", () => {
     const configured = tool("bash", guardExtensionPath, "cli");
     const current = tool("bash", "/tmp/replacement.js", "cli");
     const fake = guardedFake([limitTool(configured)], [current], ["git push"]);
+    const lookup = vi.spyOn(fake.pi, "getAllTools").mockReturnValue([current]);
+    onTestFinished(() => lookup.mockRestore());
     const scan = vi.spyOn(bashCommandCheckModule, "checkBashCommand");
 
     const result = await callTool(fake, "bash", { command: "git push" });

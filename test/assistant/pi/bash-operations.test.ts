@@ -33,7 +33,7 @@ function setup() {
   const bwrap = join(useFakeSandboxBin(), "bwrap");
   const argsLog = join(root, "bwrap-args");
   const sandbox: PiSandboxLimits = { bwrap, worktree, writePaths: [], tempFolder, hidePaths: [] };
-  const env = { ...process.env, TASKER_FAKE_BWRAP_ARGS: argsLog };
+  const env = { ...process.env, TASKER_FAKE_BWRAP_ARGS: argsLog, TASKER_TEST_VALUE: "passed" };
   return { root, worktree, sandbox, env, argsLog };
 }
 
@@ -43,7 +43,7 @@ describe("createBashOperations", () => {
     const chunks: string[] = [];
     const ops = await operations(sandbox);
 
-    const code = await ops.exec("printf out; printf err >&2; exit 7", worktree, {
+    const code = await ops.exec("printf out; printf err >&2; printf $TASKER_TEST_VALUE; pwd; exit 7", worktree, {
       onData: (chunk) => chunks.push(chunk),
       env,
     });
@@ -51,6 +51,8 @@ describe("createBashOperations", () => {
     expect(code).toBe(7);
     expect(chunks.join("")).toContain("out");
     expect(chunks.join("")).toContain("err");
+    expect(chunks.join("")).toContain("passed");
+    expect(chunks.join("")).toContain(worktree);
     expect(readFileSync(argsLog, "utf8")).toContain(worktree);
   });
 

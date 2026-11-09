@@ -7,6 +7,8 @@ import { isDeniedPath, isInside, realPathWithMissingParents } from "../../real-p
 import type { GuardLimits, GuardTool } from "./guard-limits.js";
 import { invalidDeniedCommandEntries } from "./denied-command-entry.js";
 import { checkBashCommand } from "./bash-command-check.js";
+import { createBashToolDefinition } from "@earendil-works/pi-coding-agent";
+import { createBashOperations } from "./bash-operations.js";
 
 const LIMITS_FLAG = "--tasker-guard-limits";
 const LIMITS_FIELD_NAMES = [
@@ -41,6 +43,7 @@ const RIGHT_SINGLE_QUOTE = String.fromCodePoint(0x2019);
 
 interface PiApi {
   registerFlag(name: string, options: PiFlagOptions): void;
+  registerTool(tool: unknown): void;
   getAllTools(): PiTool[];
   on(event: "tool_call" | "before_agent_start", handler: (event: unknown, context: PiContext) => unknown): void;
 }
@@ -100,6 +103,12 @@ export default function guardExtension(pi: PiApi): void {
     throw new Error("tasker could not parse the pi guard limits");
   }
   state.limits = validateLimits(value);
+  if (state.limits.sandbox !== null) {
+    const bash = createBashToolDefinition(state.limits.cwd, {
+      operations: createBashOperations(state.limits.sandbox, state.limits.deniedCommands),
+    });
+    pi.registerTool({ ...bash, executionMode: "sequential" });
+  }
 }
 
 function checkToolCall(
