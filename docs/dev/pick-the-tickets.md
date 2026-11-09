@@ -379,6 +379,11 @@ The orchestrator ends the hold in these cases:
   the refusal `blocking issue is still open`, after which no task exists, and a missing `based on <key>'s branch` note,
   after which the stacked task stays in `workspace_ready`.
 - The issue of the parent closes.
+- The orchestrator drops the planned start of the stacked ticket, for any reason. The orchestrator then ends the hold at
+  once, as for a failed start, with no read of `tasker show <stacked issue>`. One example is a defer of the stacked
+  ticket, as [the defer rule](#the-defer-rule) defines a defer. Another example is a stop of the start by the
+  broken-test ban of [Pick the tickets](#pick-the-tickets). The ban does not stop the start of the broken-test issue
+  itself.
 
 The orchestrator reads the state of the issue of the parent with `gh issue view <parent issue> --json state -q .state`.
 It does this read after each report of the task subagent of the parent or of the task subagent of a stacked ticket. It
