@@ -5,6 +5,8 @@ export type BashToken =
   | { kind: "operator" | "newline" | "keyword"; value: string; start: number; end: number }
   | { kind: "heredoc-body"; value: string; quoted: boolean; start: number; end: number };
 
+export type BashTokens = BashToken[] & { parseError?: BashParseError };
+
 export class BashParseError extends Error {}
 
 const OPERATORS = [
@@ -53,7 +55,7 @@ const KEYWORDS = new Set([
   "time",
 ]);
 
-export function tokenizeBashCommand(input: string): BashToken[] {
+export function tokenizeBashCommand(input: string): BashTokens {
   const source = joinEscapedNewlines(input);
   const tokens: BashToken[] = [];
   let index = 0;
@@ -61,161 +63,167 @@ export function tokenizeBashCommand(input: string): BashToken[] {
   let commandPosition = true;
   let header: "case" | "for" | "select" | undefined;
 
-  while (index < source.length) {
-    const char = source[index] ?? "";
-    if (char === " " || char === "\t" || char === "\r") {
-      index += 1;
-      continue;
-    }
-    if (char === "#" && (index === 0 || /\s/u.test(source[index - 1] ?? ""))) {
-      while (index < source.length && source[index] !== "\n") index += 1;
-      continue;
-    }
-    if (char === "\n") {
-      tokens.push({ kind: "newline", value: "\n", start: index, end: index + 1 });
-      index += 1;
-      if (pending.length > 0) {
-        for (const doc of pending) {
-          const start = index;
-          let body = "";
-          while (index <= source.length) {
-            const lineEnd = source.indexOf("\n", index);
-            const end = lineEnd < 0 ? source.length : lineEnd;
-            const line = source.slice(index, end);
-            const compare = doc.stripTabs ? line.replace(/^\t+/u, "") : line;
-            if (compare === doc.delimiter) {
-              index = lineEnd < 0 ? end : end + 1;
-              break;
-            }
-            body += line + (lineEnd < 0 ? "" : "\n");
-            if (lineEnd < 0) {
-              index = source.length;
-              break;
-            }
-            index = end + 1;
-          }
-          tokens.push({ kind: "heredoc-body", value: body, quoted: doc.quoted, start, end: index });
-        }
-        pending = [];
+  let parseError: BashParseError | undefined;
+  try {
+    while (index < source.length) {
+      const char = source[index] ?? "";
+      if (char === " " || char === "\t" || char === "\r") {
+        index += 1;
+        continue;
       }
-      commandPosition = true;
-      continue;
-    }
+      if (char === "#" && (index === 0 || /\s/u.test(source[index - 1] ?? ""))) {
+        while (index < source.length && source[index] !== "\n") index += 1;
+        continue;
+      }
+      if (char === "\n") {
+        tokens.push({ kind: "newline", value: "\n", start: index, end: index + 1 });
+        index += 1;
+        if (pending.length > 0) {
+          for (const doc of pending) {
+            const start = index;
+            let body = "";
+            while (index <= source.length) {
+              const lineEnd = source.indexOf("\n", index);
+              const end = lineEnd < 0 ? source.length : lineEnd;
+              const line = source.slice(index, end);
+              const compare = doc.stripTabs ? line.replace(/^\t+/u, "") : line;
+              if (compare === doc.delimiter) {
+                index = lineEnd < 0 ? end : end + 1;
+                break;
+              }
+              body += line + (lineEnd < 0 ? "" : "\n");
+              if (lineEnd < 0) {
+                index = source.length;
+                break;
+              }
+              index = end + 1;
+            }
+            tokens.push({ kind: "heredoc-body", value: body, quoted: doc.quoted, start, end: index });
+          }
+          pending = [];
+        }
+        commandPosition = true;
+        continue;
+      }
 
-    if (source.startsWith("((", index)) {
-      const end = source.indexOf("))", index + 2);
-      if (end < 0) throw new BashParseError("unclosed arithmetic command");
-      const value = source.slice(index + 2, end);
-      const part: BashWordPart = { kind: "arithmetic", value, quoted: false, start: index, end: end + 2 };
-      const word: BashWord = { value, expanded: false, nested: [], parts: [part], start: index, end: end + 2 };
-      tokens.push({ kind: "word", value, quoted: false, word, start: index, end: end + 2 });
-      index = end + 2;
-      commandPosition = false;
-      continue;
-    }
+      if (source.startsWith("((", index)) {
+        const end = source.indexOf("))", index + 2);
+        if (end < 0) throw new BashParseError("unclosed arithmetic command");
+        const value = source.slice(index + 2, end);
+        const part: BashWordPart = { kind: "arithmetic", value, quoted: false, start: index, end: end + 2 };
+        const word: BashWord = { value, expanded: false, nested: [], parts: [part], start: index, end: end + 2 };
+        tokens.push({ kind: "word", value, quoted: false, word, start: index, end: end + 2 });
+        index = end + 2;
+        commandPosition = false;
+        continue;
+      }
 
-    const fd = /^(\d+)(?=<<|<|>>|>)/u.exec(source.slice(index));
-    if (fd) index += fd[0].length;
-    if (source.startsWith("<(", index) || source.startsWith(">(", index)) {
-      const parsedProcess = readWord(source, index);
-      if (parsedProcess === undefined) throw new BashParseError("invalid process substitution");
-      tokens.push({
-        kind: "word",
-        value: parsedProcess.word.value,
-        quoted: true,
-        word: parsedProcess.word,
-        start: parsedProcess.start,
-        end: parsedProcess.end,
-      });
-      index = parsedProcess.end;
-      commandPosition = false;
-      continue;
-    }
-    const operator = OPERATORS.find((item) => {
-      const op = item.trimEnd();
-      if (op === "{" && !/\s/u.test(source[index + 1] ?? "")) return false;
-      if (op === "}" && source[index - 1] !== undefined && !/\s/u.test(source[index - 1] ?? "")) return false;
-      return op === source.slice(index, index + op.length);
-    });
-    if (operator !== undefined) {
-      const value = operator.trimEnd();
-      tokens.push({ kind: "operator", value, start: index, end: index + value.length });
-      index += value.length;
-      if (value === "<<" || value === "<<-") {
-        while (source[index] === " " || source[index] === "\t") index += 1;
-        const delimiterToken = readWord(source, index);
-        if (delimiterToken === undefined) throw new BashParseError("missing here-document delimiter");
+      const fd = /^(\d+)(?=<<|<|>>|>)/u.exec(source.slice(index));
+      if (fd) index += fd[0].length;
+      if (source.startsWith("<(", index) || source.startsWith(">(", index)) {
+        const parsedProcess = readWord(source, index);
+        if (parsedProcess === undefined) throw new BashParseError("invalid process substitution");
         tokens.push({
           kind: "word",
-          value: delimiterToken.word.value,
-          quoted: delimiterToken.word.expanded,
-          word: delimiterToken.word,
-          start: delimiterToken.start,
-          end: delimiterToken.end,
+          value: parsedProcess.word.value,
+          quoted: true,
+          word: parsedProcess.word,
+          start: parsedProcess.start,
+          end: parsedProcess.end,
         });
-        pending.push({
-          delimiter: delimiterToken.word.value,
-          quoted: delimiterToken.word.parts.some((part) => part.quoted),
-          stripTabs: value === "<<-",
-        });
-        index = delimiterToken.end;
-      } else if (["<", ">", ">>", "<<<", "<&", ">&", "&>", "&>>"].includes(value)) {
-        const target = readWord(source, index);
-        if (target !== undefined) {
+        index = parsedProcess.end;
+        commandPosition = false;
+        continue;
+      }
+      const operator = OPERATORS.find((item) => {
+        const op = item.trimEnd();
+        if (op === "{" && !/\s/u.test(source[index + 1] ?? "")) return false;
+        if (op === "}" && source[index - 1] !== undefined && !/\s/u.test(source[index - 1] ?? "")) return false;
+        return op === source.slice(index, index + op.length);
+      });
+      if (operator !== undefined) {
+        const value = operator.trimEnd();
+        tokens.push({ kind: "operator", value, start: index, end: index + value.length });
+        index += value.length;
+        if (value === "<<" || value === "<<-") {
+          while (source[index] === " " || source[index] === "\t") index += 1;
+          const delimiterToken = readWord(source, index);
+          if (delimiterToken === undefined) throw new BashParseError("missing here-document delimiter");
           tokens.push({
             kind: "word",
-            value: target.word.value,
-            quoted: target.word.expanded,
-            word: target.word,
-            start: target.start,
-            end: target.end,
+            value: delimiterToken.word.value,
+            quoted: delimiterToken.word.expanded,
+            word: delimiterToken.word,
+            start: delimiterToken.start,
+            end: delimiterToken.end,
           });
-          index = target.end;
+          pending.push({
+            delimiter: delimiterToken.word.value,
+            quoted: delimiterToken.word.parts.some((part) => part.quoted),
+            stripTabs: value === "<<-",
+          });
+          index = delimiterToken.end;
+        } else if (["<", ">", ">>", "<<<", "<&", ">&", "&>", "&>>"].includes(value)) {
+          const target = readWord(source, index);
+          if (target !== undefined) {
+            tokens.push({
+              kind: "word",
+              value: target.word.value,
+              quoted: target.word.expanded,
+              word: target.word,
+              start: target.start,
+              end: target.end,
+            });
+            index = target.end;
+          }
         }
+        if ([";", ";;&", "&&", "||", "|", "|&", "&", ")"].includes(value)) commandPosition = true;
+        continue;
       }
-      if ([";", ";;&", "&&", "||", "|", "|&", "&", ")"].includes(value)) commandPosition = true;
-      continue;
+      const parsed = readWord(source, index);
+      if (parsed === undefined) throw new BashParseError(`cannot tokenize at ${index}`);
+      const value = parsed.word.value;
+      if (/\{[^{}]*,[^{}]*\}/u.test(source.slice(parsed.start, parsed.end))) parsed.word.expanded = true;
+      if (
+        (commandPosition || (value === "in" && header !== undefined)) &&
+        KEYWORDS.has(value) &&
+        parsed.word.parts.every((part) => part.kind === "literal")
+      ) {
+        tokens.push({ kind: "keyword", value, start: parsed.start, end: parsed.end });
+        if (value === "case" || value === "for" || value === "select") header = value;
+        else if (value === "in") header = undefined;
+        commandPosition = [
+          "if",
+          "then",
+          "elif",
+          "else",
+          "while",
+          "until",
+          "do",
+          "for",
+          "select",
+          "case",
+          "time",
+          "coproc",
+        ].includes(value);
+      } else {
+        tokens.push({
+          kind: "word",
+          value,
+          quoted: parsed.word.expanded,
+          word: parsed.word,
+          start: parsed.start,
+          end: parsed.end,
+        });
+        commandPosition = false;
+      }
+      index = parsed.end;
     }
-    const parsed = readWord(source, index);
-    if (parsed === undefined) throw new BashParseError(`cannot tokenize at ${index}`);
-    const value = parsed.word.value;
-    if (/\{[^{}]*,[^{}]*\}/u.test(source.slice(parsed.start, parsed.end))) parsed.word.expanded = true;
-    if (
-      (commandPosition || (value === "in" && header !== undefined)) &&
-      KEYWORDS.has(value) &&
-      parsed.word.parts.every((part) => part.kind === "literal")
-    ) {
-      tokens.push({ kind: "keyword", value, start: parsed.start, end: parsed.end });
-      if (value === "case" || value === "for" || value === "select") header = value;
-      else if (value === "in") header = undefined;
-      commandPosition = [
-        "if",
-        "then",
-        "elif",
-        "else",
-        "while",
-        "until",
-        "do",
-        "for",
-        "select",
-        "case",
-        "time",
-        "coproc",
-      ].includes(value);
-    } else {
-      tokens.push({
-        kind: "word",
-        value,
-        quoted: parsed.word.expanded,
-        word: parsed.word,
-        start: parsed.start,
-        end: parsed.end,
-      });
-      commandPosition = false;
-    }
-    index = parsed.end;
+  } catch (error) {
+    if (!(error instanceof BashParseError)) throw error;
+    parseError = error;
   }
-  return tokens;
+  return Object.assign(tokens, parseError === undefined ? {} : { parseError });
 }
 
 function joinEscapedNewlines(source: string): string {

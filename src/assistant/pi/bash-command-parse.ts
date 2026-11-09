@@ -60,6 +60,10 @@ export function parseBashCommand(source: string): ParsedBashLine {
   let inCasePattern = false;
   let skipTimeArgument = false;
   let deferredNested: BashCommand[] = [];
+  let nestedParseError: BashParseError | undefined;
+  const keepNestedError = (error: BashParseError) => {
+    nestedParseError ??= error;
+  };
 
   const finish = (end: number) => {
     if (words.length > 0) {
@@ -81,7 +85,7 @@ export function parseBashCommand(source: string): ParsedBashLine {
       if (token === undefined) continue;
       if (token.kind === "heredoc-body") {
         finish(token.start);
-        if (!token.quoted && token.value.length > 0) addHereDocNested(commands.at(-1), token.value);
+        if (!token.quoted && token.value.length > 0) addHereDocNested(commands.at(-1), token.value, keepNestedError);
         continue;
       }
       if (token.kind === "newline" || token.kind === "operator") {
@@ -107,7 +111,7 @@ export function parseBashCommand(source: string): ParsedBashLine {
           const target = tokens[i + 1];
           if (target?.kind !== "word") throw new BashParseError("missing redirection target");
           target.word.redirectionTarget = true;
-          addWordNested(target.word);
+          addWordNested(target.word, keepNestedError);
           words.push(target.word);
           i += 1;
           continue;
@@ -220,7 +224,7 @@ export function parseBashCommand(source: string): ParsedBashLine {
           continue;
         }
         skipTimeArgument = false;
-        addWordNested(token.word);
+        addWordNested(token.word, keepNestedError);
         if (skipForHeader || inCaseHeader || (inCase && inCasePattern)) {
           deferredNested.push(...token.word.nested);
           continue;
@@ -233,24 +237,25 @@ export function parseBashCommand(source: string): ParsedBashLine {
         words.push(token.word);
       }
     }
-    finish(source.length);
+    if (tokens.parseError === undefined) finish(source.length);
     if (compound.length !== 0) throw new BashParseError("unclosed compound command");
   } catch (error) {
     if (!(error instanceof BashParseError)) throw error;
     parseError = error;
   }
+  parseError ??= nestedParseError ?? tokens.parseError;
   return { commands, ...(parseError === undefined ? {} : { parseError }) };
 }
 
 export type { BashToken };
 
-function addWordNested(word: BashWord): void {
+function addWordNested(word: BashWord, onError: (error: BashParseError) => void): void {
   if (
     word.parts.some((part) =>
       ["substitution", "parameter", "double-quoted", "process-substitution", "arithmetic"].includes(part.kind),
     )
   ) {
-    word.nested.push(...nestedCommands(word));
+    word.nested.push(...nestedCommands(word, onError));
   }
 }
 
@@ -258,17 +263,27 @@ function deferWordsNested(words: BashWord[], deferred: BashCommand[]): void {
   for (const word of words) deferred.push(...word.nested);
 }
 
-function addHereDocNested(command: BashCommand | undefined, body: string): void {
+function addHereDocNested(
+  command: BashCommand | undefined,
+  body: string,
+  onError: (error: BashParseError) => void,
+): void {
   if (command?.words[0] === undefined) return;
   for (const nestedSource of nestedSources(body)) {
-    command.words[0].nested.push(...parseBashCommand(nestedSource).commands);
+    const parsed = parseBashCommand(nestedSource);
+    command.words[0].nested.push(...parsed.commands);
+    if (parsed.parseError !== undefined) onError(parsed.parseError);
   }
 }
 
-function nestedCommands(word: BashWord): BashCommand[] {
+function nestedCommands(word: BashWord, onError: (error: BashParseError) => void): BashCommand[] {
   const found: BashCommand[] = [];
   for (const part of word.parts) {
-    for (const source of nestedSources(part.value)) found.push(...parseBashCommand(source).commands);
+    for (const source of nestedSources(part.value)) {
+      const parsed = parseBashCommand(source);
+      found.push(...parsed.commands);
+      if (parsed.parseError !== undefined) onError(parsed.parseError);
+    }
   }
   return found;
 }

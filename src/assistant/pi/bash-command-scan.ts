@@ -43,7 +43,13 @@ export function scanBashCommands(parsed: ParsedBashLine, entries: readonly strin
   return result;
 }
 
-function scanCommand(command: BashCommand, entries: readonly string[], result: ScanResult, depth: number): void {
+function scanCommand(
+  command: BashCommand,
+  entries: readonly string[],
+  result: ScanResult,
+  depth: number,
+  scanningWrapperSuffix = false,
+): void {
   const allWords = command.words;
   const words = allWords.filter((word) => !word.redirectionTarget);
   let commandIndex = 0;
@@ -107,7 +113,7 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
       scanAction: (action) => scanCommand({ words: action, inputFromPipeline: false }, entries, result, depth),
     });
   }
-  if (isWrapper(base)) scanWrapper(base, words, commandIndex, entries, result, depth);
+  if (isWrapper(base) && !scanningWrapperSuffix) scanWrapper(base, words, commandIndex, entries, result, depth);
   if (command.inputFromPipeline && isShell(base)) setFirstCause(result, CAUSE.input);
   if (isShell(base) && shellReadsInput(words, commandIndex, command)) setFirstCause(result, CAUSE.input);
   if (base === "builtin" && words[commandIndex + 1] !== undefined) {
@@ -247,7 +253,7 @@ function scanWrapper(
   scanReaderActions(base, args, entries, result, depth);
   for (let index = 0; index < args.length; index += 1) {
     const suffix = args.slice(index);
-    scanCommand({ words: suffix, inputFromPipeline: false }, entries, result, depth);
+    scanCommand({ words: suffix, inputFromPipeline: false }, entries, result, depth, true);
   }
 }
 
@@ -258,8 +264,8 @@ function scanReparsed(code: string, entries: readonly string[], result: ScanResu
     return;
   }
   const parsed = parseBashCommand(code);
-  if (parsed.parseError !== undefined) throw parsed.parseError;
   for (const command of parsed.commands) scanCommand(command, entries, result, nextDepth);
+  if (parsed.parseError !== undefined) setFirstCause(result, "the line does not parse");
 }
 
 function scanSource(words: BashWord[], commandIndex: number, command: BashCommand, result: ScanResult): void {
