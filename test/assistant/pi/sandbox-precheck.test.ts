@@ -86,7 +86,7 @@ describe("runSandboxPrecheck", () => {
 
   it.each([
     ["unix:abstract=SECRET_VALUE", "unix", "abstract"],
-    ["tcp:host=SECRET_VALUE,port=5", "tcp", "tcp"],
+    ["tcp:host=SECRET_VALUE,port=5", "tcp", "host"],
     ["unix:unknown=SECRET_VALUE", "unix", "unknown"],
   ])("refuses unsupported D-Bus entry %s without exposing its value", async (address, transport, key) => {
     const { input } = setup();
@@ -263,6 +263,7 @@ describe("runSandboxPrecheck", () => {
       return failure(input, "passed");
     });
     const args = readFileSync(input.env.TASKER_FAKE_BWRAP_ARGS!, "utf8").split("\0");
+    args.pop();
 
     expect(result.kind).toBe("failure");
     expect(reasonOf(result)).toBe("passed");
