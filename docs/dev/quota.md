@@ -6,8 +6,8 @@ The readers of this page are the orchestrator, and the task subagent for "What t
 
 The quota of Claude Code belongs to the whole account. If a `claude-code` task stops in `quota_blocked`, the
 orchestrator and all the task subagents also have no tokens. No session can act until the quota resets. For this reason,
-the orchestrator must plan the resume before the quota runs out. The orchestrator does this with up to two cron jobs for
-each task subagent: a five-hour job and a seven-day job.
+the orchestrator must plan the resume before the quota runs out. The orchestrator does this with cron jobs. A task
+subagent can have a five-hour job and a seven-day job.
 
 A `pi` task in `quota_blocked` does not stop the orchestrator and the task subagents. A pi stop can give its ticket a
 third job, the pi job. [A pi stop](#a-pi-stop) and [The pi wait](#the-pi-wait) give its steps.
