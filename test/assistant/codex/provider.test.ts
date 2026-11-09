@@ -1,4 +1,13 @@
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  readlinkSync,
+  realpathSync,
+  symlinkSync,
+} from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createCodexProvider } from "../../../src/assistant/codex/provider.js";
@@ -524,6 +533,20 @@ describe("createCodexProvider run: the execute role", () => {
     );
   });
 
+  it.each([false, true])("denies protected skill paths without direct write keys on a %s run", async (resume) => {
+    const { fake, cwd } = await executeRun(
+      { stream: resume ? codexSample("resume") : codexSample("plain") },
+      {},
+      resume ? CODEX_THREAD_ID : undefined,
+    );
+    const profile = fake.calls()[0].argv.find((arg) => arg.startsWith("permissions.tasker.filesystem="));
+
+    expect(profile).toContain(`${JSON.stringify(join(realpathSync(cwd), ".agents"))}="deny"`);
+    expect(profile).toContain(`${JSON.stringify(join(realpathSync(cwd), ".codex"))}="deny"`);
+    expect(profile).not.toContain(`${JSON.stringify(join(realpathSync(cwd), ".agents"))}="write"`);
+    expect(profile).not.toContain(`${JSON.stringify(join(realpathSync(cwd), ".codex"))}="write"`);
+  });
+
   it("passes the prompt on stdin and gives success", async () => {
     const { fake, outcome } = await executeRun({ stream: codexSample("plain") }, { prompt: "write it" });
 
@@ -602,6 +625,18 @@ describe("createCodexProvider run: the execute role", () => {
 
       expect(outcome).toMatchObject({ sandboxCleanup: { removed: [".agents", ".aws"] } });
       expect(existsSync(join(cwd, ".codex", "keep"))).toBe(true);
+    });
+
+    it("keeps a preexisting exact Codex skills link during placeholder cleanup", async () => {
+      const cwd = useTempDir("tasker-codex-cwd-");
+      mkdirSync(join(cwd, ".agents", "skills"), { recursive: true });
+      mkdirSync(join(cwd, ".codex"));
+      symlinkSync("../.agents/skills", join(cwd, ".codex", "skills"));
+
+      const { outcome } = await executeRun({ stream: codexSample("plain"), exec: node(makeFolders) }, { cwd });
+
+      expect(outcome).toMatchObject({ sandboxCleanup: { removed: [".aws"] } });
+      expect(readlinkSync(join(cwd, ".codex", "skills"))).toBe("../.agents/skills");
     });
 
     it.skipIf(process.getuid?.() === 0)("gives the error of a failed rmdir, and the kind stays success", async () => {
