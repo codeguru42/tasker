@@ -1001,15 +1001,18 @@ the order shown in [guard-extension.ts](../../src/assistant/pi/guard-extension.t
 [real-path.ts](../../src/real-path.ts). The guard compares supplied paths and real paths. A deny path takes priority
 over an allowed root.
 
+Missing roots grant no access. The guard blocks each call of the `powershell` tool. It tests each call of the `bash`
+tool as [The check of the shell commands](#the-check-of-the-shell-commands) says.
+
+The guard has one limit. A later extension can change a call's input after the guard passes it. Pi loads extensions
+named with `-e` first. The limit applies to each extension that pi loads after the guard.
+
 Before valid limits exist, each tool call blocks. An unreadable or invalid limits file stops pi before its first
 provider request. A tool-handler error blocks the call with a fixed reason. A skill-handler error removes all skill
 folders supplied by pi.
 
 `skillRoots` adds read roots only when `readRoots` is a list. The guard drops a skill root on, under or above a
-protected or denied path. Missing roots grant no access. The guard blocks shell tools.
-
-The guard has one limit. A later extension can change a call's input after the guard passes it. Pi loads extensions
-named with `-e` first. The limit applies to each extension that pi loads after the guard.
+protected or denied path.
 
 A task subagent measured facts 1–11 on 2026-11-07 with pi 1.1.0 on Linux. Each run used a new scratch folder, a scratch
 home folder and an empty `PI_CODING_AGENT_DIR`. Each run set `PI_TELEMETRY=0` and used `-p --mode json --offline`, a
@@ -1100,6 +1103,75 @@ gets `--no-mcp`, so the list has no default key `builtin:mcp`. The entry `-built
 
 An agent folder in the worktree holds files that come from the repo, and a run in the execute role can change them. The
 extension precheck rejects such a folder.
+
+### The check of the shell commands
+
+The `--tools` list of pi names whole tools. It cannot exclude one Bash command, so the guard checks each trusted Bash
+call. The fail-safe configuration is at least `Bash(git push:*)`.
+
+Denied command entries have two forms: one word, or `git` plus one word. Each word uses letters, digits, `.`, `_`, `+`
+or `-`; it cannot start with `-`. With `bash` enabled, tasker rejects other entries and reports their values in the
+`guardLimits()` error. The pi extension reports only `deniedCommands`. See the
+[entry rules](../../src/assistant/pi/denied-command-entry.ts).
+
+The check removes quotes and escapes before it compares words. One-word entries match a command basename. A `git <word>`
+entry matches its subcommand or a `git-<word>` program. Matches take priority over causes, and the first matching entry
+wins. See the [command check](../../src/assistant/pi/bash-command-check.ts).
+
+The check scans lists, pipelines, assignments, redirections, compound commands and function bodies. It scans command and
+process substitutions, parameter and arithmetic expansions, and unquoted here-document bodies. A quoted here-document
+body stays literal. The [parser](../../src/assistant/pi/bash-command-parse.ts) lists the supported syntax.
+
+The supported shells are `bash` and `sh`. The check handles commands that read a line again, including shell `-c`
+strings, `eval`, `env -S` and `script -c`. Each re-read adds a depth level, up to eight. A command substitution does not
+add depth.
+
+The wrappers are `env`, `nice`, `timeout`, `watch`, `nohup`, `command` and `stdbuf`. The check follows their command
+words. It blocks an expansion in any later wrapper word because an option can move the command. It blocks `xargs`
+because its input can add a command.
+
+Git rules apply only when an entry has the form `git <word>`. The scanner lists the supported global options. An unknown
+option blocks the call. Each `-c` blocks because a configuration value can run a command line. The check also scans
+command text in selected `clone`, `grep` and `rebase` options and in Git editor assignments. See the
+[scanner](../../src/assistant/pi/bash-command-scan.ts).
+
+The check scans actions after `find` options `-exec` and `-execdir`. It blocks an action that uses `{}` as its command.
+It also blocks an action with an expansion that can change its command.
+
+When the guard cannot read a command with certainty, it blocks the call. Examples include a parse error, a shell that
+reads commands from input, a dynamic command name, a command binding, or an array index that can run a command.
+
+The reasons for the check:
+
+- The `--tools` list of `pi` names whole tools, so it cannot keep one command out of `bash`.
+- The guard extension must block too much, never too little. Bash can expand a word into a denied command that the guard
+  extension never sees.
+- Bash runs the first line of a `-c` string before it finds a syntax error in a later line. As a result, the guard
+  extension blocks the whole call for each parse error.
+- The guard extension knows the global options of `git` only. For another program, an option can stand between the two
+  words of an entry. So tasker refuses a two-word entry for another program.
+- Bash expands a word before a program reads it again, so the guard extension cannot know the text of a word with an
+  expansion.
+- A `-c` key can make git run a command line, for example `alias.*`, `include.path`, `help.autocorrect` and
+  `core.fsmonitor`. So each `-c` blocks the call. Word splitting of a value of `-C` can move the subcommand.
+- The check keeps no table of the options of each wrapper. As a result, an expansion in any later word of a wrapper
+  blocks the call.
+- The value of a parameter expansion or of a command substitution among the arguments of `find` can be an action.
+- An alias, the history of bash, `BASH_CMDS` and `BASH_ENV` can run a command under a name that the check does not see.
+- A test runs under bash each line that the check passes. It shows that bash runs no denied command for such a line.
+
+The known limits. The guard extension reads only the text of the call:
+
+- It does not read a file. So a script file and a file that `source` or `.` reads stay out of its reach.
+- It does not follow a program that is not on its lists, for example `python -c`, `node -e`, `make` or `npm run`.
+- It does not see a command line that git reads from a git configuration file, for example an alias, a hook or
+  `core.fsmonitor`. It also does not see the values of the variables `GIT_CONFIG_PARAMETERS`, `GIT_CONFIG_COUNT`,
+  `GIT_CONFIG_KEY_<n>` and `GIT_CONFIG_VALUE_<n>`.
+- It does not follow a string that bash runs as code at run time. Examples are a variable that an arithmetic expansion
+  reads (`x='a[$(cmd)]'; echo $((x))`), `PS4` with `set -x`, and the `@P` transform.
+- For the built-in `bash` tool of pi, it does not see the keys `shellPath` and `shellCommandPrefix` of the
+  `settings.json` of pi.
+- Layer 2 and layer 3 of the [push guard](version-control.md#push-guard) still hold for `git push`.
 
 ## The plan answer and the prompts
 
