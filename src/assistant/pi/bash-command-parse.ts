@@ -41,6 +41,7 @@ export interface BashCommand {
 
 export interface ParsedBashLine {
   commands: BashCommand[];
+  parseError?: BashParseError;
 }
 
 export { BashParseError };
@@ -73,166 +74,172 @@ export function parseBashCommand(source: string): ParsedBashLine {
     readsInput = false;
   };
 
-  for (let i = 0; i < tokens.length; i += 1) {
-    const token = tokens[i];
-    if (token === undefined) continue;
-    if (token.kind === "heredoc-body") {
-      finish(token.start);
-      if (!token.quoted && token.value.length > 0) addHereDocNested(commands.at(-1), token.value);
-      continue;
-    }
-    if (token.kind === "newline" || token.kind === "operator") {
-      const op = token.value;
-      if (token.kind === "newline") {
+  let parseError: BashParseError | undefined;
+  try {
+    for (let i = 0; i < tokens.length; i += 1) {
+      const token = tokens[i];
+      if (token === undefined) continue;
+      if (token.kind === "heredoc-body") {
         finish(token.start);
+        if (!token.quoted && token.value.length > 0) addHereDocNested(commands.at(-1), token.value);
         continue;
       }
-      if ([";;&", ";;", ";&"].includes(op)) {
-        finish(token.start);
-        if (inCase) inCasePattern = true;
-        continue;
-      }
-      if (op === "<<" || op === "<<-") {
-        readsInput = true;
-        const delimiter = tokens[i + 1];
-        if (delimiter?.kind !== "word") throw new BashParseError("missing here-document delimiter");
-        i += 1;
-        continue;
-      }
-      if (["<", ">", ">>", "<<<", "<> ", "<&", ">&", "&>", "&>>"].includes(op)) {
-        if (["<", "<<<", "<&"].includes(op)) readsInput = true;
-        const target = tokens[i + 1];
-        if (target?.kind !== "word") throw new BashParseError("missing redirection target");
-        target.word.redirectionTarget = true;
-        addWordNested(target.word);
-        words.push(target.word);
-        i += 1;
-        continue;
-      }
-      if (
-        op === "(" ||
-        op === "{" ||
-        op === ")" ||
-        op === "}" ||
-        op === ";" ||
-        op === "&" ||
-        op === "&&" ||
-        op === "||" ||
-        op === "|" ||
-        op === "|&"
-      ) {
-        if (op === ")" && inCase) {
-          words = [];
-          inCasePattern = false;
+      if (token.kind === "newline" || token.kind === "operator") {
+        const op = token.value;
+        if (token.kind === "newline") {
+          finish(token.start);
           continue;
         }
-        if (op === "(" && words.length === 1 && tokens[i + 1]?.kind === "operator" && tokens[i + 1]?.value === ")") {
-          words = [];
+        if ([";;&", ";;", ";&"].includes(op)) {
+          finish(token.start);
+          if (inCase) inCasePattern = true;
+          continue;
+        }
+        if (op === "<<" || op === "<<-") {
+          readsInput = true;
+          const delimiter = tokens[i + 1];
+          if (delimiter?.kind !== "word") throw new BashParseError("missing here-document delimiter");
           i += 1;
           continue;
         }
-        finish(token.start);
-        if (op === "|" || op === "|&") pipeline = true;
-        if (op === "(" || op === "{") compound.push(op);
-        if (op === ")" || op === "}") {
-          const expected = op === ")" ? "(" : "{";
-          if (compound.pop() !== expected) throw new BashParseError("unmatched compound command delimiter");
+        if (["<", ">", ">>", "<<<", "<> ", "<&", ">&", "&>", "&>>"].includes(op)) {
+          if (["<", "<<<", "<&"].includes(op)) readsInput = true;
+          const target = tokens[i + 1];
+          if (target?.kind !== "word") throw new BashParseError("missing redirection target");
+          target.word.redirectionTarget = true;
+          addWordNested(target.word);
+          words.push(target.word);
+          i += 1;
+          continue;
         }
-        continue;
+        if (
+          op === "(" ||
+          op === "{" ||
+          op === ")" ||
+          op === "}" ||
+          op === ";" ||
+          op === "&" ||
+          op === "&&" ||
+          op === "||" ||
+          op === "|" ||
+          op === "|&"
+        ) {
+          if (op === ")" && inCase) {
+            words = [];
+            inCasePattern = false;
+            continue;
+          }
+          if (op === "(" && words.length === 1 && tokens[i + 1]?.kind === "operator" && tokens[i + 1]?.value === ")") {
+            words = [];
+            i += 1;
+            continue;
+          }
+          finish(token.start);
+          if (op === "|" || op === "|&") pipeline = true;
+          if (op === "(" || op === "{") compound.push(op);
+          if (op === ")" || op === "}") {
+            const expected = op === ")" ? "(" : "{";
+            if (compound.pop() !== expected) throw new BashParseError("unmatched compound command delimiter");
+          }
+          continue;
+        }
       }
-    }
 
-    if (token.kind === "keyword") {
-      const value = token.value;
-      const top = compound.at(-1);
-      if (value === "then" && top !== "if:condition") throw new BashParseError("then without if");
-      if ((value === "elif" || value === "else") && top !== "if:body") {
-        throw new BashParseError(`${value} without if`);
-      }
-      if (value === "fi" && top !== "if:body" && top !== "if:condition") {
-        throw new BashParseError("fi without if");
-      }
-      if (value === "do" && top !== "loop:condition") throw new BashParseError("do without loop");
-      if (value === "done" && top !== "loop:body") throw new BashParseError("done without loop");
-      if (value === "esac" && top !== "case") throw new BashParseError("esac without case");
-      if (value === "time") skipTimeArgument = true;
-      if (value === "case") {
-        inCaseHeader = true;
-        inCase = true;
-        inCasePattern = true;
-      }
-      if (value === "for" || value === "select") skipForHeader = true;
-      if (value === "do") skipForHeader = false;
-      if (value === "function") functionCandidate = true;
-      if (
-        [
-          "then",
-          "do",
-          "elif",
-          "else",
-          "fi",
-          "done",
-          "in",
-          "esac",
-          "select",
-          "case",
-          "if",
-          "while",
-          "until",
-          "for",
-          "function",
-          "time",
-          "coproc",
-        ].includes(value)
-      ) {
-        if (value === "in" && inCaseHeader) {
-          deferWordsNested(words, deferredNested);
-          words = [];
+      if (token.kind === "keyword") {
+        const value = token.value;
+        const top = compound.at(-1);
+        if (value === "then" && top !== "if:condition") throw new BashParseError("then without if");
+        if ((value === "elif" || value === "else") && top !== "if:body") {
+          throw new BashParseError(`${value} without if`);
         }
-        finish(token.start);
-        if (value === "in" && inCaseHeader) {
-          inCaseHeader = false;
-          words = [];
+        if (value === "fi" && top !== "if:body" && top !== "if:condition") {
+          throw new BashParseError("fi without if");
+        }
+        if (value === "do" && top !== "loop:condition") throw new BashParseError("do without loop");
+        if (value === "done" && top !== "loop:body") throw new BashParseError("done without loop");
+        if (value === "esac" && top !== "case") throw new BashParseError("esac without case");
+        if (value === "time") skipTimeArgument = true;
+        if (value === "case") {
+          inCaseHeader = true;
+          inCase = true;
+          inCasePattern = true;
+        }
+        if (value === "for" || value === "select") skipForHeader = true;
+        if (value === "do") skipForHeader = false;
+        if (value === "function") functionCandidate = true;
+        if (
+          [
+            "then",
+            "do",
+            "elif",
+            "else",
+            "fi",
+            "done",
+            "in",
+            "esac",
+            "select",
+            "case",
+            "if",
+            "while",
+            "until",
+            "for",
+            "function",
+            "time",
+            "coproc",
+          ].includes(value)
+        ) {
+          if (value === "in" && inCaseHeader) {
+            deferWordsNested(words, deferredNested);
+            words = [];
+          }
+          finish(token.start);
+          if (value === "in" && inCaseHeader) {
+            inCaseHeader = false;
+            words = [];
+            continue;
+          }
+          if (value === "esac") inCase = false;
+          if (value === "in" && skipForHeader) {
+            words = [];
+            continue;
+          }
+          if (value === "if") compound.push("if:condition");
+          if (["while", "until", "for", "select"].includes(value)) compound.push("loop:condition");
+          if (value === "case") compound.push("case");
+          if (value === "then") compound[compound.length - 1] = "if:body";
+          if (value === "elif") compound[compound.length - 1] = "if:condition";
+          if (value === "else") compound[compound.length - 1] = "if:body";
+          if (value === "do") compound[compound.length - 1] = "loop:body";
+          if (["fi", "done", "esac"].includes(value)) compound.pop();
           continue;
         }
-        if (value === "esac") inCase = false;
-        if (value === "in" && skipForHeader) {
-          words = [];
+      }
+      if (token.kind === "word") {
+        if (skipTimeArgument && token.value === "-p") {
+          skipTimeArgument = false;
           continue;
         }
-        if (value === "if") compound.push("if:condition");
-        if (["while", "until", "for", "select"].includes(value)) compound.push("loop:condition");
-        if (value === "case") compound.push("case");
-        if (value === "then") compound[compound.length - 1] = "if:body";
-        if (value === "elif") compound[compound.length - 1] = "if:condition";
-        if (value === "else") compound[compound.length - 1] = "if:body";
-        if (value === "do") compound[compound.length - 1] = "loop:body";
-        if (["fi", "done", "esac"].includes(value)) compound.pop();
-        continue;
-      }
-    }
-    if (token.kind === "word") {
-      if (skipTimeArgument && token.value === "-p") {
         skipTimeArgument = false;
-        continue;
+        addWordNested(token.word);
+        if (skipForHeader || inCaseHeader || (inCase && inCasePattern)) {
+          deferredNested.push(...token.word.nested);
+          continue;
+        }
+        if (["[[", "]]", "((", "))"].includes(token.value)) continue;
+        if (functionCandidate) {
+          functionCandidate = false;
+          continue;
+        }
+        words.push(token.word);
       }
-      skipTimeArgument = false;
-      addWordNested(token.word);
-      if (skipForHeader || inCaseHeader || (inCase && inCasePattern)) {
-        deferredNested.push(...token.word.nested);
-        continue;
-      }
-      if (["[[", "]]", "((", "))"].includes(token.value)) continue;
-      if (functionCandidate) {
-        functionCandidate = false;
-        continue;
-      }
-      words.push(token.word);
     }
+    finish(source.length);
+    if (compound.length !== 0) throw new BashParseError("unclosed compound command");
+  } catch (error) {
+    if (!(error instanceof BashParseError)) throw error;
+    parseError = error;
   }
-  finish(source.length);
-  if (compound.length !== 0) throw new BashParseError("unclosed compound command");
-  return { commands };
+  return { commands, ...(parseError === undefined ? {} : { parseError }) };
 }
 
 export type { BashToken };

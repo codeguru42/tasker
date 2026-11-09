@@ -8,7 +8,6 @@ import {
   readerActions,
   READER_CAUSES,
   shellRead,
-  wrapperTarget,
 } from "./bash-command-readers.js";
 import { gitSubcommandIndex, scanGit } from "./bash-command-git.js";
 import { scanFind } from "./bash-command-find.js";
@@ -87,9 +86,8 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
   if (hasGitEntry(entries) && base === "git") {
     scanGit(words, commandIndex, {
       cause: (reason) => setFirstCause(result, reason),
-      scanText: (word, nested) => {
+      scanText: (word) => {
         if (word.expanded) setFirstCause(result, CAUSE.expansion);
-        else if (nested) scanReparsed(word.value, entries, result, depth);
         else scanReparsed(word.value, entries, result, depth);
       },
       scanWords: (commandWords) =>
@@ -247,8 +245,10 @@ function scanWrapper(
   const args = words.slice(commandIndex + 1);
   if (args.some((word) => word.expanded)) setFirstCause(result, CAUSE.expansion);
   scanReaderActions(base, args, entries, result, depth);
-  const target = wrapperTarget(base, args);
-  if (target.length > 0) scanCommand({ words: target, inputFromPipeline: false }, entries, result, depth);
+  for (let index = 0; index < args.length; index += 1) {
+    const suffix = args.slice(index);
+    scanCommand({ words: suffix, inputFromPipeline: false }, entries, result, depth);
+  }
 }
 
 function scanReparsed(code: string, entries: readonly string[], result: ScanResult, depth: number): void {
@@ -258,6 +258,7 @@ function scanReparsed(code: string, entries: readonly string[], result: ScanResu
     return;
   }
   const parsed = parseBashCommand(code);
+  if (parsed.parseError !== undefined) throw parsed.parseError;
   for (const command of parsed.commands) scanCommand(command, entries, result, nextDepth);
 }
 

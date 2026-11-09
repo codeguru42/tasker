@@ -6,8 +6,6 @@ import {
   HISTORY_BINDING_OPTIONS,
   SHELLS,
   SPECIAL_ASSIGNMENTS,
-  SET_BINDING_OPTIONS,
-  VALUE_OPTIONS,
   WRAPPERS,
 } from "./bash-command-tables.js";
 import type { BashWord } from "./bash-command-parse.js";
@@ -40,7 +38,7 @@ export function hasBindingEffect(base: string, args: BashWord[]): boolean {
   if (base === "set") {
     return args.some((word, index) => {
       const value = word.value;
-      if (SET_BINDING_OPTIONS.includes(value as (typeof SET_BINDING_OPTIONS)[number])) return true;
+      if (/^[-+][A-Za-z]*H[A-Za-z]*$/u.test(value)) return true;
       return (
         (value === "-o" || value === "+o") &&
         HISTORY_BINDING_OPTIONS.includes(args[index + 1]?.value as (typeof HISTORY_BINDING_OPTIONS)[number])
@@ -188,73 +186,6 @@ export function readerActions(base: string, args: BashWord[]): ReaderAction[] {
   return actions;
 }
 
-export function wrapperTarget(base: string, args: BashWord[]): BashWord[] {
-  let index = 0;
-  while (index < args.length) {
-    const value = args[index]?.value ?? "";
-    if (base === "env") {
-      if (value === "--") return args.slice(index + 1);
-      if (value === "-S" || value === "--split-string") return [];
-      if (value.startsWith("-")) index += valueOptions(base).includes(value) ? 2 : 1;
-      else if (isAssignment(value)) index += 1;
-      else break;
-      continue;
-    }
-    if (base === "flock" && ["-c", "--command"].includes(value)) return [];
-    if ((base === "su" || base === "script") && ["-c", "--command"].includes(value)) return [];
-    if (value === "--") return args.slice(index + 1);
-    if (value.startsWith("-") && valueOptions(base).includes(value)) {
-      index += 2;
-      continue;
-    }
-    if (
-      value.startsWith("-") &&
-      (base === "nohup" ||
-        base === "command" ||
-        base === "doas" ||
-        base === "setsid" ||
-        base === "exec" ||
-        base === "sudo" ||
-        base === "ionice" ||
-        base === "chrt" ||
-        base === "taskset" ||
-        base === "flock" ||
-        base === "stdbuf")
-    ) {
-      index += 1;
-      continue;
-    }
-    if (base === "nice" && value.startsWith("-")) {
-      index += 1;
-      continue;
-    }
-    if (base === "timeout" && /^\d/u.test(value)) {
-      index += 1;
-      continue;
-    }
-    if (base === "watch" && ["-n", "--interval", "-t", "--chgexit", "-p", "--precise"].includes(value)) {
-      index += ["-n", "--interval"].includes(value) ? 2 : 1;
-      continue;
-    }
-    if ((base === "chrt" || base === "taskset") && index === 0 && /^\d/u.test(value)) {
-      index += 1;
-      continue;
-    }
-    if (base === "flock" && index === 0) {
-      index += 1;
-      continue;
-    }
-    break;
-  }
-  return args.slice(index);
-}
-
-function valueOptions(base: string): readonly string[] {
-  return VALUE_OPTIONS[base] ?? [];
-}
-function isAssignment(value: string): boolean {
-  return /^[A-Za-z_][A-Za-z0-9_]*(?:\[.*\])?=/u.test(value);
-}
 export function isHiddenShellInput(value: string): boolean {
   if (!value) return false;
   const parts = value.split("/").filter((part) => part && part !== ".");

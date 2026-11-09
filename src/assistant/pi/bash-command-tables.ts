@@ -39,46 +39,7 @@ export const SPECIAL_ASSIGNMENTS = ["BASH_ENV", "ENV"] as const;
 export const ALIAS_READ_OPTIONS = ["-p"] as const;
 export const COMMAND_TEXT_ASSIGNMENTS = ["EDITOR", "VISUAL", "PAGER"] as const;
 export const BASH_INIT_FILE_OPTIONS = ["--rcfile", "--init-file"] as const;
-export const SET_BINDING_OPTIONS = ["-H", "+H", "-eH", "+eH"] as const;
 export const HISTORY_BINDING_OPTIONS = ["history", "histexpand"] as const;
-
-export const VALUE_OPTIONS: Record<string, readonly string[]> = {
-  env: ["-u", "--unset", "-C", "--chdir"],
-  nice: ["-n", "--adjustment"],
-  timeout: ["-k", "--kill-after", "-s", "--signal"],
-  watch: ["-n", "--interval", "-t", "--chgexit", "-p", "--precise"],
-  sudo: [
-    "-u",
-    "--user",
-    "-g",
-    "--group",
-    "-h",
-    "--host",
-    "-p",
-    "--prompt",
-    "-C",
-    "--close-from",
-    "-T",
-    "--command-timeout",
-    "-R",
-    "--chroot",
-    "-D",
-    "--chdir",
-    "-r",
-    "--role",
-    "-t",
-    "--type",
-  ],
-  doas: ["-u", "-C"],
-  setsid: ["-w", "--wait"],
-  ionice: ["-c", "-n", "-p"],
-  chrt: ["-p", "-r", "-f", "-o", "-i", "-d", "--pid"],
-  taskset: ["-c", "--cpu-list", "-p", "--pid"],
-  flock: ["-E", "-w", "--conflict-exit-code", "--timeout"],
-  stdbuf: ["-i", "-o", "-e"],
-  script: ["-c", "--command", "-t", "--timing", "-T", "--log-timing", "-O", "--log-out", "-I", "--log-in"],
-  su: ["-c", "--command", "-s", "--shell", "-g", "--group", "-G", "--supp-group", "-w", "--whitelist-environment"],
-};
 
 export const GIT_GLOBAL_OPTIONS = [
   {
@@ -96,7 +57,8 @@ export const GIT_GLOBAL_OPTIONS = [
     ],
     value: "required",
   },
-  { names: ["--exec-path", "--list-cmds"], value: "optional-attached" },
+  { names: ["--exec-path"], value: "optional-attached" },
+  { names: ["--list-cmds"], value: "attached-required" },
   {
     names: [
       "-p",
@@ -127,22 +89,21 @@ export const GIT_GLOBAL_OPTIONS = [
 export const GIT_CONFIG_EXEC_OPTIONS = ["-c", "--config", "--config-env"] as const;
 
 export const GIT_READERS = [
-  { command: "rebase", options: ["-x", "--exec"], mode: "shell", standalone: false },
-  { command: "bisect", options: ["run"], mode: "argv", standalone: true },
-  { command: "submodule", options: ["foreach"], mode: "shell", standalone: true },
-  { command: "difftool", options: ["-x", "--extcmd"], mode: "shell", standalone: false },
+  { command: "rebase", options: ["-x", "--exec"], standalone: false },
+  { command: "bisect", options: ["run"], standalone: true },
+  { command: "submodule", options: ["foreach"], standalone: true },
+  { command: "difftool", options: ["-x", "--extcmd"], standalone: false },
   {
     command: "filter-branch",
     options: ["--tree-filter", "--index-filter", "--commit-filter", "--msg-filter", "--env-filter", "--setup"],
-    mode: "shell",
     standalone: false,
   },
-  { command: "fetch", options: ["--upload-pack"], mode: "program", standalone: false },
-  { command: "pull", options: ["--upload-pack"], mode: "program", standalone: false },
-  { command: "ls-remote", options: ["--upload-pack"], mode: "program", standalone: false },
-  { command: "archive", options: ["--exec"], mode: "program", standalone: false },
-  { command: "clone", options: ["-u", "--upload-pack"], mode: "program", standalone: false },
-  { command: "grep", options: ["-O", "--open-files-in-pager"], mode: "program", standalone: false },
+  { command: "fetch", options: ["--upload-pack"], standalone: false },
+  { command: "pull", options: ["--upload-pack"], standalone: false },
+  { command: "ls-remote", options: ["--upload-pack"], standalone: false },
+  { command: "archive", options: ["--exec"], standalone: false },
+  { command: "clone", options: ["-u", "--upload-pack"], standalone: false },
+  { command: "grep", options: ["-O", "--open-files-in-pager"], standalone: false },
 ] as const;
 
 export const FIND_ACTIONS = ["-exec", "-execdir", "-ok", "-okdir"] as const;

@@ -7,7 +7,7 @@ const EXPANSION_CAUSE = "an expansion can change a command name or a word of a d
 
 export interface GitScanHooks {
   cause(reason: string): void;
-  scanText(value: BashWord, nested: boolean): void;
+  scanText(value: BashWord): void;
   scanWords(words: BashWord[]): void;
 }
 
@@ -20,6 +20,7 @@ export function gitSubcommandIndex(words: BashWord[], start: number): number {
     const rule = globalRule(value);
     if (rule === undefined) return index;
     if (rule.value === "required") index += isAttached(value, rule.names) ? 1 : 2;
+    else if (rule.value === "attached-required" && !isAttached(value, rule.names)) return index;
     else index += 1;
   }
   return index;
@@ -49,6 +50,10 @@ export function scanGit(words: BashWord[], commandIndex: number, hooks: GitScanH
       continue;
     }
     const attached = isAttached(value, rule.names);
+    if (rule.value === "attached-required" && !attached) {
+      hooks.cause(OPTION_CAUSE);
+      return;
+    }
     if (rule.value === "optional-attached" && !attached) {
       index += 1;
       continue;
@@ -80,7 +85,7 @@ export function scanGit(words: BashWord[], commandIndex: number, hooks: GitScanH
     let codeIndex = start + 1;
     if (words[start]?.value === "foreach" && words[codeIndex]?.value === "--recursive") codeIndex += 1;
     const code = words[codeIndex];
-    if (words[start]?.value === "foreach" && code !== undefined) hooks.scanText(code, true);
+    if (words[start]?.value === "foreach" && code !== undefined) hooks.scanText(code);
     return;
   }
 
@@ -93,7 +98,7 @@ export function scanGit(words: BashWord[], commandIndex: number, hooks: GitScanH
       ? syntheticWord(value.slice(option.length + (value[option.length] === "=" ? 1 : 0)))
       : words[at + 1];
     if (argument === undefined) continue;
-    hooks.scanText(argument, reader.mode === "shell");
+    hooks.scanText(argument);
   }
 }
 

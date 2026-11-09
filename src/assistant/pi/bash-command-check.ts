@@ -13,6 +13,7 @@ export function checkBashCommand(command: string, entries: readonly string[]): B
         return { block: true, reason: `tasker blocked this command: it runs "${entry}", which this run must not run.` };
       }
     }
+    if (parsed.parseError !== undefined) return { block: true, reason: reasonForCause(PARSE_CAUSE) };
     if (scanned.firstCause !== undefined) return { block: true, reason: reasonForCause(scanned.firstCause) };
     return { block: false };
   } catch (error) {
