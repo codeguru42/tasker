@@ -1,5 +1,4 @@
-import * as fs from "node:fs";
-import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { RunOutcome } from "../../../src/assistant/provider.js";
 import { useTempDir } from "../../helpers/temp.js";
@@ -10,6 +9,7 @@ interface StartTempResult {
     env: NodeJS.ProcessEnv,
     start: (tempFolder: string, markSpawned: () => void) => Promise<RunOutcome>,
     failure: (error: unknown) => Extract<RunOutcome, { kind: "failure" }>,
+    removeTempFolder?: (tempFolder: string) => void,
   ): Promise<RunOutcome>;
 }
 
@@ -50,13 +50,13 @@ function failure(error: unknown): Extract<RunOutcome, { kind: "failure" }> {
 describe("runWithStartTemp", () => {
   it("creates no folder when a refusal occurs before the helper runs", async () => {
     const root = useTempDir("tasker-pi-start-refused-");
-    const before = fs.readdirSync(root);
+    const before = readdirSync(root);
     const start = vi.fn();
 
     const refused = outcome("failure");
     expect(refused.kind).toBe("failure");
     expect(start).not.toHaveBeenCalled();
-    expect(fs.readdirSync(root)).toEqual(before);
+    expect(readdirSync(root)).toEqual(before);
   });
 
   it("creates a writable folder under TMPDIR for the callback", async () => {
@@ -133,14 +133,13 @@ describe("runWithStartTemp", () => {
     const result = await helper.runWithStartTemp(
       { TMPDIR: root },
       async (folder) => {
-        const error = Object.assign(new Error("secret path"), { code: "EACCES" });
-        vi.spyOn(fs, "rmSync").mockImplementationOnce(() => {
-          throw error;
-        });
         expect(existsSync(folder)).toBe(true);
         return failure(new Error("spawn failed"));
       },
       failure,
+      () => {
+        throw Object.assign(new Error("secret path"), { code: "EACCES" });
+      },
     );
 
     expect(result.kind).toBe("failure");
@@ -181,13 +180,13 @@ describe("runWithStartTemp", () => {
       const result = await helper.runWithStartTemp(
         { TMPDIR: root },
         async (folder, markSpawned) => {
-          vi.spyOn(fs, "rmSync").mockImplementationOnce(() => {
-            throw Object.assign(new Error("secret path"), { code: "EIO" });
-          });
           markSpawned();
           return outcome(kind);
         },
         failure,
+        () => {
+          throw Object.assign(new Error("secret path"), { code: "EIO" });
+        },
       );
 
       expect(result.kind).toBe(kind);
