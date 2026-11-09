@@ -618,12 +618,12 @@ describe("executeTask protected workspace recovery", () => {
     expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
   });
 
-  it("refuses an unknown starting revision before a model starts", async () => {
+  it("refuses an unknown turn result before checking its starting revision", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
     const beforeRevision = await branchHeadOf(fixture);
     startRecord(fixture, "d".repeat(40));
 
-    await expect(runExecute(fixture)).rejects.toThrow(/starting revision/);
+    await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
 
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("approved");
     expect(todoStates(fixture)).toEqual([["a", "not_started"]]);
@@ -666,22 +666,20 @@ describe("executeTask protected workspace recovery", () => {
         repoLockWaitMs: 1000,
       }),
     );
-    const second = await runExecute(fixture);
 
     expect(retried.next).toBe("execute");
-    expect(second.result).toEqual({ exitCode: 1 });
-    expect(second.io.err.join("")).toContain("protected workspace change refused");
+    await expect(runExecute(fixture)).rejects.toThrow(/protected workspace change refused/);
     expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(false);
     expect(protectedTurnOf(fixture)).toMatchObject({
       endingRevision: null,
       outcome: "failed",
       phase: "failed",
     });
-    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("approved");
     expect(fixture.claude.calls()).toHaveLength(1);
   });
 
-  it("refuses an interrupted request before resuming the recorded session", async () => {
+  it("refuses an interrupted request before a retry starts another assistant", async () => {
     const fixture = await useExecuteFixture(
       {
         turns: [
@@ -699,7 +697,7 @@ describe("executeTask protected workspace recovery", () => {
 
     await runExecute(fixture);
 
-    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("interrupted");
+    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
     expect(protectedTurnOf(fixture)).toMatchObject({
       startingRevision: beforeRevision,
       endingRevision: null,
@@ -707,27 +705,25 @@ describe("executeTask protected workspace recovery", () => {
       phase: "interrupted",
     });
     expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(false);
-    const resumed = await withDataRootStore(fixture.config.dataRoot, (store) =>
-      resumeTask(store, {
+    const retried = await withDataRootStore(fixture.config.dataRoot, (store) =>
+      retryTask(store, {
+        config: fixture.config,
         ref: taskRefOf(fixture.started),
         taskId: fixture.task.id,
-        config: fixture.config,
+        resumeExecute: false,
         env: fixture.env,
         repoLockWaitMs: 1000,
       }),
     );
-    const resumedRun = await runExecute(fixture);
+    await expect(runExecute(fixture)).rejects.toThrow(/protected workspace change refused/);
 
-    expect(resumed.next).toBe("execute");
-    expect(resumedRun.result).toEqual({ exitCode: 1 });
-    expect(resumedRun.io.err.join("")).toContain("protected workspace change refused");
+    expect(retried.next).toBe("execute");
     expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(false);
     expect(protectedTurnOf(fixture)).toMatchObject({
       endingRevision: null,
       outcome: "interrupted",
       phase: "interrupted",
     });
-    expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("failed");
     expect(fixture.claude.calls()).toHaveLength(1);
   });
 
@@ -746,7 +742,7 @@ describe("executeTask protected workspace recovery", () => {
 
     await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
     expect(await branchHeadOf(fixture)).toBe(afterRevision);
-    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+    expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(false);
     expect(protectedTurnOf(fixture)).toMatchObject({
       startingRevision: beforeRevision,
       endingRevision: null,
@@ -1038,10 +1034,8 @@ describe("executeTask protected workspace recovery", () => {
       store.completeProtectedExecuteTurn(fixture.task.id, 1, "todo:a");
     });
 
-    const { result, io } = await runExecute(fixture);
+    await expect(runExecute(fixture)).rejects.toThrow(/protected workspace change refused/);
 
-    expect(result).toEqual({ exitCode: 1 });
-    expect(io.err.join("")).toContain("protected workspace change refused");
     expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(false);
     expect(todoStates(fixture)).toEqual([["a", "in_progress"]]);
     expect(protectedTurnOf(fixture)).toMatchObject({
@@ -1071,7 +1065,7 @@ describe("executeTask protected workspace recovery", () => {
     );
     const beforeWorktree = existsSync(join(fixture.started.worktree, protectedSkillPath));
 
-    await expect(runExecute(fixture)).rejects.toThrow(/index/);
+    await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
 
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("approved");
     expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(beforeWorktree);
