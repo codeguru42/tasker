@@ -71,6 +71,35 @@ describe("useFakePi", () => {
     expect(unanswered).toEqual([["other"]]);
   });
 
+  it("uses wildcard answers in order across different argument lists", () => {
+    const fake = useFakePi([
+      { args: [], stdout: "first\n" },
+      { args: [], stdout: "second\n" },
+    ]);
+
+    const first = runPi(fake.env, ["first"]);
+    const second = runPi(fake.env, ["second", "argument"]);
+    const unanswered = fake.unanswered();
+    rmSync(`${fake.logPath}.unanswered`, { force: true });
+
+    expect([first.stdout, second.stdout]).toEqual(["first\n", "second\n"]);
+    expect([first.status, second.status]).toEqual([0, 0]);
+    expect(unanswered).toEqual([]);
+  });
+
+  it("matches nonempty answer arguments only exactly", () => {
+    const fake = useFakePi([{ args: ["exact", "arguments"], stdout: "matched\n" }]);
+
+    const matched = runPi(fake.env, ["exact", "arguments"]);
+    const unmatched = runPi(fake.env, ["exact"]);
+    const unanswered = fake.unanswered();
+    rmSync(`${fake.logPath}.unanswered`);
+
+    expect([matched.stdout, matched.status]).toEqual(["matched\n", 0]);
+    expect(unmatched.status).toBe(99);
+    expect(unanswered).toEqual([["exact"]]);
+  });
+
   it("waits for the configured delay", () => {
     const fake = useFakePi([{ args: ["slow"], stdout: "done", delaySeconds: 0.1 }]);
     const startedAt = Date.now();
