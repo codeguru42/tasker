@@ -170,7 +170,7 @@ const commandRows: CommandRow[] = [
   { command: "busybox $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
   { command: "stdbuf -o $MODE git status", result: "cause", cause: CAUSES.expansion },
   { command: "timeout 5 $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
-  { command: "grep -n '$(' file", result: "pass" },
+  { command: "grep -n '$(' file", result: "cause", cause: CAUSES.array },
   { command: "let 'x=a[$(git push)]'", result: "cause", cause: CAUSES.array },
   { command: "eval 'git push'", result: "match" },
   { command: "fish -C 'git push' x", result: "cause", cause: CAUSES.option },
@@ -190,6 +190,26 @@ const commandRows: CommandRow[] = [
   { command: "git -c user.name=x commit", result: "cause", cause: CAUSES.gitConfig },
   { command: "GIT_EDITOR='git push' git commit", result: "match" },
   { command: "git rebase -x 'git push' HEAD~1", result: "match" },
+  { command: "git --config-env a=B status", result: "cause", cause: CAUSES.gitConfig },
+  { command: "git rebase --exec='git push' HEAD", result: "match" },
+  { command: "git bisect run git push", result: "match" },
+  { command: "git submodule foreach 'git push'", result: "match" },
+  { command: "git difftool -x 'git push'", result: "match" },
+  { command: "git filter-branch --tree-filter 'git push' HEAD", result: "match" },
+  { command: "git fetch --upload-pack='git push' .", result: "match" },
+  { command: "git pull --upload-pack 'git push' .", result: "match" },
+  { command: "git ls-remote --upload-pack='git push' .", result: "match" },
+  { command: "git archive --exec='git push' HEAD", result: "match" },
+  { command: "find . -exec echo ok \\; -exec git push \\;", result: "match" },
+  { command: "find . -ok git push \\;", result: "match" },
+  { command: "find . -okdir git push \\;", result: "match" },
+  { command: "printf -v 'a[$(git push)]' x", result: "cause", cause: CAUSES.array },
+  { command: "read 'a[$(git push)]' < /dev/null", result: "cause", cause: CAUSES.array },
+  { command: "unset 'a[$(git push)]'", result: "cause", cause: CAUSES.array },
+  { command: "test -v 'a[$(git push)]'", result: "cause", cause: CAUSES.array },
+  { command: "git commit -m 'git push'", result: "pass", stub: "git" },
+  { command: "grep -rn 'git push' docs", result: "pass", stub: "grep" },
+  { command: "xargs --version", result: "pass", stub: "xargs" },
   { command: "env -i A=b git push", result: "match" },
   { command: "nice -n 5 timeout 9 git push", result: "match" },
   { command: "echo git push | xargs env", result: "cause", cause: CAUSES.xargs },
@@ -258,6 +278,7 @@ function runPassingCommand(command: string): string {
     "busybox",
     "su",
     "script",
+    "xargs",
   ]) {
     const path = join(bin, name);
     writeFileSync(path, `#!/bin/sh\nprintf '%s %s\\n' '${name}' "$*" >> "$TASKER_BASH_STUB_LOG"\n`);
@@ -275,8 +296,8 @@ function runPassingCommand(command: string): string {
   });
   expect(result.error).toBeUndefined();
   const records = readFileSync(log, "utf8");
-  expect(records).not.toMatch(/(?:^|\s)git push(?:\s|$)/);
-  expect(records).not.toMatch(/(?:^|\s)herdr(?:\s|$)/);
+  expect(records).not.toMatch(/^git push(?:\s|$)/mu);
+  expect(records).not.toMatch(/^herdr(?:\s|$)/mu);
   return records;
 }
 
