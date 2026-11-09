@@ -38,6 +38,7 @@ This page uses these terms for the questions of an item that needs an answer:
   - A choice of the earlier-blocker offer in [Pick the tickets](pick-the-tickets.md#pick-the-tickets): the orchestrator
     runs a blocker of an earlier milestone only on the word of the user.
   - A choice of the state `awaiting_quota_approval` in [Quota](quota.md#quota).
+  - A choice of the item of a stop of [the pi wait](quota.md#the-pi-wait): the resume of a task or another step.
   - A choice of a hold of [the hold rule](land-the-work.md#the-hold-rule) that stays until the user decides.
   - A choice of the bullet "Only the user changes a landing order of the overlap rule" of
     [Land the work](land-the-work.md#land-the-work), with its relay confirm.
