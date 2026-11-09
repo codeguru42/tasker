@@ -1,4 +1,5 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { onTestFinished } from "vitest";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
@@ -312,6 +313,37 @@ export async function commitInWorktree(
   worktreeCommitCount += 1;
   const message = change.message ?? `worktree commit ${worktreeCommitCount}`;
   return writeAndCommit(worktree, env, target, change.content ?? message, message, []);
+}
+
+// Builds a commit from index entries without changing the worktree files. It models an assistant that
+// records a protected request in Git for tasker to materialize later.
+export function commitIndexChanges(
+  worktree: string,
+  taskRef: string,
+  env: NodeJS.ProcessEnv,
+  changes: readonly { path: string; content: string | null; mode?: "100644" | "100755" | "120000" }[],
+): { beforeRevision: string; afterRevision: string } {
+  const git = (args: string[], input?: string) =>
+    execFileSync("git", args, {
+      cwd: worktree,
+      env,
+      encoding: "utf8",
+      input,
+      stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
+    }).trim();
+  const beforeRevision = git(["rev-parse", "HEAD"]);
+  for (const change of changes) {
+    if (change.content === null) {
+      git(["update-index", "--force-remove", "--", change.path]);
+    } else {
+      const object = git(["hash-object", "-w", "--stdin"], change.content);
+      git(["update-index", "--add", "--cacheinfo", `${change.mode ?? "100644"},${object},${change.path}`]);
+    }
+  }
+  const tree = git(["write-tree"]);
+  const afterRevision = git(["commit-tree", tree, "-p", beforeRevision, "-m", "protected skill request"]);
+  git(["update-ref", `refs/heads/${taskRef}`, afterRevision, beforeRevision]);
+  return { beforeRevision, afterRevision };
 }
 
 // Changes only the message of the head commit of the worktree and returns the new head.

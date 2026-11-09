@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { BaseBranchMemory } from "../../../src/vcs/provider.js";
@@ -25,6 +25,7 @@ import { worktreeState } from "../../../src/vcs/git/reconcile.js";
 import { ReconcileConflictError } from "../../../src/vcs/errors.js";
 import { gitDoctorChecks } from "../../../src/vcs/git/doctor.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
+import { materializeProtectedWorkspaceChanges } from "../../../src/vcs/git/protected-skills.js";
 import { remoteTip } from "../../../src/vcs/git/remote-tip.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
 import { runGit } from "../../../src/vcs/git/run.js";
@@ -37,6 +38,7 @@ import {
 } from "../../../src/vcs/git/worktree.js";
 import {
   commitInWorktree,
+  commitIndexChanges,
   copyCloneBranchToOrigin,
   gitOutput,
   localBranches,
@@ -101,6 +103,57 @@ describe("createGitProvider", () => {
   describe("localCopyPath", () => {
     it("gives the clone path like repoPaths", () => {
       expect(provider().localCopyPath(fixture.context)).toBe(paths().clone);
+    });
+  });
+
+  describe("materializeProtectedWorkspaceChanges", () => {
+    it("matches the direct Git operation and materializes the same request", async () => {
+      const git = provider();
+      await git.provision(fixture.context);
+      const directWork = await git.createWorkspace(fixture.context, {
+        shortRef: "issue-790-direct",
+        title: "Protected skills",
+        baseRevision: base,
+      });
+      const providerWork = await git.createWorkspace(fixture.context, {
+        shortRef: "issue-790-provider",
+        title: "Protected skills",
+        baseRevision: base,
+      });
+      const directRevision = commitIndexChanges(directWork.path, directWork.taskRef, fixture.context.env, [
+        { path: ".agents/skills/provider-test.md", content: "same request\n" },
+        { path: ".codex/skills", content: "../.agents/skills", mode: "120000" },
+      ]);
+      const providerRevision = commitIndexChanges(providerWork.path, providerWork.taskRef, fixture.context.env, [
+        { path: ".agents/skills/provider-test.md", content: "same request\n" },
+        { path: ".codex/skills", content: "../.agents/skills", mode: "120000" },
+      ]);
+      const clone = paths().clone;
+
+      await materializeProtectedWorkspaceChanges({
+        clone,
+        env: fixture.context.env,
+        path: directWork.path,
+        taskRef: directWork.taskRef,
+        ...directRevision,
+        deniedPaths: [],
+      });
+      await git.materializeProtectedWorkspaceChanges(fixture.context, {
+        path: providerWork.path,
+        taskRef: providerWork.taskRef,
+        ...providerRevision,
+        deniedPaths: [],
+      });
+
+      expect(readFileSync(join(directWork.path, ".agents/skills/provider-test.md"), "utf8")).toBe(
+        readFileSync(join(providerWork.path, ".agents/skills/provider-test.md"), "utf8"),
+      );
+      expect(readlinkSync(join(directWork.path, ".codex/skills"))).toBe(
+        readlinkSync(join(providerWork.path, ".codex/skills")),
+      );
+      expect(await gitOutput({ cwd: directWork.path }, fixture.context.env, "status", "--porcelain")).toBe(
+        await gitOutput({ cwd: providerWork.path }, fixture.context.env, "status", "--porcelain"),
+      );
     });
   });
 
