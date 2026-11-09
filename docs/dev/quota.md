@@ -9,6 +9,9 @@ orchestrator and all the task subagents also have no tokens. No session can act 
 the orchestrator must plan the resume before the quota runs out. The orchestrator does this with up to two cron jobs for
 each task subagent: a five-hour job and a seven-day job.
 
+A `pi` task in `quota_blocked` does not stop the orchestrator and the task subagents. A pi stop can give its ticket a
+third job, the pi job. [A pi stop](#a-pi-stop) and [The pi wait](#the-pi-wait) give its steps.
+
 ### Terms
 
 - The reset time is the time when the quota of the account becomes available again. The quota resets at the exact reset
@@ -91,8 +94,8 @@ of the task subagent for that reset. The delays prevent a resume of all the task
 - If the reset time is not a full minute, the orchestrator must round the job time up to the next full minute.
 - When the orchestrator starts a task subagent, the orchestrator must give the task subagent the free slot with the
   lowest number.
-- When the orchestrator schedules a job for a task subagent, a five-hour job or a seven-day job, the task subagent keeps
-  the same slot.
+- When the orchestrator schedules a job for a task subagent, the task subagent keeps the same slot. This holds for a
+  five-hour job, a seven-day job and a [pi job](#a-pi-stop).
 - The task subagent keeps its slot until the orchestrator frees it, as "Delete the job" says. Then the next task
   subagent that starts takes the slot.
 
@@ -110,18 +113,30 @@ of the task subagent for that reset. The delays prevent a resume of all the task
    task subagent that it has a job.
 
 - The future-time rule: right before each CronCreate, the orchestrator reads the current time with `date`. The rule
-  covers each schedule of a five-hour job or a seven-day job (each job is a one-shot job). The seven places are step 2
-  of this section, [the schedule-all rule](#when-there-is-no-reset-time-yet), [the seven-day rule](#the-seven-day-rule),
-  [the earlier-reset rule](#when-there-is-no-reset-time-yet), [the interrupted rule](#when-there-is-no-reset-time-yet),
-  the case of [When the job fires](#when-the-job-fires) for a task in `quota_blocked` whose `resets at:` time is in the
-  future, and [The next job](#the-next-job). If the job time is later than the current time, the orchestrator schedules
-  the job. If the job time is not later than the current time, the orchestrator schedules no job. Instead, it does the
-  step that read the reset time again, one time: a new `tasker show-quota`, and [Terms](#terms) for the new reading. In
-  the second run, each job time that is not later than the current time means "no reset time yet" for that five-hour
-  job, or "no seven-day reset time yet" for that seven-day job. The step has no third run. The rules of that case apply,
-  as each place says. The rule acts on one job at a time. The other jobs of the step that have a job time in the future
-  get their job. If the second `tasker show-quota` fails, [the failure rule](limits.md#the-failure-rule) applies, and
-  the orchestrator schedules no further job of that step.
+  covers each schedule of a five-hour job, a seven-day job or a [pi job](#a-pi-stop) (each job is a one-shot job). The
+  nine places are these:
+
+  - Step 2 of this section.
+  - [The schedule-all rule](#when-there-is-no-reset-time-yet).
+  - [The seven-day rule](#the-seven-day-rule).
+  - [The earlier-reset rule](#when-there-is-no-reset-time-yet).
+  - [The interrupted rule](#when-there-is-no-reset-time-yet).
+  - The case of [When the job fires](#when-the-job-fires) for a task in `quota_blocked` whose `resets at:` time is in
+    the future.
+  - The case of a pi stop in [When the job fires](#when-the-job-fires).
+  - [A pi stop](#a-pi-stop).
+  - [The next job](#the-next-job).
+
+  If the job time is later than the current time, the orchestrator schedules the job. If the job time is not later than
+  the current time, the orchestrator schedules no job. Instead, it does the step that read the reset time again, one
+  time: a new `tasker show-quota`, and [Terms](#terms) for the new reading. In the second run, each job time that is not
+  later than the current time means "no reset time yet" for that five-hour job, or "no seven-day reset time yet" for
+  that seven-day job. The step has no third run. The rules of that case apply, as each place says.
+
+  The rule acts on one job at a time. The other jobs of the step that have a job time in the future get their job. If
+  the second `tasker show-quota` fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator
+  schedules no further job of that step.
+
 - The step that read the reset time is one of three. The first is step 1 of this section, with steps 2 to 4. The second
   is the read of [The next job](#the-next-job) and the schedules after it, not the resume rule and not the CronDelete
   paragraph before it. The third is a read of [When there is no reset time yet](#when-there-is-no-reset-time-yet) after
@@ -129,18 +144,23 @@ of the task subagent for that reset. The delays prevent a resume of all the task
   made. Steps 3 and 4 run one time, after the last run of the step. Each job of the second run keeps the result that the
   future-time rule gives. A five-hour job gets "no reset time yet", and a seven-day job gets "no seven-day reset time
   yet". Then steps 3 and 4 test the job that the task subagent has at that time.
-- Four places have their own order. The `resets at:` case reads no reset time with `tasker show-quota`, so it has no
+- Six places have their own order. The `resets at:` case reads no reset time with `tasker show-quota`, so it has no
   second run. Instead, a job time that is not later than the current time means that the stop has already reset, as that
   case says. The earlier-reset rule takes its job time from the `resets at:` line, so it has no second run. A job time
   that is not later than the current time means that the stop has already reset, as that rule says. The interrupted rule
   takes its reset time from the `date` read of the future-time rule, so it has no second run. In the replace path of the
   seven-day rule, the check runs before the CronDelete of the old job, as that rule says.
+
+  [A pi stop](#a-pi-stop) and the case of a pi stop in [When the job fires](#when-the-job-fires) schedule the pi job. If
+  the job time of a pi job is not later than the current time, the stop counts as a full stop, as A pi stop says. So a
+  pi job has no second run.
+
 - The reason for this rule: on 2026-10-24 at 18:01:22, the orchestrator scheduled the five-hour job of #416 for 18:01,
   and the job did not fire (#431).
 - When the orchestrator schedules a job, the prompt of the job must name the issue and the task subagent. The prompt
   must tell the orchestrator to do the steps of "When the job fires".
-- The orchestrator must keep the id of each job of a ticket. A ticket has at most one five-hour job and one seven-day
-  job.
+- The orchestrator must keep the id of each job of a ticket. A ticket has at most one five-hour job, one seven-day job
+  and one [pi job](#a-pi-stop).
 - For a seven-day job, the orchestrator must keep the seven-day reset time of the job with its id.
 - Each id, and the time stored with it, lives until its one-shot job fires or until CronDelete deletes it. A one-shot
   job deletes itself when it fires. After that, the ticket has no job of that kind.
@@ -202,15 +222,21 @@ The rule has three failure cases:
   message to the task subagent does not end this. The rule also leaves out a task subagent whose slot the orchestrator
   freed, as [Delete the job](#delete-the-job) says, until the orchestrator starts it again, as "Schedule a job when a
   task subagent starts" says.
+
+  The rule also leaves out the task subagent of a task of a full stop in [the pi wait](#the-pi-wait). The resume message
+  of that task ends each leave-out of this bullet for its task subagent. This applies from the start of
+  [The next job](#the-next-job), as for a case of "When the job fires" that schedules the next job. This wins over the
+  sentence "A message to the task subagent does not end this." of this bullet.
+
 - When the orchestrator schedules the job of a task subagent that had no job, the orchestrator tells the task subagent
   that it has a job. If the task subagent gets this message, the task subagent stops the run-start reports. The task
   subagent keeps the run-end reports. With no five-hour window, the seven-day rule can give a job to a task subagent
   with no job. Then the orchestrator also tells the task subagent that it has a job.
 - The earlier-reset rule applies to each run-end report of a task in `quota_blocked`, while the seven-day job of its
-  task subagent counts as the job. The report can be the final answer that ends the turn of the task subagent. The
-  orchestrator runs `tasker show-quota` and `tasker show <issue>`, in this order. If another rule of this section
-  already read `tasker show-quota` for this report, the orchestrator uses that read. Then exactly one of these cases
-  applies:
+  task subagent counts as the job. It does not apply to the report of a [pi stop](#a-pi-stop). The report can be the
+  final answer that ends the turn of the task subagent. The orchestrator runs `tasker show-quota` and
+  `tasker show <issue>`, in this order. If another rule of this section already read `tasker show-quota` for this
+  report, the orchestrator uses that read. Then exactly one of these cases applies:
   - If the case changed to a five-hour window, the bullet below that starts "A read can change" applies.
   - If the `resets at:` time is earlier than the seven-day reset time stored with the job id, the orchestrator schedules
     a five-hour job. The job time comes from that `resets at:` time and the delay of the task subagent. If the ticket
@@ -257,9 +283,9 @@ stop of the seven-day window. No session has tokens then, so the job does not fi
 the seven-day job, and send a second resume message. If CronList or CronDelete fails,
 [the failure rule](limits.md#the-failure-rule) applies. Then the orchestrator does the steps of this section.
 
-When a job of a ticket fires, a five-hour job or a seven-day job, the orchestrator runs `tasker status --issue <issue>`
-and `tasker show <issue>`. Apart from the CronList step of the paragraph above, the steps are the same for both jobs.
-Then exactly one of these cases applies:
+When a job of a ticket fires, a five-hour job, a seven-day job or a [pi job](#a-pi-stop), the orchestrator runs
+`tasker status --issue <issue>` and `tasker show <issue>`. Apart from the CronList step of the paragraph above, the
+steps are the same for each kind of job. Then exactly one of these cases applies:
 
 - If the task is in `quota_blocked` and the `resets at:` line is missing or in the past, the orchestrator sends the task
   subagent a resume message with SendMessage. Then the orchestrator schedules the next job, as
@@ -278,6 +304,17 @@ Then exactly one of these cases applies:
   replace. The seven-day job of the ticket for that `resets at:` time counts as the job that this case schedules, also
   when the orchestrator keeps an existing job. As a result, this case never leaves the task subagent out of
   [the schedule-all rule](#when-there-is-no-reset-time-yet). The task stays in `quota_blocked`.
+- If the task is in `quota_blocked` and the stop is a [pi stop](#a-pi-stop), this case wins over the first two cases of
+  this list. If the list of [the pi wait](#the-pi-wait) does not hold the task, the orchestrator first does the steps of
+  A pi stop. If the task waits in a full stop, the orchestrator does not resume the task subagent and schedules no new
+  job.
+
+  If the task waits in a timed stop, the orchestrator reads the current time with `date`. If the `resets at:` time is
+  not later than that time, the orchestrator does the steps of the first case. In each other case, the orchestrator does
+  not resume the task subagent, and it schedules the pi job, as A pi stop says. The pi job of the ticket counts as the
+  job that this case schedules, also when the orchestrator keeps an existing pi job. As a result, this case never leaves
+  the task subagent out of [the schedule-all rule](#when-there-is-no-reset-time-yet).
+
 - If the task is in `interrupted`, the orchestrator sends the task subagent a resume message, as in the first case of
   "When the job fires". Then the orchestrator schedules the next job, as [The next job](#the-next-job) says. The task
   stays in `interrupted` until the task subagent runs `tasker resume`.
@@ -309,9 +346,17 @@ waits for the orchestrator after a stop, a question or a request for the next st
 answer or the next step. The reason: the quota can end the session of the task subagent between two `tasker` commands,
 and then no other case resumes the task subagent.
 
-A resume message can come from the first case, the hand-over of the `resets at:` case to the steps of the first case,
-the interrupted case, the earlier-reset rule or the resume rule. After each one, the orchestrator deletes with
-CronDelete each other job of the ticket that has not fired. After the delete, the ticket has no job of that kind, as
+A resume message can come from one of these places:
+
+- The first case.
+- The hand-over of the `resets at:` case to the steps of the first case.
+- The interrupted case.
+- The earlier-reset rule.
+- The resume rule.
+- The resume of a task of [the pi wait](#the-pi-wait).
+
+After each one, the orchestrator deletes with CronDelete each other job of the ticket that has not fired. After the
+delete, the ticket has no job of that kind, as
 [Schedule a job when a task subagent starts](#schedule-a-job-when-a-task-subagent-starts) says for a deleted id. The
 reason: after a resume message, this section schedules the next job, so an older job of the ticket sends only a second
 resume message. Review 1 of #249 found that a late five-hour job can resume the task subagent before the seven-day job,
@@ -342,6 +387,102 @@ not tell the task subagent that it has no job.
   `tasker approve-credits`. The task subagent [stops](limits.md#the-answer-wait-rule).
 - If the task is in a different state, the task subagent does not run `tasker resume`. The task subagent continues from
   that state.
+
+### A pi stop
+
+A pi stop is a stop of a task in `quota_blocked` with the cause `rate_limit`, in a repo whose `assistant.provider` is
+`pi`. The `pi` provider gives this stop at an HTTP 402 answer of the upstream. The upstream is the model service that pi
+calls, for example `openrouter`. A 402 means that the account of the upstream has no budget left. A pi stop does not use
+up the quota of Claude Code, so the orchestrator still has tokens.
+
+To find a pi stop, the orchestrator reads the `repo:`, `cause:` and `resets at:` lines of `tasker show <issue>`. Then it
+reads the provider of that repo:
+
+```bash
+tasker show-config --repo <repo> | jq -r '.assistant.provider'
+```
+
+Each rule of this page that names a pi stop uses this test. If a read of the test fails,
+[the failure rule](limits.md#the-failure-rule) applies, and the orchestrator goes on as for a full stop. The test reads
+the provider of the configuration, not the provider of the stopped run. If the user changed `assistant.provider` after
+the start of the session of the run, the two can differ, because a continued session keeps its provider.
+
+A pi stop has one of two kinds. At the report, right after the test, the orchestrator reads the current time with
+`date`. A timed stop is a pi stop whose `resets at:` time is later than that time. A full stop is each other pi stop,
+for example a stop whose `resets at:` line prints `-`. A `resets at:` time in the past gives a full stop, because a
+resume at once can get the same 402 again.
+
+The orchestrator does the test at each run-end report of a task in `quota_blocked`, before each other rule of this page
+for that report. The report can be the final answer that ends the turn of the task subagent. Each other rule of this
+page for this report uses the `tasker show <issue>` read of the test. If the stop is a pi stop, the orchestrator sends
+no resume message for the report. The task joins [the pi wait](#the-pi-wait). Each job of the ticket that has not fired
+stays.
+
+At a timed stop, the orchestrator schedules the pi job of the ticket. The pi job is a one-shot job for the job time of
+the `resets at:` time, with the delay and the rounding of
+[The delay of each task subagent](#the-delay-of-each-task-subagent). The
+[future-time rule](#schedule-a-job-when-a-task-subagent-starts) applies right before the CronCreate. If the job time is
+not later than the `date` read of that rule, the orchestrator schedules no pi job. Then the stop counts as a full stop.
+
+If the ticket has a pi job that has not fired, the orchestrator schedules no second one. The prompt of the job names the
+issue, the task subagent and the words "pi job". It tells the orchestrator to do the steps of
+[When the job fires](#when-the-job-fires).
+
+At a full stop, the orchestrator schedules no job. The task stays in `quota_blocked` until the word of the user, as
+[The pi wait](#the-pi-wait) says.
+
+The resume message of a task of the pi wait is the resume message of the first case of "When the job fires". If the task
+is not in `quota_blocked` any more, the orchestrator still sends it, for example after the user ran `tasker resume`. The
+task subagent then does the steps of [What the task subagent does](#what-the-task-subagent-does). Then the orchestrator
+schedules the next job, as [The next job](#the-next-job) says. If the resumed run stops in a pi stop again, the task
+joins the pi wait again.
+
+### The pi wait
+
+The pi wait is the pause of the new `pi` tickets after a pi stop. It lasts while at least one task waits in it. A task
+waits from the report of its [pi stop](#a-pi-stop) until its resume message or another step of the user. While the pi
+wait lasts, the orchestrator starts no new ticket of a repo whose `assistant.provider` is `pi`, as
+[Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The tasks in flight of each repo continue. The tickets of
+each other repo start as the other rules say.
+
+The orchestrator keeps the list of the pi wait in its session. For each waiting task, the list holds the issue key, the
+kind of the stop and the `resets at:` time. While its task waits, the task subagent keeps its slot until the
+orchestrator frees it, as [The delay of each task subagent](#the-delay-of-each-task-subagent) says.
+
+A task of a timed stop leaves the pi wait at its resume message from the case of a pi stop in
+[When the job fires](#when-the-job-fires). A task of a full stop leaves the pi wait on
+[the word of the user](operator-conversations.md#the-word-of-the-user). The word of the user can also end the pi wait of
+a task of a timed stop before its reset. A task also leaves the pi wait in each case of
+[Delete the job](#delete-the-job). After the last task leaves the pi wait, the pi wait ends. Then the orchestrator does
+the steps of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) again.
+
+At each stop of the pi wait, the orchestrator sends a new item, the item of the stop. The item names each waiting task.
+A full stop gives the item one question, for its own task. A timed stop gives the item no question, so the item is a
+report with the mark "Report:" of [The form of an item](operator-items.md#the-form-of-an-item). Each earlier item keeps
+its open questions.
+
+For each waiting task, the item names the issue key and the `paused from:` and `resets at:` values. It also names the
+upstreams of the repo of that task. The orchestrator reads the upstreams with this command:
+
+```bash
+tasker show-config --repo <repo> | jq -r '[.assistant.models[].model | split("/")[0]] | unique | join(", ")'
+```
+
+The upstream of a model is the part of the model before the first `/`. If a read of the test or of the upstreams failed,
+the item also names the failed read.
+
+For a full stop, the question gives the user two steps. In the first step, the user adds credits to the account of each
+upstream of the repo of the task. If the account has a limit that resets at a set time, the user can wait for that reset
+instead. In the second step, the user runs `tasker resume <key>` and answers after that run ends. The choices are (a)
+resume and (b) another step. For a timed stop, the item says that the task resumes at its reset with no answer.
+
+An answer of the user to the question of a task has one of these outcomes:
+
+- Resume: the orchestrator sends the resume message, as [A pi stop](#a-pi-stop) says. The task leaves the pi wait.
+- Another step, for example a defer: the rule of that step applies, for example
+  [the defer rule](pick-the-tickets.md#the-defer-rule) with its delete of the jobs. The task leaves the pi wait.
+- Words that pick no choice: the question stays open, as [The answer](operator-items.md#the-answer) says. The task stays
+  in the pi wait.
 
 ### Delete the job
 
