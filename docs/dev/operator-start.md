@@ -57,8 +57,9 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    "From the user:" and says that the initial planning ends. Then the operator waits for the message of the initial
    planner that the initial planning is done. This message ends the wait. While it waits, the operator continues its
    other work. It does not wait in a loop, as [the answer-wait rule](limits.md#the-answer-wait-rule) says for a task
-   subagent. If the send fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says. The
-   tab of the initial planner stays open, and the operator still waits for the message of the initial planner.
+   subagent. If the send fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says.
+   Then the operator asks the user to tell the initial planner in its tab that the initial planning ends. The tab of the
+   initial planner stays open, and the operator still waits for the message of the initial planner.
 6. The message of the initial planner is the one signal that ends the initial planning. The operator does this step only
    after this message. The word of the user to the initial planner in step 5 is the request of the user for this stop.
    Then the operator closes the tab of the initial planner, as "Stop a session" says.
