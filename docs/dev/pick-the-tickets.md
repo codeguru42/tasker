@@ -85,6 +85,15 @@ The orchestrator does all the steps of this section.
   [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins, for example the ban of
   [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
 - Run at most 3 task subagents at the same time, one ticket for each task subagent.
+- The pi gate: while [the pi wait](quota.md#the-pi-wait) lasts, start no task subagent for a ticket of a repo whose
+  `assistant.provider` is `pi`. A new session for a task of the pi wait is not held back. Read the provider of the repo
+  with the command of the test of [A pi stop](quota.md#a-pi-stop). If the read fails,
+  [the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start at that moment.
+
+  The gate wins over each bullet and rule of this page that starts a ticket. These are the earlier-blocker offer, the
+  priority rule, the bullet of a live security gap, the stacking rule, the parent-hold rule and the link offer. For a
+  ticket that the gate holds back, send no hold of [the parent-hold rule](#the-parent-hold-rule) and make no offer.
+
 - A ticket that closes a live security gap goes first. A live security gap is a
   [security gap](review-findings.md#review-findings) that exists now on `origin/main` or on the machine. Whether a gap
   is live is a judgment. The judgment is open on purpose, and the session that orders the tickets makes it.
