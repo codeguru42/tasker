@@ -140,7 +140,7 @@ describe("parseBashCommand", () => {
   it.each(["then git status", "do git status", "done", "fi", "esac", "}"])(
     "rejects closing word without its matching open construct: %s",
     (source) => {
-      expect(() => parseBashCommand(source)).toThrow();
+      expect("parseError" in parseBashCommand(source)).toBe(true);
     },
   );
 
@@ -175,6 +175,12 @@ describe("parseBashCommand", () => {
   });
 
   it("rejects malformed command input", () => {
-    expect(() => parseBashCommand("echo ok; )")).toThrow();
+    expect("parseError" in parseBashCommand("echo ok; )")).toBe(true);
+  });
+
+  it("returns completed commands with a later parse error", () => {
+    const parsed = parseBashCommand("git push; )");
+    expect(parsed.commands.map((command) => command.words.map((word) => word.value))).toEqual([["git", "push"]]);
+    expect("parseError" in parsed).toBe(true);
   });
 });
