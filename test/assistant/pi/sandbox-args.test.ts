@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
@@ -164,7 +164,9 @@ describe("sandboxArgs", () => {
 
   it.each(["ENOENT", "ENOTDIR"])("omits a hide target on %s", async (code) => {
     const { worktree, sandbox } = setup();
-    sandbox.hidePaths = [code === "ENOENT" ? "/missing/tasker-hide" : join(worktree, ".git", "child")];
+    const notDirectory = join(worktree, "not-directory");
+    if (code === "ENOTDIR") writeFileSync(notDirectory, "file");
+    sandbox.hidePaths = [code === "ENOENT" ? "/missing/tasker-hide" : join(notDirectory, "child")];
 
     const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
 
@@ -239,6 +241,7 @@ describe("sandboxArgs", () => {
     await new Promise<void>((done) => server.close(() => done()));
     const next = createServer();
     await new Promise<void>((done) => next.listen(second, done));
+    rmSync(link);
     symlinkSync(second, link);
     const changed = await argsFor({ sandbox, cwd: worktree, command: "true", env });
     await new Promise<void>((done) => next.close(() => done()));
@@ -294,7 +297,7 @@ describe("sandboxArgs", () => {
   });
 
   it("does not mount an unset or blank optional hide source", async () => {
-    const { worktree, sandbox } = setup();
+    const { root, worktree, sandbox } = setup();
     const args = await argsFor({
       sandbox,
       cwd: worktree,
@@ -309,7 +312,8 @@ describe("sandboxArgs", () => {
     });
 
     expect(args).not.toContain("--tmpfs");
-    expect(args).not.toContain("--ro-bind");
-    expect(args).not.toContain("/var/run/docker.sock");
+    expect(args).not.toContain(join(root, "agent.sock"));
+    expect(args).not.toContain(join(root, "dbus.sock"));
+    expect(args).not.toContain(join(root, "runtime"));
   });
 });
