@@ -6,7 +6,8 @@ import { answerChecks, writeFakeCommand } from "./fake-commands.js";
 import { shellQuote } from "../../src/shell-quote.js";
 import { useTempDir } from "./temp.js";
 
-// Matching calls use their scripts in order, then keep using the last matching script. An answer with `args: []` matches every call.
+// Matching calls use their scripts in order, then keep using the last matching script.
+// An answer with `args: []` matches every call.
 export interface FakePiAnswer extends FakeAnswer {
   stream?: unknown[];
   session?: unknown[];

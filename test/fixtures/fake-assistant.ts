@@ -30,6 +30,13 @@ async function readStdin(): Promise<string> {
 }
 
 const stdin = await readStdin();
+function answersCall(candidate: { args: string[] }, callArgs: readonly string[]): boolean {
+  return (
+    candidate.args.length === 0 ||
+    (candidate.args.length === callArgs.length && candidate.args.every((value, index) => value === callArgs[index]))
+  );
+}
+
 const piControl = control as FakeClaudeControl & {
   answers?: {
     args: string[];
@@ -46,24 +53,13 @@ const piControl = control as FakeClaudeControl & {
 };
 if (piControl.answers) {
   const envNames = Object.keys(process.env).sort();
-  const matchingAnswers = piControl.answers.filter(
-    (candidate) =>
-      candidate.args.length === 0 ||
-      (candidate.args.length === args.length && candidate.args.every((value, index) => value === args[index])),
-  );
+  const matchingAnswers = piControl.answers.filter((candidate) => answersCall(candidate, args));
   const earlierMatchingCalls = existsSync(control.logPath)
     ? readFileSync(control.logPath, "utf8")
         .split("\n")
         .filter((line) => line !== "")
         .map((line) => (JSON.parse(line) as { args: string[] }).args)
-        .filter((previousArgs) =>
-          matchingAnswers.some(
-            (candidate) =>
-              candidate.args.length === 0 ||
-              (candidate.args.length === previousArgs.length &&
-                candidate.args.every((value, index) => value === previousArgs[index])),
-          ),
-        ).length
+        .filter((previousArgs) => matchingAnswers.some((candidate) => answersCall(candidate, previousArgs))).length
     : 0;
   appendFileSync(
     control.logPath,
