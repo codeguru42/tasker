@@ -14,7 +14,9 @@ and registry. Code outside `src/forge/` imports no concrete forge implementation
 ## CI results
 
 Workflow runs are included because dependency waits can remain visible after another job completes. A failed result
-takes precedence over pending or passed results. No results means pending. The caller sets the time limit for waiting.
+takes precedence over pending or passed results. If one read fails, `ciStatus()` waits for the other reads to finish and
+then reports the failure of the read that failed first. No results means pending. The caller sets the time limit for
+waiting.
 
 ## Pull requests
 
