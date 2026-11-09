@@ -31,13 +31,13 @@ export interface ScanResult {
   firstCause?: string;
 }
 
-export function scanBashCommands(parsed: ParsedBashLine, entries: string[]): ScanResult {
+export function scanBashCommands(parsed: ParsedBashLine, entries: readonly string[]): ScanResult {
   const result: ScanResult = { matches: new Set<string>() };
   for (const command of parsed.commands) scanCommand(command, entries, result, 1);
   return result;
 }
 
-function scanCommand(command: BashCommand, entries: string[], result: ScanResult, depth: number): void {
+function scanCommand(command: BashCommand, entries: readonly string[], result: ScanResult, depth: number): void {
   const words = command.words;
   let commandIndex = 0;
   while (commandIndex < words.length && isAssignment(words[commandIndex]?.value ?? "")) commandIndex += 1;
@@ -73,11 +73,11 @@ function scanCommand(command: BashCommand, entries: string[], result: ScanResult
   if (base === "find") scanFind(words, commandIndex, entries, result, depth);
   if (isWrapper(base)) scanWrapper(base, words, commandIndex, entries, result, depth);
   if (command.inputFromPipeline && isShell(base)) setFirstCause(result, CAUSE.input);
-  if (isShell(base) && shellReadsInput(words, commandIndex)) setFirstCause(result, CAUSE.input);
+  if (isShell(base) && shellReadsInput(words, commandIndex, command)) setFirstCause(result, CAUSE.input);
   if (base === "fish") setFirstCause(result, CAUSE.option);
 }
 
-function scanNested(word: BashWord, entries: string[], result: ScanResult, depth: number): void {
+function scanNested(word: BashWord, entries: readonly string[], result: ScanResult, depth: number): void {
   for (const nested of word.nested) scanCommand(nested, entries, result, depth);
 }
 
@@ -85,7 +85,7 @@ function addDirectMatches(
   base: string,
   commandIndex: number,
   words: BashWord[],
-  entries: string[],
+  entries: readonly string[],
   result: ScanResult,
 ): void {
   for (const entry of entries) {
@@ -102,7 +102,7 @@ function addDirectMatches(
   }
 }
 
-function hasGitEntry(entries: string[]): boolean {
+function hasGitEntry(entries: readonly string[]): boolean {
   return entries.some((entry) => entry.startsWith("git "));
 }
 
@@ -118,7 +118,13 @@ function gitSubcommandIndex(words: BashWord[], start: number): number {
   return index;
 }
 
-function scanGit(words: BashWord[], commandIndex: number, entries: string[], result: ScanResult, depth: number): void {
+function scanGit(
+  words: BashWord[],
+  commandIndex: number,
+  entries: readonly string[],
+  result: ScanResult,
+  depth: number,
+): void {
   let index = commandIndex + 1;
   while (index < words.length) {
     const option = words[index]?.value ?? "";
@@ -163,7 +169,7 @@ function scanGitCommandReader(
   subcommand: string,
   words: BashWord[],
   start: number,
-  entries: string[],
+  entries: readonly string[],
   result: ScanResult,
   depth: number,
 ): void {
@@ -184,7 +190,7 @@ function scanGitCommandReader(
   }
 }
 
-function scanEditorAssignment(word: BashWord, entries: string[], result: ScanResult, depth: number): void {
+function scanEditorAssignment(word: BashWord, entries: readonly string[], result: ScanResult, depth: number): void {
   const equals = word.value.indexOf("=");
   if (equals < 0) return;
   const name = word.value.slice(0, equals);
@@ -194,7 +200,7 @@ function scanEditorAssignment(word: BashWord, entries: string[], result: ScanRes
   else scanCommandText(value, entries, result, depth);
 }
 
-function scanCommandText(code: string, entries: string[], result: ScanResult, depth: number): void {
+function scanCommandText(code: string, entries: readonly string[], result: ScanResult, depth: number): void {
   const parsed = parseBashCommand(code);
   for (const command of parsed.commands) scanCommand(command, entries, result, depth);
 }
@@ -202,7 +208,7 @@ function scanCommandText(code: string, entries: string[], result: ScanResult, de
 function scanXargs(
   words: BashWord[],
   commandIndex: number,
-  entries: string[],
+  entries: readonly string[],
   result: ScanResult,
   depth: number,
 ): void {
@@ -218,7 +224,13 @@ function scanXargs(
   }
 }
 
-function scanFind(words: BashWord[], commandIndex: number, entries: string[], result: ScanResult, depth: number): void {
+function scanFind(
+  words: BashWord[],
+  commandIndex: number,
+  entries: readonly string[],
+  result: ScanResult,
+  depth: number,
+): void {
   for (let index = commandIndex + 1; index < words.length; index += 1) {
     const value = words[index]?.value ?? "";
     if (value === "-exec" || value === "-execdir") {
@@ -255,7 +267,7 @@ function scanWrapper(
   base: string,
   words: BashWord[],
   commandIndex: number,
-  entries: string[],
+  entries: readonly string[],
   result: ScanResult,
   depth: number,
 ): void {
@@ -312,7 +324,7 @@ function scanLineReader(
   base: string,
   words: BashWord[],
   commandIndex: number,
-  entries: string[],
+  entries: readonly string[],
   result: ScanResult,
   depth: number,
 ): void {
@@ -389,7 +401,7 @@ function parseShellOptions(base: string, words: BashWord[], start: number): Shel
   return { unknown: false, readsStdin: false };
 }
 
-function scanReparsed(code: string, entries: string[], result: ScanResult, depth: number): void {
+function scanReparsed(code: string, entries: readonly string[], result: ScanResult, depth: number): void {
   const nextDepth = depth + 1;
   if (nextDepth > MAX_COMMAND_DEPTH) {
     setFirstCause(result, CAUSE.depth);
@@ -406,7 +418,8 @@ function scanSource(words: BashWord[], commandIndex: number, result: ScanResult)
   else setFirstCause(result, CAUSE.input);
 }
 
-function shellReadsInput(words: BashWord[], commandIndex: number): boolean {
+function shellReadsInput(words: BashWord[], commandIndex: number, command: BashCommand): boolean {
+  if (command?.readsInput) return true;
   return words.slice(commandIndex + 1).some((word) => {
     const value = word.value;
     return value === "<" || value === "<<<" || value === "<<" || normalizePath(value) === "dev/stdin";

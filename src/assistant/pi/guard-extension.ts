@@ -126,8 +126,8 @@ function checkToolCall(
         "tasker blocked this command: the guard extension cannot read it with certainty (the command is not a string).",
       );
     }
-    const reason = checkBashCommand(input.command, limits.deniedCommands);
-    return reason === null ? undefined : blocked(reason);
+    const result = checkBashCommand(input.command, limits.deniedCommands);
+    return result.block ? blocked(result.reason) : undefined;
   }
   if (event.toolName === "powershell") {
     return blocked("the guard has no command test for shell tools");

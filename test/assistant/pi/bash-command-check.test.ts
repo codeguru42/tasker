@@ -173,7 +173,7 @@ function commandAtDepth(depth: number): string {
 
 describe("checkBashCommand", () => {
   it.each(commandRows)("checks $command", (row) => {
-    expect(checkBashCommand(row.command, row.entries ?? [DENIED])).toBe(expectedResult(row));
+    expect(checkBashCommand(row.command, row.entries ?? [DENIED])).toEqual(expectedResult(row));
   });
 
   it("runs every passing table row through bash with stub commands", () => {
