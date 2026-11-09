@@ -168,6 +168,8 @@ control. Its read deny list holds these paths:
 - The `.ssh` folder of the user.
 - The folder of the `gh` configuration.
 - The git credentials file and the `.netrc` file.
+- The folder `.config/acli` in the home folder of the user. It holds the Jira login of `acli`. Tasker runs `acli`
+  outside the sandbox, so no session needs it.
 - The credentials file of Claude Code.
 - The credentials file of Codex.
 - The files `auth.json`, `mcp-auth.json` and `models.json` in up to three agent folders of `pi`, as
