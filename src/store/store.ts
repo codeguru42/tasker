@@ -258,6 +258,22 @@ export interface ExecuteTodoProgress {
   state: ExecuteTodoState | "not_started";
 }
 
+export type ProtectedExecuteTurnOutcome = "succeeded" | "failed" | "interrupted";
+
+export interface NewProtectedExecuteTurn {
+  taskId: number;
+  planVersion: number;
+  turnId: string;
+  startingRevision: string;
+}
+
+export interface ProtectedExecuteTurn extends NewProtectedExecuteTurn {
+  phase: "started" | ProtectedExecuteTurnOutcome | "complete";
+  outcome: ProtectedExecuteTurnOutcome | null;
+  endingRevision: string | null;
+  updatedAt: string;
+}
+
 export interface StoreOptions {
   now?: () => Date;
 }
@@ -466,8 +482,31 @@ export interface TaskStore extends LockStore {
   // Sets the state of one todo of a plan revision and the time of the change. The todo must be a todo
   // of the plan revision, and the revision must exist.
   setExecuteTodoState(taskId: number, version: number, todoId: string, state: ExecuteTodoState): void;
+  // Marks one todo done and writes its event in the same transaction. A repeat returns false and writes nothing.
+  completeExecuteTodo(taskId: number, version: number, todoId: string): boolean;
   // The todos of a plan revision in the order of the plan, each with its state. A todo with no row is not started.
   executeTodoProgress(taskId: number, version: number): ExecuteTodoProgress[];
+  // Saves the bounds for one execute turn before Codex starts. Only one started or successful turn can be open per task.
+  beginProtectedExecuteTurn(input: NewProtectedExecuteTurn): ProtectedExecuteTurn;
+  // Records the assistant result. A successful result must include its ending revision.
+  recordProtectedExecuteTurnOutcome(
+    taskId: number,
+    planVersion: number,
+    turnId: string,
+    outcome: ProtectedExecuteTurnOutcome,
+    endingRevision?: string,
+  ): ProtectedExecuteTurn;
+  // Saves the revision tasker checked during recovery of a failed or interrupted turn.
+  recordProtectedExecuteTurnEndingRevision(
+    taskId: number,
+    planVersion: number,
+    turnId: string,
+    endingRevision: string,
+  ): ProtectedExecuteTurn;
+  // Marks a reconciled turn complete. The row remains available for crash recovery reads.
+  completeProtectedExecuteTurn(taskId: number, planVersion: number, turnId: string): ProtectedExecuteTurn;
+  // Reads the durable bounds of a turn, or undefined when no row exists.
+  protectedExecuteTurn(taskId: number, planVersion: number, turnId: string): ProtectedExecuteTurn | undefined;
   // Sets every todo of a plan revision to done, with one time, in one transaction. The revision must exist. This is a
   // method of the store interface, and no code in src calls it: tasker retry runs the same step inside the transaction
   // of the move, through retryTask. Code in src that changes a task must use retryTask, so that the move and the write
@@ -485,6 +524,9 @@ export interface TaskStore extends LockStore {
   // Marks the queued fix turn of a plan revision done. A revision with no queued fix turn is an error, also when its
   // fix turn is already done. The time of an earlier done mark does not change.
   markExecuteFixTurnDone(taskId: number, version: number): void;
+  // Marks the queued fix turn identified by queuedAt done and writes its event in the same transaction.
+  // A repeat or stale queuedAt returns false and writes nothing.
+  completeExecuteFixTurn(taskId: number, version: number, queuedAt: string): boolean;
   // Deletes the plan session of a task. A missing row is not an error. A run that failed before its first turn recorded
   // an id that no conversation holds, so the next run must not continue that id. This is a method of the store
   // interface, and no code in src calls it: tasker retry runs the same step inside the transaction of the move, through
@@ -557,6 +599,31 @@ interface TaskRow {
   attempt: number;
   created_at: string;
   updated_at: string;
+}
+
+interface ProtectedExecuteTurnRow {
+  task_id: number;
+  plan_version: number;
+  turn_id: string;
+  starting_revision: string;
+  phase: ProtectedExecuteTurn["phase"];
+  outcome: ProtectedExecuteTurnOutcome | null;
+  ending_revision: string | null;
+  updated_at: string;
+}
+
+function toProtectedExecuteTurn(row: ProtectedExecuteTurnRow | undefined): ProtectedExecuteTurn | undefined {
+  if (row === undefined) return undefined;
+  return {
+    taskId: row.task_id,
+    planVersion: row.plan_version,
+    turnId: row.turn_id,
+    startingRevision: row.starting_revision,
+    phase: row.phase,
+    outcome: row.outcome,
+    endingRevision: row.ending_revision,
+    updatedAt: row.updated_at,
+  };
 }
 
 interface EventRow {
@@ -870,6 +937,9 @@ function setUp(db: DatabaseSync) {
        DO UPDATE SET state = excluded.state, updated_at = excluded.updated_at`,
     ),
     selectExecuteTodos: db.prepare("SELECT todo_id, state FROM execute_todos WHERE task_id = ? AND plan_version = ?"),
+    selectExecuteTodoState: db.prepare(
+      "SELECT state FROM execute_todos WHERE task_id = ? AND plan_version = ? AND todo_id = ?",
+    ),
     upsertExecuteFixTurn: db.prepare(
       `INSERT INTO execute_fix_turns (task_id, plan_version, verify_failure, verify_log_tail, queued_at, done_at)
        VALUES (?, ?, ?, ?, ?, NULL)
@@ -886,6 +956,9 @@ function setUp(db: DatabaseSync) {
     ),
     updateExecuteFixTurnDone: db.prepare(
       "UPDATE execute_fix_turns SET done_at = ? WHERE task_id = ? AND plan_version = ? AND done_at IS NULL",
+    ),
+    updateIdentifiedExecuteFixTurnDone: db.prepare(
+      "UPDATE execute_fix_turns SET done_at = ? WHERE task_id = ? AND plan_version = ? AND queued_at = ? AND done_at IS NULL",
     ),
     selectNextPlanVersion: db.prepare(
       "SELECT COALESCE(MAX(version), 0) + 1 AS next FROM plan_revisions WHERE task_id = ?",
@@ -946,6 +1019,32 @@ function setUp(db: DatabaseSync) {
     ),
     selectQuotaEvents: db.prepare("SELECT * FROM quota_events ORDER BY repo_key"),
     selectQuotaEventOfRepo: db.prepare("SELECT * FROM quota_events WHERE repo_key = ?"),
+    insertProtectedExecuteTurn: db.prepare(
+      `INSERT INTO protected_execute_turns
+         (task_id, plan_version, turn_id, starting_revision, phase, outcome, ending_revision, updated_at)
+       VALUES (?, ?, ?, ?, 'started', NULL, NULL, ?)`,
+    ),
+    selectProtectedExecuteTurn: db.prepare(
+      `SELECT task_id, plan_version, turn_id, starting_revision, phase, outcome, ending_revision, updated_at
+       FROM protected_execute_turns WHERE task_id = ? AND plan_version = ? AND turn_id = ?`,
+    ),
+    selectOpenProtectedExecuteTurn: db.prepare(
+      `SELECT task_id, plan_version, turn_id FROM protected_execute_turns
+       WHERE task_id = ? AND phase IN ('started', 'succeeded')`,
+    ),
+    updateProtectedExecuteTurnOutcome: db.prepare(
+      `UPDATE protected_execute_turns SET phase = ?, outcome = ?, ending_revision = ?, updated_at = ?
+       WHERE task_id = ? AND plan_version = ? AND turn_id = ? AND phase = 'started'`,
+    ),
+    updateProtectedExecuteTurnEndingRevision: db.prepare(
+      `UPDATE protected_execute_turns SET ending_revision = ?, updated_at = ?
+       WHERE task_id = ? AND plan_version = ? AND turn_id = ?
+         AND phase IN ('failed', 'interrupted') AND ending_revision IS NULL`,
+    ),
+    completeProtectedExecuteTurn: db.prepare(
+      `UPDATE protected_execute_turns SET phase = 'complete', updated_at = ?
+       WHERE task_id = ? AND plan_version = ? AND turn_id = ? AND phase IN ('succeeded', 'failed', 'interrupted')`,
+    ),
   };
 }
 
@@ -1699,6 +1798,23 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       });
     },
 
+    completeExecuteTodo(taskId, version, todoId) {
+      return immediateTransaction(db, () => {
+        const revision = readPlanRevision(taskId, version);
+        if (revision === undefined) throw noPlanRevision(taskId, version);
+        if (!revision.answer.todos.some((todo) => todo.id === todoId)) {
+          throw new Error(`plan revision ${version} of task ${taskId} has no todo ${todoId}`);
+        }
+        const row = statements.selectExecuteTodoState.get(taskId, version, todoId) as
+          { state: ExecuteTodoState } | undefined;
+        if (row?.state === "done") return false;
+        const at = now().toISOString();
+        statements.upsertExecuteTodo.run(taskId, version, todoId, "done", at);
+        writeEvent(taskId, at, "todo_done", { id: todoId });
+        return true;
+      });
+    },
+
     executeTodoProgress(taskId, version) {
       const revision = readPlanRevision(taskId, version);
       if (revision === undefined) throw noPlanRevision(taskId, version);
@@ -1711,6 +1827,118 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         todo,
         state: states.get(todo.id) ?? "not_started",
       }));
+    },
+
+    beginProtectedExecuteTurn(input) {
+      return immediateTransaction(db, () => {
+        if (readTask(input.taskId) === undefined) throw taskNotFound(input.taskId);
+        const existing = toProtectedExecuteTurn(
+          statements.selectProtectedExecuteTurn.get(input.taskId, input.planVersion, input.turnId) as
+            ProtectedExecuteTurnRow | undefined,
+        );
+        if (existing !== undefined) {
+          throw new Error(`protected execute turn ${input.turnId} already exists for task ${input.taskId}`);
+        }
+        const open = statements.selectOpenProtectedExecuteTurn.get(input.taskId) as
+          { plan_version: number; turn_id: string } | undefined;
+        if (open !== undefined) {
+          throw new Error(
+            `task ${input.taskId} already has open protected execute turn ${open.turn_id} of plan ${open.plan_version}`,
+          );
+        }
+        statements.insertProtectedExecuteTurn.run(
+          input.taskId,
+          input.planVersion,
+          input.turnId,
+          input.startingRevision,
+          now().toISOString(),
+        );
+        return toProtectedExecuteTurn(
+          statements.selectProtectedExecuteTurn.get(input.taskId, input.planVersion, input.turnId) as
+            ProtectedExecuteTurnRow | undefined,
+        )!;
+      });
+    },
+
+    recordProtectedExecuteTurnOutcome(taskId, planVersion, turnId, outcome, endingRevision) {
+      return immediateTransaction(db, () => {
+        const current = toProtectedExecuteTurn(
+          statements.selectProtectedExecuteTurn.get(taskId, planVersion, turnId) as ProtectedExecuteTurnRow | undefined,
+        );
+        if (current === undefined) throw new Error(`protected execute turn ${turnId} was not found for task ${taskId}`);
+        if (current.phase !== "started") {
+          throw new Error(`protected execute turn ${turnId} already has an outcome`);
+        }
+        if (outcome === "succeeded" && endingRevision === undefined) {
+          throw new Error(`successful protected execute turn ${turnId} needs an ending revision`);
+        }
+        if (outcome !== "succeeded" && endingRevision !== undefined) {
+          throw new Error(
+            `failed or interrupted protected execute turn ${turnId} cannot record an ending revision yet`,
+          );
+        }
+        statements.updateProtectedExecuteTurnOutcome.run(
+          outcome,
+          outcome,
+          endingRevision ?? null,
+          now().toISOString(),
+          taskId,
+          planVersion,
+          turnId,
+        );
+        return toProtectedExecuteTurn(
+          statements.selectProtectedExecuteTurn.get(taskId, planVersion, turnId) as ProtectedExecuteTurnRow | undefined,
+        )!;
+      });
+    },
+
+    recordProtectedExecuteTurnEndingRevision(taskId, planVersion, turnId, endingRevision) {
+      return immediateTransaction(db, () => {
+        const current = toProtectedExecuteTurn(
+          statements.selectProtectedExecuteTurn.get(taskId, planVersion, turnId) as ProtectedExecuteTurnRow | undefined,
+        );
+        if (current === undefined) throw new Error(`protected execute turn ${turnId} was not found for task ${taskId}`);
+        if (current.phase !== "failed" && current.phase !== "interrupted") {
+          throw new Error(`protected execute turn ${turnId} cannot record a recovered ending revision`);
+        }
+        if (current.endingRevision !== null) {
+          if (current.endingRevision === endingRevision) return current;
+          throw new Error(`protected execute turn ${turnId} already has a different ending revision`);
+        }
+        statements.updateProtectedExecuteTurnEndingRevision.run(
+          endingRevision,
+          now().toISOString(),
+          taskId,
+          planVersion,
+          turnId,
+        );
+        return toProtectedExecuteTurn(
+          statements.selectProtectedExecuteTurn.get(taskId, planVersion, turnId) as ProtectedExecuteTurnRow | undefined,
+        )!;
+      });
+    },
+
+    completeProtectedExecuteTurn(taskId, planVersion, turnId) {
+      return immediateTransaction(db, () => {
+        const current = toProtectedExecuteTurn(
+          statements.selectProtectedExecuteTurn.get(taskId, planVersion, turnId) as ProtectedExecuteTurnRow | undefined,
+        );
+        if (current === undefined) throw new Error(`protected execute turn ${turnId} was not found for task ${taskId}`);
+        if (current.phase === "started" || current.endingRevision === null) {
+          throw new Error(`cannot complete protected execute turn ${turnId} before its ending revision is recorded`);
+        }
+        if (current.phase === "complete") return current;
+        statements.completeProtectedExecuteTurn.run(now().toISOString(), taskId, planVersion, turnId);
+        return toProtectedExecuteTurn(
+          statements.selectProtectedExecuteTurn.get(taskId, planVersion, turnId) as ProtectedExecuteTurnRow | undefined,
+        )!;
+      });
+    },
+
+    protectedExecuteTurn(taskId, planVersion, turnId) {
+      return toProtectedExecuteTurn(
+        statements.selectProtectedExecuteTurn.get(taskId, planVersion, turnId) as ProtectedExecuteTurnRow | undefined,
+      );
     },
 
     markExecuteTodosDone(taskId, version) {
@@ -1748,6 +1976,17 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         if (result.changes === 0) {
           throw new Error(`task ${taskId} has no queued fix turn of plan revision ${version}`);
         }
+      });
+    },
+
+    completeExecuteFixTurn(taskId, version, queuedAt) {
+      return immediateTransaction(db, () => {
+        if (readPlanRevision(taskId, version) === undefined) throw noPlanRevision(taskId, version);
+        const at = now().toISOString();
+        const result = statements.updateIdentifiedExecuteFixTurnDone.run(at, taskId, version, queuedAt);
+        if (result.changes === 0) return false;
+        writeEvent(taskId, at, "fix_turn_done", undefined);
+        return true;
       });
     },
 

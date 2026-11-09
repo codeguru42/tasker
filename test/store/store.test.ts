@@ -1445,7 +1445,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(25);
+        expect(migrations.length).toBe(26);
       });
     });
 
@@ -3223,12 +3223,13 @@ describe("task store", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
       setTodoState(task.id, 1, "write-test", "in_progress");
+      const priorEvents = store.listEvents(task.id);
       clock = new Date("2026-01-02T00:00:00.000Z");
 
       expect(completeTodo(task.id, 1, "write-test")).toBe(true);
       const events = store.listEvents(task.id);
-      expect(events).toHaveLength(1);
-      expect(events[0]).toMatchObject({ type: "todo_done", data: { id: "write-test" } });
+      expect(events).toHaveLength(priorEvents.length + 1);
+      expect(events.at(-1)).toMatchObject({ type: "todo_done", data: { id: "write-test" } });
       expect(readTodoRows().find((row) => row.todo_id === "write-test")).toMatchObject({
         state: "done",
         updated_at: "2026-01-02T00:00:00.000Z",
@@ -3246,6 +3247,7 @@ describe("task store", () => {
       const task = store.createTask(newTask);
       seedPlanRevision(store, task.id);
       setTodoState(task.id, 1, "write-test", "in_progress");
+      const priorEvents = store.listEvents(task.id);
       withRawDatabase(dbPath, (db) =>
         db.exec(
           "CREATE TRIGGER reject_todo_done BEFORE INSERT ON events WHEN NEW.type = 'todo_done' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
@@ -3254,7 +3256,7 @@ describe("task store", () => {
 
       expect(() => completeTodo(task.id, 1, "write-test")).toThrow("event rejected");
       expect(readTodoRows().find((row) => row.todo_id === "write-test")).toMatchObject({ state: "in_progress" });
-      expect(store.listEvents(task.id)).toEqual([]);
+      expect(store.listEvents(task.id)).toEqual(priorEvents);
     });
   });
 
@@ -3311,12 +3313,13 @@ describe("task store", () => {
       seedPlanRevision(store, task.id);
       queueFixTurn(task.id, 1, { verifyFailure: "f", verifyLogTail: null });
       const queuedAt = queuedFixTurn(task.id, 1)!.queuedAt;
+      const priorEvents = store.listEvents(task.id);
       clock = new Date("2026-01-02T00:00:00.000Z");
 
       expect(completeFixTurn(task.id, 1, queuedAt)).toBe(true);
       const events = store.listEvents(task.id);
-      expect(events).toHaveLength(1);
-      expect(events[0]).toMatchObject({ type: "fix_turn_done" });
+      expect(events).toHaveLength(priorEvents.length + 1);
+      expect(events.at(-1)).toMatchObject({ type: "fix_turn_done" });
       expect(readFixTurnRows()[0]).toMatchObject({ done_at: "2026-01-02T00:00:00.000Z" });
 
       clock = new Date("2026-01-03T00:00:00.000Z");
@@ -3330,6 +3333,7 @@ describe("task store", () => {
       seedPlanRevision(store, task.id);
       queueFixTurn(task.id, 1, { verifyFailure: "f", verifyLogTail: null });
       const queuedAt = queuedFixTurn(task.id, 1)!.queuedAt;
+      const priorEvents = store.listEvents(task.id);
       withRawDatabase(dbPath, (db) =>
         db.exec(
           "CREATE TRIGGER reject_fix_turn_done BEFORE INSERT ON events WHEN NEW.type = 'fix_turn_done' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
@@ -3338,7 +3342,7 @@ describe("task store", () => {
 
       expect(() => completeFixTurn(task.id, 1, queuedAt)).toThrow("event rejected");
       expect(readFixTurnRows()[0]).toMatchObject({ done_at: null });
-      expect(store.listEvents(task.id)).toEqual([]);
+      expect(store.listEvents(task.id)).toEqual(priorEvents);
     });
 
     it("refuses done for a fix turn that is already done and keeps its first done time", () => {
@@ -4133,13 +4137,14 @@ describe("task store", () => {
 
     store.close();
     store = openStore(dbPath, { now });
-    expect(api.protectedExecuteTurn(task.id, 3, input.turnId)).toMatchObject({
+    const reopenedApi = store as unknown as typeof api;
+    expect(reopenedApi.protectedExecuteTurn(task.id, 3, input.turnId)).toMatchObject({
       startingRevision: "a".repeat(40),
       endingRevision: "b".repeat(40),
       phase: "succeeded",
     });
-    api.completeProtectedExecuteTurn(task.id, 3, input.turnId);
-    expect(api.protectedExecuteTurn(task.id, 3, input.turnId)).toMatchObject({ phase: "complete" });
+    reopenedApi.completeProtectedExecuteTurn(task.id, 3, input.turnId);
+    expect(reopenedApi.protectedExecuteTurn(task.id, 3, input.turnId)).toMatchObject({ phase: "complete" });
   });
 
   it("refuses invalid protected execute turn transitions and a second open turn", () => {

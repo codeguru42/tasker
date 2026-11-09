@@ -191,4 +191,21 @@ ALTER TABLE tasks ADD COLUMN undo_before_parent_task_id INTEGER;
 ALTER TABLE tasks ADD COLUMN undo_after_base TEXT;
 ALTER TABLE tasks ADD COLUMN undo_after_parent_task_id INTEGER;`,
   `ALTER TABLE tasks ADD COLUMN card_marked INTEGER NOT NULL DEFAULT 0;`,
+  `CREATE TABLE protected_execute_turns (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  plan_version INTEGER NOT NULL,
+  turn_id TEXT NOT NULL,
+  starting_revision TEXT NOT NULL,
+  phase TEXT NOT NULL CHECK (phase IN ('started', 'succeeded', 'failed', 'interrupted', 'complete')),
+  outcome TEXT CHECK (outcome IN ('succeeded', 'failed', 'interrupted')),
+  ending_revision TEXT,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (task_id, plan_version, turn_id),
+  CHECK ((phase = 'started' AND outcome IS NULL AND ending_revision IS NULL)
+      OR (phase = 'succeeded' AND outcome = 'succeeded' AND ending_revision IS NOT NULL)
+      OR (phase IN ('failed', 'interrupted') AND outcome = phase)
+      OR (phase = 'complete' AND outcome IS NOT NULL AND ending_revision IS NOT NULL))
+);
+CREATE UNIQUE INDEX protected_execute_turns_one_active
+  ON protected_execute_turns (task_id) WHERE phase IN ('started', 'succeeded');`,
 ];
