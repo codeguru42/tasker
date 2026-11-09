@@ -6,6 +6,7 @@ import { errnoCode } from "../../errno.js";
 import { isDeniedPath, isInside, realPathWithMissingParents } from "../../real-path.js";
 import type { GuardLimits, GuardTool } from "./guard-limits.js";
 import { invalidDeniedCommandEntries } from "./denied-command-entry.js";
+import { checkBashCommand } from "./bash-command-check.js";
 
 const LIMITS_FLAG = "--tasker-guard-limits";
 const LIMITS_FIELD_NAMES = [
@@ -118,7 +119,17 @@ function checkToolCall(
   if (current.sourceInfo.path !== configured.path || current.sourceInfo.source !== configured.source) {
     return blocked("the tool source does not match the guard limits");
   }
-  if (event.toolName === "bash" || event.toolName === "powershell") {
+  if (event.toolName === "bash") {
+    const input = isRecord(event.input) ? event.input : {};
+    if (typeof input.command !== "string") {
+      return blocked(
+        "tasker blocked this command: the guard extension cannot read it with certainty (the command is not a string).",
+      );
+    }
+    const reason = checkBashCommand(input.command, limits.deniedCommands);
+    return reason === null ? undefined : blocked(reason);
+  }
+  if (event.toolName === "powershell") {
     return blocked("the guard has no command test for shell tools");
   }
   const fileRule = Object.hasOwn(FILE_TOOLS, event.toolName)
