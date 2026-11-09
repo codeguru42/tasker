@@ -121,6 +121,14 @@ export interface WorkspaceState {
   changes: UncommittedChange[];
 }
 
+export interface ProtectedWorkspaceChangeOptions {
+  path: string;
+  taskRef: string;
+  beforeRevision: string;
+  afterRevision: string;
+  deniedPaths: readonly string[];
+}
+
 // How the local tip of a task ref relates to its copy on the remote after the fetch.
 export type RemoteTaskRefRelation = "equal" | "local-ancestor" | "remote-ancestor" | "diverged";
 
@@ -261,6 +269,8 @@ export interface VcsProvider {
   ): Promise<string>;
   // Reads the head, the task ref and the uncommitted changes of the workspace. It changes nothing.
   workspaceState(ctx: VcsContext, o: { path: string }): Promise<WorkspaceState>;
+  // Checks a committed protected request and materializes only its approved skill files or Codex link.
+  materializeProtectedWorkspaceChanges(ctx: VcsContext, o: ProtectedWorkspaceChangeOptions): Promise<void>;
   // Pushes taskRef to the remote. published is the revision that the last publish gave.
   publish(ctx: VcsContext, o: { taskRef: string; published: string | undefined }): Promise<PublishResult>;
   // Moves base on the remote to revision. It is a fast-forward.

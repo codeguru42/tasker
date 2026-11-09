@@ -1,4 +1,4 @@
-import type { VcsContext, VcsProvider } from "../provider.js";
+import type { ProtectedWorkspaceChangeOptions, VcsContext, VcsProvider } from "../provider.js";
 import type { GitVcsConfig } from "./config.js";
 import {
   DENIED_COMMANDS,
@@ -24,6 +24,7 @@ import { deleteRemoteTaskBranch, landOnBase, publishTaskBranch } from "./publish
 import { gitDoctorChecks } from "./doctor.js";
 import { installPushHook } from "./push-guard.js";
 import { provisionClone } from "./provision.js";
+import { materializeProtectedWorkspaceChanges as materializeProtectedSkills } from "./protected-skills.js";
 import { remoteTip } from "./remote-tip.js";
 import {
   moveWorktreeTo,
@@ -188,6 +189,10 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
       const { clone } = pathsOf(ctx);
       const { head, branch, changes } = await worktreeState({ clone, env: ctx.env, path });
       return { head, taskRef: branch, changes };
+    },
+    async materializeProtectedWorkspaceChanges(ctx, options: ProtectedWorkspaceChangeOptions) {
+      const { clone } = pathsOf(ctx);
+      await materializeProtectedSkills({ clone, env: ctx.env, ...options });
     },
     async publish(ctx, { taskRef, published }) {
       const result = await publishTaskBranch({ ...remoteOptionsOf(ctx), branch: taskRef, published });

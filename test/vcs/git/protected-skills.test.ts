@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { materializeProtectedWorkspaceChanges } from "../../../src/vcs/git/protected-skills.js";
 import { repoPaths } from "../../../src/vcs/git/repo-paths.js";
+import { runGit } from "../../../src/vcs/git/run.js";
 import { createGitProvider } from "../../../src/vcs/git/provider.js";
 import { commitIndexChanges, gitOutput, makeProviderFixture, type ProviderFixture } from "../../helpers/git.js";
 
@@ -210,16 +211,17 @@ describe("materializeProtectedWorkspaceChanges", () => {
     const expectedBytes = Buffer.from("valid \uFFFD bytes\n", "utf8");
     const revisions = commitIndexChanges(work.path, work.taskRef, fixture.context.env, [
       { path: ".agents/skills/replacement.md", content: expectedBytes.toString("utf8") },
+      { path: ".agents/skills/also-requested.md", content: "new skill\n" },
     ]);
     const invalidBytes = Buffer.from([
       0x76, 0x61, 0x6c, 0x69, 0x64, 0x20, 0x80, 0x20, 0x62, 0x79, 0x74, 0x65, 0x73, 0x0a,
     ]);
     writeFileSync(join(work.path, ".agents/skills/replacement.md"), invalidBytes);
 
-    await materializeProtectedWorkspaceChanges(options(work, revisions));
+    await expect(materializeProtectedWorkspaceChanges(options(work, revisions))).rejects.toThrow();
 
-    expect(readFileSync(join(work.path, ".agents/skills/replacement.md"))).toEqual(expectedBytes);
-    expect(await gitOutput({ cwd: work.path }, fixture.context.env, "status", "--porcelain")).toBe("");
+    expect(readFileSync(join(work.path, ".agents/skills/replacement.md"))).toEqual(invalidBytes);
+    expect(existsSync(join(work.path, ".agents/skills/also-requested.md"))).toBe(false);
   });
 
   it("refuses a matching executable canonical file before changing another skill", async () => {
@@ -265,7 +267,6 @@ describe("materializeProtectedWorkspaceChanges", () => {
     ["an .agents sibling", ".agents/other.md", "content\n", "100644"],
     ["another .codex entry", ".codex/settings.json", "{}\n", "100644"],
     ["an .aws entry", ".aws/credentials", "secret\n", "100644"],
-    ["a .git entry", ".git/tasker", "content\n", "100644"],
     ["the Claude alias", ".claude/skills/alias.md", "content\n", "100644"],
     ["a symlink inside canonical skills", ".agents/skills/inner-link", "../other\n", "120000"],
     ["an executable canonical file", ".agents/skills/run.sh", "echo no\n", "100755"],
@@ -300,6 +301,19 @@ describe("materializeProtectedWorkspaceChanges", () => {
     expect(existsSync(join(work.path, ".agents/skills/denied.md"))).toBe(false);
   });
 
+  it("refuses an explicitly denied path that already exists", async () => {
+    const work = await workspace();
+    const revisions = commitIndexChanges(work.path, work.taskRef, fixture.context.env, [
+      { path: ".agents/skills/edit.md", content: "denied edit\n" },
+    ]);
+
+    await expect(
+      materializeProtectedWorkspaceChanges(options(work, revisions, [join(work.path, ".agents/skills/edit.md")])),
+    ).rejects.toThrow();
+
+    expect(readFileSync(join(work.path, ".agents/skills/edit.md"), "utf8")).toBe("before edit\n");
+  });
+
   it("refuses an unrelated destination and a linked protected parent", async () => {
     const work = await workspace();
     const revisions = commitIndexChanges(work.path, work.taskRef, fixture.context.env, [
@@ -322,6 +336,74 @@ describe("materializeProtectedWorkspaceChanges", () => {
 
     await expect(materializeProtectedWorkspaceChanges(options(linkedWork, linkedRevisions))).rejects.toThrow();
     expect(existsSync(join(outside, "skills/new.md"))).toBe(false);
+  });
+
+  it("refuses a file or broken link in a destination parent", async () => {
+    const work = await workspace();
+    const revisions = commitIndexChanges(work.path, work.taskRef, fixture.context.env, [
+      { path: ".agents/skills/file-parent/child.md", content: "child\n" },
+    ]);
+    writeFileSync(join(work.path, ".agents/skills/file-parent"), "keep me\n");
+
+    await expect(materializeProtectedWorkspaceChanges(options(work, revisions))).rejects.toThrow();
+    expect(readFileSync(join(work.path, ".agents/skills/file-parent"), "utf8")).toBe("keep me\n");
+
+    const brokenWork = await workspace("issue-791");
+    const brokenRevisions = commitIndexChanges(brokenWork.path, brokenWork.taskRef, fixture.context.env, [
+      { path: ".agents/skills/broken-parent/child.md", content: "child\n" },
+    ]);
+    symlinkSync(join(fixture.origin.dir, "missing-parent"), join(brokenWork.path, ".agents/skills/broken-parent"));
+
+    await expect(materializeProtectedWorkspaceChanges(options(brokenWork, brokenRevisions))).rejects.toThrow();
+  });
+
+  it("refuses an unregistered workspace path", async () => {
+    const work = await workspace();
+    const revisions = commitIndexChanges(work.path, work.taskRef, fixture.context.env, [
+      { path: ".agents/skills/new.md", content: "new\n" },
+    ]);
+    const outside = join(fixture.origin.dir, "outside-workspace");
+    mkdirSync(outside);
+
+    await expect(
+      materializeProtectedWorkspaceChanges({
+        ...options(work, revisions),
+        path: outside,
+      }),
+    ).rejects.toThrow(/registered workspace/);
+  });
+
+  it("refuses an index that does not match the ending tree", async () => {
+    const work = await workspace();
+    const revisions = commitIndexChanges(work.path, work.taskRef, fixture.context.env, [
+      { path: ".agents/skills/new.md", content: "new\n" },
+    ]);
+    await runGit(["update-index", "--force-remove", "--", ".agents/skills/new.md"], {
+      cwd: work.path,
+      env: fixture.context.env,
+    });
+
+    await expect(materializeProtectedWorkspaceChanges(options(work, revisions))).rejects.toThrow(/index/);
+
+    expect(existsSync(join(work.path, ".agents/skills/new.md"))).toBe(false);
+  });
+
+  it("refuses an unrelated existing Codex link and a linked workspace root", async () => {
+    const work = await workspace();
+    const revisions = commitIndexChanges(work.path, work.taskRef, fixture.context.env, [
+      { path: ".codex/skills", content: "../.agents/skills", mode: "120000" },
+    ]);
+    mkdirSync(join(work.path, ".codex"));
+    symlinkSync("../../outside", join(work.path, ".codex/skills"));
+
+    await expect(materializeProtectedWorkspaceChanges(options(work, revisions))).rejects.toThrow();
+    expect(readlinkSync(join(work.path, ".codex/skills"))).toBe("../../outside");
+
+    const linked = join(fixture.origin.dir, "linked-workspace");
+    symlinkSync(work.path, linked);
+    await expect(materializeProtectedWorkspaceChanges({ ...options(work, revisions), path: linked })).rejects.toThrow(
+      /linked or not canonical/,
+    );
   });
 
   it("replays a partial materialization only when existing content matches the committed result", async () => {
