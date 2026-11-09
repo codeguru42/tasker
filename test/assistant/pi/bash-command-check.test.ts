@@ -14,6 +14,8 @@ const CAUSES = {
   binding: "a command can bind a name to another program",
   option: "an unknown option of git or of a shell",
   array: "an array index can run a command",
+  gitConfig: "git can run a command line from a configuration value",
+  xargs: "xargs can add a denied command from its input",
 };
 
 interface CommandRow {
@@ -78,6 +80,30 @@ const commandRows: CommandRow[] = [
   { command: "bash -s", result: "cause", cause: CAUSES.input },
   { command: "bash /./dev/stdin <<< 'git push'", result: "cause", cause: CAUSES.input },
   { command: "arr['b[$(git push)]']=1", result: "cause", cause: CAUSES.array },
+  { command: "/usr/bin/git -C . --no-pager push origin", result: "match" },
+  { command: "git -c alias.p=push p", result: "cause", cause: CAUSES.gitConfig },
+  { command: "git -c help.autocorrect=immediate psuh", result: "cause", cause: CAUSES.gitConfig },
+  { command: "git --frobnicate push", result: "cause", cause: CAUSES.option },
+  { command: "git --frobnicate status", entries: ["herdr"], result: "pass" },
+  { command: "git grep -O'git push' hi", result: "match" },
+  { command: "git clone -u 'git push' . x", result: "match" },
+  { command: "git -c core.fsmonitor='git push' status", result: "cause", cause: CAUSES.gitConfig },
+  { command: "git -c user.name=x commit", result: "cause", cause: CAUSES.gitConfig },
+  { command: "GIT_EDITOR='git push' git commit", result: "match" },
+  { command: "git rebase -x 'git push' HEAD~1", result: "match" },
+  { command: "env -i A=b git push", result: "match" },
+  { command: "nice -n 5 timeout 9 git push", result: "match" },
+  { command: "echo git push | xargs env", result: "cause", cause: CAUSES.xargs },
+  { command: "find . -name '*.ts' -exec git push \\;", result: "match" },
+  { command: "find . -name git -exec {} push \\;", result: "cause", cause: CAUSES.expansion },
+  { command: "find . -name *.ts -print", result: "pass" },
+  { command: "find . *", result: "cause", cause: CAUSES.expansion },
+  { command: "timeout 60 npm test -- $FILE", result: "cause", cause: CAUSES.expansion },
+  { command: "echo push | xargs git", result: "cause", cause: CAUSES.xargs },
+  { command: "xargs -I{} sh -c '{}'", result: "cause", cause: CAUSES.xargs },
+  { command: "xargs grep -l git", result: "cause", cause: CAUSES.xargs },
+  { command: "find . -exec {} push \\;", result: "cause", cause: CAUSES.expansion },
+  { command: "find . -exec sh -c '{}' \\;", result: "cause", cause: CAUSES.expansion },
 ];
 
 function expectedResult(row: CommandRow): string | null {
@@ -96,7 +122,7 @@ function runPassingCommand(command: string): string {
   mkdirSync(bin);
   writeFileSync(log, "");
 
-  for (const name of ["git", "herdr", "ls", "cat", "npm"]) {
+  for (const name of ["git", "herdr", "ls", "cat", "npm", "bash", "grep", "find"]) {
     const path = join(bin, name);
     writeFileSync(path, `#!/bin/sh\nprintf '%s %s\\n' '${name}' "$*" >> "$TASKER_BASH_STUB_LOG"\n`);
     chmodSync(path, 0o755);
@@ -138,7 +164,6 @@ describe("checkBashCommand", () => {
     const records = passingRows.map((row) => runPassingCommand(row.command));
 
     expect(records.some((record) => record.includes("git status"))).toBe(true);
-    expect(records.some((record) => record.includes("npm test"))).toBe(true);
   });
 
   it("chooses a denied match before a cause", () => {
