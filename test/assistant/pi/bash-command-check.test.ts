@@ -90,7 +90,6 @@ function runPassingCommand(command: string): string {
 
 describe("checkBashCommand", () => {
   it.each(commandRows)("checks $command", (row) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(checkBashCommand(row.command, row.entries ?? [DENIED])).toBe(expectedResult(row));
   });
 
@@ -103,21 +102,18 @@ describe("checkBashCommand", () => {
   });
 
   it("chooses a denied match before a cause", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(checkBashCommand("echo $X; git push", [DENIED])).toBe(
       `tasker blocked this command: it runs "${DENIED}", which this run must not run.`,
     );
   });
 
   it("chooses the first denied entry from the entry list", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(checkBashCommand("herdr agent list && git push", [DENIED, "herdr"])).toBe(
       `tasker blocked this command: it runs "${DENIED}", which this run must not run.`,
     );
   });
 
   it("blocks a parse error after an earlier valid command", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(checkBashCommand("echo ok\necho hi; )", [DENIED])).toBe(
       `tasker blocked this command: the guard extension cannot read it with certainty (${CAUSES.parse}).`,
     );
@@ -131,7 +127,6 @@ describe("checkBashCommand", () => {
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     expect(checkBashCommand("git status", entries)).toBe(
       "tasker blocked this command: the guard extension cannot read it with certainty (an error in the guard extension).",
     );
