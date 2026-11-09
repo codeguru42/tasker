@@ -1118,9 +1118,12 @@ The check removes quotes and escapes before it compares words. One-word entries 
 entry matches its subcommand or a `git-<word>` program. Matches take priority over causes, and the first matching entry
 wins. See the [command check](../../src/assistant/pi/bash-command-check.ts).
 
-The check scans lists, pipelines, assignments, redirections, compound commands and function bodies. It scans command and
-process substitutions, parameter expansions and arithmetic expansions. It scans expansions and substitutions in an
-unquoted here-document body; plain text in the body stays data. A quoted here-document body stays literal. The
+The parser accepts a safe Bash subset. It supports simple commands with assignment words and redirections. It also
+supports lists, pipelines, `!`, `time`, `time -p`, `coproc`, subshells, brace groups and function definitions. Compound
+commands include `if`, `while`, `until`, `for`, `select`, `case`, `[[ ]]` and `(( ))`. The scanner reads command and
+process substitutions, backticks, parameter expansions and arithmetic expansions. It scans redirection targets,
+here-strings and unquoted here-document bodies. Plain body text stays data, and quoted here-document bodies stay
+literal. Unsupported or uncertain syntax blocks the whole call with the parse cause. The
 [parser](../../src/assistant/pi/bash-command-parse.ts) lists the supported syntax.
 
 The supported shells are `bash`, `sh`, `zsh`, `ksh`, `dash`, `rbash`, `ash`, `mksh`, `yash` and `fish`. The check
@@ -1129,29 +1132,34 @@ letters `c`, `l`, `i`, `e` and `x`. It recognizes `-o`, `-O`, `+o` and `+O` with
 allowed short option letters. It recognizes common long options such as `--login`, `--posix` and `--version`. An unknown
 option blocks the call. The Bash reader consumes the values of `--rcfile` and `--init-file` before it reads a script
 operand. The check blocks `-s`, `-`, shells with no script or command string, shell input redirections, and hidden
-operands such as absolute paths, parent-relative paths, `/dev/stdin` and `/dev/fd/0`. A `source` or `.` call blocks when
-it has no operand, or when its operand is dynamic or names hidden input. A static source path is not read. The check
-also follows `eval`, `env -S` and `--split-string`, `flock -c` and `--command`, `su -c` and `--command`, `script -c` and
-`--command`, and the `-C` or `--callback` strings of `mapfile` and `readarray`. Each re-read adds a depth level, up to
-eight. A command substitution does not add depth.
+operands under `/dev` or `/proc`, or with a `..` path part. A `source` or `.` call blocks when it has no operand, when
+its operand is dynamic or names hidden input, or when its input comes from a redirection or pipeline. A static source
+path is not read. The check reparses each suffix of later words for `eval`, `watch` and `sudo`. It also reparses later
+words and `--name=value` parts for `env`, `flock`, `su`, `script` and `trap`. `env` also rereads values after `-S` and
+`--split-string`. `flock`, `su` and `script` also reread values after `-c` and `--command`. `mapfile` and `readarray`
+reread the `-C` or `--callback` value. Each re-read adds a depth level, up to eight. A command substitution does not add
+depth.
 
-The wrappers are `env`, `nice`, `timeout`, `watch`, `nohup`, `command`, `stdbuf`, `sudo`, `exec`, `doas`, `setsid`,
-`ionice`, `chrt`, `taskset`, `flock` and `busybox`. The check follows their command words and blocks an expansion in any
-later wrapper word because an option can move the command. `BASH_ENV`, `ENV`, `BASH_CMDS[...]` and `BASH_ALIASES[...]`
-assignments and commands that can bind a name to another program also block. An `xargs` call gets an input cause unless
-it has no command (so `xargs` uses its default `echo`), its command is `ls` or `echo`, or it uses `--version`, `--help`
-or `--show-limits`. Before a listed command, it accepts only `-0`, `--null`, `-r` and `--no-run-if-empty`.
+The command wrappers are `env`, `nice`, `timeout`, `watch`, `nohup`, `command`, `stdbuf`, `sudo`, `exec`, `doas`,
+`setsid`, `ionice`, `chrt`, `taskset`, `flock` and `busybox`. The check follows their command words and blocks an
+expansion in any later word because an option can move the command. It also scans the command after `time` and
+`builtin`, and checks `xargs` input separately. A word that contains `BASH_CMDS`, `BASH_ALIASES` or `expand_aliases`
+causes a binding block. Assignments to `BASH_ENV` and `ENV` cause the same block in supported assignment positions.
+Commands that can bind or replay a command name also block. An `xargs` call gets an input cause unless it has no command
+(so `xargs` uses its default `echo`), its command is `ls` or `echo`, or it uses `--version`, `--help` or
+`--show-limits`. Before a listed command, it accepts only `-0`, `--null`, `-r` and `--no-run-if-empty`.
 
 Git rules apply only when an entry has the form `git <word>`. The scanner lists the supported global options. An unknown
 option blocks the call. `-c`, `--config` and `--config-env` block because a configuration value can run a command line.
 The check scans command text from `rebase -x` and `--exec`, `bisect run`, `submodule foreach`, `difftool -x` and
 `--extcmd`, and the `filter-branch` filter options. It also checks program values for `fetch`, `pull`, `ls-remote`,
-`archive`, `clone` and `grep`. The assignments `EDITOR`, `VISUAL` and `PAGER`, and every `GIT_` assignment, are scanned
-as command text when their values are static. A dynamic value blocks with the git-configuration cause. See the
+`archive`, `clone` and `grep`. Static values of `EDITOR`, `VISUAL`, `PAGER` and `GIT_` names are scanned as command text
+when they appear before the command name or as `NAME=value` arguments of `env`, `export`, `declare`, `typeset`, `local`
+or `readonly`. A dynamic value blocks with the git-configuration cause. See the
 [scanner](../../src/assistant/pi/bash-command-scan.ts).
 
 The check scans every action after `find` options `-exec`, `-execdir`, `-ok` and `-okdir`. It blocks an action that uses
-`{}` as its command. It also blocks an action with an expansion that can change its command.
+`{}` as its command or has an expansion in an action word.
 
 When the guard cannot read a command with certainty, it blocks the call. Examples include a parse error, a shell that
 reads commands from input, a dynamic command name, a command binding, or an array index that can run a command.
