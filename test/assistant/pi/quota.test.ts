@@ -34,10 +34,8 @@ describe("quotaStopOf", () => {
   });
 
   it.each([
-    ["value with spaces", colon(json(retry(" \t3600\t ")))],
     ["date in another form", colon(json(retry("Wed, 4 Nov 2026 08:00:00 GMT")))],
     ["nonexistent day", colon(json(retry("Tue, 31 Nov 2026 08:00:00 GMT")))],
-    ["seconds 60", colon(json(retry("60")))],
     ["different values", colon('{"metadata":{"headers":{"Retry-After":"60","retry-after":"61"}}}')],
     ["numeric value", colon(json(retry(60)))],
     ["JSON string body", colon(json("body"))],
@@ -48,15 +46,10 @@ describe("quotaStopOf", () => {
     ["array metadata", colon('{"metadata":[]}')],
     ["string headers", colon('{"metadata":{"headers":"bad"}}')],
     ["array headers", colon('{"metadata":{"headers":[]}}')],
-    ["JSON followed by LF", colon(`${json(retry("60"))}\nsecond line`)],
     ["unparseable body without marker", colon("not json")],
     ["missing retry-after in cut body", colon('{"code":402}... [truncated 10 chars]')],
-    ["two equal values in cut body", colon('{"Retry-After":"60","retry-after":"60" ... [truncated 10 chars]')],
     ["two different values in cut body", colon('{"Retry-After":"60","retry-after":"61" ... [truncated 10 chars]')],
     ["cut retry-after value", colon('{"Retry-After":"6... [truncated 10 chars]')],
-    ["space form error metadata delay", space(json(retryError("3600")))],
-    ["space form error metadata date", space(json(retryError(date)))],
-    ["space form top-level metadata", space(json(retry("60")))],
     [
       "space form metadata without headers",
       space('{"metadata":{},"error":{"metadata":{"headers":{"Retry-After":"60"}}}}'),
@@ -66,19 +59,18 @@ describe("quotaStopOf", () => {
     ["array error", space('{"error":[]}')],
     ["402 prose", space("Insufficient credits")],
     ["402 without body", space("status code (no body)")],
-    ["space-form cut body", space('{"error":{"metadata":{"headers":{"Retry-After":"60"}} ... [truncated 10 chars]')],
     ["space-form LF body", space('{"error":{"metadata":{"headers":{"Retry-After":"60"}}}\nsecond')],
     [
       "labeled OpenAI error",
       { role: "assistant", stopReason: "error", errorMessage: "OpenAI API error (402): {}" },
-      undefined,
+      null,
     ],
-    ["429 colon prefix", { role: "assistant", stopReason: "error", errorMessage: "429: {}" }, undefined],
-    ["429 space prefix", { role: "assistant", stopReason: "error", errorMessage: "429 {}" }, undefined],
-    ["colon prefix with stop reason stop", colon(json(retry("60")), "stop"), undefined],
-    ["space prefix with stop reason stop", space(json(retryError("60")), "stop"), undefined],
-  ])("handles %s", (_name, message, expected: { resetsAt?: number } | undefined = {}) => {
-    if (expected === undefined) expect(callQuotaStop(message)).toBeUndefined();
+    ["429 colon prefix", { role: "assistant", stopReason: "error", errorMessage: "429: {}" }, null],
+    ["429 space prefix", { role: "assistant", stopReason: "error", errorMessage: "429 {}" }, null],
+    ["colon prefix with stop reason stop", colon(json(retry("60")), "stop"), null],
+    ["space prefix with stop reason stop", space(json(retryError("60")), "stop"), null],
+  ])("handles %s", (_name, message, expected: { resetsAt?: number } | null = {}) => {
+    if (expected === null) expect(callQuotaStop(message)).toBeUndefined();
     else expect(callQuotaStop(message)).toEqual(expected);
   });
 
@@ -88,6 +80,29 @@ describe("quotaStopOf", () => {
 
   it("accepts delay 0", () => {
     expect(callQuotaStop(colon(json(retry("0"))))).toEqual({ resetsAt: Math.floor(Date.now() / 1000) });
+  });
+
+  it.each([
+    ["value with spaces", colon(json(retry(" \t3600\t "))), 3600],
+    ["seconds 60", colon(json(retry("60"))), 60],
+    ["JSON followed by LF", colon(`${json(retry("60"))}\nsecond line`), 60],
+    ["two equal values in cut body", colon('{"Retry-After":"60","retry-after":"60" ... [truncated 10 chars]'), 60],
+    ["space form error metadata delay", space(json(retryError("3600"))), 3600],
+    ["space form top-level metadata", space(json(retry("60"))), 60],
+    [
+      "space-form cut body",
+      space('{"error":{"metadata":{"headers":{"Retry-After":"60"}} ... [truncated 10 chars]'),
+      60,
+    ],
+  ])("accepts %s", (_name, message, delay: number) => {
+    const before = Math.floor(Date.now() / 1000);
+    const result = callQuotaStop(message);
+    expect(result?.resetsAt).toBeGreaterThanOrEqual(before + delay);
+    expect(result?.resetsAt).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + delay);
+  });
+
+  it("accepts a space-form error metadata date", () => {
+    expect(callQuotaStop(space(json(retryError(date))))).toEqual({ resetsAt: 1793779200 });
   });
 
   it.each([
