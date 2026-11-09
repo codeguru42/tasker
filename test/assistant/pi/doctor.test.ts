@@ -3,6 +3,7 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   piAuthCheck as fromPiAuthCheck,
+  piDoctorChecks as fromPiDoctorChecks,
   piVersionCheck as fromPiVersionCheck,
   simpleEnglishCheck as fromSimpleEnglishCheck,
   superpowersCheck as fromSuperpowersCheck,
@@ -16,6 +17,7 @@ import { validConfig } from "../../helpers/config.js";
 import { parseConfig } from "../../../src/config/schema.js";
 import { useTempDir, writeFileWithParents } from "../../helpers/temp.js";
 import { piNotInstalled } from "../../../src/assistant/pi/program.js";
+import { sandboxProgramCheck } from "../../../src/assistant/program-check.js";
 
 const VERSION = "1.1.0";
 const VERSION_ARGS = ["--version"];
@@ -49,6 +51,14 @@ function superpowersCheck(timeoutMs?: number): Check {
 
 function simpleEnglishCheck(timeoutMs?: number): Check {
   return fromSimpleEnglishCheck(timeoutMs);
+}
+
+function piDoctorChecks(repos: readonly AssistantDoctorRepo[], platform: NodeJS.Platform): Check[] {
+  const check = fromPiDoctorChecks as unknown as (
+    repos: readonly AssistantDoctorRepo[],
+    platform: NodeJS.Platform,
+  ) => Check[];
+  return check(repos, platform);
 }
 
 function makePiNotInstalled(program: string): string {
@@ -112,6 +122,35 @@ describe("pi doctor check selection", () => {
       { name: "superpowers:pi", required: true, timeoutMs: 5000 },
       { name: "simple-english:pi", required: true, timeoutMs: 1000 },
     ]);
+  });
+
+  it("adds the required bwrap check after pi version on Linux", () => {
+    const checks = piDoctorChecks([piRepo("a", ["openrouter/a", "anthropic/b", "google/c"])], "linux");
+
+    expect(checkSummaries(checks)).toEqual([
+      { name: "pi version", required: true, timeoutMs: 5000 },
+      { name: "sandbox: bwrap", required: true, timeoutMs: 1000 },
+      { name: "pi-auth:openrouter", required: true, timeoutMs: 10000 },
+      { name: "pi-auth:anthropic", required: true, timeoutMs: 10000 },
+      { name: "pi-auth:google", required: true, timeoutMs: 10000 },
+      { name: "superpowers:pi", required: true, timeoutMs: 5000 },
+      { name: "simple-english:pi", required: true, timeoutMs: 1000 },
+    ]);
+  });
+
+  it("leaves the bwrap check out on Darwin and uses the shared missing-package result on Linux", async () => {
+    const repos = [piRepo("a", ["openrouter/a", "anthropic/b", "google/c"])];
+    const darwinChecks = piDoctorChecks(repos, "darwin");
+    const linuxChecks = piDoctorChecks(repos, "linux");
+    const linuxSandbox = linuxChecks.find(({ name }) => name === "sandbox: bwrap");
+    const emptyBin = useTempDir("tasker-empty-bwrap-bin-");
+
+    expect(darwinChecks.some(({ name }) => name === "sandbox: bwrap")).toBe(false);
+    expect(linuxSandbox).toBeDefined();
+    expect(linuxSandbox?.required).toBe(true);
+    expect(await linuxSandbox?.run({ PATH: emptyBin })).toEqual(
+      await sandboxProgramCheck("bwrap", "bubblewrap").run({ PATH: emptyBin }),
+    );
   });
 });
 
