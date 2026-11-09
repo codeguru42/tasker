@@ -29,7 +29,7 @@ Each task is in one state. An edge is a permitted change from one state to anoth
 | `cleanup_failed`          | `finish` stopped before the cleanup ended.                            |
 | `finished`                | Terminal. The task is done.                                           |
 | `updating_branch`         | tasker moves the worktree onto a newer base.                          |
-| `quota_blocked`           | A subscription limit stopped a run.                                   |
+| `quota_blocked`           | A subscription limit or a used-up budget stopped a run.               |
 | `awaiting_quota_approval` | The quota use passed the threshold. The task waits for your approval. |
 | `interrupted`             | The process of a run died, or tasker passed it a signal.              |
 | `failed`                  | An operation failed.                                                  |
