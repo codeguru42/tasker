@@ -8,6 +8,7 @@ import { useFakePiExtension, type FakePiTool } from "../../helpers/fake-pi-exten
 import { useTempDir } from "../../helpers/temp.js";
 import type { GuardLimits } from "../../../src/assistant/pi/guard-limits.js";
 import guardExtension from "../../../src/assistant/pi/guard-extension.js";
+import * as bashCommandCheckModule from "../../../src/assistant/pi/bash-command-check.js";
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
@@ -46,8 +47,8 @@ function invokeGuard(args: string[], tools: FakePiTool[] = [], fake = useFakePiE
   return fake;
 }
 
-function guardedFake(limitsTools: GuardLimits["tools"], tools: FakePiTool[]) {
-  const path = writeLimits({ ...validLimits(), tools: limitsTools });
+function guardedFake(limitsTools: GuardLimits["tools"], tools: FakePiTool[], deniedCommands: string[] = []) {
+  const path = writeLimits({ ...validLimits(), tools: limitsTools, deniedCommands });
   return invokeGuard(limitsArgs(path), tools);
 }
 
@@ -412,13 +413,55 @@ describe("guard extension tool source checks", () => {
     expect(lookup).toHaveBeenCalledTimes(2);
   });
 
-  it.each(["bash", "powershell"])("blocks shell tool %s without testing a command", async (name) => {
-    const shell = tool(name, `builtin:${name}`, "builtin");
+  it("keeps powershell blocked with its current reason", async () => {
+    const shell = tool("powershell", "builtin:powershell", "builtin");
     const fake = guardedFake([limitTool(shell)], [shell]);
 
-    const result = await callTool(fake, name, { command: "SENSITIVE" });
+    const result = await callTool(fake, "powershell", { command: "SENSITIVE" });
 
     expectBlock(result, "command test");
+  });
+
+  it("blocks a denied command in a trusted bash call", async () => {
+    const shell = tool("bash", "builtin:bash", "builtin");
+    const fake = guardedFake([limitTool(shell)], [shell], ["git push"]);
+
+    const result = await callTool(fake, "bash", { command: "git push" });
+
+    expect(result).toEqual({
+      block: true,
+      reason: 'tasker blocked this command: it runs "git push", which this run must not run.',
+    });
+  });
+
+  it("passes an allowed command in a trusted bash call", async () => {
+    const shell = tool("bash", "builtin:bash", "builtin");
+    const fake = guardedFake([limitTool(shell)], [shell], ["git push"]);
+
+    expect(await callTool(fake, "bash", { command: "git status" })).toBe("tool result");
+  });
+
+  it("blocks a non-string command in a trusted bash call", async () => {
+    const shell = tool("bash", "builtin:bash", "builtin");
+    const fake = guardedFake([limitTool(shell)], [shell], ["git push"]);
+
+    expect(await callTool(fake, "bash", { command: 4 })).toEqual({
+      block: true,
+      reason:
+        "tasker blocked this command: the guard extension cannot read it with certainty (the command is not a string).",
+    });
+  });
+
+  it("does not scan a bash call when its tool source does not match", async () => {
+    const configured = tool("bash", "builtin:bash", "builtin");
+    const current = tool("bash", "/tmp/replacement.js", "cli");
+    const fake = guardedFake([limitTool(configured)], [current], ["git push"]);
+    const scan = vi.spyOn(bashCommandCheckModule, "checkBashCommand");
+
+    const result = await callTool(fake, "bash", { command: "git push" });
+
+    expectBlock(result, "source");
+    expect(scan).not.toHaveBeenCalled();
   });
 
   it("passes a named non-file, non-shell tool", async () => {
