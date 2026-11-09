@@ -60,6 +60,8 @@ export interface PreparedExecuteRun {
   provider: AssistantProvider;
   // The approved quota window of the request, for the result step.
   approvedResetsAt?: number;
+  // The exact deny list used by the shell. Execute passes it to protected-change validation.
+  deniedReadPaths: readonly string[];
   // The commit text for the prompt of the run. It holds the {{BASE_REF}} placeholder.
   executeCommitText: string;
   start(input: ExecuteStartInput): Promise<RunOutcome>;
@@ -246,6 +248,7 @@ export async function prepareTaskExecuteRun(req: TaskRunRequest): Promise<Prepar
     session: common.session,
     provider: common.provider,
     approvedResetsAt: common.approvedResetsAt,
+    deniedReadPaths: sandbox.denyRead ?? [],
     executeCommitText: surface.executeCommitText,
     start: (input) => {
       const outcome = common.run({ ...limits, timeoutMs: input.timeoutMs ?? limits.timeoutMs }, input, resume);

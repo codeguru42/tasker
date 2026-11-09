@@ -26,7 +26,7 @@ import { approvedResetsAtOf, transitionTask, transitionWithExecution } from "../
 import { executeTranscriptPath } from "../store/layout.js";
 import { withTaskLock } from "../store/locks.js";
 import { readPlanFile } from "../store/plan-file.js";
-import { type ExecuteFixTurn, type TaskStore } from "../store/store.js";
+import { type ExecuteFixTurn, type ProtectedExecuteTurn, type TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskExecuteRun } from "./assistant-run.js";
 import {
@@ -45,6 +45,116 @@ type PlanTodo = PlanAnswer["todos"][number];
 
 // One turn of the run: a todo or the fix turn, with the words that name it in a message.
 type Subject = { kind: "todo"; todo: PlanTodo; label: string } | { kind: "fix"; turn: ExecuteFixTurn; label: string };
+
+function turnIdFor(subject: Subject): string {
+  return subject.kind === "todo" ? `todo:${subject.todo.id}` : `fix:${subject.turn.queuedAt}`;
+}
+
+function turnIdsFor(store: TaskStore, taskId: number, version: number, base: string): string[] {
+  const ids: string[] = [];
+  for (let attempt = 1; ; attempt += 1) {
+    const id = attempt === 1 ? base : `${base}:${attempt}`;
+    if (store.protectedExecuteTurn(taskId, version, id) === undefined) break;
+    ids.push(id);
+  }
+  return ids;
+}
+
+async function reconcileProtectedTurn(
+  store: TaskStore,
+  vcs: ReturnType<typeof vcsForRepo>["vcs"],
+  ctx: ReturnType<typeof vcsForRepo>["ctx"],
+  task: ReturnType<typeof taskInState>,
+  turn: ProtectedExecuteTurn,
+  deniedPaths: readonly string[],
+): Promise<ProtectedExecuteTurn> {
+  if (task.worktreePath === null) throw new Error(`task ${task.id} has no worktree for protected recovery`);
+
+  if (turn.phase === "complete") {
+    const branch = requireBranch(task);
+    const state = await vcs.workspaceState(ctx, { path: task.worktreePath });
+    const branchRevision = await vcs.taskRefRevision(ctx, { taskRef: branch });
+    if (
+      turn.endingRevision === null ||
+      state.head !== turn.endingRevision ||
+      state.taskRef !== branch ||
+      branchRevision !== turn.endingRevision
+    ) {
+      throw new Error(`completed protected execute turn ${turn.turnId} no longer matches the task branch and worktree`);
+    }
+    await vcs.materializeProtectedWorkspaceChanges(ctx, {
+      path: task.worktreePath,
+      taskRef: branch,
+      beforeRevision: turn.startingRevision,
+      afterRevision: turn.endingRevision,
+      deniedPaths,
+    });
+    return turn;
+  }
+
+  if (turn.phase === "started" && turn.outcome === null) {
+    throw new Error(`unknown result for protected execute turn ${turn.turnId}; recovery cannot continue`);
+  }
+
+  let endingRevision = turn.endingRevision;
+  if (endingRevision === null) {
+    endingRevision = (await vcs.workspaceState(ctx, { path: task.worktreePath })).head;
+    store.recordProtectedExecuteTurnEndingRevision(task.id, turn.planVersion, turn.turnId, endingRevision);
+  }
+  await vcs.materializeProtectedWorkspaceChanges(ctx, {
+    path: task.worktreePath,
+    taskRef: requireBranch(task),
+    beforeRevision: turn.startingRevision,
+    afterRevision: endingRevision,
+    deniedPaths,
+  });
+  return store.completeProtectedExecuteTurn(task.id, turn.planVersion, turn.turnId);
+}
+
+async function reconcilePendingProtectedTurns(
+  store: TaskStore,
+  vcs: ReturnType<typeof vcsForRepo>["vcs"],
+  ctx: ReturnType<typeof vcsForRepo>["ctx"],
+  task: ReturnType<typeof taskInState>,
+  version: number,
+  subjects: readonly Subject[],
+  deniedPaths: readonly string[],
+): Promise<boolean> {
+  let fixTurnDone = false;
+  const bases = new Set(subjects.map(turnIdFor));
+  // Include every todo identity, even when it is already done or no turn remains to run.
+  for (const progress of store.executeTodoProgress(task.id, version)) bases.add(`todo:${progress.todo.id}`);
+  for (const base of bases) {
+    for (const id of turnIdsFor(store, task.id, version, base)) {
+      const turn = store.protectedExecuteTurn(task.id, version, id)!;
+      if (turn.phase === "complete") {
+        if (turn.outcome !== "succeeded") continue;
+        if (base.startsWith("todo:")) {
+          const todoId = base.slice("todo:".length);
+          const current = store.executeTodoProgress(task.id, version).find((entry) => entry.todo.id === todoId);
+          if (current?.state === "done") continue;
+        } else if (store.executeFixTurnState(task.id, version) !== "queued") {
+          continue;
+        }
+      }
+      const completed = await reconcileProtectedTurn(store, vcs, ctx, task, turn, deniedPaths);
+      if (completed.outcome === "succeeded") {
+        if (base.startsWith("todo:")) {
+          const todoId = base.slice("todo:".length);
+          const current = store.executeTodoProgress(task.id, version).find((entry) => entry.todo.id === todoId);
+          if (current?.state !== "done") {
+            store.completeExecuteTodo(task.id, version, todoId);
+          }
+        } else {
+          if (store.executeFixTurnState(task.id, version) === "queued") {
+            fixTurnDone = store.completeExecuteFixTurn(task.id, version, base.slice("fix:".length)) || fixTurnDone;
+          }
+        }
+      }
+    }
+  }
+  return fixTurnDone;
+}
 
 export interface ExecuteRequest {
   config: Config;
@@ -100,6 +210,22 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     session: stored ? { resume: true, sessionId: stored.sessionId, recorded: stored } : { resume: false },
     approvedResetsAt: approvedResetsAtOf(store, task.id),
   });
+
+  const initialSubjects: Subject[] = [];
+  const initialFixTurn = store.queuedExecuteFixTurn(task.id, version);
+  if (initialFixTurn !== undefined) {
+    initialSubjects.push({ kind: "fix", turn: initialFixTurn, label: "the fix turn for the verify failure" });
+  }
+  // Reconcile every saved request before this run starts a model, including a no-turn completion.
+  const recoveredFixTurnDone = await reconcilePendingProtectedTurns(
+    store,
+    vcs,
+    ctx,
+    task,
+    version,
+    initialSubjects,
+    prepared.deniedReadPaths,
+  );
 
   const progress = store.executeTodoProgress(task.id, version);
   const doneIds = new Set(progress.filter((entry) => entry.state === "done").map((entry) => entry.todo.id));
@@ -159,7 +285,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
     return failRun(store, task, io, message);
   };
   const transcriptPath = executeTranscriptPath(config.dataRoot, task, version);
-  let fixTurnDone = false;
+  let fixTurnDone = recoveredFixTurnDone;
   try {
     makeParentFolders(transcriptPath);
     const fd = openSync(transcriptPath, "a");
@@ -187,6 +313,16 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
             VERIFY_LOG: subject.turn.verifyLogTail ?? NO_VERIFY_LOG,
           });
         }
+        const turnBase = turnIdFor(subject);
+        const priorTurns = turnIdsFor(store, task.id, version, turnBase);
+        const turnId = priorTurns.length === 0 ? turnBase : `${turnBase}:${priorTurns.length + 1}`;
+        const startingRevision = (await vcs.workspaceState(ctx, { path: task.worktreePath! })).head;
+        store.beginProtectedExecuteTurn({
+          taskId: task.id,
+          planVersion: version,
+          turnId,
+          startingRevision,
+        });
         const prompt = first && prefix !== undefined ? `${prefix}\n${turnPrompt}` : turnPrompt;
         first = false;
         const outcome = await prepared.start({
@@ -197,6 +333,26 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
           timeoutMs: left,
         });
         denials.push(...outcome.permissionDenials);
+        const read = outcome.kind === "success" ? readTurnResult(outcome.structuredOutput) : undefined;
+        if (outcome.kind === "success") {
+          const endingRevision = (await vcs.workspaceState(ctx, { path: task.worktreePath! })).head;
+          store.recordProtectedExecuteTurnOutcome(
+            task.id,
+            version,
+            turnId,
+            read?.kind === "done" ? "succeeded" : "failed",
+            read?.kind === "done" ? endingRevision : undefined,
+          );
+          const protectedTurn = store.protectedExecuteTurn(task.id, version, turnId)!;
+          await reconcileProtectedTurn(store, vcs, ctx, task, protectedTurn, prepared.deniedReadPaths);
+        } else {
+          store.recordProtectedExecuteTurnOutcome(
+            task.id,
+            version,
+            turnId,
+            outcome.kind === "interrupted" ? "interrupted" : "failed",
+          );
+        }
         if (outcome.kind !== "success") flushDenials();
         const result = applyRunOutcome({
           store,
@@ -208,15 +364,11 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
           quota: { repo: config.repos[task.repoKey], prepared },
           omitInterruptedLine: true,
         });
-        const read = "outcome" in result ? readTurnResult(result.outcome.structuredOutput) : undefined;
         if (read?.kind === "done") {
           if (subject.kind === "todo") {
-            store.setExecuteTodoState(task.id, version, subject.todo.id, "done");
-            store.appendEvent(task.id, "todo_done", { id: subject.todo.id });
+            store.completeExecuteTodo(task.id, version, subject.todo.id);
           } else {
-            store.markExecuteFixTurnDone(task.id, version);
-            store.appendEvent(task.id, "fix_turn_done");
-            fixTurnDone = true;
+            fixTurnDone = store.completeExecuteFixTurn(task.id, version, subject.turn.queuedAt) || fixTurnDone;
           }
         }
         recordSandboxCleanup(store, task, outcome);

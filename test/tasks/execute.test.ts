@@ -608,12 +608,12 @@ describe("executeTask protected workspace recovery", () => {
     expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
   });
 
-  it("refuses an unknown starting revision before a model starts", async () => {
+  it("refuses an unknown turn result before checking its starting revision", async () => {
     const fixture = await useExecuteFixture({ stream: doneStream }, oneTodo);
     const beforeRevision = await branchHeadOf(fixture);
     startRecord(fixture, "d".repeat(40));
 
-    await expect(runExecute(fixture)).rejects.toThrow(/starting revision/);
+    await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
 
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("approved");
     expect(todoStates(fixture)).toEqual([["a", "not_started"]]);
@@ -731,7 +731,7 @@ describe("executeTask protected workspace recovery", () => {
 
     await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
     expect(await branchHeadOf(fixture)).toBe(afterRevision);
-    expect(readFileSync(join(fixture.started.worktree, protectedSkillPath), "utf8")).toBe(protectedSkillContent);
+    expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(false);
     expect(protectedTurnOf(fixture)).toMatchObject({
       startingRevision: beforeRevision,
       endingRevision: null,
@@ -997,7 +997,7 @@ describe("executeTask protected workspace recovery", () => {
     );
     const beforeWorktree = existsSync(join(fixture.started.worktree, protectedSkillPath));
 
-    await expect(runExecute(fixture)).rejects.toThrow(/index/);
+    await expect(runExecute(fixture)).rejects.toThrow(/unknown result for protected execute turn todo:a/);
 
     expect(latestTaskOf(fixture.started.dataRoot, fixture.started.key).state).toBe("approved");
     expect(existsSync(join(fixture.started.worktree, protectedSkillPath))).toBe(beforeWorktree);

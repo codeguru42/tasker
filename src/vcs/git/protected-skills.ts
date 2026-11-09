@@ -138,7 +138,7 @@ function currentContent(options: ProtectedWorkspaceChangeOptions, path: string):
   const target = checkParents(options, path);
   const stat = lstatOrUndefined(target);
   if (stat === undefined) return undefined;
-  if (path === ".codex/skills") {
+  if (path === ".codex/skills" || path === ".claude/skills") {
     if (!stat.isSymbolicLink()) refuse(options, path, "the Codex destination is not a symbolic link");
     return readlinkSync(target);
   }
@@ -160,6 +160,12 @@ function validateSafeEntry(
   if (path === ".codex/skills") {
     if (entry.mode !== "120000" || entry.type !== "blob" || content !== CODEX_LINK) {
       refuse(options, path, `the Codex link must have mode 120000 and target ${CODEX_LINK}`);
+    }
+    return;
+  }
+  if (path === ".claude/skills") {
+    if (entry.mode !== "120000" || entry.type !== "blob" || content !== CODEX_LINK) {
+      refuse(options, path, `the Claude link must have mode 120000 and target ${CODEX_LINK}`);
     }
     return;
   }
@@ -326,7 +332,6 @@ export async function materializeProtectedWorkspaceChanges(options: ProtectedWor
     const afterContent = await contentOf(options, after, path);
     validateSafeEntry(options, path, after, afterContent);
     if (before !== undefined) validateSafeEntry(options, path, before, beforeContent);
-    if (path.startsWith(".claude/skills")) refuse(options, path, "the Claude link uses its separate worktree route");
     const current = currentContent(options, path);
     if (!entryMatches(current, beforeContent, path) && !entryMatches(current, afterContent, path)) {
       refuse(options, path, "the destination does not match its checked before or after content");
@@ -336,6 +341,7 @@ export async function materializeProtectedWorkspaceChanges(options: ProtectedWor
 
   for (const entry of entries) {
     const target = checkParents(options, entry.path);
+    if (entry.path === ".claude/skills") continue;
     if (entry.after === undefined) {
       if (lstatOrUndefined(target) !== undefined) {
         refuseHardLinkedCanonicalDestination(options, entry.path, target);
