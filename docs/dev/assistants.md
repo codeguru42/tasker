@@ -429,6 +429,11 @@ continued session.
 - Under `workspace-write`, the cwd, the temp folder and each path of `sandbox.allowWrite` are keys with the value
   `"write"`. The temp folder is `TMPDIR`, or `/tmp` when `TMPDIR` is not set. A `read-only` run has no write key and
   does not read `sandbox.allowWrite`.
+- A `workspace-write` run also gives `"deny"` keys to the worktree folders `.agents`, `.aws` and `.codex`. These keys
+  apply to new and continued sessions. Before Codex starts, the provider creates each missing folder as an empty
+  placeholder. It refuses a folder that is a link or is not a directory. After the run, it removes only empty folders
+  that were missing before the run. This lets the sandbox use each deny key and lets tasker keep materialized files and
+  links.
 - Each path of `sandbox.denyRead` is a key with the value `"deny"`. So are the folder `herdr` under `XDG_CONFIG_HOME`
   (or under `HOME/.config`), the real path of the file that `SSH_AUTH_SOCK` names, the real path of the folder that
   `XDG_RUNTIME_DIR` names and the real path of `/var/run/docker.sock`. `codexSocketDenyPaths()` in
@@ -511,9 +516,56 @@ layers. See [Push guard](version-control.md#push-guard).
 
 ### The limits of the execute role
 
-The execute role writes the worktree, the temp folder and each path of `sandbox.allowWrite`. The sandbox protects
-`<worktree>/.git`, `.codex`, `.agents` and `.aws` by itself. A repo that tracks a file under `.codex/` or `.agents/`
-cannot edit it in an execute run.
+The execute role gets write keys for the worktree, the temp folder and each path of `sandbox.allowWrite`. Deny keys
+protect `.agents`, `.aws` and `.codex` inside the worktree. The execute role has no direct write key or command grant
+for those folders. Git can still write its shared clone paths so it can make commits.
+
+### Protected skill requests
+
+`.agents/skills/` is the only source of editable skill content. Codex records a request in a commit and does not write
+these protected worktree paths directly. For an add or edit, it writes a Git blob and stages mode `100644` at the
+canonical path. For a move, it stages a removal and an addition. For a delete, it removes the index entry. The staging
+forms are `git hash-object -w --stdin`, `git update-index --add --cacheinfo <mode>,<oid>,<path>` and
+`git update-index --force-remove -- <path>`.
+
+Before tasker materializes a protected Git blob, it encodes the decoded UTF-8 text again and checks that the Git object
+ID matches the tree. If decoding invalid UTF-8 changed its bytes, tasker refuses the request before it writes any
+protected path. Valid UTF-8 bytes for U+FFFD remain eligible.
+
+For canonical skill files, tasker compares the worktree file bytes with the validated Git blob bytes during preflight.
+It skips a write only when the existing bytes match the ending blob. After materialization, tasker compares the bytes
+again. A text comparison alone does not prove that the file bytes match.
+
+Tasker allows a tracked legacy Claude-file move only when every starting file below `.claude/skills/` disappears from
+the ending tree, the ending tree tracks the exact `.claude/skills -> ../.agents/skills` link, and each file appears at
+the matching `.agents/skills/<suffix>` path with mode `100644` and the same Git blob object. The worktree must already
+hold the exact Claude link. Tasker checks the old files in the Git trees and does not read or remove them through the
+new link. An unrelated or unmatched legacy file makes tasker refuse the request.
+
+An existing canonical skill file must be a regular file with no execute bits before tasker edits or replays it, even
+when its bytes match the before or after blob. Tasker also refuses a canonical file with multiple hard links during
+preflight, including when its bytes match the ending blob, and checks the link count again before each write or delete.
+After each write, tasker checks the bytes and makes sure that the file is still regular and has no execute bits.
+
+Codex requests `.codex/skills` in the same way. It stages a Git symbolic-link entry with mode `120000` and the exact
+target bytes `../.agents/skills`. It does not create that link in the worktree. Before execute reports success, tasker
+checks the committed change, the index, the worktree path and each destination. It then creates only the exact link and
+the checked canonical skill files. It accepts an existing destination only when it matches the saved content before or
+after the request. It refuses another protected path, a different link target, a linked or broken parent, an unrelated
+destination, a changed branch tip or an uncertain index.
+
+Each execute turn has a saved starting revision and a phase in the task store. On success, tasker saves the ending
+revision and checks the request before it marks the turn complete. After a failed or interrupted turn, tasker does not
+immediately materialize a request in the protected worktree. Before a later execute turn, including one after retry or
+resume, tasker checks and reconciles a saved request before starting Codex. If the request is uncertain, tasker refuses
+and starts no later model. Only tasker changes its managed worktree during recovery.
+
+`.claude/skills -> ../.agents/skills` stays on its separate worktree route. The protected-request materializer checks
+that a committed Claude link has the exact target and mode, but does not create or replace it.
+
+**UNMEASURED:** Tests cover tasker ordering, Git validation and materialization. They do not prove that the real Codex
+sandbox permits the staged route while blocking shell and `apply_patch` writes through either link. A later approved,
+built execute probe must measure the full route. Its result belongs in a separate add-work update after that probe.
 
 The sandbox cannot tell `apply_patch` from a `git commit`, because both run as the same run. A `git commit` must write
 under `<clone>/refs`, `objects`, `logs` and `worktrees/<name>`, so these are write paths. As a result, `apply_patch` can
@@ -523,9 +575,9 @@ add a file there too. A `PreToolUse` hook of tasker closes this gap for `apply_p
 `src/assistant/codex/edit-hook-main.ts` runs as `node edit-hook-main.js <worktree> <denied...>`. It reads the stdin of
 the hook, and `editHookAnswer()` decides. A deny is one line of JSON with exit code 0. An allow prints nothing. The hook
 reads each `*** Add File:`, `*** Update File:`, `*** Delete File:` and `*** Move to:` header. It denies a patch that it
-cannot read, a path with a `..` part, a denied path, a symbolic link in the path, a path that it cannot read and a path
-outside the worktree. It writes no file. An indented `***` line that matches no header is a context line of a hunk. A
-`***` line with no indent that matches no header is a patch that the hook cannot read.
+cannot read, a path with a `.` or `..` part, a protected or denied path, a symbolic link in the path, a path that it
+cannot read and a path outside the worktree. It writes no file. An indented `***` line that matches no header is a
+context line of a hunk. A `***` line with no indent that matches no header is a patch that the hook cannot read.
 
 The hook denies an `apply_patch` path outside the worktree that no entry names. This is a decision that the issue did
 not state. The reason is the limit of the `claude` provider, which allows `Edit` and `Write` only in the worktree. The
@@ -613,7 +665,16 @@ run on macOS or Windows is unmeasured.
 - Edit of denied paths (2026-11-01): `apply_patch` cannot change `<worktree>/.git`, `<clone>/description` or
   `<clone>/hooks/*`. It can add files under `<clone>/refs`, `objects`, `logs` and `worktrees/<name>`. A patch path
   `sub/../x.txt` writes `x.txt`. The shell has no `apply_patch`.
-- Config folders (2026-11-01): `apply_patch` and the shell cannot write `<worktree>/.codex/` and `<worktree>/.agents/`.
+- Config folders (2026-11-01): the default profile denied shell writes to `<worktree>/.codex/` and
+  `<worktree>/.agents/`. On 2026-11-09, Codex CLI 0.166.0 with a direct write key for `.agents/skills` allowed shell
+  writes through `.claude/skills`, `.codex/skills` and an inner link. Four files appeared under canonical skills. The
+  probe exited 1 by design. This rules out a direct canonical write key. The staged request and the current deny keys
+  have not been measured with the built provider.
+- Codex link (2026-11-08): the default profile denied creation of `.codex/skills`, while it allowed creation of
+  `.claude/skills -> ../.agents/skills`. A candidate with write keys for `.agents/skills` and `.codex/skills` failed
+  before its script ran because a nested deny target was missing. With a preexisting sentinel, another candidate allowed
+  a canonical shell write but still denied creation of `.codex/skills` in its protected parent. The script exited 12.
+  These runs did not test the staged route, linked content writes or all deny cases.
 - Hook (2026-11-01): the inline `-c hooks.PreToolUse=[...]` form needs no file in the Codex home. It runs only with
   `--dangerously-bypass-hook-trust`, in `codex exec` and in `codex exec resume`. `tool_name` is `apply_patch`, and
   `tool_input.command` holds the bare patch text. A deny line with exit 0, or exit 2 with the reason on stderr, blocks
