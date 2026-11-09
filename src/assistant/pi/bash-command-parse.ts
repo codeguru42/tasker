@@ -93,6 +93,7 @@ export function parseBashCommand(source: string): ParsedBashLine {
         continue;
       }
       if (op === "<<" || op === "<<-") {
+        readsInput = true;
         const delimiter = tokens[i + 1];
         if (delimiter?.kind !== "word") throw new BashParseError("missing here-document delimiter");
         i += 1;

@@ -1,6 +1,7 @@
 import { parseBashCommand, type BashCommand, type BashWord, type ParsedBashLine } from "./bash-command-parse.js";
 import {
   hasBindingEffect,
+  isHiddenShellInput,
   isShell,
   isSpecialAssignment,
   isWrapper,
@@ -11,7 +12,14 @@ import {
 } from "./bash-command-readers.js";
 import { gitSubcommandIndex, scanGit } from "./bash-command-git.js";
 import { scanFind } from "./bash-command-find.js";
-import { GIT_COMMAND_ASSIGNMENTS, XARGS_SAFE_MODES } from "./bash-command-tables.js";
+import {
+  COMMAND_TEXT_ASSIGNMENTS,
+  GIT_COMMAND_ASSIGNMENT_PREFIX,
+  XARGS_SAFE_COMMANDS,
+  XARGS_SAFE_MODES,
+  XARGS_SAFE_OPTIONS,
+  XARGS_VALUE_OPTIONS,
+} from "./bash-command-tables.js";
 
 const CAUSE = {
   expansion: "an expansion can change a command name or a word of a denied command",
@@ -19,6 +27,7 @@ const CAUSE = {
   binding: "a command can bind a name to another program",
   option: "an unknown option of git or of a shell",
   array: "an array index can run a command",
+  gitConfig: "git can run a command line from a configuration value",
   depth: "the command lines are nested more than 8 levels deep",
 };
 
@@ -47,11 +56,15 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
 
   for (const word of allWords) {
     scanNested(word, entries, result, depth);
-    if (hasExecutableArrayIndex(word.value) || (base === "grep" && word.value === "$(")) {
+    if (
+      hasExecutableArrayIndex(word.value) ||
+      hasLiteralExpansionMarker(word) ||
+      (base === "grep" && word.value === "$(")
+    ) {
       setFirstCause(result, CAUSE.array);
     }
     if (isSpecialAssignment(word.value)) setFirstCause(result, CAUSE.binding);
-    scanEditorAssignment(word, entries, result, depth);
+    scanCommandAssignment(word, entries, result, depth);
   }
   for (let index = 0; index < words.length; index += 1) {
     const word = words[index];
@@ -94,7 +107,6 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
   if (isWrapper(base)) scanWrapper(base, words, commandIndex, entries, result, depth);
   if (command.inputFromPipeline && isShell(base)) setFirstCause(result, CAUSE.input);
   if (isShell(base) && shellReadsInput(words, commandIndex, command)) setFirstCause(result, CAUSE.input);
-  if (base === "fish") setFirstCause(result, CAUSE.option);
   if (base === "builtin" && words[commandIndex + 1] !== undefined) {
     scanCommand(
       { words: words.slice(commandIndex + 1), inputFromPipeline: command.inputFromPipeline },
@@ -134,13 +146,18 @@ function hasGitEntry(entries: readonly string[]): boolean {
   return entries.some((entry) => entry.startsWith("git "));
 }
 
-function scanEditorAssignment(word: BashWord, entries: readonly string[], result: ScanResult, depth: number): void {
+function scanCommandAssignment(word: BashWord, entries: readonly string[], result: ScanResult, depth: number): void {
   const equals = word.value.indexOf("=");
   if (equals < 0) return;
   const name = word.value.slice(0, equals);
-  if (!GIT_COMMAND_ASSIGNMENTS.includes(name as (typeof GIT_COMMAND_ASSIGNMENTS)[number])) return;
+  if (
+    !COMMAND_TEXT_ASSIGNMENTS.includes(name as (typeof COMMAND_TEXT_ASSIGNMENTS)[number]) &&
+    !name.startsWith(GIT_COMMAND_ASSIGNMENT_PREFIX)
+  ) {
+    return;
+  }
   const value = word.value.slice(equals + 1);
-  if (word.expanded) setFirstCause(result, CAUSE.expansion);
+  if (word.expanded) setFirstCause(result, CAUSE.gitConfig);
   else scanCommandText(value, entries, result, depth);
 }
 
@@ -156,14 +173,33 @@ function scanXargs(
   result: ScanResult,
   depth: number,
 ): void {
-  if (XARGS_SAFE_MODES.includes(words[commandIndex + 1]?.value as (typeof XARGS_SAFE_MODES)[number])) return;
-  setFirstCause(result, "xargs can add a denied command from its input");
   let index = commandIndex + 1;
+  let unknownOption = false;
   while (index < words.length && (words[index]?.value ?? "").startsWith("-")) {
     const option = words[index]?.value ?? "";
-    index += ["-I", "-L", "-n", "-P", "-d"].includes(option) ? 2 : 1;
+    if (XARGS_SAFE_MODES.includes(option as (typeof XARGS_SAFE_MODES)[number])) return;
+    if (option === "--") {
+      index += 1;
+      break;
+    }
+    if (XARGS_SAFE_OPTIONS.includes(option as (typeof XARGS_SAFE_OPTIONS)[number])) {
+      index += 1;
+      continue;
+    }
+    unknownOption = true;
+    const takesValue = XARGS_VALUE_OPTIONS.some((name) => option === name);
+    index += takesValue ? 2 : 1;
   }
   const candidate = words.slice(index);
+  const target = candidate[0];
+  if (
+    !unknownOption &&
+    (target === undefined ||
+      (!target.expanded && XARGS_SAFE_COMMANDS.includes(target.value as (typeof XARGS_SAFE_COMMANDS)[number])))
+  ) {
+    return;
+  }
+  setFirstCause(result, "xargs can add a denied command from its input");
   if (candidate.length > 0 && !candidate.some((word) => word.expanded)) {
     scanCommand({ words: candidate, inputFromPipeline: false }, entries, result, depth);
   }
@@ -229,7 +265,7 @@ function scanSource(words: BashWord[], commandIndex: number, result: ScanResult)
   const source = words[commandIndex + 1];
   if (source === undefined) setFirstCause(result, CAUSE.input);
   else if (source.expanded) setFirstCause(result, CAUSE.expansion);
-  else setFirstCause(result, CAUSE.input);
+  else if (isHiddenShellInput(source.value)) setFirstCause(result, CAUSE.input);
 }
 
 function shellReadsInput(words: BashWord[], commandIndex: number, command: BashCommand): boolean {
@@ -248,6 +284,20 @@ function hasExecutableArrayIndex(value: string): boolean {
   const open = value.indexOf("[");
   const close = value.indexOf("]");
   return open >= 0 && close > open && value.slice(open + 1, close).includes("$(");
+}
+
+function hasLiteralExpansionMarker(word: BashWord): boolean {
+  for (let index = 0; index < word.parts.length; index += 1) {
+    const part = word.parts[index];
+    if (part === undefined) continue;
+    if (["single-quoted", "ansi-quoted"].includes(part.kind) && /\$\(|`|\$\{/u.test(part.value)) return true;
+    if (part.kind !== "escape") continue;
+    if (part.value.includes("`")) return true;
+    const next = word.parts[index + 1]?.value ?? "";
+    const previous = word.parts[index - 1]?.value ?? "";
+    if ((part.value === "$" && /^[({]/u.test(next)) || (part.value === "(" && previous === "$")) return true;
+  }
+  return false;
 }
 
 function isAssignment(value: string): boolean {

@@ -1,16 +1,15 @@
 export const SHELLS = {
   bash: { family: "bash", flags: "abefhklmnptuvxBCEHPT" },
   sh: { family: "posix", flags: "abefnuvx" },
-  zsh: { family: "posix", flags: "abefnuvx" },
-  ksh: { family: "posix", flags: "abefnuvx" },
+  zsh: { family: "posix", flags: "cliex" },
+  ksh: { family: "posix", flags: "cliex" },
   dash: { family: "posix", flags: "abefnuvx" },
   rbash: { family: "bash", flags: "abefhklmnptuvxBCEHPT" },
   ash: { family: "posix", flags: "abefnuvx" },
-  mksh: { family: "posix", flags: "abefnuvx" },
-  yash: { family: "posix", flags: "abefnuvx" },
+  mksh: { family: "posix", flags: "cliex" },
+  yash: { family: "posix", flags: "cliex" },
+  fish: { family: "fish", flags: "cliex" },
 } as const;
-
-export const LINE_READERS = ["eval", ...Object.keys(SHELLS)] as const;
 
 export const CALLBACK_READERS = ["mapfile", "readarray"] as const;
 
@@ -35,9 +34,13 @@ export const WRAPPERS = [
   "busybox",
 ] as const;
 
-export const SPECIAL_ASSIGNMENTS = ["BASH_ENV", "ENV"] as const;
+export const SPECIAL_ASSIGNMENTS = ["BASH_ENV", "ENV", "BASH_ALIASES"] as const;
 
-export const BINDING_COMMANDS = ["alias", "fc", "set", "history", "trap"] as const;
+export const ALIAS_READ_OPTIONS = ["-p"] as const;
+export const COMMAND_TEXT_ASSIGNMENTS = ["EDITOR", "VISUAL", "PAGER"] as const;
+export const BASH_INIT_FILE_OPTIONS = ["--rcfile", "--init-file"] as const;
+export const SET_BINDING_OPTIONS = ["-H", "+H", "-eH", "+eH"] as const;
+export const HISTORY_BINDING_OPTIONS = ["history", "histexpand"] as const;
 
 export const VALUE_OPTIONS: Record<string, readonly string[]> = {
   env: ["-u", "--unset", "-C", "--chdir"],
@@ -159,4 +162,23 @@ export const FIND_VALUE_PREDICATES = [
   "-mindepth",
 ] as const;
 export const XARGS_SAFE_MODES = ["--version", "--help", "--show-limits"] as const;
-export const GIT_COMMAND_ASSIGNMENTS = ["GIT_EDITOR", "GIT_SEQUENCE_EDITOR", "GIT_SSH_COMMAND"] as const;
+export const XARGS_SAFE_COMMANDS = ["ls", "echo"] as const;
+export const XARGS_SAFE_OPTIONS = ["-0", "--null", "-r", "--no-run-if-empty"] as const;
+export const XARGS_VALUE_OPTIONS = [
+  "-I",
+  "--replace",
+  "-L",
+  "--max-lines",
+  "-n",
+  "--max-args",
+  "-P",
+  "--max-procs",
+  "-d",
+  "--delimiter",
+  "-E",
+  "--eof",
+  "-a",
+  "--arg-file",
+] as const;
+export const GIT_COMMAND_ASSIGNMENT_PREFIX = "GIT_";
+export const GIT_INVALID_GLOBAL_OPTIONS = ["-Cx", "-C=x", "--list-cmds"] as const;

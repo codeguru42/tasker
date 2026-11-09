@@ -266,7 +266,7 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
       if (end < 0) throw new BashParseError("unclosed dollar quote");
       const text = source.slice(i + 2, end);
       value += text;
-      expanded ||= q === "'";
+      expanded = true;
       append(q === "'" ? "ansi-quoted" : "locale-quoted", text, true, i, end + 1);
       i = end + 1;
       continue;

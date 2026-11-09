@@ -1,10 +1,12 @@
 import {
-  BINDING_COMMANDS,
+  BASH_INIT_FILE_OPTIONS,
   CALLBACK_READERS,
   COMMAND_STRING_READERS,
-  LINE_READERS,
+  ALIAS_READ_OPTIONS,
+  HISTORY_BINDING_OPTIONS,
   SHELLS,
   SPECIAL_ASSIGNMENTS,
+  SET_BINDING_OPTIONS,
   VALUE_OPTIONS,
   WRAPPERS,
 } from "./bash-command-tables.js";
@@ -21,10 +23,6 @@ export function isShell(base: string): boolean {
   return Object.hasOwn(SHELLS, base);
 }
 
-export function isLineReader(base: string): boolean {
-  return LINE_READERS.includes(base);
-}
-
 export function isWrapper(base: string): boolean {
   return WRAPPERS.includes(base as (typeof WRAPPERS)[number]);
 }
@@ -33,34 +31,45 @@ export function isSpecialAssignment(value: string): boolean {
   const equals = value.indexOf("=");
   if (equals < 0) return false;
   const name = value.slice(0, equals);
-  return SPECIAL_ASSIGNMENTS.includes(name as (typeof SPECIAL_ASSIGNMENTS)[number]) || name.startsWith("BASH_CMDS[");
+  return (
+    SPECIAL_ASSIGNMENTS.includes(name as (typeof SPECIAL_ASSIGNMENTS)[number]) ||
+    name.startsWith("BASH_CMDS[") ||
+    name.startsWith("BASH_ALIASES[")
+  );
 }
 
 export function hasBindingEffect(base: string, args: BashWord[]): boolean {
-  if (base === "set")
-    return args.some(
-      (word) =>
-        word.value === "-H" || word.value === "+H" || word.value === "-o history" || word.value === "+o history",
-    );
+  if (base === "alias")
+    return args.some((word) => !ALIAS_READ_OPTIONS.includes(word.value as (typeof ALIAS_READ_OPTIONS)[number]));
+  if (base === "set") {
+    return args.some((word, index) => {
+      const value = word.value;
+      if (SET_BINDING_OPTIONS.includes(value as (typeof SET_BINDING_OPTIONS)[number])) return true;
+      return (
+        (value === "-o" || value === "+o") &&
+        HISTORY_BINDING_OPTIONS.includes(args[index + 1]?.value as (typeof HISTORY_BINDING_OPTIONS)[number])
+      );
+    });
+  }
+  if (base === "shopt") {
+    const enablesAliases = args.some((word) => word.value === "-s");
+    return enablesAliases && args.some((word) => word.value === "expand_aliases");
+  }
   if (base === "history") return true;
   if (base === "trap") return !["-p", "-l"].includes(args[0]?.value ?? "");
-  if (base === "fc") return args.some((word) => word.value === "-s" || word.value === "-e");
-  return (
-    BINDING_COMMANDS.includes(base as (typeof BINDING_COMMANDS)[number]) || (base === "hash" && args[0]?.value === "-p")
-  );
+  if (base === "fc") return !args[0]?.value.startsWith("-l");
+  if (base === "hash") return args.some((word) => /^-[^-]*p/u.test(word.value));
+  return false;
 }
 
 export interface ReaderAction {
   code: BashWord;
-  reparsed: boolean;
 }
-export type ShellReadResult = { kind: "unknown" | "input" } | { kind: "code"; word?: BashWord } | { kind: "none" };
+export type ShellReadResult = { kind: "unknown" | "input" | "none" } | { kind: "code"; word?: BashWord };
 
 export function shellRead(base: string, words: BashWord[], start: number): ShellReadResult {
-  if (base === "eval")
-    return { kind: "code", word: words.slice(start).length ? joinWords(words.slice(start)) : undefined };
   const shell = SHELLS[base as keyof typeof SHELLS];
-  if (shell === undefined) return { kind: "none" };
+  if (shell === undefined) return { kind: "unknown" };
   let index = start;
   let commandMode = false;
   while (index < words.length) {
@@ -71,6 +80,15 @@ export function shellRead(base: string, words: BashWord[], start: number): Shell
       break;
     }
     if (value === "-") return { kind: "input" };
+    if (base === "bash" && BASH_INIT_FILE_OPTIONS.includes(value as (typeof BASH_INIT_FILE_OPTIONS)[number])) {
+      if (words[index + 1] === undefined) return { kind: "unknown" };
+      index += 2;
+      continue;
+    }
+    if (base === "bash" && BASH_INIT_FILE_OPTIONS.some((option) => value.startsWith(`${option}=`))) {
+      index += 1;
+      continue;
+    }
     if (!value.startsWith("-") && !value.startsWith("+")) break;
     if (
       value === "--login" ||
@@ -90,29 +108,37 @@ export function shellRead(base: string, words: BashWord[], start: number): Shell
       index += 2;
       continue;
     }
-    if (/^\+[A-Za-z]+$/u.test(value)) return { kind: "unknown" };
+    if (value.startsWith("+")) {
+      for (let flagIndex = 1; flagIndex < value.length; flagIndex += 1) {
+        if (!shell.flags.includes(value[flagIndex] ?? "")) return { kind: "unknown" };
+      }
+      index += 1;
+      continue;
+    }
     if (!value.startsWith("-")) return { kind: "unknown" };
+    let takesOptionValue = false;
     for (const flag of value.slice(1)) {
       if (flag === "c") commandMode = true;
       else if (flag === "s") return { kind: "input" };
-      else if (flag === "o" || flag === "O") {
-        index += 1;
-        if (words[index] === undefined) return { kind: "unknown" };
-      } else if (!shell.flags.includes(flag)) return { kind: "unknown" };
+      else if (flag === "o" || flag === "O") takesOptionValue = true;
+      else if (!shell.flags.includes(flag)) return { kind: "unknown" };
     }
     index += 1;
+    if (takesOptionValue) {
+      if (words[index] === undefined) return { kind: "unknown" };
+      index += 1;
+    }
   }
   if (commandMode) return { kind: "code", word: words[index] };
   if (index === words.length) return { kind: "input" };
-  if (base === "bash" && words.slice(index).some((word) => normalizePath(word.value) === "dev/stdin"))
-    return { kind: "input" };
+  if (isHiddenShellInput(words[index]?.value ?? "")) return { kind: "input" };
   return { kind: "none" };
 }
 
 export function readerActions(base: string, args: BashWord[]): ReaderAction[] {
   const actions: ReaderAction[] = [];
   if (base === "eval") {
-    if (args.length > 0) actions.push({ code: joinWords(args), reparsed: true });
+    if (args.length > 0) actions.push({ code: joinWords(args) });
     return actions;
   }
   if (base === "env") {
@@ -125,7 +151,7 @@ export function readerActions(base: string, args: BashWord[]): ReaderAction[] {
     if (index >= 0) {
       const word = args[index];
       const code = word?.value === "-S" || word?.value === "--split-string" ? args[index + 1] : word;
-      if (code !== undefined) actions.push({ code, reparsed: true });
+      if (code !== undefined) actions.push({ code });
     }
     return actions;
   }
@@ -137,7 +163,7 @@ export function readerActions(base: string, args: BashWord[]): ReaderAction[] {
     if (index >= 0) {
       const candidate = args[index];
       const code = candidate?.value === "-c" || candidate?.value === "--command" ? args[index + 1] : candidate;
-      if (code !== undefined) actions.push({ code, reparsed: true });
+      if (code !== undefined) actions.push({ code });
     }
     return actions;
   }
@@ -146,10 +172,10 @@ export function readerActions(base: string, args: BashWord[]): ReaderAction[] {
       const value = args[index]?.value ?? "";
       if (value === "-C" || value === "--callback") {
         const code = args[index + 1];
-        if (code !== undefined) actions.push({ code, reparsed: true });
+        if (code !== undefined) actions.push({ code });
         index += 1;
       } else if (value.startsWith("-C") && value.length > 2) {
-        actions.push({ code: syntheticWord(value.slice(2)), reparsed: true });
+        actions.push({ code: syntheticWord(value.slice(2)) });
       }
     }
   }
@@ -228,6 +254,18 @@ function normalizePath(value: string): string {
     .split("/")
     .filter((part) => part && part !== ".")
     .join("/");
+}
+export function isHiddenShellInput(value: string): boolean {
+  if (!value) return false;
+  const normalized = normalizePath(value);
+  return (
+    value.startsWith("/") ||
+    value.startsWith("../") ||
+    value.includes("/../") ||
+    value === ".." ||
+    normalized === "dev/stdin" ||
+    normalized.startsWith("dev/fd/")
+  );
 }
 function syntheticWord(value: string): BashWord {
   return { value, expanded: false, nested: [], parts: [], start: 0, end: value.length };
