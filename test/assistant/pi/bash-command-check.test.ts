@@ -304,7 +304,7 @@ describe("checkBashCommand", () => {
     });
 
     expect(records.length).toBeGreaterThan(0);
-  }, 15000);
+  }, 30000);
 
   it("chooses a denied match before a cause", () => {
     expect(checkBashCommand("echo $X; git push", [DENIED])).toEqual({

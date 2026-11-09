@@ -1,4 +1,14 @@
 import { parseBashCommand, type BashCommand, type BashWord, type ParsedBashLine } from "./bash-command-parse.js";
+import {
+  hasBindingEffect,
+  isShell,
+  isSpecialAssignment,
+  isWrapper,
+  readerActions,
+  READER_CAUSES,
+  shellRead,
+  wrapperTarget,
+} from "./bash-command-readers.js";
 
 const CAUSE = {
   expansion: "an expansion can change a command name or a word of a denied command",
@@ -9,16 +19,11 @@ const CAUSE = {
   depth: "the command lines are nested more than 8 levels deep",
 };
 
-const SHELLS = ["bash", "sh"] as const;
-const LINE_READERS = ["bash", "sh", "eval"] as const;
-const BINDING_COMMANDS = ["alias", "fc", "trap"] as const;
-const BINDING_ASSIGNMENTS = ["BASH_ENV", "ENV"] as const;
 const GIT_GLOBAL_OPTIONS = [
   { names: ["-C", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env"], takesValue: true },
   { names: ["-c"], takesValue: true, blocksConfig: true },
   { names: ["--no-pager", "--no-optional-locks", "--bare"], takesValue: false },
 ] as const;
-const WRAPPERS = ["env", "nice", "timeout", "watch", "nohup", "command", "stdbuf"] as const;
 const GIT_COMMAND_READERS = [
   { command: "rebase", options: ["-x", "--exec"], shell: true },
   { command: "clone", options: ["-u", "--upload-pack"], shell: false },
@@ -66,8 +71,11 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
   if (commandWord === undefined || commandWord.expanded) return;
   addDirectMatches(base, commandIndex, words, entries, result);
   if (hasGitEntry(entries) && base === "git") scanGit(words, commandIndex, entries, result, depth);
-  if (isBindingCommand(base, words.slice(commandIndex + 1))) setFirstCause(result, CAUSE.binding);
-  if (isLineReader(base)) scanLineReader(base, words, commandIndex, entries, result, depth);
+  if (hasBindingEffect(base, words.slice(commandIndex + 1))) setFirstCause(result, CAUSE.binding);
+  if (isShell(base)) scanShellReader(base, words, commandIndex, entries, result, depth);
+  else if (base === "eval" || ["mapfile", "readarray", "flock", "su", "script"].includes(base)) {
+    scanReaderActions(base, words.slice(commandIndex + 1), entries, result, depth);
+  }
   if (isSourceCommand(base)) scanSource(words, commandIndex, result);
   if (base === "xargs") scanXargs(words, commandIndex, entries, result, depth);
   if (base === "find") scanFind(words, commandIndex, entries, result, depth);
@@ -75,6 +83,14 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
   if (command.inputFromPipeline && isShell(base)) setFirstCause(result, CAUSE.input);
   if (isShell(base) && shellReadsInput(words, commandIndex, command)) setFirstCause(result, CAUSE.input);
   if (base === "fish") setFirstCause(result, CAUSE.option);
+  if (base === "builtin" && words[commandIndex + 1] !== undefined) {
+    scanCommand(
+      { words: words.slice(commandIndex + 1), inputFromPipeline: command.inputFromPipeline },
+      entries,
+      result,
+      depth,
+    );
+  }
 }
 
 function scanNested(word: BashWord, entries: readonly string[], result: ScanResult, depth: number): void {
@@ -263,6 +279,37 @@ function isSimpleGlob(value: string): boolean {
   return /^[A-Za-z0-9_.*?[\]-]+$/.test(value);
 }
 
+function scanShellReader(
+  base: string,
+  words: BashWord[],
+  commandIndex: number,
+  entries: readonly string[],
+  result: ScanResult,
+  depth: number,
+): void {
+  const read = shellRead(base, words, commandIndex + 1);
+  if (read.kind === "unknown") setFirstCause(result, READER_CAUSES.option);
+  else if (read.kind === "input") setFirstCause(result, READER_CAUSES.input);
+  else if (read.kind === "code") {
+    if (read.word === undefined) setFirstCause(result, READER_CAUSES.input);
+    else if (read.word.expanded) setFirstCause(result, READER_CAUSES.expansion);
+    else scanReparsed(read.word.value, entries, result, depth);
+  }
+}
+
+function scanReaderActions(
+  base: string,
+  args: BashWord[],
+  entries: readonly string[],
+  result: ScanResult,
+  depth: number,
+): void {
+  for (const action of readerActions(base, args)) {
+    if (action.code.expanded) setFirstCause(result, READER_CAUSES.expansion);
+    else scanReparsed(action.code.value, entries, result, depth);
+  }
+}
+
 function scanWrapper(
   base: string,
   words: BashWord[],
@@ -273,132 +320,9 @@ function scanWrapper(
 ): void {
   const args = words.slice(commandIndex + 1);
   if (args.some((word) => word.expanded)) setFirstCause(result, CAUSE.expansion);
-  if (base === "env") {
-    const split = args.findIndex((word) => word.value === "-S" || word.value === "--split-string");
-    if (split >= 0) {
-      const code = args[split + 1];
-      if (code?.expanded) setFirstCause(result, CAUSE.expansion);
-      else if (code !== undefined) scanReparsed(code.value, entries, result, depth);
-      return;
-    }
-  }
-  if (base === "script") {
-    const commandFlag = args.findIndex((word) => word.value.includes("c"));
-    if (commandFlag >= 0) {
-      const code = args[commandFlag + 1];
-      if (code?.expanded) setFirstCause(result, CAUSE.expansion);
-      else if (code !== undefined) scanReparsed(code.value, entries, result, depth);
-      return;
-    }
-  }
+  scanReaderActions(base, args, entries, result, depth);
   const target = wrapperTarget(base, args);
   if (target.length > 0) scanCommand({ words: target, inputFromPipeline: false }, entries, result, depth);
-}
-
-function wrapperTarget(base: string, args: BashWord[]): BashWord[] {
-  let index = 0;
-  while (index < args.length) {
-    const value = args[index]?.value ?? "";
-    if (base === "env") {
-      if (value === "--") return args.slice(index + 1);
-      if (value.startsWith("-")) index += ["-u", "--unset", "-C", "--chdir"].includes(value) ? 2 : 1;
-      else if (isAssignment(value)) index += 1;
-      else break;
-      continue;
-    }
-    if (base === "nice" && (value === "-n" || value === "--adjustment")) index += 2;
-    else if (base === "timeout" && index === 0 && !value.startsWith("-")) index += 1;
-    else if (base === "watch" && ["-n", "--interval", "-d", "--differences"].includes(value)) {
-      index += value === "-n" || value === "--interval" ? 2 : 1;
-    } else if (value.startsWith("-") && (base === "nohup" || base === "command")) index += 1;
-    else break;
-  }
-  return args.slice(index);
-}
-
-function isWrapper(base: string): boolean {
-  return WRAPPERS.includes(base as (typeof WRAPPERS)[number]);
-}
-
-function scanLineReader(
-  base: string,
-  words: BashWord[],
-  commandIndex: number,
-  entries: readonly string[],
-  result: ScanResult,
-  depth: number,
-): void {
-  if (base === "eval") {
-    const codeWords = words.slice(commandIndex + 1);
-    if (codeWords.some((word) => word.expanded)) {
-      setFirstCause(result, CAUSE.expansion);
-      return;
-    }
-    const code = codeWords.map((word) => word.value).join(" ");
-    if (code.length > 0) scanReparsed(code, entries, result, depth);
-    return;
-  }
-
-  const parsedOptions = parseShellOptions(base, words, commandIndex + 1);
-  if (parsedOptions.unknown) {
-    setFirstCause(result, CAUSE.option);
-    return;
-  }
-  if (parsedOptions.readsStdin) {
-    setFirstCause(result, CAUSE.input);
-    return;
-  }
-  if (parsedOptions.commandIndex !== undefined) {
-    const code = words[parsedOptions.commandIndex];
-    if (code === undefined) {
-      setFirstCause(result, CAUSE.input);
-    } else if (code.expanded) {
-      setFirstCause(result, CAUSE.expansion);
-    } else {
-      scanReparsed(code.value, entries, result, depth);
-    }
-  }
-}
-
-interface ShellOptions {
-  unknown: boolean;
-  readsStdin: boolean;
-  commandIndex?: number;
-}
-
-function parseShellOptions(base: string, words: BashWord[], start: number): ShellOptions {
-  let index = start;
-  let commandMode = false;
-  while (index < words.length) {
-    const value = words[index]?.value ?? "";
-    if (value === "--") {
-      index += 1;
-      break;
-    }
-    if (value === "-") return { unknown: false, readsStdin: true };
-    if (!value.startsWith("-")) break;
-    for (const flag of value.slice(1)) {
-      if (flag === "c") commandMode = true;
-      else if (flag === "s") return { unknown: false, readsStdin: true };
-      else if (flag === "o" || flag === "O") {
-        index += 1;
-        if (words[index] === undefined) return { unknown: true, readsStdin: false };
-      } else if (
-        (base === "bash" && "abefhklmnptuvxBCEHPT".includes(flag)) ||
-        (base === "sh" && "abefnuvx".includes(flag))
-      ) {
-        continue;
-      } else {
-        return { unknown: true, readsStdin: false };
-      }
-    }
-    index += 1;
-  }
-  if (commandMode) return { unknown: false, readsStdin: false, commandIndex: index };
-  if (base === "bash" && words.slice(index).some((word) => normalizePath(word.value) === "dev/stdin")) {
-    return { unknown: false, readsStdin: true };
-  }
-  return { unknown: false, readsStdin: false };
 }
 
 function scanReparsed(code: string, entries: readonly string[], result: ScanResult, depth: number): void {
@@ -430,19 +354,6 @@ function isSourceCommand(base: string): boolean {
   return base === "." || base === "source";
 }
 
-function isBindingCommand(base: string, args: BashWord[]): boolean {
-  return (
-    BINDING_COMMANDS.includes(base as (typeof BINDING_COMMANDS)[number]) || (base === "hash" && args[0]?.value === "-p")
-  );
-}
-
-function isSpecialAssignment(value: string): boolean {
-  const equals = value.indexOf("=");
-  if (equals < 0) return false;
-  const name = value.slice(0, equals);
-  return BINDING_ASSIGNMENTS.includes(name as (typeof BINDING_ASSIGNMENTS)[number]) || name.startsWith("BASH_CMDS[");
-}
-
 function isArrayAssignment(value: string): boolean {
   return /^[A-Za-z_][A-Za-z0-9_]*\[.*\]=/.test(value) && hasExecutableArrayIndex(value);
 }
@@ -470,14 +381,6 @@ function normalizePath(value: string): string {
     .split("/")
     .filter((part) => part.length > 0 && part !== ".")
     .join("/");
-}
-
-function isShell(base: string): boolean {
-  return SHELLS.includes(base as (typeof SHELLS)[number]);
-}
-
-function isLineReader(base: string): boolean {
-  return LINE_READERS.includes(base as (typeof LINE_READERS)[number]);
 }
 
 function setFirstCause(result: ScanResult, cause: string): void {
