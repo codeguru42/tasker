@@ -292,6 +292,16 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
           expanded = true;
         }
         if (source[i] === "\\" && i + 1 < source.length) {
+          if (source[i + 1] === "$" && (source[i + 2] === "(" || source[i + 2] === "{")) {
+            const left = source[i + 2] ?? "";
+            const right = left === "(" ? ")" : "}";
+            const end = matching(source, i + 2, left, right);
+            const marker = source.slice(i + 1, end + 1);
+            append("escape", marker, true, i, end + 1);
+            text += marker;
+            i = end + 1;
+            continue;
+          }
           i += 1;
           text += source[i];
           i += 1;
@@ -309,6 +319,16 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
     }
     if (c === "\\") {
       if (i + 1 >= source.length) throw new BashParseError("unfinished escape");
+      if (source[i + 1] === "$" && (source[i + 2] === "(" || source[i + 2] === "{")) {
+        const left = source[i + 2] ?? "";
+        const right = left === "(" ? ")" : "}";
+        const end = matching(source, i + 2, left, right);
+        const marker = source.slice(i + 1, end + 1);
+        value += marker;
+        append("escape", marker, true, i, end + 1);
+        i = end + 1;
+        continue;
+      }
       value += source[i + 1];
       append("escape", source[i + 1] ?? "", true, i, i + 2);
       i += 2;
@@ -349,8 +369,10 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
     if (c === "*" || c === "?" || c === "[") {
       expanded = true;
       append("glob", c, false, i, i + 1);
-    } else if (c === "~" && i === start) append("tilde", c, false, i, i + 1);
-    else if (c === "{" || c === "}") {
+    } else if (c === "~" && i === start) {
+      expanded = true;
+      append("tilde", c, false, i, i + 1);
+    } else if (c === "{" || c === "}") {
       expanded ||= /\{[^{}]*,[^{}]*\}/u.test(source.slice(start, i + 1));
       append("brace", c, false, i, i + 1);
     } else append("literal", c, false, i, i + 1);

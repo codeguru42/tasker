@@ -63,8 +63,13 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
     ) {
       setFirstCause(result, CAUSE.array);
     }
-    if (isSpecialAssignment(word.value)) setFirstCause(result, CAUSE.binding);
-    scanCommandAssignment(word, entries, result, depth);
+    const index = words.indexOf(word);
+    const isAssignmentPosition = index >= 0 && isAssignmentPositionFor(index, commandIndex, base);
+    if (isAssignmentPosition && isSpecialAssignment(word.value)) setFirstCause(result, CAUSE.binding);
+    if (isAssignmentPosition) scanCommandAssignment(word, entries, result, depth);
+    if (["BASH_CMDS", "BASH_ALIASES", "expand_aliases"].some((marker) => word.value.includes(marker))) {
+      setFirstCause(result, CAUSE.binding);
+    }
   }
   for (let index = 0; index < words.length; index += 1) {
     const word = words[index];
@@ -93,10 +98,10 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
   }
   if (hasBindingEffect(base, words.slice(commandIndex + 1))) setFirstCause(result, CAUSE.binding);
   if (isShell(base)) scanShellReader(base, words, commandIndex, entries, result, depth);
-  else if (base === "eval" || ["mapfile", "readarray", "flock", "su", "script"].includes(base)) {
+  else if (base === "eval" || base === "trap" || ["mapfile", "readarray", "flock", "su", "script"].includes(base)) {
     scanReaderActions(base, words.slice(commandIndex + 1), entries, result, depth);
   }
-  if (isSourceCommand(base)) scanSource(words, commandIndex, result);
+  if (isSourceCommand(base)) scanSource(words, commandIndex, command, result);
   if (base === "xargs") scanXargs(words, commandIndex, entries, result, depth);
   if (base === "find") {
     scanFind(words, commandIndex, {
@@ -261,11 +266,12 @@ function scanReparsed(code: string, entries: readonly string[], result: ScanResu
   for (const command of parsed.commands) scanCommand(command, entries, result, nextDepth);
 }
 
-function scanSource(words: BashWord[], commandIndex: number, result: ScanResult): void {
+function scanSource(words: BashWord[], commandIndex: number, command: BashCommand, result: ScanResult): void {
   const source = words[commandIndex + 1];
   if (source === undefined) setFirstCause(result, CAUSE.input);
   else if (source.expanded) setFirstCause(result, CAUSE.expansion);
   else if (isHiddenShellInput(source.value)) setFirstCause(result, CAUSE.input);
+  if (command.inputFromPipeline || command.readsInput) setFirstCause(result, CAUSE.input);
 }
 
 function shellReadsInput(words: BashWord[], commandIndex: number, command: BashCommand): boolean {
@@ -292,12 +298,17 @@ function hasLiteralExpansionMarker(word: BashWord): boolean {
     if (part === undefined) continue;
     if (["single-quoted", "ansi-quoted"].includes(part.kind) && /\$\(|`|\$\{/u.test(part.value)) return true;
     if (part.kind !== "escape") continue;
-    if (part.value.includes("`")) return true;
+    if (part.value.includes("`") || part.value.includes("$(") || part.value.includes("${")) return true;
     const next = word.parts[index + 1]?.value ?? "";
     const previous = word.parts[index - 1]?.value ?? "";
     if ((part.value === "$" && /^[({]/u.test(next)) || (part.value === "(" && previous === "$")) return true;
   }
   return false;
+}
+
+function isAssignmentPositionFor(index: number, commandIndex: number, base: string): boolean {
+  if (index < commandIndex) return true;
+  return index > commandIndex && ["env", "export", "declare", "typeset", "local", "readonly"].includes(base);
 }
 
 function isAssignment(value: string): boolean {

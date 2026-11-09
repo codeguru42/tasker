@@ -1,9 +1,4 @@
-import {
-  GIT_CONFIG_EXEC_OPTIONS,
-  GIT_GLOBAL_OPTIONS,
-  GIT_INVALID_GLOBAL_OPTIONS,
-  GIT_READERS,
-} from "./bash-command-tables.js";
+import { GIT_CONFIG_EXEC_OPTIONS, GIT_GLOBAL_OPTIONS, GIT_READERS } from "./bash-command-tables.js";
 import type { BashWord } from "./bash-command-parse.js";
 
 const CONFIG_CAUSE = "git can run a command line from a configuration value";
@@ -34,10 +29,7 @@ export function scanGit(words: BashWord[], commandIndex: number, hooks: GitScanH
   let index = commandIndex + 1;
   while (index < words.length) {
     const value = words[index]?.value ?? "";
-    if (
-      GIT_INVALID_GLOBAL_OPTIONS.includes(value as (typeof GIT_INVALID_GLOBAL_OPTIONS)[number]) &&
-      (value !== "--list-cmds" || words[index + 1] !== undefined)
-    ) {
+    if ((value.startsWith("-C") || value.startsWith("-c")) && value.length > 2) {
       hooks.cause(OPTION_CAUSE);
       return;
     }

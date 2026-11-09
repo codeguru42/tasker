@@ -22,9 +22,15 @@ export function scanFind(words: BashWord[], commandIndex: number, hooks: FindSca
       if (action.length > 0) {
         const commandSubstitution =
           action.some((word) => word.value.includes("-c")) && action.some((word) => word.value.includes("{}"));
-        if (action[0]?.value === "{}" || commandSubstitution || action.some((word) => word.expanded)) {
+        if (
+          action[0]?.value === "{}" ||
+          action.some((word) => word.value === "{}") ||
+          commandSubstitution ||
+          action.some((word) => word.expanded)
+        ) {
           hooks.cause(EXPANSION_CAUSE);
-        } else hooks.scanAction(action);
+        }
+        hooks.scanAction(action);
       }
       index = end;
       continue;

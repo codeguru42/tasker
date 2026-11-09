@@ -31,11 +31,7 @@ export function isSpecialAssignment(value: string): boolean {
   const equals = value.indexOf("=");
   if (equals < 0) return false;
   const name = value.slice(0, equals);
-  return (
-    SPECIAL_ASSIGNMENTS.includes(name as (typeof SPECIAL_ASSIGNMENTS)[number]) ||
-    name.startsWith("BASH_CMDS[") ||
-    name.startsWith("BASH_ALIASES[")
-  );
+  return SPECIAL_ASSIGNMENTS.includes(name as (typeof SPECIAL_ASSIGNMENTS)[number]);
 }
 
 export function hasBindingEffect(base: string, args: BashWord[]): boolean {
@@ -57,7 +53,7 @@ export function hasBindingEffect(base: string, args: BashWord[]): boolean {
   }
   if (base === "history") return true;
   if (base === "trap") return !["-p", "-l"].includes(args[0]?.value ?? "");
-  if (base === "fc") return !args[0]?.value.startsWith("-l");
+  if (base === "fc") return true;
   if (base === "hash") return args.some((word) => /^-[^-]*p/u.test(word.value));
   return false;
 }
@@ -137,33 +133,43 @@ export function shellRead(base: string, words: BashWord[], start: number): Shell
 
 export function readerActions(base: string, args: BashWord[]): ReaderAction[] {
   const actions: ReaderAction[] = [];
-  if (base === "eval") {
-    if (args.length > 0) actions.push({ code: joinWords(args) });
+  if (base === "eval" || base === "watch" || base === "sudo") {
+    for (let index = 0; index < args.length; index += 1) actions.push({ code: joinWords(args.slice(index)) });
     return actions;
   }
   if (base === "env") {
-    const index = args.findIndex(
-      (word) =>
-        word.value === "-S" ||
-        word.value === "--split-string" ||
-        (word.value.startsWith("-S") && word.value.length > 2),
-    );
-    if (index >= 0) {
-      const word = args[index];
-      const code = word?.value === "-S" || word?.value === "--split-string" ? args[index + 1] : word;
-      if (code !== undefined) actions.push({ code });
+    addLaterWordActions(args, actions);
+    for (let index = 0; index < args.length; index += 1) {
+      const value = args[index]?.value ?? "";
+      if (value === "-S" || value === "--split-string") {
+        const code = args[index + 1];
+        if (code !== undefined) actions.push({ code });
+      } else if (value.startsWith("-") && !value.startsWith("--")) {
+        const marker = value.indexOf("S", 1);
+        if (marker >= 0 && marker + 1 < value.length) {
+          actions.push({ code: syntheticWord(value.slice(marker + 1), args[index]) });
+        }
+      }
     }
     return actions;
   }
+  if (base === "trap") {
+    addLaterWordActions(args, actions);
+    return actions;
+  }
   if (COMMAND_STRING_READERS.includes(base as (typeof COMMAND_STRING_READERS)[number])) {
-    const flag = base === "flock" ? ["-c", "--command"] : base === "su" ? ["-c", "--command"] : ["-c", "--command"];
-    const index = args.findIndex(
-      (word) => flag.includes(word.value) || (word.value.startsWith("-c") && word.value.length > 2),
-    );
-    if (index >= 0) {
-      const candidate = args[index];
-      const code = candidate?.value === "-c" || candidate?.value === "--command" ? args[index + 1] : candidate;
-      if (code !== undefined) actions.push({ code });
+    addLaterWordActions(args, actions);
+    for (let index = 0; index < args.length; index += 1) {
+      const value = args[index]?.value ?? "";
+      if (value === "-c" || value === "--command") {
+        const code = args[index + 1];
+        if (code !== undefined) actions.push({ code });
+      } else if (value.startsWith("-") && !value.startsWith("--")) {
+        const marker = value.indexOf("c", 1);
+        if (marker >= 0 && marker + 1 < value.length) {
+          actions.push({ code: syntheticWord(value.slice(marker + 1), args[index]) });
+        }
+      }
     }
     return actions;
   }
@@ -175,7 +181,7 @@ export function readerActions(base: string, args: BashWord[]): ReaderAction[] {
         if (code !== undefined) actions.push({ code });
         index += 1;
       } else if (value.startsWith("-C") && value.length > 2) {
-        actions.push({ code: syntheticWord(value.slice(2)) });
+        actions.push({ code: syntheticWord(value.slice(2), args[index]) });
       }
     }
   }
@@ -249,26 +255,32 @@ function valueOptions(base: string): readonly string[] {
 function isAssignment(value: string): boolean {
   return /^[A-Za-z_][A-Za-z0-9_]*(?:\[.*\])?=/u.test(value);
 }
-function normalizePath(value: string): string {
-  return value
-    .split("/")
-    .filter((part) => part && part !== ".")
-    .join("/");
-}
 export function isHiddenShellInput(value: string): boolean {
   if (!value) return false;
-  const normalized = normalizePath(value);
-  return (
-    value.startsWith("/") ||
-    value.startsWith("../") ||
-    value.includes("/../") ||
-    value === ".." ||
-    normalized === "dev/stdin" ||
-    normalized.startsWith("dev/fd/")
-  );
+  const parts = value.split("/").filter((part) => part && part !== ".");
+  return parts.includes("..") || parts[0] === "dev" || parts[0] === "proc";
 }
-function syntheticWord(value: string): BashWord {
-  return { value, expanded: false, nested: [], parts: [], start: 0, end: value.length };
+function syntheticWord(value: string, source?: BashWord): BashWord {
+  return {
+    value,
+    expanded: source?.expanded ?? false,
+    nested: source?.nested ?? [],
+    parts: source?.parts ?? [],
+    start: 0,
+    end: value.length,
+  };
+}
+
+function addLaterWordActions(args: BashWord[], actions: ReaderAction[]): void {
+  for (const word of args) {
+    actions.push({ code: word });
+    const value = word.value;
+    if (value.startsWith("--")) {
+      const equals = value.indexOf("=");
+      if (equals >= 0 && equals + 1 < value.length)
+        actions.push({ code: syntheticWord(value.slice(equals + 1), word) });
+    }
+  }
 }
 function joinWords(words: BashWord[]): BashWord {
   return syntheticWord(words.map((word) => word.value).join(" "));

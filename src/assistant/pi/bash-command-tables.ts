@@ -34,7 +34,7 @@ export const WRAPPERS = [
   "busybox",
 ] as const;
 
-export const SPECIAL_ASSIGNMENTS = ["BASH_ENV", "ENV", "BASH_ALIASES"] as const;
+export const SPECIAL_ASSIGNMENTS = ["BASH_ENV", "ENV"] as const;
 
 export const ALIAS_READ_OPTIONS = ["-p"] as const;
 export const COMMAND_TEXT_ASSIGNMENTS = ["EDITOR", "VISUAL", "PAGER"] as const;
@@ -100,6 +100,7 @@ export const GIT_GLOBAL_OPTIONS = [
   {
     names: [
       "-p",
+      "-v",
       "--paginate",
       "-P",
       "--no-pager",
@@ -181,4 +182,3 @@ export const XARGS_VALUE_OPTIONS = [
   "--arg-file",
 ] as const;
 export const GIT_COMMAND_ASSIGNMENT_PREFIX = "GIT_";
-export const GIT_INVALID_GLOBAL_OPTIONS = ["-Cx", "-C=x", "--list-cmds"] as const;
