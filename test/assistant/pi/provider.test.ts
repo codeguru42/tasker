@@ -11,9 +11,10 @@ import { createPiProvider as fromCreatePiProvider } from "../../../src/assistant
 import type { RunInput, RunOutcome } from "../../../src/assistant/provider.js";
 import { checkPlanAnswer, planAnswerJsonSchema } from "../../../src/plan/answer.js";
 import { reviewAnswerJsonSchema } from "../../../src/review/answer.js";
-import { failureOutcomeOf, runInput, TEST_SESSION_ID } from "../../helpers/fake-claude.js";
+import { failureOutcomeOf, runInput as sharedRunInput, TEST_SESSION_ID } from "../../helpers/fake-claude.js";
 import { type FakePiAnswer, useFakePi } from "../../helpers/fake-pi.js";
 import { validPlanAnswer } from "../../helpers/plan.js";
+import { piQuotaStream } from "../../helpers/pi-quota-streams.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 vi.mock("node:os", async (importOriginal) => {
@@ -32,7 +33,7 @@ function callPi(input: RunInput, files: PiFiles): Promise<RunOutcome> {
 
 function validInput(overrides: Partial<RunInput> = {}): RunInput {
   return {
-    ...runInput(),
+    ...sharedRunInput(),
     sessionId: TEST_SESSION_ID,
     env: { HOME: "/home/user" },
     cwd: useTempDir("tasker-pi-worktree-"),
@@ -745,6 +746,135 @@ describe("createPiProvider runs", () => {
 });
 
 describe("createPiProvider outcomes", () => {
+  it.each([
+    ["quotaDelay", "quota", 3600],
+    ["quotaDate", "quota", 1793779200],
+    ["quotaNoRetryAfter", "quota", undefined],
+    ["quotaCutComplete", "quota", 3600],
+    ["quotaCutValue", "quota", undefined],
+    ["quotaSpaceWhole", "quota", 3600],
+    ["quotaSpaceNoBody", "quota", undefined],
+    ["error429Colon", "failure", undefined],
+    ["error429Space", "failure", undefined],
+    ["retryWorks", "success", undefined],
+    ["retryFails", "quota", 3600],
+  ] as const)("reads the final quota result from %s", async (name, kind, resetsAt) => {
+    const files = makeFiles();
+    const input = validInput({ overageStop: { approvedResetsAt: 1793779200 } });
+    const args = expectedArgs(input, files);
+    const fixture = piQuotaStream(name);
+    const fake = useFakePi([
+      { args, stream: fixture.stdout, session: fixture.session, sessionFile: fixture.sessionFile },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe(kind);
+    if (kind === "quota") {
+      expect(outcome).toMatchObject({ kind: "quota", cause: "rate_limit", usage: "unavailable" });
+      if (resetsAt === undefined) expect(outcome).not.toHaveProperty("resetsAt");
+      else if (name === "quotaDate") expect(outcome).toMatchObject({ resetsAt });
+      else {
+        const quota = outcome as Extract<RunOutcome, { kind: "quota" }>;
+        expect(quota.resetsAt).toBeGreaterThanOrEqual(Math.floor(Date.now() / 1000) + resetsAt);
+        expect(quota.resetsAt).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + resetsAt);
+      }
+    }
+    const provider = fromCreatePiProvider(files);
+    expect(provider.detectQuotaApprovalWarning(outcome, 0.9)).toBeUndefined();
+    expect(provider.shouldSuppressQuotaApprovalPause({ utilization: 0.95 }, undefined)).toBe(false);
+    for (const event of fixture.stdout) {
+      expect(provider.isQuotaEvent(event)).toBe(false);
+    }
+  });
+
+  it("gives quota priority over a nonzero exit", async () => {
+    const files = makeFiles();
+    const input = validInput();
+    const fixture = piQuotaStream("quotaDelay");
+    const fake = useFakePi([{ args: expectedArgs(input, files), stream: fixture.stdout, exitCode: 4 }]);
+    input.env = { ...input.env, ...fake.env };
+    expect(await callPi(input, files)).toMatchObject({ kind: "quota", cause: "rate_limit" });
+  });
+
+  it("uses a session-file quota result when the stream has no agent end", async () => {
+    const files = makeFiles();
+    const input = validInput();
+    const fixture = piQuotaStream("quotaDelay");
+    const stream = fixture.stdout.filter(
+      (event) =>
+        event.type !== "agent_end" &&
+        !(event.type === "message_end" && (event.message as { role?: string }).role === "assistant"),
+    );
+    const fake = useFakePi([
+      { args: expectedArgs(input, files), stream, session: fixture.session, sessionFile: fixture.sessionFile },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+    expect(await callPi(input, files)).toMatchObject({
+      kind: "quota",
+      cause: "rate_limit",
+      resetsAt: expect.any(Number),
+    });
+  });
+
+  it("gives quota priority over a passed SIGTERM", async () => {
+    const files = makeFiles();
+    const input = validInput({ onSpawn: () => process.kill(process.pid, "SIGTERM") });
+    const fixture = piQuotaStream("quotaDelay");
+    const fake = useFakePi([{ args: expectedArgs(input, files), stream: fixture.stdout, delaySeconds: 0.2 }]);
+    input.env = { ...input.env, ...fake.env };
+    expect(await callPi(input, files)).toMatchObject({ kind: "quota", cause: "rate_limit" });
+  });
+
+  it("keeps the deadline ahead of quota", async () => {
+    const files = makeFiles();
+    const input = validInput({ timeoutMs: 50 });
+    const fixture = piQuotaStream("quotaDelay");
+    const fake = useFakePi([{ args: expectedArgs(input, files), stream: fixture.stdout, delaySeconds: 0.4 }]);
+    input.env = { ...input.env, ...fake.env };
+    expect(await callPi(input, files)).toMatchObject({ kind: "timeout" });
+  });
+
+  it("ignores a quota message from an earlier session-file run", async () => {
+    const files = makeFiles();
+    const input = validInput();
+    mkdirSync(input.sessionDir, { recursive: true });
+    const old = piQuotaStream("quotaDelay").session.at(-1);
+    writeFileSync(join(input.sessionDir, `old_${input.sessionId}.jsonl`), `${JSON.stringify(old)}\n`);
+    const fake = useFakePi([{ args: expectedArgs(input, files), stream: firstTextStream(input) }]);
+    input.env = { ...input.env, ...fake.env };
+    expect(await callPi(input, files)).toMatchObject({ kind: "success" });
+  });
+
+  it("does not start a correction after quota on the first process", async () => {
+    const files = makeFiles();
+    const input = correctiveInput();
+    const fixture = piQuotaStream("quotaDelay");
+    const fake = useFakePi([{ args: expectedArgs(input, files), stream: fixture.stdout }]);
+    input.env = { ...input.env, ...fake.env };
+    expect(await callPi(input, files)).toMatchObject({ kind: "quota", cause: "rate_limit" });
+    expect(fake.calls()).toHaveLength(1);
+  });
+
+  it("uses quota from the corrective process", async () => {
+    const files = makeFiles();
+    const input = correctiveInput();
+    const fixture = piQuotaStream("quotaDelay");
+    const fake = processScripts(input, files, [
+      {
+        stream: firstTextStream(input),
+        session: firstSession(input, [
+          { role: "assistant", content: [{ type: "text", text: "no structured answer" }], stopReason: "stop" },
+        ]),
+      },
+      { stream: fixture.stdout, session: fixture.session, sessionFile: fixture.sessionFile },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+    expect(await callPi(input, files)).toMatchObject({ kind: "quota", cause: "rate_limit" });
+    expect(fake.calls()).toHaveLength(2);
+  });
+
   it("reports a missing program", async () => {
     const input = validInput({ env: { HOME: "/home/user", PATH: useTempDir("tasker-empty-pi-") } });
     const outcome = await callPi(input, makeFiles());

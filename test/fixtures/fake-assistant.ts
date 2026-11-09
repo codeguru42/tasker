@@ -62,7 +62,8 @@ if (piControl.answers) {
   );
   const matchingAnswers = piControl.answers.filter(
     (candidate) =>
-      candidate.args.length === args.length && candidate.args.every((value, index) => value === args[index]),
+      candidate.args.length === 0 ||
+      (candidate.args.length === args.length && candidate.args.every((value, index) => value === args[index])),
   );
   const answer = matchingAnswers[Math.min(earlierMatchingCalls, matchingAnswers.length - 1)];
   if (!answer) {

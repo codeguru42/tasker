@@ -1,0 +1,2045 @@
+{
+  "quotaDelay": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Insufficient credits\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Insufficient credits\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "quotaDate": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Insufficient credits\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"Wed, 04 Nov 2026 08:00:00 GMT\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Insufficient credits\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"Wed, 04 Nov 2026 08:00:00 GMT\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "quotaNoRetryAfter": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Insufficient credits\",\"code\":402}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Insufficient credits\",\"code\":402}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "quotaCutComplete": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}},\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx... [truncated 1071 chars]",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}},\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx... [truncated 1071 chars]",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "quotaCutValue": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"metadata\":{\"headers\":{\"Retry-After\":\"36... [truncated 80 chars]",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"metadata\":{\"headers\":{\"Retry-After\":\"36... [truncated 80 chars]",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "quotaSpaceWhole": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402 {\"error\":{\"message\":\"Insufficient credits\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402 {\"error\":{\"message\":\"Insufficient credits\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "quotaSpaceNoBody": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402 status code (no body)",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402 status code (no body)",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "error429Colon": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "429: {\"message\":\"Rate limit exceeded\",\"code\":429}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "429: {\"message\":\"Rate limit exceeded\",\"code\":429}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "error429Space": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "429 {\"message\":\"Rate limit exceeded\",\"code\":429}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "429 {\"message\":\"Rate limit exceeded\",\"code\":429}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "retryWorks": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "auto_retry_start",
+        "attempt": 1,
+        "maxAttempts": 3,
+        "delayMs": 2000,
+        "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}"
+      },
+      {
+        "type": "entry_appended"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "faux answer"
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end",
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "hello prompt"
+              }
+            ],
+            "timestamp": 1794204577200
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "faux answer"
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "stubo",
+            "model": "m",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1794204577223,
+            "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+            "durationMs": 28,
+            "thinkingLevel": "off"
+          }
+        ],
+        "willRetry": false
+      },
+      {
+        "type": "auto_retry_end",
+        "success": true,
+        "attempt": 1
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-1",
+        "parentId": "a-s1-0",
+        "timestamp": "2026-11-08T02:20:34.311Z",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "faux answer"
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794204577223,
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-1",
+        "parentId": "a-s1-0",
+        "timestamp": "2026-11-08T02:20:34.311Z",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "faux answer"
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  },
+  "retryFails": {
+    "sessionFile": "2026-11-08T02-20-34-100Z_s1.jsonl",
+    "stdout": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "agent_start"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "system",
+          "content": ""
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "turn_end"
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "auto_retry_start",
+        "attempt": 1,
+        "maxAttempts": 3,
+        "delayMs": 2000,
+        "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}"
+      },
+      {
+        "type": "entry_appended"
+      },
+      {
+        "type": "turn_start"
+      },
+      {
+        "type": "message_start",
+        "message": {
+          "role": "assistant",
+          "content": []
+        }
+      },
+      {
+        "type": "message_end",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "agent_end"
+      },
+      {
+        "type": "auto_retry_end",
+        "success": false,
+        "attempt": 1,
+        "finalError": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}"
+      },
+      {
+        "type": "agent_settled",
+        "aborted": false
+      }
+    ],
+    "session": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "s1",
+        "timestamp": "2026-11-08T02:20:34.100Z",
+        "cwd": "/scratch/work"
+      },
+      {
+        "type": "message",
+        "id": "u-s1",
+        "parentId": "parent-s1",
+        "timestamp": "2026-11-08T02:20:34.307Z",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello prompt"
+            }
+          ],
+          "timestamp": 1794204577200
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-0",
+        "parentId": "u-s1",
+        "timestamp": "2026-11-08T02:20:34.310Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      },
+      {
+        "type": "message",
+        "id": "a-s1-1",
+        "parentId": "a-s1-0",
+        "timestamp": "2026-11-08T02:20:34.311Z",
+        "message": {
+          "role": "assistant",
+          "content": [],
+          "api": "openai-completions",
+          "provider": "stubo",
+          "model": "m",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "error",
+          "timestamp": 1794204577223,
+          "errorMessage": "402: {\"message\":\"Provider returned error\",\"code\":402,\"metadata\":{\"headers\":{\"Retry-After\":\"3600\"}}}",
+          "durationMs": 28,
+          "thinkingLevel": "off"
+        }
+      }
+    ]
+  }
+}
