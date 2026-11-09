@@ -274,7 +274,7 @@ export function sandboxReadDenyPaths(o: { env: NodeJS.ProcessEnv; repos: readonl
   if (isSet(env.GH_CONFIG_DIR)) fromEnv.push(env.GH_CONFIG_DIR);
   else if (isSet(env.XDG_CONFIG_HOME)) fromEnv.push(join(env.XDG_CONFIG_HOME, "gh"));
   else if (home) fromEnv.push(join(home, ".config", "gh"));
-  if (home) fromEnv.push(join(home, ".git-credentials"), join(home, ".netrc"));
+  if (home) fromEnv.push(join(home, ".git-credentials"), join(home, ".netrc"), join(home, ".config", "acli"));
   const claudeDir = claudeConfigDir(env);
   if (claudeDir !== undefined) fromEnv.push(join(claudeDir, ".credentials.json"));
   const codexDir = codexHome(env);
