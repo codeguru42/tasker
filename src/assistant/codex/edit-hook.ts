@@ -100,10 +100,15 @@ export function editHookAnswer(input: string, worktree: string, denied: readonly
     const paths = patchPaths(command);
     if (paths === undefined || paths.length === 0) return deny("tasker cannot read a path from the patch");
     for (const path of paths) {
-      if (path.split(/[\\/]/).includes("..")) return deny(`a path with .. is not allowed: ${path}`);
       const full = resolve(worktree, path);
       if (isDeniedPath(full, denied)) return deny(`the path is denied: ${path}`);
       if (!isInside(full, worktree)) return deny(`the path is outside the worktree: ${path}`);
+      if (path.split(/[\\/]/).includes("..")) return deny(`a path with .. is not allowed: ${path}`);
+      if (path.split(/[\\/]/).includes(".")) return deny(`a path with . is not allowed: ${path}`);
+      const firstPart = relative(worktree, full).split(sep)[0];
+      if ([".agents", ".aws", ".codex"].includes(firstPart ?? "")) {
+        return deny(`the path is protected: ${path}`);
+      }
       const linked = walk(worktree, full, path);
       if (linked !== undefined) return deny(linked);
     }

@@ -1,4 +1,5 @@
 import { lstatSync, realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import { hasErrnoCode } from "../../errno.js";
 import { canonicalPath, isInside } from "../../real-path.js";
 import type { RunInput } from "../provider.js";
@@ -54,7 +55,9 @@ function withoutNested(paths: readonly string[]): string[] {
 // or under a deny path is dropped. A deny key under a write key stays.
 function filesystemTable(input: RunInput): string {
   const table = new Map<string, string>([["/", "read"]]);
-  const denied = realKeys([...(input.sandbox?.denyRead ?? []), ...codexSocketDenyPaths(input.env)]);
+  const protectedRoots =
+    input.access === "workspace-write" ? [".agents", ".aws", ".codex"].map((name) => resolve(input.cwd, name)) : [];
+  const denied = realKeys([...(input.sandbox?.denyRead ?? []), ...protectedRoots, ...codexSocketDenyPaths(input.env)]);
   if (input.access === "workspace-write") {
     const temp = childTempRoot(input.env);
     for (const path of realKeys([input.cwd, temp, ...(input.sandbox?.allowWrite ?? [])])) {
