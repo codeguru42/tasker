@@ -129,7 +129,7 @@ describe("guard extension limits validation", () => {
     const limits = {
       ...validLimits(),
       tools: [...validLimits().tools, { name: "bash", path: "builtin:bash", source: "builtin" }],
-      deniedCommands: ["git push", "gh api", "git remote", "herdr", "a.b_c+d-e9"],
+      deniedCommands: ["git push", "git remote", "herdr", "a.b_c+d-e9"],
     };
 
     expect(() => invokeGuard(limitsArgs(writeLimits(limits)))).not.toThrow();
@@ -139,14 +139,14 @@ describe("guard extension limits validation", () => {
     const limits = {
       ...validLimits(),
       tools: [...validLimits().tools, { name: "bash", path: "builtin:bash", source: "builtin" }],
-      deniedCommands: ["gh api read", "-hidden", "two words"],
+      deniedCommands: ["gh api", "git remote add", "-hidden", "two words"],
     };
 
     expect(extensionError(limitsArgs(writeLimits(limits)))).toBe("invalid pi guard limits fields: deniedCommands");
   });
 
   it("keeps denied command entries unchanged when bash is not enabled", () => {
-    const limits = { ...validLimits(), deniedCommands: ["gh api read", "-hidden", "two words"] };
+    const limits = { ...validLimits(), deniedCommands: ["gh api", "git remote add", "-hidden", "two words"] };
 
     expect(() => invokeGuard(limitsArgs(writeLimits(limits)))).not.toThrow();
   });

@@ -1,4 +1,5 @@
 import { writeFileSync } from "node:fs";
+import { invalidDeniedCommandEntries } from "./denied-command-entry.js";
 import type { RunInput } from "../provider.js";
 import { guardLimitsPath } from "../../store/layout.js";
 
@@ -28,6 +29,12 @@ export function builtInTool(name: string): GuardTool {
 export function guardLimits(input: RunInput, tools: GuardTool[]): GuardLimits {
   if (input.access !== "read-only") {
     throw new Error("pi guard limits support read-only access only");
+  }
+  if (tools.some((tool) => tool.name === "bash")) {
+    const invalid = invalidDeniedCommandEntries(input.deniedCommands);
+    if (invalid.length > 0) {
+      throw new Error(`invalid pi denied command entries: ${invalid.join(", ")}`);
+    }
   }
   return {
     version: 1,

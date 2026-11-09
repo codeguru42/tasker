@@ -53,7 +53,7 @@ const tools = [{ name: "read", path: "builtin:read", source: "builtin" }];
 
 describe("guardLimits", () => {
   it("accepts permitted denied command entries when bash is enabled", () => {
-    for (const deniedCommands of [["git push"], ["gh api"], ["git remote"], ["herdr"], ["a.b_c+d-e9"]]) {
+    for (const deniedCommands of [["git push"], ["git remote"], ["herdr"], ["a.b_c+d-e9"]]) {
       expect(
         makeLimits({ ...runInput(), deniedCommands }, [
           ...tools,
@@ -64,7 +64,7 @@ describe("guardLimits", () => {
   });
 
   it("names every invalid denied command entry when bash is enabled", () => {
-    const deniedCommands = ["gh api read", "-hidden", "two words"];
+    const deniedCommands = ["gh api", "git remote add", "-hidden", "two words"];
     const error = thrownBy(() =>
       makeLimits({ ...runInput(), deniedCommands }, [
         ...tools,
@@ -77,7 +77,7 @@ describe("guardLimits", () => {
   });
 
   it("keeps denied command entries unchanged when bash is not enabled", () => {
-    const deniedCommands = ["gh api read", "-hidden", "two words"];
+    const deniedCommands = ["gh api", "git remote add", "-hidden", "two words"];
 
     expect(makeLimits({ ...runInput(), deniedCommands }, tools).deniedCommands).toEqual(deniedCommands);
   });

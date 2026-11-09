@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { errnoCode } from "../../errno.js";
 import { isDeniedPath, isInside, realPathWithMissingParents } from "../../real-path.js";
 import type { GuardLimits, GuardTool } from "./guard-limits.js";
+import { invalidDeniedCommandEntries } from "./denied-command-entry.js";
 
 const LIMITS_FLAG = "--tasker-guard-limits";
 const LIMITS_FIELD_NAMES = [
@@ -379,7 +380,15 @@ function validateLimits(value: unknown): GuardLimits {
     if (!absolutePathList(record.denyRead)) invalid.add("denyRead");
     if (!absolutePathList(record.writeRoots)) invalid.add("writeRoots");
     if (!denyWriteList(record.denyWrite)) invalid.add("denyWrite");
-    if (!nonEmptyStringList(record.deniedCommands)) invalid.add("deniedCommands");
+    if (!nonEmptyStringList(record.deniedCommands)) {
+      invalid.add("deniedCommands");
+    } else if (
+      validTools(record.tools) &&
+      record.tools.some((tool) => tool.name === "bash") &&
+      invalidDeniedCommandEntries(record.deniedCommands).length > 0
+    ) {
+      invalid.add("deniedCommands");
+    }
     for (const name of LIMITS_FIELD_NAMES) {
       if (!Object.hasOwn(record, name)) invalid.add(name);
     }
