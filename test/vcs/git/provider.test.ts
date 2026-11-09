@@ -110,12 +110,12 @@ describe("createGitProvider", () => {
       const git = provider();
       await git.provision(fixture.context);
       const directWork = await git.createWorkspace(fixture.context, {
-        shortRef: "issue-790-direct",
+        shortRef: "issue-790",
         title: "Protected skills",
         baseRevision: base,
       });
       const providerWork = await git.createWorkspace(fixture.context, {
-        shortRef: "issue-790-provider",
+        shortRef: "issue-791",
         title: "Protected skills",
         baseRevision: base,
       });
