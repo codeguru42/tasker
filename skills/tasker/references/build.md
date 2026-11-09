@@ -34,7 +34,7 @@ On success, the command prints these lines on stdout:
 
 - `executed <issue key> at revision v<N>`
 - `todos: <done> of <total> done`
-- `fix turn: done`, only when this run did the fix turn
+- `fix turn: done`, when this run completes the fix turn, either with an assistant call or during recovery
 - `denials: <count>`, the permission denials of all turns of this run
 - `transcript: <path>`, the file `transcripts/execute-v<N>.jsonl`. The runs of one revision share it.
 

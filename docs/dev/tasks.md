@@ -410,13 +410,37 @@ The steps run in this order.
 2. The command fills the prompts and archives only the prompts that the run sends. It records a new session only when
    the run has a turn.
 3. The command moves the task to `executing` and opens the transcript of the revision for append.
-4. For each turn, the command sets the state of the todo and runs the assistant. After the turn, it records the result
-   and reads the remote tip again.
-5. The command acts on each outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says, with the
+4. For each turn, the command sets the state of the todo and runs the assistant. Before it starts the assistant, it
+   saves a protected-turn row with the task, plan version, turn identity and starting branch revision. After the
+   assistant returns, it reads the structured result. Process success alone does not mean that the turn is `done`.
+5. Only process success with a validated `done` result records the protected outcome `succeeded` and its ending
+   revision. The command then asks the VCS provider to validate and materialize any protected skill request, and marks
+   the row complete. This happens before the todo or fix turn is marked done, before a quota pause, and before the task
+   moves to `executed`. Each live todo or fix done mark and its event share one transaction. A blocked or missing result
+   never records `succeeded` or marks progress done. A failed or interrupted process records its outcome but does not
+   immediately materialize a request.
+6. The command acts on each outcome as [The result of an assistant run](#the-result-of-an-assistant-run) says, with the
    phase name `executing`. An error after the start of the run also moves the task to `failed`, with the prefix
    `executing failed:`.
-6. After the last turn, the command writes the `permission_denials` event when a turn had a denial. Then it moves the
+7. After the last turn, the command writes the `permission_denials` event when a turn had a denial. Then it moves the
    task to `executed`.
+
+At the start of each execute run, before it moves the task to `executing` or starts a model, execute reconciles saved
+protected-turn rows. It uses the same boundary after `tasker retry` or `tasker resume`. A `started` row with no saved
+outcome has an unknown result. Git state cannot show whether the assistant returned `done`. Execute leaves the row,
+commit, index and worktree unchanged, then refuses before another model starts, even when the branch changed.
+
+For a saved `succeeded` row, execute checks that the ending revision matches the task branch and worktree. It then
+validates and materializes the saved request. If todo or fix-turn progress is still pending, execute finishes it without
+running the assistant again. A recovered done mark and its `todo_done` or `fix_turn_done` event share one transaction.
+When recovery completes a queued fix turn, execute reports `fixTurnDone: true`, which makes `tasker execute` print
+`fix turn: done`. A later recovery adds no second event.
+
+Saved `failed` and `interrupted` rows keep their checked recovery. The validator checks the saved revision bounds,
+committed change, index and worktree destinations. If any bound or change is uncertain, execute refuses before another
+model starts and leaves the commit, index and worktree for tasker to report. Tasker does not reset commits or ask
+someone to repair its managed worktree by hand. A run with no assistant turn runs the same preflight before it reports
+success.
 
 The move to `executed` appends one `executed` event with the data `{ version, prompts, from, to }`. The `executed` event
 takes the place of the `transition` event for this move. `prompts` holds the versions of the prompts that the run sent.
@@ -454,6 +478,8 @@ The reasons:
 - A run with no turn records no execute session and archives no prompt. The rule of
   [the sessions table](data-root.md#sessions-table) says that an id that no conversation holds must not be continued. If
   the run recorded one, a later fix turn from `tasker retry` continues an empty id and fails.
+- A failed execute turn can leave a protected request in its commit and index. Retry goes through execute, which checks
+  and reconciles that saved request before it starts another model.
 
 ## Verify
 
@@ -644,7 +670,8 @@ pause as `from`. Then it writes a `resume` event `{ origin, target }`. A resume 
 These reasons explain its rules:
 
 - A quota stop and a crash leave a session that holds the work so far. So the resumed plan or execute run continues that
-  session. A todo that is `done` gets no new turn.
+  session. A todo that is `done` gets no new turn. Before execute starts the continued session, it reconciles any saved
+  protected request. A refusal starts no model and needs no manual change to the managed worktree.
 - A refine needs its feedback, and nobody is present at a resume. So the move into `refining` records the feedback, and
   resume runs the same refine with it.
 - A review always runs in a new session. The session row of the stopped review names a conversation that the next review
