@@ -1119,28 +1119,36 @@ entry matches its subcommand or a `git-<word>` program. Matches take priority ov
 wins. See the [command check](../../src/assistant/pi/bash-command-check.ts).
 
 The check scans lists, pipelines, assignments, redirections, compound commands and function bodies. It scans command and
-process substitutions, parameter and arithmetic expansions, and unquoted here-document bodies. A quoted here-document
-body stays literal. The [parser](../../src/assistant/pi/bash-command-parse.ts) lists the supported syntax.
+process substitutions, parameter expansions and arithmetic expansions. It scans expansions and substitutions in an
+unquoted here-document body; plain text in the body stays data. A quoted here-document body stays literal. The
+[parser](../../src/assistant/pi/bash-command-parse.ts) lists the supported syntax.
 
-The supported shells are `bash`, `sh`, `zsh`, `ksh`, `dash`, `rbash`, `ash`, `mksh` and `yash`. The check follows their
-`-c` command strings and recognizes the listed short option flags, `-o`, `-O`, `+o` and `+O` with a value, and common
-long options such as `--login`, `--posix` and `--version`. An unknown option blocks the call. The check blocks `-s`,
-`-`, a shell with no command file or command string, and Bash input from `/dev/stdin`. It also follows `eval`, `env -S`
-and `--split-string`, `flock -c` and `--command`, `su -c` and `--command`, `script -c` and `--command`, and the `-C` or
-`--callback` strings of `mapfile` and `readarray`. Each re-read adds a depth level, up to eight. A command substitution
-does not add depth.
+The supported shells are `bash`, `sh`, `zsh`, `ksh`, `dash`, `rbash`, `ash`, `mksh`, `yash` and `fish`. The check
+follows their `-c` command strings. For `zsh`, `ksh`, `mksh`, `yash` and `fish`, it accepts only the short option
+letters `c`, `l`, `i`, `e` and `x`. It recognizes `-o`, `-O`, `+o` and `+O` with a value. The shell tables list the
+allowed short option letters. It recognizes common long options such as `--login`, `--posix` and `--version`. An unknown
+option blocks the call. The Bash reader consumes the values of `--rcfile` and `--init-file` before it reads a script
+operand. The check blocks `-s`, `-`, shells with no script or command string, shell input redirections, and hidden
+operands such as absolute paths, parent-relative paths, `/dev/stdin` and `/dev/fd/0`. A `source` or `.` call blocks when
+it has no operand, or when its operand is dynamic or names hidden input. A static source path is not read. The check
+also follows `eval`, `env -S` and `--split-string`, `flock -c` and `--command`, `su -c` and `--command`, `script -c` and
+`--command`, and the `-C` or `--callback` strings of `mapfile` and `readarray`. Each re-read adds a depth level, up to
+eight. A command substitution does not add depth.
 
 The wrappers are `env`, `nice`, `timeout`, `watch`, `nohup`, `command`, `stdbuf`, `sudo`, `exec`, `doas`, `setsid`,
 `ionice`, `chrt`, `taskset`, `flock` and `busybox`. The check follows their command words and blocks an expansion in any
-later wrapper word because an option can move the command. `BASH_ENV`, `ENV` and `BASH_CMDS[...]` assignments and
-commands that can bind a name to another program also block. It blocks `xargs` because its input can add a command.
+later wrapper word because an option can move the command. `BASH_ENV`, `ENV`, `BASH_CMDS[...]` and `BASH_ALIASES[...]`
+assignments and commands that can bind a name to another program also block. An `xargs` call gets an input cause unless
+it has no command (so `xargs` uses its default `echo`), its command is `ls` or `echo`, or it uses `--version`, `--help`
+or `--show-limits`. Before a listed command, it accepts only `-0`, `--null`, `-r` and `--no-run-if-empty`.
 
 Git rules apply only when an entry has the form `git <word>`. The scanner lists the supported global options. An unknown
 option blocks the call. `-c`, `--config` and `--config-env` block because a configuration value can run a command line.
 The check scans command text from `rebase -x` and `--exec`, `bisect run`, `submodule foreach`, `difftool -x` and
 `--extcmd`, and the `filter-branch` filter options. It also checks program values for `fetch`, `pull`, `ls-remote`,
-`archive`, `clone` and `grep`. The assignments `GIT_EDITOR`, `GIT_SEQUENCE_EDITOR` and `GIT_SSH_COMMAND` are checked for
-command text. See the [scanner](../../src/assistant/pi/bash-command-scan.ts).
+`archive`, `clone` and `grep`. The assignments `EDITOR`, `VISUAL` and `PAGER`, and every `GIT_` assignment, are scanned
+as command text when their values are static. A dynamic value blocks with the git-configuration cause. See the
+[scanner](../../src/assistant/pi/bash-command-scan.ts).
 
 The check scans every action after `find` options `-exec`, `-execdir`, `-ok` and `-okdir`. It blocks an action that uses
 `{}` as its command. It also blocks an action with an expansion that can change its command.
