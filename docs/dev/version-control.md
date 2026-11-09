@@ -235,6 +235,10 @@ Known limit: the assistant can move any ref of the clone, for example the branch
 The push guard has three layers:
 
 1. Layer 1 is a deny rule for the shell of the assistant (see [Assistant surface](#assistant-surface)).
+
+   For `pi`, layer 1 is the check of the shell commands in the guard extension of tasker (see
+   [The pi provider](assistants.md#the-pi-provider)).
+
 2. Layer 2 is the `pre-push` hook of the clone. Provision writes it. See below.
 3. Layer 3 is the tip of a branch on the remote. A read of the tip before a run and after it shows a push that skipped
    the hook.
@@ -270,12 +274,13 @@ These cases skip the hook:
 - A write by the assistant to the clone. It can edit the hook or the configuration. The next provision writes the hook
   and `core.hooksPath` again.
 
-For `claude`, layer 1 and layer 3 cover these cases. A run of `codex` has no layer 1 in any role (plan, refine, review
-and execute). An execute run has layer 2 and layer 3, so layer 3 covers these cases for such a run.
+For `claude` and `pi`, layer 1 and layer 3 cover these cases. A run of `codex` has no layer 1 in any role (plan, refine,
+review and execute). An execute run has layer 2 and layer 3, so layer 3 covers these cases for such a run.
 
 The hook alone does not cover them. For `claude`, a caller that runs the assistant must apply the deny rule of layer 1.
-`tasker execute`, `tasker plan`, `tasker refine` and `tasker review` compare the tips of the task branch for layer 3, as
-[tasks.md](tasks.md#execute) says.
+For `pi`, a caller must give the guard extension the entries of `deniedCommands`. `tasker execute`, `tasker plan`,
+`tasker refine` and `tasker review` compare the tips of the task branch for layer 3, as [tasks.md](tasks.md#execute)
+says.
 
 The token files are outside the bare clone and outside each worktree. The sandbox of the assistant must not have a write
 path that covers them. This doc makes no other promise about a sandbox.
