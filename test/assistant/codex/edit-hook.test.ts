@@ -14,6 +14,7 @@ import { useTempDir, useTempFile } from "../../helpers/temp.js";
 const BAD_INPUT = "the hook input is not a PreToolUse call of apply_patch";
 const NOT_PARSED = "tasker cannot read a path from the patch";
 const DOT_DOT = (path: string) => `a path with .. is not allowed: ${path}`;
+const DOT = (path: string) => `a path with . is not allowed: ${path}`;
 const DENIED_PATH = (path: string) => `the path is denied: ${path}`;
 const OUTSIDE = (path: string) => `the path is outside the worktree: ${path}`;
 const LINK = (path: string) => `the path goes through a symbolic link: ${path}`;
@@ -189,6 +190,39 @@ describe("editHookAnswer", () => {
   it("denies sub/../dotdot.txt", () => {
     const { answer } = setup();
     expect(answer(patch("*** Add File: sub/../dotdot.txt", "+x"))).toBe(denyLine(DOT_DOT("sub/../dotdot.txt")));
+  });
+
+  it.each([".", "./file.txt", "sub/./file.txt"])("denies a path with a . part: %s", (path) => {
+    const { answer } = setup();
+    expect(answer(patch(`*** Add File: ${path}`, "+x"))).toBe(denyLine(DOT(path)));
+  });
+
+  it("denies canonical skill paths and protected siblings", () => {
+    const { answer } = setup();
+    for (const path of [
+      ".agents/skills/topic.md",
+      ".agents/other.md",
+      ".codex/skills",
+      ".codex/settings.toml",
+      ".aws/credentials",
+      ".git/config",
+    ]) {
+      expect(answer(patch(`*** Add File: ${path}`, "+x"))).toMatch(/"permissionDecision":"deny"/);
+    }
+  });
+
+  it("denies content paths through both skill links and an inner link", () => {
+    const { answer, wt } = setup();
+    mkdirSync(join(wt, ".agents", "skills"), { recursive: true });
+    mkdirSync(join(wt, ".claude"));
+    mkdirSync(join(wt, ".codex"));
+    symlinkSync("../.agents/skills", join(wt, ".claude", "skills"));
+    symlinkSync("../.agents/skills", join(wt, ".codex", "skills"));
+    symlinkSync(join(wt, ".agents", "skills"), join(wt, ".agents", "inner"));
+
+    for (const path of [".claude/skills/topic.md", ".codex/skills/topic.md", ".agents/inner/topic.md"]) {
+      expect(answer(patch(`*** Add File: ${path}`, "+x"))).toMatch(/"permissionDecision":"deny"/);
+    }
   });
 
   it("denies a symbolic link at the first, a middle and the last part, also inside the worktree", () => {

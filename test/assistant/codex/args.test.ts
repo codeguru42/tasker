@@ -240,6 +240,25 @@ describe("codexArgs: the write profile", () => {
     );
   });
 
+  it.each([false, true])("denies protected skill paths in a %s write session without a direct grant", (resume) => {
+    const protectedPaths = ["/work/.agents", "/work/.codex"];
+    const args = writeArgs(
+      {
+        resume,
+        sandbox: sandboxLimits({ allowWrite: protectedPaths, denyRead: protectedPaths }),
+      },
+      resume ? { threadId: "T1" } : {},
+    );
+    const profile = args.find((arg) => arg.startsWith("permissions.tasker.filesystem="));
+
+    expect(profile).toContain('"/work/.agents"="deny"');
+    expect(profile).toContain('"/work/.codex"="deny"');
+    expect(profile).not.toContain('"/work/.agents"="write"');
+    expect(profile).not.toContain('"/work/.codex"="write"');
+    expect(args).toContain("exec");
+    expect(args.includes("resume")).toBe(resume);
+  });
+
   it("gives a write key for /tmp when TMPDIR is not set", () => {
     expect(writeArgs()).toEqual(
       expectedCodexArgs({ model: "haiku", effort: "low", writePaths: ["/work", "/tmp"], hookCommand: HOOK }),
