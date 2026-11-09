@@ -32,6 +32,10 @@ The command reads the origin. The origin is the state that the task left when it
 - `verifying` with `--resume-execute`: the task goes to `approved`. The command marks every todo of the pinned revision
   `done` and queues one fix turn. Then it runs `tasker execute`, which continues the execute session and runs only the
   fix turn.
+
+  If the saved fix turn already succeeded but its progress is still queued, execute recovery completes it without
+  another assistant turn.
+
 - `reviewing`: the task goes to `awaiting_work_review`. The command deletes the review session of the next review
   number, so that the next run starts a new session. Then it runs `tasker review`.
 - `merging`, when the stored merge origin is `accepted` or `in_peer_review`: the task returns to that state, and the
