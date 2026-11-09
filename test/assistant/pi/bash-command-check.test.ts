@@ -46,6 +46,10 @@ const commandRows: CommandRow[] = [
   { command: "echo ok |& git push", result: "match" },
   { command: "echo ok |& git status", result: "pass" },
   { command: "echo ok\ngit push", result: "match" },
+  { command: "git push\necho '", result: "match" },
+  { command: 'git push; echo "', result: "match" },
+  { command: "echo hi\necho '", result: "cause", cause: CAUSES.parse },
+  { command: "echo '", result: "cause", cause: CAUSES.parse },
   { command: "git push; )", result: "match" },
   { command: "echo hi\ngit push\n)", result: "match" },
   { command: "echo hi; )", result: "cause", cause: CAUSES.parse },
@@ -221,6 +225,14 @@ const commandRows: CommandRow[] = [
   { command: 'echo "git push"', result: "pass" },
   { command: "A=1 B=2 git push", result: "match" },
   { command: "echo $(git push)", result: "match" },
+  { command: "eval 'git push; )'", result: "match" },
+  { command: "bash -c 'git push; )'", result: "match" },
+  { command: "echo $(git push; fi)", result: "match" },
+  { command: "eval 'echo hi; )'", result: "cause", cause: CAUSES.parse },
+  { command: "echo $(then git status)", result: "cause", cause: CAUSES.parse },
+  { command: "echo $(echo hi; fi)", result: "cause", cause: CAUSES.parse },
+  { command: "echo `then git status`", result: "cause", cause: CAUSES.parse },
+  { command: "x=$(fi)", result: "cause", cause: CAUSES.parse },
   { command: "echo `git push`", result: "match" },
   { command: 'echo "`git push`"', result: "match" },
   { command: "echo \"<<'EOF'\"\ngit push\nEOF", result: "match" },
@@ -637,6 +649,10 @@ function gitReaderAtDepth(depth: number): string {
   return command;
 }
 
+function wrapperChain(wrappers: string[], command: string): string {
+  return `${wrappers.join(" ")} ${command}`;
+}
+
 describe("checkBashCommand", () => {
   it.each(commandRows)("checks $command", (row) => {
     expect(checkBashCommand(row.command, row.entries ?? [DENIED])).toEqual(expectedResult(row));
@@ -652,6 +668,31 @@ describe("checkBashCommand", () => {
 
     expect(records.length).toBeGreaterThan(0);
   }, 120000);
+
+  it("scans a 22-word env wrapper chain in under two seconds", () => {
+    const command = wrapperChain(Array(22).fill("env"), "git status");
+    const start = performance.now();
+    expect(checkBashCommand(command, [DENIED])).toEqual({ block: false });
+    expect(performance.now() - start).toBeLessThan(2000);
+  });
+
+  it("scans a 22-word env wrapper chain with a match in under two seconds", () => {
+    const command = wrapperChain(Array(22).fill("env"), "git push");
+    const start = performance.now();
+    expect(checkBashCommand(command, [DENIED])).toEqual(expectedResult({ command, result: "match" }));
+    expect(performance.now() - start).toBeLessThan(2000);
+  });
+
+  it("scans a 22-word mixed wrapper chain in under two seconds", () => {
+    const wrappers = Array.from(
+      { length: 22 },
+      (_, index) => ["nice", "-n", "5", "timeout", "9", "env", "sudo"][index % 7],
+    );
+    const command = wrapperChain(wrappers, "git push");
+    const start = performance.now();
+    expect(checkBashCommand(command, [DENIED])).toEqual(expectedResult({ command, result: "match" }));
+    expect(performance.now() - start).toBeLessThan(2000);
+  });
 
   it("chooses a denied match before a cause", () => {
     expect(checkBashCommand("echo $X; git push", [DENIED])).toEqual({

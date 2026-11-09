@@ -183,4 +183,10 @@ describe("parseBashCommand", () => {
     expect(parsed.commands.map((command) => command.words.map((word) => word.value))).toEqual([["git", "push"]]);
     expect("parseError" in parsed).toBe(true);
   });
+
+  it("keeps completed commands when tokenization fails and omits the open command", () => {
+    const parsed = parseBashCommand("git push\necho '");
+    expect(parsed.commands.map((command) => command.words.map((word) => word.value))).toEqual([["git", "push"]]);
+    expect(parsed.parseError).toBeInstanceOf(Error);
+  });
 });
