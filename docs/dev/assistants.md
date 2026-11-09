@@ -1001,18 +1001,17 @@ the order shown in [guard-extension.ts](../../src/assistant/pi/guard-extension.t
 [real-path.ts](../../src/real-path.ts). The guard compares supplied paths and real paths. A deny path takes priority
 over an allowed root.
 
-Missing roots grant no access. The guard blocks each call of the `powershell` tool. It tests each call of the `bash`
-tool as [The check of the shell commands](#the-check-of-the-shell-commands) says.
-
-The guard has one limit. A later extension can change a call's input after the guard passes it. Pi loads extensions
-named with `-e` first. The limit applies to each extension that pi loads after the guard.
-
 Before valid limits exist, each tool call blocks. An unreadable or invalid limits file stops pi before its first
 provider request. A tool-handler error blocks the call with a fixed reason. A skill-handler error removes all skill
 folders supplied by pi.
 
-`skillRoots` adds read roots only when `readRoots` is a list. The guard drops a skill root on, under or above a
-protected or denied path.
+`skillRoots` adds read roots only when `readRoots` is a list. Missing roots grant no access.  
+The guard blocks each call of the `powershell` tool. It tests each call of the `bash` tool as
+[The check of the shell commands](#the-check-of-the-shell-commands) says. The guard drops a skill root on, under or
+above a protected or denied path.
+
+The guard has one limit. A later extension can change a call's input after the guard passes it. Pi loads extensions
+named with `-e` first. The limit applies to each extension that pi loads after the guard.
 
 A task subagent measured facts 1–11 on 2026-11-07 with pi 1.1.0 on Linux. Each run used a new scratch folder, a scratch
 home folder and an empty `PI_CODING_AGENT_DIR`. Each run set `PI_TELEMETRY=0` and used `-p --mode json --offline`, a
@@ -1107,7 +1106,8 @@ extension precheck rejects such a folder.
 ### The check of the shell commands
 
 The `--tools` list of pi names whole tools. It cannot exclude one Bash command, so the guard checks each trusted Bash
-call. The fail-safe configuration is at least `Bash(git push:*)`.
+call. The check must block too much and never too little. Its bar is at least the bar of the deny rule
+`Bash(git push:*)` of Claude Code.
 
 Denied command entries have two forms: one word, or `git` plus one word. Each word uses letters, digits, `.`, `_`, `+`
 or `-`; it cannot start with `-`. With `bash` enabled, tasker rejects other entries and reports their values in the
@@ -1120,49 +1120,63 @@ wins. See the [command check](../../src/assistant/pi/bash-command-check.ts).
 
 The parser accepts a safe Bash subset. It supports simple commands with assignment words and redirections. It also
 supports lists, pipelines, `!`, `time`, `time -p`, `coproc`, subshells, brace groups and function definitions. Compound
-commands include `if`, `while`, `until`, `for`, `select`, `case`, `[[ ]]` and `(( ))`. The scanner reads command and
-process substitutions, backticks, parameter expansions and arithmetic expansions. It scans redirection targets,
-here-strings and unquoted here-document bodies. Plain body text stays data, and quoted here-document bodies stay
-literal. Unsupported or uncertain syntax blocks the whole call with the parse cause. The
+commands include `if`, `while`, `until`, `for`, `select`, `case`, `[[ ]]` and `(( ))`. The
 [parser](../../src/assistant/pi/bash-command-parse.ts) lists the supported syntax.
 
+The scanner reads command and process substitutions, backticks, parameter expansions and arithmetic expansions. It scans
+redirection targets, here-strings and unquoted here-document bodies. Plain body text stays data. Quoted here-document
+bodies stay literal. Unsupported or uncertain syntax blocks the whole call with the parse cause.
+
 The supported shells are `bash`, `sh`, `zsh`, `ksh`, `dash`, `rbash`, `ash`, `mksh`, `yash` and `fish`. The check
-follows their `-c` command strings. For `zsh`, `ksh`, `mksh`, `yash` and `fish`, it accepts only the short option
-letters `c`, `l`, `i`, `e` and `x`. It recognizes `-o`, `-O`, `+o` and `+O` with a value. The shell tables list the
-allowed short option letters. It recognizes common long options such as `--login`, `--posix` and `--version`. An unknown
-option blocks the call. The Bash reader consumes the values of `--rcfile` and `--init-file` before it reads a script
-operand. The check blocks `-s`, `-`, shells with no script or command string, shell input redirections, and hidden
-operands under `/dev` or `/proc`, or with a `..` path part. A `source` or `.` call blocks when it has no operand, when
-its operand is dynamic or names hidden input, or when its input comes from a redirection or pipeline. A static source
-path is not read. The check reparses each suffix of later words for `eval`, `watch` and `sudo`. It also reparses later
-words and `--name=value` parts for `env`, `flock`, `su`, `script` and `trap`. `env` also rereads values after `-S` and
+follows their `-c` command strings. For `zsh`, `ksh`, `mksh`, `yash` and `fish`, it accepts only short option letters
+`c`, `l`, `i`, `e` and `x`. It recognizes `-o`, `-O`, `+o` and `+O` with a value.
+
+The shell tables list the allowed short option letters. It recognizes common long options such as `--login`, `--posix`
+and `--version`. An unknown option blocks the call. The Bash reader consumes `--rcfile` and `--init-file` values before
+it reads a script operand.
+
+The check blocks `-s`, `-`, shells with no script or command string, and shell input redirections. It also blocks hidden
+operands under `/dev` or `/proc`, or operands with a `..` path part. A `source` or `.` call blocks when it has no
+operand, or when its operand is dynamic or names hidden input. It also blocks when its input comes from a redirection or
+pipeline. The check does not read a static source path.
+
+The check reparses each suffix of later words for `eval`, `watch` and `sudo`. It also reparses later words and
+`--name=value` parts for `env`, `flock`, `su`, `script` and `trap`. `env` also rereads values after `-S` and
 `--split-string`. `flock`, `su` and `script` also reread values after `-c` and `--command`. `mapfile` and `readarray`
-reread the `-C` or `--callback` value. Each re-read adds a depth level, up to eight. A command substitution does not add
-depth.
+reread the `-C` or `--callback` value.
+
+Each re-read adds a depth level, up to eight. A command substitution does not add depth.
 
 The command wrappers are `env`, `nice`, `timeout`, `watch`, `nohup`, `command`, `stdbuf`, `sudo`, `exec`, `doas`,
-`setsid`, `ionice`, `chrt`, `taskset`, `flock` and `busybox`. The check follows their command words and blocks an
+`setsid`, `ionice`, `chrt`, `taskset`, `flock` and `busybox`. The check follows their command words. It blocks an
 expansion in any later word because an option can move the command. It also scans the command after `time` and
-`builtin`, and checks `xargs` input separately. A word that contains `BASH_CMDS`, `BASH_ALIASES` or `expand_aliases`
-causes a binding block. Assignments to `BASH_ENV` and `ENV` cause the same block in supported assignment positions.
-Commands that can bind or replay a command name also block. An `xargs` call gets an input cause unless it has no command
-(so `xargs` uses its default `echo`), its command is `ls` or `echo`, or it uses `--version`, `--help` or
-`--show-limits`. Before a listed command, it accepts only `-0`, `--null`, `-r` and `--no-run-if-empty`.
+`builtin`. The check scans `xargs` input separately.
+
+A word that contains `BASH_CMDS`, `BASH_ALIASES` or `expand_aliases` causes a binding block. Assignments to `BASH_ENV`
+and `ENV` cause the same block in supported assignment positions. Commands that can bind or replay a command name also
+block.
+
+An `xargs` call gets an input cause in most cases. No cause applies when it has no command, so `xargs` uses its default
+`echo`. No cause applies when its command is `ls` or `echo`, or it uses `--version`, `--help` or `--show-limits`. Before
+a listed command, it accepts only `-0`, `--null`, `-r` and `--no-run-if-empty`.
 
 Git rules apply only when an entry has the form `git <word>`. The scanner lists the supported global options. An unknown
 option blocks the call. `-c`, `--config` and `--config-env` block because a configuration value can run a command line.
-The check scans command text from `rebase -x` and `--exec`, `bisect run`, `submodule foreach`, `difftool -x` and
-`--extcmd`, and the `filter-branch` filter options. It also checks program values for `fetch`, `pull`, `ls-remote`,
-`archive`, `clone` and `grep`. Static values of `EDITOR`, `VISUAL`, `PAGER` and `GIT_` names are scanned as command text
-when they appear before the command name or as `NAME=value` arguments of `env`, `export`, `declare`, `typeset`, `local`
-or `readonly`. A dynamic value blocks with the git-configuration cause. See the
-[scanner](../../src/assistant/pi/bash-command-scan.ts).
+
+The check scans command text from `rebase -x` and `--exec`, `bisect run`, and `submodule foreach`. It also scans
+`difftool -x`, `--extcmd` and the `filter-branch` filter options. The check scans program values for `fetch`, `pull`,
+`ls-remote`, `archive`, `clone` and `grep`.
+
+Static values of `EDITOR`, `VISUAL`, `PAGER` and `GIT_` names are scanned as command text. This applies before the
+command name and to `NAME=value` arguments of `env`, `export`, `declare`, `typeset`, `local` or `readonly`. A dynamic
+value blocks with the git-configuration cause. See the [scanner](../../src/assistant/pi/bash-command-scan.ts).
 
 The check scans every action after `find` options `-exec`, `-execdir`, `-ok` and `-okdir`. It blocks an action that uses
 `{}` as its command or has an expansion in an action word.
 
 When the guard cannot read a command with certainty, it blocks the call. Examples include a parse error, a shell that
-reads commands from input, a dynamic command name, a command binding, or an array index that can run a command.
+reads commands from input. They also include a dynamic command name, a command binding, or an array index that can run a
+command.
 
 The reasons for the check:
 
