@@ -65,4 +65,36 @@ describe("migrate", () => {
     // The second string ends the transaction itself, then fails.
     expect(() => migrate(db, ["CREATE TABLE a (x)", "COMMIT; NOT SQL"])).toThrow(/syntax error/);
   });
+
+  it("adds protected execute turn storage in a new migration", () => {
+    migrate(db, migrations);
+
+    expect(schemaVersion(db)).toBe(migrations.length);
+    expect(migrations.length).toBe(24);
+    expect(
+      db
+        .prepare("PRAGMA table_info(protected_execute_turns)")
+        .all()
+        .map((column) => (column as { name: string }).name),
+    ).toEqual([
+      "task_id",
+      "plan_version",
+      "turn_id",
+      "starting_revision",
+      "phase",
+      "outcome",
+      "ending_revision",
+      "updated_at",
+    ]);
+  });
+
+  it("upgrades version 23 without changing earlier migrations", () => {
+    migrate(db, migrations.slice(0, 23));
+    migrate(db, migrations);
+
+    expect(schemaVersion(db)).toBe(24);
+    expect(
+      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'protected_execute_turns'").get(),
+    ).toEqual({ name: "protected_execute_turns" });
+  });
 });

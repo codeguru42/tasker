@@ -188,12 +188,21 @@ describe("task store", () => {
   const todoProgress = (taskId: number, version: number) => store.executeTodoProgress(taskId, version);
 
   const markTodosDone = (taskId: number, version: number) => store.markExecuteTodosDone(taskId, version);
+  const storeWithAtomicCompletion = () =>
+    store as TaskStore & {
+      completeExecuteTodo(taskId: number, version: number, todoId: string): boolean;
+      completeExecuteFixTurn(taskId: number, version: number, queuedAt: string): boolean;
+    };
+  const completeTodo = (taskId: number, version: number, todoId: string) =>
+    storeWithAtomicCompletion().completeExecuteTodo(taskId, version, todoId);
 
   const queueFixTurn = (taskId: number, version: number, turn: NewExecuteFixTurn) =>
     store.queueExecuteFixTurn(taskId, version, turn);
   const queuedFixTurn = (taskId: number, version: number) => store.queuedExecuteFixTurn(taskId, version);
   const fixTurnState = (taskId: number, version: number) => store.executeFixTurnState(taskId, version);
   const markFixTurnDone = (taskId: number, version: number) => store.markExecuteFixTurnDone(taskId, version);
+  const completeFixTurn = (taskId: number, version: number, queuedAt: string) =>
+    storeWithAtomicCompletion().completeExecuteFixTurn(taskId, version, queuedAt);
 
   const clearPlan = (taskId: number) => store.clearPlanSession(taskId);
   const clearExecute = (taskId: number, version: number) => store.clearExecuteSession(taskId, version);
@@ -3209,6 +3218,46 @@ describe("task store", () => {
     });
   });
 
+  describe("complete execute todo", () => {
+    it("writes one done event and keeps the first completion time on repeat", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      setTodoState(task.id, 1, "write-test", "in_progress");
+      clock = new Date("2026-01-02T00:00:00.000Z");
+
+      expect(completeTodo(task.id, 1, "write-test")).toBe(true);
+      const events = store.listEvents(task.id);
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ type: "todo_done", data: { id: "write-test" } });
+      expect(readTodoRows().find((row) => row.todo_id === "write-test")).toMatchObject({
+        state: "done",
+        updated_at: "2026-01-02T00:00:00.000Z",
+      });
+
+      clock = new Date("2026-01-03T00:00:00.000Z");
+      expect(completeTodo(task.id, 1, "write-test")).toBe(false);
+      expect(store.listEvents(task.id)).toEqual(events);
+      expect(readTodoRows().find((row) => row.todo_id === "write-test")).toMatchObject({
+        updated_at: "2026-01-02T00:00:00.000Z",
+      });
+    });
+
+    it("rolls back the done state when event insertion fails", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      setTodoState(task.id, 1, "write-test", "in_progress");
+      withRawDatabase(dbPath, (db) =>
+        db.exec(
+          "CREATE TRIGGER reject_todo_done BEFORE INSERT ON events WHEN NEW.type = 'todo_done' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+        ),
+      );
+
+      expect(() => completeTodo(task.id, 1, "write-test")).toThrow("event rejected");
+      expect(readTodoRows().find((row) => row.todo_id === "write-test")).toMatchObject({ state: "in_progress" });
+      expect(store.listEvents(task.id)).toEqual([]);
+    });
+  });
+
   describe("execute fix turn", () => {
     it("queues a fix turn and reads it with a log tail", () => {
       const task = store.createTask(newTask);
@@ -3255,6 +3304,41 @@ describe("task store", () => {
           done_at: "2026-01-02T00:00:00.000Z",
         },
       ]);
+    });
+
+    it("writes one done event for the identified turn and keeps its first completion time", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "f", verifyLogTail: null });
+      const queuedAt = queuedFixTurn(task.id, 1)!.queuedAt;
+      clock = new Date("2026-01-02T00:00:00.000Z");
+
+      expect(completeFixTurn(task.id, 1, queuedAt)).toBe(true);
+      const events = store.listEvents(task.id);
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ type: "fix_turn_done" });
+      expect(readFixTurnRows()[0]).toMatchObject({ done_at: "2026-01-02T00:00:00.000Z" });
+
+      clock = new Date("2026-01-03T00:00:00.000Z");
+      expect(completeFixTurn(task.id, 1, queuedAt)).toBe(false);
+      expect(store.listEvents(task.id)).toEqual(events);
+      expect(readFixTurnRows()[0]).toMatchObject({ done_at: "2026-01-02T00:00:00.000Z" });
+    });
+
+    it("rolls back the done time when event insertion fails", () => {
+      const task = store.createTask(newTask);
+      seedPlanRevision(store, task.id);
+      queueFixTurn(task.id, 1, { verifyFailure: "f", verifyLogTail: null });
+      const queuedAt = queuedFixTurn(task.id, 1)!.queuedAt;
+      withRawDatabase(dbPath, (db) =>
+        db.exec(
+          "CREATE TRIGGER reject_fix_turn_done BEFORE INSERT ON events WHEN NEW.type = 'fix_turn_done' BEGIN SELECT RAISE(ABORT, 'event rejected'); END",
+        ),
+      );
+
+      expect(() => completeFixTurn(task.id, 1, queuedAt)).toThrow("event rejected");
+      expect(readFixTurnRows()[0]).toMatchObject({ done_at: null });
+      expect(store.listEvents(task.id)).toEqual([]);
     });
 
     it("refuses done for a fix turn that is already done and keeps its first done time", () => {
@@ -4005,6 +4089,132 @@ describe("task store", () => {
         expect(() => store.runStatus(9999)).toThrow("task not found: 9999");
       });
     });
+  });
+
+  it("stores protected execute turn bounds and reads them after reopening", () => {
+    const task = store.createTask(newTask);
+    const api = store as unknown as {
+      beginProtectedExecuteTurn(input: {
+        taskId: number;
+        planVersion: number;
+        turnId: string;
+        startingRevision: string;
+      }): unknown;
+      recordProtectedExecuteTurnOutcome(
+        taskId: number,
+        planVersion: number,
+        turnId: string,
+        outcome: "succeeded" | "failed" | "interrupted",
+        endingRevision?: string,
+      ): unknown;
+      completeProtectedExecuteTurn(taskId: number, planVersion: number, turnId: string): unknown;
+      protectedExecuteTurn(taskId: number, planVersion: number, turnId: string): unknown;
+    };
+    const input = {
+      taskId: task.id,
+      planVersion: 3,
+      turnId: "todo-add-store-test",
+      startingRevision: "a".repeat(40),
+    };
+
+    api.beginProtectedExecuteTurn(input);
+    expect(api.protectedExecuteTurn(task.id, 3, input.turnId)).toMatchObject({
+      ...input,
+      phase: "started",
+      outcome: null,
+      endingRevision: null,
+    });
+    api.recordProtectedExecuteTurnOutcome(task.id, 3, input.turnId, "succeeded", "b".repeat(40));
+    expect(api.protectedExecuteTurn(task.id, 3, input.turnId)).toMatchObject({
+      phase: "succeeded",
+      outcome: "succeeded",
+      endingRevision: "b".repeat(40),
+    });
+
+    store.close();
+    store = openStore(dbPath, { now });
+    expect(api.protectedExecuteTurn(task.id, 3, input.turnId)).toMatchObject({
+      startingRevision: "a".repeat(40),
+      endingRevision: "b".repeat(40),
+      phase: "succeeded",
+    });
+    api.completeProtectedExecuteTurn(task.id, 3, input.turnId);
+    expect(api.protectedExecuteTurn(task.id, 3, input.turnId)).toMatchObject({ phase: "complete" });
+  });
+
+  it("refuses invalid protected execute turn transitions and a second open turn", () => {
+    const task = store.createTask(newTask);
+    const api = store as unknown as {
+      beginProtectedExecuteTurn(input: {
+        taskId: number;
+        planVersion: number;
+        turnId: string;
+        startingRevision: string;
+      }): unknown;
+      recordProtectedExecuteTurnOutcome(
+        taskId: number,
+        planVersion: number,
+        turnId: string,
+        outcome: "succeeded" | "failed" | "interrupted",
+        endingRevision?: string,
+      ): unknown;
+      completeProtectedExecuteTurn(taskId: number, planVersion: number, turnId: string): unknown;
+    };
+    const input = {
+      taskId: task.id,
+      planVersion: 1,
+      turnId: "fix-1",
+      startingRevision: "a".repeat(40),
+    };
+
+    api.beginProtectedExecuteTurn(input);
+    expect(() => api.beginProtectedExecuteTurn({ ...input, turnId: "todo-next" })).toThrow(
+      /open protected execute turn/,
+    );
+    expect(() => api.completeProtectedExecuteTurn(task.id, 1, input.turnId)).toThrow(/cannot complete/);
+    expect(() => api.recordProtectedExecuteTurnOutcome(task.id, 1, input.turnId, "succeeded")).toThrow(
+      /ending revision/,
+    );
+    api.recordProtectedExecuteTurnOutcome(task.id, 1, input.turnId, "failed");
+    expect(() => api.recordProtectedExecuteTurnOutcome(task.id, 1, input.turnId, "succeeded", "b".repeat(40))).toThrow(
+      /already has an outcome/,
+    );
+  });
+
+  it("keeps failed and interrupted turn bounds readable for crash recovery", () => {
+    const task = store.createTask(newTask);
+    const api = store as unknown as {
+      beginProtectedExecuteTurn(input: {
+        taskId: number;
+        planVersion: number;
+        turnId: string;
+        startingRevision: string;
+      }): unknown;
+      recordProtectedExecuteTurnOutcome(
+        taskId: number,
+        planVersion: number,
+        turnId: string,
+        outcome: "succeeded" | "failed" | "interrupted",
+        endingRevision?: string,
+      ): unknown;
+      protectedExecuteTurn(taskId: number, planVersion: number, turnId: string): unknown;
+    };
+
+    for (const outcome of ["failed", "interrupted"] as const) {
+      const turnId = outcome;
+      api.beginProtectedExecuteTurn({
+        taskId: task.id,
+        planVersion: 2,
+        turnId,
+        startingRevision: "c".repeat(40),
+      });
+      api.recordProtectedExecuteTurnOutcome(task.id, 2, turnId, outcome);
+      expect(api.protectedExecuteTurn(task.id, 2, turnId)).toMatchObject({
+        startingRevision: "c".repeat(40),
+        endingRevision: null,
+        outcome,
+      });
+    }
   });
 
   it("lets two processes write to one new database at once", async () => {
