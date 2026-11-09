@@ -97,7 +97,7 @@ export async function ciStatus(
   cwd: string,
   env: NodeJS.ProcessEnv,
 ): Promise<CiStatus> {
-  const [checkStdout, statusStdout, workflowStdout] = await Promise.all([
+  const promises = [
     readSource(
       session,
       ["api", "--paginate", "--slurp", `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`],
@@ -119,7 +119,15 @@ export async function ciStatus(
       sha,
       workflows,
     ),
-  ]);
+  ] as const;
+  let results: [string, string, string];
+  try {
+    results = await Promise.all(promises);
+  } catch (error) {
+    await Promise.allSettled(promises);
+    throw error;
+  }
+  const [checkStdout, statusStdout, workflowStdout] = results;
   const checkRuns = responseResults(checkStdout, sha, checks);
   const commitStatuses = responseResults(statusStdout, sha, statuses);
   const workflowRuns = responseResults(workflowStdout, sha, workflows);
