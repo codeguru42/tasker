@@ -4,10 +4,10 @@ The readers of this page are the orchestrator, and the task subagent for "What t
 
 ## Quota
 
-The quota belongs to the whole account. If a task stops in `quota_blocked`, the orchestrator and all the task subagents
-also have no tokens. No session can act until the quota resets. For this reason, the orchestrator must plan the resume
-before the quota runs out. The orchestrator does this with up to two cron jobs for each task subagent: a five-hour job
-and a seven-day job.
+The quota of Claude Code belongs to the whole account. If a `claude-code` task stops in `quota_blocked`, the
+orchestrator and all the task subagents also have no tokens. No session can act until the quota resets. For this reason,
+the orchestrator must plan the resume before the quota runs out. The orchestrator does this with up to two cron jobs for
+each task subagent: a five-hour job and a seven-day job.
 
 ### Terms
 
