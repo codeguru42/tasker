@@ -5,7 +5,7 @@ export type BashToken =
   | { kind: "operator" | "newline" | "keyword"; value: string; start: number; end: number }
   | { kind: "heredoc-body"; value: string; quoted: boolean; start: number; end: number };
 
-export type BashTokens = BashToken[] & { parseError?: BashParseError };
+type BashTokens = BashToken[] & { parseError?: BashParseError };
 
 export class BashParseError extends Error {}
 

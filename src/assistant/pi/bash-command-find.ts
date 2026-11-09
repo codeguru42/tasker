@@ -3,7 +3,7 @@ import type { BashWord } from "./bash-command-parse.js";
 
 const EXPANSION_CAUSE = "an expansion can change a command name or a word of a denied command";
 
-export interface FindScanHooks {
+interface FindScanHooks {
   cause(reason: string): void;
   scanAction(words: BashWord[]): void;
 }

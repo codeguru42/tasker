@@ -5,7 +5,7 @@ const CONFIG_CAUSE = "git can run a command line from a configuration value";
 const OPTION_CAUSE = "an unknown option of git or of a shell";
 const EXPANSION_CAUSE = "an expansion can change a command name or a word of a denied command";
 
-export interface GitScanHooks {
+interface GitScanHooks {
   cause(reason: string): void;
   scanText(value: BashWord): void;
   scanWords(words: BashWord[]): void;

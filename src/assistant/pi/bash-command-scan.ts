@@ -32,7 +32,7 @@ const CAUSE = {
 
 const MAX_COMMAND_DEPTH = 8;
 
-export interface ScanResult {
+interface ScanResult {
   matches: Set<string>;
   firstCause?: string;
 }

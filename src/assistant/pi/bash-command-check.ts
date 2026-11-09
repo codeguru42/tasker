@@ -2,7 +2,7 @@ import { BashParseError, parseBashCommand } from "./bash-command-parse.js";
 import { scanBashCommands } from "./bash-command-scan.js";
 
 const PARSE_CAUSE = "the line does not parse";
-export type BashCommandCheck = { block: false } | { block: true; reason: string };
+type BashCommandCheck = { block: false } | { block: true; reason: string };
 
 export function checkBashCommand(command: string, entries: readonly string[]): BashCommandCheck {
   try {

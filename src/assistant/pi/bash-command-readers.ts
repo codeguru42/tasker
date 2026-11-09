@@ -56,10 +56,10 @@ export function hasBindingEffect(base: string, args: BashWord[]): boolean {
   return false;
 }
 
-export interface ReaderAction {
+interface ReaderAction {
   code: BashWord;
 }
-export type ShellReadResult = { kind: "unknown" | "input" | "none" } | { kind: "code"; word?: BashWord };
+type ShellReadResult = { kind: "unknown" | "input" | "none" } | { kind: "code"; word?: BashWord };
 
 export function shellRead(base: string, words: BashWord[], start: number): ShellReadResult {
   const shell = SHELLS[base as keyof typeof SHELLS];

@@ -1,4 +1,4 @@
-import { BashParseError, tokenizeBashCommand, type BashToken } from "./bash-command-tokenize.js";
+import { BashParseError, tokenizeBashCommand } from "./bash-command-tokenize.js";
 
 export interface BashWordPart {
   kind:
@@ -246,8 +246,6 @@ export function parseBashCommand(source: string): ParsedBashLine {
   parseError ??= nestedParseError ?? tokens.parseError;
   return { commands, ...(parseError === undefined ? {} : { parseError }) };
 }
-
-export type { BashToken };
 
 function addWordNested(word: BashWord, onError: (error: BashParseError) => void): void {
   if (
