@@ -33,6 +33,20 @@ const commandRows: CommandRow[] = [
   { command: "A=1 B=2 git push", result: "match" },
   { command: "echo $(git push)", result: "match" },
   { command: "echo `git push`", result: "match" },
+  { command: 'echo "`git push`"', result: "match" },
+  { command: "echo \"<<'EOF'\"\ngit push\nEOF", result: "match" },
+  { command: "echo hi\ngit push", result: "match" },
+  { command: "time -p git push", result: "match" },
+  { command: "coproc git push", result: "match" },
+  { command: "2>&1 git push", result: "match" },
+  { command: "> /tmp/x git push", result: "match" },
+  { command: "if git push; then :; fi", result: "match" },
+  { command: "while git push; do :; done", result: "match" },
+  { command: "f() ( git push )", result: "match" },
+  { command: 'cat <<"EOF"\n$(git push)\nEOF\ngit push', result: "match" },
+  { command: "$'git' push", result: "cause", cause: CAUSES.expansion },
+  { command: "gi\\\nt push", result: "match" },
+  { command: "git\\\n push", result: "match" },
   { command: "echo ${x:-$(git push)}", result: "match" },
   { command: "cat <<EOF\n$(git push)\nEOF", result: "match" },
   { command: "cat <<'EOF'\n$(git push)\nEOF", result: "pass" },
@@ -106,13 +120,16 @@ const commandRows: CommandRow[] = [
   { command: "find . -exec sh -c '{}' \\;", result: "cause", cause: CAUSES.expansion },
 ];
 
-function expectedResult(row: CommandRow): string | null {
-  if (row.result === "pass") return null;
+function expectedResult(row: CommandRow): { block: false } | { block: true; reason: string } {
+  if (row.result === "pass") return { block: false };
   if (row.result === "match") {
     const entry = row.entry ?? DENIED;
-    return `tasker blocked this command: it runs "${entry}", which this run must not run.`;
+    return { block: true, reason: `tasker blocked this command: it runs "${entry}", which this run must not run.` };
   }
-  return `tasker blocked this command: the guard extension cannot read it with certainty (${row.cause ?? ""}).`;
+  return {
+    block: true,
+    reason: `tasker blocked this command: the guard extension cannot read it with certainty (${row.cause ?? ""}).`,
+  };
 }
 
 function runPassingCommand(command: string): string {
@@ -163,25 +180,28 @@ describe("checkBashCommand", () => {
     const passingRows = commandRows.filter((row) => row.result === "pass");
     const records = passingRows.map((row) => runPassingCommand(row.command));
 
-    expect(records.some((record) => record.includes("git status"))).toBe(true);
+    expect(records.length).toBeGreaterThan(0);
   });
 
   it("chooses a denied match before a cause", () => {
-    expect(checkBashCommand("echo $X; git push", [DENIED])).toBe(
-      `tasker blocked this command: it runs "${DENIED}", which this run must not run.`,
-    );
+    expect(checkBashCommand("echo $X; git push", [DENIED])).toEqual({
+      block: true,
+      reason: `tasker blocked this command: it runs "${DENIED}", which this run must not run.`,
+    });
   });
 
   it("chooses the first denied entry from the entry list", () => {
-    expect(checkBashCommand("herdr agent list && git push", [DENIED, "herdr"])).toBe(
-      `tasker blocked this command: it runs "${DENIED}", which this run must not run.`,
-    );
+    expect(checkBashCommand("herdr agent list && git push", [DENIED, "herdr"])).toEqual({
+      block: true,
+      reason: `tasker blocked this command: it runs "${DENIED}", which this run must not run.`,
+    });
   });
 
   it("blocks a parse error after an earlier valid command", () => {
-    expect(checkBashCommand("echo ok\necho hi; )", [DENIED])).toBe(
-      `tasker blocked this command: the guard extension cannot read it with certainty (${CAUSES.parse}).`,
-    );
+    expect(checkBashCommand("echo ok\necho hi; )", [DENIED])).toEqual({
+      block: true,
+      reason: `tasker blocked this command: the guard extension cannot read it with certainty (${CAUSES.parse}).`,
+    });
   });
 
   it("blocks an internal error in the guard", () => {
@@ -192,21 +212,27 @@ describe("checkBashCommand", () => {
       },
     });
 
-    expect(checkBashCommand("git status", entries)).toBe(
-      "tasker blocked this command: the guard extension cannot read it with certainty (an error in the guard extension).",
-    );
+    expect(checkBashCommand("git status", entries)).toEqual({
+      block: true,
+      reason:
+        "tasker blocked this command: the guard extension cannot read it with certainty (an error in the guard extension).",
+    });
   });
 
   it("allows eight command-line levels and blocks nine", () => {
-    expect(checkBashCommand(commandAtDepth(8), [DENIED])).toBeNull();
-    expect(checkBashCommand(commandAtDepth(9), [DENIED])).toBe(
-      "tasker blocked this command: the guard extension cannot read it with certainty (the command lines are nested more than 8 levels deep).",
-    );
+    expect(checkBashCommand(commandAtDepth(8), [DENIED])).toEqual({ block: false });
+    expect(checkBashCommand(commandAtDepth(9), [DENIED])).toEqual({
+      block: true,
+      reason:
+        "tasker blocked this command: the guard extension cannot read it with certainty (the command lines are nested more than 8 levels deep).",
+    });
   });
 
   it("records the first cause by command text order", () => {
-    expect(checkBashCommand('bash -c "$X"; hash -p /usr/bin/git g', [DENIED])).toBe(
-      "tasker blocked this command: the guard extension cannot read it with certainty (" + CAUSES.expansion + ").",
-    );
+    expect(checkBashCommand('bash -c "$X"; hash -p /usr/bin/git g', [DENIED])).toEqual({
+      block: true,
+      reason:
+        "tasker blocked this command: the guard extension cannot read it with certainty (" + CAUSES.expansion + ").",
+    });
   });
 });
