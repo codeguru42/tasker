@@ -8,6 +8,7 @@ import { useFakePiExtension, type FakePiTool } from "../../helpers/fake-pi-exten
 import { useTempDir } from "../../helpers/temp.js";
 import type { GuardLimits } from "../../../src/assistant/pi/guard-limits.js";
 import guardExtension from "../../../src/assistant/pi/guard-extension.js";
+import { guardExtensionPath } from "../../../src/assistant/pi/guard-start.js";
 import * as bashCommandCheckModule from "../../../src/assistant/pi/bash-command-check.js";
 
 vi.mock("node:fs", async (importOriginal) => {
@@ -27,8 +28,19 @@ function validLimits(): GuardLimits {
     writeRoots: [],
     denyWrite: [],
     deniedCommands: [],
-  };
+    sandbox: null,
+  } as GuardLimits;
 }
+
+const bashSandbox = {
+  bwrap: "/usr/bin/bwrap",
+  worktree: "/work/tree",
+  writePaths: [],
+  tempFolder: "/tmp/tasker-start",
+  hidePaths: [],
+};
+
+const bashLimit = { name: "bash", path: guardExtensionPath, source: "cli" };
 
 function writeLimits(value: unknown): string {
   const path = join(useTempDir("tasker-guard-validation-"), "limits.json");
@@ -48,7 +60,8 @@ function invokeGuard(args: string[], tools: FakePiTool[] = [], fake = useFakePiE
 }
 
 function guardedFake(limitsTools: GuardLimits["tools"], tools: FakePiTool[], deniedCommands: string[] = []) {
-  const path = writeLimits({ ...validLimits(), tools: limitsTools, deniedCommands });
+  const sandbox = limitsTools.some(({ name }) => name === "bash") ? bashSandbox : null;
+  const path = writeLimits({ ...validLimits(), sandbox, tools: limitsTools, deniedCommands });
   return invokeGuard(limitsArgs(path), tools);
 }
 
@@ -129,7 +142,8 @@ describe("guard extension limits validation", () => {
   it("accepts permitted denied command entries when bash is enabled", () => {
     const limits = {
       ...validLimits(),
-      tools: [...validLimits().tools, { name: "bash", path: "builtin:bash", source: "builtin" }],
+      sandbox: bashSandbox,
+      tools: [...validLimits().tools, bashLimit],
       deniedCommands: ["git push", "git remote", "herdr", "a.b_c+d-e9"],
     };
 
@@ -139,7 +153,8 @@ describe("guard extension limits validation", () => {
   it("reports only deniedCommands for invalid entries when bash is enabled", () => {
     const limits = {
       ...validLimits(),
-      tools: [...validLimits().tools, { name: "bash", path: "builtin:bash", source: "builtin" }],
+      sandbox: bashSandbox,
+      tools: [...validLimits().tools, bashLimit],
       deniedCommands: ["gh api", "git remote add", "-hidden", "two words"],
     };
 
@@ -210,6 +225,7 @@ describe("guard extension limits validation", () => {
     "writeRoots",
     "denyWrite",
     "deniedCommands",
+    "sandbox",
   ])("rejects a missing required field %s", (field) => {
     const limits = Object.fromEntries(Object.entries(validLimits()).filter(([key]) => key !== field));
     const path = writeLimits(limits);
@@ -228,6 +244,7 @@ describe("guard extension limits validation", () => {
     ["writeRoots", "/work"],
     ["denyWrite", "/secret"],
     ["deniedCommands", "git push"],
+    ["sandbox", 4],
   ])("rejects a field with the wrong type: %s", (field, value) => {
     const limits = { ...validLimits(), [field]: value };
     const path = writeLimits(limits);
@@ -285,6 +302,38 @@ describe("guard extension limits validation", () => {
     const path = writeLimits(limits);
 
     expect(extensionError(limitsArgs(path))).toContain("tools");
+  });
+
+  it("rejects a missing or malformed sandbox field", () => {
+    for (const value of [
+      undefined,
+      4,
+      [],
+      { ...bashSandbox, bwrap: "relative" },
+      { ...bashSandbox, worktree: "relative" },
+      { ...bashSandbox, tempFolder: "relative" },
+      { ...bashSandbox, writePaths: ["relative"] },
+      { ...bashSandbox, hidePaths: ["relative"] },
+    ]) {
+      const limits = { ...validLimits(), sandbox: value } as Record<string, unknown>;
+      if (value === undefined) delete limits.sandbox;
+      expect(extensionError(limitsArgs(writeLimits(limits)))).toContain("sandbox");
+    }
+  });
+
+  it("rejects bash with a null sandbox", () => {
+    const limits = { ...validLimits(), tools: [...validLimits().tools, bashLimit], sandbox: null };
+
+    expect(extensionError(limitsArgs(writeLimits(limits)))).toContain("sandbox");
+  });
+
+  it.each([
+    { ...bashLimit, path: "/tmp/another-extension.js" },
+    { ...bashLimit, source: "builtin" },
+  ])("rejects bash with a different guard source", (bash) => {
+    const limits = { ...validLimits(), sandbox: bashSandbox, tools: [...validLimits().tools, bash] };
+
+    expect(extensionError(limitsArgs(writeLimits(limits)))).toContain("tools");
   });
 
   it("names every bad field without exposing their values", () => {
@@ -423,7 +472,7 @@ describe("guard extension tool source checks", () => {
   });
 
   it("blocks a denied command in a trusted bash call", async () => {
-    const shell = tool("bash", "builtin:bash", "builtin");
+    const shell = tool("bash", guardExtensionPath, "cli");
     const fake = guardedFake([limitTool(shell)], [shell], ["git push"]);
 
     const result = await callTool(fake, "bash", { command: "git push" });
@@ -435,14 +484,14 @@ describe("guard extension tool source checks", () => {
   });
 
   it("passes an allowed command in a trusted bash call", async () => {
-    const shell = tool("bash", "builtin:bash", "builtin");
+    const shell = tool("bash", guardExtensionPath, "cli");
     const fake = guardedFake([limitTool(shell)], [shell], ["git push"]);
 
     expect(await callTool(fake, "bash", { command: "git status" })).toBe("tool result");
   });
 
   it("blocks a non-string command in a trusted bash call", async () => {
-    const shell = tool("bash", "builtin:bash", "builtin");
+    const shell = tool("bash", guardExtensionPath, "cli");
     const fake = guardedFake([limitTool(shell)], [shell], ["git push"]);
 
     expect(await callTool(fake, "bash", { command: 4 })).toEqual({
@@ -453,7 +502,7 @@ describe("guard extension tool source checks", () => {
   });
 
   it("does not scan a bash call when its tool source does not match", async () => {
-    const configured = tool("bash", "builtin:bash", "builtin");
+    const configured = tool("bash", guardExtensionPath, "cli");
     const current = tool("bash", "/tmp/replacement.js", "cli");
     const fake = guardedFake([limitTool(configured)], [current], ["git push"]);
     const scan = vi.spyOn(bashCommandCheckModule, "checkBashCommand");

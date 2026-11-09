@@ -1,18 +1,34 @@
-import { readFileSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { thrownBy } from "../../helpers/errors.js";
 import { useTempDir } from "../../helpers/temp.js";
 import { builtInTool, guardLimits, writeGuardLimits } from "../../../src/assistant/pi/guard-limits.js";
 import * as guardStartModule from "../../../src/assistant/pi/guard-start.js";
 import { guardStartArgs } from "../../../src/assistant/pi/guard-start.js";
+import { guardExtensionPath } from "../../../src/assistant/pi/guard-start.js";
 import type { RunInput } from "../../../src/assistant/provider.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
 import { runInput as sharedRunInput } from "../../helpers/fake-claude.js";
 
 function makeLimits(input: RunInput, tools: { name: string; path: string; source: string }[]) {
-  return guardLimits(input, tools);
+  return guardLimits(input, tools) as ReturnType<typeof guardLimits> & { sandbox: null | SandboxPart };
+}
+
+interface SandboxPart {
+  bwrap: string;
+  worktree: string;
+  writePaths: string[];
+  tempFolder: string;
+  hidePaths: string[];
+}
+
+async function makeSandboxPart(input: RunInput, bwrap: string, tempFolder: string): Promise<SandboxPart> {
+  const module = (await import("../../../src/assistant/pi/guard-limits.js")) as unknown as {
+    sandboxPart(input: RunInput, bwrap: string, tempFolder: string): SandboxPart;
+  };
+  return module.sandboxPart(input, bwrap, tempFolder);
 }
 
 function makeStartArgs(path: string, guardFile?: string) {
@@ -42,6 +58,7 @@ function runInput(access: RunInput["access"] = "read-only"): RunInput {
     timeoutMs: 1000,
     sessionDir: "/sessions",
     access,
+    sandbox: { allowWrite: [], denyRead: [], trackedPaths: async () => [], sharedFolder: "/shared" },
     deniedCommands: ["git push"],
     deniedEditPaths: [],
     model: "model",
@@ -50,27 +67,20 @@ function runInput(access: RunInput["access"] = "read-only"): RunInput {
 }
 
 const tools = [{ name: "read", path: "builtin:read", source: "builtin" }];
+const bashTool = { name: "bash", path: guardExtensionPath, source: "cli" };
 
 describe("guardLimits", () => {
   it("accepts permitted denied command entries when bash is enabled", () => {
     for (const deniedCommands of [["git push"], ["git remote"], ["herdr"], ["a.b_c+d-e9"]]) {
-      expect(
-        makeLimits({ ...runInput(), deniedCommands }, [
-          ...tools,
-          { name: "bash", path: "builtin:bash", source: "builtin" },
-        ]).deniedCommands,
-      ).toEqual(deniedCommands);
+      expect(makeLimits({ ...runInput(), deniedCommands }, [...tools, bashTool]).deniedCommands).toEqual(
+        deniedCommands,
+      );
     }
   });
 
   it("names every invalid denied command entry when bash is enabled", () => {
     const deniedCommands = ["gh api", "git remote add", "-hidden", "two words"];
-    const error = thrownBy(() =>
-      makeLimits({ ...runInput(), deniedCommands }, [
-        ...tools,
-        { name: "bash", path: "builtin:bash", source: "builtin" },
-      ]),
-    );
+    const error = thrownBy(() => makeLimits({ ...runInput(), deniedCommands }, [...tools, bashTool]));
 
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toContain(deniedCommands.join(", "));
@@ -94,6 +104,7 @@ describe("guardLimits", () => {
       writeRoots: [],
       denyWrite: [],
       deniedCommands: ["git push"],
+      sandbox: null,
     });
   });
 
@@ -107,6 +118,61 @@ describe("guardLimits", () => {
         tools,
       ).denyRead,
     ).toEqual(["/secret"]);
+  });
+
+  it("sets the sandbox field to null for a read-only run", () => {
+    expect(makeLimits(runInput(), tools).sandbox).toBeNull();
+  });
+
+  it("builds sandbox paths from real bind paths and unresolved hide paths", async () => {
+    const root = useTempDir("tasker-pi-sandbox-part-");
+    const worktree = join(root, "worktree");
+    const writePath = join(root, "write");
+    const tempFolder = join(root, "temp");
+    mkdirSync(worktree);
+    mkdirSync(writePath);
+    mkdirSync(tempFolder);
+    const worktreeLink = join(root, "worktree-link");
+    const writeLink = join(root, "write-link");
+    const tempLink = join(root, "temp-link");
+    symlinkSync(worktree, worktreeLink);
+    symlinkSync(writePath, writeLink);
+    symlinkSync(tempFolder, tempLink);
+    const input = {
+      ...runInput(),
+      cwd: worktreeLink,
+      env: {
+        XDG_CONFIG_HOME: "/x",
+        SSH_AUTH_SOCK: "/s",
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/tmp/a%2Cb",
+        XDG_RUNTIME_DIR: "rel/run",
+      },
+      sandbox: {
+        allowWrite: [writeLink],
+        denyRead: ["/deny/raw"],
+        trackedPaths: async () => [],
+        sharedFolder: "/shared",
+      },
+    };
+
+    expect(await makeSandboxPart(input, "/usr/bin/bwrap", tempLink)).toEqual({
+      bwrap: "/usr/bin/bwrap",
+      worktree: realpathSync(worktree),
+      writePaths: [realpathSync(writePath)],
+      tempFolder: realpathSync(tempFolder),
+      hidePaths: ["/deny/raw", "/x/herdr", "/s", "/tmp/a,b", resolve("rel/run"), "/var/run/docker.sock"],
+    });
+  });
+
+  it("uses HOME for herdr and keeps SSH_AUTH_SOCK as given", async () => {
+    const input = {
+      ...runInput(),
+      env: { HOME: "/h", SSH_AUTH_SOCK: "/s" },
+    };
+
+    expect(await makeSandboxPart(input, "/usr/bin/bwrap", "/tmp/tasker-start")).toMatchObject({
+      hidePaths: ["/h/.config/herdr", "/s", "/var/run/docker.sock"],
+    });
   });
 
   it("refuses workspace-write access", () => {
