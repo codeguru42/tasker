@@ -292,7 +292,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
         prompt = correctivePrompt(processResult.noAnswerProblems, input.jsonSchema!);
       }
     },
-    doctorChecks: (repos) => piDoctorChecks(repos),
+    doctorChecks: (repos) => piDoctorChecks(repos, os.platform()),
     modelChecks: (model) => [assistantModelCheck("pi", `pi model: ${model}`, model)],
     detectQuotaApprovalWarning: () => undefined,
     isQuotaEvent: () => false,

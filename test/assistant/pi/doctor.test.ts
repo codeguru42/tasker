@@ -94,10 +94,13 @@ function addSkill(folder: string): void {
 
 describe("pi doctor check selection", () => {
   it("gives checks in order and adds each upstream at first use", () => {
-    const checks = createPiProvider().doctorChecks([
-      piRepo("a", ["openrouter/a", "anthropic/b", "openrouter/c"]),
-      piRepo("b", ["google/d", "anthropic/e", "google/f"]),
-    ]);
+    const checks = piDoctorChecks(
+      [
+        piRepo("a", ["openrouter/a", "anthropic/b", "openrouter/c"]),
+        piRepo("b", ["google/d", "anthropic/e", "google/f"]),
+      ],
+      "darwin",
+    );
 
     expect(checkSummaries(checks)).toEqual([
       { name: "pi version", required: true, timeoutMs: 5000 },

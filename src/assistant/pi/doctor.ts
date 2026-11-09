@@ -1,3 +1,4 @@
+import * as os from "node:os";
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { isSet, relativePathReason } from "../../config/path.js";
@@ -7,7 +8,7 @@ import { isOlderVersion } from "../../doctor/version-compare.js";
 import { ProgramFileError } from "../../process/resolve-program.js";
 import { timedCheck } from "../../doctor/timed-check.js";
 import { isObject } from "../../object.js";
-import { runProgramCheck } from "../program-check.js";
+import { runProgramCheck, sandboxProgramCheck } from "../program-check.js";
 import { upstreamOf } from "../models.js";
 import type { AssistantDoctorRepo } from "../provider.js";
 import { piChildEnv, relativeHomeReason } from "./child-env.js";
@@ -222,7 +223,10 @@ export function simpleEnglishCheck(timeoutMs = 1000): Check {
   });
 }
 
-export function piDoctorChecks(repos: readonly AssistantDoctorRepo[]): Check[] {
+export function piDoctorChecks(
+  repos: readonly AssistantDoctorRepo[],
+  platform: NodeJS.Platform = os.platform(),
+): Check[] {
   if (repos.length === 0) return [];
   const upstreams = new Set<string>();
   for (const repo of repos) {
@@ -233,6 +237,7 @@ export function piDoctorChecks(repos: readonly AssistantDoctorRepo[]): Check[] {
   }
   return [
     piVersionCheck(),
+    ...(platform === "linux" ? [sandboxProgramCheck("bwrap", "bubblewrap")] : []),
     ...[...upstreams].map((upstream) => piAuthCheck(upstream)),
     superpowersCheck(),
     simpleEnglishCheck(),

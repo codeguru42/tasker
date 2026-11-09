@@ -136,6 +136,7 @@ describe("assistantDoctorChecks", () => {
 
     expect(checkSummaries(checks)).toEqual([
       { name: "pi version", required: true, timeoutMs: 5000 },
+      ...(process.platform === "linux" ? [{ name: "sandbox: bwrap", required: true, timeoutMs: 1000 }] : []),
       { name: "pi-auth:openrouter", required: true, timeoutMs: 10000 },
       { name: "superpowers:pi", required: true, timeoutMs: 5000 },
       { name: "simple-english:pi", required: true, timeoutMs: 1000 },
