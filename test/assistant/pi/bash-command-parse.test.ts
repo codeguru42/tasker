@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseBashCommand } from "../../../src/assistant/pi/bash-command-parse.js";
+import { tokenizeBashCommand } from "../../../src/assistant/pi/bash-command-tokenize.js";
 
 function commands(source: string): string[][] {
   return parseBashCommand(source).commands.map((command) => command.words.map((word) => word.value));
@@ -45,6 +46,30 @@ describe("parseBashCommand", () => {
 
   it("keeps quoted here document bodies literal and reads after the delimiter", () => {
     expect(commands("cat <<'EOF'\n$(git push)\nEOF\ngit status")).toEqual([["cat"], ["git", "status"]]);
+  });
+
+  it("keeps redirection targets attached to their command", () => {
+    expect(commands("echo >$(git push)")).toEqual([["echo", "git", "push"]]);
+    expect(commands("echo a > $(git push)")).toEqual([["echo", "a", "git", "push"]]);
+  });
+
+  it("keeps plain here-document text as data", () => {
+    expect(commands("cat <<EOF\ngit push\nEOF")).toEqual([["cat"]]);
+  });
+
+  it("keeps an unfinished here-document body through end of input", () => {
+    expect(tokenizeBashCommand("cat <<EOF\nplain text\n$(git push)")).toEqual(
+      expect.arrayContaining([expect.objectContaining({ kind: "heredoc-body", value: "plain text\n$(git push)\n" })]),
+    );
+  });
+
+  it("reads multiple quoted and unquoted here-documents", () => {
+    expect(commands("cat <<A <<'B'\n$(git push)\nA\n$(git push)\nB")).toEqual([["cat"], ["git", "push"]]);
+  });
+
+  it("keeps reserved words in arguments as words", () => {
+    expect(commands("echo then git push")).toEqual([["echo", "then", "git", "push"]]);
+    expect(commands("echo do done fi")).toEqual([["echo", "do", "done", "fi"]]);
   });
 
   it("keeps source spans and quote and expansion parts", () => {
