@@ -51,6 +51,27 @@ describe("useFakeSandboxBin", () => {
     expect(existsSync(join(bin, "bwrap"))).toBe(false);
     expect(runs("socat", bin).status).toBe(0);
   });
+
+  it("records bwrap arguments and runs the command after --", () => {
+    const bin = useFakeSandboxBin();
+    const log = join(useTempDir("tasker-bwrap-"), "args");
+
+    const result = spawnSync("bwrap", ["--flag", "value", "--", "/bin/sh", "-c", "printf ran"], {
+      env: { PATH: bin, TASKER_FAKE_BWRAP_ARGS: log },
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe("ran");
+    expect(readFileSync(log, "utf8").split("\0").slice(0, -1)).toEqual([
+      "--flag",
+      "value",
+      "--",
+      "/bin/sh",
+      "-c",
+      "printf ran",
+    ]);
+  });
 });
 
 describe("usePathWithout", () => {

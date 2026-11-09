@@ -173,11 +173,24 @@ export function usePathWithout(program: string, path: string): string {
     .join(delimiter);
 }
 
-// Writes a fake bwrap and a fake socat (both exit 0) into binDir, except the names in except.
+// Writes a fake bwrap and a fake socat into binDir, except the names in except. The fake bwrap records optional
+// arguments and runs the command after --.
 export function writeFakeSandboxPrograms(binDir: string, except: readonly string[] = []): void {
-  for (const name of ["bwrap", "socat"]) {
-    if (!except.includes(name)) writeFakeCommand(binDir, name, "exit 0");
+  if (!except.includes("bwrap")) {
+    writeFakeCommand(
+      binDir,
+      "bwrap",
+      [
+        'if [ -n "${TASKER_FAKE_BWRAP_ARGS-}" ]; then printf \'%s\\0\' "$@" > "$TASKER_FAKE_BWRAP_ARGS"; fi',
+        'while [ "$#" -gt 0 ]; do',
+        '  if [ "$1" = "--" ]; then shift; "$@"; exit $?; fi',
+        "  shift",
+        "done",
+        "exit 0",
+      ].join("\n"),
+    );
   }
+  if (!except.includes("socat")) writeFakeCommand(binDir, "socat", "exit 0");
 }
 
 // A new temp folder (see useTempDir()) with a fake bwrap and a fake socat, except the names in except.
