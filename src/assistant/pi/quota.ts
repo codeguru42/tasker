@@ -28,12 +28,16 @@ function parsedRetryAfter(body: string): string[] | undefined {
     if (!marker) return undefined;
     const text = body.slice(0, marker.index);
     const values: string[] = [];
-    const key = /"retry-after"\s*:\s*("(?:\\.|[^"\\])*")/gi;
+    const key = /"retry-after"\s*:\s*/gi;
+    const value = /"(?:\\.|[^"\\])*"/y;
     for (const match of text.matchAll(key)) {
+      value.lastIndex = (match.index ?? 0) + match[0].length;
+      const valueMatch = value.exec(text);
+      if (!valueMatch) return undefined;
       try {
-        const value: unknown = JSON.parse(match[1]);
-        if (typeof value !== "string") return undefined;
-        values.push(value.replace(/^[ \t]+|[ \t]+$/g, ""));
+        const parsedValue: unknown = JSON.parse(valueMatch[0]);
+        if (typeof parsedValue !== "string") return undefined;
+        values.push(parsedValue.replace(/^[ \t]+|[ \t]+$/g, ""));
       } catch {
         return undefined;
       }
