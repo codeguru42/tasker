@@ -768,7 +768,9 @@ describe("createPiProvider outcomes", () => {
     ]);
     input.env = { ...input.env, ...fake.env };
 
+    const before = Math.floor(Date.now() / 1000);
     const outcome = await callPi(input, files);
+    const after = Math.floor(Date.now() / 1000);
 
     expect(outcome.kind).toBe(kind);
     if (kind === "quota") {
@@ -777,8 +779,8 @@ describe("createPiProvider outcomes", () => {
       else if (name === "quotaDate") expect(outcome).toMatchObject({ resetsAt });
       else {
         const quota = outcome as Extract<RunOutcome, { kind: "quota" }>;
-        expect(quota.resetsAt).toBeGreaterThanOrEqual(Math.floor(Date.now() / 1000) + resetsAt);
-        expect(quota.resetsAt).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + resetsAt);
+        expect(quota.resetsAt).toBeGreaterThanOrEqual(before + resetsAt);
+        expect(quota.resetsAt).toBeLessThanOrEqual(after + resetsAt);
       }
     }
     const provider = fromCreatePiProvider(files);

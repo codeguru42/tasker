@@ -91,7 +91,12 @@ describe("quotaStopOf", () => {
   });
 
   it("accepts delay 0", () => {
-    expect(callQuotaStop(colon(json(retry("0"))))).toEqual({ resetsAt: Math.floor(Date.now() / 1000) });
+    const before = Math.floor(Date.now() / 1000);
+    const result = callQuotaStop(colon(json(retry("0"))));
+    const after = Math.floor(Date.now() / 1000);
+    expect(result).toMatchObject({ resetsAt: expect.any(Number) });
+    expect(result?.resetsAt).toBeGreaterThanOrEqual(before);
+    expect(result?.resetsAt).toBeLessThanOrEqual(after);
   });
 
   it.each([
@@ -109,8 +114,10 @@ describe("quotaStopOf", () => {
   ])("accepts %s", (_name, message, delay: number) => {
     const before = Math.floor(Date.now() / 1000);
     const result = callQuotaStop(message);
+    const after = Math.floor(Date.now() / 1000);
+    expect(result).toMatchObject({ resetsAt: expect.any(Number) });
     expect(result?.resetsAt).toBeGreaterThanOrEqual(before + delay);
-    expect(result?.resetsAt).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + delay);
+    expect(result?.resetsAt).toBeLessThanOrEqual(after + delay);
   });
 
   it("accepts a space-form error metadata date", () => {
@@ -121,7 +128,12 @@ describe("quotaStopOf", () => {
     ["case-different keys with equal values", '{"metadata":{"headers":{"Retry-After":"60","retry-after":"60"}}}'],
     ["equal values after trim", '{"metadata":{"headers":{"Retry-After":"60","retry-after":" 60 "}}}'],
   ])("accepts %s", (_name, body) => {
-    expect(callQuotaStop(colon(body))?.resetsAt).toBeGreaterThanOrEqual(Math.floor(Date.now() / 1000) + 60);
+    const before = Math.floor(Date.now() / 1000);
+    const result = callQuotaStop(colon(body));
+    const after = Math.floor(Date.now() / 1000);
+    expect(result).toMatchObject({ resetsAt: expect.any(Number) });
+    expect(result?.resetsAt).toBeGreaterThanOrEqual(before + 60);
+    expect(result?.resetsAt).toBeLessThanOrEqual(after + 60);
   });
 
   it("keeps a past reset time", () => {
@@ -134,7 +146,12 @@ describe("quotaStopOf", () => {
         "x".repeat(4000) +
         "... [truncated 1071 chars]",
     );
-    expect(callQuotaStop(message)?.resetsAt).toBeGreaterThanOrEqual(Math.floor(Date.now() / 1000) + 3600);
+    const before = Math.floor(Date.now() / 1000);
+    const result = callQuotaStop(message);
+    const after = Math.floor(Date.now() / 1000);
+    expect(result).toMatchObject({ resetsAt: expect.any(Number) });
+    expect(result?.resetsAt).toBeGreaterThanOrEqual(before + 3600);
+    expect(result?.resetsAt).toBeLessThanOrEqual(after + 3600);
   });
 
   it("returns undefined for a non-402 result", () => {

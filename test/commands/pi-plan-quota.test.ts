@@ -59,6 +59,7 @@ describe("pi plan quota pause", () => {
 
     const before = Math.floor(Date.now() / 1000);
     const planResult = await runCommand(plan, "plan", KEY, "--repo", REPO);
+    const after = Math.floor(Date.now() / 1000);
     const firstTask = latestTaskOf(fixture.started.dataRoot, KEY);
     const session = withDataRootStore(fixture.started.dataRoot, (store) => store.planSession(firstTask.id));
     const firstCall = fake.calls()[0];
@@ -69,7 +70,7 @@ describe("pi plan quota pause", () => {
     };
     expect(pause.cause).toBe("rate_limit");
     expect(pause.resetsAt).toBeGreaterThanOrEqual(before + 3600);
-    expect(pause.resetsAt).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 3600);
+    expect(pause.resetsAt).toBeLessThanOrEqual(after + 3600);
     expect(
       firstCall.args.slice(firstCall.args.indexOf("--session-id"), firstCall.args.indexOf("--session-id") + 2),
     ).toEqual(["--session-id", session?.sessionId]);
