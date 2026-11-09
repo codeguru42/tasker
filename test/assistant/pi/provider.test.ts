@@ -11,7 +11,7 @@ import { createPiProvider as fromCreatePiProvider } from "../../../src/assistant
 import type { RunInput, RunOutcome } from "../../../src/assistant/provider.js";
 import { checkPlanAnswer, planAnswerJsonSchema } from "../../../src/plan/answer.js";
 import { reviewAnswerJsonSchema } from "../../../src/review/answer.js";
-import { failureOutcomeOf, runInput as sharedRunInput, TEST_SESSION_ID } from "../../helpers/fake-claude.js";
+import { failureOutcomeOf, runInput, TEST_SESSION_ID } from "../../helpers/fake-claude.js";
 import { type FakePiAnswer, useFakePi } from "../../helpers/fake-pi.js";
 import { validPlanAnswer } from "../../helpers/plan.js";
 import { piQuotaStream } from "../../helpers/pi-quota-streams.js";
@@ -33,7 +33,7 @@ function callPi(input: RunInput, files: PiFiles): Promise<RunOutcome> {
 
 function validInput(overrides: Partial<RunInput> = {}): RunInput {
   return {
-    ...sharedRunInput(),
+    ...runInput(),
     sessionId: TEST_SESSION_ID,
     env: { HOME: "/home/user" },
     cwd: useTempDir("tasker-pi-worktree-"),
