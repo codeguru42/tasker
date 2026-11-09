@@ -1122,21 +1122,28 @@ The check scans lists, pipelines, assignments, redirections, compound commands a
 process substitutions, parameter and arithmetic expansions, and unquoted here-document bodies. A quoted here-document
 body stays literal. The [parser](../../src/assistant/pi/bash-command-parse.ts) lists the supported syntax.
 
-The supported shells are `bash` and `sh`. The check handles commands that read a line again, including shell `-c`
-strings, `eval`, `env -S` and `script -c`. Each re-read adds a depth level, up to eight. A command substitution does not
-add depth.
+The supported shells are `bash`, `sh`, `zsh`, `ksh`, `dash`, `rbash`, `ash`, `mksh` and `yash`. The check follows their
+`-c` command strings and recognizes the listed short option flags, `-o`, `-O`, `+o` and `+O` with a value, and common
+long options such as `--login`, `--posix` and `--version`. An unknown option blocks the call. The check blocks `-s`,
+`-`, a shell with no command file or command string, and Bash input from `/dev/stdin`. It also follows `eval`, `env -S`
+and `--split-string`, `flock -c` and `--command`, `su -c` and `--command`, `script -c` and `--command`, and the `-C` or
+`--callback` strings of `mapfile` and `readarray`. Each re-read adds a depth level, up to eight. A command substitution
+does not add depth.
 
-The wrappers are `env`, `nice`, `timeout`, `watch`, `nohup`, `command` and `stdbuf`. The check follows their command
-words. It blocks an expansion in any later wrapper word because an option can move the command. It blocks `xargs`
-because its input can add a command.
+The wrappers are `env`, `nice`, `timeout`, `watch`, `nohup`, `command`, `stdbuf`, `sudo`, `exec`, `doas`, `setsid`,
+`ionice`, `chrt`, `taskset`, `flock` and `busybox`. The check follows their command words and blocks an expansion in any
+later wrapper word because an option can move the command. `BASH_ENV`, `ENV` and `BASH_CMDS[...]` assignments and
+commands that can bind a name to another program also block. It blocks `xargs` because its input can add a command.
 
 Git rules apply only when an entry has the form `git <word>`. The scanner lists the supported global options. An unknown
-option blocks the call. Each `-c` blocks because a configuration value can run a command line. The check also scans
-command text in selected `clone`, `grep` and `rebase` options and in Git editor assignments. See the
-[scanner](../../src/assistant/pi/bash-command-scan.ts).
+option blocks the call. `-c`, `--config` and `--config-env` block because a configuration value can run a command line.
+The check scans command text from `rebase -x` and `--exec`, `bisect run`, `submodule foreach`, `difftool -x` and
+`--extcmd`, and the `filter-branch` filter options. It also checks program values for `fetch`, `pull`, `ls-remote`,
+`archive`, `clone` and `grep`. The assignments `GIT_EDITOR`, `GIT_SEQUENCE_EDITOR` and `GIT_SSH_COMMAND` are checked for
+command text. See the [scanner](../../src/assistant/pi/bash-command-scan.ts).
 
-The check scans actions after `find` options `-exec` and `-execdir`. It blocks an action that uses `{}` as its command.
-It also blocks an action with an expansion that can change its command.
+The check scans every action after `find` options `-exec`, `-execdir`, `-ok` and `-okdir`. It blocks an action that uses
+`{}` as its command. It also blocks an action with an expansion that can change its command.
 
 When the guard cannot read a command with certainty, it blocks the call. Examples include a parse error, a shell that
 reads commands from input, a dynamic command name, a command binding, or an array index that can run a command.
