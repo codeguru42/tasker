@@ -48,6 +48,32 @@ describe("parseBashCommand", () => {
     expect(commands("cat <<'EOF'\n$(git push)\nEOF\ngit status")).toEqual([["cat"], ["git", "status"]]);
   });
 
+  it("reads spaced here document delimiters and keeps body order", () => {
+    const source = "cat << EOF << 'NEXT'\none\nEOF\n$(git push)\nNEXT";
+    const tokens = tokenizeBashCommand(source);
+    const delimiters = tokens.filter((token) => token.kind === "word").slice(1, 3);
+    expect(delimiters.map(({ value, start, end }) => ({ value, text: source.slice(start, end) }))).toEqual([
+      { value: "EOF", text: "EOF" },
+      { value: "NEXT", text: "'NEXT'" },
+    ]);
+    expect(tokens.filter((token) => token.kind === "heredoc-body").map((token) => token.value)).toEqual([
+      "one\n",
+      "$(git push)\n",
+    ]);
+  });
+
+  it.each([
+    ["echo $(printf '%s' \"$(git push)\")", ["printf", "git"]],
+    ['echo $(echo ")" ; git push)', ["echo", "git"]],
+    ["echo $(case a in a) git push;; esac)", ["git"]],
+    ["echo $(echo ok # )\ngit push\n)", ["echo", "git"]],
+    ['echo "$(echo ")" ; git push)"', ["echo", "git"]],
+  ])("parses nested substitutions at the matching close in %s", (source, expected) => {
+    const parsed = parseBashCommand(source);
+    const nested = parsed.commands[0]?.words.flatMap((word) => word.nested) ?? [];
+    expect(nested.flatMap((command) => command.words.map((word) => word.value))).toEqual(expected);
+  });
+
   it("keeps redirection targets attached to their command", () => {
     const parsed = parseBashCommand("echo >$(git push); echo a > $(git push)");
     expect(parsed.commands.map((command) => command.words.map((word) => word.value))).toEqual([
@@ -79,6 +105,13 @@ describe("parseBashCommand", () => {
     expect(commands("echo then git push")).toEqual([["echo", "then", "git", "push"]]);
     expect(commands("echo do done fi")).toEqual([["echo", "do", "done", "fi"]]);
   });
+
+  it.each(["then git status", "do git status", "done", "fi", "esac", "}"])(
+    "rejects closing word without its matching open construct: %s",
+    (source) => {
+      expect(() => parseBashCommand(source)).toThrow();
+    },
+  );
 
   it("keeps source spans and quote and expansion parts", () => {
     const parsed = parseBashCommand(
