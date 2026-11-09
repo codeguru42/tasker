@@ -90,7 +90,7 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
       scanText: (word, nested) => {
         if (word.expanded) setFirstCause(result, CAUSE.expansion);
         else if (nested) scanReparsed(word.value, entries, result, depth);
-        else scanCommandText(word.value, entries, result, depth);
+        else scanReparsed(word.value, entries, result, depth);
       },
       scanWords: (commandWords) =>
         scanCommand({ words: commandWords, inputFromPipeline: false }, entries, result, depth),
@@ -163,12 +163,7 @@ function scanCommandAssignment(word: BashWord, entries: readonly string[], resul
   }
   const value = word.value.slice(equals + 1);
   if (word.expanded) setFirstCause(result, CAUSE.gitConfig);
-  else scanCommandText(value, entries, result, depth);
-}
-
-function scanCommandText(code: string, entries: readonly string[], result: ScanResult, depth: number): void {
-  const parsed = parseBashCommand(code);
-  for (const command of parsed.commands) scanCommand(command, entries, result, depth);
+  else scanReparsed(value, entries, result, depth);
 }
 
 function scanXargs(

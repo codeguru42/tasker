@@ -132,7 +132,7 @@ export function parseBashCommand(source: string): ParsedBashLine {
           continue;
         }
         finish(token.start);
-        if (op === "|") pipeline = true;
+        if (op === "|" || op === "|&") pipeline = true;
         if (op === "(" || op === "{") compound.push(op);
         if (op === ")" || op === "}") {
           const expected = op === ")" ? "(" : "{";
