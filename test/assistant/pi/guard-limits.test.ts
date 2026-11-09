@@ -52,6 +52,36 @@ function runInput(access: RunInput["access"] = "read-only"): RunInput {
 const tools = [{ name: "read", path: "builtin:read", source: "builtin" }];
 
 describe("guardLimits", () => {
+  it("accepts permitted denied command entries when bash is enabled", () => {
+    for (const deniedCommands of [["git push"], ["gh api"], ["git remote"], ["herdr"], ["a.b_c+d-e9"]]) {
+      expect(
+        makeLimits({ ...runInput(), deniedCommands }, [
+          ...tools,
+          { name: "bash", path: "builtin:bash", source: "builtin" },
+        ]).deniedCommands,
+      ).toEqual(deniedCommands);
+    }
+  });
+
+  it("names every invalid denied command entry when bash is enabled", () => {
+    const deniedCommands = ["gh api read", "-hidden", "two words"];
+    const error = thrownBy(() =>
+      makeLimits({ ...runInput(), deniedCommands }, [
+        ...tools,
+        { name: "bash", path: "builtin:bash", source: "builtin" },
+      ]),
+    );
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain(deniedCommands.join(", "));
+  });
+
+  it("keeps denied command entries unchanged when bash is not enabled", () => {
+    const deniedCommands = ["gh api read", "-hidden", "two words"];
+
+    expect(makeLimits({ ...runInput(), deniedCommands }, tools).deniedCommands).toEqual(deniedCommands);
+  });
+
   it("uses the limits fields and read-only values", () => {
     expect(makeLimits(runInput(), tools)).toEqual({
       version: 1,

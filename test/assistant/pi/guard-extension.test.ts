@@ -125,6 +125,32 @@ function limitsArgs(path: string): string[] {
 }
 
 describe("guard extension limits validation", () => {
+  it("accepts permitted denied command entries when bash is enabled", () => {
+    const limits = {
+      ...validLimits(),
+      tools: [...validLimits().tools, { name: "bash", path: "builtin:bash", source: "builtin" }],
+      deniedCommands: ["git push", "gh api", "git remote", "herdr", "a.b_c+d-e9"],
+    };
+
+    expect(() => invokeGuard(limitsArgs(writeLimits(limits)))).not.toThrow();
+  });
+
+  it("reports only deniedCommands for invalid entries when bash is enabled", () => {
+    const limits = {
+      ...validLimits(),
+      tools: [...validLimits().tools, { name: "bash", path: "builtin:bash", source: "builtin" }],
+      deniedCommands: ["gh api read", "-hidden", "two words"],
+    };
+
+    expect(extensionError(limitsArgs(writeLimits(limits)))).toBe("invalid pi guard limits fields: deniedCommands");
+  });
+
+  it("keeps denied command entries unchanged when bash is not enabled", () => {
+    const limits = { ...validLimits(), deniedCommands: ["gh api read", "-hidden", "two words"] };
+
+    expect(() => invokeGuard(limitsArgs(writeLimits(limits)))).not.toThrow();
+  });
+
   it("registers its flag and loads a valid limits file", () => {
     const path = writeLimits(validLimits());
     const fake = useFakePiExtension();
