@@ -39,6 +39,10 @@ const commandRows: CommandRow[] = [
   { command: "false || git status", result: "pass" },
   { command: "echo ok | git push", result: "match" },
   { command: "echo ok | git status", result: "pass" },
+  { command: "echo data | bash run.sh", result: "cause", cause: CAUSES.input },
+  { command: "echo data |& bash run.sh", result: "cause", cause: CAUSES.input },
+  { command: "echo data |& git status", result: "pass", stub: "git" },
+  { command: "bash run.sh |& cat", result: "pass", stub: "cat" },
   { command: "echo ok |& git push", result: "match" },
   { command: "echo ok |& git status", result: "pass" },
   { command: "echo ok\ngit push", result: "match" },
@@ -583,6 +587,18 @@ function commandAtDepth(depth: number): string {
   return command;
 }
 
+function assignmentReaderAtDepth(depth: number): string {
+  let command = "git status";
+  for (let nested = 1; nested < depth; nested += 1) command = `GIT_EDITOR=${shellQuote(command)} true`;
+  return command;
+}
+
+function gitReaderAtDepth(depth: number): string {
+  let command = "git status";
+  for (let nested = 1; nested < depth; nested += 1) command = `git clone -u ${shellQuote(command)} . x`;
+  return command;
+}
+
 describe("checkBashCommand", () => {
   it.each(commandRows)("checks $command", (row) => {
     expect(checkBashCommand(row.command, row.entries ?? [DENIED])).toEqual(expectedResult(row));
@@ -643,6 +659,18 @@ describe("checkBashCommand", () => {
         "tasker blocked this command: the guard extension cannot read it with certainty (the command lines are nested more than 8 levels deep).",
     });
   });
+
+  it.each([assignmentReaderAtDepth, gitReaderAtDepth])(
+    "counts reparsed reader strings at depth eight and nine",
+    (atDepth) => {
+      expect(checkBashCommand(atDepth(8), [DENIED])).toEqual({ block: false });
+      expect(checkBashCommand(atDepth(9), [DENIED])).toEqual({
+        block: true,
+        reason:
+          "tasker blocked this command: the guard extension cannot read it with certainty (the command lines are nested more than 8 levels deep).",
+      });
+    },
+  );
 
   it("records the first cause by command text order", () => {
     expect(checkBashCommand('bash -c "$X"; hash -p /usr/bin/git g', [DENIED])).toEqual({
