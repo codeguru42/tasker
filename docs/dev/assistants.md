@@ -1005,10 +1005,9 @@ Before valid limits exist, each tool call blocks. An unreadable or invalid limit
 provider request. A tool-handler error blocks the call with a fixed reason. A skill-handler error removes all skill
 folders supplied by pi.
 
-`skillRoots` adds read roots only when `readRoots` is a list. Missing roots grant no access.  
-The guard blocks each call of the `powershell` tool. It tests each call of the `bash` tool as
-[The check of the shell commands](#the-check-of-the-shell-commands) says. The guard drops a skill root on, under or
-above a protected or denied path.
+`skillRoots` adds read roots only when `readRoots` is a list. The guard drops a skill root on, under or above a
+protected or denied path. Missing roots grant no access. The guard blocks each call of the `powershell` tool. It tests
+each call of the `bash` tool as [The check of the shell commands](#the-check-of-the-shell-commands) says.
 
 The guard has one limit. A later extension can change a call's input after the guard passes it. Pi loads extensions
 named with `-e` first. The limit applies to each extension that pi loads after the guard.

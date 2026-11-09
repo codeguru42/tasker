@@ -234,10 +234,9 @@ Known limit: the assistant can move any ref of the clone, for example the branch
 
 The push guard has three layers:
 
-1. Layer 1 is a deny rule for the shell of the assistant (see [Assistant surface](#assistant-surface)).  
-   For `pi`, layer 1 is the check of the shell commands in the guard extension of tasker (see
+1. Layer 1 is a deny rule for the shell of the assistant (see [Assistant surface](#assistant-surface)). For `pi`, layer
+   1 is the check of the shell commands in the guard extension of tasker (see
    [The pi provider](assistants.md#the-pi-provider)).
-
 2. Layer 2 is the `pre-push` hook of the clone. Provision writes it. See below.
 3. Layer 3 is the tip of a branch on the remote. A read of the tip before a run and after it shows a push that skipped
    the hook.
