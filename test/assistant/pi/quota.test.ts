@@ -49,6 +49,18 @@ describe("quotaStopOf", () => {
     ["unparseable body without marker", colon("not json")],
     ["missing retry-after in cut body", colon('{"code":402}... [truncated 10 chars]')],
     ["two different values in cut body", colon('{"Retry-After":"60","retry-after":"61" ... [truncated 10 chars]')],
+    [
+      "complete value followed by cut string value in colon form",
+      colon('{"Retry-After":"60","retry-after":"6... [truncated 10 chars]'),
+    ],
+    [
+      "complete value followed by non-string value in colon form",
+      colon('{"Retry-After":"60","retry-after":61 ... [truncated 10 chars]'),
+    ],
+    [
+      "complete value followed by cut string value in space form",
+      space('{"error":{"metadata":{"headers":{"Retry-After":"60","retry-after":"6... [truncated 10 chars]'),
+    ],
     ["cut retry-after value", colon('{"Retry-After":"6... [truncated 10 chars]')],
     [
       "space form metadata without headers",
