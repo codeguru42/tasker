@@ -20,7 +20,7 @@ describe("migrate", () => {
   });
 
   it("has a migration for the card mark column", () => {
-    expect(migrations).toHaveLength(26);
+    expect(migrations).toHaveLength(27);
     migrate(db, migrations);
     const columns = db.prepare("PRAGMA table_info(tasks)").all() as { name: string; dflt_value: string | null }[];
     expect(columns.find((column) => column.name === "card_marked")?.dflt_value).toBe("0");
@@ -64,5 +64,37 @@ describe("migrate", () => {
   it("throws the first error when the transaction is already gone", () => {
     // The second string ends the transaction itself, then fails.
     expect(() => migrate(db, ["CREATE TABLE a (x)", "COMMIT; NOT SQL"])).toThrow(/syntax error/);
+  });
+
+  it("adds protected execute turn storage in a new migration", () => {
+    migrate(db, migrations);
+
+    expect(schemaVersion(db)).toBe(migrations.length);
+    expect(migrations.length).toBe(27);
+    expect(
+      db
+        .prepare("PRAGMA table_info(protected_execute_turns)")
+        .all()
+        .map((column) => (column as { name: string }).name),
+    ).toEqual([
+      "task_id",
+      "plan_version",
+      "turn_id",
+      "starting_revision",
+      "phase",
+      "outcome",
+      "ending_revision",
+      "updated_at",
+    ]);
+  });
+
+  it("upgrades version 23 without changing earlier migrations", () => {
+    migrate(db, migrations.slice(0, 23));
+    migrate(db, migrations);
+
+    expect(schemaVersion(db)).toBe(27);
+    expect(
+      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'protected_execute_turns'").get(),
+    ).toEqual({ name: "protected_execute_turns" });
   });
 });
