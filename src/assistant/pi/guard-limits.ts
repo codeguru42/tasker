@@ -9,6 +9,14 @@ export interface GuardTool {
   source: string;
 }
 
+export interface PiSandboxLimits {
+  bwrap: string;
+  worktree: string;
+  writePaths: string[];
+  tempFolder: string;
+  hidePaths: string[];
+}
+
 export interface GuardLimits {
   version: 1;
   cwd: string;
@@ -20,6 +28,7 @@ export interface GuardLimits {
   writeRoots: string[];
   denyWrite: string[];
   deniedCommands: string[];
+  sandbox: PiSandboxLimits | null;
 }
 
 export function builtInTool(name: string): GuardTool {
@@ -47,6 +56,7 @@ export function guardLimits(input: RunInput, tools: GuardTool[]): GuardLimits {
     writeRoots: [],
     denyWrite: [],
     deniedCommands: [...input.deniedCommands],
+    sandbox: null,
   };
 }
 

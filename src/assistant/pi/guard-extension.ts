@@ -20,6 +20,7 @@ const LIMITS_FIELD_NAMES = [
   "writeRoots",
   "denyWrite",
   "deniedCommands",
+  "sandbox",
 ] as const;
 const FILE_TOOLS = {
   read: { field: "path", noPath: "Not permitted", kind: "read" },
@@ -391,6 +392,7 @@ function validateLimits(value: unknown): GuardLimits {
     if (!absolutePathList(record.denyRead)) invalid.add("denyRead");
     if (!absolutePathList(record.writeRoots)) invalid.add("writeRoots");
     if (!denyWriteList(record.denyWrite)) invalid.add("denyWrite");
+    if (!validSandbox(record.sandbox)) invalid.add("sandbox");
     if (!nonEmptyStringList(record.deniedCommands)) {
       invalid.add("deniedCommands");
     } else if (
@@ -399,6 +401,15 @@ function validateLimits(value: unknown): GuardLimits {
       invalidDeniedCommandEntries(record.deniedCommands).length > 0
     ) {
       invalid.add("deniedCommands");
+    }
+    if (validTools(record.tools)) {
+      const bash = record.tools.find((tool) => tool.name === "bash");
+      if (bash !== undefined) {
+        if (record.sandbox === null) invalid.add("sandbox");
+        if (bash.source !== "cli" || bash.path !== fileURLToPath(new URL("./guard-extension.js", import.meta.url))) {
+          invalid.add("tools");
+        }
+      }
     }
     for (const name of LIMITS_FIELD_NAMES) {
       if (!Object.hasOwn(record, name)) invalid.add(name);
@@ -410,6 +421,18 @@ function validateLimits(value: unknown): GuardLimits {
     throw new Error(`invalid pi guard limits fields: ${names.join(", ")}`);
   }
   return value as GuardLimits;
+}
+
+function validSandbox(value: unknown): boolean {
+  if (value === null) return true;
+  if (!isRecord(value)) return false;
+  return (
+    isAbsolutePath(value.bwrap) &&
+    isAbsolutePath(value.worktree) &&
+    absolutePathList(value.writePaths) &&
+    isAbsolutePath(value.tempFolder) &&
+    absolutePathList(value.hidePaths)
+  );
 }
 
 function validTools(value: unknown): value is GuardTool[] {

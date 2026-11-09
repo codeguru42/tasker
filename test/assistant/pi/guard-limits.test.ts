@@ -4,31 +4,25 @@ import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { thrownBy } from "../../helpers/errors.js";
 import { useTempDir } from "../../helpers/temp.js";
-import { builtInTool, guardLimits, writeGuardLimits } from "../../../src/assistant/pi/guard-limits.js";
+import {
+  builtInTool,
+  guardLimits,
+  writeGuardLimits,
+  type PiSandboxLimits,
+} from "../../../src/assistant/pi/guard-limits.js";
 import * as guardStartModule from "../../../src/assistant/pi/guard-start.js";
-import { guardStartArgs } from "../../../src/assistant/pi/guard-start.js";
-import { guardExtensionPath } from "../../../src/assistant/pi/guard-start.js";
+import { guardExtensionPath, guardStartArgs } from "../../../src/assistant/pi/guard-start.js";
+import { sandboxPart } from "../../../src/assistant/pi/sandbox-part.js";
 import type { RunInput } from "../../../src/assistant/provider.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
 import { runInput as sharedRunInput } from "../../helpers/fake-claude.js";
 
 function makeLimits(input: RunInput, tools: { name: string; path: string; source: string }[]) {
-  return guardLimits(input, tools) as ReturnType<typeof guardLimits> & { sandbox: null | SandboxPart };
+  return guardLimits(input, tools);
 }
 
-interface SandboxPart {
-  bwrap: string;
-  worktree: string;
-  writePaths: string[];
-  tempFolder: string;
-  hidePaths: string[];
-}
-
-async function makeSandboxPart(input: RunInput, bwrap: string, tempFolder: string): Promise<SandboxPart> {
-  const module = (await import("../../../src/assistant/pi/guard-limits.js")) as unknown as {
-    sandboxPart(input: RunInput, bwrap: string, tempFolder: string): SandboxPart;
-  };
-  return module.sandboxPart(input, bwrap, tempFolder);
+function makeSandboxPart(input: RunInput, bwrap: string, tempFolder: string): PiSandboxLimits {
+  return sandboxPart(input, bwrap, tempFolder);
 }
 
 function makeStartArgs(path: string, guardFile?: string) {
@@ -155,7 +149,7 @@ describe("guardLimits", () => {
       },
     };
 
-    expect(await makeSandboxPart(input, "/usr/bin/bwrap", tempLink)).toEqual({
+    expect(makeSandboxPart(input, "/usr/bin/bwrap", tempLink)).toEqual({
       bwrap: "/usr/bin/bwrap",
       worktree: realpathSync(worktree),
       writePaths: [realpathSync(writePath)],
@@ -170,7 +164,7 @@ describe("guardLimits", () => {
       env: { HOME: "/h", SSH_AUTH_SOCK: "/s" },
     };
 
-    expect(await makeSandboxPart(input, "/usr/bin/bwrap", "/tmp/tasker-start")).toMatchObject({
+    expect(makeSandboxPart(input, "/usr/bin/bwrap", "/tmp/tasker-start")).toMatchObject({
       hidePaths: ["/h/.config/herdr", "/s", "/var/run/docker.sock"],
     });
   });

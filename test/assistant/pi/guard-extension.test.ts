@@ -29,7 +29,7 @@ function validLimits(): GuardLimits {
     denyWrite: [],
     deniedCommands: [],
     sandbox: null,
-  } as GuardLimits;
+  };
 }
 
 const bashSandbox = {
