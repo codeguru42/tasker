@@ -9,7 +9,7 @@ function commands(source: string): string[][] {
 describe("parseBashCommand", () => {
   it.each([
     ["echo a; git push | head", [["echo", "a"], ["git", "push"], ["head"]]],
-    ["A=1 >out git push", [["A=1", "git", "push"]]],
+    ["A=1 >out git push", [["A=1", "out", "git", "push"]]],
     ["(git push)", [["git", "push"]]],
     ["{ git push; }", [["git", "push"]]],
     ["if a; then b; elif c; then d; else e; fi", [["a"], ["b"], ["c"], ["d"], ["e"]]],
@@ -49,8 +49,12 @@ describe("parseBashCommand", () => {
   });
 
   it("keeps redirection targets attached to their command", () => {
-    expect(commands("echo >$(git push)")).toEqual([["echo", "git", "push"]]);
-    expect(commands("echo a > $(git push)")).toEqual([["echo", "a", "git", "push"]]);
+    const parsed = parseBashCommand("echo >$(git push); echo a > $(git push)");
+    expect(parsed.commands.map((command) => command.words.map((word) => word.value))).toEqual([
+      ["echo", "$(git push)"],
+      ["echo", "a", "$(git push)"],
+    ]);
+    expect(parsed.commands.every((command) => command.words.at(-1)?.nested[0]?.words[0]?.value === "git")).toBe(true);
   });
 
   it("keeps plain here-document text as data", () => {
@@ -59,12 +63,16 @@ describe("parseBashCommand", () => {
 
   it("keeps an unfinished here-document body through end of input", () => {
     expect(tokenizeBashCommand("cat <<EOF\nplain text\n$(git push)")).toEqual(
-      expect.arrayContaining([expect.objectContaining({ kind: "heredoc-body", value: "plain text\n$(git push)\n" })]),
+      expect.arrayContaining([expect.objectContaining({ kind: "heredoc-body", value: "plain text\n$(git push)" })]),
     );
   });
 
   it("reads multiple quoted and unquoted here-documents", () => {
-    expect(commands("cat <<A <<'B'\n$(git push)\nA\n$(git push)\nB")).toEqual([["cat"], ["git", "push"]]);
+    const parsed = parseBashCommand("cat <<A <<'B'\n$(git push)\nA\n$(git push)\nB");
+    expect(parsed.commands.map((command) => command.words.map((word) => word.value))).toEqual([["cat"]]);
+    expect(parsed.commands[0]?.words[0]?.nested.map((command) => command.words.map((word) => word.value))).toEqual([
+      ["git", "push"],
+    ]);
   });
 
   it("keeps reserved words in arguments as words", () => {

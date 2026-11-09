@@ -1,4 +1,4 @@
-import { tokenizeBashCommand, type BashToken } from "./bash-command-tokenize.js";
+import { BashParseError, tokenizeBashCommand, type BashToken } from "./bash-command-tokenize.js";
 
 export interface BashWordPart {
   kind:
@@ -28,6 +28,7 @@ export interface BashWord {
   parts: BashWordPart[];
   start?: number;
   end?: number;
+  redirectionTarget?: boolean;
 }
 
 export interface BashCommand {
@@ -42,7 +43,7 @@ export interface ParsedBashLine {
   commands: BashCommand[];
 }
 
-export class BashParseError extends Error {}
+export { BashParseError };
 
 export function parseBashCommand(source: string): ParsedBashLine {
   const tokens = tokenizeBashCommand(source);
@@ -51,15 +52,20 @@ export function parseBashCommand(source: string): ParsedBashLine {
   let pipeline = false;
   let readsInput = false;
   const compound: string[] = [];
-  const pendingHeredocs: { delimiter: string; quoted: boolean; stripTabs: boolean }[] = [];
   let skipForHeader = false;
   let functionCandidate = false;
   let inCaseHeader = false;
   let inCase = false;
+  let inCasePattern = false;
   let skipTimeArgument = false;
+  let deferredNested: BashCommand[] = [];
 
   const finish = (end: number) => {
     if (words.length > 0) {
+      if (words[0] !== undefined && deferredNested.length > 0) {
+        words[0].nested.push(...deferredNested);
+        deferredNested = [];
+      }
       commands.push({ words, inputFromPipeline: pipeline, readsInput, start: words[0]?.start ?? end, end });
       words = [];
     }
@@ -72,10 +78,7 @@ export function parseBashCommand(source: string): ParsedBashLine {
     if (token === undefined) continue;
     if (token.kind === "heredoc-body") {
       finish(token.start);
-      if (!token.quoted && token.value.length > 0) {
-        const nested = parseBashCommand(token.value);
-        commands.push(...nested.commands);
-      }
+      if (!token.quoted && token.value.length > 0) addHereDocNested(commands.at(-1), token.value);
       continue;
     }
     if (token.kind === "newline" || token.kind === "operator") {
@@ -86,12 +89,12 @@ export function parseBashCommand(source: string): ParsedBashLine {
       }
       if ([";;&", ";;", ";&"].includes(op)) {
         finish(token.start);
+        if (inCase) inCasePattern = true;
         continue;
       }
       if (op === "<<" || op === "<<-") {
         const delimiter = tokens[i + 1];
         if (delimiter?.kind !== "word") throw new BashParseError("missing here-document delimiter");
-        pendingHeredocs.push({ delimiter: delimiter.value, quoted: delimiter.quoted, stripTabs: op === "<<-" });
         i += 1;
         continue;
       }
@@ -99,6 +102,9 @@ export function parseBashCommand(source: string): ParsedBashLine {
         if (["<", "<<<", "<&"].includes(op)) readsInput = true;
         const target = tokens[i + 1];
         if (target?.kind !== "word") throw new BashParseError("missing redirection target");
+        target.word.redirectionTarget = true;
+        addWordNested(target.word);
+        words.push(target.word);
         i += 1;
         continue;
       }
@@ -116,6 +122,7 @@ export function parseBashCommand(source: string): ParsedBashLine {
       ) {
         if (op === ")" && inCase) {
           words = [];
+          inCasePattern = false;
           continue;
         }
         if (op === "(" && words.length === 1 && tokens[i + 1]?.kind === "operator" && tokens[i + 1]?.value === ")") {
@@ -140,6 +147,7 @@ export function parseBashCommand(source: string): ParsedBashLine {
       if (value === "case") {
         inCaseHeader = true;
         inCase = true;
+        inCasePattern = true;
       }
       if (value === "for" || value === "select") skipForHeader = true;
       if (value === "do") skipForHeader = false;
@@ -165,7 +173,10 @@ export function parseBashCommand(source: string): ParsedBashLine {
           "coproc",
         ].includes(value)
       ) {
-        if (value === "in" && inCaseHeader) words = [];
+        if (value === "in" && inCaseHeader) {
+          deferWordsNested(words, deferredNested);
+          words = [];
+        }
         finish(token.start);
         if (value === "in" && inCaseHeader) {
           inCaseHeader = false;
@@ -188,23 +199,15 @@ export function parseBashCommand(source: string): ParsedBashLine {
         continue;
       }
       skipTimeArgument = false;
-      if (skipForHeader) continue;
+      addWordNested(token.word);
+      if (skipForHeader || inCaseHeader || (inCase && inCasePattern)) {
+        deferredNested.push(...token.word.nested);
+        continue;
+      }
       if (["[[", "]]", "((", "))"].includes(token.value)) continue;
       if (functionCandidate) {
         functionCandidate = false;
         continue;
-      }
-      if (pendingHeredocs.length > 0 && token.value === "") throw new BashParseError("invalid here-document delimiter");
-      if (
-        token.word.parts.some(
-          (part) =>
-            part.kind === "substitution" ||
-            part.kind === "parameter" ||
-            part.kind === "double-quoted" ||
-            part.kind === "process-substitution",
-        )
-      ) {
-        token.word.nested.push(...nestedCommands(token.word));
       }
       words.push(token.word);
     }
@@ -215,6 +218,29 @@ export function parseBashCommand(source: string): ParsedBashLine {
 }
 
 export type { BashToken };
+
+function addWordNested(word: BashWord): void {
+  if (
+    word.parts.some((part) =>
+      ["substitution", "parameter", "double-quoted", "process-substitution", "arithmetic"].includes(part.kind),
+    )
+  ) {
+    word.nested.push(...nestedCommands(word));
+  }
+}
+
+function deferWordsNested(words: BashWord[], deferred: BashCommand[]): void {
+  for (const word of words) deferred.push(...word.nested);
+}
+
+function addHereDocNested(command: BashCommand | undefined, body: string): void {
+  if (command?.words[0] === undefined) return;
+  const pattern = /\$\((?!\()([\s\S]*?)\)|`([^`]*)`/gu;
+  for (const match of body.matchAll(pattern)) {
+    const nested = parseBashCommand(match[1] ?? match[2] ?? "");
+    command.words[0].nested.push(...nested.commands);
+  }
+}
 
 function nestedCommands(word: BashWord): BashCommand[] {
   const found: BashCommand[] = [];

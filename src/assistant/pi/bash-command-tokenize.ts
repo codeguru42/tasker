@@ -5,6 +5,8 @@ export type BashToken =
   | { kind: "operator" | "newline" | "keyword"; value: string; start: number; end: number }
   | { kind: "heredoc-body"; value: string; quoted: boolean; start: number; end: number };
 
+export class BashParseError extends Error {}
+
 const OPERATORS = [
   ";;&",
   "]]",
@@ -57,6 +59,7 @@ export function tokenizeBashCommand(input: string): BashToken[] {
   let index = 0;
   let pending: { delimiter: string; quoted: boolean; stripTabs: boolean }[] = [];
   let commandPosition = true;
+  let header: "case" | "for" | "select" | undefined;
 
   while (index < source.length) {
     const char = source[index] ?? "";
@@ -85,7 +88,10 @@ export function tokenizeBashCommand(input: string): BashToken[] {
               break;
             }
             body += line + (lineEnd < 0 ? "" : "\n");
-            if (lineEnd < 0) throw new Error("unterminated here-document");
+            if (lineEnd < 0) {
+              index = source.length;
+              break;
+            }
             index = end + 1;
           }
           tokens.push({ kind: "heredoc-body", value: body, quoted: doc.quoted, start, end: index });
@@ -98,7 +104,7 @@ export function tokenizeBashCommand(input: string): BashToken[] {
 
     if (source.startsWith("((", index)) {
       const end = source.indexOf("))", index + 2);
-      if (end < 0) throw new Error("unclosed arithmetic command");
+      if (end < 0) throw new BashParseError("unclosed arithmetic command");
       const value = source.slice(index + 2, end);
       const part: BashWordPart = { kind: "arithmetic", value, quoted: false, start: index, end: end + 2 };
       const word: BashWord = { value, expanded: false, nested: [], parts: [part], start: index, end: end + 2 };
@@ -112,7 +118,7 @@ export function tokenizeBashCommand(input: string): BashToken[] {
     if (fd) index += fd[0].length;
     if (source.startsWith("<(", index) || source.startsWith(">(", index)) {
       const parsedProcess = readWord(source, index);
-      if (parsedProcess === undefined) throw new Error("invalid process substitution");
+      if (parsedProcess === undefined) throw new BashParseError("invalid process substitution");
       tokens.push({
         kind: "word",
         value: parsedProcess.word.value,
@@ -137,7 +143,7 @@ export function tokenizeBashCommand(input: string): BashToken[] {
       index += value.length;
       if (value === "<<" || value === "<<-") {
         const delimiterToken = readWord(source, index);
-        if (delimiterToken === undefined) throw new Error("missing here-document delimiter");
+        if (delimiterToken === undefined) throw new BashParseError("missing here-document delimiter");
         tokens.push({
           kind: "word",
           value: delimiterToken.word.value,
@@ -166,36 +172,35 @@ export function tokenizeBashCommand(input: string): BashToken[] {
           index = target.end;
         }
       }
-      if ([";", "&&", "||", "|", "|&", "&"].includes(value)) commandPosition = true;
+      if ([";", ";;&", "&&", "||", "|", "|&", "&", ")"].includes(value)) commandPosition = true;
       continue;
     }
     const parsed = readWord(source, index);
-    if (parsed === undefined) throw new Error(`cannot tokenize at ${index}`);
+    if (parsed === undefined) throw new BashParseError(`cannot tokenize at ${index}`);
     const value = parsed.word.value;
     if (/\{[^{}]*,[^{}]*\}/u.test(source.slice(parsed.start, parsed.end))) parsed.word.expanded = true;
     if (
-      (commandPosition ||
-        [
-          "in",
-          "do",
-          "then",
-          "elif",
-          "else",
-          "fi",
-          "done",
-          "esac",
-          "if",
-          "while",
-          "until",
-          "for",
-          "select",
-          "case",
-          "function",
-        ].includes(value)) &&
+      (commandPosition || (value === "in" && header !== undefined)) &&
       KEYWORDS.has(value) &&
       parsed.word.parts.every((part) => part.kind === "literal")
     ) {
       tokens.push({ kind: "keyword", value, start: parsed.start, end: parsed.end });
+      if (value === "case" || value === "for" || value === "select") header = value;
+      else if (value === "in") header = undefined;
+      commandPosition = [
+        "if",
+        "then",
+        "elif",
+        "else",
+        "while",
+        "until",
+        "do",
+        "for",
+        "select",
+        "case",
+        "time",
+        "coproc",
+      ].includes(value);
     } else {
       tokens.push({
         kind: "word",
@@ -248,7 +253,7 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
     if (/\s/u.test(c) || (operatorHere && !((c === "<" || c === ">") && source[i + 1] === "("))) break;
     if (c === "'") {
       const end = source.indexOf("'", i + 1);
-      if (end < 0) throw new Error("unclosed single quote");
+      if (end < 0) throw new BashParseError("unclosed single quote");
       const text = source.slice(i + 1, end);
       value += text;
       append("single-quoted", text, true, i, end + 1);
@@ -258,7 +263,7 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
     if (c === "$" && (source[i + 1] === "'" || source[i + 1] === '"')) {
       const q = source[i + 1] as "'" | '"';
       const end = source.indexOf(q, i + 2);
-      if (end < 0) throw new Error("unclosed dollar quote");
+      if (end < 0) throw new BashParseError("unclosed dollar quote");
       const text = source.slice(i + 2, end);
       value += text;
       expanded ||= q === "'";
@@ -282,7 +287,7 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
         text += source[i];
         i += 1;
       }
-      if (source[i] !== '"') throw new Error("unclosed double quote");
+      if (source[i] !== '"') throw new BashParseError("unclosed double quote");
       value += text;
       expanded ||= /[$`]/u.test(text);
       append("double-quoted", text, true, startQuote, i + 1);
@@ -290,7 +295,7 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
       continue;
     }
     if (c === "\\") {
-      if (i + 1 >= source.length) throw new Error("unfinished escape");
+      if (i + 1 >= source.length) throw new BashParseError("unfinished escape");
       value += source[i + 1];
       append("escape", source[i + 1] ?? "", true, i, i + 2);
       i += 2;
@@ -303,7 +308,7 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
       if (c === "`") {
         kind = "substitution";
         end = source.indexOf("`", i + 1);
-        if (end < 0) throw new Error("unclosed backtick");
+        if (end < 0) throw new BashParseError("unclosed backtick");
         end += 1;
       } else if (c === "<" || c === ">") {
         kind = "process-substitution";
@@ -311,7 +316,7 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
       } else if (source[i + 1] === "(" && source[i + 2] === "(") {
         kind = "arithmetic";
         end = source.indexOf("))", i + 3);
-        if (end < 0) throw new Error("unclosed arithmetic expansion");
+        if (end < 0) throw new BashParseError("unclosed arithmetic expansion");
         end += 2;
       } else if (source[i + 1] === "(") {
         kind = "substitution";
@@ -360,5 +365,5 @@ function matching(source: string, opening: number, left: string, right: string):
     if (c === left) depth += 1;
     if (c === right && --depth === 0) return i;
   }
-  throw new Error("unclosed expansion");
+  throw new BashParseError("unclosed expansion");
 }

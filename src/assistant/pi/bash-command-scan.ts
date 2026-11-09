@@ -36,7 +36,8 @@ export function scanBashCommands(parsed: ParsedBashLine, entries: readonly strin
 }
 
 function scanCommand(command: BashCommand, entries: readonly string[], result: ScanResult, depth: number): void {
-  const words = command.words;
+  const allWords = command.words;
+  const words = allWords.filter((word) => !word.redirectionTarget);
   let commandIndex = 0;
   while (commandIndex < words.length && isAssignment(words[commandIndex]?.value ?? "")) commandIndex += 1;
   while (commandIndex < words.length && isControlWord(words[commandIndex]?.value ?? "")) commandIndex += 1;
@@ -44,15 +45,17 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
   const commandWord = words[commandIndex];
   const base = basename(commandWord?.value ?? "");
 
-  for (let index = 0; index < words.length; index += 1) {
-    const word = words[index];
-    if (word === undefined) continue;
+  for (const word of allWords) {
     scanNested(word, entries, result, depth);
     if (hasExecutableArrayIndex(word.value) || (base === "grep" && word.value === "$(")) {
       setFirstCause(result, CAUSE.array);
     }
     if (isSpecialAssignment(word.value)) setFirstCause(result, CAUSE.binding);
     scanEditorAssignment(word, entries, result, depth);
+  }
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index];
+    if (word === undefined) continue;
     const canChangeCommand =
       index === commandIndex ||
       (base === "git" && index === commandIndex + 1) ||
