@@ -24,6 +24,7 @@ interface CommandRow {
   result: "pass" | "match" | "cause";
   cause?: string;
   entry?: string;
+  stub?: string;
 }
 
 const commandRows: CommandRow[] = [
@@ -71,6 +72,16 @@ const commandRows: CommandRow[] = [
   { command: "sh -c 'git push'", result: "match" },
   { command: 'bash -lc "git push"', result: "match" },
   { command: "bash -co errexit 'git push'", result: "match" },
+  { command: "zsh -c 'git push'", result: "match" },
+  { command: "ksh -c 'git push'", result: "match" },
+  { command: "dash -c 'git push'", result: "match" },
+  { command: "rbash -c 'git push'", result: "match" },
+  { command: "ash -c 'git push'", result: "match" },
+  { command: "mksh -c 'git push'", result: "match" },
+  { command: "yash -c 'git push'", result: "match" },
+  { command: "bash +O extglob -c 'git push'", result: "match" },
+  { command: "bash", result: "cause", cause: CAUSES.input },
+  { command: "sh", result: "cause", cause: CAUSES.input },
   { command: 'bash -c "$X"', result: "cause", cause: CAUSES.expansion },
   { command: "bash <(echo git push)", result: "cause", cause: CAUSES.expansion },
   { command: "bash /dev/stdin <<< 'git push'", result: "cause", cause: CAUSES.input },
@@ -85,6 +96,80 @@ const commandRows: CommandRow[] = [
   { command: "alias g=git", result: "cause", cause: CAUSES.binding },
   { command: "fc -s status=push", result: "cause", cause: CAUSES.binding },
   { command: "BASH_ENV=<(echo git push) bash -c true", result: "cause", cause: CAUSES.binding },
+  { command: "ENV=<(echo git push) sh -c true", result: "cause", cause: CAUSES.binding },
+  { command: "BASH_ENV=$X bash -c true", result: "cause", cause: CAUSES.binding },
+  { command: "flock /tmp/l -c 'git push'", result: "match" },
+  { command: "su -c 'git push' root", result: "match" },
+  { command: "script -c 'git push' /dev/null", result: "match" },
+  { command: "mapfile -C 'git push' -c 1 a < /dev/null", result: "match" },
+  { command: "readarray -C 'git push' -c 1 a", result: "match" },
+  { command: "set -H", result: "cause", cause: CAUSES.binding },
+  { command: "set +H", result: "cause", cause: CAUSES.binding },
+  { command: "history", result: "cause", cause: CAUSES.binding },
+  { command: "history -s x", result: "cause", cause: CAUSES.binding },
+  { command: "sudo git push", result: "match" },
+  { command: "exec git push", result: "match" },
+  { command: "doas git push", result: "match" },
+  { command: "setsid git push", result: "match" },
+  { command: "ionice -c3 git push", result: "match" },
+  { command: "chrt 1 git push", result: "match" },
+  { command: "taskset 1 git push", result: "match" },
+  { command: "flock /tmp/l git push", result: "match" },
+  { command: "builtin exec git push", result: "match" },
+  { command: "busybox git push", result: "match" },
+  { command: "stdbuf -o0 git push", result: "match" },
+  { command: "timeout -s KILL 5 git push", result: "match" },
+  { command: "sudo $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
+  { command: "timeout 5 $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
+  { command: "flock /tmp/l -c $COMMAND", result: "cause", cause: CAUSES.expansion },
+  { command: "zsh -c 'git status'", result: "pass", stub: "zsh" },
+  { command: "ksh -c 'git status'", result: "pass", stub: "ksh" },
+  { command: "dash -c 'git status'", result: "pass", stub: "dash" },
+  { command: "rbash -c 'git status'", result: "pass", stub: "rbash" },
+  { command: "ash -c 'git status'", result: "pass", stub: "ash" },
+  { command: "mksh -c 'git status'", result: "pass", stub: "mksh" },
+  { command: "yash -c 'git status'", result: "pass", stub: "yash" },
+  { command: "bash +O extglob -c 'git status'", result: "pass", stub: "bash" },
+  { command: "flock /tmp/l -c 'git status'", result: "pass", stub: "flock" },
+  { command: "su -c 'git status' root", result: "pass", stub: "su" },
+  { command: "script -c 'git status' /dev/null", result: "pass", stub: "script" },
+  { command: "mapfile -t a < /dev/null", result: "pass" },
+  { command: "readarray -t a < /dev/null", result: "pass" },
+  { command: "sudo git status", result: "pass", stub: "sudo" },
+  { command: "exec git status", result: "pass", stub: "git" },
+  { command: "doas git status", result: "pass", stub: "doas" },
+  { command: "setsid git status", result: "pass", stub: "setsid" },
+  { command: "ionice -c3 git status", result: "pass", stub: "ionice" },
+  { command: "chrt 1 git status", result: "pass", stub: "chrt" },
+  { command: "taskset 1 git status", result: "pass", stub: "taskset" },
+  { command: "flock /tmp/l git status", result: "pass", stub: "flock" },
+  { command: "busybox git status", result: "pass", stub: "busybox" },
+  { command: "stdbuf -o0 git status", result: "pass", stub: "stdbuf" },
+  { command: "timeout -s KILL 5 git status", result: "pass", stub: "timeout" },
+  { command: "env -i echo ok", result: "pass", stub: "env" },
+  { command: "nice -n 5 git status", result: "pass", stub: "nice" },
+  { command: "watch --version", result: "pass", stub: "watch" },
+  { command: "nohup git status", result: "pass", stub: "nohup" },
+  { command: "command git status", result: "pass", stub: "git" },
+  { command: "stdbuf --version", result: "pass", stub: "stdbuf" },
+  { command: "eval 'git status'", result: "pass", stub: "git" },
+  { command: "sudo --version", result: "pass", stub: "sudo" },
+  { command: "flock --version", result: "pass", stub: "flock" },
+  { command: "su --version", result: "pass", stub: "su" },
+  { command: "script --version", result: "pass", stub: "script" },
+  { command: "set +x", result: "pass" },
+  { command: "trap -p", result: "pass" },
+  { command: "sudo --user $USER git status", result: "cause", cause: CAUSES.expansion },
+  { command: "exec $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
+  { command: "doas --user $USER git status", result: "cause", cause: CAUSES.expansion },
+  { command: "setsid $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
+  { command: "ionice -c $LEVEL git status", result: "cause", cause: CAUSES.expansion },
+  { command: "chrt $LEVEL git status", result: "cause", cause: CAUSES.expansion },
+  { command: "taskset $MASK git status", result: "cause", cause: CAUSES.expansion },
+  { command: "flock /tmp/l $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
+  { command: "busybox $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
+  { command: "stdbuf -o $MODE git status", result: "cause", cause: CAUSES.expansion },
+  { command: "timeout 5 $PROGRAM git status", result: "cause", cause: CAUSES.expansion },
   { command: "grep -n '$(' file", result: "pass" },
   { command: "let 'x=a[$(git push)]'", result: "cause", cause: CAUSES.array },
   { command: "eval 'git push'", result: "match" },
@@ -139,7 +224,41 @@ function runPassingCommand(command: string): string {
   mkdirSync(bin);
   writeFileSync(log, "");
 
-  for (const name of ["git", "herdr", "ls", "cat", "npm", "bash", "grep", "find"]) {
+  for (const name of [
+    "git",
+    "herdr",
+    "ls",
+    "cat",
+    "npm",
+    "bash",
+    "grep",
+    "find",
+    "zsh",
+    "ksh",
+    "dash",
+    "rbash",
+    "ash",
+    "mksh",
+    "yash",
+    "env",
+    "nice",
+    "timeout",
+    "watch",
+    "nohup",
+    "command",
+    "stdbuf",
+    "sudo",
+    "exec",
+    "doas",
+    "setsid",
+    "ionice",
+    "chrt",
+    "taskset",
+    "flock",
+    "busybox",
+    "su",
+    "script",
+  ]) {
     const path = join(bin, name);
     writeFileSync(path, `#!/bin/sh\nprintf '%s %s\\n' '${name}' "$*" >> "$TASKER_BASH_STUB_LOG"\n`);
     chmodSync(path, 0o755);
@@ -180,8 +299,12 @@ describe("checkBashCommand", () => {
     const passingRows = commandRows.filter((row) => row.result === "pass");
     const records = passingRows.map((row) => runPassingCommand(row.command));
 
+    passingRows.forEach((row, index) => {
+      if (row.stub !== undefined) expect(records[index]).toContain(`${row.stub} `);
+    });
+
     expect(records.length).toBeGreaterThan(0);
-  });
+  }, 15000);
 
   it("chooses a denied match before a cause", () => {
     expect(checkBashCommand("echo $X; git push", [DENIED])).toEqual({
