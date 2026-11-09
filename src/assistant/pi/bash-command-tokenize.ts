@@ -134,7 +134,7 @@ export function tokenizeBashCommand(input: string): BashToken[] {
     const operator = OPERATORS.find((item) => {
       const op = item.trimEnd();
       if (op === "{" && !/\s/u.test(source[index + 1] ?? "")) return false;
-      if (op === "}" && !/\s/u.test(source[index - 1] ?? "")) return false;
+      if (op === "}" && source[index - 1] !== undefined && !/\s/u.test(source[index - 1] ?? "")) return false;
       return op === source.slice(index, index + op.length);
     });
     if (operator !== undefined) {
@@ -142,6 +142,7 @@ export function tokenizeBashCommand(input: string): BashToken[] {
       tokens.push({ kind: "operator", value, start: index, end: index + value.length });
       index += value.length;
       if (value === "<<" || value === "<<-") {
+        while (source[index] === " " || source[index] === "\t") index += 1;
         const delimiterToken = readWord(source, index);
         if (delimiterToken === undefined) throw new BashParseError("missing here-document delimiter");
         tokens.push({
@@ -247,7 +248,7 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
     const operatorHere = OPERATORS.some((item) => {
       const op = item.trimEnd();
       if (op === "{" && !/\s/u.test(source[i + 1] ?? "")) return false;
-      if (op === "}" && !/\s/u.test(source[i - 1] ?? "")) return false;
+      if (op === "}" && source[i - 1] !== undefined && !/\s/u.test(source[i - 1] ?? "")) return false;
       return op === source.slice(i, i + op.length);
     });
     if (/\s/u.test(c) || (operatorHere && !((c === "<" || c === ">") && source[i + 1] === "("))) break;
@@ -275,6 +276,18 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
       const startQuote = i++;
       let text = "";
       while (i < source.length && source[i] !== '"') {
+        if (source.startsWith("$(", i)) {
+          const end = matching(source, i + 1, "(", ")");
+          text += source.slice(i, end + 1);
+          i = end + 1;
+          continue;
+        }
+        if (source[i] === "`") {
+          const end = matchingBacktick(source, i + 1);
+          text += source.slice(i, end + 1);
+          i = end + 1;
+          continue;
+        }
         if (source[i] === "`" || (source[i] === "$" && source[i + 1] === "(")) {
           expanded = true;
         }
@@ -351,6 +364,14 @@ function readWord(source: string, start: number): { word: BashWord; start: numbe
 function matching(source: string, opening: number, left: string, right: string): number {
   let depth = 0;
   let quote = "";
+  const cases: ("header" | "pattern" | "body")[] = [];
+  let word = "";
+  const finishWord = () => {
+    if (word === "case") cases.push("header");
+    else if (word === "in" && cases.at(-1) === "header") cases[cases.length - 1] = "pattern";
+    else if (word === "esac" && cases.length > 0) cases.pop();
+    word = "";
+  };
   for (let i = opening; i < source.length; i += 1) {
     const c = source[i] ?? "";
     if (c === "\\" && quote !== "'") {
@@ -358,12 +379,45 @@ function matching(source: string, opening: number, left: string, right: string):
       continue;
     }
     if ((c === "'" || c === '"') && (!quote || quote === c)) {
+      finishWord();
       quote = quote ? "" : c;
       continue;
     }
     if (quote) continue;
+    if (c === "#" && (i === 0 || /\s/u.test(source[i - 1] ?? ""))) {
+      finishWord();
+      while (i < source.length && source[i] !== "\n") i += 1;
+      continue;
+    }
+    if (/[A-Za-z0-9_]/u.test(c)) {
+      word += c;
+      continue;
+    }
+    finishWord();
+    if (c === ";" && source.startsWith(";;", i)) {
+      if (cases.at(-1) === "body") cases[cases.length - 1] = "pattern";
+      i += 1;
+      continue;
+    }
+    if (c === ")" && cases.at(-1) === "pattern") {
+      cases[cases.length - 1] = "body";
+      continue;
+    }
     if (c === left) depth += 1;
-    if (c === right && --depth === 0) return i;
+    if (c === right) {
+      if (--depth === 0) return i;
+    }
   }
   throw new BashParseError("unclosed expansion");
+}
+
+function matchingBacktick(source: string, start: number): number {
+  for (let i = start; i < source.length; i += 1) {
+    if (source[i] === "\\") {
+      i += 1;
+      continue;
+    }
+    if (source[i] === "`") return i;
+  }
+  throw new BashParseError("unclosed backtick");
 }

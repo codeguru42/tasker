@@ -144,6 +144,17 @@ export function parseBashCommand(source: string): ParsedBashLine {
 
     if (token.kind === "keyword") {
       const value = token.value;
+      const top = compound.at(-1);
+      if (value === "then" && top !== "if:condition") throw new BashParseError("then without if");
+      if ((value === "elif" || value === "else") && top !== "if:body") {
+        throw new BashParseError(`${value} without if`);
+      }
+      if (value === "fi" && top !== "if:body" && top !== "if:condition") {
+        throw new BashParseError("fi without if");
+      }
+      if (value === "do" && top !== "loop:condition") throw new BashParseError("do without loop");
+      if (value === "done" && top !== "loop:body") throw new BashParseError("done without loop");
+      if (value === "esac" && top !== "case") throw new BashParseError("esac without case");
       if (value === "time") skipTimeArgument = true;
       if (value === "case") {
         inCaseHeader = true;
@@ -189,7 +200,13 @@ export function parseBashCommand(source: string): ParsedBashLine {
           words = [];
           continue;
         }
-        if (["if", "while", "until", "for", "case"].includes(value)) compound.push(value);
+        if (value === "if") compound.push("if:condition");
+        if (["while", "until", "for", "select"].includes(value)) compound.push("loop:condition");
+        if (value === "case") compound.push("case");
+        if (value === "then") compound[compound.length - 1] = "if:body";
+        if (value === "elif") compound[compound.length - 1] = "if:condition";
+        if (value === "else") compound[compound.length - 1] = "if:body";
+        if (value === "do") compound[compound.length - 1] = "loop:body";
         if (["fi", "done", "esac"].includes(value)) compound.pop();
         continue;
       }
@@ -236,21 +253,108 @@ function deferWordsNested(words: BashWord[], deferred: BashCommand[]): void {
 
 function addHereDocNested(command: BashCommand | undefined, body: string): void {
   if (command?.words[0] === undefined) return;
-  const pattern = /\$\((?!\()([\s\S]*?)\)|`([^`]*)`/gu;
-  for (const match of body.matchAll(pattern)) {
-    const nested = parseBashCommand(match[1] ?? match[2] ?? "");
-    command.words[0].nested.push(...nested.commands);
+  for (const nestedSource of nestedSources(body)) {
+    command.words[0].nested.push(...parseBashCommand(nestedSource).commands);
   }
 }
 
 function nestedCommands(word: BashWord): BashCommand[] {
   const found: BashCommand[] = [];
   for (const part of word.parts) {
-    const source = part.value;
-    const bodies: string[] = [];
-    const pattern = /\$\((?!\()([\s\S]*?)\)|`([^`]*)`|[<>]\(([^)]*)\)/gu;
-    for (const match of source.matchAll(pattern)) bodies.push(match[1] ?? match[2] ?? match[3] ?? "");
-    for (const body of bodies) found.push(...parseBashCommand(body).commands);
+    for (const source of nestedSources(part.value)) found.push(...parseBashCommand(source).commands);
   }
   return found;
+}
+
+function nestedSources(source: string): string[] {
+  const found: string[] = [];
+  let quote = "";
+  for (let i = 0; i < source.length; i += 1) {
+    const char = source[i] ?? "";
+    if (char === "\\") {
+      i += 1;
+      continue;
+    }
+    if (char === "'" && quote !== '"') {
+      quote = quote === "'" ? "" : "'";
+      continue;
+    }
+    if (char === '"' && quote !== "'") {
+      quote = quote === '"' ? "" : '"';
+      continue;
+    }
+    if (quote === "'" || (char === "#" && (i === 0 || /\s/u.test(source[i - 1] ?? "")))) {
+      if (char === "#") while (i < source.length && source[i] !== "\n") i += 1;
+      continue;
+    }
+    if (char === "`") {
+      let end = i + 1;
+      while (end < source.length && source[end] !== "`") {
+        if (source[end] === "\\") end += 1;
+        end += 1;
+      }
+      if (end >= source.length) throw new BashParseError("unclosed backtick");
+      found.push(source.slice(i + 1, end));
+      i = end;
+      continue;
+    }
+    if (
+      (char === "$" && source[i + 1] === "(" && source[i + 2] !== "(") ||
+      ((char === "<" || char === ">") && source[i + 1] === "(")
+    ) {
+      const opening = i + 1;
+      const end = findClosingParen(source, opening);
+      found.push(source.slice(opening + 1, end));
+      i = end;
+    }
+  }
+  return found;
+}
+
+function findClosingParen(source: string, opening: number): number {
+  let depth = 0;
+  let quote = "";
+  const cases: ("header" | "pattern" | "body")[] = [];
+  let word = "";
+  const finishWord = () => {
+    if (word === "case") cases.push("header");
+    else if (word === "in" && cases.at(-1) === "header") cases[cases.length - 1] = "pattern";
+    else if (word === "esac" && cases.length > 0) cases.pop();
+    word = "";
+  };
+  for (let i = opening; i < source.length; i += 1) {
+    const char = source[i] ?? "";
+    if (char === "\\" && quote !== "'") {
+      i += 1;
+      continue;
+    }
+    if ((char === "'" || char === '"') && (!quote || quote === char)) {
+      finishWord();
+      quote = quote ? "" : char;
+      continue;
+    }
+    if (quote) continue;
+    if (char === "#" && (i === 0 || /\s/u.test(source[i - 1] ?? ""))) {
+      finishWord();
+      while (i < source.length && source[i] !== "\n") i += 1;
+      continue;
+    }
+    if (/[A-Za-z0-9_]/u.test(char)) {
+      word += char;
+      continue;
+    }
+    finishWord();
+    if (char === ";" && source.startsWith(";;", i)) {
+      if (cases.at(-1) === "body") cases[cases.length - 1] = "pattern";
+      i += 1;
+      continue;
+    }
+    if (char === ")" && cases.at(-1) === "pattern") {
+      cases[cases.length - 1] = "body";
+      continue;
+    }
+    if (char === "(") depth += 1;
+    if (char === ")" && --depth === 0) return i;
+  }
+  throw new BashParseError("unclosed substitution");
 }

@@ -63,15 +63,46 @@ describe("parseBashCommand", () => {
   });
 
   it.each([
-    ["echo $(printf '%s' \"$(git push)\")", ["printf", "git"]],
-    ['echo $(echo ")" ; git push)', ["echo", "git"]],
-    ["echo $(case a in a) git push;; esac)", ["git"]],
-    ["echo $(echo ok # )\ngit push\n)", ["echo", "git"]],
-    ['echo "$(echo ")" ; git push)"', ["echo", "git"]],
+    [
+      "echo $(printf '%s' \"$(git push)\")",
+      [
+        ["printf", "%s", "$(git push)"],
+        ["git", "push"],
+      ],
+    ],
+    [
+      'echo $(echo ")" ; git push)',
+      [
+        ["echo", ")"],
+        ["git", "push"],
+      ],
+    ],
+    ["echo $(case a in a) git push;; esac)", [["git", "push"]]],
+    [
+      "echo $(echo ok # )\ngit push\n)",
+      [
+        ["echo", "ok"],
+        ["git", "push"],
+      ],
+    ],
+    [
+      'echo "$(echo ")" ; git push)"',
+      [
+        ["echo", ")"],
+        ["git", "push"],
+      ],
+    ],
   ])("parses nested substitutions at the matching close in %s", (source, expected) => {
     const parsed = parseBashCommand(source);
-    const nested = parsed.commands[0]?.words.flatMap((word) => word.nested) ?? [];
-    expect(nested.flatMap((command) => command.words.map((word) => word.value))).toEqual(expected);
+    const tree: string[][] = [];
+    const visit = (commandsToVisit: typeof parsed.commands) => {
+      for (const command of commandsToVisit) {
+        tree.push(command.words.map((word) => word.value));
+        visit(command.words.flatMap((word) => word.nested));
+      }
+    };
+    visit(parsed.commands[0]?.words.flatMap((word) => word.nested) ?? []);
+    expect(tree).toEqual(expected);
   });
 
   it("keeps redirection targets attached to their command", () => {
