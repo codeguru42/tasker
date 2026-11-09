@@ -9,6 +9,9 @@ import {
   shellRead,
   wrapperTarget,
 } from "./bash-command-readers.js";
+import { gitSubcommandIndex, scanGit } from "./bash-command-git.js";
+import { scanFind } from "./bash-command-find.js";
+import { GIT_COMMAND_ASSIGNMENTS, XARGS_SAFE_MODES } from "./bash-command-tables.js";
 
 const CAUSE = {
   expansion: "an expansion can change a command name or a word of a denied command",
@@ -19,16 +22,6 @@ const CAUSE = {
   depth: "the command lines are nested more than 8 levels deep",
 };
 
-const GIT_GLOBAL_OPTIONS = [
-  { names: ["-C", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env"], takesValue: true },
-  { names: ["-c"], takesValue: true, blocksConfig: true },
-  { names: ["--no-pager", "--no-optional-locks", "--bare"], takesValue: false },
-] as const;
-const GIT_COMMAND_READERS = [
-  { command: "rebase", options: ["-x", "--exec"], shell: true },
-  { command: "clone", options: ["-u", "--upload-pack"], shell: false },
-  { command: "grep", options: ["-O", "--open-files-in-pager"], shell: false },
-] as const;
 const MAX_COMMAND_DEPTH = 8;
 
 export interface ScanResult {
@@ -55,7 +48,7 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
     const word = words[index];
     if (word === undefined) continue;
     scanNested(word, entries, result, depth);
-    if (isArrayAssignment(word.value) || (base === "let" && hasExecutableArrayIndex(word.value))) {
+    if (hasExecutableArrayIndex(word.value) || (base === "grep" && word.value === "$(")) {
       setFirstCause(result, CAUSE.array);
     }
     if (isSpecialAssignment(word.value)) setFirstCause(result, CAUSE.binding);
@@ -70,7 +63,18 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
 
   if (commandWord === undefined || commandWord.expanded) return;
   addDirectMatches(base, commandIndex, words, entries, result);
-  if (hasGitEntry(entries) && base === "git") scanGit(words, commandIndex, entries, result, depth);
+  if (hasGitEntry(entries) && base === "git") {
+    scanGit(words, commandIndex, {
+      cause: (reason) => setFirstCause(result, reason),
+      scanText: (word, nested) => {
+        if (word.expanded) setFirstCause(result, CAUSE.expansion);
+        else if (nested) scanReparsed(word.value, entries, result, depth);
+        else scanCommandText(word.value, entries, result, depth);
+      },
+      scanWords: (commandWords) =>
+        scanCommand({ words: commandWords, inputFromPipeline: false }, entries, result, depth),
+    });
+  }
   if (hasBindingEffect(base, words.slice(commandIndex + 1))) setFirstCause(result, CAUSE.binding);
   if (isShell(base)) scanShellReader(base, words, commandIndex, entries, result, depth);
   else if (base === "eval" || ["mapfile", "readarray", "flock", "su", "script"].includes(base)) {
@@ -78,7 +82,12 @@ function scanCommand(command: BashCommand, entries: readonly string[], result: S
   }
   if (isSourceCommand(base)) scanSource(words, commandIndex, result);
   if (base === "xargs") scanXargs(words, commandIndex, entries, result, depth);
-  if (base === "find") scanFind(words, commandIndex, entries, result, depth);
+  if (base === "find") {
+    scanFind(words, commandIndex, {
+      cause: (reason) => setFirstCause(result, reason),
+      scanAction: (action) => scanCommand({ words: action, inputFromPipeline: false }, entries, result, depth),
+    });
+  }
   if (isWrapper(base)) scanWrapper(base, words, commandIndex, entries, result, depth);
   if (command.inputFromPipeline && isShell(base)) setFirstCause(result, CAUSE.input);
   if (isShell(base) && shellReadsInput(words, commandIndex, command)) setFirstCause(result, CAUSE.input);
@@ -122,95 +131,11 @@ function hasGitEntry(entries: readonly string[]): boolean {
   return entries.some((entry) => entry.startsWith("git "));
 }
 
-function gitSubcommandIndex(words: BashWord[], start: number): number {
-  let index = start;
-  while (index < words.length) {
-    const option = words[index]?.value ?? "";
-    if (option === "--") return index + 1;
-    const rule = GIT_GLOBAL_OPTIONS.find((candidate) => candidate.names.some((name) => isGitOption(option, name)));
-    if (rule === undefined) return index;
-    index += rule.takesValue ? (isAttachedGitOption(option, rule.names) ? 1 : 2) : 1;
-  }
-  return index;
-}
-
-function scanGit(
-  words: BashWord[],
-  commandIndex: number,
-  entries: readonly string[],
-  result: ScanResult,
-  depth: number,
-): void {
-  let index = commandIndex + 1;
-  while (index < words.length) {
-    const option = words[index]?.value ?? "";
-    if (option === "--") return;
-    if (!option.startsWith("-")) break;
-    const rule = GIT_GLOBAL_OPTIONS.find((candidate) => candidate.names.some((name) => isGitOption(option, name)));
-    if (rule === undefined) {
-      setFirstCause(result, CAUSE.option);
-      return;
-    }
-    if ("blocksConfig" in rule && rule.blocksConfig) {
-      setFirstCause(result, "git can run a command line from a configuration value");
-    }
-    if (rule.takesValue) {
-      const attached = isAttachedGitOption(option, rule.names);
-      const valueIndex = attached ? index : index + 1;
-      const value = words[valueIndex];
-      if (value?.expanded) setFirstCause(result, CAUSE.expansion);
-      index = valueIndex + 1;
-    } else index += 1;
-  }
-  scanGitCommandReader(words[index]?.value ?? "", words, index + 1, entries, result, depth);
-}
-
-function isGitOption(value: string, name: string): boolean {
-  return (
-    value === name ||
-    (name.length === 2 && value.startsWith(name) && value.length > name.length) ||
-    (name.startsWith("--") && value.startsWith(name + "="))
-  );
-}
-
-function isAttachedGitOption(value: string, names: readonly string[]): boolean {
-  return names.some(
-    (name) =>
-      (name.length === 2 && value.startsWith(name) && value.length > name.length) ||
-      (name.startsWith("--") && value.startsWith(name + "=")),
-  );
-}
-
-function scanGitCommandReader(
-  subcommand: string,
-  words: BashWord[],
-  start: number,
-  entries: readonly string[],
-  result: ScanResult,
-  depth: number,
-): void {
-  const reader = GIT_COMMAND_READERS.find((item) => item.command === subcommand);
-  if (reader === undefined) return;
-  for (let index = start; index < words.length; index += 1) {
-    const value = words[index]?.value ?? "";
-    const option = reader.options.find(
-      (name) => value === name || (value.startsWith(name) && value.length > name.length),
-    );
-    if (option === undefined) continue;
-    const argument =
-      value === option ? words[index + 1] : { value: value.slice(option.length), expanded: false, nested: [] };
-    if (argument === undefined) continue;
-    if (argument.expanded) setFirstCause(result, CAUSE.expansion);
-    else if (reader.shell) scanReparsed(argument.value, entries, result, depth);
-    else scanCommandText(argument.value, entries, result, depth);
-  }
-}
-
 function scanEditorAssignment(word: BashWord, entries: readonly string[], result: ScanResult, depth: number): void {
   const equals = word.value.indexOf("=");
   if (equals < 0) return;
   const name = word.value.slice(0, equals);
-  if (!["GIT_EDITOR", "GIT_SEQUENCE_EDITOR", "GIT_SSH_COMMAND"].includes(name)) return;
+  if (!GIT_COMMAND_ASSIGNMENTS.includes(name as (typeof GIT_COMMAND_ASSIGNMENTS)[number])) return;
   const value = word.value.slice(equals + 1);
   if (word.expanded) setFirstCause(result, CAUSE.expansion);
   else scanCommandText(value, entries, result, depth);
@@ -228,6 +153,7 @@ function scanXargs(
   result: ScanResult,
   depth: number,
 ): void {
+  if (XARGS_SAFE_MODES.includes(words[commandIndex + 1]?.value as (typeof XARGS_SAFE_MODES)[number])) return;
   setFirstCause(result, "xargs can add a denied command from its input");
   let index = commandIndex + 1;
   while (index < words.length && (words[index]?.value ?? "").startsWith("-")) {
@@ -238,45 +164,6 @@ function scanXargs(
   if (candidate.length > 0 && !candidate.some((word) => word.expanded)) {
     scanCommand({ words: candidate, inputFromPipeline: false }, entries, result, depth);
   }
-}
-
-function scanFind(
-  words: BashWord[],
-  commandIndex: number,
-  entries: readonly string[],
-  result: ScanResult,
-  depth: number,
-): void {
-  for (let index = commandIndex + 1; index < words.length; index += 1) {
-    const value = words[index]?.value ?? "";
-    if (value === "-exec" || value === "-execdir") {
-      const action: BashWord[] = [];
-      for (let actionIndex = index + 1; actionIndex < words.length; actionIndex += 1) {
-        const part = words[actionIndex];
-        if (part === undefined || part.value === ";" || part.value === "+") break;
-        action.push(part);
-      }
-      if (action.length > 0) {
-        if (action[0]?.value === "{}") setFirstCause(result, CAUSE.expansion);
-        else if (action.some((word) => word.expanded)) setFirstCause(result, CAUSE.expansion);
-        else if (action.some((word) => word.value.includes("-c")) && action.some((word) => word.value.includes("{}"))) {
-          setFirstCause(result, CAUSE.expansion);
-        } else scanCommand({ words: action, inputFromPipeline: false }, entries, result, depth);
-      }
-      return;
-    }
-    if (["-name", "-iname", "-path", "-ipath"].includes(value)) {
-      index += 1;
-      const pattern = words[index];
-      if (pattern?.expanded && !isSimpleGlob(pattern.value)) setFirstCause(result, CAUSE.expansion);
-      continue;
-    }
-    if (words[index]?.expanded) setFirstCause(result, CAUSE.expansion);
-  }
-}
-
-function isSimpleGlob(value: string): boolean {
-  return /^[A-Za-z0-9_.*?[\]-]+$/.test(value);
 }
 
 function scanShellReader(
@@ -352,10 +239,6 @@ function shellReadsInput(words: BashWord[], commandIndex: number, command: BashC
 
 function isSourceCommand(base: string): boolean {
   return base === "." || base === "source";
-}
-
-function isArrayAssignment(value: string): boolean {
-  return /^[A-Za-z_][A-Za-z0-9_]*\[.*\]=/.test(value) && hasExecutableArrayIndex(value);
 }
 
 function hasExecutableArrayIndex(value: string): boolean {
