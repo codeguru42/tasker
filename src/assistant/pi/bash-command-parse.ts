@@ -6,6 +6,7 @@ export interface BashWord {
 
 export interface BashCommand {
   words: BashWord[];
+  inputFromPipeline: boolean;
 }
 
 export interface ParsedBashLine {
@@ -47,6 +48,7 @@ function parseInto(source: string, output: ParsedBashLine): void {
   let escaped = false;
   let parens = 0;
   let braceExpansion = false;
+  let nextCommandReadsPipe = false;
   const nested: BashCommand[] = [];
 
   const finishWord = () => {
@@ -61,7 +63,10 @@ function parseInto(source: string, output: ParsedBashLine): void {
   };
   const finishCommand = () => {
     finishWord();
-    if (commandWords.length > 0) output.commands.push({ words: commandWords });
+    if (commandWords.length > 0) {
+      output.commands.push({ words: commandWords, inputFromPipeline: nextCommandReadsPipe });
+      nextCommandReadsPipe = false;
+    }
     commandWords = [];
   };
 
@@ -101,6 +106,14 @@ function parseInto(source: string, output: ParsedBashLine): void {
       index = end;
       continue;
     }
+    if (quote === undefined && (char === "<" || char === ">") && next === "(") {
+      const end = matchingParen(source, index + 1);
+      nested.push(...parseBashCommand(source.slice(index + 2, end)).commands);
+      quoted = true;
+      word += source.slice(index, end + 1);
+      index = end;
+      continue;
+    }
     if (char === "$") {
       if (next === "(") {
         const end = matchingParen(source, index + 1);
@@ -122,7 +135,7 @@ function parseInto(source: string, output: ParsedBashLine): void {
       if (/[A-Za-z0-9_@*?$#!-]/.test(next)) quoted = true;
     }
     if (quote === undefined && char === "{" && next !== "") braceExpansion = true;
-    if (quote === undefined && (char === "[" || char === "*") && word.length > 0) quoted = true;
+    if (quote === undefined && (char === "[" || char === "*")) quoted = true;
 
     if (quote === undefined && /\s/.test(char)) {
       finishWord();
@@ -130,6 +143,9 @@ function parseInto(source: string, output: ParsedBashLine): void {
     }
     if (quote === undefined && (char === ";" || char === "|" || char === "&" || char === "\n")) {
       finishCommand();
+      if (char === "|" && next !== "|") nextCommandReadsPipe = true;
+      if (char === "|" && next === "|") index += 1;
+      if (char === "&" && next === "&") index += 1;
       continue;
     }
     if (quote === undefined && char === "{" && word.length === 0 && /\s/.test(next)) {
