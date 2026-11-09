@@ -10,6 +10,10 @@ const DENIED = "git push";
 const CAUSES = {
   parse: "the line does not parse",
   expansion: "an expansion can change a command name or a word of a denied command",
+  input: "a shell or source reads commands that the guard extension cannot see",
+  binding: "a command can bind a name to another program",
+  option: "an unknown option of git or of a shell",
+  array: "an array index can run a command",
 };
 
 interface CommandRow {
@@ -48,6 +52,32 @@ const commandRows: CommandRow[] = [
   { command: "$cmd push", result: "cause", cause: CAUSES.expansion },
   { command: '"$(which git)" push', result: "cause", cause: CAUSES.expansion },
   { command: '"$@"', result: "cause", cause: CAUSES.expansion },
+  { command: "sh -c 'git push'", result: "match" },
+  { command: 'bash -lc "git push"', result: "match" },
+  { command: "bash -co errexit 'git push'", result: "match" },
+  { command: 'bash -c "$X"', result: "cause", cause: CAUSES.expansion },
+  { command: "bash <(echo git push)", result: "cause", cause: CAUSES.expansion },
+  { command: "bash /dev/stdin <<< 'git push'", result: "cause", cause: CAUSES.input },
+  { command: "echo 'git push' | bash", result: "cause", cause: CAUSES.input },
+  { command: ". <(echo git push)", result: "cause", cause: CAUSES.expansion },
+  { command: "hash -p /usr/bin/git g", result: "cause", cause: CAUSES.binding },
+  { command: "BASH_CMDS[g]=/usr/bin/git", result: "cause", cause: CAUSES.binding },
+  { command: "bash //dev/stdin <<< 'git push'", result: "cause", cause: CAUSES.input },
+  { command: "bash run.sh < input.txt", result: "cause", cause: CAUSES.input },
+  { command: "bash run.sh", result: "pass" },
+  { command: "bash *.sh", result: "cause", cause: CAUSES.expansion },
+  { command: "alias g=git", result: "cause", cause: CAUSES.binding },
+  { command: "fc -s status=push", result: "cause", cause: CAUSES.binding },
+  { command: "BASH_ENV=<(echo git push) bash -c true", result: "cause", cause: CAUSES.binding },
+  { command: "grep -n '$(' file", result: "pass" },
+  { command: "let 'x=a[$(git push)]'", result: "cause", cause: CAUSES.array },
+  { command: "eval 'git push'", result: "match" },
+  { command: "fish -C 'git push' x", result: "cause", cause: CAUSES.option },
+  { command: "trap 'git push' EXIT", result: "cause", cause: CAUSES.binding },
+  { command: "alias p='git push'", result: "cause", cause: CAUSES.binding },
+  { command: "bash -s", result: "cause", cause: CAUSES.input },
+  { command: "bash /./dev/stdin <<< 'git push'", result: "cause", cause: CAUSES.input },
+  { command: "arr['b[$(git push)]']=1", result: "cause", cause: CAUSES.array },
 ];
 
 function expectedResult(row: CommandRow): string | null {
@@ -86,6 +116,16 @@ function runPassingCommand(command: string): string {
   expect(records).not.toMatch(/(?:^|\s)git push(?:\s|$)/);
   expect(records).not.toMatch(/(?:^|\s)herdr(?:\s|$)/);
   return records;
+}
+
+function shellQuote(value: string): string {
+  return "'" + value.replaceAll("'", "'\\''") + "'";
+}
+
+function commandAtDepth(depth: number): string {
+  let command = "git status";
+  for (let nested = 1; nested < depth; nested += 1) command = "bash -c " + shellQuote(command);
+  return command;
 }
 
 describe("checkBashCommand", () => {
@@ -129,6 +169,19 @@ describe("checkBashCommand", () => {
 
     expect(checkBashCommand("git status", entries)).toBe(
       "tasker blocked this command: the guard extension cannot read it with certainty (an error in the guard extension).",
+    );
+  });
+
+  it("allows eight command-line levels and blocks nine", () => {
+    expect(checkBashCommand(commandAtDepth(8), [DENIED])).toBeNull();
+    expect(checkBashCommand(commandAtDepth(9), [DENIED])).toBe(
+      "tasker blocked this command: the guard extension cannot read it with certainty (the command lines are nested more than 8 levels deep).",
+    );
+  });
+
+  it("records the first cause by command text order", () => {
+    expect(checkBashCommand('bash -c "$X"; hash -p /usr/bin/git g', [DENIED])).toBe(
+      "tasker blocked this command: the guard extension cannot read it with certainty (" + CAUSES.expansion + ").",
     );
   });
 });
