@@ -735,10 +735,11 @@ is `<model>`, which names one model.
 
 ### The doctor checks of pi
 
-The checks run in this order: `pi version`, one `pi-auth:<upstream>` for each upstream, `superpowers:pi` and
-`simple-english:pi`. `pi version` makes sure that `pi` runs. `pi-auth:<upstream>` makes sure that `pi` has a login for
-the upstream. `superpowers:pi` makes sure that the superpowers package is installed and is version 6.4.1 or later.
-`simple-english:pi` makes sure that the skill `simple-english` is in a skill folder of the user.
+The checks run in this order: `pi version`, on Linux `sandbox: bwrap`, one `pi-auth:<upstream>` for each upstream,
+`superpowers:pi` and `simple-english:pi`. `pi version` makes sure that `pi` runs. `sandbox: bwrap` makes sure that
+`bwrap` is on `PATH`. `pi-auth:<upstream>` makes sure that `pi` has a login for the upstream. `superpowers:pi` makes
+sure that the superpowers package is installed and is version 6.4.1 or later. `simple-english:pi` makes sure that the
+skill `simple-english` is in a skill folder of the user.
 
 A task subagent measured these facts on 2026-11-07 with `pi` 1.1.0 on Linux. No measure called a model.
 
@@ -780,10 +781,11 @@ answer schema, `--tools` lists only `read,grep,find,ls`. The command also leaves
 run has a schema, `submit_answer`. Pi trims the prompt before it makes the user message. `--no-mcp`, `-e <guard file>`
 and `--tasker-guard-limits <limits path>` load and configure [the guard extension](#the-guard-extension).
 
-The run never gives pi `bash`, `edit` or `write`. It never gives `--no-skills`, `-ns`, `--no-tools`, `-nt`,
-`--no-builtin-tools` or `-nbt`. When the model reads the `SKILL.md` of a skill, pi loads the skill, so the run keeps the
-`read` tool and the discovery of skills. The run never gives `--no-extensions` or `-ne`, because this flag also turns
-off the built-in extensions of pi. The run loads each extension that the user trusts in `assistant.trustedExtensions`.
+The run never gives pi `edit` or `write`. With sandbox limits, the guard registers `bash`. It never gives `--no-skills`,
+`-ns`, `--no-tools`, `-nt`, `--no-builtin-tools` or `-nbt`. When the model reads the `SKILL.md` of a skill, pi loads the
+skill, so the run keeps the `read` tool and the discovery of skills. The run never gives `--no-extensions` or `-ne`,
+because this flag also turns off the built-in extensions of pi. The run loads each extension that the user trusts in
+`assistant.trustedExtensions`.
 
 ### The limits of the plan and review roles
 
@@ -1008,8 +1010,9 @@ provider request. A tool-handler error blocks the call with a fixed reason. A sk
 folders supplied by pi.
 
 `skillRoots` adds read roots only when `readRoots` is a list. The guard drops a skill root on, under or above a
-protected or denied path. Missing roots grant no access. The guard blocks each call of the `powershell` tool. It tests
-each call of the `bash` tool as [The check of the shell commands](#the-check-of-the-shell-commands) says.
+protected or denied path. Missing roots grant no access. The guard blocks each call of the `powershell` tool. For a
+sandboxed run, it tests each call of the `bash` tool as
+[The check of the shell commands](#the-check-of-the-shell-commands) says.
 
 The guard has one limit. A later extension can change a call's input after the guard passes it. Pi loads extensions
 named with `-e` first. The limit applies to each extension that pi loads after the guard.
@@ -1207,9 +1210,143 @@ The known limits. The guard extension reads only the text of the call:
   `GIT_CONFIG_KEY_<n>` and `GIT_CONFIG_VALUE_<n>`.
 - It does not follow a string that bash runs as code at run time. Examples are a variable that an arithmetic expansion
   reads (`x='a[$(cmd)]'; echo $((x))`), `PS4` with `set -x`, and the `@P` transform.
-- For the built-in `bash` tool of pi, it does not see the keys `shellPath` and `shellCommandPrefix` of the
-  `settings.json` of pi.
+- The registered `bash` tool does not use the `shellPath` or `shellCommandPrefix` keys of the `settings.json` of pi.
 - Layer 2 and layer 3 of the [push guard](version-control.md#push-guard) still hold for `git push`.
+
+### The sandbox
+
+These helpers define the sandbox for a later pi execute start. The pi provider still refuses execute runs, so it does
+not start this sandbox yet. When a run has sandbox limits, its `bash` tool runs in bubblewrap (`bwrap`). Bubblewrap
+makes the file system read-only, then adds write access only to the worktree, approved write paths and the temp folder
+of the start. It hides selected login files and host sockets. The tool runs only on Linux.
+
+The guard extension registers pi's Bash tool definition only when the limits file has sandbox settings. It uses tasker's
+process operations and sets `executionMode: "sequential"`. Pi runs every `tool_call` handler in a message before it runs
+any call in that message. Sequential execution means an earlier Bash call ends before a later call's guard check.
+Without it, an earlier Bash call could change a link after the guard checked a file call from the same message. The
+registered tool reports source `cli` and the absolute path of the guard file. The limits file names that same source and
+path. The guard checks the source again for each call. A later handler can change the command, so the process operations
+check the final command text again immediately before spawn.
+
+The Bash tool starts `bwrap` directly with an argument list. The host does not read the command through a shell. The
+arguments are in this order:
+
+1. `--ro-bind / /` makes the whole file system read-only.
+2. `--dev /dev --proc /proc` gives the command a new device folder and process view.
+3. `--bind <worktree> <worktree>` lets the command change the worktree.
+4. `--bind <write path> <write path>` for each approved write path lets tools such as git write their data.
+5. `--bind <temp folder of the start> <temp folder of the start>` gives the command a private place for temp files.
+6. `--ro-bind <worktree>/.git <worktree>/.git` keeps the worktree's git link read-only.
+7. Hide mounts cover each existing hide path. A folder gets `--tmpfs`; a file, socket or pipe gets a read-only bind of
+   `/dev/null`. They come after write mounts, so a parent write mount cannot uncover a hidden path.
+8. `--unshare-pid --new-session --die-with-parent` ends background jobs with the call, disconnects the terminal and ends
+   the command if its parent ends.
+9. `--setenv TMPDIR <temp folder of the start> --chdir <call cwd>` sets the temp folder and the call's working folder.
+10. `-- <shell> -c <command>` starts `/bin/bash`, or `bash` from the child's `PATH` if `/bin/bash` is absent.
+
+The hide list contains the read deny paths, `herdr` under `XDG_CONFIG_HOME` or `$HOME/.config/herdr`, `SSH_AUTH_SOCK`,
+each decoded `path` value from a Unix `DBUS_SESSION_BUS_ADDRESS` entry, `XDG_RUNTIME_DIR`, and `/var/run/docker.sock`.
+The runtime and config paths use their absolute lexical paths. The session bus, runtime folder and Docker socket can
+give a command access to user services or the host. Each existing hide path is resolved at call time. A missing path or
+a dangling link needs no mount. A link is resolved for every part of a bind path because bubblewrap cannot mount on a
+symbolic link. A hide path equal to or above the worktree, a write path or the temp folder blocks the call. A hide path
+under a write path is allowed and stays hidden. The hide paths come from
+[the execute-role read deny list](#the-execute-role); that list includes the Jira login folder of `acli`.
+
+Before pi starts, tasker checks that `bwrap` is on the child's `PATH`, that every D-Bus entry uses the Unix transport
+and has a `path` key, and that the worktree and write paths resolve. It rejects other transports because bubblewrap
+shares the host network and cannot hide abstract or network sockets. It creates the temp folder of the start, checks
+that hide paths do not cover write paths, then runs a ten-second `bwrap` probe with `true` and no hide mounts. A failed
+check refuses the start. Check errors name an error code or problem kind, not a path. Every start gets a new folder
+named with the prefix `tasker-pi-` under the child's `TMPDIR`, or `/tmp` when unset. The folder is removed after pi's
+process group ends, including on a failure after creation but before spawn. A removal failure after spawn leaves the
+outcome kind unchanged and adds `sandbox_cleanup` with the error. For pi, that event holds only an error from removal of
+the temp folder of the start.
+
+The sandbox does not limit network access. A command can read paths and connect to Unix sockets that the hide list does
+not name. Abstract sockets stay open. Only the `bash` tool runs inside bubblewrap; pi, its other tools and its
+extensions do not. The command can see hide-path names in `/proc/1/cmdline`, `/proc/self/mountinfo` and host
+`ps -o args`, but it cannot read the hidden contents. The command can still read the list of hide paths.
+
+Measures ran on 2026-11-09 on Debian Linux 6.12 with bubblewrap 0.12.0, pi 1.1.0 and git 2.47.3. They made no real model
+call. Before the deny rule was added, a sandbox read a fake `acli` login file (`acli-exit=0`), while a fake SSH file was
+hidden (`ssh-exit=1`). The measured Jira login folder was `$HOME/.config/acli`; it held nine YAML files with mode 0600
+and its folder had mode 0700. The shared deny list now hides that folder from assistant sandboxes. A
+sequential-execution probe showed that pi's `read` handler could see a marker left by an earlier Bash call; without
+sequential execution it could not see the marker. A scripted probe of pi 1.1.0 loaded Bash with `-e` in a scratch folder
+with a faux provider. It reported
+`{"path":"<absolute extension path>","source":"cli","scope":"temporary","origin":"top-level"}` for Bash and a built-in
+source for `read`. They also showed that a sandboxed `git rebase -i --autosquash main` in a linked worktree printed
+`packed-refs.lock` errors but exited 0 and left `CHERRY_PICK_HEAD` in the worktree admin folder.
+`git status --porcelain` printed no line, while plain `git status` reported a cherry-pick. `git cherry-pick --quit` did
+not remove the file. Moving it out of the writable admin folder worked, and a control rebase outside the sandbox left no
+`CHERRY_PICK_HEAD`. This ticket documents the state; a separate issue handles a fix. It adds no clone-root write bind
+and no cleanup step.
+
+The following bubblewrap facts were measured on 2026-11-03 on Debian Linux 6.12 with bubblewrap 0.12.0 and git 2.47.3.
+Each probe used `--ro-bind / / --dev /dev --proc /proc` and the named flags in a scratch folder.
+
+- A Unix socket in a read-only bind still accepts a connection. An abstract socket also accepts a connection.
+- `--tmpfs <folder>` hides a folder, and a connection to a socket in it fails with `FileNotFoundError`.
+- `--ro-bind /dev/null <socket>` makes a connection fail with `ConnectionRefusedError`. Over a file, a read fails with
+  `Permission denied`.
+- A hide mount before a parent `--bind` does not stay hidden; the connection works. A hide mount after the bind stays
+  hidden.
+- `--bind`, `--tmpfs` and `--ro-bind /dev/null` each fail on a symbolic-link destination with
+  `bwrap: Can't mount on symlink destination <path>` and exit code 1.
+- `--ro-bind /dev/null <missing path>` in the read-only root fails with
+  `bwrap: Can't create file <path>: Read-only file system`. The same mount in a write bind exits 0 and leaves an empty
+  read-only file on the host. `--tmpfs` on a missing folder in a write bind leaves an empty folder on the host.
+- A `--tmpfs` hide of a folder and a `--ro-bind /dev/null` hide of a file inside it work in either order.
+- With `--unshare-pid`, `sh -c 'sleep 4242 & echo bg started'` leaves no `sleep` after the call. Without it, `sleep`
+  stays.
+- With `--die-with-parent`, a `SIGKILL` of the parent of `bwrap` ends the command. Without it, the command stays.
+- With `--new-session`, `ps -o pid,sid,tty,comm` shows no terminal (`?`).
+- A review probe started `bwrap` with `setsid`, then ran `kill -KILL -<process group>`. With `--die-with-parent`, the
+  command and its background job ended. Without it, the inner `bwrap`, Bash and both `sleep` processes stayed.
+- `bash -c 'exit 7'` gives exit code 7. `kill -TERM $$` in the command gives exit code 143.
+- A probe with `--bind <worktree> <worktree> --tmpfs <hidden> --unshare-pid --new-session --die-with-parent` and
+  `/bin/bash -c ...` showed each argument in `/proc/1/cmdline` and each hide path in `/proc/self/mountinfo`. With
+  `bwrap --args 3`, the command line no longer showed the paths, but `mountinfo` still listed them.
+- `--ro-bind <worktree>/.git <worktree>/.git` after `--bind <worktree> <worktree>` makes a `.git` write fail with
+  `Read-only file system`; `rm` and `mv` fail with `Device or resource busy`. A new worktree file can be written.
+- A probe used a bare clone and linked worktree. It bound the worktree, `objects/`, `refs/`, `logs/` and the worktree's
+  admin folder. `git commit` exited 0 and moved the branch, but printed
+  `Unable to create '<clone>/packed-refs.lock': Read-only file system`. Writes to clone `config` and `hooks/x` failed
+  with `Read-only file system`.
+- `--setenv TMPDIR <folder>` with a bind of that folder makes `mktemp` create its file there.
+- In `bwrap ... -- /bin/sh -c '...'`, flags end at `--`. An unknown flag prints `bwrap: Unknown option --bogus` and
+  exits 1.
+
+The following pi package facts were read on 2026-11-03 from pi 1.1.0 (`@earendil-works/pi-coding-agent`). No model call
+ran.
+
+- `_refreshToolRegistry()` in `dist/core/agent-session.js` adds built-in tools first and extension tools after them. An
+  extension tool with a built-in name replaces it. `getAllTools()` reports the extension's `sourceInfo`.
+- `dist/core/tools/bash.d.ts` exports `createBashToolDefinition(cwd, options)`. Its
+  `options.operations.exec(command, cwd, { onData, signal, timeout, env })` runs each command.
+- `createLocalShellOperations()` in `dist/core/tools/bash.js` starts the shell in its own process group and kills its
+  tree on abort or timeout. It throws `aborted` after an abort and `timeout:<timeout>` after a timeout. It returns
+  `128 + <signal number>` for a signaled shell and 1 for a null exit code with no signal.
+- It throws `aborted` for a signal already aborted and an error when the cwd does not exist.
+- `createShellToolDefinition()` adds `commandPrefix` before it calls the operations. Only pi's built-in tool gets
+  `settings.json` keys.
+- `getShellConfig()` in `dist/utils/shell.js` chooses `/bin/bash`, then `bash` on `PATH`, then `sh`.
+- `executeToolCallsParallel` in `@earendil-works/pi-agent-core` runs every call's `tool_call` handlers before any call
+  runs. Calls run one at a time when `toolExecution` is `"sequential"` or a tool has `executionMode: "sequential"`.
+- The extension loader runs handlers in extension load and registration order. A later `tool_call` handler can change a
+  call's input.
+- The extension loader maps an import of `@earendil-works/pi-coding-agent` in an extension to the package used by the
+  running pi.
+- `pi --help` lists built-in tools `read`, `bash`, `powershell`, `edit`, `write`, `grep`, `find` and `ls`.
+- `shellPath` and `shellCommandPrefix` in `docs/settings.md` apply to pi's built-in shell.
+
+Nobody measured these cases:
+
+- A host where `bwrap` cannot start.
+- A real pi run with tasker's `bash` tool.
+- The effect of hiding the session bus and `XDG_RUNTIME_DIR` on a real command.
+- Whether the CI runner has `bwrap`.
 
 ## The plan answer and the prompts
 

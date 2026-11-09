@@ -24,7 +24,7 @@ export interface SandboxLimits {
   sharedFolder: string;
 }
 
-// What the provider removed after a sandboxed run: relative paths, sorted, or the error.
+// What the provider removed after a sandboxed run: relative paths, sorted, or the error. For pi it holds only the error of a failed removal of the temp folder of the start.
 export type SandboxCleanup = { removed: string[] } | { error: string };
 
 export interface OverageStop {
@@ -101,7 +101,7 @@ interface OutcomeBase {
   usage: Usage;
   transcriptPath?: string;
   reportedModel?: string;
-  // Only a sandboxed run that got to the spawn step sets it.
+  // Only a sandboxed run that got to the spawn step sets it. For pi, it holds only the error of the removal of the temp folder of the start.
   sandboxCleanup?: SandboxCleanup;
 }
 
