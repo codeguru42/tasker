@@ -871,6 +871,34 @@ orchestrator.
   found these cases. The task subagent then stopped under the case "Two reviews in a row" of
   [the stop rule](plan-review.md#the-stop-rule).
 
+## A ticket that adds or changes a guard or a parser
+
+This section covers a ticket that adds or changes a guard or a parser. The terms of this section have these meanings. A
+guard is code that reads an input text, for example a command line, and blocks the input or lets it through. A parser is
+code that splits an input text into its parts and refuses a text that it cannot read. The check is the guard or the
+parser of the ticket.
+
+- A place of the check is a part of the input that the check reads. An example is a command after `&&` or inside `$( )`.
+  An option form is one way to write an option that the check reads, for example `--git-dir .git` or `--git-dir=.git`. A
+  table test runs the check one time for each row of a table, for example with an `it.each`. A Block row of the table
+  gives an input that the check must block or refuse.
+
+  Ask the plan for a table test of the check, with one Block row for each place of the check. Also ask for one Block row
+  for each option form of each option that the check reads. In the feedback, list each place of the check and each
+  option form that the issue names. The table of the issue can miss some of them. Ask the plan to add a Block row for
+  each one that it misses. Also ask for a Block row for each place of the check and each option form that the plan adds.
+
+  The reason: a check that misses a place or an option form with no Block row can still pass `tasker verify`.
+
+  On #729 (2026-11-09), the check had to block each command line that runs a command that matches an entry of
+  `deniedCommands`. Requirement 13 of the issue listed the places of the check, and requirement 21 listed the global
+  options of `git`. The table of requirement 34 had 56 rows. Many places of the check and option forms had no row.
+  Examples are such a command inside `if`, `while`, `case` or `$(( ))`, and the option `--git-dir` of `git`.
+
+  The first version of the check passed `tasker verify`, and review 1 found 6 ways to run such a command past the check.
+  The task subagent then ran 120 command lines against the built check, and the check did not block about half of them.
+  The ticket took 9 reviews and 7 review loops. No one measured whether this hint prevents such a gap.
+
 ## A ticket that adds an interface
 
 - Give the full export map and a table of the neutral names.
