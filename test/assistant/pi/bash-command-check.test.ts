@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { useTempDir } from "../../helpers/temp.js";
 import { checkBashCommand } from "../../../src/assistant/pi/bash-command-check.js";
+import { shellQuote } from "../../../src/shell-quote.js";
 
 const DENIED = "git push";
 
@@ -625,10 +626,6 @@ function runPassingCommand(command: string): string {
   expect(records).not.toMatch(/^git push(?:\s|$)/mu);
   expect(records).not.toMatch(/^herdr(?:\s|$)/mu);
   return records;
-}
-
-function shellQuote(value: string): string {
-  return "'" + value.replaceAll("'", "'\\''") + "'";
 }
 
 function commandAtDepth(depth: number): string {
