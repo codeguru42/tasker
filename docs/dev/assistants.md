@@ -882,12 +882,9 @@ After it starts pi, the first matching result sets the outcome:
    `errorMessage`, the reason is `pi ended its turn with <stopReason>`.
 8. A nonzero exit gives `failure` with `pi exited <code>` and the end of stderr.
 9. No final assistant message gives `failure` with `the assistant ended with no result`.
-10. A clean end with no usable answer gives `failure`.
-
-    A clean end is the end of a pi process that matches none of rows 1 to 9. The reason is
-    `the assistant gave no structured answer:`, then one line `  - <problem>` for each problem.
+10. A clean end with no usable answer gives `failure`. A clean end is the end of a pi process that matches none of rows
+    1 to 9. The reason is `the assistant gave no structured answer:`, then one line `  - <problem>` for each problem.
     [The corrective turns](#corrective-turns) give the problems.
-
 11. Each other run gives `success`.
 
 pi exits with 0 when a turn fails in JSON mode, so the row of `stopReason` comes before the row of the exit code.
