@@ -3,9 +3,30 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { codexArgs } from "../../../src/assistant/codex/args.js";
 import type { Effort, RunInput } from "../../../src/assistant/provider.js";
-import { expectedCodexArgs } from "../../helpers/fake-codex.js";
+import { expectedCodexArgs as baseExpectedCodexArgs } from "../../helpers/fake-codex.js";
 import { runInput, sandboxLimits } from "../../helpers/fake-claude.js";
 import { useTempDir } from "../../helpers/temp.js";
+
+function expectedCodexArgs(expected: Parameters<typeof baseExpectedCodexArgs>[0]): string[] {
+  const worktree = expected.writePaths?.[0];
+  const denied = expected.denyRead ?? [];
+  const lateDenied = denied.filter((path) => path.endsWith("/.config/herdr") || path.endsWith("/runtime"));
+  const earlyDenied = denied.filter((path) => !lateDenied.includes(path));
+  return baseExpectedCodexArgs({
+    ...expected,
+    ...(worktree === undefined
+      ? {}
+      : {
+          denyRead: [
+            ...earlyDenied,
+            join(worktree, ".agents"),
+            join(worktree, ".aws"),
+            join(worktree, ".codex"),
+            ...lateDenied,
+          ],
+        }),
+  });
+}
 
 function realTempDir(): string {
   return realpathSync(useTempDir("tasker-codex-table-"));

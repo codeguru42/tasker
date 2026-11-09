@@ -9,7 +9,7 @@ import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "..
 import { codexArgs } from "./args.js";
 import { CODEX_NOT_INSTALLED, codexLoginCheck, codexVersionCheck } from "./doctor.js";
 import { type PlaceholderList, removePlaceholders } from "../placeholders.js";
-import { absentPlaceholders } from "./placeholders.js";
+import { prepareWritePlaceholders } from "./placeholders.js";
 import { EDIT_HOOK_SCRIPT, editHookCommand, editHookRefusal } from "./edit-hook.js";
 import { type CodexStreamFacts, readCodexStream, threadIdOf, usageTotalOf } from "./stream.js";
 
@@ -116,7 +116,7 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
       let placeholders: PlaceholderList | undefined;
       if (input.access === "workspace-write") {
         try {
-          placeholders = absentPlaceholders(input.cwd);
+          placeholders = prepareWritePlaceholders(input.cwd);
         } catch (error) {
           return failureWithNoExit(input, errorMessage(error));
         }

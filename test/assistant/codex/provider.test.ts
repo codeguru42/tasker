@@ -512,7 +512,12 @@ describe("createCodexProvider run: the execute role", () => {
         model: "haiku",
         effort: "low",
         writePaths: write(cwd),
-        denyRead: [herdrFolder(fake)],
+        denyRead: [
+          join(realpathSync(cwd), ".agents"),
+          join(realpathSync(cwd), ".aws"),
+          join(realpathSync(cwd), ".codex"),
+          herdrFolder(fake),
+        ],
         hookCommand,
       }),
     );
@@ -526,7 +531,12 @@ describe("createCodexProvider run: the execute role", () => {
         model: "haiku",
         effort: "low",
         writePaths: write(cwd),
-        denyRead: [herdrFolder(fake)],
+        denyRead: [
+          join(realpathSync(cwd), ".agents"),
+          join(realpathSync(cwd), ".aws"),
+          join(realpathSync(cwd), ".codex"),
+          herdrFolder(fake),
+        ],
         hookCommand,
         threadId: CODEX_THREAD_ID,
       }),
@@ -641,7 +651,9 @@ describe("createCodexProvider run: the execute role", () => {
 
     it.skipIf(process.getuid?.() === 0)("gives the error of a failed rmdir, and the kind stays success", async () => {
       const cwd = useTempDir("tasker-codex-cwd-");
-      const exec = node("require('fs').mkdirSync('.aws'); require('fs').chmodSync(process.cwd(), 0o555);");
+      const exec = node(
+        "require('fs').mkdirSync('.aws', { recursive: true }); require('fs').chmodSync(process.cwd(), 0o555);",
+      );
 
       try {
         const { outcome } = await executeRun({ stream: codexSample("plain"), exec }, { cwd });

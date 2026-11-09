@@ -76,11 +76,10 @@ describe("editHookAnswer", () => {
     expect(answer(patch("*** Update File: a.txt", "*** Move to: b.txt", "@@", "+x"))).toBe("");
   });
 
-  it("allows a relative path, an absolute path in the worktree and a path with a . part", () => {
+  it("allows a relative path and an absolute path in the worktree", () => {
     const { answer, wt } = setup();
     expect(answer(patch("*** Add File: sub/a.txt", "+x"))).toBe("");
     expect(answer(patch(`*** Add File: ${wt}/a.txt`, "+x"))).toBe("");
-    expect(answer(patch("*** Add File: ./sub/./a.txt", "+x"))).toBe("");
   });
 
   it("denies the input that is not JSON, the wrong event, another tool and a command that is not a string", () => {
@@ -248,9 +247,9 @@ describe("editHookAnswer", () => {
     expect(answer(patch("*** Add File: file/a.txt", "+x"))).toBe(denyLine(UNREADABLE("file/a.txt")));
   });
 
-  it("allows a path equal to the worktree", () => {
+  it("denies a path equal to the worktree because it has a . part", () => {
     const { answer } = setup();
-    expect(answer(patch("*** Add File: .", "+x"))).toBe("");
+    expect(answer(patch("*** Add File: .", "+x"))).toBe(denyLine(DOT(".")));
   });
 
   it("denies a path outside the worktree", () => {
