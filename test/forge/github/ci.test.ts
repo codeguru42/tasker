@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createGhSession } from "../../../src/github/forge-session.js";
+import type { GhSession } from "../../../src/github/forge-session.js";
 import { ciStatus } from "../../../src/forge/github/ci.js";
 import { diagnosticStrings, failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
@@ -363,6 +364,33 @@ describe("ciStatus", () => {
     expect((error.cause as Error & { stderr?: string }).stderr).toBe("HTTP 422: request failed with ***");
     expect(diagnosticStrings(error).join("\n")).not.toContain(token);
     fake.assertAnswered();
+  });
+
+  it("waits for other reads to finish before reporting a read failure", async () => {
+    const events: string[] = [];
+    const session: GhSession = {
+      run(args) {
+        const command = args.join(" ");
+        if (command.includes("/check-runs?")) {
+          return Promise.reject(
+            Object.assign(new Error("check runs failed"), { stderr: "HTTP 422: check runs failed" }),
+          );
+        }
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            events.push("read finished");
+            resolve(command.includes("/status?") ? '[{"statuses":[]}]' : '[{"workflow_runs":[]}]');
+          }, 20);
+        });
+      },
+    };
+
+    const error = await failureOf(callCiStatus(session, sha, "/tasker/cwd", {}), Error);
+    events.push("ciStatus rejected");
+
+    expect(events).toEqual(["read finished", "read finished", "ciStatus rejected"]);
+    expect(error.message).toContain("check runs");
+    expect(error.message).toContain("HTTP 422: check runs failed");
   });
 
   it("accepts empty successful workflow runs when another source passes", async () => {
