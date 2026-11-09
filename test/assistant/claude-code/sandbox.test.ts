@@ -13,7 +13,7 @@ import { useTempDir } from "../../helpers/temp.js";
 
 const limits = {
   allowWrite: ["/work/wt", "/work/clone/objects"],
-  denyRead: ["/home/test/key"],
+  denyRead: ["/home/test/key", "/home/test/.config/acli"],
   trackedPaths: async () => [] as string[],
   sharedFolder: "/work/clones/owner-repo/bare-repo",
 };
@@ -25,7 +25,10 @@ describe("sandboxSettings", () => {
         enabled: true,
         failIfUnavailable: true,
         allowUnsandboxedCommands: false,
-        filesystem: { allowWrite: ["/work/wt", "/work/clone/objects"], denyRead: ["/home/test/key"] },
+        filesystem: {
+          allowWrite: ["/work/wt", "/work/clone/objects"],
+          denyRead: ["/home/test/key", "/home/test/.config/acli"],
+        },
         network: { allowedDomains: ["*"], allowUnixSockets: ["/tmp/claude-1000"] },
       },
     });

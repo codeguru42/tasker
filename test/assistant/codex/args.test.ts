@@ -170,6 +170,18 @@ describe("codexArgs: the keys of the deny table", () => {
     expect(deny(["/tasker-no-such/path"])).toEqual(expected(["/tasker-no-such/path"]));
   });
 
+  it("keeps a missing acli login deny key", () => {
+    expect(deny(["/h/.config/acli"])).toEqual(expected(["/h/.config/acli"]));
+  });
+
+  it("uses the full real path for an existing acli login folder", () => {
+    const dir = realTempDir();
+    mkdirSync(join(dir, ".config", "acli"), { recursive: true });
+    const path = join(dir, ".config", "acli");
+
+    expect(deny([path])).toEqual(expected([path]));
+  });
+
   it("gives one key for a path that repeats", () => {
     expect(deny(["/h/x", "/h/x"])).toEqual(expected(["/h/x"]));
   });

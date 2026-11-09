@@ -49,6 +49,7 @@ import {
   withDataRootStore,
 } from "../helpers/store.js";
 import { type AssistantRunFixture, useAssistantRunFixture } from "../helpers/task-fixtures.js";
+import { sourceFiles } from "../helpers/source-scan.js";
 import { useTempDir } from "../helpers/temp.js";
 
 // The codex edit hook script has no built file under vitest, so the execute role of codex would refuse to run.
@@ -211,6 +212,7 @@ describe("sandboxReadDenyPaths", () => {
       "/h/.config/gh",
       "/h/.git-credentials",
       "/h/.netrc",
+      "/h/.config/acli",
       "/h/.claude/.credentials.json",
       "/h/.codex/auth.json",
       "/h/.pi/agent/auth.json",
@@ -229,6 +231,7 @@ describe("sandboxReadDenyPaths", () => {
       "/x/gh",
       "/h/.git-credentials",
       "/h/.netrc",
+      "/h/.config/acli",
       "/h/.claude/.credentials.json",
       "/h/.codex/auth.json",
       "/h/.pi/agent/auth.json",
@@ -244,6 +247,32 @@ describe("sandboxReadDenyPaths", () => {
     expect(ghEntry({ HOME: "/h", XDG_CONFIG_HOME: "/x", GH_CONFIG_DIR: "/g" })).toBe("/g");
     expect(ghEntry({ HOME: "/h", XDG_CONFIG_HOME: "/x" })).toBe("/x/gh");
     expect(ghEntry({ HOME: "/h" })).toBe("/h/.config/gh");
+  });
+
+  it("adds the acli login after .netrc from HOME only", () => {
+    const paths = denyPaths({ HOME: "/h" });
+    expect(paths[paths.indexOf("/h/.netrc") + 1]).toBe("/h/.config/acli");
+  });
+
+  it("uses HOME for the acli login when XDG_CONFIG_HOME is set", () => {
+    const paths = denyPaths({ HOME: "/h", XDG_CONFIG_HOME: "/x" });
+    expect(paths).toContain("/h/.config/acli");
+    expect(paths).not.toContain("/x/acli");
+  });
+
+  it.each([{}, { HOME: "  " }, { XDG_CONFIG_HOME: "/x" }])(
+    "does not add an acli path without a usable HOME: %j",
+    (env) => expect(denyPaths(env)).not.toContain(expect.stringMatching(/acli/i)),
+  );
+
+  it("makes an acli path from a relative HOME absolute against the tasker cwd", () => {
+    expect(denyPaths({ HOME: "rel/h" })).toContain(resolve(process.cwd(), "rel/h/.config/acli"));
+  });
+
+  it("keeps the acli login path out of assistant and prompt source", () => {
+    // Tasker runs acli outside assistant sandboxes.
+    const relevant = sourceFiles().filter(({ file }) => file.startsWith("assistant/") || file.startsWith("prompts/"));
+    expect(relevant.every(({ text }) => !/acli/i.test(text))).toBe(true);
   });
 
   it("takes the credentials of Claude Code from CLAUDE_CONFIG_DIR", () => {
@@ -269,6 +298,7 @@ describe("sandboxReadDenyPaths", () => {
       "/h/.config/gh",
       "/h/.git-credentials",
       "/h/.netrc",
+      "/h/.config/acli",
       "/h/.claude/.credentials.json",
       "/h/.codex/auth.json",
       "/pi/custom/auth.json",
@@ -379,6 +409,7 @@ describe("sandboxReadDenyPaths", () => {
       "/h/.config/gh",
       "/h/.git-credentials",
       "/h/.netrc",
+      "/h/.config/acli",
       "/h/.claude/.credentials.json",
       "/cx/auth.json",
       "/pi/auth.json",
