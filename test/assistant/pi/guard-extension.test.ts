@@ -1,3 +1,5 @@
+/* eslint @typescript-eslint/triple-slash-reference: off */
+/// <reference path="../../helpers/pi-bash-module.d.ts" />
 import * as fs from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -10,6 +12,7 @@ import type { GuardLimits } from "../../../src/assistant/pi/guard-limits.js";
 import guardExtension from "../../../src/assistant/pi/guard-extension.js";
 import { guardExtensionPath } from "../../../src/assistant/pi/guard-start.js";
 import * as bashCommandCheckModule from "../../../src/assistant/pi/bash-command-check.js";
+import { definitionCalls } from "@earendil-works/pi-coding-agent";
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
@@ -376,6 +379,58 @@ describe("guard extension limits validation", () => {
     invokeGuard(limitsArgs(path));
 
     expect(vi.mocked(fs.readFileSync).mock.calls.filter(([readPath]) => readPath === path)).toHaveLength(1);
+  });
+});
+
+describe("guard extension Bash registration", () => {
+  it("registers pi's Bash definition only for a sandbox and runs it sequentially", () => {
+    definitionCalls.length = 0;
+    const sandboxLimits = { ...validLimits(), sandbox: bashSandbox, tools: [...validLimits().tools, bashLimit] };
+    const fake = invokeGuard(limitsArgs(writeLimits(sandboxLimits)));
+    const bash = fake.pi.getAllTools().find(({ name }) => name === "bash");
+
+    expect(bash).toMatchObject({
+      name: "bash",
+      sourceInfo: { path: guardExtensionPath, source: "cli" },
+      executionMode: "sequential",
+    });
+    expect(definitionCalls).toHaveLength(1);
+    expect(definitionCalls[0].options).toHaveProperty("operations");
+    expect(definitionCalls[0].options).not.toHaveProperty("commandPrefix");
+    expect(definitionCalls[0].options).not.toHaveProperty("shellPath");
+    expect(definitionCalls[0].options).not.toHaveProperty("spawnHook");
+  });
+
+  it("does not register Bash when the limits have no sandbox", () => {
+    definitionCalls.length = 0;
+    const fake = invokeGuard(limitsArgs(writeLimits(validLimits())));
+
+    expect(fake.pi.getAllTools().some(({ name }) => name === "bash")).toBe(false);
+    expect(definitionCalls).toEqual([]);
+  });
+
+  it("checks the final command after a later handler changes it", async () => {
+    const root = useTempDir("tasker-guard-final-bash-");
+    const worktree = join(root, "worktree");
+    const tempFolder = join(root, "temp");
+    fs.mkdirSync(join(worktree, ".git"), { recursive: true });
+    fs.mkdirSync(tempFolder);
+    const limits = {
+      ...validLimits(),
+      cwd: worktree,
+      sandbox: { ...bashSandbox, worktree, tempFolder, bwrap: join(root, "must-not-run") },
+      tools: [...validLimits().tools, bashLimit],
+      deniedCommands: ["git push"],
+    };
+    const fake = invokeGuard(limitsArgs(writeLimits(limits)));
+    fake.pi.on("tool_call", (event) => {
+      const call = event as { toolName: string; input: { command: string } };
+      if (call.toolName === "bash") call.input.command = "git push";
+    });
+
+    await expect(fake.callTool("bash", { command: "git status" }, { cwd: worktree })).rejects.toThrow(
+      'tasker blocked this command: it runs "git push"',
+    );
   });
 });
 

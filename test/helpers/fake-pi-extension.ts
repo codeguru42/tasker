@@ -4,6 +4,7 @@ export interface FakePiTool {
   description?: string;
   parameters?: Record<string, unknown>;
   exposure?: "direct" | "model-only" | "codemode" | "deferred" | "hidden";
+  executionMode?: "parallel" | "sequential";
   sourceInfo: { path: string; source: string };
   execute(input: unknown, context: FakePiContext): unknown;
 }
@@ -112,7 +113,8 @@ export function useFakePiExtension(
       ...context,
       executeTool: (nestedName, nestedInput) => callTool(nestedName, nestedInput, context),
     };
-    const outcomes = await dispatch("tool_call", { toolName: name, input }, eventContext);
+    const event = { toolName: name, input };
+    const outcomes = await dispatch("tool_call", event, eventContext);
     const block = outcomes.find((outcome) => {
       return outcome !== null && typeof outcome === "object" && "block" in outcome && outcome.block === true;
     });
@@ -122,9 +124,9 @@ export function useFakePiExtension(
     if (!tool) throw new Error(`fake pi: unknown tool ${name}`);
     if (name === "submit_answer") {
       const execute = tool.execute.bind(tool);
-      return Reflect.apply(execute, undefined, ["fake-tool-call", input, undefined, undefined, eventContext]);
+      return Reflect.apply(execute, undefined, ["fake-tool-call", event.input, undefined, undefined, eventContext]);
     }
-    return tool.execute(input, eventContext);
+    return tool.execute(event.input, eventContext);
   };
 
   return {
