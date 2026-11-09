@@ -667,7 +667,27 @@ orchestrator.
   failed on it. The Write tool and the Edit tool of the execute session can write under `.claude/skills/`. Each other
   path under `.claude/` stays blocked for them, and the shell cannot write under `.claude/skills/` (see
   [the execute role](assistants.md#the-execute-role)). On #413, the Write tool refused
-  `.claude/skills/session-review/SKILL.md`, and the task failed in `executing`.
+  `.claude/skills/session-review/SKILL.md`, and the task failed in `executing`. For a Codex ticket that changes
+  canonical skill files, keep `.agents/` and `.codex/` protected. Ask Codex to record each request in a commit without
+  writing those worktree paths: write each file blob with `git hash-object -w --stdin`, stage a `100644` entry with
+  `git update-index --add --cacheinfo <mode>,<oid>,<path>`, and commit it. For a move, stage a removal and an addition;
+  for a delete, use `git update-index --force-remove -- <path>`. Before materializing any protected blob, tasker
+  re-encodes its decoded UTF-8 text and checks its Git object ID against the tree. If decoding invalid UTF-8 changes its
+  bytes, tasker refuses the request before any protected write; valid UTF-8 bytes, including U+FFFD, remain eligible.
+  Tasker allows a tracked legacy Claude-file move only when every starting file below `.claude/skills/` disappears, the
+  ending tree tracks `.claude/skills -> ../.agents/skills`, and each suffix appears under `.agents/skills/` with mode
+  `100644` and the same Git blob object. The worktree must already hold that exact Claude link. Tasker checks the old
+  paths in the Git trees and never reads or removes an old child through the new link. An unrelated or unmatched legacy
+  file makes tasker refuse the request. An existing canonical file must be regular and have no execute bits before
+  tasker edits or replays it, even if its bytes match the before or after blob. Tasker refuses an existing canonical
+  destination with multiple hard links during preflight, including when it matches the ending blob, and checks again
+  before each write or delete. After each write, tasker checks its bytes and makes sure that the file remains regular
+  with no execute bits. Request `.codex/skills` as a committed symlink entry with mode `120000` and target bytes
+  `../.agents/skills`. Tasker checks the committed entries and materializes only the approved files and exact link in
+  its managed worktree before execute reports success. A later execute run checks saved requests before it starts
+  another model. Do not add direct write keys for `.agents/` or `.codex/`. This staged route is unmeasured with the real
+  Codex sandbox; a separate approved built execute probe must measure it. Keep `.claude/skills` on its separate existing
+  worktree route. These Codex rules do not change the Claude Code limits above.
 - If two test helpers share a one-line rule, for example a PATH prefix, ask the plan to put the rule in one shared
   helper up front ([rules.md](rules.md#tests)). On #43, a new git wrapper helper copied the PATH rule of a sibling
   helper, and review 1 found the copy. The fix cost one loop.
