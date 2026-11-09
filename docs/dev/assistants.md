@@ -762,7 +762,7 @@ The reasons for the checks:
 - `pi` loads a skill of the worktree only with the trust of the project, and each run of tasker refuses that trust. So
   `simple-english:pi` does not look there.
 
-### The arguments
+### The arguments of pi
 
 For a new session, tasker runs `pi` with these arguments, in this order:
 
@@ -822,10 +822,10 @@ A run with a schema can end with no usable answer, because pi has no flag for a 
 answer is a value that passes the answer test. The answer test calls `RunInput.checkAnswer` on at most two candidates:
 the arguments of the last accepted call, then the text object. The first candidate that passes is the answer.
 
-A clean end with no usable answer can start a corrective turn, while the limit and the time of the run allow it. A clean
-end is defined in [the outcome](#the-outcome). A corrective turn is a pi process that continues the session of the run
-with a corrective prompt on stdin. The prompt names the problems and gives the schema again. The provider starts at most
-`assistant.correctiveTurns` corrective turns in one run.
+A clean end with no usable answer can start a corrective turn, while the limit and the time of the run allow it.
+[The outcome of pi](#the-outcome-of-pi) defines a clean end. A corrective turn is a pi process that continues the
+session of the run with a corrective prompt on stdin. The prompt names the problems and gives the schema again. The
+provider starts at most `assistant.correctiveTurns` corrective turns in one run.
 
 Each caller that sets `jsonSchema` also sets `checkAnswer`, as this table says:
 
@@ -861,7 +861,7 @@ Tasker records the file size before the run starts. If the stream has an `agent_
 recorded size. This keeps earlier messages out of the answer. When the file exists after the run starts, tasker returns
 its path as `transcriptPath`.
 
-### The outcome
+### The outcome of pi
 
 The pi provider runs only on Linux. It refuses a run that has an execute step. It runs its checks before it starts pi:
 the host, access mode, child environment, extension trust, continued-session file, injected extension files and, for a
