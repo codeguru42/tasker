@@ -1,10 +1,6 @@
-type JsonObject = Record<string, unknown>;
+import { isObject } from "../../object.js";
 
-function isJsonObject(value: unknown): value is JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function retryAfterValues(headers: JsonObject): string[] | undefined {
+function retryAfterValues(headers: Record<string, unknown>): string[] | undefined {
   const values = Object.entries(headers)
     .filter(([key]) => key.toLowerCase() === "retry-after")
     .map(([, value]) => value);
@@ -15,13 +11,13 @@ function retryAfterValues(headers: JsonObject): string[] | undefined {
 function parsedRetryAfter(body: string): string[] | undefined {
   try {
     const parsed: unknown = JSON.parse(body);
-    if (!isJsonObject(parsed)) return undefined;
+    if (!isObject(parsed)) return undefined;
     const metadata = Object.hasOwn(parsed, "metadata")
       ? parsed.metadata
-      : isJsonObject(parsed.error)
+      : isObject(parsed.error)
         ? parsed.error.metadata
         : undefined;
-    if (!isJsonObject(metadata) || !isJsonObject(metadata.headers)) return undefined;
+    if (!isObject(metadata) || !isObject(metadata.headers)) return undefined;
     return retryAfterValues(metadata.headers);
   } catch {
     const marker = /\.\.\. \[truncated [0-9]+ chars\]/.exec(body);
@@ -76,7 +72,7 @@ function resetTimeOf(value: string): number | undefined {
 }
 
 export function quotaStopOf(message: unknown): { resetsAt?: number } | undefined {
-  if (!isJsonObject(message) || message.role !== "assistant" || message.stopReason !== "error") return undefined;
+  if (!isObject(message) || message.role !== "assistant" || message.stopReason !== "error") return undefined;
   if (typeof message.errorMessage !== "string") return undefined;
   const match = /^(?:402: |402 )([\s\S]*)$/.exec(message.errorMessage);
   if (!match) return undefined;
