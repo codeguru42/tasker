@@ -899,6 +899,46 @@ parser of the ticket.
   The task subagent then ran 120 command lines against the built check, and the check did not block about half of them.
   The ticket took 9 reviews and 7 review loops. No one measured whether this hint prevents such a gap.
 
+- The input run is a run in which the task subagent passes its own inputs to the check in the task worktree. The task
+  subagent does the input run one time, after the first `tasker verify` that passes and before the first
+  `tasker review`. If the first `tasker review` already ran, the task subagent does no input run. Before the run, the
+  task subagent applies [the update rule](limits.md#the-update-rule). The run is a direct test in the task worktree, so
+  both install cases of [Limits](limits.md#limits) apply. If a step of the update rule or of the install fails, or the
+  run cannot start, the task subagent [stops](limits.md#the-answer-wait-rule).
+
+  Each input is a text that the task subagent expects the check to block or refuse. The inputs combine places of the
+  check with option forms. They also put one place of the check inside another, for example a command inside `$( )`
+  inside `if`. They also use forms that the issue does not name, for example a quote inside a word. The number of the
+  inputs and the choice of each input are open on purpose, and the task subagent makes them.
+
+  The inputs and each script of the run stay out of the task worktree. The reason: a new file in the task worktree stops
+  the next update rule at its step 4. The hint of [All tickets](#all-tickets) that starts "For
+  [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives their folder.
+
+  The run passes each input to the check as text, for example with a `.mts` script that the `tsx` of the task worktree
+  runs. The run never runs an input in a shell. The reason: an input can run a command that the check must block, for
+  example `git push`. An input that the check lets through is an input with no result in the form of a block or a
+  refuse. The issue gives that form, for example a result field or a named error. If the issue does not give that form,
+  the form of the Block rows of the table test applies.
+
+  If the check blocks or refuses each input, the task subagent runs `tasker review`, as step 5 of
+  [Run one ticket](run-one-ticket.md#run-one-ticket) says. Otherwise, it compares each input that the check lets through
+  with the Requirements of the issue. If the Requirements let such an input through, the input needs no work.
+
+  If the Requirements do not say whether the check must block such an input, the task subagent asks the orchestrator.
+  The sources bullet of [Limits](limits.md#limits) gives this ask. The task subagent asks before it adds the work, and
+  it waits for the answer, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. The reason: one run of the
+  add-work rule then covers each input.
+
+  Then the task subagent adds the work with [the add-work rule](run-one-ticket.md#the-add-work-rule). The feedback lists
+  each input that the check lets through but must block or refuse. It asks for a fix of the check and a Block row for
+  each such input. If no such input is left, the task subagent runs `tasker review`. It does no second input run. The
+  reason: the new Block rows run in each later `tasker verify`.
+
+  The reason for the input run: the table test holds only the inputs that the plan named. A check that misses an input
+  that combines or nests places of the check can still pass `tasker verify`. The bullet before this one gives the case
+  of #729, where such a run came only after review 1. No one measured whether this hint prevents such a gap.
+
 ## A ticket that adds an interface
 
 - Give the full export map and a table of the neutral names.
