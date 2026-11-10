@@ -236,7 +236,8 @@ todo in each turn of the execute session.
 
 The states are in a table, as [the rule of the `events` table](#events-table) says. A todo is in progress or done. A
 todo with no row is not started, so the table stores only the two other states. Only `tasker execute` writes a state,
-one turn at a time.
+one turn at a time. The todo done mark and its `todo_done` event share one transaction. A repeated completion keeps the
+first update time and adds no event.
 
 ## `execute_fix_turns` table
 
@@ -247,10 +248,42 @@ done. It gives the assistant the error of a failed verify run. `tasker retry --r
 These rules hold:
 
 - A revision has one fix turn at most. A new fix turn replaces the old one, also when the old one is done.
-- A row with no done time is a queued fix turn. Only a queued fix turn can be marked done. A second done mark on a done
-  fix turn is an error, and the first done time stays.
+- A row with no done time is a queued fix turn. Only a queued fix turn can change to done. A repeated completion keeps
+  the first done time and adds no `fix_turn_done` event.
 - The row holds the last lines of the log of the failed verify command. The sandbox of the run cannot read the data
   root, so the lines must travel in the row.
+
+## `protected_execute_turns` table
+
+The table holds the saved bounds and state of each execute turn. The key is the task, plan version, and turn id. The row
+stores the starting branch revision, the phase, the outcome, the ending revision when known, and the last update time.
+The turn id identifies the todo or fix turn.
+
+The phases are `started`, `succeeded`, `failed`, `interrupted`, and `complete`. Tasker writes `started` before it starts
+the assistant. A `started` row has no outcome or ending revision. If tasker stops in this phase, Git state cannot show
+whether the assistant returned `done` or failed. Recovery leaves the row and worktree unchanged, then refuses before
+another assistant starts, even when the branch changed.
+
+A row is `succeeded` only when the assistant process succeeds and tasker reads a validated `done` result. Tasker saves
+the ending revision and `succeeded` outcome before it checks or materializes protected changes. A blocked or missing
+result does not count as success. A failed or interrupted process keeps its outcome and starting revision; it does not
+cause immediate materialization. During later recovery, tasker can save an ending revision only after it validates the
+committed request against the saved start. After tasker checks and materializes the request, it marks the row
+`complete`.
+
+The table allows only one active (`started` or `succeeded`) turn for a task. Its checks require the phase and outcome to
+agree, and require an ending revision for success and completion. Schema version 24 adds this table and its active-turn
+index. The migration fills no rows.
+
+The `complete` phase does not prove that tasker saved the todo or fix-turn progress. Those writes follow protected
+request materialization, so a stop can leave a completed `succeeded` row with pending progress. Before another assistant
+starts, recovery checks that the saved ending revision still matches the task branch and worktree, then checks and
+materializes the protected request. It marks the pending todo or fix turn done once without running the assistant again.
+
+Recovery reads the saved columns, including the task, plan version, turn id, revisions, phase, and outcome. It does not
+infer a turn or its bounds from an event or assistant transcript. An unknown bound, a changed branch tip after a saved
+ending revision, or a request that fails validation leaves the row unfinished and prevents the next assistant turn.
+These records let tasker safely replay a checked request after a crash during materialization.
 
 ## `verify_runs` table
 
