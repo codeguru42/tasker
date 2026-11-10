@@ -4,7 +4,7 @@ declare module "@earendil-works/pi-coding-agent" {
     cwd: string,
     options: {
       operations: {
-        exec(command: string, cwd: string, options: { onData(data: string): void }): Promise<unknown>;
+        exec(command: string, cwd: string, options: { onData(data: Buffer): void; timeout?: number }): Promise<unknown>;
       };
       [key: string]: unknown;
     },

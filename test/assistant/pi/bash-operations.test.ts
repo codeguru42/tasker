@@ -6,14 +6,14 @@ import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 interface ExecOptions {
-  onData(data: string): void;
+  onData(data: Buffer): void;
   signal?: AbortSignal;
   timeout?: number;
   env?: NodeJS.ProcessEnv;
 }
 
 interface BashOperations {
-  exec(command: string, cwd: string, options: ExecOptions): Promise<number>;
+  exec(command: string, cwd: string, options: ExecOptions): Promise<{ exitCode: number }>;
 }
 
 async function operations(sandbox: PiSandboxLimits, deniedCommands: string[] = []): Promise<BashOperations> {
@@ -38,21 +38,34 @@ function setup() {
 }
 
 describe("createBashOperations", () => {
-  it("runs bwrap with the call cwd and env, forwards both streams, and returns the exit code", async () => {
-    const { worktree, sandbox, env, argsLog } = setup();
-    const chunks: string[] = [];
+  it("returns an exitCode and sends Buffer output", async () => {
+    const { worktree, sandbox, env } = setup();
+    const chunks: Buffer[] = [];
     const ops = await operations(sandbox);
 
-    const code = await ops.exec("printf out; printf err >&2; printf $TASKER_TEST_VALUE; pwd; exit 7", worktree, {
+    await expect(ops.exec("echo hi", worktree, { onData: (chunk) => chunks.push(chunk), env })).resolves.toEqual({
+      exitCode: 0,
+    });
+    expect(chunks.every((chunk) => Buffer.isBuffer(chunk))).toBe(true);
+    expect(Buffer.concat(chunks).toString()).toBe("hi\n");
+  });
+
+  it("runs bwrap with the call cwd and env, forwards both streams, and returns the exit code", async () => {
+    const { worktree, sandbox, env, argsLog } = setup();
+    const chunks: Buffer[] = [];
+    const ops = await operations(sandbox);
+
+    const result = await ops.exec("printf out; printf err >&2; printf $TASKER_TEST_VALUE; pwd; exit 7", worktree, {
       onData: (chunk) => chunks.push(chunk),
       env,
     });
 
-    expect(code).toBe(7);
-    expect(chunks.join("")).toContain("out");
-    expect(chunks.join("")).toContain("err");
-    expect(chunks.join("")).toContain("passed");
-    expect(chunks.join("")).toContain(worktree);
+    expect(result).toEqual({ exitCode: 7 });
+    expect(chunks.every((chunk) => Buffer.isBuffer(chunk))).toBe(true);
+    expect(Buffer.concat(chunks).toString()).toContain("out");
+    expect(Buffer.concat(chunks).toString()).toContain("err");
+    expect(Buffer.concat(chunks).toString()).toContain("passed");
+    expect(Buffer.concat(chunks).toString()).toContain(worktree);
     expect(readFileSync(argsLog, "utf8")).toContain(worktree);
   });
 
@@ -112,11 +125,27 @@ describe("createBashOperations", () => {
     await expect(
       ops.exec(`sleep 0.2; touch '${marker}'`, worktree, {
         onData: () => undefined,
-        timeout: 25,
+        timeout: 0.025,
         env,
       }),
-    ).rejects.toThrow("timeout:25");
+    ).rejects.toThrow("timeout:0.025");
     await new Promise((done) => setTimeout(done, 250));
+    expect(() => readFileSync(marker)).toThrow();
+  });
+
+  it("treats the pi timeout as seconds and stops the process group", async () => {
+    const { root, worktree, sandbox, env } = setup();
+    const marker = join(root, "after-one-second-timeout");
+    const ops = await operations(sandbox);
+    const started = Date.now();
+
+    await expect(
+      ops.exec(`sleep 3; touch '${marker}'`, worktree, { onData: () => undefined, timeout: 1, env }),
+    ).rejects.toThrow("timeout:1");
+    const elapsed = Date.now() - started;
+    expect(elapsed).toBeGreaterThanOrEqual(900);
+    expect(elapsed).toBeLessThan(2500);
+    await new Promise((done) => setTimeout(done, 100));
     expect(() => readFileSync(marker)).toThrow();
   });
 
@@ -125,6 +154,6 @@ describe("createBashOperations", () => {
     writeFileSync(sandbox.bwrap, "#!/bin/sh\nkill -TERM $$\n", { mode: 0o755 });
     const ops = await operations(sandbox);
 
-    await expect(ops.exec("true", worktree, { onData: () => undefined, env })).resolves.toBe(143);
+    await expect(ops.exec("true", worktree, { onData: () => undefined, env })).resolves.toEqual({ exitCode: 143 });
   });
 });
