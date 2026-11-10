@@ -249,7 +249,8 @@ todo in each turn of the execute session.
 
 The states are in a table, as [the rule of the `events` table](#events-table) says. A todo is in progress or done. A
 todo with no row is not started, so the table stores only the two other states. Only `tasker execute` writes a state,
-one turn at a time.
+one turn at a time. The todo done mark and its `todo_done` event share one transaction. A repeated completion keeps the
+first update time and adds no event.
 
 ## `execute_fix_turns` table
 
@@ -260,10 +261,45 @@ done. It gives the assistant the error of a failed verify run. `tasker retry --r
 These rules hold:
 
 - A revision has one fix turn at most. A new fix turn replaces the old one, also when the old one is done.
-- A row with no done time is a queued fix turn. Only a queued fix turn can be marked done. A second done mark on a done
-  fix turn is an error, and the first done time stays.
+- A row with no done time is a queued fix turn. Only a queued fix turn can change to done. A repeated completion keeps
+  the first done time and adds no `fix_turn_done` event.
 - The row holds the last lines of the log of the failed verify command. The sandbox of the run cannot read the data
   root, so the lines must travel in the row.
+
+## `protected_execute_turns` table
+
+The table holds the saved bounds and state of each execute turn. The key is the task, plan version, and turn id. The row
+stores the starting branch revision, the phase, the outcome, the ending revision when known, and the last update time.
+The turn id identifies the todo or fix turn.
+
+The phases are `started`, `succeeded`, `failed`, `interrupted`, and `complete`. Tasker writes `started` before it starts
+the assistant. A `started` row has no outcome or ending revision. If tasker stops in this phase, Git state cannot show
+whether the assistant returned `done` or failed. Recovery leaves the row and worktree unchanged, then refuses before
+another assistant starts, even when the branch changed.
+
+A row is `succeeded` only when the assistant process succeeds and tasker reads a validated `done` result. Tasker saves
+the ending revision and `succeeded` outcome before it checks or materializes protected changes. A blocked or missing
+result does not count as success. A failed or interrupted process never materializes a protected request. Tasker checks
+the ending revision, branch, index and changed paths. If a protected path changed, tasker refuses before it writes that
+path or starts another assistant. If no protected path changed, tasker records the ending revision and marks the row
+`complete` without marking todo or fix progress done. Retry, resume and continued runs perform this check before they
+start an assistant, including for a completed failed row.
+
+The table allows only one active (`started` or `succeeded`) turn for a task. Its checks require the phase and outcome to
+agree, and require an ending revision for success and completion. Schema version 27 adds this table and its active-turn
+index. The migration fills no rows.
+
+The `complete` phase does not prove that tasker saved todo or fix-turn progress. A `succeeded` row can be complete after
+materialization but before progress completion. A failed or interrupted row can be complete after validation when no
+protected path changed; its progress stays pending. Before another assistant starts, recovery checks that the saved
+ending revision still matches the task branch and worktree, then materializes the protected request for a `succeeded`
+row. If progress for a `succeeded` row is pending, recovery marks the todo or fix turn done once without running the
+assistant again.
+
+Recovery reads the saved columns, including the task, plan version, turn id, revisions, phase, and outcome. It does not
+infer a turn or its bounds from an event or assistant transcript. An unknown bound, a changed branch tip after a saved
+ending revision, or a request that fails validation leaves the row unfinished and prevents the next assistant turn.
+These records let tasker safely replay a checked request after a crash during materialization.
 
 ## `verify_runs` table
 
