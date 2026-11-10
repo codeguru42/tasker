@@ -7,6 +7,7 @@ import { sandboxArgs } from "./sandbox-args.js";
 import type { PiSandboxLimits } from "./guard-limits.js";
 import { sandboxPart } from "./sandbox-part.js";
 import { spawnPiBwrap } from "../../process/pi-bwrap.js";
+import { parseDbusAddress } from "./dbus-address.js";
 
 const PROBE_TIMEOUT_MS = 10_000;
 
@@ -22,8 +23,8 @@ export async function runSandboxPrecheck(
   const bwrap = findOnPath("bwrap", input.env);
   if (bwrap === undefined) return failed(input, "sandbox precheck failed: bwrap is not on PATH");
 
-  const dbusIssue = validateDbusAddress(input.env.DBUS_SESSION_BUS_ADDRESS);
-  if (dbusIssue !== undefined) return failed(input, dbusIssue);
+  const dbus = parseDbusAddress(input.env.DBUS_SESSION_BUS_ADDRESS);
+  if ("reason" in dbus) return failed(input, dbus.reason);
 
   let worktree: string;
   try {
@@ -44,19 +45,13 @@ export async function runSandboxPrecheck(
         return failed(input, `sandbox path precheck failed: ${errnoCode(error) ?? "unknown"}`);
       }
 
-      const hideValidation = sandboxArgs({ sandbox, cwd: worktree, command: "true", env: input.env });
+      const hideValidation = sandboxArgs({ sandbox, cwd: worktree, command: "true" });
       if ("reason" in hideValidation) return failed(input, hideValidation.reason);
 
-      const probeEnvForArgs = {
-        ...input.env,
-        SSH_AUTH_SOCK: undefined,
-        DBUS_SESSION_BUS_ADDRESS: undefined,
-      };
       const probe = sandboxArgs({
         sandbox: { ...sandbox, hidePaths: [] },
         cwd: worktree,
         command: "true",
-        env: probeEnvForArgs,
       });
       if ("reason" in probe) return failed(input, probe.reason);
 
@@ -83,23 +78,6 @@ export async function runSandboxPrecheck(
     },
     (error) => failed(input, `sandbox temp folder failed: ${errnoCode(error) ?? "unknown"}`),
   );
-}
-
-function validateDbusAddress(addresses: string | undefined): string | undefined {
-  if (addresses === undefined || addresses.trim() === "") return undefined;
-  for (const address of addresses.split(";")) {
-    const separator = address.indexOf(":");
-    const transport = separator < 0 ? address : address.slice(0, separator);
-    const fields = separator < 0 ? [] : address.slice(separator + 1).split(",");
-    const firstKey = fields[0]?.split("=", 1)[0] || "missing";
-    if (transport !== "unix") {
-      return `unsupported D-Bus address: transport ${transport || "unknown"}, key ${firstKey}`;
-    }
-    if (!fields.some((field) => field.split("=", 1)[0] === "path")) {
-      return `unsupported D-Bus address: transport unix, key ${firstKey}`;
-    }
-  }
-  return undefined;
 }
 
 function pathError(code: string): Error {

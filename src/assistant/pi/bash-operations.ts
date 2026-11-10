@@ -23,7 +23,7 @@ export function createBashOperations(sandbox: PiSandboxLimits, deniedCommands: r
         throw new Error("Invalid timeout: must be a finite number of seconds");
       }
       const env = options.env ?? process.env;
-      const built = sandboxArgs({ sandbox, cwd, command, env });
+      const built = sandboxArgs({ sandbox, cwd, command });
       if ("reason" in built) throw new Error(built.reason);
       const check = checkBashCommand(command, deniedCommands);
       if (check.block) throw new Error(check.reason);

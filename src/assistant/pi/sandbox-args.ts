@@ -8,7 +8,6 @@ export interface SandboxArgsInput {
   sandbox: PiSandboxLimits;
   cwd: string;
   command: string;
-  env: NodeJS.ProcessEnv;
 }
 
 export type SandboxArgsResult = { args: string[] } | { reason: string };
@@ -27,13 +26,6 @@ export function sandboxArgs(input: SandboxArgsInput): SandboxArgsResult {
     const gitPath = realPath(resolve(worktree, ".git"));
     const requiredWrites = [worktree, cwd, ...writePaths, tempFolder];
     const hidePaths = [...input.sandbox.hidePaths];
-    const sshAuthSock = input.env.SSH_AUTH_SOCK;
-    if (sshAuthSock !== undefined && sshAuthSock.trim() !== "") hidePaths.push(sshAuthSock);
-
-    const dbus = dbusSocketPaths(input.env.DBUS_SESSION_BUS_ADDRESS);
-    if ("reason" in dbus) return dbus;
-    hidePaths.push(...dbus.paths);
-
     const hides: HideMount[] = [];
     const seenHides = new Set<string>();
     for (const hidePath of hidePaths) {
@@ -95,28 +87,6 @@ function hideMount(path: string): HideMount | undefined {
   return targetStat.isDirectory()
     ? { args: ["--tmpfs", real], path: real }
     : { args: ["--ro-bind", "/dev/null", real], path: real };
-}
-
-function dbusSocketPaths(addresses: string | undefined): { paths: string[] } | { reason: string } {
-  if (addresses === undefined || addresses.trim() === "") return { paths: [] };
-  const paths: string[] = [];
-  for (const address of addresses.split(";")) {
-    const colon = address.indexOf(":");
-    const transport = colon < 0 ? address : address.slice(0, colon);
-    const fields = colon < 0 ? [] : address.slice(colon + 1).split(",");
-    if (transport !== "unix") return { reason: `unsupported D-Bus transport: ${transport || "unknown"}` };
-    const pathField = fields.find((field) => field.startsWith("path="));
-    if (pathField === undefined) {
-      const key = fields[0]?.split("=", 1)[0] || "missing";
-      return { reason: `unsupported D-Bus key: ${key}` };
-    }
-    try {
-      paths.push(decodeURIComponent(pathField.slice("path=".length)));
-    } catch {
-      return { reason: "invalid D-Bus path escape" };
-    }
-  }
-  return { paths };
 }
 
 function shellPath(): string {
