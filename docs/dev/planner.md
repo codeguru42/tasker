@@ -571,6 +571,22 @@ user with each finding that it dismissed. The initial planner posts only after t
   that no two rows match the same case. If two rows still match one case, the issue names the row that wins. On #346
   (2026-10-18), the rows "Diverged, no commit only on origin" and "Diverged, local work at risk" of the sync table both
   matched one case: a pushed and rebased branch with a new local commit.
+- An issue can ask for a new or changed guard or parser. This bullet uses the terms of
+  [A ticket that adds or changes a guard or a parser](first-refine.md#a-ticket-that-adds-or-changes-a-guard-or-a-parser)
+  of first-refine.md. These terms are a guard, a parser, the check, a place of the check, an option form, a table test
+  and a Block row. In this bullet, a guard is not the read before a write of the bullet that starts "An issue can give a
+  rule that lets a session do a write".
+
+  Before the post, the planner makes sure that such an issue gives a table test of the check. The table has one Block
+  row for each place of the check that the issue names. It also has one Block row for each option form of each option
+  that the issue names for the check. The table needs no row for each pair of a place and an option form. The hint that
+  starts "A place of the check is a part of the input" in the section of first-refine.md still applies in the first
+  refine of the ticket.
+
+  The reason: plan v1 sees only the issue and the repo, and the plan follows an exact table of the issue. So with this
+  rule, plan v1 already holds these rows before the first refine. The section of first-refine.md gives the case of #729
+  (2026-11-09), with its missing rows and its cost. No one measured whether this rule prevents such a gap.
+
 - An issue can give a rule with a time condition, for example "while X runs" or "after X ends". Before the post, the
   planner names at least these states of X in the issue: not started, running and ended. The issue says what the rule
   does in each state. On #440 (2026-10-25), the issue gave the states "still runs" and "has ended" of the orchestrator
