@@ -85,24 +85,23 @@ describe("runSandboxPrecheck", () => {
   });
 
   it.each([
-    ["unix:abstract=SECRET_VALUE", "unix", "abstract"],
-    ["tcp:host=SECRET_VALUE,port=5", "tcp", "host"],
-    ["unix:unknown=SECRET_VALUE", "unix", "unknown"],
-  ])("refuses unsupported D-Bus entry %s without exposing its value", async (address, transport, key) => {
+    ["unix:abstract=SECRET_VALUE", "unsupported D-Bus key: abstract"],
+    ["tcp:host=SECRET_VALUE,port=5", "unsupported D-Bus transport: tcp"],
+    ["unix:path=/tmp/%Q0", "invalid D-Bus path escape"],
+  ])("refuses invalid D-Bus entry %s before start", async (address, expectedReason) => {
     const { input } = setup();
     input.env.DBUS_SESSION_BUS_ADDRESS = address;
 
     const result = await run(input, noStart());
 
     expect(result.kind).toBe("failure");
-    expect(reasonOf(result)).toContain(transport);
-    expect(reasonOf(result)).toContain(key);
+    expect(reasonOf(result)).toBe(expectedReason);
     expect(reasonOf(result)).not.toContain("SECRET_VALUE");
   });
 
-  it("accepts a Unix D-Bus path and reaches the start callback after a successful probe", async () => {
+  it("passes a decoded Unix D-Bus path to start after a successful probe", async () => {
     const { input, worktree, tempRoot } = setup();
-    input.env.DBUS_SESSION_BUS_ADDRESS = "unix:path=/tmp/no-such-session-bus";
+    input.env.DBUS_SESSION_BUS_ADDRESS = "unix:path=/tmp/no%20such%20session%20bus";
     let seen: PiSandboxLimits | undefined;
 
     const result = await run(input, async (sandbox) => {
@@ -117,6 +116,7 @@ describe("runSandboxPrecheck", () => {
       worktree,
       tempFolder: expect.stringContaining(tempRoot),
       writePaths: [join(worktree, "write")],
+      hidePaths: expect.arrayContaining(["/tmp/no such session bus"]),
     });
   });
 

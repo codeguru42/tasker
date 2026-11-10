@@ -235,8 +235,8 @@ describe("sandboxArgs", () => {
     const server = createServer();
     await new Promise<void>((done) => server.listen(first, done));
     symlinkSync(first, link);
-    sandbox.hidePaths = [];
-    const env = { SSH_AUTH_SOCK: link };
+    sandbox.hidePaths = [link];
+    const env = {};
     const args = await argsFor({ sandbox, cwd: worktree, command: "true", env });
     await new Promise<void>((done) => server.close(() => done()));
     const next = createServer();
@@ -255,9 +255,11 @@ describe("sandboxArgs", () => {
     const { root, worktree, sandbox } = setup();
     const missing = join(root, "missing-agent");
     sandbox.hidePaths = [];
+    sandbox.hidePaths = [missing];
     const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: { SSH_AUTH_SOCK: missing } });
     const loop = join(root, "agent-loop");
     symlinkSync(loop, loop);
+    sandbox.hidePaths = [loop];
     const blocked = await sandboxArgs({ sandbox, cwd: worktree, command: "true", env: { SSH_AUTH_SOCK: loop } });
 
     expect(args).not.toContain(missing);
@@ -265,35 +267,33 @@ describe("sandboxArgs", () => {
     expect(JSON.stringify(blocked)).not.toContain(loop);
   });
 
-  it("decodes D-Bus path escapes and rejects abstract or network addresses", async () => {
+  it("hides D-Bus paths supplied by the sandbox", async () => {
     const { root, worktree, sandbox } = setup();
     const socketPath = join(root, "dbus path");
     mkdirSync(socketPath);
-    const escaped = encodeURIComponent(socketPath).replaceAll("%2F", "/");
+    sandbox.hidePaths = [socketPath];
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
+
+    expect(args).toContain(socketPath);
+  });
+
+  it("does not add environment socket paths to an empty hide list", async () => {
+    const { root, worktree, sandbox } = setup();
+    const ssh = join(root, "ssh-agent");
+    const dbus = join(root, "dbus.sock");
+    mkdirSync(ssh);
+    mkdirSync(dbus);
+    sandbox.hidePaths = [];
+
     const args = await argsFor({
       sandbox,
       cwd: worktree,
       command: "true",
-      env: { DBUS_SESSION_BUS_ADDRESS: `unix:path=${escaped}` },
-    });
-    const abstract = await sandboxArgs({
-      sandbox,
-      cwd: worktree,
-      command: "true",
-      env: { DBUS_SESSION_BUS_ADDRESS: "unix:abstract=bus" },
-    });
-    const network = await sandboxArgs({
-      sandbox,
-      cwd: worktree,
-      command: "true",
-      env: { DBUS_SESSION_BUS_ADDRESS: "tcp:host=example" },
+      env: { SSH_AUTH_SOCK: ssh, DBUS_SESSION_BUS_ADDRESS: `unix:path=${dbus}` },
     });
 
-    expect(args).toContain(socketPath);
-    expect(abstract).toHaveProperty("reason");
-    expect(network).toHaveProperty("reason");
-    expect(JSON.stringify([abstract, network])).not.toContain("example");
-    expect(JSON.stringify([abstract, network])).not.toContain("bus");
+    expect(args).not.toContain(ssh);
+    expect(args).not.toContain(dbus);
   });
 
   it("does not mount an unset or blank optional hide source", async () => {

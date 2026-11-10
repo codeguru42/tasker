@@ -138,7 +138,7 @@ describe("guardLimits", () => {
       env: {
         XDG_CONFIG_HOME: "/x",
         SSH_AUTH_SOCK: "/s",
-        DBUS_SESSION_BUS_ADDRESS: "unix:path=/tmp/a%2Cb",
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/tmp/a%2Cb;unix:path=/tmp/two",
         XDG_RUNTIME_DIR: "rel/run",
       },
       sandbox: {
@@ -154,7 +154,7 @@ describe("guardLimits", () => {
       worktree: realpathSync(worktree),
       writePaths: [realpathSync(writePath)],
       tempFolder: realpathSync(tempFolder),
-      hidePaths: ["/deny/raw", "/x/herdr", "/s", "/tmp/a,b", resolve("rel/run"), "/var/run/docker.sock"],
+      hidePaths: ["/deny/raw", "/x/herdr", "/s", "/tmp/a,b", "/tmp/two", resolve("rel/run"), "/var/run/docker.sock"],
     });
   });
 
