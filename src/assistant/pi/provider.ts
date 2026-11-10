@@ -23,26 +23,12 @@ import { piNotInstalled, piProgram } from "./program.js";
 import { piMessages } from "./stream.js";
 import { guardExtensionPath } from "./guard-start.js";
 import { quotaStopOf } from "./quota.js";
-
-type Failure = Extract<RunOutcome, { kind: "failure" }>;
+import { failed, type Failure } from "./failure.js";
 
 const DEFAULT_FILES: PiFiles = {
   guardFile: guardExtensionPath,
   answerFile: fileURLToPath(new URL("./answer-extension.js", import.meta.url)),
 };
-
-function failed(input: RunInput, reason: string): Failure {
-  return {
-    kind: "failure",
-    sessionId: input.sessionId,
-    events: [],
-    permissionDenials: [],
-    usage: "unavailable",
-    exitCode: null,
-    signal: null,
-    reason,
-  };
-}
 
 function isFile(path: string): boolean {
   try {

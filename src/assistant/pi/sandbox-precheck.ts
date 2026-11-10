@@ -8,6 +8,7 @@ import type { PiSandboxLimits } from "./guard-limits.js";
 import { sandboxPart } from "./sandbox-part.js";
 import { spawnPiBwrap } from "../../process/pi-bwrap.js";
 import { parseDbusAddress } from "./dbus-address.js";
+import { failed } from "./failure.js";
 
 const PROBE_TIMEOUT_MS = 10_000;
 
@@ -82,17 +83,4 @@ export async function runSandboxPrecheck(
 
 function pathError(code: string): Error {
   return Object.assign(new Error("invalid path"), { code });
-}
-
-function failed(input: RunInput, reason: string): Extract<RunOutcome, { kind: "failure" }> {
-  return {
-    kind: "failure",
-    sessionId: input.sessionId,
-    events: [],
-    permissionDenials: [],
-    usage: "unavailable",
-    exitCode: null,
-    signal: null,
-    reason,
-  };
 }

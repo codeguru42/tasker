@@ -3,10 +3,10 @@ import { join } from "node:path";
 import type { RunOutcome } from "../provider.js";
 import { errnoCode } from "../../errno.js";
 import { childTempRoot } from "../shared-sandbox-paths.js";
+import type { Failure } from "./failure.js";
 
-type FailureOutcome = Extract<RunOutcome, { kind: "failure" }>;
 type StartFunction = (tempFolder: string, markSpawned: () => void) => Promise<RunOutcome>;
-type FailureFunction = (error: unknown) => FailureOutcome;
+type FailureFunction = (error: unknown) => Failure;
 type RemoveTempFolder = (tempFolder: string) => void;
 
 export async function runWithStartTemp(
