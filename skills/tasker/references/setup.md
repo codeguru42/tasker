@@ -28,8 +28,8 @@ The command runs these checks one at a time, in this order:
   `baseBranchFieldName`.
 - Once for each assistant provider that the configuration uses, in the order of first use: the checks of the provider.
   For `claude-code`, this is `claude version`, and on Linux also `sandbox: bwrap` and `sandbox: socat`. For `codex`,
-  these are `codex version` and `codex login`. For `pi`, these are `pi version`, `pi-auth:<upstream>` for each upstream,
-  `superpowers:pi` and `simple-english:pi`.
+  these are `codex version` and `codex login`. For `pi`, these are `pi version`, on Linux also `sandbox: bwrap`,
+  `pi-auth:<upstream>` for each upstream, `superpowers:pi` and `simple-english:pi`.
 
 The command prints one line for each check, with the status (`ok`, `warn` or `error`), the name and the first line of
 the detail. The other lines of the detail and the remediation follow with an indent. The command prints the lines of a
