@@ -7,7 +7,7 @@ import { errnoCode } from "../errno.js";
 export interface PiBwrapOptions {
   cwd: string;
   env: NodeJS.ProcessEnv;
-  onData(data: string): void;
+  onData(data: Buffer): void;
   signal?: AbortSignal;
   timeout?: number;
 }
@@ -56,8 +56,12 @@ export function spawnPiBwrap(program: string, args: readonly string[], options: 
     };
     const abort = () => stop("abort");
 
-    child.stdout?.on("data", (chunk: Buffer | string) => options.onData(chunk.toString()));
-    child.stderr?.on("data", (chunk: Buffer | string) => options.onData(chunk.toString()));
+    child.stdout?.on("data", (chunk: Buffer | string) =>
+      options.onData(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+    );
+    child.stderr?.on("data", (chunk: Buffer | string) =>
+      options.onData(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+    );
     child.once("error", (error) => {
       cleanup();
       reject(

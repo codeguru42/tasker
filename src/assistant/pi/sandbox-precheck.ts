@@ -67,7 +67,7 @@ export async function runSandboxPrecheck(
           cwd: worktree,
           env: input.env,
           onData: (chunk) => {
-            stderr += chunk;
+            stderr += chunk.toString();
           },
           timeout: options.probeTimeoutMs ?? PROBE_TIMEOUT_MS,
         });

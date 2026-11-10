@@ -4,12 +4,12 @@ declare module "@earendil-works/pi-coding-agent" {
       command: string,
       cwd: string,
       options: {
-        onData(data: string): void;
+        onData(data: Buffer): void;
         signal?: AbortSignal;
         timeout?: number;
         env?: NodeJS.ProcessEnv;
       },
-    ): Promise<number>;
+    ): Promise<{ exitCode: number | null }>;
   }
 
   export interface BashToolDefinition {
