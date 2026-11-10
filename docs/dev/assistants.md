@@ -1341,10 +1341,36 @@ ran.
 - `pi --help` lists built-in tools `read`, `bash`, `powershell`, `edit`, `write`, `grep`, `find` and `ls`.
 - `shellPath` and `shellCommandPrefix` in `docs/settings.md` apply to pi's built-in shell.
 
+A probe on 2026-11-09 ran pi 1.1.0 with a faux provider (no model call), the built guard extension with sandbox limits,
+bubblewrap 0.12.0 and a scratch git repository. It found the contract of the `bash` operations of pi, which pi 1.1.0
+expects:
+
+- `onData` takes a `Buffer`. The output accumulator of pi decodes it with a streaming `TextDecoder`. A string made pi
+  exit with code 1 and a `TypeError`.
+- `exec` resolves `{ exitCode }`, not a number. A number made the tool print `Command exited with code undefined`.
+- `timeout` is a number of seconds. pi throws `timeout:<timeout>` with that value. A value used as milliseconds killed a
+  command with `timeout: 5` after 5 ms.
+
+With the fixes, the probe gave these results:
+
+- A write in the worktree works. A write outside the write paths fails with `Read-only file system`.
+- A read of a path on the hide list fails with `Permission denied`. A connect to a socket behind a link on the hide list
+  fails with `ConnectionRefusedError`.
+- A background job `sleep 31 &` ends with the call. `git status` works. A command that the guard denies, such as
+  `git push`, gets the reason of the guard and does not start.
+- `{"command":"sleep 32 & sleep 5","timeout":2}` ended after 2008 ms with `Command timed out after 2 seconds`, and no
+  `sleep 32` stayed on the host.
+- A command that prints 3000 lines, and one that prints 3000 and 70000 multibyte characters, gave the right counts.
+  `TMPDIR` was the temp folder of the start, and `mktemp` made its file there. A command with `exit 7` gave
+  `Command exited with code 7`.
+- The calls of one message ran one after the other.
+
+The probe made no real model call, and it did not test abort.
+
 Nobody measured these cases:
 
 - A host where `bwrap` cannot start.
-- A real pi run with tasker's `bash` tool.
+- A real pi run with a real model and tasker's `bash` tool.
 - The effect of hiding the session bus and `XDG_RUNTIME_DIR` on a real command.
 - Whether the CI runner has `bwrap`.
 
