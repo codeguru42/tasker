@@ -10,7 +10,7 @@ interface SandboxArgsInput {
   sandbox: PiSandboxLimits;
   cwd: string;
   command: string;
-  env: NodeJS.ProcessEnv;
+  env?: NodeJS.ProcessEnv;
 }
 
 type SandboxArgsResult = { args: string[] } | { reason: string };
@@ -61,7 +61,7 @@ describe("sandboxArgs", () => {
     sandbox.hidePaths = [hideDir, hideFile];
     const command = "printf safe";
 
-    const args = await argsFor({ sandbox, cwd: worktree, command, env: {} });
+    const args = await argsFor({ sandbox, cwd: worktree, command });
 
     expect(args).toEqual([
       "--ro-bind",
@@ -122,7 +122,7 @@ describe("sandboxArgs", () => {
     const { worktree, sandbox } = setup();
     sandbox.hidePaths = [choosePath(sandbox, worktree)];
 
-    const result = await sandboxArgs({ sandbox, cwd: worktree, command: "true", env: {} });
+    const result = await sandboxArgs({ sandbox, cwd: worktree, command: "true" });
 
     expect(result).toHaveProperty("reason");
     expect("reason" in result ? result.reason : "").not.toContain(sandbox.hidePaths[0]);
@@ -136,7 +136,7 @@ describe("sandboxArgs", () => {
     mkdirSync(beside);
     sandbox.hidePaths = [nested, beside];
 
-    const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true" });
 
     expect(hideIndex(args, "--tmpfs", nested)).toBeGreaterThan(args.indexOf(write));
     expect(hideIndex(args, "--tmpfs", beside)).toBeGreaterThan(args.indexOf(write));
@@ -156,7 +156,7 @@ describe("sandboxArgs", () => {
     mkdirSync(path);
     sandbox.hidePaths = [path];
 
-    const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true" });
 
     expect(args).toContain("--tmpfs");
     expect(args).toContain(path);
@@ -168,7 +168,7 @@ describe("sandboxArgs", () => {
     if (code === "ENOTDIR") writeFileSync(notDirectory, "file");
     sandbox.hidePaths = [code === "ENOENT" ? "/missing/tasker-hide" : join(notDirectory, "child")];
 
-    const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true" });
 
     expect(args).not.toContain(sandbox.hidePaths[0]);
   });
@@ -185,7 +185,7 @@ describe("sandboxArgs", () => {
     symlinkSync(targetFile, fileLink);
     sandbox.hidePaths = [dirLink, fileLink];
 
-    const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true" });
 
     expect(hideIndex(args, "--tmpfs", targetDir)).toBeGreaterThan(-1);
     expect(hideIndex(args, "--ro-bind", "/dev/null")).toBeGreaterThan(-1);
@@ -201,7 +201,7 @@ describe("sandboxArgs", () => {
     expect(created.status).toBe(0);
     sandbox.hidePaths = [pipe];
 
-    const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true" });
 
     expect(hideIndex(args, "--ro-bind", "/dev/null")).toBeGreaterThan(-1);
     expect(args).toContain(pipe);
@@ -217,9 +217,9 @@ describe("sandboxArgs", () => {
     symlinkSync(loopA, loopB);
     sandbox.hidePaths = [dangling];
 
-    const omitted = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
+    const omitted = await argsFor({ sandbox, cwd: worktree, command: "true" });
     sandbox.hidePaths = [loopA];
-    const blocked = await sandboxArgs({ sandbox, cwd: worktree, command: "true", env: {} });
+    const blocked = await sandboxArgs({ sandbox, cwd: worktree, command: "true" });
 
     expect(omitted).not.toContain(dangling);
     expect(blocked).toHaveProperty("reason");
@@ -256,11 +256,11 @@ describe("sandboxArgs", () => {
     const missing = join(root, "missing-agent");
     sandbox.hidePaths = [];
     sandbox.hidePaths = [missing];
-    const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: { SSH_AUTH_SOCK: missing } });
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true" });
     const loop = join(root, "agent-loop");
     symlinkSync(loop, loop);
     sandbox.hidePaths = [loop];
-    const blocked = await sandboxArgs({ sandbox, cwd: worktree, command: "true", env: { SSH_AUTH_SOCK: loop } });
+    const blocked = await sandboxArgs({ sandbox, cwd: worktree, command: "true" });
 
     expect(args).not.toContain(missing);
     expect(JSON.stringify(blocked)).toContain("ELOOP");
@@ -272,7 +272,7 @@ describe("sandboxArgs", () => {
     const socketPath = join(root, "dbus path");
     mkdirSync(socketPath);
     sandbox.hidePaths = [socketPath];
-    const args = await argsFor({ sandbox, cwd: worktree, command: "true", env: {} });
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true" });
 
     expect(args).toContain(socketPath);
   });
@@ -302,13 +302,6 @@ describe("sandboxArgs", () => {
       sandbox,
       cwd: worktree,
       command: "true",
-      env: {
-        SSH_AUTH_SOCK: "",
-        DBUS_SESSION_BUS_ADDRESS: "",
-        XDG_RUNTIME_DIR: "",
-        XDG_CONFIG_HOME: "",
-        HOME: "",
-      },
     });
 
     expect(args).not.toContain("--tmpfs");
