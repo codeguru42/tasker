@@ -132,10 +132,8 @@ The orchestrator does all the steps of this section.
 - If a task in flight that changes the file of a moving ticket is far from landing, for example in
   `awaiting_plan_review`, the orchestrator asks the user. The user decides whether the orchestrator waits or starts the
   moving ticket now. The orchestrator follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
-  If the user answers "start now", the orchestrator sets a landing order between the moving ticket and that task in
-  flight, as [Land the work](land-the-work.md#land-the-work) says. [The Docs rule](land-the-work.md#the-docs-rule)
-  covers the moving ticket and a task in flight of another milestone, as that rule defines it. For such a task, the
-  orchestrator sets no landing order.
+  If the user answers "start now", [the overlap rule](land-the-work.md#the-overlap-rule) says whether the moving ticket
+  and that task in flight get a landing order.
 - When a ticket starts, the orchestrator moves its card to In progress, with the move command of
   [The project board](issues.md#the-project-board). `tasker start` does not move the card. The board moves the card to
   Done when `tasker finish` closes the issue.
