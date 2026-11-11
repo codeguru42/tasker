@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { RepoConfig } from "../../src/config/schema.js";
-import { trackerTargets } from "../../src/tasks/tracker-write.js";
+import { runTrackerWrite, trackerTargets } from "../../src/tasks/tracker-write.js";
+import { withDataRootStore, eventsOf } from "../helpers/store.js";
+import { captureIo } from "../helpers/cli.js";
+import { useAcceptedTask } from "../helpers/task-fixtures.js";
 
 const ALL_KEYS = {
   inProgressLabel: "in progress",
@@ -41,5 +44,51 @@ describe("trackerTargets", () => {
   it("gives undefined when no review target is set", () => {
     expect((targetsOf("github") as Record<string, unknown>).review).toBeUndefined();
     expect((targetsOf("jira") as Record<string, unknown>).review).toBeUndefined();
+  });
+});
+
+describe("runTrackerWrite", () => {
+  it("returns true for a passed write and false for a failed write", async () => {
+    const fixture = await useAcceptedTask();
+    const io = captureIo();
+    const before = eventsOf(fixture.dataRoot, fixture.key).length;
+    const success = await withDataRootStore(fixture.dataRoot, (store) => {
+      const result = runTrackerWrite(
+        store,
+        fixture.task.id,
+        {
+          action: "done",
+          text: `mark ${fixture.key} for review`,
+          success: `marked ${fixture.key} for review`,
+          run: async () => {},
+        },
+        io,
+      );
+      return result as unknown as Promise<boolean>;
+    });
+    const failed = await withDataRootStore(fixture.dataRoot, (store) => {
+      const result = runTrackerWrite(
+        store,
+        fixture.task.id,
+        {
+          action: "done",
+          text: `mark ${fixture.key} for review`,
+          success: `marked ${fixture.key} for review`,
+          run: async () => {
+            throw new Error("denied");
+          },
+        },
+        io,
+      );
+      return result as unknown as Promise<boolean>;
+    });
+    expect(success).toBe(true);
+    expect(failed).toBe(false);
+    expect(eventsOf(fixture.dataRoot, fixture.key).slice(before)).toMatchObject([
+      { type: "tracker_update", data: { action: "done", result: "ok" } },
+      { type: "tracker_update", data: { action: "done", result: "failed", error: "denied" } },
+    ]);
+    expect(io.out.join("")).toBe(`marked ${fixture.key} for review\n`);
+    expect(io.err.join("")).toContain(`warning: cannot mark ${fixture.key} for review on the tracker: denied\n`);
   });
 });
