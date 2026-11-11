@@ -31,6 +31,13 @@ Run `tasker show-config --repo <key>` to print one repo.
 
 If the configuration is invalid, the command prints the errors from the "Errors" section and exits with code 1.
 
+Run `tasker show-config-schema` to print configuration schema entries as a JSON array. It reads no configuration file,
+so it works when the file is missing or invalid.
+
+Use `<key>` for a repo key and `<name>` for a tracker name, for example `repos.<key>.forge` or
+`trackers.<name>.provider`. Give a path to print its entry and all entries below it. A real repo or tracker key is not
+accepted.
+
 ## Top level
 
 | Key                    | Type            | Default                | Notes                                                                                                                                                                                              |
