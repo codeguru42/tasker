@@ -56,6 +56,67 @@ describe("skills/tasker/SKILL.md", () => {
     expect(readSkill().split("$ARGUMENTS").length - 1).toBe(1);
   });
 
+  it("keeps command chaining disabled by default", () => {
+    const section = runCommandSection().replace(/\s+/g, " ");
+    expect(section).toContain(
+      "Do not run a next command. The output can name one, for example in a `next:` line. Give that command to the user.",
+    );
+  });
+
+  it("allows chaining only when the user opts in", () => {
+    const section = runCommandSection().replace(/\s+/g, " ");
+    expect(section).toContain(
+      "If the user explicitly opts in to chaining in the current request or a standing instruction",
+    );
+  });
+
+  it("uses a separate tasker show call after each successful command", () => {
+    const section = runCommandSection().replace(/\s+/g, " ");
+    expect(section).toContain("run `tasker show <issue>` in a separate shell call");
+    expect(section).toContain("Read its `next:` line");
+  });
+
+  it("uses the plain form of each chained command", () => {
+    const section = runCommandSection().replace(/\s+/g, " ");
+    expect(section).toContain("Each chained call has the form `tasker <command> <issue key>`");
+    expect(section).toContain("with the first command's issue key and no added option");
+    expect(section).toContain("Never choose from `also:`");
+  });
+
+  it("reports every tasker call", () => {
+    const section = runCommandSection().replace(/\s+/g, " ");
+    expect(section).toContain("report each call's exit code, stdout, and stderr");
+    expect(section).toContain("including each `tasker show` call");
+  });
+
+  it("stops when a command exits with a nonzero code", () => {
+    expect(runCommandSection().replace(/\s+/g, " ")).toContain("Stop when a command exits with a code other than 0");
+  });
+
+  it("stops when the user's command takes no issue key or is read-only show", () => {
+    expect(runCommandSection().replace(/\s+/g, " ")).toContain(
+      "Stop when the user's command takes no issue key or is a read-only show command",
+    );
+  });
+
+  it("stops when tasker show has no next line", () => {
+    expect(runCommandSection().replace(/\s+/g, " ")).toContain("Stop when `tasker show` prints no `next:` line");
+  });
+
+  it("stops before approve-credits", () => {
+    expect(runCommandSection().replace(/\s+/g, " ")).toContain("when the next command is `approve-credits`");
+  });
+
+  it("stops when the next step needs the user's content", () => {
+    expect(runCommandSection().replace(/\s+/g, " ")).toContain("when the next step needs the user's own content");
+  });
+
+  it("reports a commands line without choosing a command", () => {
+    expect(runCommandSection().replace(/\s+/g, " ")).toContain(
+      "A `commands:` line gives choices and has no `next:` line",
+    );
+  });
+
   it("lists the request and the folder of each assistant", () => {
     const heading = "The command line in each assistant:\n\n";
     const section = runCommandSection();
