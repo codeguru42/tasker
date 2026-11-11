@@ -46,8 +46,9 @@ non-zero code.
 tasker reads one configuration file. It reads `$TASKER_CONFIG`. If that is not set, it reads
 `$XDG_CONFIG_HOME/tasker/config.json`. If that is not set, it reads `$HOME/.config/tasker/config.json`.
 
-See the [configuration reference](docs/config.md) for the keys. Run `tasker show-config` to see the configuration with
-the defaults filled in. Run `tasker doctor` to make sure that the machine is set up.
+Run `tasker show-config-schema` to find configuration keys, types, accepted values, defaults and descriptions. See the
+[configuration reference](docs/config.md) for details. Run `tasker show-config` to see the configuration with the
+defaults filled in. Run `tasker doctor` to make sure that the machine is set up.
 
 ## Quick start
 
