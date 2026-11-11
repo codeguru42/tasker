@@ -108,23 +108,26 @@ describe("tasker mark-landed", () => {
     expectMarkedFrom(["pushing", "pushed", "opening_pr", "in_peer_review"], "in_peer_review"));
 
   it("marks a failed opening-pr task landed without Git or forge calls", async () => {
-    const fixture = await useStartFixture();
-    seedTasks(fixture.dataRoot, [
-      {
-        issueKey: KEY,
-        repoKey: REPO,
-        state: "opening_pr",
-        at: "2026-01-01T00:00:00.000Z",
-        failWith: "forge unavailable",
-      },
-    ]);
-    const before = eventsOf(fixture.dataRoot, KEY);
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => {
+      moveTaskThrough(store, accepted.task.id, ["pushing", "pushed", "opening_pr"]);
+      failTask(store, accepted.task.id, "forge unavailable");
+    });
+    const recorder = gitRecorderEnv(accepted.origin.dir, process.env);
+    useProcessEnv(recorder.env);
+    const claude = useFakeClaudeOnPath({});
+    const before = eventsOf(accepted.dataRoot, KEY);
+    const gitCalls = readArgLog(recorder.log);
+    const ghCalls = accepted.gh.calls();
 
     const result = await runMarkLanded();
 
     expect(result).toEqual({ code: 0, out: `marked ${KEY} landed\n`, err: "" });
-    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("landed");
-    expect(eventsOf(fixture.dataRoot, KEY).slice(before.length)).toEqual([
+    expect(readArgLog(recorder.log)).toEqual(gitCalls);
+    expect(accepted.gh.calls()).toEqual(ghCalls);
+    expectNoAssistantRun({ claude, started: { dataRoot: accepted.dataRoot } });
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("landed");
+    expect(eventsOf(accepted.dataRoot, KEY).slice(before.length)).toEqual([
       { type: "marked_landed", data: { from: "failed", to: "landed" } },
     ]);
   });

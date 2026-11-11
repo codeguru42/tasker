@@ -3,6 +3,7 @@ import { showLines } from "../state/commands.js";
 import { formatFindings } from "../review/findings-text.js";
 import {
   transitionFromEvents,
+  failedFrom,
   lastTransitionError,
   pauseRecordOf,
   type PauseRecord,
@@ -110,7 +111,7 @@ function formatTask(store: TaskStore, task: Task, clone: string): string {
     );
   }
   fields.push(...pauseFields(events, task.state));
-  const commandLines = showLines(task.state, task.issueKey)
+  const commandLines = showLines(task.state, task.issueKey, failedFrom(store, task.id))
     .map((line) => `${line}\n`)
     .join("");
   return formatFields(fields) + commandLines + todoProgress(store, task.id) + reviewFindings(store, task);

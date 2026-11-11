@@ -1,8 +1,8 @@
 import type { IssueRef } from "../issue-key/ref.js";
-import { transitionWithMarkedLanding } from "../state/machine.js";
+import { failedFrom, transitionWithMarkedLanding } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
 import type { TaskStore } from "../store/store.js";
-import { taskInState } from "./task-state.js";
+import { taskById, taskInState } from "./task-state.js";
 
 export interface MarkLandedRequest {
   ref: IssueRef;
@@ -20,7 +20,11 @@ export async function markLandedTask(store: TaskStore, request: MarkLandedReques
 }
 
 function markLandedLocked(store: TaskStore, request: MarkLandedRequest): MarkedLanded {
-  const task = taskInState(store, request.taskId, "mark-landed");
+  const found = taskById(store, request.taskId);
+  const task =
+    found.state === "failed" && failedFrom(store, found.id) === "opening_pr"
+      ? found
+      : taskInState(store, request.taskId, "mark-landed");
   transitionWithMarkedLanding(store, task.id);
   return { issueKey: task.issueKey };
 }

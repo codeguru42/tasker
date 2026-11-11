@@ -94,12 +94,16 @@ function renderAll(commands: readonly TaskCommand[], issueKey: string): string {
 }
 
 // The lines that tasker show prints after the fields, and tasker update-branch prints after the state. No row gives no line.
-export function showLines(state: string, issueKey: string): string[] {
+export function showLines(state: string, issueKey: string, failureOrigin?: string): string[] {
   const row = stateCommands(state);
   if (row === undefined) return [];
   const { primary, others } = splitRow(row);
-  if (primary === undefined) return [`commands: ${renderAll(others, issueKey)}`];
-  return [`next: ${render(primary, issueKey)}`, `also: ${renderAll(others, issueKey)}`];
+  const shownOthers =
+    state === "failed" && failureOrigin === "opening_pr"
+      ? [...others.slice(0, -1), "mark-landed" as const, ...others.slice(-1)]
+      : others;
+  if (primary === undefined) return [`commands: ${renderAll(shownOthers, issueKey)}`];
+  return [`next: ${render(primary, issueKey)}`, `also: ${renderAll(shownOthers, issueKey)}`];
 }
 
 // The NEXT cell of tasker status. No row gives an empty string.

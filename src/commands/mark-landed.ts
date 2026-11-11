@@ -12,7 +12,7 @@ export const markLanded: RegisterCommand = (program, io) => {
   program
     .command("mark-landed")
     .description(
-      "Declare that work in accepted, pushed or in_peer_review landed. This command makes no Git or forge calls",
+      "Declare that work in accepted, pushed or in_peer_review landed, or mark a task landed after opening_pr failed. This command makes no Git or forge calls",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)

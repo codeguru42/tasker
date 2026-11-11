@@ -165,6 +165,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
     "in_peer_review",
     "refining",
     "pushed",
+    "landed",
     "updating_branch",
   ],
   cancelled: [],
