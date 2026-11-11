@@ -6,9 +6,9 @@ These commands land the work on the base branch, record a landing that happened 
 
 ## `tasker reopen`
 
-Starts a new plan for a task in `accepted` or `pushed`: `tasker reopen <issue> <feedback> [--repo <key>]`. The feedback
-is required and must not be blank. Use it to say what bug was found after acceptance and what the new complete plan must
-do. The command continues the recorded plan session.
+Starts a new plan for a task in `accepted`, `pushed` or `in_peer_review`:
+`tasker reopen <issue> <feedback> [--repo <key>]`. The feedback is required and must not be blank. Use it to describe
+the issue and the changes that the new complete plan must cover. The command continues the recorded plan session.
 
 Before it starts, the task must have a branch, worktree, stored base, latest complete plan revision and recorded plan
 session. The base guard must pass. The worktree must be clean, on the stored task branch, and at the same HEAD as that
@@ -30,7 +30,11 @@ state: awaiting_plan_review
 ```
 
 The revision does not approve or publish the changed work. Approve it, execute it, verify it, review it and accept it
-before another push or other publication. Reopen keeps the accepted revision, published revision and any PR record.
+before another push or publication. Reopen keeps the accepted revision, published revision and PR number.
+
+If the task had an open PR, `tasker push` updates the same task branch after acceptance. It uses the saved published
+revision as the lease for that update. Then `tasker open-pr` finds and adopts the still-open PR for the branch. The PR
+number stays the same, and tasker returns the task to `in_peer_review`.
 
 Before the task enters `refining`, a refusal exits with code 1 and writes no task or worktree changes. The error names
 the failed guard. It can report blank feedback, a missing branch, worktree, base, plan revision or plan session, a dirty
