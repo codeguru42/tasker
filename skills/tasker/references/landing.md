@@ -126,6 +126,26 @@ adopted PR #<number>: <url>
 state: in_peer_review
 ```
 
+If the repo sets `issueTracker.reviewLabel` for GitHub or `issueTracker.reviewStatus` for Jira, tasker updates the issue
+after it records the PR and moves the task to `in_peer_review`. The review target is optional. For GitHub, when
+`updateOnStart` is true and `inProgressLabel` is set, a successful review-label add is followed by a marker clear. Jira
+makes no marker-clear call. Successful tracker lines appear before the PR and state lines. For example:
+
+```text
+marked the review label <label> to <issue key> for review on the tracker
+cleared the in-progress marker of <issue key> on the tracker
+opened PR #<number>: <url>
+state: in_peer_review
+```
+
+For an adopted PR, the third line starts with `adopted PR` instead of `opened PR`. For Jira, the review line is
+`marked <issue key> to the status "<status>" for review on the tracker`; no marker-clear line follows it.
+
+If the review write fails, tasker prints a warning to stderr and still exits with code 0. The PR stays open, and the
+task stays in `in_peer_review`. A failed GitHub review-label add keeps the in-progress marker and prevents the clear
+step. A failed marker removal also warns; both labels can remain on the issue. The warning names the failed target or
+marker step. Tasker does not retry these writes directly after it has moved the task to `in_peer_review`.
+
 The PR number, `pr_opened` event and move to `in_peer_review` share one database transaction. The task stores the PR
 number for later use. A later push keeps that number and moves the task to `pushed`. Running `tasker open-pr` then
 adopts the same open PR again without changing its title or body.
