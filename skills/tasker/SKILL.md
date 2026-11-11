@@ -85,7 +85,8 @@ After a command, it is an option of that command.
 tasker reads one configuration file. It reads `$TASKER_CONFIG`. If that is not set, it reads
 `$XDG_CONFIG_HOME/tasker/config.json`. If that is not set, it reads `$HOME/.config/tasker/config.json`.
 
-See `docs/config.md` for the keys.
+Run `tasker show-config-schema` to find configuration keys, types, accepted values, defaults and descriptions. Do not
+read `docs/config.md` or installed tasker package code to find these details.
 
 ## Issue keys
 
