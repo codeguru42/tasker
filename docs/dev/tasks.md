@@ -745,6 +745,13 @@ Lookup precedes creation so recovery adopts a PR that tasker created before its 
 The PR number and state share one transaction so `in_peer_review` always has its PR record. See
 [the tasks table](data-root.md#tasks-table) for storage rules.
 
+After that transaction, `tasker open-pr` makes the optional review write from `issueTracker.reviewLabel` (`github`) or
+`issueTracker.reviewStatus` (`jira`). After a successful GitHub review-label add, tasker removes the in-progress marker
+when `updateOnStart` is true and `inProgressLabel` is set. The add must pass first because the marker protects the issue
+against a second start. Jira makes no clear call. A failed review write or marker removal warns; it does not undo the PR
+record or the move to `in_peer_review`. A failed add keeps the marker, while a failed clear can leave both labels.
+`tasker open-pr` still exits with code 0 after either tracker write fails.
+
 The [landing reference](../../skills/tasker/references/landing.md#tasker-open-pr) gives the state path, output, failures
 and publication cycle.
 
