@@ -36,6 +36,15 @@ The command runs these checks one at a time, in this order:
 - Once for each version control provider that the configuration uses, in the order of first use: the checks of the
   provider. For `git`, `git version` runs once, and the identity, connection and lock-file checks then run for each
   repo, in the order of the configuration.
+- For each repo, `tracker config: <repo key>` checks enabled tracker writes for missing targets. These read-only checks
+  run after the version control checks and before the issue tracker checks. The command prints one `warn` for each
+  missing target. For a start target, the detail says that start skips the in-progress write and names the full
+  configuration key, for example `repos.tasker.issueTracker.inProgressLabel` for GitHub or
+  `repos.tasker.issueTracker.inProgressStatus` for Jira.
+- A missing GitHub `doneLabel` also gets a warning when `updateOnFinish` is `true`. The detail says that finish closes
+  the issue as completed. This is the GitHub fallback when no done label is set. A missing Jira `doneStatus` warning
+  says that finish cannot move the issue to a done status and its tracker write will warn. The warning names the full
+  configuration key, for example `repos.tasker.issueTracker.doneStatus`.
 - Once for each issue tracker that the configuration uses, in the order of first use: the checks of the tracker. For
   `github`, `gh version` runs once, `gh auth` runs once for each account, and the project and label checks run for each
   repo. For `jira`, `acli auth` runs once, and `jira token: <repo key>` runs for each repo that sets
