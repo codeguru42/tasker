@@ -42,6 +42,18 @@ If the command line of the user is not empty, follow these rules:
 4. After the run, give the user the exit code, and stdout and stderr as tasker printed them. Do not shorten an error.
 5. Do not run a next command. The output can name one, for example in a `next:` line. Give that command to the user.
 
+   If the user explicitly opts in to chaining in the current request or a standing instruction, such as a memory note or
+   `CLAUDE.md`, you can run the next tasker command. After the first command succeeds, run `tasker show <issue>` in a
+   separate shell call. Read its `next:` line, then run that command in another shell call. After each successful task
+   command, repeat the `tasker show` call. Each chained call has the form `tasker <command> <issue key>`, with the first
+   command's issue key and no added option. Never choose from `also:`.
+
+   Stop when a command exits with a code other than 0, including a `tasker show` call. Stop when the user's command
+   takes no issue key or is a read-only show command. Stop when `tasker show` prints no `next:` line, when the next
+   command is `approve-credits`, or when the next step needs the user's own content. A `commands:` line gives choices
+   and has no `next:` line. At each stop, report the `next:` or `commands:` line if tasker printed one. Report each
+   call's exit code, stdout, and stderr, including each `tasker show` call.
+
 For the command line of the user, these rules win over the rule "Use only the commands that this skill lists" of
 [Rules](#rules). tasker itself reports an unknown command.
 

@@ -85,7 +85,7 @@ describe("skills/tasker/SKILL.md", () => {
 
   it("reports every tasker call", () => {
     const section = runCommandSection().replace(/\s+/g, " ");
-    expect(section).toContain("report each call's exit code, stdout, and stderr");
+    expect(section).toContain("each call's exit code, stdout, and stderr");
     expect(section).toContain("including each `tasker show` call");
   });
 
