@@ -328,7 +328,8 @@ prints its warning, still moves the task to `cancelled` and exits with code 0.
 For a GitHub repo, the tracker step runs only when `issueTracker.updateOnStart` is `true`, the repo sets
 `inProgressLabel`, and this task added the label at its start. It removes the in-progress label and prints
 `cleared the in-progress marker of <issue> on the tracker` when the call succeeds. If the call fails, stderr gets
-`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`.
+`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. A passed `tasker open-pr` clear ends
+this task's ownership of the marker, so a later abort skips the remove call.
 
 For a Jira repo, the step runs only when `issueTracker.updateOnStart` is `true` and the repo sets `abortStatus`. This
 task must also have marked the issue in progress. The command moves the issue to that status and prints
