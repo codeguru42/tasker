@@ -80,6 +80,29 @@ describe("a Jira repo", () => {
     ]);
   });
 
+  it("warns when Jira has no in-progress status and still assigns the issue", async () => {
+    const { dataRoot, acli } = await useJiraTask({ inProgressStatus: undefined });
+
+    const { code, out, err } = await runCommand(start, "start", "TEST-5");
+
+    expect(code).toBe(0);
+    expect(err).toBe(
+      "tasker saved main as the default base branch of codeguru42/tasker.\n" +
+        "warning: did not mark TEST-5 in progress: issueTracker.inProgressStatus is not set\n",
+    );
+    expect(out).toContain("assigned TEST-5 to @me on the tracker\n");
+    expect(argsOf(acli)).toEqual([
+      AUTH_STATUS_ARGS,
+      issueViewArgs("TEST-5"),
+      AUTH_STATUS_ARGS,
+      linksViewArgs("TEST-5"),
+      AUTH_STATUS_ARGS,
+      assignArgs("TEST-5", "@me"),
+    ]);
+    expect(eventDataOf(dataRoot, "TEST-5", "tracker_update")).toEqual([{ action: "assign", result: "ok" }]);
+    expect(latestTaskOf(dataRoot, "TEST-5").trackerMarked).toBe(false);
+  });
+
   it("tasker finish moves the issue to the done status", async () => {
     const { dataRoot, acli } = await useJiraTask();
     await runCommand(start, "start", "TEST-5");
