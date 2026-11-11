@@ -106,11 +106,14 @@ and the notes of the base step.
 If `issueTracker.updateOnStart` is `true`, start assigns the issue. When an in-progress target is set, start also marks
 the issue in progress after the task reaches `workspace_ready`. Each tracker write records a `tracker_update` event. The
 data is `{ action, result }` when the write works, and `{ action, result: "failed", error }` when it fails. The value of
-`action` is `assign`, `in_progress`, `clear_in_progress`, `done` or `abort`.
+`action` is `assign`, `in_progress`, `clear_in_progress`, `done`, `abort` or `review`.
 
 When no in-progress target is set, start skips the in-progress write and prints
 `warning: did not mark <issue> in progress: issueTracker.<key> is not set` on stderr. The command still exits with code
 0 and records no `tracker_update` event with `action: in_progress`. The assignment write still records its event.
+
+Open-pr writes `review` when the repo sets a review target. It can also write `clear_in_progress` after a successful
+GitHub review-label add. See [Open PR](#open-pr) for the rules.
 
 The abort also makes a tracker write. If `issueTracker.updateOnStart` is `true`, the repo sets the in-progress label,
 and this GitHub task has `tracker_marked` set, it removes the marker with the action `clear_in_progress`. A failed write
@@ -747,10 +750,11 @@ The PR number and state share one transaction so `in_peer_review` always has its
 
 After that transaction, `tasker open-pr` makes the optional review write from `issueTracker.reviewLabel` (`github`) or
 `issueTracker.reviewStatus` (`jira`). After a successful GitHub review-label add, tasker removes the in-progress marker
-when `updateOnStart` is true and `inProgressLabel` is set. The add must pass first because the marker protects the issue
-against a second start. Jira makes no clear call. A failed review write or marker removal warns; it does not undo the PR
-record or the move to `in_peer_review`. A failed add keeps the marker, while a failed clear can leave both labels.
-`tasker open-pr` still exits with code 0 after either tracker write fails.
+when `updateOnStart` is true and `inProgressLabel` is set. It skips the clear when the label names match, including a
+case-only difference, because GitHub treats those names as equal. The add must pass first because the marker protects
+the issue against a second start. Jira makes no clear call. A failed review write or marker removal warns. It does not
+undo the PR record or the move to `in_peer_review`. A failed add keeps the marker, while a failed clear can leave both
+labels. `tasker open-pr` still exits with code 0 after either tracker write fails.
 
 The [landing reference](../../skills/tasker/references/landing.md#tasker-open-pr) gives the state path, output, failures
 and publication cycle.
