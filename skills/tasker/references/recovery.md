@@ -112,9 +112,9 @@ and the command writes no task data or event. The shared errors of no task, of
 - The task failed in `merging`, but `merge_origin` is NULL or is not `accepted` or `in_peer_review`. Retry makes no move
   and reports
   `the task of <issue key> has no valid stored merge origin; use tasker mark-landed to record an external landing`. The
-  hint names [`tasker mark-landed`](landing.md#tasker-mark-landed), which also accepts `failed` only when its latest
-  valid failure origin is `opening_pr`. A failure from `merging` does not qualify. Only `tasker show` lists
-  `mark-landed` for this failure origin.
+  hint names [`tasker mark-landed`](landing.md#tasker-mark-landed), which also accepts a task in `failed` whose last
+  failure came from `opening_pr`. A failure from `merging` does not qualify. Only `tasker show` lists `mark-landed` for
+  this failure origin.
 - You gave `--resume-execute` for a task that did not fail in `verifying`. The error is
   `--resume-execute applies only to a task that failed in verifying`.
 - The repo lock is busy, or Git cannot restore the saved reopen head. Retry leaves the task in `failed` and keeps
@@ -193,8 +193,8 @@ read the state and the `next:` or `commands:` line that it prints. Run a command
 For a merge recovery, resume reads the task's stored `merge_origin` value. It accepts only `accepted` and
 `in_peer_review`. A NULL value or any other value makes resume stop without a move. It reports
 `the task of <issue key> has no valid stored merge origin; use tasker mark-landed to record an external landing`. The
-hint names [`tasker mark-landed`](landing.md#tasker-mark-landed), which also accepts `failed` only when its latest valid
-failure origin is `opening_pr`. An interrupted task does not qualify.
+hint names [`tasker mark-landed`](landing.md#tasker-mark-landed), which also accepts a task in `failed` whose last
+failure came from `opening_pr`. An interrupted task does not qualify.
 
 The first PR status check detects a merge that completed before the stop, so resume does not request it again. See
 [`tasker merge`](landing.md#tasker-merge) for the PR merge checks and results.
