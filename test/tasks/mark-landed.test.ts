@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { markLandedTask } from "../../src/tasks/mark-landed.js";
 import type { TaskStore } from "../../src/store/store.js";
@@ -28,6 +28,18 @@ const callMarkLanded = (fixture: AcceptedTask, store: TaskStore, taskId = fixtur
   });
 
 describe("markLandedTask", () => {
+  it("reads an accepted task once", async () => {
+    const accepted = await useAcceptedTask();
+
+    await withDataRootStore(accepted.dataRoot, async (store) => {
+      const getTask = vi.spyOn(store, "getTask");
+
+      await callMarkLanded(accepted, store);
+
+      expect(getTask).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("marks landed while the repo lock is busy", async () => {
     const accepted = await useAcceptedTask();
     await landAcceptedTask(accepted);
