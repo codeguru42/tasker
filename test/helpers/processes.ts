@@ -1,10 +1,11 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { join } from "node:path";
 import { onTestFinished } from "vitest";
 import { errnoCode } from "../../src/errno.js";
 import type { LockAttempt } from "../../src/store/locks.js";
 import { useDefaultConfigHome } from "./config.js";
+import { pathWithFirst } from "./fake-commands.js";
 
 // The repo root, for spawn tests that need it as cwd.
 export const repoRoot = new URL("../..", import.meta.url);
@@ -97,7 +98,7 @@ export function spawnTasker(
   });
 }
 
-// Runs tasker with PATH and HOME defaults for GitHub forge tests.
+// Runs src/main.ts with a child environment containing only PATH and HOME. Its configuration is at the default path under HOME.
 export async function spawnTaskerWithPathAndHome(
   args: readonly string[],
   configPath: string,
@@ -107,7 +108,7 @@ export async function spawnTaskerWithPathAndHome(
   path: string;
   home: string;
 }> {
-  const path = [firstPath, process.env.PATH].filter((part): part is string => part !== undefined).join(delimiter);
+  const path = pathWithFirst(firstPath, process.env);
   const home = useDefaultConfigHome(configPath);
   const result = await spawnTasker(args, { PATH: path, HOME: home }, { replaceEnv: true });
   return { result, path, home };

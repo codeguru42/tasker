@@ -1,10 +1,11 @@
 import { spawn, spawnSync } from "node:child_process";
 import { rmSync, writeFileSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { join } from "node:path";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { useProcessEnv, useTempDir } from "./temp.js";
 import { validConfig, writeTempConfig } from "./config.js";
 import { withRawDatabase } from "./store.js";
+import { pathWithFirst } from "./fake-commands.js";
 import { loadConfig } from "../../src/config/load.js";
 import {
   deadPid,
@@ -259,9 +260,7 @@ describe("spawnTasker", () => {
     const { result, path, home } = await spawnTaskerWithPathAndHome(["show-config"], written.path, firstPath);
 
     expect(result.code).toBe(0);
-    expect(path).toBe(
-      [firstPath, process.env.PATH].filter((part): part is string => part !== undefined).join(delimiter),
-    );
+    expect(path).toBe(pathWithFirst(firstPath, process.env));
     expect(home).not.toBe(process.env.HOME);
     expect(JSON.parse(result.stdout)).toEqual(loadConfig({}, home));
   });
