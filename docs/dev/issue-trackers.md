@@ -128,7 +128,7 @@ create it.
 If that add succeeds, tasker removes `issueTracker.inProgressLabel` when `updateOnStart` is true, the marker label is
 set and the task added the marker (`tracker_marked`). If both labels have the same name, tasker leaves the review label
 in place. GitHub label names are equal without regard to case, so this also applies when the names differ only in letter
-case. Tasker adds the review label first because the in-progress marker protects the issue from another start. If the
+case. tasker adds the review label first because the in-progress marker protects the issue from another start. If the
 add fails, tasker warns and leaves the marker. If the marker removal fails, tasker warns and both labels can remain.
 Neither failure changes the recorded PR or the task state.
 
