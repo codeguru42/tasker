@@ -69,9 +69,7 @@ describe("skills/tasker/SKILL.md", () => {
 
   it("allows chaining only when the user opts in", () => {
     const section = runCommandText();
-    expect(section).toContain(
-      "If the user explicitly opts in to chaining in the current request or a standing instruction",
-    );
+    expect(section).toContain("It can be in the current request or in a standing instruction");
   });
 
   it("uses a separate tasker show call after each successful command", () => {
@@ -82,11 +80,9 @@ describe("skills/tasker/SKILL.md", () => {
 
   it("uses the plain form of each chained command", () => {
     const section = runCommandText();
-    expect(section).toContain("Each chained call has the form `tasker <command> <issue key>`");
-    expect(section).toContain(
-      "If the user's first command has `--repo <key>`, carry that option and value into every later call",
-    );
-    expect(section).toContain("including `tasker show`");
+    expect(section).toContain("Each later call has the form `tasker <command> <issue key>`");
+    expect(section).toContain("as `--repo <key>` or as `--repo=<key>`");
+    expect(section).toContain("Keep that option and its value in every later call");
     expect(section).toContain("Never choose from `also:`");
   });
 
