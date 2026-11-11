@@ -8,6 +8,17 @@ import type { TaskState } from "../../src/state/machine.js";
 import { repoLockName, taskLockName } from "../../src/store/locks.js";
 import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
+import {
+  acliWriteResult,
+  assignArgs,
+  AUTH_STATUS_ARGS,
+  BACKLOG_ISSUE_VIEW,
+  fakeAcli,
+  issueViewArgs,
+  linksViewArgs,
+  MEASURED_AUTH_STATUS,
+  NO_LINKS_VIEW,
+} from "../helpers/fake-acli.js";
 import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
 import {
   blockerReadCalls,
@@ -38,10 +49,26 @@ import {
   trackerRepo,
   useStartFixture,
 } from "../helpers/task-fixtures.js";
-import { useTempDir, writeFileWithParents } from "../helpers/temp.js";
+import { useProcessEnv, useTempDir, writeFileWithParents } from "../helpers/temp.js";
 
 const KEY = "codeguru42/tasker#5";
 const PROJECT = "codeguru42/tasker";
+
+async function useJiraStartFixture() {
+  const fixture = await useStartFixture({
+    repo: {
+      issueTracker: { provider: "jira", project: "TEST", updateOnStart: true, updateOnFinish: false },
+    },
+  });
+  const acli = fakeAcli(useTempDir("tasker-jira-start-"), {}, [
+    { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
+    { args: issueViewArgs("TEST-5"), stdout: BACKLOG_ISSUE_VIEW },
+    { args: linksViewArgs("TEST-5"), stdout: NO_LINKS_VIEW },
+    { args: assignArgs("TEST-5", "@me"), stdout: acliWriteResult("SUCCESS", "assigned") },
+  ]);
+  useProcessEnv({ TASKER_ACLI_BIN: String(acli.env.TASKER_ACLI_BIN) });
+  return { ...fixture, acli };
+}
 
 // Makes sure that the task failed in provisioning with an error, and that stderr holds the notes
 // that came before the error, then that error.
@@ -594,6 +621,7 @@ describe("start", () => {
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
+      expect(result.err).toBe("tasker saved main as the default base branch of codeguru42/tasker.\n");
       expect(result.out).toBe(fieldLines(fixture.dataRoot));
       expect(trackerWriteCalls(fixture.gh)).toEqual([]);
       expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([]);
@@ -608,6 +636,7 @@ describe("start", () => {
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
+      expect(result.err).toBe("tasker saved main as the default base branch of codeguru42/tasker.\n");
       expect(result.out).toBe(
         `${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\nmarked ${KEY} in progress on the tracker\n`,
       );
@@ -667,9 +696,38 @@ describe("start", () => {
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
+      expect(result.err).toBe(
+        "warning: did not mark codeguru42/tasker#5 in progress: issueTracker.inProgressLabel is not set\n",
+      );
       expect(result.out).toBe(`${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\n`);
       expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("assign")]);
       expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([{ action: "assign", result: "ok" }]);
+      expect(
+        eventsOf(fixture.dataRoot, KEY).some(
+          (event) => event.type === "tracker_update" && (event.data as { action?: string }).action === "in_progress",
+        ),
+      ).toBe(false);
+      expect(latestTaskOf(fixture.dataRoot, KEY).trackerMarked).toBe(false);
+    });
+
+    it("warns when Jira has no in-progress status and still assigns the issue", async () => {
+      const fixture = await useJiraStartFixture();
+
+      const result = await runCommand(start, "start", "TEST-5");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe("warning: did not mark TEST-5 in progress: issueTracker.inProgressStatus is not set\n");
+      expect(result.out).toContain("assigned TEST-5 to @me on the tracker\n");
+      expect(fixture.acli.calls().map((call) => call.args)).toEqual([
+        AUTH_STATUS_ARGS,
+        issueViewArgs("TEST-5"),
+        AUTH_STATUS_ARGS,
+        linksViewArgs("TEST-5"),
+        AUTH_STATUS_ARGS,
+        assignArgs("TEST-5", "@me"),
+      ]);
+      expect(eventDataOf(fixture.dataRoot, "TEST-5", "tracker_update")).toEqual([{ action: "assign", result: "ok" }]);
+      expect(latestTaskOf(fixture.dataRoot, "TEST-5").trackerMarked).toBe(false);
     });
 
     it("warns for each failed write, exits with 0 and keeps the task in workspace_ready", async () => {
