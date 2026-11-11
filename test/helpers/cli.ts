@@ -34,19 +34,23 @@ export const greet: RegisterCommand = (program) => {
   program.command("greet").description("Say hello").option("--name <name>", "Who to greet");
 };
 
-// Runs argv with only this command and gives the exit code and the whole stdout and stderr.
+// Runs argv with these commands and gives the exit code and the whole stdout and stderr.
 export async function runCommand(
-  command: RegisterCommand,
+  command: RegisterCommand | readonly RegisterCommand[],
   ...argv: string[]
 ): Promise<{ code: number; out: string; err: string }> {
   const io = captureIo();
-  const code = await run(argv, { commands: [command], io });
+  const commands = Array.isArray(command) ? command : [command];
+  const code = await run(argv, { commands, io });
   return { code, out: io.out.join(""), err: io.err.join("") };
 }
 
-// Runs <name> --help with only this command and gives the exit code and the help text. Commander wraps the long
+// Runs <name> --help with these commands and gives the exit code and the help text. Commander wraps the long
 // lines of the help, so the help joins each run of white space to one space.
-export async function runHelp(command: RegisterCommand, name: string): Promise<{ code: number; help: string }> {
+export async function runHelp(
+  command: RegisterCommand | readonly RegisterCommand[],
+  name: string,
+): Promise<{ code: number; help: string }> {
   const { code, out } = await runCommand(command, name, "--help");
   return { code, help: out.replace(/\s+/g, " ") };
 }

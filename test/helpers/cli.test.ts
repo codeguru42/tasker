@@ -2,7 +2,18 @@ import { describe, expect, it } from "vitest";
 import type { RegisterCommand } from "../../src/cli.js";
 import { captureIo, greet, helpText, runCommand, runHelp } from "./cli.js";
 
+const farewell: RegisterCommand = (program) => {
+  program.command("farewell").description("Say goodbye");
+};
+
 describe("runCommand", () => {
+  it("runs a command from a list", async () => {
+    const result = await runCommand([greet, farewell], "farewell", "--help");
+
+    expect(result.code).toBe(0);
+    expect(result.out).toContain("Say goodbye");
+  });
+
   it("gives the help text and code 0 for --help", async () => {
     const result = await runCommand(greet, "greet", "--help");
 
@@ -22,6 +33,13 @@ describe("runCommand", () => {
 });
 
 describe("runHelp", () => {
+  it("gets help for a command from a list", async () => {
+    const { code, help } = await runHelp([greet, farewell], "farewell");
+
+    expect(code).toBe(0);
+    expect(help).toContain("Say goodbye");
+  });
+
   it("gives code 0 and the help text of the command", async () => {
     const { code, help } = await runHelp(greet, "greet");
 
