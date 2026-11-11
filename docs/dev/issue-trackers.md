@@ -124,6 +124,12 @@ The writes read nothing before they write. They rely on these facts of the gh 2.
 As a result, exit 0 is success and the code has no special case. The label must exist on GitHub. The writes do not
 create it.
 
+`tasker open-pr` adds `issueTracker.reviewLabel` with the same `gh issue edit --add-label` call after it records the PR.
+If that add succeeds, tasker removes `issueTracker.inProgressLabel` when `updateOnStart` is true and the marker label is
+set. It adds the review label first because the in-progress marker protects the issue from another start. If the add
+fails, tasker warns and leaves the marker. If the marker removal fails, tasker warns and both labels can remain. Neither
+failure changes the recorded PR or the task state.
+
 The remove of the in-progress label uses `gh issue edit --remove-label`. The facts below come from a measure of gh
 2.101.0 against a fake local HTTPS server:
 
@@ -179,9 +185,10 @@ the token call, give no project remediation.
 
 ### Labels
 
-- A missing in-progress label or done label is a warning, because the write only warns. A missing in-progress label
-  makes the in-progress write of each `tasker start` fail. A missing done label makes the done write of each
-  `tasker finish` fail.
+- A missing in-progress label, done label or review label is a warning, because each write only warns. A missing
+  in-progress label makes the in-progress write of each `tasker start` fail. A missing done label makes the done write
+  of each `tasker finish` fail. A missing review label makes the review write of each `tasker open-pr` fail and only
+  warns. The review label is checked even when `updateOnStart` and `updateOnFinish` are false.
 - The name is URL-encoded, so `/` and a space are safe, and `{` and `}` never hit a placeholder that `gh api` fills,
   such as `{owner}`.
 - GitHub gives the same 404 for a repo that does not exist, so the project check of the same repo names the real cause.
