@@ -232,8 +232,8 @@ these cases:
 - The plan has a security gap.
 - The plan changes a file that the issue does not name, and another task in progress also changes that file. For
   example, `tasker refine` prints a warning for such a file (see ["Land the work"](land-the-work.md#land-the-work)). If
-  the orchestrator already set a landing order for that file, or told the task subagent that
-  [the section rule](land-the-work.md#the-section-rule) covers it, this case does not apply.
+  the orchestrator already set a landing order for that file, or told the task subagent that the file has no landing
+  order, this case does not apply.
 
   For each task of the overlap warning, the task subagent reads the milestone of its issue with
   `gh issue view <issue> --json milestone -q '.milestone.title'`. `<issue>` is the number of the issue key on the line
