@@ -170,6 +170,10 @@ As a result, when a check must report all problems in one run, as [rules.md](rul
 - Tests use Vitest. Each test file matches `test/**/*.test.ts`. Its name mirrors the file in `src/` that it tests,
   except for a test that reads a doc, a test that scans the whole source tree, a test of the shared helpers, or a test
   that guards a fact about an outside tool.
+- `TASKER_TEST_WORKERS` sets the maximum number of test workers. It defaults to `25%` to limit the resources used by
+  parallel tests. Set it to a positive whole-number count, such as `4`, or a positive whole-number percent, such as
+  `50%`. An unset or empty value selects the default. Other values cause a configuration error. Vitest's
+  `VITEST_MAX_WORKERS` environment variable takes precedence and accepts an integer count, not a percent.
 - Unit tests call `run()` with a capturing `Io` and with fixture commands. The test reads stdout and stderr from the
   `Io` and the exit code from the result of `run()`. The capturing `Io` and the fixture commands come from
   `test/helpers/`. [rules.md](rules.md#tests) gives the rules for the shared helpers.
