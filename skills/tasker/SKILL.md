@@ -45,14 +45,20 @@ If the command line of the user is not empty, follow these rules:
    If the user explicitly opts in to chaining in the current request or a standing instruction, such as a memory note or
    `CLAUDE.md`, you can run the next tasker command. After the first command succeeds, run `tasker show <issue>` in a
    separate shell call. Read its `next:` line, then run that command in another shell call. After each successful task
-   command, repeat the `tasker show` call. Each chained call has the form `tasker <command> <issue key>`, with the first
-   command's issue key and no added option. Never choose from `also:`.
+   command, repeat the `tasker show` call. Rule 2 applies before the user's first command. Each chained call has the
+   form `tasker <command> <issue key>`. If the user's first command has `--repo <key>`, carry that option and value into
+   every later call, including `tasker show`. Add no other option. Never choose from `also:`.
 
-   Stop when a command exits with a code other than 0, including a `tasker show` call. Stop when the user's command
-   takes no issue key or is a read-only show command. Stop when `tasker show` prints no `next:` line, when the next
-   command is `approve-credits`, or when the next step needs the user's own content. A `commands:` line gives choices
-   and has no `next:` line. At each stop, report the `next:` or `commands:` line if tasker printed one. Report each
-   call's exit code, stdout, and stderr, including each `tasker show` call.
+   Stop if any of these conditions apply:
+
+   - Stop when a command exits with a code other than 0, including a `tasker show` call.
+   - Stop when the user's command takes no issue key or is a read-only show command.
+   - Stop when `tasker show` prints no `next:` line.
+   - Stop when the next command is `approve-credits`.
+   - Stop when the next step needs the user's own content.
+
+   A `commands:` line gives choices and has no `next:` line. At each stop, report the `next:` or `commands:` line if
+   tasker printed one. Report each call's exit code, stdout, and stderr, including each `tasker show` call.
 
 For the command line of the user, these rules win over the rule "Use only the commands that this skill lists" of
 [Rules](#rules). tasker itself reports an unknown command.
