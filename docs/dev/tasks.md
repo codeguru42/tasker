@@ -112,6 +112,9 @@ When no in-progress target is set, start skips the in-progress write and prints
 `warning: did not mark <issue> in progress: issueTracker.<key> is not set` on stderr. The command still exits with code
 0 and records no `tracker_update` event with `action: in_progress`. The assignment write still records its event.
 
+A passed `in_progress` write sets `tracker_marked` in the same transaction as its event. A passed `clear_in_progress`
+write sets it to 0 in the same transaction as its event. A failed clear keeps it at 1.
+
 Open-pr writes `review` when the repo sets a review target. It can also write `clear_in_progress` after a successful
 GitHub review-label add, with the same conditions as the abort below. See [Open PR](#open-pr) for the rules.
 
@@ -753,9 +756,10 @@ After that transaction, `tasker open-pr` makes the optional review write from `i
 when `updateOnStart` is true, `inProgressLabel` is set and the task has `tracker_marked` set. The clear uses the same
 rule as the abort: a task removes only the marker that it added. It skips the clear when the label names match,
 including a case-only difference, because GitHub treats those names as equal. The add must pass first because the marker
-protects the issue against a second start. Jira makes no clear call. A failed review write or marker removal warns. It
-does not undo the PR record or the move to `in_peer_review`. A failed add keeps the marker, while a failed clear can
-leave both labels. `tasker open-pr` still exits with code 0 after either tracker write fails.
+protects the issue against a second start. A passed clear sets `tracker_marked` to 0, so a later abort leaves the label
+alone. A failed clear keeps `tracker_marked` at 1. Jira makes no clear call. A failed review write or marker removal
+warns. It does not undo the PR record or the move to `in_peer_review`. A failed add keeps the marker, while a failed
+clear can leave both labels. `tasker open-pr` still exits with code 0 after either tracker write fails.
 
 The [landing reference](../../skills/tasker/references/landing.md#tasker-open-pr) gives the state path, output, failures
 and publication cycle.
