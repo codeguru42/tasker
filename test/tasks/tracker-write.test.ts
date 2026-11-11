@@ -64,7 +64,7 @@ describe("runTrackerWrite", () => {
         },
         io,
       );
-      return result as unknown as Promise<boolean>;
+      return result;
     });
     const failed = await withDataRootStore(fixture.dataRoot, (store) => {
       const result = runTrackerWrite(
@@ -80,7 +80,7 @@ describe("runTrackerWrite", () => {
         },
         io,
       );
-      return result as unknown as Promise<boolean>;
+      return result;
     });
     expect(success).toBe(true);
     expect(failed).toBe(false);

@@ -79,18 +79,18 @@ describe("openPrTask", () => {
     const forge = forgeStub();
 
     const trackerEnv = { ...gh.env, PATH: fixture.env.PATH };
-    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) =>
-      callOpenPr(fixture, store, forge, 300, trackerEnv),
-    );
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => {
+      store.recordTrackerMark(fixture.task.id);
+      return callOpenPr(fixture, store, forge, 300, trackerEnv);
+    });
 
     expect(result).toMatchObject({ adopted: false, pullRequest: { number: 42 } });
     expect(gh.calls().map((call) => call.args)).toEqual([
-      ["auth", "token", "--hostname", "github.com", "--user", "codeguru42"],
       ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "peer-review"],
       ["issue", "edit", "5", "-R", "codeguru42/tasker", "--remove-label", "wip"],
     ]);
     expect(io.out.join("")).toBe(
-      `added the review label peer-review to ${KEY} on the tracker\ncleared the in-progress marker of ${KEY} on the tracker\n`,
+      `marked the review label peer-review to ${KEY} for review on the tracker\ncleared the in-progress marker of ${KEY} on the tracker\n`,
     );
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
     expect(eventsOf(fixture.dataRoot, KEY).slice(-2)).toMatchObject([
@@ -126,12 +126,9 @@ describe("openPrTask", () => {
     );
 
     expect(result).toMatchObject({ adopted: false, pullRequest: { number: 42 } });
-    expect(
-      gh
-        .calls()
-        .map((call) => call.args)
-        .slice(1),
-    ).toEqual([["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "peer-review"]]);
+    expect(gh.calls().map((call) => call.args)).toEqual([
+      ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "peer-review"],
+    ]);
     expect(io.err.join("")).toContain("issueTracker.reviewLabel");
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
     expect(eventsOf(fixture.dataRoot, KEY).at(-1)).toMatchObject({

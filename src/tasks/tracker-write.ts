@@ -1,8 +1,11 @@
 import type { Io } from "../cli.js";
 import type { RepoConfig } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
+import type { Config } from "../config/schema.js";
+import type { IssueRef } from "../issue-key/ref.js";
+import { issueProviderFor } from "../issues/provider.js";
 import type { IssueTrackerId } from "../issues/provider.js";
-import type { TaskStore } from "../store/store.js";
+import type { Task, TaskStore } from "../store/store.js";
 
 type TargetKey = "inProgressLabel" | "inProgressStatus" | "doneLabel" | "doneStatus" | "reviewLabel" | "reviewStatus";
 
@@ -31,7 +34,7 @@ export function trackerTargets(issueTracker: RepoConfig["issueTracker"]): {
   };
 }
 
-export type TrackerAction = "assign" | "in_progress" | "clear_in_progress" | "done" | "abort";
+export type TrackerAction = "assign" | "in_progress" | "clear_in_progress" | "done" | "abort" | "review";
 
 // One write to the issue tracker. text finishes "warning: cannot ... on the tracker: <error>".
 // success is the line that stdout gets when the write works.
@@ -49,17 +52,36 @@ export async function runTrackerWrite(
   taskId: number,
   write: TrackerWrite,
   io: Pick<Io, "stdout" | "stderr">,
-): Promise<void> {
+): Promise<boolean> {
   try {
     await write.run();
   } catch (error) {
     const message = errorMessage(error);
     store.appendEvent(taskId, "tracker_update", { action: write.action, result: "failed", error: message });
     io.stderr(`warning: cannot ${write.text} on the tracker: ${message}\n`);
-    return;
+    return false;
   }
   // A passed in_progress write sets the column trackerMarked. Code reads that column, never the event.
   if (write.action === "in_progress") store.recordTrackerMark(taskId);
   else store.appendEvent(taskId, "tracker_update", { action: write.action, result: "ok" });
   io.stdout(`${write.success}\n`);
+  return true;
+}
+
+// The marker protects an issue against two machines, so a task removes only the marker that it added.
+export function clearMarkerWrite(
+  config: Config,
+  ref: IssueRef,
+  task: Task,
+  env: NodeJS.ProcessEnv,
+): TrackerWrite | undefined {
+  const { issueTracker } = config.repos[ref.repoKey];
+  const marker = trackerTargets(issueTracker).inProgress;
+  if (!issueTracker.updateOnStart || marker === undefined || !task.trackerMarked) return undefined;
+  return {
+    action: "clear_in_progress",
+    text: `clear the in-progress marker of ${ref.key}`,
+    success: `cleared the in-progress marker of ${ref.key} on the tracker`,
+    run: () => issueProviderFor(config, ref.repoKey).clearInProgress(ref, marker, env),
+  };
 }

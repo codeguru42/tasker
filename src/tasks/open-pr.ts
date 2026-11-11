@@ -4,12 +4,14 @@ import { errorMessage } from "../error-message.js";
 import type { ForgeProvider, PullRequest } from "../forge/provider.js";
 import { forgeForRepo } from "../forge/registry.js";
 import type { IssueRef } from "../issue-key/ref.js";
+import { issueProviderFor } from "../issues/provider.js";
 import { transitionTask, transitionWithPrOpened } from "../state/machine.js";
 import type { TaskStore } from "../store/store.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBranch, requireWorktree, taskInState } from "./task-state.js";
+import { clearMarkerWrite, runTrackerWrite, trackerTargets, type TrackerWrite } from "./tracker-write.js";
 
 export interface OpenPrRequest {
   config: Config;
@@ -112,6 +114,26 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
         request.io,
         `opening_pr failed: ${description} PR #${pullRequest.number} (${pullRequest.url}), but tasker cannot record it: ${errorMessage(error)}`,
       );
+    }
+
+    const { issueTracker } = request.config.repos[task.repoKey];
+    const reviewTarget = trackerTargets(issueTracker).review;
+    if (reviewTarget !== undefined) {
+      const target =
+        issueTracker.provider === "github"
+          ? `the review label ${reviewTarget} to ${task.issueKey}`
+          : `${task.issueKey} to the status ${JSON.stringify(reviewTarget)}`;
+      const reviewWrite: TrackerWrite = {
+        action: "review",
+        text: `mark ${target}`,
+        success: `marked ${target} for review on the tracker`,
+        run: () => issueProviderFor(request.config, task.repoKey).markReview(request.ref, reviewTarget, request.env),
+      };
+      const reviewPassed = await runTrackerWrite(store, task.id, reviewWrite, request.io);
+      if (reviewPassed && issueTracker.provider === "github") {
+        const clearWrite = clearMarkerWrite(request.config, request.ref, task, request.env);
+        if (clearWrite !== undefined) await runTrackerWrite(store, task.id, clearWrite, request.io);
+      }
     }
 
     return { pullRequest, adopted };
