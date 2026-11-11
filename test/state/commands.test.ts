@@ -158,7 +158,7 @@ describe("showLines", () => {
 
   it("shows merge alongside landing and branch choices in peer review", () => {
     expect(showLines("in_peer_review", key)).toEqual([
-      "commands: tasker merge codeguru42/tasker#5, tasker mark-landed codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+      "commands: tasker merge codeguru42/tasker#5, tasker mark-landed codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker reopen codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
     ]);
   });
 
@@ -207,7 +207,7 @@ describe("errorSentence", () => {
 
   it("includes merge in peer-review wrong-state choices", () => {
     expect(errorSentence("in_peer_review", key)).toBe(
-      "commands: tasker merge codeguru42/tasker#5, tasker mark-landed codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
+      "commands: tasker merge codeguru42/tasker#5, tasker mark-landed codeguru42/tasker#5, tasker update-branch codeguru42/tasker#5, tasker reopen codeguru42/tasker#5, tasker abort codeguru42/tasker#5",
     );
   });
 

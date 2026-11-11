@@ -82,6 +82,7 @@ const REFINE_RETRY_TABLE: Partial<Record<TaskState, RetryRow>> = {
   awaiting_work_review: { target: "awaiting_work_review", next: "review-feedback", clears: {} },
   accepted: { target: "accepted", next: "reopen-hint", clears: {} },
   pushed: { target: "pushed", next: "reopen-hint", clears: {} },
+  in_peer_review: { target: "in_peer_review", next: "reopen-hint", clears: {} },
 };
 
 // The refining entry has a fallback: a refine origin with no row keeps the row of a plain refine. The merging entry has

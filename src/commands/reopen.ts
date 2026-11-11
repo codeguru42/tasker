@@ -8,7 +8,7 @@ export const reopen: RegisterCommand = (program, io) => {
   program
     .command("reopen")
     .description(
-      "Resync accepted or pushed work to its stored base, then continue the recorded plan session with feedback and record a complete new plan revision for review",
+      "Resync accepted, pushed, or peer-reviewed work to its stored base, then continue the recorded plan session with feedback and record a complete new plan revision for review",
     )
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .argument("<feedback>", "The reason to reopen the work and the changes needed in the new plan")

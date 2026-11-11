@@ -37,7 +37,7 @@ describe("expectedStateCommands", () => {
 
   it("offers merge for a peer-review task without a primary command", () => {
     expect(expectedStateCommands("in_peer_review")).toEqual({
-      commands: ["merge", "mark-landed", "update-branch", "abort"],
+      commands: ["merge", "mark-landed", "update-branch", "reopen", "abort"],
     });
   });
 

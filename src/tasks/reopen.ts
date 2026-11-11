@@ -26,7 +26,7 @@ export interface ReopenRequest {
   repoLockWaitMs: number;
 }
 
-// Resyncs the accepted work, then continues its recorded plan session. The task lock covers both steps.
+// Resyncs the accepted or peer-reviewed work, then continues its recorded plan session. The task lock covers both steps.
 export async function reopenTask(store: TaskStore, request: ReopenRequest): Promise<PlanResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => reopenLocked(store, request));
 }

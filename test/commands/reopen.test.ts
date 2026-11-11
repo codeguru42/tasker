@@ -145,7 +145,7 @@ describe("reopen", () => {
     await expectCommandRefused(
       { dataRoot: fixture.started.dataRoot, key: KEY },
       () => runReopen(),
-      `${wrongStateError("executed", KEY, "reopen", "accepted, pushed, or in_peer_review")}\n`,
+      `${wrongStateError("executed", KEY, "reopen", "accepted, pushed or in_peer_review")}\n`,
     );
   });
 

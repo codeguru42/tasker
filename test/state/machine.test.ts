@@ -211,6 +211,7 @@ const SPECIFIC: Record<string, string[]> = {
     "awaiting_work_review",
     "accepted",
     "pushed",
+    "in_peer_review",
     "reviewed",
   ],
   awaiting_quota_approval: [
@@ -220,6 +221,7 @@ const SPECIFIC: Record<string, string[]> = {
     "awaiting_work_review",
     "accepted",
     "pushed",
+    "in_peer_review",
     "reviewed",
   ],
   interrupted: [
@@ -285,8 +287,8 @@ const NO_ASSISTANT = ["verifying", "pushing", "opening_pr", "merging", "finishin
 const ASSISTANT = ["planning", "refining", "executing", "reviewing"] as TaskState[];
 
 describe("table edges", () => {
-  it("has 112 specific edges", () => {
-    expect(TABLE_EDGES).toHaveLength(112);
+  it("has 114 specific edges", () => {
+    expect(TABLE_EDGES).toHaveLength(114);
   });
 
   it.each(TABLE_EDGES)("allows %s -> %s", (from, to) => {
@@ -301,7 +303,7 @@ describe("table edges", () => {
       }
     }
     expect(found).toEqual(LEGAL_EDGES);
-    expect(found.size).toBe(162);
+    expect(found.size).toBe(164);
   });
 
   it("allows stopped reopen runs to return to peer review", () => {

@@ -77,6 +77,7 @@ const REFINE_RESUME_TABLE: Partial<Record<TaskState, ResumeRow>> = {
   failed: PLAIN_REFINE_ROW,
   accepted: { target: "accepted", next: "reopen", clearReview: false },
   pushed: { target: "pushed", next: "reopen", clearReview: false },
+  in_peer_review: { target: "in_peer_review", next: "reopen", clearReview: false },
   reviewed: { target: "reviewed", next: "refine", clearReview: false },
   awaiting_work_review: {
     target: "awaiting_work_review",
@@ -182,9 +183,12 @@ function resumeMoveOf(task: Task, events: readonly TaskEvent[], command: "resume
     mergeOrigin === "accepted" || mergeOrigin === "in_peer_review"
       ? RESUME_TABLES.byOriginOf?.merging?.rows[mergeOrigin]
       : undefined;
-  const isReopen = (refineOrigin === "accepted" || refineOrigin === "pushed") && refineFeedbackOf(events) !== undefined;
+  const isReopen =
+    (refineOrigin === "accepted" || refineOrigin === "pushed" || refineOrigin === "in_peer_review") &&
+    refineFeedbackOf(events) !== undefined;
   const row =
-    origin === undefined || ((refineOrigin === "accepted" || refineOrigin === "pushed") && !isReopen)
+    origin === undefined ||
+    ((refineOrigin === "accepted" || refineOrigin === "pushed" || refineOrigin === "in_peer_review") && !isReopen)
       ? undefined
       : origin === "merging"
         ? mergeRow

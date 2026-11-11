@@ -99,7 +99,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
   pushing: ["pushed", "interrupted"],
   pushed: ["landed", "opening_pr", "refining", "updating_branch"],
   opening_pr: ["in_peer_review", "interrupted"],
-  in_peer_review: ["landed", "merging", "updating_branch"],
+  in_peer_review: ["landed", "merging", "refining", "updating_branch"],
   merging: ["landed", "interrupted"],
   landed: ["finishing"],
   finishing: ["finished", "cleanup_failed", "interrupted"],
@@ -128,6 +128,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
     "awaiting_work_review",
     "accepted",
     "pushed",
+    "in_peer_review",
     "reviewed",
   ],
   awaiting_quota_approval: [
@@ -137,6 +138,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
     "awaiting_work_review",
     "accepted",
     "pushed",
+    "in_peer_review",
     "reviewed",
   ],
   interrupted: [
