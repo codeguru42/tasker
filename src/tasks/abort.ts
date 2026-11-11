@@ -96,18 +96,17 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
     const write =
       issueTracker.provider === "jira"
         ? abortStatusWrite(config, ref, task, request.env)
-        : clearMarkerWrite(config, ref, request.env);
+        : clearMarkerWrite(config, ref, task, request.env);
     if (write !== undefined) await runTrackerWrite(store, task.id, write, request.trackerIo);
     return transitionTask(store, task.id, "cancelled");
   });
 }
 
-// The marker protects an issue against two machines. After an abort, no machine works on the issue,
-// so the abort of a GitHub task removes the marker. The assignee stays.
-function clearMarkerWrite(config: Config, ref: IssueRef, env: NodeJS.ProcessEnv): TrackerWrite | undefined {
+// The marker protects an issue against two machines, so a task removes only the marker that it added.
+function clearMarkerWrite(config: Config, ref: IssueRef, task: Task, env: NodeJS.ProcessEnv): TrackerWrite | undefined {
   const { issueTracker } = config.repos[ref.repoKey];
   const marker = trackerTargets(issueTracker).inProgress;
-  if (!issueTracker.updateOnStart || marker === undefined) return undefined;
+  if (!issueTracker.updateOnStart || marker === undefined || !task.trackerMarked) return undefined;
   return {
     action: "clear_in_progress",
     text: `clear the in-progress marker of ${ref.key}`,
