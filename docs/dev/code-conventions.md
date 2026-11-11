@@ -174,7 +174,8 @@ As a result, when a check must report all problems in one run, as [rules.md](rul
   process. Many test files also start child processes, such as git, the tasker CLI through `spawnTasker`, and fake
   tools. Simultaneous check runs fill CPU cores and increase memory use. They slow each run. As a result, a test with a
   short timeout can fail at random, and that failure can look like a code failure. `TASKER_TEST_WORKERS` defaults to
-  `25%`, so about four simultaneous runs can share the cores. A lone run takes longer on an idle machine. Set
+  `25%`, so about four simultaneous runs can share the cores. Vitest rounds a percent of `os.availableParallelism()` to
+  a whole number of workers and uses at least one worker. A lone run takes longer on an idle machine. Set
   `TASKER_TEST_WORKERS=100%` for an idle machine. You can set the variable to a positive whole-number count, such as
   `4`, or a positive whole-number percent, such as `50%`. An unset or empty value selects the `25%` default. Other
   values cause a configuration error that names the variable and value. The variable `VITEST_MAX_WORKERS` of Vitest wins
