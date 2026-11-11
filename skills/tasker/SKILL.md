@@ -279,9 +279,9 @@ Opens or adopts a pull request for a task in `pushed`. See [the reference](refer
 
 ### `tasker mark-landed`
 
-Records that the work of a task in `accepted`, `pushed` or `in_peer_review` landed outside tasker, or that a task that
-failed from `opening_pr` landed. Only `tasker show` lists `mark-landed` for this failure origin. See
-[the reference](references/landing.md#tasker-mark-landed).
+Records an operator declaration that work in `accepted`, `pushed` or `in_peer_review` landed outside tasker. It also
+accepts a task in `failed` whose last failure came from `opening_pr`. Only `tasker show` lists `mark-landed` for this
+failure origin. See [the reference](references/landing.md#tasker-mark-landed).
 
 ### `tasker update-branch`
 
