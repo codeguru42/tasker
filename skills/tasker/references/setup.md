@@ -10,6 +10,8 @@ each `issueTracker`.
 
 If the repo key of `--repo` does not exist, the command prints an error and exits with code 1.
 
+## `tasker show-config-schema`
+
 ## `tasker doctor`
 
 Makes sure that the configuration, the data root, git, `gh`, `acli`, `claude`, `codex`, `pi` and the accounts work

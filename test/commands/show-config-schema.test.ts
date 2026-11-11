@@ -19,7 +19,11 @@ function expectedPaths(schema: SchemaLike, path = ""): string[] {
   if (["default", "optional", "nullable", "prefault", "nonoptional"].includes(String(type))) {
     return expectedPaths(def.innerType as SchemaLike, path);
   }
-  if (type === "pipe") return expectedPaths(def.out as SchemaLike, path);
+  if (type === "pipe") {
+    const input = def.in as SchemaLike;
+    const side = input._def.type === "object" ? input : (def.out as SchemaLike);
+    return expectedPaths(side, path);
+  }
   if (type === "object") {
     return Object.entries(schema.shape ?? {}).flatMap(([key, child]) => {
       const childPath = path === "" ? key : `${path}.${key}`;
@@ -152,7 +156,7 @@ describe("show-config-schema", () => {
     expect(byPath.get("skillsDirs")?.description).toMatch(/expand.*~.*\$NAME.*\$\{NAME\}.*absolute/i);
     expect(byPath.get("repos.<key>.issueTracker.site")?.description).toMatch(/ASCII.*uppercase.*lowercase/i);
     expect(byPath.get("repos.<key>.issueTracker.provider")?.description).toMatch(/^The kind of tracker\./);
-    expect(byPath.get("repos.<key>.issueTracker.project")?.description).toMatch(/repo key.*absent/i);
+    expect(byPath.get("repos.<key>.issueTracker.project")?.description).toMatch(/If it is absent.*repo key/i);
     expect(byPath.get("repos.<key>.sessions.models.operator.model")?.description).toMatch(/model of the agent kind/i);
     expect(byPath.get("repos.<key>.assistant.trustedExtensions")?.description).toMatch(/only pi/i);
     expect(byPath.get("repos.<key>.assistant.models.plan.model")?.description).toMatch(/provider/i);

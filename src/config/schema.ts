@@ -15,10 +15,10 @@ import { JIRA_PROJECT, SITE_LABEL } from "../issue-key/short-ref.js";
 const positive = z.number().positive();
 
 const LimitsSchema = z.strictObject({
-  bootstrapTimeoutMin: positive,
-  verifyTimeoutMin: positive,
-  planTimeoutMin: positive.default(30),
-  executeTimeoutMin: positive.default(90),
+  bootstrapTimeoutMin: positive.describe("Minutes that the bootstrap phase can run."),
+  verifyTimeoutMin: positive.describe("Minutes that the verify phase can run."),
+  planTimeoutMin: positive.default(30).describe("Minutes that the plan phase or a review run can run."),
+  executeTimeoutMin: positive.default(90).describe("Minutes that the execute phase can run."),
 });
 
 const nonEmpty = z.string().min(1);
@@ -34,19 +34,32 @@ const EnvNameSchema = z
   });
 
 const VerifySchema = z.strictObject({
-  commands: z.array(nonEmpty).min(1),
-  env: z.array(EnvNameSchema).default([]),
+  commands: z
+    .array(nonEmpty)
+    .min(1)
+    .describe("Commands that tasker runs for verification, in order. The list cannot be empty."),
+  env: z
+    .array(EnvNameSchema)
+    .default([])
+    .describe(
+      "Environment variable names that tasker passes to verify commands. Names must match `^[A-Za-z_][A-Za-z0-9_]*$`, must not start with `TASKER_`, and must not name variables every phase already receives, such as `HOME`.",
+    ),
 });
 
 const BootstrapSchema = z.strictObject({
-  commands: z.array(z.string()).default([]),
-  env: z.array(EnvNameSchema).default([]),
+  commands: z.array(z.string()).default([]).describe("Commands that tasker runs during bootstrap, in order."),
+  env: z
+    .array(EnvNameSchema)
+    .default([])
+    .describe(
+      "Environment variable names that tasker passes to bootstrap commands. Names must match `^[A-Za-z_][A-Za-z0-9_]*$`, must not start with `TASKER_`, and must not name variables every phase already receives, such as `HOME`.",
+    ),
 });
 
 const ForgeSchema = z.strictObject({
-  provider: z.literal("github"),
-  account: nonEmpty,
-  mergeMethod: z.enum(["merge", "squash", "rebase"]).default("merge"),
+  provider: z.literal("github").describe("The kind of forge."),
+  account: nonEmpty.describe("The account to use."),
+  mergeMethod: z.enum(["merge", "squash", "rebase"]).default("merge").describe("How to merge a pull request."),
 });
 
 export const VCS_PROVIDER_IDS = ["git"] as const; // the vcs.provider enum
@@ -54,8 +67,14 @@ export type VcsProviderId = (typeof VCS_PROVIDER_IDS)[number];
 
 function vcsBranch<P extends VcsProviderId>(provider: P) {
   return z.strictObject({
-    provider: z.literal(provider),
-    config: vcsConfigSchema(provider).default({}),
+    provider: z.literal(provider).describe('The kind of version control. "git" is the only permitted value.').meta({
+      effectiveDefault: "git",
+      required: false,
+    }),
+    config: vcsConfigSchema(provider)
+      .default({})
+      .describe("The configuration of the provider.")
+      .meta({ effectiveDefault: {} }),
   });
 }
 
@@ -69,8 +88,8 @@ const nonEmptyList = z.array(nonEmpty).min(1);
 
 const MatchSchema = z
   .strictObject({
-    labels: nonEmptyList.optional(),
-    components: nonEmptyList.optional(),
+    labels: nonEmptyList.optional().describe("Labels that an issue must have to match."),
+    components: nonEmptyList.optional().describe("Components that an issue must have to match."),
   })
   .superRefine((match, ctx) => {
     if (match.labels === undefined && match.components === undefined) {
@@ -79,37 +98,97 @@ const MatchSchema = z
   });
 
 const IssueTrackerSchema = z.strictObject({
-  provider: z.enum(["github", "jira"]),
-  project: nonEmpty.optional(),
-  match: MatchSchema.optional(),
-  site: nonEmpty.transform(asciiFold).optional(),
-  tracker: nonEmpty.optional(),
-  account: nonEmpty.optional(),
-  baseBranchFieldName: nonEmpty.optional(),
-  apiToken: nonEmpty.optional(),
-  email: nonEmpty.optional(),
-  updateOnStart: z.boolean().default(false),
-  assignee: nonEmpty.default("@me"),
-  inProgressLabel: nonEmpty.optional(),
-  inProgressStatus: nonEmpty.optional(),
-  updateOnFinish: z.boolean().default(false),
-  doneLabel: nonEmpty.optional(),
-  doneStatus: nonEmpty.optional(),
-  abortStatus: nonEmpty.optional(),
+  provider: z
+    .enum(["github", "jira"])
+    .describe(
+      "The kind of tracker. A provider is required without `tracker`, and it must be absent when `tracker` is set.",
+    )
+    .meta({ required: false }),
+  project: nonEmpty
+    .optional()
+    .describe(
+      "The project of the tracker. If it is absent, tasker uses the repo key. For Jira, a set project must be a Jira project key such as PROJ. If the repo key is not a Jira project key, Jira requires a project.",
+    ),
+  match: MatchSchema.optional().describe(
+    "Issue fields that tasker uses to match an issue to this repo. Set `labels` or `components`.",
+  ),
+  site: nonEmpty
+    .transform(asciiFold)
+    .optional()
+    .describe(
+      "The site of the tracker. ASCII uppercase letters fold to lowercase. Jira requires a bare host name with a dot, such as example.atlassian.net.",
+    ),
+  tracker: nonEmpty.optional().describe("The name of an entry under trackers."),
+  account: nonEmpty
+    .optional()
+    .describe("The account that tasker uses for the tracker. GitHub requires it, and Jira refuses it.")
+    .meta({ provider: "github" }),
+  baseBranchFieldName: nonEmpty
+    .optional()
+    .describe("For Jira, the custom field that holds an issue's base branch.")
+    .meta({ provider: "jira" }),
+  apiToken: nonEmpty
+    .optional()
+    .describe("For Jira, the API token used to look up the base branch field id.")
+    .meta({ provider: "jira" }),
+  email: nonEmpty
+    .optional()
+    .describe("For Jira, the email address of the API token account.")
+    .meta({ provider: "jira" }),
+  updateOnStart: z
+    .boolean()
+    .default(false)
+    .describe("Whether tasker assigns the issue and marks it in progress at start."),
+  assignee: nonEmpty.default("@me").describe("The account that tasker assigns the issue to. GitHub refuses commas."),
+  inProgressLabel: nonEmpty
+    .optional()
+    .describe(
+      "For GitHub, the label that tasker adds and checks for at start. GitHub refuses commas, and Jira refuses this field.",
+    )
+    .meta({ provider: "github" }),
+  inProgressStatus: nonEmpty
+    .optional()
+    .describe("For Jira, the status that tasker moves the issue to at start.")
+    .meta({ provider: "jira" }),
+  updateOnFinish: z
+    .boolean()
+    .default(false)
+    .describe("Whether tasker marks the issue done after it removes the worktree and branch."),
+  doneLabel: nonEmpty
+    .optional()
+    .describe(
+      "For GitHub, the label that tasker adds when it finishes the issue. GitHub refuses commas, and Jira refuses this field.",
+    )
+    .meta({ provider: "github" }),
+  doneStatus: nonEmpty
+    .optional()
+    .describe(
+      "For Jira, the status that tasker moves the issue to when it finishes. Jira requires it when `updateOnFinish` is true.",
+    )
+    .meta({ provider: "jira" }),
+  abortStatus: nonEmpty
+    .optional()
+    .describe("For Jira, the status that tasker moves the issue to when it aborts. GitHub refuses this field.")
+    .meta({ provider: "jira" }),
 });
 
-const TrackerDefinitionSchema = IssueTrackerSchema.omit({
-  project: true,
-  tracker: true,
-  match: true,
-}).strict();
+const TrackerDefinitionSchema = IssueTrackerSchema.omit({ project: true, tracker: true, match: true })
+  .extend({
+    provider: z.enum(["github", "jira"]).describe("The kind of tracker.").meta({ required: true }),
+  })
+  .strict()
+  .describe("A named issue tracker definition that repos share.");
 
 const RoleSchema = z.strictObject({
-  model: nonEmpty,
-  effort: z.enum(["low", "medium", "high"]),
+  model: nonEmpty.describe("The model to use for this assistant role. It must belong to the assistant provider."),
+  effort: z.enum(["low", "medium", "high"]).describe("The effort level to use for this assistant role."),
 });
 
-const ModelsSchema = z.strictObject({ plan: RoleSchema, execute: RoleSchema, review: RoleSchema });
+const ModelsSchema = z.strictObject({
+  plan: RoleSchema.describe("The model and effort for plan sessions."),
+  execute: RoleSchema.describe("The model and effort for execute sessions."),
+  review: RoleSchema.describe("The model and effort for review sessions."),
+});
 
 // The assistant roles, in the order of the report of tasker model.
 export const ASSISTANT_ROLES = ModelsSchema.keyof().options;
@@ -129,11 +208,21 @@ function checkTrustedExtensions(assistant: unknown, ctx: z.RefinementCtx): void 
 
 const AssistantSchema = z
   .strictObject({
-    provider: AssistantProviderSchema,
-    models: ModelsSchema,
-    trustedExtensions: z.array(nonEmpty).optional(),
-    account: nonEmpty.optional(),
-    correctiveTurns: z.number().int().min(0).default(1),
+    provider: AssistantProviderSchema.describe("The assistant to run."),
+    models: ModelsSchema.describe("The models and effort levels for the assistant roles."),
+    trustedExtensions: z
+      .array(nonEmpty)
+      .optional()
+      .describe("Extensions that a pi session can trust. Only pi accepts this field.")
+      .meta({ provider: "pi", default: [] }),
+    account: nonEmpty.optional().describe("The account to use."),
+    correctiveTurns: z
+      .number()
+      .int()
+      .min(0)
+      .default(1)
+      .describe("The maximum corrective turns that pi starts for a refused answer.")
+      .meta({ provider: "pi" }),
   })
   .superRefine(checkTrustedExtensions, { when: () => true })
   .transform((assistant) => ({ ...assistant, trustedExtensions: assistant.trustedExtensions ?? [] }));
@@ -175,14 +264,14 @@ function checkModels(repo: unknown, ctx: z.RefinementCtx): void {
 const SessionKindSchema = z.literal("claude").default("claude");
 
 const SessionRoleSchema = z.strictObject({
-  model: nonEmpty,
-  effort: z.enum(["low", "medium", "high", "xhigh", "max"]),
+  model: nonEmpty.describe("The model to use for this session role. It must be a model of the agent kind's provider."),
+  effort: z.enum(["low", "medium", "high", "xhigh", "max"]).describe("The effort level to use for this session role."),
 });
 
 const SessionModelsSchema = z.strictObject({
-  operator: SessionRoleSchema.optional(),
-  planner: SessionRoleSchema.optional(),
-  orchestrator: SessionRoleSchema.optional(),
+  operator: SessionRoleSchema.optional().describe("The model and effort for operator sessions."),
+  planner: SessionRoleSchema.optional().describe("The model and effort for planner sessions."),
+  orchestrator: SessionRoleSchema.optional().describe("The model and effort for orchestrator sessions."),
 });
 
 // The session roles, in the order of the report of tasker model.
@@ -207,31 +296,49 @@ function checkSessionModels(sessions: unknown, ctx: z.RefinementCtx): void {
 
 const SessionsSchema = z
   .strictObject({
-    kind: SessionKindSchema,
-    models: SessionModelsSchema.default({}),
+    kind: SessionKindSchema.describe("The agent kind used for each session role."),
+    models: SessionModelsSchema.default({}).describe("The optional models and effort levels for session roles."),
   })
   .superRefine(checkSessionModels, { when: () => true });
 
 const RepoSchema = z
   .strictObject({
-    remote: nonEmpty,
-    issueTracker: IssueTrackerSchema,
-    assistant: AssistantSchema,
-    sessions: SessionsSchema.default({ kind: "claude", models: {} }),
-    verify: VerifySchema,
-    bootstrap: BootstrapSchema.default({ commands: [], env: [] }),
+    remote: nonEmpty.describe("The remote address of the repo."),
+    issueTracker: IssueTrackerSchema.describe("The issue tracker for this repo."),
+    assistant: AssistantSchema.describe("The assistant and role models for this repo."),
+    sessions: SessionsSchema.default({ kind: "claude", models: {} }).describe(
+      "The agent kind and models of operator, planner, and orchestrator sessions.",
+    ),
+    verify: VerifySchema.describe("The commands and environment for the verify phase."),
+    bootstrap: BootstrapSchema.default({ commands: [], env: [] }).describe(
+      "The commands and environment for the bootstrap phase.",
+    ),
     defaultBaseBranch: nonEmpty
       .refine((name) => !name.startsWith(LOCAL_PREFIX), {
         message: "must name a remote branch, not a local branch in the form refs/heads/<x>",
       })
-      .optional(),
-    overagePolicy: z.enum(["decline", "ask"]).default("decline"),
-    quotaApprovalThreshold: z.number().gt(0).max(1).default(0.9),
-    updateBranchStrategy: z.enum(["rebase", "merge"]).default("rebase"),
-    forge: ForgeSchema.optional(),
-    vcs: VcsSchema.default({ provider: "git", config: {} }),
+      .optional()
+      .describe(
+        "The origin branch that tasks start from when no learned default exists. It must not start with `refs/heads/`.",
+      ),
+    overagePolicy: z.enum(["decline", "ask"]).default("decline").describe("What tasker does when quota use gets high."),
+    quotaApprovalThreshold: z
+      .number()
+      .gt(0)
+      .max(1)
+      .default(0.9)
+      .describe("The share of the quota window that pauses a run under ask policy."),
+    updateBranchStrategy: z
+      .enum(["rebase", "merge"])
+      .default("rebase")
+      .describe("How tasker brings a branch up to date."),
+    forge: ForgeSchema.optional().describe("The forge used for pull requests."),
+    vcs: VcsSchema.default({ provider: "git", config: {} })
+      .describe("The version control provider and its configuration.")
+      .meta({ effectiveDefault: { provider: "git", config: {} } }),
   })
-  .superRefine(checkModels, { when: () => true });
+  .superRefine(checkModels, { when: () => true })
+  .describe("Configuration for one repo.");
 
 // The github writes pass these values to a gh flag that splits on commas.
 const GH_COMMA_SPLIT_KEYS = ["assignee", "inProgressLabel", "doneLabel"] as const;
@@ -414,13 +521,25 @@ export function buildConfigSchema(env: NodeJS.ProcessEnv, homedir: string) {
   });
 
   const top = z.strictObject({
-    dataRoot: absolutePath,
-    retentionDays: z.number().default(30),
-    dataRootMinFreeBytes: positive.default(1073741824),
-    skillsDirs: z.array(absolutePath).min(1).prefault(["~/.claude/skills"]),
-    limits: LimitsSchema,
-    trackers: z.record(z.string(), TrackerDefinitionSchema).default({}),
-    repos: z.record(z.string(), RepoSchema),
+    dataRoot: absolutePath.describe(
+      "The folder where tasker keeps its data. Tasker expands a leading `~`, `$NAME`, or `${NAME}` and requires an absolute path. It rejects an unset or empty variable.",
+    ),
+    retentionDays: z.number().default(30).describe("How many days tasker keeps data."),
+    dataRootMinFreeBytes: positive.default(1073741824).describe("The free space that dataRoot must have, in bytes."),
+    skillsDirs: z
+      .array(absolutePath)
+      .min(1)
+      .prefault(["~/.claude/skills"])
+      .describe(
+        "Folders where tasker install-skills copies the skills. Tasker expands a leading `~`, `$NAME`, or `${NAME}` and requires an absolute path. It rejects an unset or empty variable.",
+      ),
+    limits: LimitsSchema.describe("The time limits for task phases."),
+    trackers: z
+      .record(z.string(), TrackerDefinitionSchema)
+      .default({})
+      .describe("Named issue tracker definitions that repos share.")
+      .meta({ effectiveDefault: {} }),
+    repos: z.record(z.string(), RepoSchema).describe("Maps each repo key to its configuration."),
   });
 
   return top;

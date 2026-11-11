@@ -169,6 +169,11 @@ print the commands of the state of a task.
 Prints the configuration as JSON, with the defaults filled in, and needs no task. See
 [the reference](references/setup.md#tasker-show-config).
 
+### `tasker show-config-schema`
+
+Prints the configuration schema as JSON and needs no task. See
+[the reference](references/setup.md#tasker-show-config-schema).
+
 ### `tasker show-quota`
 
 Prints the last quota event of each repo as JSON, and needs no task. See
