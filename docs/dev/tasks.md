@@ -822,12 +822,14 @@ the remote already has the revision, tasker records it without another push.
 
 ## Mark landed
 
-`tasker mark-landed` records the operator's declaration that work in `accepted`, `pushed` or `in_peer_review` landed.
-The task moves to `landed`.
+`tasker mark-landed` records the operator's declaration that work in `accepted`, `pushed` or `in_peer_review` landed. It
+also accepts `failed` only when the latest valid failure origin is `opening_pr`, and moves the task from `failed` to
+`landed`. Only `tasker show` lists `mark-landed` for this failure origin.
 
 The command checks the task and its state under the task lock. It makes no Git or forge query and takes no repo lock.
-One transaction appends one `marked_landed` event with exactly `{ from, to: "landed" }` and moves the task to `landed`.
-This event takes the place of the generic `transition` event for the move.
+One transaction appends one `marked_landed` event with exactly `{ from: "failed", to: "landed" }` for this case and
+moves the task to `landed`. The event records the task's actual source state and takes the place of the generic
+`transition` event for the move.
 
 The command records the operator's declaration as given. It does not inspect branch, base or parent metadata.
 
