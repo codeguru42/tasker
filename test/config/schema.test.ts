@@ -1185,6 +1185,50 @@ describe("parseConfig abortStatus", () => {
   });
 });
 
+describe("parseConfig review targets", () => {
+  it("accepts review targets on their matching providers and definitions", () => {
+    const gh = validConfig();
+    gh.repos.tasker.issueTracker = {
+      provider: "github",
+      account: "codeguru42",
+      reviewLabel: "peer-review",
+      inProgressStatus: "In Progress",
+      doneStatus: "Done",
+    };
+    expect(parsedRepo(gh).issueTracker.reviewLabel).toBe("peer-review");
+    expect(parsedRepo(gh).issueTracker.inProgressStatus).toBe("In Progress");
+    expect(parsedRepo(gh).issueTracker.doneStatus).toBe("Done");
+
+    const jira = withTracker({ tracker: "acme", project: "TEST" }, { acme: { ...acme, reviewStatus: "In Review" } });
+    expect((parseConfig(jira, {}, home).repos.tasker.issueTracker as Record<string, unknown>).reviewStatus).toBe(
+      "In Review",
+    );
+    expect((parseConfig(jira, {}, home).trackers.acme as Record<string, unknown>).reviewStatus).toBe("In Review");
+  });
+
+  it("rejects empty review targets", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", reviewStatus: "" };
+    expectIssueAt(issuesOf(raw), "repos.tasker.issueTracker.reviewStatus");
+  });
+
+  it("rejects reviewLabel on jira and reviewStatus on github", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", reviewLabel: "review" };
+    expect(issuesOf(raw)).toContain(refusedLine("reviewLabel"));
+    raw.repos.tasker.issueTracker = { provider: "github", account: "codeguru42", reviewStatus: "Review" };
+    expect(issuesOf(raw)).toContain("repos.tasker.issueTracker.reviewStatus: is not accepted for the github tracker");
+  });
+
+  it("rejects commas in a github reviewLabel", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "github", account: "codeguru42", reviewLabel: "one,two" };
+    expect(issuesOf(raw)).toContain(
+      "repos.tasker.issueTracker.reviewLabel: must not contain a comma for the github tracker",
+    );
+  });
+});
+
 describe("parseConfig jira tracker", () => {
   function jiraConfig(keys: Record<string, unknown>): Record<string, unknown> {
     const raw = validConfig();
