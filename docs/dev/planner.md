@@ -739,6 +739,18 @@ user with each finding that it dismissed. The initial planner posts only after t
   doc. On #575 (2026-10-25), the issue gave a new bullet of `docs/dev/first-refine.md` with 7 sentences and two
   sentences of 26 words. The landed bullet kept the sentence that gives the source of the bullet, with 26 words.
 
+- When the doc text of an issue names a part of a doc, it uses words that stay true in the doc. Examples of a part are a
+  bullet, a paragraph, a step and a section. Examples of such words are the topic, the first words, the heading, and
+  [the number of a step with its page](first-refine.md#all-tickets). The doc text avoids issue-only names such as "the
+  new bullet" or "the second new bullet". Outside its doc text, the issue can still use words that are true only in the
+  issue. For example, it can use them to give the place of a bullet.
+
+  The reason: the plan follows the words of the issue, so the words of the doc text go into the doc. On #853
+  (2026-11-11), the Docs section said "The sentence says that a session of the first new bullet follows the second new
+  bullet." Plan v2 put the words "first new bullet" and "second new bullet" into a sentence of the session-review skill.
+  The task subagent found the words at plan review, and the fix cost one refine. No one measured whether the cost
+  repeats.
+
 - An issue that adds a bullet to a section of a doc names the place of the bullet. The place is right after or right
   before a bullet that the issue names by its first words. The place can also be the start or the end of the section. On
   #435 (2026-10-25), the issue said "add two bullets to the section", and the task subagent stopped before
