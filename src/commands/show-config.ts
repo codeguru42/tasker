@@ -1,6 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
 import type { RepoConfig } from "../config/schema.js";
-import { loadConfigOrFail, repoKeyOrFail } from "./shared.js";
+import { loadConfigOrFail, printJson, repoKeyOrFail } from "./shared.js";
 
 const MASK = "***";
 
@@ -30,10 +30,10 @@ export const showConfig: RegisterCommand = (program, io) => {
           trackers: Object.fromEntries(Object.entries(config.trackers).map(([name, t]) => [name, maskTracker(t)])),
           repos: Object.fromEntries(Object.entries(config.repos).map(([name, r]) => [name, maskRepo(r)])),
         };
-        io.stdout(`${JSON.stringify(masked, null, 2)}\n`);
+        printJson(io, masked);
         return;
       }
       repoKeyOrFail(io, config, key);
-      io.stdout(`${JSON.stringify(maskRepo(config.repos[key]), null, 2)}\n`);
+      printJson(io, maskRepo(config.repos[key]));
     });
 };

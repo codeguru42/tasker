@@ -1,6 +1,6 @@
 import type { RegisterCommand } from "../cli.js";
 import { configSchemaEntries } from "../config/show-schema.js";
-import { fail } from "./shared.js";
+import { fail, printJson } from "./shared.js";
 
 export const showConfigSchema: RegisterCommand = (program, io) => {
   program
@@ -12,6 +12,6 @@ export const showConfigSchema: RegisterCommand = (program, io) => {
       if (keyPath !== undefined && entries.length === 0) {
         fail(io, `configuration key path not found: ${keyPath}`);
       }
-      io.stdout(`${JSON.stringify(entries, null, 2)}\n`);
+      printJson(io, entries);
     });
 };

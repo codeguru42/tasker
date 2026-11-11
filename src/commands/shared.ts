@@ -19,6 +19,11 @@ export const REPO_LOCK_WAIT_MS = 300_000;
 export const REPO_OPTION_DESCRIPTION = "Use the repo with this key when two repos share the project of the issue";
 export const ISSUE_ARGUMENT_DESCRIPTION = "The issue key of the task";
 
+// Writes a JSON value with two-space indentation and one final newline.
+export function printJson(io: Io, value: unknown): void {
+  io.stdout(`${JSON.stringify(value, null, 2)}\n`);
+}
+
 // Prints message to stderr and stops the command with exit code 1.
 export function fail(io: Io, message: string): never {
   io.stderr(`${message}\n`);

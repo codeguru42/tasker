@@ -1,5 +1,5 @@
 import type { RegisterCommand } from "../cli.js";
-import { loadConfigOrFail, repoKeyOrFail, withStore } from "./shared.js";
+import { loadConfigOrFail, printJson, repoKeyOrFail, withStore } from "./shared.js";
 
 export const showQuota: RegisterCommand = (program, io) => {
   program
@@ -17,6 +17,6 @@ export const showQuota: RegisterCommand = (program, io) => {
         receivedAt,
         event,
       }));
-      io.stdout(`${JSON.stringify(list, null, 2)}\n`);
+      printJson(io, list);
     });
 };

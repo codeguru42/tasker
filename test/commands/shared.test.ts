@@ -4,6 +4,7 @@ import { CommanderError } from "commander";
 import { describe, expect, it } from "vitest";
 import {
   fail,
+  printJson,
   issueKeyOrFail,
   numberedRowOrFail,
   orFail,
@@ -26,6 +27,16 @@ import { failureOf, thrownBy } from "../helpers/errors.js";
 import { deadRunNote } from "../helpers/state-commands.js";
 import { seedDeadRun, seedTasks, withDataRootStore } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
+
+describe("printJson", () => {
+  it("writes two-space JSON with one final newline", () => {
+    const io = captureIo();
+
+    printJson(io, { answer: 42, nested: { ok: true } });
+
+    expect(io.out).toEqual(['{\n  "answer": 42,\n  "nested": {\n    "ok": true\n  }\n}\n']);
+  });
+});
 
 describe("orFail", () => {
   it("returns the value of fn and writes nothing", () => {
