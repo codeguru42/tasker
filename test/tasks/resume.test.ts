@@ -268,12 +268,20 @@ describe("resumeTask origins", () => {
     "returns to %s after a reopen pause with its exact feedback",
     async (origin) => {
       const { dataRoot, task } = seedApprovedTaskWithSessions();
+      if (origin === "in_peer_review") {
+        withDataRootStore(dataRoot, (store) =>
+          store.updateTask(task.id, { publishedRevision: "published", prNumber: 73 }),
+        );
+      }
       withDataRootStore(dataRoot, (store) => pauseRefineFrom(store, task.id, origin, "interrupted", FEEDBACK));
 
       const result = await resume(dataRoot, task);
 
       expect(result).toEqual({ origin: "refining", target: origin, next: "reopen", feedback: FEEDBACK });
       expect(latestTaskOf(dataRoot, KEY).state).toBe(origin);
+      if (origin === "in_peer_review") {
+        expect(latestTaskOf(dataRoot, KEY)).toMatchObject({ publishedRevision: "published", prNumber: 73 });
+      }
       expect(eventDataOf(dataRoot, KEY, "resume")).toEqual([{ origin: "refining", target: origin }]);
     },
   );

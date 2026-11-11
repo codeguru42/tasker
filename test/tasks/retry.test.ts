@@ -65,7 +65,12 @@ async function failedPendingReopen(origin: "accepted" | "pushed" | "in_peer_revi
   const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
   const startHead = await startConflictedReopenResync(fixture);
   withDataRootStore(fixture.started.dataRoot, (store) => {
-    store.updateTask(fixture.task.id, { state: origin, reopenStartHead: startHead, prNumber: 73 });
+    store.updateTask(fixture.task.id, {
+      state: origin,
+      reopenStartHead: startHead,
+      prNumber: 73,
+      publishedRevision: origin === "in_peer_review" ? "published" : fixture.task.publishedRevision,
+    });
     failRefineFrom(store, fixture.task.id, origin);
   });
   return { ...fixture, startHead, task: latestTaskOf(fixture.started.dataRoot, KEY) };
@@ -397,6 +402,9 @@ describe("retryTask pending reopen recovery", () => {
       reopenStartHead: null,
       prNumber: 73,
     });
+    if (origin === "in_peer_review") {
+      expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({ publishedRevision: "published" });
+    }
     expect(await gitOutput({ cwd: path }, fixture.started.env, "rev-parse", "HEAD")).toBe(fixture.startHead);
     expect(await gitOutput({ cwd: path }, fixture.started.env, "status", "--porcelain")).toBe("");
   });

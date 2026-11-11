@@ -164,6 +164,15 @@ describe("useSeededTask", () => {
   });
 });
 
+describe("useReopenFixture", () => {
+  it("keeps the published revision and pull request number for peer review", async () => {
+    const fixture = await useReopenFixture({ stream: [] }, "in_peer_review");
+
+    expect(fixture.task.publishedRevision).not.toBeNull();
+    expect(fixture.task.prNumber).not.toBeNull();
+  });
+});
+
 describe("useStartFixture with limits", () => {
   it("sets the limits in the configuration file and keeps the other limits", async () => {
     const before = (await useStartFixture()).config.limits;

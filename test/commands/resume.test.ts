@@ -244,7 +244,12 @@ describe("tasker resume", () => {
         state: "awaiting_plan_review",
         reopenStartHead: null,
         publishedRevision: fixture.task.publishedRevision,
+        prNumber: fixture.task.prNumber,
       });
+      if (origin === "in_peer_review") {
+        expect(fixture.task.publishedRevision).not.toBeNull();
+        expect(fixture.task.prNumber).not.toBeNull();
+      }
       expect(
         await taskBranchTipOf({ clone: fixture.started.clone, env: fixture.started.env, task: fixture.task }),
       ).toBe(startHead);

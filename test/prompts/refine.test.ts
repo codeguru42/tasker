@@ -90,9 +90,9 @@ describe("PLAIN_REFINE_CONTEXT", () => {
 });
 
 describe("REOPEN_REFINE_CONTEXT", () => {
-  it("says that a bug after acceptance needs a new complete plan", () => {
+  it("says that reopened accepted work needs a new complete plan", () => {
     expect(REOPEN_REFINE_CONTEXT).toBe(
-      "A bug was found after acceptance. The user needs a new complete plan revision.",
+      "The user reopened accepted work with feedback. The user needs a new complete plan revision.",
     );
   });
 });

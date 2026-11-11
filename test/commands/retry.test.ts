@@ -414,6 +414,14 @@ describe("tasker retry", () => {
       expect(fixture.claude.calls()).toEqual([]);
       expect(fixture.started.gh.calls()).toEqual(ghCalls);
       expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe(origin);
+      if (origin === "in_peer_review") {
+        expect(fixture.task.publishedRevision).not.toBeNull();
+        expect(fixture.task.prNumber).not.toBeNull();
+        expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({
+          publishedRevision: fixture.task.publishedRevision,
+          prNumber: fixture.task.prNumber,
+        });
+      }
       expect(eventDataOf(fixture.started.dataRoot, KEY, "retry")).toEqual([
         { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin },
       ]);
