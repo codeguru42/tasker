@@ -107,11 +107,11 @@ If `issueTracker.updateOnStart` is `true`, the start assigns the issue and marks
 `tracker_update` event. The data is `{ action, result }` when the write works, and `{ action, result: "failed", error }`
 when it fails. The value of `action` is `assign`, `in_progress`, `clear_in_progress`, `done` or `abort`.
 
-The abort also makes a tracker write. If `issueTracker.updateOnStart` is `true` and the repo sets the in-progress label,
-it removes the marker with the action `clear_in_progress`. A failed write is a warning, the same as for the start. If
-`issueTracker.updateOnStart` is `true`, the repo sets `abortStatus` and the task has `tracker_marked` set, the abort of
-a Jira task moves the issue to that status with the action `abort`. If one of these is not true, the abort of a Jira
-task runs no tracker step.
+The abort also makes a tracker write. If `issueTracker.updateOnStart` is `true`, the repo sets the in-progress label,
+and this GitHub task has `tracker_marked` set, it removes the marker with the action `clear_in_progress`. A failed write
+is a warning, the same as for the start. If `issueTracker.updateOnStart` is `true`, the repo sets `abortStatus` and the
+task has `tracker_marked` set, the abort of a Jira task moves the issue to that status with the action `abort`. If one
+of these is not true, the abort of a Jira task runs no tracker step.
 
 The start follows the check-before-write rule in the [intro](#the-task-commands) and the rules in
 [The locks](#the-locks). These are the reasons of the tracker writes:
@@ -122,7 +122,7 @@ The start follows the check-before-write rule in the [intro](#the-task-commands)
   [The order of the steps](#the-order-of-the-steps) says. The check protects against two machines that work on the same
   issue.
 - The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked. tasker
-  cannot undo the assign, and only an abort removes the marker.
+  cannot undo the assign, and only an abort of the task that added the marker removes it.
 - The write of finish comes before the move to `finished`. The reason: a second run after a crash runs it again, and the
   writes are safe to repeat. [Writes](issue-trackers.md#writes) gives the facts. For Jira, a transition to the status
   that the issue has now exits with 0 and passes.
@@ -132,8 +132,7 @@ The start follows the check-before-write rule in the [intro](#the-task-commands)
 A dirty worktree needs `--force`, because the abort cannot bring the work back. A refused abort also leaves the worktree
 and the branch as they were.
 
-The abort of a GitHub task removes the in-progress marker of the issue on the tracker. The reason: the marker protects
-an issue against two machines, and after an abort no machine works on the issue.
+The marker protects an issue against two machines, so a task removes only the marker that it added.
 [The tracker writes](#the-tracker-writes) gives the rule for a failed write. The abort of a Jira task moves the issue to
 `abortStatus` only if this task marked the issue. See [The abort write](jira.md#the-abort-write).
 
