@@ -640,8 +640,9 @@ These reasons explain its rules:
   [Retry](#retry). The stored origin identifies the path because the pause event only names `merging`. [Merge](#merge)
   gives the reasons for the PR queries.
 - A missing or unsupported `merge_origin` makes resume refuse without a recovery move. The error points to
-  `tasker mark-landed` for an external landing declaration. That command accepts only `accepted`, `pushed` or
-  `in_peer_review`, so it cannot run directly from `interrupted`.
+  `tasker mark-landed` for an external landing declaration. That command accepts a task in `accepted`, `pushed` or
+  `in_peer_review`, and a task in `failed` whose last failure came from `opening_pr`. It cannot run directly from
+  `interrupted`.
 - If publication finished before a push stopped, resume runs `tasker push` again. If `origin` holds the current local
   task branch revision, the provider reports it without another push. Tasker records that revision.
 - Each cleanup step of `tasker finish` skips what is done, so a second run finishes the rest. The target of `finishing`
@@ -822,16 +823,16 @@ the remote already has the revision, tasker records it without another push.
 
 ## Mark landed
 
-`tasker mark-landed` records the operator's declaration that work in `accepted`, `pushed` or `in_peer_review` landed. It
-also accepts `failed` only when the latest valid failure origin is `opening_pr`, and moves the task from `failed` to
-`landed`. Only `tasker show` lists `mark-landed` for this failure origin.
+`tasker mark-landed` records an operator declaration that work in `accepted`, `pushed` or `in_peer_review` landed. It
+also accepts a task in `failed` whose last failure came from `opening_pr`. Only `tasker show` lists `mark-landed` for
+this failure origin.
 
 The command checks the task and its state under the task lock. It makes no Git or forge query and takes no repo lock.
-One transaction appends one `marked_landed` event with exactly `{ from: "failed", to: "landed" }` for this case and
-moves the task to `landed`. The event records the task's actual source state and takes the place of the generic
-`transition` event for the move.
+One transaction appends one `marked_landed` event with `{ from, to: "landed" }` and moves the task to `landed`. For a
+task in `failed` whose last failure came from `opening_pr`, `from` is `failed`. The event records the source state of
+the task and takes the place of the generic `transition` event for the move.
 
-The command records the operator's declaration as given. It does not inspect branch, base or parent metadata.
+The command records the operator declaration as given. It does not inspect branch, base or parent metadata.
 
 ## Update branch
 
