@@ -81,8 +81,16 @@ If `issueTracker.updateOnStart` is `true`, the command writes to the issue track
 - `assigned <issue key> to <assignee> on the tracker`
 - `marked <issue key> in progress on the tracker`
 
-If the configuration has no in-progress label or status, the command only assigns the issue and prints only the first
-line.
+If `issueTracker.updateOnStart` is `true` and the configuration has no in-progress label or status, the command assigns
+the issue but skips the in-progress write. It prints this warning on stderr:
+
+- GitHub: `warning: did not mark <issue key> in progress: issueTracker.inProgressLabel is not set`
+- Jira: `warning: did not mark <issue key> in progress: issueTracker.inProgressStatus is not set`
+
+The command still exits with code 0. It records no in-progress tracker update event and leaves the task's tracker mark
+unset. Without a target, it also skips the early check for an existing marker. Another operator can start an issue that
+already has the marker. Set the matching target key in the repo configuration, then mark this issue in progress on the
+tracker yourself.
 
 A write that fails does not change the exit code, which stays 0, and does not change the task, which stays in
 `workspace_ready`. The command prints a warning on stderr at once, with the error of the tracker:
