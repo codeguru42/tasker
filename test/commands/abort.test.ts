@@ -436,6 +436,11 @@ describe("abort", () => {
         ],
       });
 
+      expect(eventDataOf(started.dataRoot, KEY, "tracker_update")).toContainEqual({
+        action: "in_progress",
+        result: "ok",
+      });
+
       const result = await runAbort(KEY);
 
       expect(result).toEqual({
@@ -453,6 +458,64 @@ describe("abort", () => {
           .slice(-2)
           .map((event) => event.type),
       ).toEqual(["tracker_update", "transition"]);
+    });
+
+    it("does not remove the label when provisioning fails before the marker write", async () => {
+      const started = await useStartedTask({
+        repo: {
+          ...tracked,
+          bootstrap: { commands: ["exit 3"], env: [] },
+        },
+        ghAnswers: [
+          fixtureTrackerAnswer("assign"),
+          fixtureTrackerAnswer("inProgress"),
+          fixtureTrackerAnswer("clearInProgress"),
+        ],
+      });
+
+      expect(started.result.code).toBe(1);
+      expect(
+        eventDataOf(started.dataRoot, KEY, "tracker_update").filter(
+          (event) => (event as { action?: string }).action === "in_progress",
+        ),
+      ).toEqual([]);
+
+      const result = await runAbort(KEY);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(started.dataRoot, KEY).state).toBe("cancelled");
+      expect(trackerWriteCalls(started.gh)).not.toContainEqual(fixtureTrackerCall("clearInProgress"));
+      expect(eventDataOf(started.dataRoot, KEY, "tracker_update")).not.toContainEqual(
+        expect.objectContaining({ action: "clear_in_progress" }),
+      );
+      expect(result.out).not.toContain("in-progress marker");
+      expect(result.err).not.toContain("in-progress marker");
+    });
+
+    it("does not remove the label when the marker write failed", async () => {
+      const started = await useStartedTask({
+        repo: tracked,
+        ghAnswers: [
+          fixtureTrackerAnswer("assign"),
+          fixtureTrackerAnswer("inProgress", { stderr: "cannot label\\n", exitCode: 1 }),
+          fixtureTrackerAnswer("clearInProgress"),
+        ],
+      });
+
+      expect(eventDataOf(started.dataRoot, KEY, "tracker_update")).toContainEqual(
+        expect.objectContaining({ action: "in_progress", result: "failed" }),
+      );
+
+      const result = await runAbort(KEY);
+
+      expect(result.code).toBe(0);
+      expect(latestTaskOf(started.dataRoot, KEY).state).toBe("cancelled");
+      expect(trackerWriteCalls(started.gh)).not.toContainEqual(fixtureTrackerCall("clearInProgress"));
+      expect(eventDataOf(started.dataRoot, KEY, "tracker_update")).not.toContainEqual(
+        expect.objectContaining({ action: "clear_in_progress" }),
+      );
+      expect(result.out).not.toContain("in-progress marker");
+      expect(result.err).not.toContain("in-progress marker");
     });
 
     it("warns for a failed write, exits with 0 and cancels the task", async () => {
