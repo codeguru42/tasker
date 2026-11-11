@@ -141,6 +141,8 @@ label differs from the review label, a successful clear also prints:
 cleared the in-progress marker of <issue key> on the tracker
 ```
 
+After this successful clear, a later `tasker abort` of this task does not remove the label again.
+
 These tracker lines come before the PR and state lines:
 
 ```text
