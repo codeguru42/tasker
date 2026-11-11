@@ -88,14 +88,14 @@ The column `reopen_start_head` holds the worktree HEAD from the start of a reope
 Schema version 20 adds it. Existing task rows get NULL. `startReopen` writes the head with the move into `refining`, its
 feedback transition event and the run marker in one transaction. After resync, `completeReopen` records
 `synced_base_tip` and clears `reopen_start_head` and the three update-branch undo columns in one write. It keeps
-`accepted_revision` and `published_revision`.
+`accepted_revision`, `published_revision` and `pr_number`.
 
 If the process stops before `completeReopen`, `resume` or eligible `approve-credits` restores the saved head under the
 repo lock before returning the task to its origin. The move and the `resume` event clear `reopen_start_head` in one
 transaction. A retry of a failed reopen also restores the saved head under the repo lock before returning the task to
-`accepted` or `pushed`. The retry event, state move and clear of `reopen_start_head` share one transaction. A failed
-restore keeps the task state and recovery head. If the column is NULL, the resync was recorded, so recovery keeps the
-current worktree state.
+its origin, which can be `accepted`, `pushed` or `in_peer_review`. The retry event, state move and clear of
+`reopen_start_head` share one transaction. A failed restore keeps the task state and recovery head. If the column is
+NULL, the resync was recorded, so recovery keeps the current worktree state.
 
 The nullable integer column `pr_number` holds the number of the pull request tasker recorded for the task, or NULL when
 there is no record. Schema version 21 adds it. Existing task rows get NULL. `tasker open-pr` writes the number, the
@@ -152,7 +152,7 @@ The table has one row for each plan that the assistant returned for a task. A re
 revision comes from the feedback of the user on an earlier one, or, with the source `review`, from the open findings of
 a review, with the feedback of the user or none. With the source `review-feedback`, a revision comes from the feedback
 of the user on the committed work of a task in `awaiting_work_review`. With the source `reopen`, it comes from the
-feedback for a task in `accepted` or `pushed`, after the task branch resyncs to its stored base.
+feedback for a task in `accepted`, `pushed` or `in_peer_review`, after the task branch resyncs to its stored base.
 
 These rules hold:
 
