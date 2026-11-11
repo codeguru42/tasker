@@ -92,7 +92,7 @@ revision, the provider reports that fact and tasker records it without another p
 A crash during publication leaves the task in `pushing` with its run marker. The next command that reads the task moves
 it to `interrupted`. Run `tasker resume` to continue publication. See [tasker resume](recovery.md#tasker-resume).
 
-Do not change tasker-owned worktrees or branch refs outside tasker. Tasker does not protect publication against those
+Do not change tasker-owned worktrees or branch refs outside tasker. tasker does not protect publication against those
 concurrent changes.
 
 ## `tasker open-pr`
@@ -100,13 +100,13 @@ concurrent changes.
 Opens or adopts a pull request (PR) for a task in `pushed`: `tasker open-pr <issue> [--repo <key>]`. A PR asks for
 external review. The repo must have a configured forge. The task must have a branch, worktree and stored base.
 
-Tasker fetches `origin` and resolves its symbolic default branch before it enters `opening_pr`. If the default cannot be
+tasker fetches `origin` and resolves its symbolic default branch before it enters `opening_pr`. If the default cannot be
 resolved, or it differs from the stored task base, the command exits with code 1 and leaves the task state and events
 unchanged. The fetch can update or prune clone refs before this refusal. A local or stacked task base also fails this
 check.
 
 After the task enters `opening_pr`, tasker lists open origin PRs for the exact task branch. A PR on the resolved default
-base takes precedence, even when another open PR uses a different base. Tasker adopts the matching PR and does not edit
+base takes precedence, even when another open PR uses a different base. tasker adopts the matching PR and does not edit
 its title or body. If no PR matches and an open PR exists on another base, tasker exits with code 1 and names its
 number, URL and actual base. Correct that PR base and run `tasker retry`.
 
@@ -156,12 +156,13 @@ the clear.
 If the review write fails, tasker prints a warning to stderr and still exits with code 0. The PR stays open, and the
 task stays in `in_peer_review`. A failed GitHub review-label add keeps the in-progress marker and prevents the clear
 step. A failed marker removal also warns. Both labels can remain on the issue. The warning names the failed target or
-marker step. Tasker does not retry these writes directly after it moves the task to `in_peer_review`.
+marker step.
 
 The PR number, `pr_opened` event and move to `in_peer_review` share one database transaction. The task stores the PR
-number for later use. Each time tasker records a PR, it writes the configured review target. This includes a new PR, an
-adopted PR, and an adopted PR after a later push. It also includes an open-pr run after retry or resume from an
-`opening_pr` failure. Tasker does not change the title or body of an adopted PR.
+number for later use. A later push keeps that number and moves the task to `pushed`. Each time tasker records a PR, it
+writes the configured review target. This includes a new PR, an adopted PR, and an adopted PR after a later push. It
+also includes an open-pr run after retry or resume from an `opening_pr` failure. tasker does not change the title or
+body of an adopted PR.
 
 A lookup, create, other-base conflict or record failure after `opening_pr` moves the task to `failed`, clears its run
 marker and exits with code 1. The error starts with the exact text `opening_pr failed: <reason>`. If tasker created a PR
@@ -267,14 +268,14 @@ After both locks are held, tasker stores the origin and enters `merging`. It ask
 recorded PR is merged. If the PR is already merged, tasker sends no merge request.
 
 Otherwise, tasker requests `forge.mergeMethod` at the stored published SHA, then asks whether the PR merged. The forge
-refuses a different head atomically. A failed query fails the operation. Tasker lands only after a merged result. It
+refuses a different head atomically. A failed query fails the operation. tasker lands only after a merged result. It
 does not wait for CI or a forge queue. Forge authentication uses `forge.account` independently of the issue tracker
 account.
 
 The completion transaction moves the task to `landed`, clears `merge_origin` and the run marker, and appends `merged`.
 Its data is exactly `{ forge, number, method, expectedHead, requested, from: "merging", to: "landed" }`. `forge` is the
 configured provider id, `number` is the recorded PR number, and `expectedHead` is the published SHA. `requested` is true
-only when this invocation sent a merge request. Tasker keeps the PR number and published SHA.
+only when this invocation sent a merge request. tasker keeps the PR number and published SHA.
 
 If the PR remains unmerged, including after queue acceptance, the operation fails with
 `merging failed: PR #<number> is not merged. Retry after the merge completes. CAUTION: tasker abort deletes the PR head branch`.
