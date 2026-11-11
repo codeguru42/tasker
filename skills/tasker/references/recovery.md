@@ -326,10 +326,9 @@ If you pass `--force`, abort discards the changes before it removes the worktree
 prints its warning, still moves the task to `cancelled` and exits with code 0.
 
 For a GitHub repo, the tracker step runs only when `issueTracker.updateOnStart` is `true`, the repo sets
-`inProgressLabel`, and this task has `tracker_marked` set. It removes the in-progress label and prints
+`inProgressLabel`, and this task added the label at its start. It removes the in-progress label and prints
 `cleared the in-progress marker of <issue> on the tracker` when the call succeeds. If the call fails, stderr gets
-`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. If the step is skipped, it prints no
-marker line.
+`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`.
 
 For a Jira repo, the step runs only when `issueTracker.updateOnStart` is `true` and the repo sets `abortStatus`. This
 task must also have marked the issue in progress. The command moves the issue to that status and prints
