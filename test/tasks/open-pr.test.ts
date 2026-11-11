@@ -20,6 +20,14 @@ import {
 import { taskRefOf, useAcceptedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
 import { fakeGh, ghTokenAnswer, githubWriteAnswer } from "../helpers/fake-gh.js";
 import { useTempDir } from "../helpers/temp.js";
+import {
+  acliWriteResult,
+  AUTH_STATUS_ARGS,
+  fakeAcli,
+  MEASURED_AUTH_STATUS,
+  transitionArgs,
+  jiraRefOf,
+} from "../helpers/fake-acli.js";
 
 const KEY = "codeguru42/tasker#5";
 
@@ -43,11 +51,12 @@ async function callOpenPr(
   forge: ReturnType<typeof forgeStub>,
   repoLockWaitMs = 300,
   env: NodeJS.ProcessEnv = fixture.env,
+  ref = taskRefOf(fixture),
 ) {
   const io = captureIo();
   const result = await openPrTask(store, {
     config: fixture.config,
-    ref: taskRefOf(fixture),
+    ref,
     taskId: fixture.task.id,
     env,
     io,
@@ -77,19 +86,52 @@ describe("openPrTask", () => {
         }),
       ]);
 
-      const { result } = await withDataRootStore(fixture.dataRoot, (store) =>
-        callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH }),
-      );
+      const { result } = await withDataRootStore(fixture.dataRoot, (store) => {
+        store.recordTrackerMark(fixture.task.id);
+        return callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH });
+      });
 
       expect(result).toMatchObject({ adopted: false, pullRequest: { number: 42 } });
       expect(gh.calls().map((call) => call.args)).toEqual([
         ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", label],
       ]);
-      expect(eventsOf(fixture.dataRoot, KEY).filter((event) => event.type === "tracker_update")).toMatchObject([
-        { data: { action: "review", result: "ok" } },
-      ]);
+      expect(
+        eventsOf(fixture.dataRoot, KEY).filter(
+          (event) => event.type === "tracker_update" && (event.data as { action: string }).action !== "in_progress",
+        ),
+      ).toMatchObject([{ data: { action: "review", result: "ok" } }]);
     },
   );
+
+  it("moves a Jira issue to review after recording the PR", async () => {
+    const fixture = await pushedTask();
+    Object.assign(fixture.config.repos[fixture.repoKey].issueTracker, {
+      provider: "jira",
+      project: "TEST",
+      reviewStatus: "In Review",
+    });
+    const acli = fakeAcli(useTempDir("tasker-open-pr-jira-review-"), fixture.env, [
+      { args: AUTH_STATUS_ARGS, stdout: MEASURED_AUTH_STATUS },
+      { args: transitionArgs("TEST-5", "In Review"), stdout: acliWriteResult("SUCCESS", "") },
+    ]);
+    const { result } = await withDataRootStore(fixture.dataRoot, (store) =>
+      callOpenPr(
+        fixture,
+        store,
+        forgeStub(),
+        300,
+        { ...acli.env, PATH: [acli.env.PATH, fixture.env.PATH].filter(Boolean).join(":") },
+        { ...jiraRefOf("TEST-5"), repoKey: fixture.repoKey },
+      ),
+    );
+    expect(result).toMatchObject({ pullRequest: { number: 42 } });
+    expect(acli.calls().map((call) => call.args)).toEqual([AUTH_STATUS_ARGS, transitionArgs("TEST-5", "In Review")]);
+    expect(eventsOf(fixture.dataRoot, KEY).at(-1)).toMatchObject({
+      type: "tracker_update",
+      data: { action: "review", result: "ok" },
+    });
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review" });
+  });
 
   it.each([
     { name: "without an in-progress label", updateOnStart: true, inProgressLabel: undefined, marked: true },
