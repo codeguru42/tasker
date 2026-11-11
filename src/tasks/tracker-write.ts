@@ -1,15 +1,13 @@
 import type { Io } from "../cli.js";
-import type { RepoConfig } from "../config/schema.js";
+import type { Config, RepoConfig } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
-import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
-import { issueProviderFor } from "../issues/provider.js";
-import type { IssueTrackerId } from "../issues/provider.js";
+import { issueProviderFor, type IssueTrackerId } from "../issues/provider.js";
 import type { Task, TaskStore } from "../store/store.js";
 
 type TargetKey = "inProgressLabel" | "inProgressStatus" | "doneLabel" | "doneStatus" | "reviewLabel" | "reviewStatus";
 
-// The keys of the issue tracker that hold the in-progress and the done target, for each provider.
+// The keys of the issue tracker that hold each write target for each provider.
 const TARGET_KEYS: Record<IssueTrackerId, { inProgress: TargetKey; done: TargetKey; review: TargetKey }> = {
   github: { inProgress: "inProgressLabel", done: "doneLabel", review: "reviewLabel" },
   jira: { inProgress: "inProgressStatus", done: "doneStatus", review: "reviewStatus" },
@@ -68,7 +66,8 @@ export async function runTrackerWrite(
   return true;
 }
 
-// The marker protects an issue against two machines, so a task removes only the marker that it added.
+// Removes the GitHub in-progress marker. The marker protects an issue against two machines, so a task removes only
+// the marker that it added. Abort clears it after the work stops. Open-pr clears it after a review label write passes.
 export function clearMarkerWrite(
   config: Config,
   ref: IssueRef,

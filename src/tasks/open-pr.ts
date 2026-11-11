@@ -1,4 +1,5 @@
 import type { Io } from "../cli.js";
+import { asciiFold } from "../ascii-fold.js";
 import type { Config } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
 import type { ForgeProvider, PullRequest } from "../forge/provider.js";
@@ -119,20 +120,25 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
     const { issueTracker } = request.config.repos[task.repoKey];
     const reviewTarget = trackerTargets(issueTracker).review;
     if (reviewTarget !== undefined) {
-      const target =
-        issueTracker.provider === "github"
-          ? `the review label ${reviewTarget} to ${task.issueKey}`
-          : `${task.issueKey} to the status ${JSON.stringify(reviewTarget)}`;
+      const github = issueTracker.provider === "github";
+      const text = github
+        ? `add the label ${JSON.stringify(reviewTarget)} to ${task.issueKey}`
+        : `move ${task.issueKey} to the status ${JSON.stringify(reviewTarget)}`;
+      const success = github
+        ? `added the label ${JSON.stringify(reviewTarget)} to ${task.issueKey} on the tracker`
+        : `moved ${task.issueKey} to the status ${JSON.stringify(reviewTarget)} on the tracker`;
       const reviewWrite: TrackerWrite = {
         action: "review",
-        text: `mark ${target}`,
-        success: `marked ${target} for review on the tracker`,
+        text,
+        success,
         run: () => issueProviderFor(request.config, task.repoKey).markReview(request.ref, reviewTarget, request.env),
       };
       const reviewPassed = await runTrackerWrite(store, task.id, reviewWrite, request.io);
       if (reviewPassed && issueTracker.provider === "github") {
         const clearWrite = clearMarkerWrite(request.config, request.ref, task, request.env);
-        if (clearWrite !== undefined) await runTrackerWrite(store, task.id, clearWrite, request.io);
+        const marker = trackerTargets(issueTracker).inProgress;
+        const sameLabel = marker !== undefined && asciiFold(marker) === asciiFold(reviewTarget);
+        if (clearWrite !== undefined && !sameLabel) await runTrackerWrite(store, task.id, clearWrite, request.io);
       }
     }
 

@@ -92,9 +92,10 @@ describe("openPrTask", () => {
   );
 
   it.each([
-    { name: "without an in-progress label", updateOnStart: true, inProgressLabel: undefined },
-    { name: "when updateOnStart is false", updateOnStart: false, inProgressLabel: "wip" },
-  ])("adds review $name without a clear", async ({ updateOnStart, inProgressLabel }) => {
+    { name: "without an in-progress label", updateOnStart: true, inProgressLabel: undefined, marked: true },
+    { name: "when updateOnStart is false", updateOnStart: false, inProgressLabel: "wip", marked: true },
+    { name: "when this task did not add the marker", updateOnStart: true, inProgressLabel: "wip", marked: false },
+  ])("adds review $name without a clear", async ({ updateOnStart, inProgressLabel, marked }) => {
     const fixture = await pushedTask();
     Object.assign(fixture.config.repos[fixture.repoKey].issueTracker, {
       updateOnStart,
@@ -110,15 +111,18 @@ describe("openPrTask", () => {
         rest: ["--add-label", "peer-review"],
       }),
     ]);
-    const { io } = await withDataRootStore(fixture.dataRoot, (store) =>
-      callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH }),
-    );
+    const { io } = await withDataRootStore(fixture.dataRoot, (store) => {
+      if (marked) store.recordTrackerMark(fixture.task.id);
+      return callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH });
+    });
 
     expect(gh.calls().map((call) => call.args)).toHaveLength(1);
     expect(io.out.join("")).toContain("peer-review");
-    expect(eventsOf(fixture.dataRoot, KEY).filter((event) => event.type === "tracker_update")).toMatchObject([
-      { data: { action: "review", result: "ok" } },
-    ]);
+    expect(
+      eventsOf(fixture.dataRoot, KEY).filter(
+        (event) => event.type === "tracker_update" && (event.data as { action: string }).action !== "in_progress",
+      ),
+    ).toMatchObject([{ data: { action: "review", result: "ok" } }]);
   });
 
   it("keeps the PR and review state when clearing the marker fails", async () => {
@@ -145,9 +149,10 @@ describe("openPrTask", () => {
         exitCode: 1,
       }),
     ]);
-    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) =>
-      callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH }),
-    );
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => {
+      store.recordTrackerMark(fixture.task.id);
+      return callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH });
+    });
 
     expect(result).toMatchObject({ pullRequest: { number: 42 } });
     expect(io.err.join("")).toContain("warning: cannot clear the in-progress marker");
@@ -337,7 +342,7 @@ describe("openPrTask", () => {
     ]);
     expect(io.out.join("")).toBe(`added the label "peer-review" to ${KEY} on the tracker\n`);
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 19 });
-    expect(eventsOf(fixture.dataRoot, KEY).at(-1)).toMatchObject({
+    expect(eventsOf(fixture.dataRoot, KEY).find((event) => event.type === "pr_opened")).toMatchObject({
       type: "pr_opened",
       data: { number: 19, adopted: true, base: "main" },
     });
