@@ -41,7 +41,8 @@ Each task is in one state. An edge is a permitted change from one state to anoth
 - A self-transition (an edge from a state to the same state) is never legal.
 - Each non-terminal state has an edge to `failed` and an edge to `cancelled`. `failed` has no edge to itself, because
   the self-transition rule wins.
-- `failed` has an edge to `landed` only when the recorded failure origin is `opening_pr`.
+- `failed` has an edge to `landed`. Only `tasker mark-landed` uses it, and only for a task whose last failure came from
+  `opening_pr`.
 
 ## Main lifecycle
 
@@ -138,7 +139,8 @@ only when no finding is left unhandled.
 `accept` goes to `accepted`. From `accepted`, `merge` lands the work on the trunk branch. For the pull request path,
 `push` and `open-pr` take the task to `in_peer_review`, where `merge` merges the recorded PR. `mark-landed` records an
 operator declaration that work in `accepted`, `pushed` or `in_peer_review` landed outside tasker. It moves the task to
-`landed` without Git or forge queries.
+`landed` without Git or forge queries. It also moves a task in `failed` whose last failure came from `opening_pr` to
+`landed`.
 
 ### Trunk path
 
