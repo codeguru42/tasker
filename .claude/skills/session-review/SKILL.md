@@ -11,7 +11,7 @@ This skill reviews the transcript of the session before the session ends.
 
 Run the skill only on a request, for example `/session-review` before `/clear` or before the end of a session.
 
-The skill runs in a loop with the user before the clear. In the loop, the session answers the questions of the user and refines the proposed issues. In some cases, the session also writes a handoff file. The clear can come only after the loop ends.
+The skill runs in a loop with the user before the clear. In the loop, the session answers the questions of the user and refines the proposed issues. In some cases, the session also writes a handoff file. The clear can come only after the loop ends. A session with no role that works with the user directly follows the bullet about a fresh subagent in [The tools of a session](../../../docs/dev/working-with-the-user.md#the-tools-of-a-session).
 
 ## Steps
 
