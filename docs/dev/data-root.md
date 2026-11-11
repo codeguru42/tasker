@@ -71,11 +71,13 @@ The columns `undo_before_head`, `undo_after_head` and `undo_synced_base_tip` hol
 no value, so the rows that exist hold NULL.
 
 The column `tracker_marked` is 1 when the task marked the issue in progress on the tracker, and 0 if not. A passed
-`in_progress` write sets it in the same transaction as its `tracker_update` event, so the two agree. Nothing clears it.
-For a GitHub issue, `tasker abort` reads this column to decide whether to remove the in-progress label. For a Jira
-issue, it reads the column to decide whether to move the issue to `issueTracker.abortStatus`. Schema version 17 adds it.
-The migration fills it once for each row that exists: it is 1 when the task has a `tracker_update` event with the action
-`in_progress` and the result `ok`. Code reads the column and never the event, as the rule of the `events` table says.
+`in_progress` write sets it in the same transaction as its `tracker_update` event. A passed `clear_in_progress` write
+sets it to 0 in the same transaction as its event. A failed clear keeps it at 1. For a GitHub issue, `tasker abort`
+reads this column to decide whether to remove the in-progress label. After a passed clear, a later abort leaves the
+label alone because another task can add it. For a Jira issue, abort reads the column to decide whether to move the
+issue to `issueTracker.abortStatus`. Schema version 17 adds it. The migration fills it once for each row that exists: it
+is 1 when the task has a `tracker_update` event with the action `in_progress` and the result `ok`. Code reads the column
+and never the event, as the rule of the `events` table says.
 
 The column `published_revision` holds the last task branch revision that tasker recorded on `origin`, or NULL before the
 first recorded publication. Schema version 19 adds it. Existing task rows get NULL. Later pushes read this column
