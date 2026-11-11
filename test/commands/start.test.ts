@@ -697,7 +697,8 @@ describe("start", () => {
 
       expect(result.code).toBe(0);
       expect(result.err).toBe(
-        "warning: did not mark codeguru42/tasker#5 in progress: issueTracker.inProgressLabel is not set\n",
+        "tasker saved main as the default base branch of codeguru42/tasker.\n" +
+          "warning: did not mark codeguru42/tasker#5 in progress: issueTracker.inProgressLabel is not set\n",
       );
       expect(result.out).toBe(`${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\n`);
       expect(trackerWriteCalls(fixture.gh)).toEqual([fixtureTrackerCall("assign")]);
@@ -716,7 +717,10 @@ describe("start", () => {
       const result = await runCommand(start, "start", "TEST-5");
 
       expect(result.code).toBe(0);
-      expect(result.err).toBe("warning: did not mark TEST-5 in progress: issueTracker.inProgressStatus is not set\n");
+      expect(result.err).toBe(
+        "tasker saved main as the default base branch of codeguru42/tasker.\n" +
+          "warning: did not mark TEST-5 in progress: issueTracker.inProgressStatus is not set\n",
+      );
       expect(result.out).toContain("assigned TEST-5 to @me on the tracker\n");
       expect(fixture.acli.calls().map((call) => call.args)).toEqual([
         AUTH_STATUS_ARGS,

@@ -12,12 +12,17 @@ const TARGET_KEYS: Record<IssueTrackerId, { inProgress: TargetKey; done: TargetK
   jira: { inProgress: "inProgressStatus", done: "doneStatus" },
 };
 
+// The configuration keys that hold the targets for a tracker provider.
+export function trackerTargetKeys(issueTracker: Pick<RepoConfig["issueTracker"], "provider">) {
+  return TARGET_KEYS[issueTracker.provider];
+}
+
 // The in-progress and the done target of a tracker. A target is undefined when its key is not set.
 export function trackerTargets(issueTracker: RepoConfig["issueTracker"]): {
   inProgress: string | undefined;
   done: string | undefined;
 } {
-  const keys = TARGET_KEYS[issueTracker.provider];
+  const keys = trackerTargetKeys(issueTracker);
   return { inProgress: issueTracker[keys.inProgress], done: issueTracker[keys.done] };
 }
 
