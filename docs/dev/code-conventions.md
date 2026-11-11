@@ -171,13 +171,15 @@ As a result, when a check must report all problems in one run, as [rules.md](rul
   except for a test that reads a doc, a test that scans the whole source tree, a test of the shared helpers, or a test
   that guards a fact about an outside tool.
 - Without a worker limit, Vitest uses about `os.availableParallelism() - 1` workers. Each worker runs in a child
-  process. Parallel check runs can start many workers, which raises CPU and memory use. This can slow each run and cause
-  short timeouts. `TASKER_TEST_WORKERS` defaults to `25%`, so about four simultaneous runs can share the cores. A lone
-  run takes longer on an idle machine. Set `TASKER_TEST_WORKERS=100%` for an idle machine. You can set the variable to a
-  positive whole-number count, such as `4`, or a positive whole-number percent, such as `50%`. An unset or empty value
-  selects the `25%` default. Other values cause a configuration error that names the variable and value.
-  `VITEST_MAX_WORKERS` takes precedence over `TASKER_TEST_WORKERS`. Vitest reads that variable with `Number.parseInt`,
-  so `VITEST_MAX_WORKERS=25%` means 25 workers.
+  process. Many test files also start child processes, such as git, the tasker CLI through `spawnTasker`, and fake
+  tools. Simultaneous check runs fill CPU cores and increase memory use. They slow each run. As a result, a test with a
+  short timeout can fail at random, and that failure can look like a code failure. `TASKER_TEST_WORKERS` defaults to
+  `25%`, so about four simultaneous runs can share the cores. A lone run takes longer on an idle machine. Set
+  `TASKER_TEST_WORKERS=100%` for an idle machine. You can set the variable to a positive whole-number count, such as
+  `4`, or a positive whole-number percent, such as `50%`. An unset or empty value selects the `25%` default. Other
+  values cause a configuration error that names the variable and value. The variable `VITEST_MAX_WORKERS` of Vitest wins
+  over `TASKER_TEST_WORKERS`. Vitest reads that variable with `Number.parseInt`, so `VITEST_MAX_WORKERS=25%` means 25
+  workers.
 - Unit tests call `run()` with a capturing `Io` and with fixture commands. The test reads stdout and stderr from the
   `Io` and the exit code from the result of `run()`. The capturing `Io` and the fixture commands come from
   `test/helpers/`. [rules.md](rules.md#tests) gives the rules for the shared helpers.
