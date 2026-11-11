@@ -4,12 +4,12 @@ import { errorMessage } from "../error-message.js";
 import type { IssueTrackerId } from "../issues/provider.js";
 import type { TaskStore } from "../store/store.js";
 
-type TargetKey = "inProgressLabel" | "inProgressStatus" | "doneLabel" | "doneStatus";
+type TargetKey = "inProgressLabel" | "inProgressStatus" | "doneLabel" | "doneStatus" | "reviewLabel" | "reviewStatus";
 
 // The keys of the issue tracker that hold the in-progress and the done target, for each provider.
-const TARGET_KEYS: Record<IssueTrackerId, { inProgress: TargetKey; done: TargetKey }> = {
-  github: { inProgress: "inProgressLabel", done: "doneLabel" },
-  jira: { inProgress: "inProgressStatus", done: "doneStatus" },
+const TARGET_KEYS: Record<IssueTrackerId, { inProgress: TargetKey; done: TargetKey; review: TargetKey }> = {
+  github: { inProgress: "inProgressLabel", done: "doneLabel", review: "reviewLabel" },
+  jira: { inProgress: "inProgressStatus", done: "doneStatus", review: "reviewStatus" },
 };
 
 // The configuration keys that hold the targets for a tracker provider.
@@ -21,9 +21,14 @@ export function trackerTargetKeys(issueTracker: Pick<RepoConfig["issueTracker"],
 export function trackerTargets(issueTracker: RepoConfig["issueTracker"]): {
   inProgress: string | undefined;
   done: string | undefined;
+  review: string | undefined;
 } {
   const keys = trackerTargetKeys(issueTracker);
-  return { inProgress: issueTracker[keys.inProgress], done: issueTracker[keys.done] };
+  return {
+    inProgress: issueTracker[keys.inProgress],
+    done: issueTracker[keys.done],
+    review: issueTracker[keys.review],
+  };
 }
 
 export type TrackerAction = "assign" | "in_progress" | "clear_in_progress" | "done" | "abort";

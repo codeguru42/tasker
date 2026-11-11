@@ -18,11 +18,11 @@ function targetsOf(provider: RepoConfig["issueTracker"]["provider"], keys: Parti
 
 describe("trackerTargets", () => {
   it("gives the labels for github and ignores the status keys", () => {
-    expect(targetsOf("github", ALL_KEYS)).toEqual({ inProgress: "in progress", done: "done" });
+    expect(targetsOf("github", ALL_KEYS)).toEqual({ inProgress: "in progress", done: "done", review: "peer-review" });
   });
 
   it("gives the statuses for jira and ignores the label keys", () => {
-    expect(targetsOf("jira", ALL_KEYS)).toEqual({ inProgress: "In Progress", done: "Done" });
+    expect(targetsOf("jira", ALL_KEYS)).toEqual({ inProgress: "In Progress", done: "Done", review: "In Review" });
   });
 
   it("gives undefined for keys that are not set", () => {

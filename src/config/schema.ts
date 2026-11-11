@@ -170,6 +170,18 @@ const IssueTrackerSchema = z.strictObject({
     .optional()
     .describe("For Jira, the status that tasker moves the issue to when it aborts. GitHub refuses this field.")
     .meta({ provider: "jira" }),
+  reviewStatus: nonEmpty
+    .optional()
+    .describe(
+      "For Jira, the status that tasker open-pr moves the issue to after it records the PR. GitHub refuses this field.",
+    )
+    .meta({ provider: "jira" }),
+  reviewLabel: nonEmpty
+    .optional()
+    .describe(
+      "For GitHub, the label that tasker open-pr adds after it records the PR. GitHub refuses commas, and Jira refuses this field.",
+    )
+    .meta({ provider: "github" }),
 });
 
 const TrackerDefinitionSchema = IssueTrackerSchema.omit({ project: true, tracker: true, match: true })
@@ -341,7 +353,7 @@ const RepoSchema = z
   .describe("Configuration for one repo.");
 
 // The github writes pass these values to a gh flag that splits on commas.
-const GH_COMMA_SPLIT_KEYS = ["assignee", "inProgressLabel", "doneLabel"] as const;
+const GH_COMMA_SPLIT_KEYS = ["assignee", "inProgressLabel", "doneLabel", "reviewLabel"] as const;
 
 // A github tracker needs the account that runs gh, and no comma in a value that gh splits.
 // tasker checks the merged issueTracker, so a definition under trackers can leave account out.
@@ -362,11 +374,14 @@ function githubTrackerIssues(key: string, issueTracker: Record<string, unknown>)
   if (issueTracker.abortStatus !== undefined) {
     issues.push(issueLine(["repos", key, "issueTracker", "abortStatus"], "is not accepted for the github tracker"));
   }
+  if (issueTracker.reviewStatus !== undefined) {
+    issues.push(issueLine(["repos", key, "issueTracker", "reviewStatus"], "is not accepted for the github tracker"));
+  }
   return issues;
 }
 
 // acli has no flag for a site or a user for one call, so a Jira repo sets no account. A Jira repo uses statuses, not labels.
-const JIRA_REFUSED_KEYS = ["account", "inProgressLabel", "doneLabel"] as const;
+const JIRA_REFUSED_KEYS = ["account", "inProgressLabel", "doneLabel", "reviewLabel"] as const;
 
 const JIRA_PROJECT_PATTERN = new RegExp(`^${JIRA_PROJECT}$`);
 const JIRA_SITE_PATTERN = new RegExp(`^${SITE_LABEL}(?:\\.${SITE_LABEL})+$`);
