@@ -50,8 +50,8 @@ The command reads the origin. The origin is the state that the task left when it
   failed in `interrupted` after a push has no retry step. Retry uses the direct row for `interrupted`, which has no
   entry for a push.
 
-When a reopen fails while refining from `accepted` or `pushed`, retry returns the task to that same state. It prints the
-retry line, then the hint for that origin from the list below.
+When a reopen fails while refining from `accepted`, `pushed` or `in_peer_review`, retry returns the task to that same
+state. It prints the retry line, then the hint for that origin from the list below.
 
 Retry prints only a hint. It starts no assistant and does not print the saved feedback. Run the command with new
 feedback.
@@ -95,7 +95,7 @@ refine:
 - `reviewed`:
   `run tasker refine <issue key> again to act on the findings, or tasker dismiss-review <issue key> "<reason>"`
 - `awaiting_work_review`: `run tasker review <issue key> "<feedback>" again`
-- `accepted` or `pushed`: `run tasker reopen <issue key> "<feedback>" again`
+- `accepted`, `pushed` or `in_peer_review`: `run tasker reopen <issue key> "<feedback>" again`
 
 The command makes its move before it runs the next command. If the guard of a stacked task refuses the next command, the
 task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`. Then
@@ -140,6 +140,8 @@ origin in this table:
   `tasker reopen` with the recorded feedback.
 - `refining`, when the origin of the refine is `pushed`: the task goes to `pushed`, and the command runs `tasker reopen`
   with the recorded feedback.
+- `refining`, when the origin of the refine is `in_peer_review`: the task goes to `in_peer_review`, and the command runs
+  `tasker reopen` with the recorded feedback.
 - `refining`, when the origin of the refine is `reviewed`: the task goes to `reviewed`, and the command runs
   `tasker refine` with the recorded feedback, or with none if you gave none.
 - `refining`, when the origin of the refine is `awaiting_work_review`: the task goes to `awaiting_work_review`, and the
@@ -181,10 +183,10 @@ section of the next command gives them. If the assistant never created the sessi
 next command fails. Then `tasker retry` starts a new session.
 
 If reopen stopped before it recorded the resync, resume restores the saved start head under the repo lock before it
-moves the task to `accepted` or `pushed`. The move clears the recovery head in the same transaction. If resync was
-already recorded, the recovery head is NULL and resume keeps the resynced worktree. A failed restore leaves the task in
-its pause with the recovery head still set, and starts no assistant. Resume releases the repo lock before it runs
-`tasker reopen` again with the recorded feedback.
+moves the task to `accepted`, `pushed` or `in_peer_review`. The move clears the recovery head in the same transaction.
+If resync was already recorded, the recovery head is NULL and resume keeps the resynced worktree. A failed restore
+leaves the task in its pause with the recovery head still set, and starts no assistant. Resume releases the repo lock
+before it runs `tasker reopen` again with the recorded feedback.
 
 The command makes its move before it runs the next command. If the guard of a stacked task refuses the next command, the
 task stays in the target state. The refusal is the error of that command. Run `tasker update-branch <issue key>`. Then
@@ -213,8 +215,8 @@ of the task lock belong to this group:
 - The task paused from a state that resume has no step for. The error is
   `the task of <issue key> was paused from <state>; tasker resume has no step for it`. A task in `quota_blocked` that
   paused from `updating_branch` gets this error, and so does an update whose origin has no record. Resume refuses a
-  quota pause from `opening_pr`; only an interrupted task can resume from that state. A refine pause from `accepted` or
-  `pushed` with no recorded feedback has no resume row.
+  quota pause from `opening_pr`; only an interrupted task can resume from that state. A refine pause from `accepted`,
+  `pushed` or `in_peer_review` with no recorded feedback has no resume row.
 - The task paused in `merging`, but `merge_origin` is NULL or is not `accepted` or `in_peer_review`. Resume makes no
   recovery move and reports
   `the task of <issue key> has no valid stored merge origin; use tasker mark-landed to record an external landing`.
@@ -238,9 +240,9 @@ quota window of the pause, and runs the same command again: `tasker approve-cred
 
 The command moves the task like [`tasker resume`](#tasker-resume). It reads the origin, moves the task to the state
 before the run that stopped, and runs the next command. The table of `tasker resume` gives the target and the next
-command. For a stopped reopen from `accepted` or `pushed`, it returns the task to that same state and runs
-`tasker reopen` with the recorded feedback. It uses the same pending-resync restore as `tasker resume`; the restore lock
-is free before reopen runs again.
+command. For a stopped reopen from `accepted`, `pushed` or `in_peer_review`, the command returns the task to that state
+and runs `tasker reopen` with the recorded feedback. It uses the same pending-resync restore as `tasker resume`; the
+restore lock is free before reopen runs again.
 
 The approval belongs to one task and one quota window. The command records the reset time of that window from the pause
 record. The record and the move happen in one transaction. A later approval replaces an earlier one. The next command
@@ -275,7 +277,7 @@ of the task lock belong to this group:
   `the task of <issue key> stopped at the overage boundary, but the stop named no window, so an approval cannot hold; run tasker resume <issue key> after the reset`.
 - The task paused from a state that this command has no step for. The error is
   `the task of <issue key> was paused from <state>; tasker approve-credits has no step for it`. A refine pause from
-  `accepted` or `pushed` has a route when the refine transition recorded feedback.
+  `accepted`, `pushed` or `in_peer_review` has a route when the refine transition recorded feedback.
 
 ## `tasker abort`
 
