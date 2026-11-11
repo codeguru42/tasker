@@ -164,8 +164,7 @@ no command that prints its token, so this call needs its own API token.
 
 `trackers` maps a name to a tracker definition. A definition takes every `issueTracker` key except `project`, `tracker`
 and `match`. Its `provider` is required. For the `github` tracker, a definition can leave `account` out, because each
-repo can set it. For the `jira` tracker, a definition can leave `doneStatus` out, and each repo that uses it sets the
-key.
+repo can set it.
 
 A repo uses a definition when `issueTracker.tracker` names it. Then tasker merges the two:
 
@@ -175,10 +174,9 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 - If the definition has an error, tasker reports it once, under `trackers.<name>`.
 - For the `github` tracker, tasker checks `account`, `assignee`, `inProgressLabel`, `doneLabel` and `abortStatus` on the
   merged `issueTracker` of each repo.
-- For the `jira` tracker, tasker checks `account`, `inProgressLabel`, `doneLabel`, `project`, `site`, `updateOnFinish`
-  and `doneStatus` on the merged `issueTracker` of each repo. The path of each error is
-  `repos.<key>.issueTracker.<name>`, also for a value from a definition. A definition that no repo uses gets no Jira
-  error.
+- For the `jira` tracker, tasker checks `account`, `inProgressLabel`, `doneLabel`, `project` and `site` on the merged
+  `issueTracker` of each repo. The path of each error is `repos.<key>.issueTracker.<name>`, also for a value from a
+  definition. A definition that no repo uses gets no Jira error.
 
 ## `assistant`
 
