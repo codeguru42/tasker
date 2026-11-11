@@ -41,6 +41,7 @@ Each task is in one state. An edge is a permitted change from one state to anoth
 - A self-transition (an edge from a state to the same state) is never legal.
 - Each non-terminal state has an edge to `failed` and an edge to `cancelled`. `failed` has no edge to itself, because
   the self-transition rule wins.
+- `failed` has an edge to `landed` only when the recorded failure origin is `opening_pr`.
 
 ## Main lifecycle
 
@@ -400,6 +401,8 @@ read one table. The table lives in `src/state/commands.ts`.
 | `interrupted`                                                                                                                                                            | `resume`          | `resume`, `abort`                                                  |
 | each other state that is not terminal: `planning`, `refining`, `executing`, `verifying`, `reviewing`, `pushing`, `opening_pr`, `merging`, `finishing`, `updating_branch` | none              | `abort`                                                            |
 | `finished`, `cancelled`                                                                                                                                                  | no row            | no row                                                             |
+
+Only `tasker show` lists `mark-landed` for a failure from `opening_pr`, just before `abort`.
 
 The rules of the table:
 
