@@ -810,6 +810,38 @@ describe("task store", () => {
     expect(events.map((event) => event.data)).toEqual([{ action: "in_progress", result: "ok" }]);
   });
 
+  it("clearTrackerMark clears trackerMarked and records one clear event", () => {
+    const task = store.createTask(newTask);
+    store.recordTrackerMark(task.id);
+    const clearTrackerMark = Reflect.get(store, "clearTrackerMark") as (taskId: number) => void;
+
+    clearTrackerMark.call(store, task.id);
+
+    expect(store.getTask(task.id)?.trackerMarked).toBe(false);
+    const events = store.listEvents(task.id).filter((event) => event.type === "tracker_update");
+    expect(events.map((event) => event.data)).toEqual([
+      { action: "in_progress", result: "ok" },
+      { action: "clear_in_progress", result: "ok" },
+    ]);
+  });
+
+  it("rolls back trackerMarked when the clear event insert fails", () => {
+    const task = store.createTask(newTask);
+    store.recordTrackerMark(task.id);
+    const release = rejectEvent(dbPath, "tracker_update");
+    const clearTrackerMark = Reflect.get(store, "clearTrackerMark") as (taskId: number) => void;
+
+    try {
+      expect(() => clearTrackerMark.call(store, task.id)).toThrow(/event rejected/);
+    } finally {
+      release();
+    }
+
+    expect(store.getTask(task.id)?.trackerMarked).toBe(true);
+    const events = store.listEvents(task.id).filter((event) => event.type === "tracker_update");
+    expect(events.map((event) => event.data)).toEqual([{ action: "in_progress", result: "ok" }]);
+  });
+
   it("reads a task back, and returns undefined for a missing id", () => {
     const task = store.createTask(newTask);
     expect(store.getTask(task.id)).toEqual(task);

@@ -1,6 +1,7 @@
 import { renameSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { openPrTask } from "../../src/tasks/open-pr.js";
+import { abortTask } from "../../src/tasks/abort.js";
 import { LockBusyError, repoLockName, taskLockName } from "../../src/store/locks.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { captureIo } from "../helpers/cli.js";
@@ -203,6 +204,7 @@ describe("openPrTask", () => {
       { data: { action: "clear_in_progress", result: "failed" } },
     ]);
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
+    expect(latestTaskOf(fixture.dataRoot, KEY).trackerMarked).toBe(true);
   });
 
   it("does not write to the tracker when there is no review target", async () => {
@@ -242,9 +244,21 @@ describe("openPrTask", () => {
     const forge = forgeStub();
 
     const trackerEnv = { ...gh.env, PATH: fixture.env.PATH };
-    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) => {
+    const { result, io } = await withDataRootStore(fixture.dataRoot, async (store) => {
       store.recordTrackerMark(fixture.task.id);
-      return callOpenPr(fixture, store, forge, 300, trackerEnv);
+      const opened = await callOpenPr(fixture, store, forge, 300, trackerEnv);
+      await abortTask(store, {
+        config: fixture.config,
+        ref: taskRefOf(fixture),
+        taskId: fixture.task.id,
+        force: false,
+        keepRemote: true,
+        env: trackerEnv,
+        repoLockWaitMs: 300,
+        report: () => {},
+        trackerIo: { stdout: () => {}, stderr: () => {} },
+      });
+      return opened;
     });
 
     expect(result).toMatchObject({ adopted: false, pullRequest: { number: 42 } });
@@ -252,6 +266,8 @@ describe("openPrTask", () => {
       ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "peer-review"],
       ["issue", "edit", "5", "-R", "codeguru42/tasker", "--remove-label", "wip"],
     ]);
+    expect(gh.calls().filter((call) => call.args.includes("--remove-label"))).toHaveLength(1);
+    expect(latestTaskOf(fixture.dataRoot, KEY).trackerMarked).toBe(false);
     expect(io.out.join("")).toBe(
       `added the label "peer-review" to ${KEY} on the tracker\ncleared the in-progress marker of ${KEY} on the tracker\n`,
     );
