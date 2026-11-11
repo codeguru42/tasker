@@ -264,14 +264,24 @@ for its status before it can send another request.
 
 ## `tasker mark-landed`
 
-Declares that work in `accepted`, `pushed` or `in_peer_review` landed: `tasker mark-landed <issue>`. The task moves to
-`landed`. The command makes no Git or forge calls and takes no clone lock.
+Declares that work in `accepted`, `pushed` or `in_peer_review` landed: `tasker mark-landed <issue>`. It also accepts a
+task in `failed` only when its latest valid failure origin is `opening_pr`. For this case, the command moves the task
+from `failed` to `landed` and records `{ from: "failed", to: "landed" }` in the `marked_landed` event. Only
+`tasker show` lists `mark-landed` for this failure origin. The command makes no Git or forge calls and takes no clone
+lock.
 
 On success, the command prints `marked <issue key> landed\n` on stdout. The command records the declaration and moves
 the task in one transaction.
 
-The command stops with exit code 1 and prints the error on stderr when the task does not exist, its state is not one of
-the three states above, or another process holds the task lock. In each case, the task and its events stay unchanged.
+For a task in `failed` with another failure origin, or with no valid failure origin, the command stops with exit code 1
+and prints this error on stderr:
+
+```text
+the task of <issue key> is in failed; tasker mark-landed needs accepted, pushed or in_peer_review. next: tasker retry <issue key> (also: tasker refine <issue key>, tasker update-branch <issue key>, tasker abort <issue key>)
+```
+
+The command also stops with exit code 1 when the task does not exist, its state is not accepted, pushed, in_peer_review
+or an eligible failed task, or another process holds the task lock. A refusal leaves the task and its events unchanged.
 
 ## `tasker finish`
 
