@@ -25,6 +25,7 @@ import { useAcceptedTask } from "../helpers/task-fixtures.js";
 import { spawnTaskerWithPathAndHome } from "../helpers/processes.js";
 import { deadRunNote } from "../helpers/state-commands.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
+import { fakeGh, ghTokenAnswer, githubWriteAnswer } from "../helpers/fake-gh.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -112,6 +113,142 @@ describe("tasker open-pr", () => {
     expect(fake.calls()[0]?.tokenMatches).toBe(false);
     expect(fake.calls()[1]?.tokenMatches).toBe(true);
     expect(JSON.stringify(fake.calls())).not.toContain(TOKEN);
+  });
+
+  it("writes the review label and clears the marker in the tracker output", async () => {
+    const url = "https://github.com/codeguru42/tasker/pull/42";
+    const accepted = await useAcceptedTask({
+      repo: {
+        forge: { provider: "github", account: ACCOUNT },
+        issueTracker: {
+          provider: "github",
+          account: "codeguru42",
+          updateOnStart: true,
+          inProgressLabel: "in progress",
+          reviewLabel: "peer-review",
+        },
+      },
+      ghAnswers: [
+        githubWriteAnswer({ project: "codeguru42/tasker", number: 5, verb: "edit", rest: ["--add-assignee", "@me"] }),
+        githubWriteAnswer({
+          project: "codeguru42/tasker",
+          number: 5,
+          verb: "edit",
+          rest: ["--add-label", "in progress"],
+        }),
+      ],
+    });
+    await copyCloneBranchToOrigin({
+      origin: accepted.origin.path,
+      clone: accepted.clone,
+      branch: accepted.task.branch!,
+      env: accepted.env,
+    });
+    withDataRootStore(accepted.dataRoot, (store) =>
+      store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision }),
+    );
+    const listArgs = openPrListArgs(accepted.task.branch!);
+    const fake = fakeGh(useTempDir("tasker-open-pr-review-output-"), process.env, [
+      openPrTokenAnswer(),
+      { args: listArgs, stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]) },
+      ghTokenAnswer("codeguru42", "gho_test"),
+      githubWriteAnswer({
+        project: "codeguru42/tasker",
+        number: 5,
+        verb: "edit",
+        rest: ["--add-label", "peer-review"],
+      }),
+      githubWriteAnswer({
+        project: "codeguru42/tasker",
+        number: 5,
+        verb: "edit",
+        rest: ["--remove-label", "in progress"],
+      }),
+    ]);
+    useProcessEnv({ TASKER_GH_BIN: fake.env.TASKER_GH_BIN, PATH: `${fake.env.PATH ?? ""}:${process.env.PATH ?? ""}` });
+
+    const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `added the label "peer-review" to ${KEY} on the tracker\ncleared the in-progress marker of ${KEY} on the tracker\nadopted PR #42: ${url}\nstate: in_peer_review\n`,
+      err: "",
+    });
+  });
+
+  it("warns when the review label write fails and does not clear the marker", async () => {
+    const url = "https://github.com/codeguru42/tasker/pull/42";
+    const accepted = await useAcceptedTask({
+      repo: {
+        forge: { provider: "github", account: ACCOUNT },
+        issueTracker: {
+          provider: "github",
+          account: "codeguru42",
+          updateOnStart: true,
+          inProgressLabel: "in progress",
+          reviewLabel: "peer-review",
+        },
+      },
+      ghAnswers: [
+        githubWriteAnswer({ project: "codeguru42/tasker", number: 5, verb: "edit", rest: ["--add-assignee", "@me"] }),
+        githubWriteAnswer({
+          project: "codeguru42/tasker",
+          number: 5,
+          verb: "edit",
+          rest: ["--add-label", "in progress"],
+        }),
+      ],
+    });
+    await copyCloneBranchToOrigin({
+      origin: accepted.origin.path,
+      clone: accepted.clone,
+      branch: accepted.task.branch!,
+      env: accepted.env,
+    });
+    withDataRootStore(accepted.dataRoot, (store) =>
+      store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision }),
+    );
+    const listArgs = openPrListArgs(accepted.task.branch!);
+    const fake = fakeGh(useTempDir("tasker-open-pr-review-fail-output-"), process.env, [
+      openPrTokenAnswer(),
+      { args: listArgs, stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]) },
+      ghTokenAnswer("codeguru42", "gho_test"),
+      githubWriteAnswer({
+        project: "codeguru42/tasker",
+        number: 5,
+        verb: "edit",
+        rest: ["--add-label", "peer-review"],
+        stderr: "denied\n",
+        exitCode: 1,
+      }),
+    ]);
+    useProcessEnv({ TASKER_GH_BIN: fake.env.TASKER_GH_BIN, PATH: `${fake.env.PATH ?? ""}:${process.env.PATH ?? ""}` });
+
+    const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
+
+    expect(result).toEqual({
+      code: 0,
+      out: `adopted PR #42: ${url}\nstate: in_peer_review\n`,
+      err: `warning: cannot add the label "peer-review" to ${KEY} on the tracker: could not add the label "peer-review" of issueTracker.reviewLabel to ${KEY}: gh issue edit failed with exit code 1: denied\n`,
+    });
+    expect(fake.calls().map(({ args }) => args)).toContainEqual([
+      "issue",
+      "edit",
+      "5",
+      "-R",
+      "codeguru42/tasker",
+      "--add-label",
+      "peer-review",
+    ]);
+    expect(fake.calls().map(({ args }) => args)).not.toContainEqual([
+      "issue",
+      "edit",
+      "5",
+      "-R",
+      "codeguru42/tasker",
+      "--remove-label",
+      "in progress",
+    ]);
   });
 
   it("does not publish, run an assistant, wait for CI, merge, or detect PR state", async () => {
