@@ -126,9 +126,11 @@ create it.
 
 `tasker open-pr` adds `issueTracker.reviewLabel` with the same `gh issue edit --add-label` call after it records the PR.
 If that add succeeds, tasker removes `issueTracker.inProgressLabel` when `updateOnStart` is true and the marker label is
-set. It adds the review label first because the in-progress marker protects the issue from another start. If the add
-fails, tasker warns and leaves the marker. If the marker removal fails, tasker warns and both labels can remain. Neither
-failure changes the recorded PR or the task state.
+set. If both labels have the same name, tasker leaves the review label in place. GitHub label names are equal without
+regard to case, so this also applies when the names differ only in letter case. Tasker adds the review label first
+because the in-progress marker protects the issue from another start. If the add fails, tasker warns and leaves the
+marker. If the marker removal fails, tasker warns and both labels can remain. Neither failure changes the recorded PR or
+the task state.
 
 The remove of the in-progress label uses `gh issue edit --remove-label`. The facts below come from a measure of gh
 2.101.0 against a fake local HTTPS server:
