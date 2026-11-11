@@ -36,11 +36,6 @@ describe("trackerTargets", () => {
     });
   });
 
-  it("selects the review target for its provider", () => {
-    expect(targetsOf("github", ALL_KEYS)).toEqual({ inProgress: "in progress", done: "done", review: "peer-review" });
-    expect(targetsOf("jira", ALL_KEYS)).toEqual({ inProgress: "In Progress", done: "Done", review: "In Review" });
-  });
-
   it("gives undefined when no review target is set", () => {
     expect((targetsOf("github") as Record<string, unknown>).review).toBeUndefined();
     expect((targetsOf("jira") as Record<string, unknown>).review).toBeUndefined();

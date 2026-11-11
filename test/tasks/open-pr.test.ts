@@ -58,6 +58,106 @@ async function callOpenPr(
 }
 
 describe("openPrTask", () => {
+  it.each(["peer-review", "Peer-Review"])(
+    "keeps review label %s when it matches the in-progress label",
+    async (label) => {
+      const fixture = await pushedTask();
+      Object.assign(fixture.config.repos[fixture.repoKey].issueTracker, {
+        updateOnStart: true,
+        inProgressLabel: "peer-review",
+        reviewLabel: label,
+      });
+      const gh = fakeGh(useTempDir("tasker-open-pr-same-review-gh-"), fixture.env, [
+        ghTokenAnswer("codeguru42", "gho_test"),
+        githubWriteAnswer({
+          project: "codeguru42/tasker",
+          number: 5,
+          verb: "edit",
+          rest: ["--add-label", label],
+        }),
+      ]);
+
+      const { result } = await withDataRootStore(fixture.dataRoot, (store) =>
+        callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH }),
+      );
+
+      expect(result).toMatchObject({ adopted: false, pullRequest: { number: 42 } });
+      expect(gh.calls().map((call) => call.args)).toEqual([
+        ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", label],
+      ]);
+      expect(eventsOf(fixture.dataRoot, KEY).filter((event) => event.type === "tracker_update")).toMatchObject([
+        { data: { action: "review", result: "ok" } },
+      ]);
+    },
+  );
+
+  it.each([
+    { name: "without an in-progress label", updateOnStart: true, inProgressLabel: undefined },
+    { name: "when updateOnStart is false", updateOnStart: false, inProgressLabel: "wip" },
+  ])("adds review $name without a clear", async ({ updateOnStart, inProgressLabel }) => {
+    const fixture = await pushedTask();
+    Object.assign(fixture.config.repos[fixture.repoKey].issueTracker, {
+      updateOnStart,
+      inProgressLabel,
+      reviewLabel: "peer-review",
+    });
+    const gh = fakeGh(useTempDir("tasker-open-pr-gated-clear-gh-"), fixture.env, [
+      ghTokenAnswer("codeguru42", "gho_test"),
+      githubWriteAnswer({
+        project: "codeguru42/tasker",
+        number: 5,
+        verb: "edit",
+        rest: ["--add-label", "peer-review"],
+      }),
+    ]);
+    const { io } = await withDataRootStore(fixture.dataRoot, (store) =>
+      callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH }),
+    );
+
+    expect(gh.calls().map((call) => call.args)).toHaveLength(1);
+    expect(io.out.join("")).toContain("peer-review");
+    expect(eventsOf(fixture.dataRoot, KEY).filter((event) => event.type === "tracker_update")).toMatchObject([
+      { data: { action: "review", result: "ok" } },
+    ]);
+  });
+
+  it("keeps the PR and review state when clearing the marker fails", async () => {
+    const fixture = await pushedTask();
+    Object.assign(fixture.config.repos[fixture.repoKey].issueTracker, {
+      updateOnStart: true,
+      inProgressLabel: "wip",
+      reviewLabel: "peer-review",
+    });
+    const gh = fakeGh(useTempDir("tasker-open-pr-clear-fail-gh-"), fixture.env, [
+      ghTokenAnswer("codeguru42", "gho_test"),
+      githubWriteAnswer({
+        project: "codeguru42/tasker",
+        number: 5,
+        verb: "edit",
+        rest: ["--add-label", "peer-review"],
+      }),
+      githubWriteAnswer({
+        project: "codeguru42/tasker",
+        number: 5,
+        verb: "edit",
+        rest: ["--remove-label", "wip"],
+        stderr: "denied",
+        exitCode: 1,
+      }),
+    ]);
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) =>
+      callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH }),
+    );
+
+    expect(result).toMatchObject({ pullRequest: { number: 42 } });
+    expect(io.err.join("")).toContain("warning: cannot clear the in-progress marker");
+    expect(eventsOf(fixture.dataRoot, KEY).slice(-2)).toMatchObject([
+      { data: { action: "review", result: "ok" } },
+      { data: { action: "clear_in_progress", result: "failed" } },
+    ]);
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
+  });
+
   it("adds review after recording the PR, then clears the GitHub marker", async () => {
     const fixture = await pushedTask();
     Object.assign(fixture.config.repos[fixture.repoKey].issueTracker, {
@@ -90,7 +190,7 @@ describe("openPrTask", () => {
       ["issue", "edit", "5", "-R", "codeguru42/tasker", "--remove-label", "wip"],
     ]);
     expect(io.out.join("")).toBe(
-      `marked the review label peer-review to ${KEY} for review on the tracker\ncleared the in-progress marker of ${KEY} on the tracker\n`,
+      `added the label "peer-review" to ${KEY} on the tracker\ncleared the in-progress marker of ${KEY} on the tracker\n`,
     );
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
     expect(eventsOf(fixture.dataRoot, KEY).slice(-2)).toMatchObject([
@@ -129,13 +229,14 @@ describe("openPrTask", () => {
     expect(gh.calls().map((call) => call.args)).toEqual([
       ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "peer-review"],
     ]);
-    expect(io.err.join("")).toContain("issueTracker.reviewLabel");
+    expect(io.err.join("")).toContain(`warning: cannot add the label "peer-review" to ${KEY} on the tracker:`);
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
     expect(eventsOf(fixture.dataRoot, KEY).at(-1)).toMatchObject({
       type: "tracker_update",
       data: { action: "review", result: "failed" },
     });
   });
+
   it("refuses an accepted task before resolving its origin or calling the forge", async () => {
     const fixture = await useAcceptedTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
     const fake = forgeStub();
