@@ -187,6 +187,90 @@ describe("doctor", () => {
     expect(statusLines(out).find((line) => line.includes("free space"))).toMatch(/^warn /);
   });
 
+  it("warns for missing github start and finish targets in each repo", async () => {
+    await setUp([...GOOD_GH, OTHER_PROJECT], (raw) => {
+      raw.repos.tasker.issueTracker.updateOnStart = true;
+      raw.repos.tasker.issueTracker.updateOnFinish = true;
+      raw.repos.other = {
+        ...raw.repos.tasker,
+        issueTracker: {
+          ...raw.repos.tasker.issueTracker,
+          project: "codeguru42/other",
+          updateOnStart: true,
+          updateOnFinish: true,
+        },
+      };
+    });
+
+    const { code, out } = await runCommand(doctor, "doctor");
+
+    expect(code).toBe(0);
+    for (const repo of ["tasker", "other"]) {
+      expect(out).toContain(`repos.${repo}.issueTracker.inProgressLabel`);
+      expect(out).toContain(`repos.${repo}.issueTracker.doneLabel`);
+    }
+    const warnings = statusLines(out).filter((line) => line.startsWith("warn "));
+    expect(warnings).toHaveLength(4);
+    expect(warnings.filter((line) => line.includes("inProgressLabel"))).toHaveLength(2);
+    expect(warnings.filter((line) => line.includes("doneLabel"))).toHaveLength(2);
+    expect(
+      warnings.filter((line) => line.includes("doneLabel")).every((line) => /close.*issue|issue.*close/i.test(line)),
+    ).toBe(true);
+  });
+
+  it("warns for missing Jira start and finish targets in each repo", async () => {
+    const { dir } = await setUp([], (raw) => {
+      const tracker = { provider: "jira", project: "TEST", updateOnStart: true, updateOnFinish: true };
+      raw.repos.tasker.issueTracker = tracker;
+      raw.repos.work = { ...raw.repos.tasker, issueTracker: { ...tracker } };
+    });
+    useFakeAcli(dir);
+
+    const { code, out } = await runCommand(doctor, "doctor");
+
+    expect(code).toBe(0);
+    for (const repo of ["tasker", "work"]) {
+      expect(out).toContain(`repos.${repo}.issueTracker.inProgressStatus`);
+      expect(out).toContain(`repos.${repo}.issueTracker.doneStatus`);
+    }
+    const warnings = statusLines(out).filter((line) => line.startsWith("warn "));
+    expect(warnings.filter((line) => line.includes("inProgressStatus"))).toHaveLength(2);
+    expect(warnings.filter((line) => line.includes("doneStatus"))).toHaveLength(2);
+  });
+
+  it("does not warn when the github and Jira targets are configured", async () => {
+    const { dir } = await setUp(
+      [
+        ...GOOD_GH,
+        { args: ["api", "repos/codeguru42/tasker/labels/in%20progress"], stdout: "{}" },
+        { args: ["api", "repos/codeguru42/tasker/labels/done"], stdout: "{}" },
+      ],
+      (raw) => {
+        raw.repos.tasker.issueTracker.updateOnStart = true;
+        raw.repos.tasker.issueTracker.updateOnFinish = true;
+        raw.repos.tasker.issueTracker.inProgressLabel = "in progress";
+        raw.repos.tasker.issueTracker.doneLabel = "done";
+        raw.repos.work = {
+          ...raw.repos.tasker,
+          issueTracker: {
+            provider: "jira",
+            project: "TEST",
+            updateOnStart: true,
+            updateOnFinish: false,
+            inProgressStatus: "In Progress",
+            doneStatus: "Done",
+          },
+        };
+      },
+    );
+    useFakeAcli(dir);
+
+    const { code, out } = await runCommand(doctor, "doctor");
+
+    expect(code).toBe(0);
+    expect(statusLines(out).filter((line) => line.startsWith("warn ") && line.includes("issueTracker."))).toEqual([]);
+  });
+
   it("gives 0 and an ok acli auth line for one jira repo, and runs no gh check", async () => {
     const { dir } = await setUp([], (raw) => {
       raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST" };

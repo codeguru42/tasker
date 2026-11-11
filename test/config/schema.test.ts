@@ -10,10 +10,6 @@ function issuesOf(raw: unknown, env: NodeJS.ProcessEnv = {}): string[] {
   return configIssuesOf(() => parseConfig(raw, env, home));
 }
 
-function doneLine(key = "tasker"): string {
-  return `repos.${key}.issueTracker.doneStatus: is required for the jira tracker when updateOnFinish is true`;
-}
-
 function refusedLine(name: string, key = "tasker"): string {
   return `repos.${key}.issueTracker.${name}: is not accepted for the jira tracker`;
 }
@@ -1072,9 +1068,9 @@ describe("parseConfig named trackers", () => {
       expect(parsedRepo(raw).issueTracker.doneStatus).toBe("Done");
     });
 
-    it("reports a repo that leaves doneStatus out", () => {
+    it("accepts a repo that leaves doneStatus out of a merged tracker definition", () => {
       const raw = withTracker({ tracker: "acme", project: "TEST" }, { acme: finishing });
-      expect(issuesOf(raw)).toEqual([doneLine()]);
+      expect(parsedRepo(raw).issueTracker).toMatchObject({ updateOnFinish: true, doneStatus: undefined });
     });
 
     it("accepts a repo that sets updateOnFinish to false over the definition", () => {
@@ -1205,8 +1201,9 @@ describe("parseConfig jira tracker", () => {
   });
 
   describe("doneStatus", () => {
-    it("requires doneStatus when updateOnFinish is true", () => {
-      expect(issuesOf(jiraConfig({ updateOnFinish: true }))).toEqual([doneLine()]);
+    it("accepts updateOnFinish without doneStatus", () => {
+      const raw = jiraConfig({ updateOnFinish: true });
+      expect(parsedRepo(raw).issueTracker).toMatchObject({ updateOnFinish: true, doneStatus: undefined });
     });
 
     it("accepts updateOnFinish with doneStatus", () => {
@@ -1222,7 +1219,6 @@ describe("parseConfig jira tracker", () => {
       expect(issues).toContain(refusedLine("account"));
       expect(issues).toContain(badLine("bad"));
       expect(issues).toContain(siteLine());
-      expect(issues).toContain(doneLine());
       expectIssueAt(issues, "repos.tasker.verify.commands");
       expect(issues).toContain("bogus: unrecognized key");
     });
