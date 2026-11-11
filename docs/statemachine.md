@@ -184,6 +184,7 @@ flowchart LR
   PU -->|open-pr| OP[opening_pr]
   OP -->|done| PR[in_peer_review]
   PR -->|merge| MG[back to merging]
+  PR -->|reopen FEEDBACK| RF[refining]
   MG -->|forge confirms merged| L[back to landed]
   PU -->|mark-landed| L[back to landed]
   PR -->|mark-landed| L
@@ -191,7 +192,7 @@ flowchart LR
   classDef spawn fill:#2563eb,color:#fff,stroke:#1e3a8a;
   classDef exit fill:#f3f4f6,color:#111827,stroke:#6b7280;
   class PG,OP spawn;
-  class MG,L exit;
+  class MG,L,RF exit;
 ```
 
 - `push` publishes the task branch only. It never pushes the base branch.
@@ -207,7 +208,7 @@ flowchart LR
   See [the landing reference](../skills/tasker/references/landing.md#tasker-merge) for guards, errors and output.
 
 - After `landed`, the path is the same as the trunk path. `finish` refuses a task in `in_peer_review`.
-- `reopen`, from `accepted` or `pushed`, sends a bug found after accept back to `refining` in Plan. It resyncs the
+- `reopen`, from `accepted`, `pushed` or `in_peer_review`, sends feedback back to `refining` in Plan. It resyncs the
   worktree onto the stored base tip first. The new plan revision must be approved and then go through execution,
   verification and acceptance before another publication. Reopen keeps the published revision.
 - To update an open PR, run `update-branch` from `in_peer_review`. It demotes the task to `executed`. Then run `verify`,
@@ -269,6 +270,7 @@ flowchart LR
 | `refining` (plain refine, or from `failed`) | `awaiting_plan_review`                                     | `refine`, with the recorded feedback                                                                                         |
 | `refining` (reopen from `accepted`)         | `accepted`                                                 | `reopen`, with the recorded feedback                                                                                         |
 | `refining` (reopen from `pushed`)           | `pushed`                                                   | `reopen`, with the recorded feedback                                                                                         |
+| `refining` (reopen from `in_peer_review`)   | `in_peer_review`                                           | `reopen`, with the recorded feedback                                                                                         |
 | `refining` (promoted from `reviewed`)       | `reviewed`                                                 | `refine`, with the recorded feedback or none                                                                                 |
 | `refining` (from `tasker review FEEDBACK`)  | `awaiting_work_review`                                     | `review`, with the recorded feedback                                                                                         |
 | `executing`                                 | `approved`                                                 | `execute` (continues the session)                                                                                            |
@@ -310,6 +312,7 @@ flowchart LR
 | `refining` (from `tasker review FEEDBACK`)                  | `awaiting_work_review`                                                                                                    | nothing runs. Retry prints a hint, and you give the next feedback to `review`.                                               |
 | `refining` (reopen from `accepted`)                         | `accepted`                                                                                                                | nothing runs. Retry prints the reopen hint. No assistant runs.                                                               |
 | `refining` (reopen from `pushed`)                           | `pushed`                                                                                                                  | nothing runs. Retry prints the reopen hint. No assistant runs.                                                               |
+| `refining` (reopen from `in_peer_review`)                   | `in_peer_review`                                                                                                          | nothing runs. Retry prints the reopen hint. No assistant runs.                                                               |
 | `approved`                                                  | `approved`                                                                                                                | `execute`                                                                                                                    |
 | `executing`                                                 | `approved`                                                                                                                | `execute` (new session). A done todo gets no turn.                                                                           |
 | `verifying`                                                 | `executed`                                                                                                                | `verify`. With `--resume-execute`: `approved`, every todo done, then `execute` continues the session with one fix turn.      |
@@ -394,7 +397,7 @@ read one table. The table lives in `src/state/commands.ts`.
 | `reviewed`                                                                                                                                                               | none              | `refine`, `dismiss-review`, `update-branch`, `abort`               |
 | `accepted`                                                                                                                                                               | none              | `merge`, `push`, `mark-landed`, `update-branch`, `reopen`, `abort` |
 | `pushed`                                                                                                                                                                 | none              | `open-pr`, `mark-landed`, `update-branch`, `reopen`, `abort`       |
-| `in_peer_review`                                                                                                                                                         | none              | `merge`, `mark-landed`, `update-branch`, `abort`                   |
+| `in_peer_review`                                                                                                                                                         | none              | `merge`, `mark-landed`, `update-branch`, `reopen`, `abort`         |
 | `landed`                                                                                                                                                                 | `finish`          | `finish`, `abort`                                                  |
 | `cleanup_failed`                                                                                                                                                         | `finish`          | `finish`, `update-branch`, `abort`                                 |
 | `failed`                                                                                                                                                                 | `retry`           | `retry`, `refine`, `update-branch`, `abort`                        |
