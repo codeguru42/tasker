@@ -134,8 +134,8 @@ appear before the PR and state lines. For GitHub, tasker prints:
 added the label "<label>" to <issue key> on the tracker
 ```
 
-When `updateOnStart` is true, `inProgressLabel` is set, and its name differs from the review label, a successful clear
-also prints:
+When `updateOnStart` is true, `inProgressLabel` is set, this task added the in-progress marker, and the name of that
+label differs from the review label, a successful clear also prints:
 
 ```text
 cleared the in-progress marker of <issue key> on the tracker
