@@ -265,10 +265,9 @@ for its status before it can send another request.
 ## `tasker mark-landed`
 
 Declares that work in `accepted`, `pushed` or `in_peer_review` landed: `tasker mark-landed <issue>`. It also accepts a
-task in `failed` only when its latest valid failure origin is `opening_pr`. For this case, the command moves the task
-from `failed` to `landed` and records `{ from: "failed", to: "landed" }` in the `marked_landed` event. Only
-`tasker show` lists `mark-landed` for this failure origin. The command makes no Git or forge calls and takes no clone
-lock.
+task in `failed` whose last failure came from `opening_pr`. For this case, the command moves the task from `failed` to
+`landed` and records `{ from: "failed", to: "landed" }` in the `marked_landed` event. Only `tasker show` lists
+`mark-landed` for this failure origin. The command makes no Git or forge calls and takes no clone lock.
 
 On success, the command prints `marked <issue key> landed\n` on stdout. The command records the declaration and moves
 the task in one transaction.
