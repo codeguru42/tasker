@@ -13,8 +13,8 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
 
 - After `tasker approve`, each task subagent sends the orchestrator the list of files that the plan changes.
   `tasker refine` and `tasker approve` also print a warning when another task in progress changes the same file.
-- If the edit of a shared file is not required, the task subagent removes it in a refine. If it is required, the
-  orchestrator sets the landing order.
+- If the edit of a shared file is not required, the task subagent removes it in a refine. If it is required,
+  [the overlap rule](#the-overlap-rule) says whether the two tickets get a landing order.
 - When the orchestrator sets the landing order, it tells the later task subagent which ticket must land first. The
   earlier ticket is the ticket that must land first. The later task subagent is the task subagent of the ticket that
   lands after it. The earlier task subagent is the task subagent of the earlier ticket.
@@ -264,14 +264,24 @@ Any other exit code of `git fetch` or `git diff` is a failure. For example, `git
 no `tasker` remote. `git diff` exits with 128 when the task branch is not on the `tasker` remote. If a command of the
 compare fails, [the failure rule](limits.md#the-failure-rule) applies.
 
-For a shared file, the overlap rule sets a landing order. A ticket of the same milestone or of no milestone follows the
-bullets of [Land the work](#land-the-work). Each orchestrator tells its own task subagent the landing order, also when
-its ticket lands first. For two tickets of different milestones, [the Docs rule](#the-docs-rule) applies instead, so the
-first ticket that is ready lands first. For a stacked ticket and its parent,
-[the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over this paragraph.
+For a shared file, the overlap rule sets no landing order, except for a real need. Each ticket lands as soon as it is
+ready, so the first ticket that is ready lands first. The list of [the Docs rule](#the-docs-rule) applies to the shared
+file, so the ticket that lands second runs `tasker update-branch`. The orchestrator of each ticket tells its own task
+subagent the words "no fixed order, first ready lands" for the shared file.
 
-For a shared doc that two tickets edit in different sections, [the section rule](#the-section-rule) applies in place of
-a landing order.
+A real need is a need of one ticket for the code or the docs that the other ticket makes. An example is a ticket whose
+output must describe the keys that the other ticket adds. The orchestrator that does the compare judges a real need, and
+this judgment is open on purpose. For a real need, the overlap rule sets a landing order. A ticket of the same milestone
+or of no milestone then follows the bullets of [Land the work](#land-the-work). Each orchestrator tells its own task
+subagent the landing order, also for the ticket that lands first.
+
+For two tickets of different milestones, [the Docs rule](#the-docs-rule) applies instead of the two paragraphs before
+this one. For a stacked ticket and its parent, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule)
+wins over the two paragraphs before this one.
+
+The user decided this rule on 2026-11-10. That day, the user answered "Whichever finishes first lands" for #847 and #359
+of `M19 — Polish`. The answer came after a ticket held before `tasker accept` only for its landing order. Earlier the
+same day, the user overrode a fixed order with "Land 846 since it is ready".
 
 ### The Docs rule
 
@@ -311,49 +321,6 @@ only a ticket of "Docs" and a ticket of a numbered milestone. For two tickets of
 the earlier milestone landed first. The reason: under the old order, a ticket of a later milestone can wait for a ticket
 of an earlier milestone that makes no progress. The milestone of the later ticket can often land its own tickets first.
 The rule keeps its name from its first case, a ticket of "Docs" and a ticket of a numbered milestone.
-
-### The section rule
-
-This rule covers two tickets that edit different sections of a shared doc. A shared doc is a Markdown file under `docs/`
-that both tickets change. A section is the text under one heading of any level, up to the next heading. The text before
-the first heading is also a section. A new heading starts a new section, and a change of a heading line is an edit of
-its section. A moving ticket of [the move rule](pick-the-tickets.md#pick-the-tickets) and a ticket that changes the
-layout of a whole doc edit each section.
-
-For the shared doc, the orchestrator of each ticket sets no landing order, and it sends none to the other orchestrator.
-A landing order for another shared file stays. If the two tickets have no landing order at all, each ticket lands as
-soon as it is ready. The list of [the Docs rule](#the-docs-rule) applies to the shared doc. For the shared doc, this
-rule wins over the second sentence of the bullet "If the edit of a shared file is not required". The first sentence of
-that bullet still applies.
-
-The orchestrator that does the compare of [the overlap rule](#the-overlap-rule) also names the sections of each shared
-doc. Before the start of a ticket, it takes them from the items and the hints that the shared-file bullet of
-[Pick the tickets](pick-the-tickets.md#pick-the-tickets) counts. For a task in flight, it takes them from the plan, with
-`tasker show-plan <issue>`.
-
-For a task in flight, the orchestrator also runs `git fetch --multiple tasker origin`, and then
-`git diff -U100000 origin/<base branch>...tasker/<task branch> -- <docs>`. `<docs>` is each shared doc of the task. This
-read is a step of its own, so it uses each ref in one command. The large context shows each heading, because a hunk
-header shows no heading of a Markdown file.
-
-If the two tickets share a section, the overlap rule sets the landing order. If the orchestrator cannot name the
-sections of a ticket, the overlap rule also sets the landing order. A failed fetch, a failed read of the plan and a
-failed diff are such cases. If a later compare finds a shared section, the overlap rule sets the landing order at that
-compare.
-
-In each of these cases, the orchestrator that sets the landing order tells the other orchestrator with `SendMessage`.
-The other orchestrator tells its own task subagent. A landing order that already exists stays, and
-[Land the work](#land-the-work) says who changes it.
-
-For two tickets of different milestones, [the Docs rule](#the-docs-rule) applies instead. For a stacked ticket and its
-parent, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over this rule.
-
-If a task subagent stops under the fourth case of [the stop rule](plan-review.md#the-stop-rule) for a shared doc, the
-orchestrator does this compare for that doc. If this rule covers the doc, the orchestrator tells the task subagent.
-
-The user decided this rule on 2026-10-31. The reason: a relayed change of a landing order waits for the user, and that
-wait can cost more than the rebase that it prevents. The cost: a clash of meaning between two sections shows late, in
-the review or the diff read of the ticket that lands second.
 
 ### The hold rule
 
