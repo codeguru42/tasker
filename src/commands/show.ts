@@ -3,7 +3,6 @@ import { showLines } from "../state/commands.js";
 import { formatFindings } from "../review/findings-text.js";
 import {
   transitionFromEvents,
-  failedFrom,
   lastTransitionError,
   pauseRecordOf,
   type PauseRecord,
@@ -87,6 +86,7 @@ function pauseFields(events: readonly TaskEvent[], state: string): Field[] {
 function formatTask(store: TaskStore, task: Task, clone: string): string {
   const events = store.listEvents(task.id);
   const last = events.at(-1);
+  const failedOrigin = task.state === "failed" ? transitionFromEvents(events, "failed") : undefined;
   const fields: [string, string | number | null | undefined][] = [
     ["issue", task.issueKey],
     ["repo", task.repoKey],
@@ -105,13 +105,10 @@ function formatTask(store: TaskStore, task: Task, clone: string): string {
     fields.splice(fields.findIndex(([name]) => name === "base") + 1, 0, ["synced base tip", task.syncedBaseTip]);
   }
   if (task.state === "failed") {
-    fields.push(
-      ["failed in", transitionFromEvents(events, "failed")],
-      ["error", lastTransitionError(events, "failed")],
-    );
+    fields.push(["failed in", failedOrigin], ["error", lastTransitionError(events, "failed")]);
   }
   fields.push(...pauseFields(events, task.state));
-  const commandLines = showLines(task.state, task.issueKey, failedFrom(store, task.id))
+  const commandLines = showLines(task.state, task.issueKey, failedOrigin)
     .map((line) => `${line}\n`)
     .join("");
   return formatFields(fields) + commandLines + todoProgress(store, task.id) + reviewFindings(store, task);
