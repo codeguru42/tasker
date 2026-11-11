@@ -1,11 +1,11 @@
-import { rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, onTestFinished } from "vitest";
 import { loadConfig } from "../../src/config/load.js";
 import { type Config, parseConfig } from "../../src/config/schema.js";
 import { IssueKeyError } from "../../src/issue-key/ref.js";
 import { resolveIssueKey } from "../../src/issue-key/resolve.js";
-import { makeTempDir, useProcessEnv } from "./temp.js";
+import { makeTempDir, useProcessEnv, useTempHome } from "./temp.js";
 
 // A new object for each call, so a test can change it freely.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -103,6 +103,15 @@ export function useConfigFile(build: (dataRoot: string) => string): {
   writeFileSync(path, build(dataRoot));
   useProcessEnv({ TASKER_CONFIG: path });
   return { dir, path, dataRoot };
+}
+
+// Copies configPath to the default configuration path under a temporary HOME and returns that HOME.
+export function useDefaultConfigHome(configPath: string): string {
+  const { HOME } = useTempHome();
+  const configPathInHome = join(HOME, ".config", "tasker", "config.json");
+  mkdirSync(join(HOME, ".config", "tasker"), { recursive: true });
+  copyFileSync(configPath, configPathInHome);
+  return HOME;
 }
 
 // Writes threeRepoConfig() with useConfigFile(). Call it inside a test.

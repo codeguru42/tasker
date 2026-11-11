@@ -54,6 +54,54 @@ function fixture(answers: Parameters<typeof forgeGh>[2] = [], envNames: string[]
 }
 
 describe("createGitHubForge", () => {
+  it("uses the tasker GitHub config directory without passing HOME to gh", async () => {
+    const { fake, worktree } = fixture(
+      [{ args: ["pr", "view", "42", "--json", "state"], stdout: '{"state":"OPEN"}' }],
+      ["GH_CONFIG_DIR", "HOME"],
+    );
+
+    await makeProvider().isPrMerged(prNumber, worktree, {
+      ...fake.env,
+      TASKER_PATH: fake.env.PATH,
+      TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
+      HOME: "/tasker/home",
+    });
+
+    expect(fake.calls()[1]?.env).toEqual({ GH_CONFIG_DIR: "/tasker/gh-config", HOME: undefined });
+  });
+
+  it("rejects a blank TASKER_PATH without starting gh", async () => {
+    const { fake, worktree } = fixture();
+    const error = await failureOf(
+      makeProvider().isPrMerged(prNumber, worktree, {
+        ...fake.env,
+        PATH: fake.env.PATH,
+        TASKER_PATH: "",
+        TASKER_HOME: "/tasker/home",
+      }),
+      Error,
+    );
+
+    expect(diagnosticStrings(error).join("\n")).toContain("TASKER_PATH must be a nonblank path");
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it("rejects a blank TASKER_HOME without a GitHub config directory", async () => {
+    const { fake, worktree } = fixture();
+    const error = await failureOf(
+      makeProvider().isPrMerged(prNumber, worktree, {
+        ...fake.env,
+        TASKER_PATH: fake.env.PATH,
+        TASKER_HOME: "",
+        HOME: "/tasker/home",
+      }),
+      Error,
+    );
+
+    expect(diagnosticStrings(error).join("\n")).toContain("TASKER_HOME or TASKER_GH_CONFIG_DIR must be nonblank");
+    expect(fake.calls()).toEqual([]);
+  });
+
   it("creates the exact provider interface without starting gh", async () => {
     const { fake } = fixture();
     useProcessEnv(fake.env);

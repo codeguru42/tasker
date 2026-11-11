@@ -11,6 +11,7 @@ import {
   splitRoleModelsRepo,
   threeRepoConfig,
   useConfigFile,
+  useDefaultConfigHome,
   useThreeRepoDataRoot,
   validConfig,
   withTrustedExtensions,
@@ -140,6 +141,20 @@ describe("useConfigFile", () => {
     holder.written = written;
 
     expect(existsSync(written.dir)).toBe(true);
+  });
+});
+
+describe("useDefaultConfigHome", () => {
+  it("copies configuration to the default path under a temporary HOME", () => {
+    const written = writeDataRootConfig();
+    onTestFinished(() => rmSync(written.dir, { recursive: true, force: true }));
+
+    const home = useDefaultConfigHome(written.path);
+
+    expect(readFileSync(join(home, ".config", "tasker", "config.json"), "utf8")).toBe(
+      readFileSync(written.path, "utf8"),
+    );
+    expect(loadConfig({}, home).dataRoot).toBe(loadConfig({ TASKER_CONFIG: written.path }).dataRoot);
   });
 });
 

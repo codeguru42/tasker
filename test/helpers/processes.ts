@@ -78,11 +78,12 @@ export async function startWriteLockHolder(dbPath: string, holdMs: number): Prom
 export function spawnTasker(
   args: readonly string[],
   env: NodeJS.ProcessEnv = {},
+  options: { replaceEnv?: boolean } = {},
 ): Promise<{ code: number | null; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, ["--import", "tsx", "src/main.ts", ...args], {
       cwd: repoRoot,
-      env: { ...process.env, ...env },
+      env: options.replaceEnv ? env : { ...process.env, ...env },
     });
     let stdout = "";
     let stderr = "";

@@ -2,9 +2,11 @@ import { spawn, spawnSync } from "node:child_process";
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
-import { useTempDir } from "./temp.js";
+import { useProcessEnv, useTempDir } from "./temp.js";
 import { validConfig, writeTempConfig } from "./config.js";
 import { withRawDatabase } from "./store.js";
+import { useDefaultConfigHome } from "./config.js";
+import { loadConfig } from "../../src/config/load.js";
 import {
   deadPid,
   isAlive,
@@ -246,5 +248,17 @@ describe("spawnTasker", () => {
     expect(result.code).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain(`config file not found: ${path}`);
+  });
+
+  it("replaces the parent environment when requested", async () => {
+    const written = writeTempConfig(validConfig());
+    onTestFinished(() => rmSync(written.dir, { recursive: true, force: true }));
+    const home = useDefaultConfigHome(written.path);
+    useProcessEnv({ TASKER_CONFIG: join(useTempDir("tasker-spawn-bad-config-"), "missing.json") });
+
+    const result = await spawnTasker(["show-config"], { PATH: process.env.PATH, HOME: home }, { replaceEnv: true });
+
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(loadConfig({}, home));
   });
 });

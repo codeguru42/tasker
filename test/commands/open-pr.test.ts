@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { delimiter } from "node:path";
 import { run } from "../../src/cli.js";
 import { openPr } from "../../src/commands/open-pr.js";
 import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
@@ -21,6 +22,9 @@ import {
   writeRunMarker,
 } from "../helpers/store.js";
 import { useAcceptedTask } from "../helpers/task-fixtures.js";
+import { useDefaultConfigHome } from "../helpers/config.js";
+import { forgeGh } from "../helpers/forge-gh.js";
+import { spawnTasker } from "../helpers/processes.js";
 import { deadRunNote } from "../helpers/state-commands.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
@@ -30,6 +34,53 @@ const REPO = "codeguru42/tasker";
 const tokenAnswer = openPrTokenAnswer();
 
 describe("tasker open-pr", () => {
+  it("uses PATH and HOME from the child environment for GitHub calls", async () => {
+    const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: ACCOUNT } } });
+    await copyCloneBranchToOrigin({
+      origin: accepted.origin.path,
+      clone: accepted.clone,
+      branch: accepted.task.branch!,
+      env: accepted.env,
+    });
+    withDataRootStore(accepted.dataRoot, (store) =>
+      store.updateTask(accepted.task.id, {
+        state: "pushed",
+        publishedRevision: accepted.revision,
+        prNumber: null,
+      }),
+    );
+    const url = "https://github.com/codeguru42/tasker/pull/42";
+    const fake = forgeGh(
+      useTempDir("tasker-open-pr-default-environment-"),
+      TOKEN,
+      [
+        tokenAnswer,
+        {
+          args: openPrListArgs(accepted.task.branch!),
+          stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]),
+        },
+      ],
+      ["PATH", "HOME"],
+    );
+    const home = useDefaultConfigHome(accepted.configPath);
+    const path = [fake.env.PATH, process.env.PATH].filter((part): part is string => part !== undefined).join(delimiter);
+
+    const result = await spawnTasker(
+      ["open-pr", KEY, "--repo", REPO],
+      {
+        PATH: path,
+        HOME: home,
+      },
+      { replaceEnv: true },
+    );
+
+    expect(result.code, result.stderr).toBe(0);
+    expect(result.stdout).toContain(`adopted PR #42: ${url}`);
+    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
+    expect(fake.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, openPrListArgs(accepted.task.branch!)]);
+    expect(fake.calls()[0]?.env).toEqual({ PATH: `set:${path}`, HOME: `set:${home}` });
+  });
+
   it("shows its issue argument and repo option", async () => {
     const { code, help } = await runHelp(openPr, "open-pr");
 
