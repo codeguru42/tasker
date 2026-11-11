@@ -264,7 +264,7 @@ describe("resumeTask origins", () => {
     expect(result).not.toHaveProperty("feedback");
   });
 
-  it.each(["accepted", "pushed"] as const)(
+  it.each(["accepted", "pushed", "in_peer_review"] as const)(
     "returns to %s after a reopen pause with its exact feedback",
     async (origin) => {
       const { dataRoot, task } = seedApprovedTaskWithSessions();

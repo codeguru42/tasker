@@ -464,13 +464,13 @@ export async function useRefineFixture(
 }
 
 export interface ReopenFixture extends RefineFixture {
-  origin: "accepted" | "pushed";
+  origin: "accepted" | "pushed" | "in_peer_review";
 }
 
 // Runs useRefineFixture, then places its complete plan and recorded plan session in an accepted or pushed state.
 export async function useReopenFixture(
   control: FakeClaudeControl,
-  origin: "accepted" | "pushed" = "accepted",
+  origin: "accepted" | "pushed" | "in_peer_review" = "accepted",
   options: Parameters<typeof useRefineFixture>[1] = {},
 ): Promise<ReopenFixture> {
   const fixture = await useRefineFixture(control, options);

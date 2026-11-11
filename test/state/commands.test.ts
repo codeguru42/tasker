@@ -31,7 +31,7 @@ const ACCEPTED: Record<TaskCommand, readonly string[]> = {
   "open-pr": ["pushed"],
   push: ["accepted"],
   "mark-landed": ["accepted", "pushed", "in_peer_review"],
-  reopen: ["accepted", "pushed"],
+  reopen: ["accepted", "pushed", "in_peer_review"],
   finish: ["landed", "cleanup_failed"],
   retry: ["failed"],
   resume: ["quota_blocked", "interrupted"],
@@ -73,7 +73,7 @@ describe("stateCommands", () => {
 
   it("offers merge from peer review without a primary command", () => {
     expect(stateCommands("in_peer_review")).toEqual({
-      commands: ["merge", "mark-landed", "update-branch", "abort"],
+      commands: ["merge", "mark-landed", "update-branch", "reopen", "abort"],
     });
     expect(acceptsState("merge", "in_peer_review")).toBe(true);
   });

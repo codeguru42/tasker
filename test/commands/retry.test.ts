@@ -397,25 +397,28 @@ describe("tasker retry", () => {
     },
   ];
 
-  it.each(["accepted", "pushed"] as const)("prints the reopen hint for a failed reopen from %s", async (origin) => {
-    const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);
-    withDataRootStore(fixture.started.dataRoot, (store) => failRefineFrom(store, fixture.task.id, origin));
-    const ghCalls = fixture.started.gh.calls();
+  it.each(["accepted", "pushed", "in_peer_review"] as const)(
+    "prints the reopen hint for a failed reopen from %s",
+    async (origin) => {
+      const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);
+      withDataRootStore(fixture.started.dataRoot, (store) => failRefineFrom(store, fixture.task.id, origin));
+      const ghCalls = fixture.started.gh.calls();
 
-    const result = await runRetry();
+      const result = await runRetry();
 
-    expect(result).toEqual({
-      code: 0,
-      out: `${firstLine("refining", origin)}run tasker reopen ${KEY} "<feedback>" again\n`,
-      err: "",
-    });
-    expect(fixture.claude.calls()).toEqual([]);
-    expect(fixture.started.gh.calls()).toEqual(ghCalls);
-    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe(origin);
-    expect(eventDataOf(fixture.started.dataRoot, KEY, "retry")).toEqual([
-      { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin },
-    ]);
-  });
+      expect(result).toEqual({
+        code: 0,
+        out: `${firstLine("refining", origin)}run tasker reopen ${KEY} "<feedback>" again\n`,
+        err: "",
+      });
+      expect(fixture.claude.calls()).toEqual([]);
+      expect(fixture.started.gh.calls()).toEqual(ghCalls);
+      expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe(origin);
+      expect(eventDataOf(fixture.started.dataRoot, KEY, "retry")).toEqual([
+        { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin },
+      ]);
+    },
+  );
 
   it.each(hints)(
     "prints a hint and runs nothing for a task that failed in refining after a refine from $refineOrigin",

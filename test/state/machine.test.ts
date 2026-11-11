@@ -185,7 +185,7 @@ const SPECIFIC: Record<string, string[]> = {
   pushing: ["pushed", "interrupted"],
   pushed: ["landed", "opening_pr", "refining", "updating_branch"],
   opening_pr: ["in_peer_review", "interrupted"],
-  in_peer_review: ["landed", "merging", "updating_branch"],
+  in_peer_review: ["landed", "merging", "refining", "updating_branch"],
   merging: ["landed", "interrupted"],
   landed: ["finishing"],
   finishing: ["finished", "cleanup_failed", "interrupted"],
@@ -285,8 +285,8 @@ const NO_ASSISTANT = ["verifying", "pushing", "opening_pr", "merging", "finishin
 const ASSISTANT = ["planning", "refining", "executing", "reviewing"] as TaskState[];
 
 describe("table edges", () => {
-  it("has 111 specific edges", () => {
-    expect(TABLE_EDGES).toHaveLength(111);
+  it("has 112 specific edges", () => {
+    expect(TABLE_EDGES).toHaveLength(112);
   });
 
   it.each(TABLE_EDGES)("allows %s -> %s", (from, to) => {
@@ -301,7 +301,12 @@ describe("table edges", () => {
       }
     }
     expect(found).toEqual(LEGAL_EDGES);
-    expect(found.size).toBe(161);
+    expect(found.size).toBe(162);
+  });
+
+  it("allows stopped reopen runs to return to peer review", () => {
+    expect(canTransition("quota_blocked", "in_peer_review")).toBe(true);
+    expect(canTransition("awaiting_quota_approval", "in_peer_review")).toBe(true);
   });
 
   it("allows failed -> landed", () => {

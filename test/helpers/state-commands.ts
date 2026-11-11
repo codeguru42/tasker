@@ -24,7 +24,7 @@ const EXPECTED: Record<string, Expected> = {
   pushing: ABORT_ONLY,
   pushed: { commands: ["open-pr", "mark-landed", "update-branch", "reopen", "abort"] },
   opening_pr: ABORT_ONLY,
-  in_peer_review: { commands: ["merge", "mark-landed", "update-branch", "abort"] },
+  in_peer_review: { commands: ["merge", "mark-landed", "update-branch", "reopen", "abort"] },
   merging: ABORT_ONLY,
   landed: { primary: "finish", commands: ["finish", "abort"] },
   finishing: ABORT_ONLY,

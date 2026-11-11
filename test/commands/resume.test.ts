@@ -216,7 +216,7 @@ describe("tasker resume", () => {
     expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
   });
 
-  it.each(["accepted", "pushed"] as const)(
+  it.each(["accepted", "pushed", "in_peer_review"] as const)(
     "restores a stopped reopen from %s and reuses its feedback",
     async (origin) => {
       const fixture = await useReopenFixture({ stream: answerStream(V2_ANSWER) }, origin);

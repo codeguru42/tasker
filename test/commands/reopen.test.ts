@@ -46,7 +46,7 @@ describe("reopen", () => {
     expect(help).toContain("--repo <key>");
   });
 
-  it.each(["accepted", "pushed"] as const)(
+  it.each(["accepted", "pushed", "in_peer_review"] as const)(
     "resyncs a %s task, continues its plan session, and records an unapproved reopen revision",
     async (origin) => {
       const fixture = await useReopenFixture({ stream: answerStream(V2) }, origin);
@@ -78,7 +78,7 @@ describe("reopen", () => {
     },
   );
 
-  it.each(["accepted", "pushed"] as const)(
+  it.each(["accepted", "pushed", "in_peer_review"] as const)(
     "refuses a %s task with an invalid current plan before resync",
     async (origin) => {
       for (const invalid of ["missing plan file", "refused recorded model"] as const) {
@@ -145,7 +145,7 @@ describe("reopen", () => {
     await expectCommandRefused(
       { dataRoot: fixture.started.dataRoot, key: KEY },
       () => runReopen(),
-      `${wrongStateError("executed", KEY, "reopen", "accepted or pushed")}\n`,
+      `${wrongStateError("executed", KEY, "reopen", "accepted, pushed, or in_peer_review")}\n`,
     );
   });
 

@@ -180,7 +180,7 @@ describe("tasker approve-credits", () => {
     expect(latestTaskOf(dataRoot, KEY).state).toBe("awaiting_plan_review");
   });
 
-  it.each(["accepted", "pushed"] as const)(
+  it.each(["accepted", "pushed", "in_peer_review"] as const)(
     "restores and reopens a stopped task from %s after credit approval",
     async (origin) => {
       const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);

@@ -61,7 +61,7 @@ function retry(
   );
 }
 
-async function failedPendingReopen(origin: "accepted" | "pushed" = "accepted") {
+async function failedPendingReopen(origin: "accepted" | "pushed" | "in_peer_review" = "accepted") {
   const fixture = await useRefineFixture({ stream: answerStream(validPlanAnswer()) });
   const startHead = await startConflictedReopenResync(fixture);
   withDataRootStore(fixture.started.dataRoot, (store) => {
@@ -301,39 +301,45 @@ describe("retryTask origins", () => {
     },
   );
 
-  it.each(["accepted", "pushed"] as const)("prints a reopen hint for a failed reopen from %s", async (origin) => {
-    const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);
-    const { dataRoot } = fixture.started;
-    const { task } = fixture;
-    withDataRootStore(dataRoot, (store) => {
-      seedExecuteSession(store, task.id, 1);
-      seedReviewSession(store, task.id, 1);
-      failTaskVia(store, task.id, origin, "refining");
-    });
-    withDataRootStore(dataRoot, (store) =>
-      store.updateTask(task.id, { acceptedRevision: "accepted-revision", publishedRevision: "published-revision" }),
-    );
-    const beforeTask = latestTaskOf(dataRoot, KEY);
-    const beforeSessions = sessionsOf(dataRoot, task);
-    const beforeRevisions = withDataRootStore(dataRoot, (store) => store.listPlanRevisions(task.id));
-    const beforeEvents = eventsOf(dataRoot, KEY);
+  it.each(["accepted", "pushed", "in_peer_review"] as const)(
+    "prints a reopen hint for a failed reopen from %s",
+    async (origin) => {
+      const fixture = await useReopenFixture({ stream: answerStream(validPlanAnswer()) }, origin);
+      const { dataRoot } = fixture.started;
+      const { task } = fixture;
+      withDataRootStore(dataRoot, (store) => {
+        seedExecuteSession(store, task.id, 1);
+        seedReviewSession(store, task.id, 1);
+        failTaskVia(store, task.id, origin, "refining");
+      });
+      withDataRootStore(dataRoot, (store) =>
+        store.updateTask(task.id, { acceptedRevision: "accepted-revision", publishedRevision: "published-revision" }),
+      );
+      const beforeTask = latestTaskOf(dataRoot, KEY);
+      const beforeSessions = sessionsOf(dataRoot, task);
+      const beforeRevisions = withDataRootStore(dataRoot, (store) => store.listPlanRevisions(task.id));
+      const beforeEvents = eventsOf(dataRoot, KEY);
 
-    const result = await retry(dataRoot, task);
+      const result = await retry(dataRoot, task);
 
-    expect(result).toEqual({ origin: "refining", target: origin, next: "reopen-hint" });
-    expect(latestTaskOf(dataRoot, KEY).state).toBe(origin);
-    expect(sessionsOf(dataRoot, task)).toEqual(beforeSessions);
-    expect(withDataRootStore(dataRoot, (store) => store.listPlanRevisions(task.id))).toEqual(beforeRevisions);
-    expect(latestTaskOf(dataRoot, KEY)).toMatchObject({
-      acceptedRevision: "accepted-revision",
-      publishedRevision: "published-revision",
-    });
-    expect(beforeTask.acceptedRevision).toBe("accepted-revision");
-    expect(beforeTask.publishedRevision).toBe("published-revision");
-    expect(eventsOf(dataRoot, KEY).slice(beforeEvents.length)).toEqual([
-      { type: "retry", data: { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin } },
-    ]);
-  });
+      expect(result).toEqual({ origin: "refining", target: origin, next: "reopen-hint" });
+      expect(latestTaskOf(dataRoot, KEY).state).toBe(origin);
+      expect(sessionsOf(dataRoot, task)).toEqual(beforeSessions);
+      expect(withDataRootStore(dataRoot, (store) => store.listPlanRevisions(task.id))).toEqual(beforeRevisions);
+      expect(latestTaskOf(dataRoot, KEY)).toMatchObject({
+        acceptedRevision: "accepted-revision",
+        publishedRevision: "published-revision",
+      });
+      expect(beforeTask.acceptedRevision).toBe("accepted-revision");
+      expect(beforeTask.publishedRevision).toBe("published-revision");
+      expect(eventsOf(dataRoot, KEY).slice(beforeEvents.length)).toEqual([
+        {
+          type: "retry",
+          data: { origin: "refining", target: origin, resumeExecute: false, from: "failed", to: origin },
+        },
+      ]);
+    },
+  );
 });
 
 describe("retryTask pending reopen recovery", () => {
@@ -375,7 +381,7 @@ describe("retryTask pending reopen recovery", () => {
     expect(existsSync(recorder.log)).toBe(false);
   });
 
-  it.each(["accepted", "pushed"] as const)("restores a pending reopen from %s", async (origin) => {
+  it.each(["accepted", "pushed", "in_peer_review"] as const)("restores a pending reopen from %s", async (origin) => {
     const fixture = await failedPendingReopen(origin);
     const path = String(fixture.task.worktreePath);
     writeFileSync(join(path, "after-failure.txt"), "discard me\n");
