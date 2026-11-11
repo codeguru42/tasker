@@ -12,6 +12,18 @@ If the repo key of `--repo` does not exist, the command prints an error and exit
 
 ## `tasker show-config-schema`
 
+Prints a JSON array of configuration schema entries. Each entry has its path, type, required flag and description. It
+also prints accepted values, defaults, provider names and input constraints when they apply.
+
+The paths use `<key>` for a repo key and `<name>` for a tracker name. For example, use `repos.<key>.forge` or
+`trackers.<name>.provider`. A real map key is not accepted.
+
+Give a path to print its entry and all entries below it. For example, `tasker show-config-schema repos.<key>.forge`
+prints the forge entry and its fields.
+
+If the path does not exist, the command prints `configuration key path not found: <path>` on stderr and exits with
+code 1.
+
 ## `tasker doctor`
 
 Makes sure that the configuration, the data root, git, `gh`, `acli`, `claude`, `codex`, `pi` and the accounts work
