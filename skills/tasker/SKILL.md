@@ -42,12 +42,13 @@ If the command line of the user is not empty, follow these rules:
 4. After the run, give the user the exit code, and stdout and stderr as tasker printed them. Do not shorten an error.
 5. Do not run a next command. The output can name one, for example in a `next:` line. Give that command to the user.
 
-   If the user explicitly opts in to chaining in the current request or a standing instruction, such as a memory note or
-   `CLAUDE.md`, you can run the next tasker command. After the first command succeeds, run `tasker show <issue>` in a
-   separate shell call. Read its `next:` line, then run that command in another shell call. After each successful task
-   command, repeat the `tasker show` call. Rule 2 applies before the user's first command. Each chained call has the
-   form `tasker <command> <issue key>`. If the user's first command has `--repo <key>`, carry that option and value into
-   every later call, including `tasker show`. Add no other option. Never choose from `also:`.
+   The user can opt in to the next commands. The opt-in is an explicit word of the user. It can be in the current
+   request or in a standing instruction, for example a memory note or `CLAUDE.md`. With the opt-in, run the next tasker
+   command. After the first command succeeds, run `tasker show <issue>` in a separate shell call. Read its `next:` line,
+   then run that command in another shell call. After each successful task command, repeat the `tasker show` call. Rule
+   2 applies before the user's first command. Each later call has the form `tasker <command> <issue key>`. The first
+   command of the user can have the option `--repo`, as `--repo <key>` or as `--repo=<key>`. Keep that option and its
+   value in every later call, also in `tasker show`. Add no other option. Never choose from `also:`.
 
    Stop if any of these conditions apply:
 
