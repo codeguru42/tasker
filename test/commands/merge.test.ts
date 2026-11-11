@@ -81,7 +81,7 @@ describe("tasker merge", () => {
       openPrTokenAnswer().args,
       ["pr", "view", "42", "--json", "state"],
     ]);
-    expect(fake.calls()[0]?.env).toEqual({ PATH: `set:${path}`, HOME: `set:${home}` });
+    expect(fake.calls()[0]?.env).toEqual({ PATH: path, HOME: home });
   });
 
   it("prints the exact success lines after a newly requested merge", async () => {

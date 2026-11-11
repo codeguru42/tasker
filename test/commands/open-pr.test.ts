@@ -78,7 +78,7 @@ describe("tasker open-pr", () => {
     expect(result.stdout).toContain(`adopted PR #42: ${url}`);
     expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
     expect(fake.calls().map(({ args }) => args)).toEqual([tokenAnswer.args, openPrListArgs(accepted.task.branch!)]);
-    expect(fake.calls()[0]?.env).toEqual({ PATH: `set:${path}`, HOME: `set:${home}` });
+    expect(fake.calls()[0]?.env).toEqual({ PATH: path, HOME: home });
   });
 
   it("shows its issue argument and repo option", async () => {

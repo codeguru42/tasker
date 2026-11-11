@@ -8,6 +8,15 @@ export interface GhSession {
   run(args: readonly string[], options: { cwd: string; env: NodeJS.ProcessEnv }): Promise<string>;
 }
 
+export function forgeEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const forgeEnv = { ...env };
+  forgeEnv.TASKER_PATH ??= forgeEnv.PATH;
+  if (forgeEnv.TASKER_HOME === undefined && forgeEnv.TASKER_GH_CONFIG_DIR === undefined) {
+    forgeEnv.TASKER_HOME = forgeEnv.HOME;
+  }
+  return forgeEnv;
+}
+
 const forbiddenCommands = new Set(["token", "login", "logout", "switch"]);
 const forbiddenEnvironment = ["TASKER_GH_TOKEN", "TASKER_GH_HOST", "TASKER_GH_REPO"] as const;
 
