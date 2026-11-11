@@ -163,7 +163,7 @@ const IssueTrackerSchema = z.strictObject({
   doneStatus: nonEmpty
     .optional()
     .describe(
-      "For Jira, the status that tasker moves the issue to when it finishes. The configuration loads without this key. When `updateOnFinish` is true, doctor warns, and the done write of `tasker finish` fails and only warns.",
+      "For Jira, the status that tasker moves the issue to when it finishes. The configuration loads without this key. If `updateOnFinish` is true and this key is missing, doctor warns, and the done write of `tasker finish` fails and only warns.",
     )
     .meta({ provider: "jira" }),
   abortStatus: nonEmpty
