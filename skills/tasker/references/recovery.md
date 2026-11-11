@@ -325,10 +325,11 @@ task lock and clone lock belong to this list:
 If you pass `--force`, abort discards the changes before it removes the worktree. If a tracker write fails, the command
 prints its warning, still moves the task to `cancelled` and exits with code 0.
 
-For a GitHub repo, the tracker step runs only when `issueTracker.updateOnStart` is `true` and the repo sets
-`inProgressLabel`. It removes the in-progress label and prints
-`cleared the in-progress marker of <issue> on the tracker`. If this write fails, stderr gets
-`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`.
+For a GitHub repo, the tracker step runs only when `issueTracker.updateOnStart` is `true`, the repo sets
+`inProgressLabel`, and this task has `tracker_marked` set. It removes the in-progress label and prints
+`cleared the in-progress marker of <issue> on the tracker` when the call succeeds. If the call fails, stderr gets
+`warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. If the step is skipped, it prints no
+marker line.
 
 For a Jira repo, the step runs only when `issueTracker.updateOnStart` is `true` and the repo sets `abortStatus`. This
 task must also have marked the issue in progress. The command moves the issue to that status and prints
