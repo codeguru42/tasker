@@ -18,7 +18,7 @@ export function trackerTargetKeys(issueTracker: Pick<RepoConfig["issueTracker"],
   return TARGET_KEYS[issueTracker.provider];
 }
 
-// The in-progress and the done target of a tracker. A target is undefined when its key is not set.
+// The in-progress, review, and done targets of a tracker. A target is undefined when its key is not set.
 export function trackerTargets(issueTracker: RepoConfig["issueTracker"]): {
   inProgress: string | undefined;
   done: string | undefined;

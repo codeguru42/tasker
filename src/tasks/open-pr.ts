@@ -134,11 +134,12 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
         run: () => issueProviderFor(request.config, task.repoKey).markReview(request.ref, reviewTarget, request.env),
       };
       const reviewPassed = await runTrackerWrite(store, task.id, reviewWrite, request.io);
-      if (reviewPassed && issueTracker.provider === "github") {
-        const clearWrite = clearMarkerWrite(request.config, request.ref, task, request.env);
+      if (reviewPassed && github) {
         const marker = trackerTargets(issueTracker).inProgress;
-        const sameLabel = marker !== undefined && asciiFold(marker) === asciiFold(reviewTarget);
-        if (clearWrite !== undefined && !sameLabel) await runTrackerWrite(store, task.id, clearWrite, request.io);
+        if (marker !== undefined && asciiFold(marker) !== asciiFold(reviewTarget)) {
+          const clearWrite = clearMarkerWrite(request.config, request.ref, task, request.env);
+          if (clearWrite !== undefined) await runTrackerWrite(store, task.id, clearWrite, request.io);
+        }
       }
     }
 
