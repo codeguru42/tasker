@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { KEY_PARSERS } from "../../../src/issue-key/resolve.js";
-import type { IssueRef } from "../../../src/issue-key/ref.js";
 import { authStatus } from "../../../src/issues/jira/auth.js";
 import { jiraDoctorChecks } from "../../../src/issues/jira/doctor.js";
 import { jiraBaseBranchHint } from "../../../src/issues/jira/hint.js";
@@ -58,12 +57,7 @@ const MEMBERS: Member[] = [
   },
   {
     name: "markReview",
-    run: (p, env) =>
-      (Reflect.get(p, "markReview") as (ref: IssueRef, target: string, env: NodeJS.ProcessEnv) => Promise<void>)(
-        ref,
-        "In Review",
-        env,
-      ),
+    run: (p, env) => p.markReview(ref, "In Review", env),
     args: transitionArgs("TEST-1", "In Review"),
   },
 ];
@@ -82,6 +76,7 @@ describe("createJiraProvider", () => {
       { args: transitionArgs("TEST-1", "In Progress"), stdout: acliWriteResult("SUCCESS", "moved") },
       { args: transitionArgs("TEST-1", "Done"), stdout: acliWriteResult("SUCCESS", "moved") },
       { args: transitionArgs("TEST-1", "Cancelled"), stdout: acliWriteResult("SUCCESS", "moved") },
+      { args: transitionArgs("TEST-1", "In Review"), stdout: acliWriteResult("SUCCESS", "moved") },
     ]);
   });
 

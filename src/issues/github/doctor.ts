@@ -119,7 +119,7 @@ interface LabelToRead {
 
 // The labels that tasker writes with the configuration of the repo, in the order of use.
 function labelsToRead(repo: IssueDoctorRepo): LabelToRead[] {
-  const { updateOnStart, inProgressLabel, updateOnFinish, doneLabel } = repo.issueTracker;
+  const { updateOnStart, inProgressLabel, updateOnFinish, doneLabel, reviewLabel } = repo.issueTracker;
   const labels: LabelToRead[] = [];
   if (updateOnStart && inProgressLabel !== undefined) {
     labels.push({
@@ -133,6 +133,13 @@ function labelsToRead(repo: IssueDoctorRepo): LabelToRead[] {
       configKey: "issueTracker.doneLabel",
       name: doneLabel,
       reason: "the done write of each tasker finish fails and only warns",
+    });
+  }
+  if (reviewLabel !== undefined) {
+    labels.push({
+      configKey: "issueTracker.reviewLabel",
+      name: reviewLabel,
+      reason: "the review write of each tasker open-pr fails and only warns",
     });
   }
   return labels;

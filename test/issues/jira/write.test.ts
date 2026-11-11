@@ -8,6 +8,7 @@ import {
   markJiraAborted,
   markJiraDone,
   markJiraInProgress,
+  markJiraReview,
 } from "../../../src/issues/jira/write.js";
 import { failureOf } from "../../helpers/errors.js";
 import {
@@ -72,20 +73,17 @@ describe("Jira writes", () => {
 
   it("transitions to review and names issueTracker.reviewStatus on failure", async () => {
     const args = transitionArgs("TEST-10", "In Review");
-    const review = Reflect.get(await import("../../../src/issues/jira/write.js"), "markJiraReview") as (
-      ref: ReturnType<typeof jiraRefOf>,
-      status: string,
-      site: string | undefined,
-      env: NodeJS.ProcessEnv,
-    ) => Promise<void>;
     const fake = fakeWrite(args, {
       stdout: acliWriteResult("SUCCESS", "Work item TEST-10 has been successfully transitioned to In Review"),
     });
-    await review(jiraRefOf("TEST-10"), "In Review", undefined, fake.env);
+    await markJiraReview(jiraRefOf("TEST-10"), "In Review", undefined, fake.env);
     expect(callArgs(fake)).toEqual([AUTH_STATUS_ARGS, args]);
 
     const failed = fakeWrite(args, { stderr: "boom", exitCode: 1 });
-    const error = await failureOf(review(jiraRefOf("TEST-10"), "In Review", undefined, failed.env), IssueWriteError);
+    const error = await failureOf(
+      markJiraReview(jiraRefOf("TEST-10"), "In Review", undefined, failed.env),
+      IssueWriteError,
+    );
     expect(error.configKey).toBe("issueTracker.reviewStatus");
   });
 

@@ -10,7 +10,14 @@ import { readJiraIssue } from "./issue.js";
 import { lookupFieldId } from "./field-id.js";
 import { jiraCredentials } from "./rest.js";
 import type { JiraLogin } from "./site.js";
-import { assignJiraIssue, jiraInProgressMarker, markJiraAborted, markJiraDone, markJiraInProgress } from "./write.js";
+import {
+  assignJiraIssue,
+  jiraInProgressMarker,
+  markJiraAborted,
+  markJiraDone,
+  markJiraInProgress,
+  markJiraReview,
+} from "./write.js";
 
 // The keys of the issueTracker of one repo that the lookup of the base branch field reads.
 export type JiraRepoSettings = Pick<RepoConfig["issueTracker"], "baseBranchFieldName" | "apiToken" | "email">;
@@ -59,6 +66,7 @@ export function createJiraProvider({
     inProgressMarker: jiraInProgressMarker,
     clearInProgress: () => Promise.reject(new Error("the jira tracker has no in-progress clear")),
     markDone: (ref, target, env) => markJiraDone(ref, target, site, env),
+    markReview: (ref, target, env) => markJiraReview(ref, target, site, env),
     markAborted: (ref, status, env) => markJiraAborted(ref, status, site, env),
     doctorChecks: jiraDoctorChecks,
   };

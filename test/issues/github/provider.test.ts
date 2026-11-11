@@ -165,23 +165,8 @@ describe("createGithubProvider", () => {
   it("marks review with a label as markGithubReview does", async () => {
     const { first, second } = await compareCalls(
       [{ args: editArgs("--add-label", "peer-review") }],
-      (env) =>
-        (
-          Reflect.get(provider(), "markReview") as (
-            ref: IssueRef,
-            target: string,
-            env: NodeJS.ProcessEnv,
-          ) => Promise<void>
-        )(ref, "peer-review", env),
-      (env) =>
-        (
-          Reflect.get(writeModule, "markGithubReview") as (
-            ref: IssueRef,
-            target: string,
-            account: string,
-            env: NodeJS.ProcessEnv,
-          ) => Promise<void>
-        )(ref, "peer-review", "octo", env),
+      (env) => provider().markReview(ref, "peer-review", env),
+      (env) => writeModule.markGithubReview(ref, "peer-review", "octo", env),
     );
     expect(first).toEqual([editArgs("--add-label", "peer-review")]);
     expect(first).toEqual(second);

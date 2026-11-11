@@ -73,6 +73,9 @@ export interface IssueProvider {
   // closes as completed. For jira, the issue moves to the status. The caller reads
   // issueTracker.updateOnFinish to decide if it calls this write at all.
   markDone(ref: IssueRef, target: string | undefined, env: NodeJS.ProcessEnv): Promise<void>;
+  // Marks the issue for peer review. target is issueTracker.reviewLabel for github and
+  // issueTracker.reviewStatus for jira.
+  markReview(ref: IssueRef, target: string, env: NodeJS.ProcessEnv): Promise<void>;
   // Moves the issue to the abort status. status is issueTracker.abortStatus. The caller decides if it
   // calls this write at all. For github, it rejects, because tasker refuses that key at load.
   markAborted(ref: IssueRef, status: string, env: NodeJS.ProcessEnv): Promise<void>;

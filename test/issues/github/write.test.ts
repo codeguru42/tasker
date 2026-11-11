@@ -128,24 +128,16 @@ describe("markGithubInProgress", () => {
 });
 
 describe("markGithubReview", () => {
-  const markReview = () =>
-    Reflect.get(write, "markGithubReview") as (
-      ref: IssueRef,
-      target: string,
-      account: string,
-      env: NodeJS.ProcessEnv,
-    ) => Promise<void>;
-
   it("adds the review label with one edit call", async () => {
     const fake = fakeGh(dir, {}, [token, { args: editArgs("--add-label", "peer-review") }]);
-    await markReview()(ref, "peer-review", "octo", fake.env);
+    await write.markGithubReview(ref, "peer-review", "octo", fake.env);
     expect(fake.calls().map((call) => call.args)).toEqual([token.args, editArgs("--add-label", "peer-review")]);
   });
 
   it("names issueTracker.reviewLabel when the add fails", async () => {
     const stderr = editFailure("'peer-review' not found");
     const fake = fakeGh(dir, {}, [token, { args: editArgs("--add-label", "peer-review"), exitCode: 1, stderr }]);
-    const error = await failureOf(markReview()(ref, "peer-review", "octo", fake.env), issue.IssueWriteError);
+    const error = await failureOf(write.markGithubReview(ref, "peer-review", "octo", fake.env), issue.IssueWriteError);
     expect(error.configKey).toBe("issueTracker.reviewLabel");
     expect(error.message).toContain("issueTracker.reviewLabel");
     expect(fake.calls()).toHaveLength(2);

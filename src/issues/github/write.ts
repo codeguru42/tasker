@@ -49,6 +49,11 @@ export function markGithubInProgress(
   return editLabel("--add-label", ref, label, "issueTracker.inProgressLabel", account, env);
 }
 
+// Adds the review label to the issue of ref.
+export function markGithubReview(ref: IssueRef, label: string, account: string, env: NodeJS.ProcessEnv): Promise<void> {
+  return editLabel("--add-label", ref, label, "issueTracker.reviewLabel", account, env);
+}
+
 // Removes the in-progress label from the issue of ref. gh does not read the labels of the issue first, so it has no
 // separate path for an issue that does not have the label.
 export function clearGithubInProgress(

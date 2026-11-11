@@ -106,6 +106,17 @@ export async function markJiraAborted(
   await moveToStatus(ref, status, "issueTracker.abortStatus", env);
 }
 
+// Moves one Jira issue to the review status. The site guard runs first.
+export async function markJiraReview(
+  ref: IssueRef,
+  status: string,
+  site: string | undefined,
+  env: NodeJS.ProcessEnv,
+): Promise<void> {
+  await siteGuard(ref.repoKey, site, env);
+  await moveToStatus(ref, status, "issueTracker.reviewStatus", env);
+}
+
 // True when the status of the issue is the configured in-progress status. The compare ignores the case of the
 // ASCII letters. It makes no acli call.
 export function jiraInProgressMarker(issue: Issue, status: string | undefined): boolean {

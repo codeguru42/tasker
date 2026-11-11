@@ -5,7 +5,13 @@ import { authStatus } from "./auth.js";
 import { readGithubBlockers } from "./blockers.js";
 import { githubDoctorChecks } from "./doctor.js";
 import { readGithubIssue } from "./issue.js";
-import { assignGithubIssue, clearGithubInProgress, markGithubDone, markGithubInProgress } from "./write.js";
+import {
+  assignGithubIssue,
+  clearGithubInProgress,
+  markGithubDone,
+  markGithubInProgress,
+  markGithubReview,
+} from "./write.js";
 
 // Maps the neutral names of IssueProvider to the GitHub functions. It adds no behavior.
 export function createGithubProvider({ account }: { account: string }): IssueProvider {
@@ -22,6 +28,7 @@ export function createGithubProvider({ account }: { account: string }): IssuePro
     inProgressMarker,
     clearInProgress: (ref, target, env) => clearGithubInProgress(ref, target, account, env),
     markDone: (ref, target, env) => markGithubDone(ref, target, account, env),
+    markReview: (ref, target, env) => markGithubReview(ref, target, account, env),
     markAborted: () => Promise.reject(new Error("the github tracker has no abortStatus")),
     doctorChecks: githubDoctorChecks,
   };
