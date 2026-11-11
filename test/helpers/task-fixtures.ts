@@ -467,7 +467,7 @@ export interface ReopenFixture extends RefineFixture {
   origin: "accepted" | "pushed" | "in_peer_review";
 }
 
-// Runs useRefineFixture, then places its complete plan and recorded plan session in an accepted or pushed state.
+// Runs useRefineFixture, then places its complete plan and recorded plan session in an accepted, pushed or peer review state.
 export async function useReopenFixture(
   control: FakeClaudeControl,
   origin: "accepted" | "pushed" | "in_peer_review" = "accepted",
@@ -477,7 +477,8 @@ export async function useReopenFixture(
   const task = withDataRootStore(fixture.started.dataRoot, (store) =>
     store.updateTask(fixture.task.id, {
       state: origin,
-      publishedRevision: origin === "pushed" ? "published-revision" : null,
+      publishedRevision: origin === "pushed" || origin === "in_peer_review" ? "published-revision" : null,
+      prNumber: origin === "in_peer_review" ? 42 : null,
     }),
   );
   return { ...fixture, task, origin };

@@ -171,6 +171,8 @@ interface ResumeMove {
   row: ResumeRow;
 }
 
+const REOPEN_ORIGINS = new Set<TaskState>(["accepted", "pushed", "in_peer_review"]);
+
 // Finds the move of a task in a pause back to the state before the run that stopped. The caller holds the task lock and
 // made sure that the task is in a pause that command accepts. It refuses an origin with no row. It writes nothing.
 function resumeMoveOf(task: Task, events: readonly TaskEvent[], command: "resume" | "approve-credits"): ResumeMove {
@@ -183,12 +185,10 @@ function resumeMoveOf(task: Task, events: readonly TaskEvent[], command: "resume
     mergeOrigin === "accepted" || mergeOrigin === "in_peer_review"
       ? RESUME_TABLES.byOriginOf?.merging?.rows[mergeOrigin]
       : undefined;
-  const isReopen =
-    (refineOrigin === "accepted" || refineOrigin === "pushed" || refineOrigin === "in_peer_review") &&
-    refineFeedbackOf(events) !== undefined;
+  const isReopenOrigin = refineOrigin !== undefined && REOPEN_ORIGINS.has(refineOrigin);
+  const isReopen = isReopenOrigin && refineFeedbackOf(events) !== undefined;
   const row =
-    origin === undefined ||
-    ((refineOrigin === "accepted" || refineOrigin === "pushed" || refineOrigin === "in_peer_review") && !isReopen)
+    origin === undefined || (isReopenOrigin && !isReopen)
       ? undefined
       : origin === "merging"
         ? mergeRow

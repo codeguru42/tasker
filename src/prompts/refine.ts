@@ -6,7 +6,8 @@ import { SHARED_RULES } from "./shared.js";
 export const REFINE_PROMPT_NAME = "refine";
 
 export const PLAIN_REFINE_CONTEXT = "The user read the plan and asks for a revision.";
-export const REOPEN_REFINE_CONTEXT = "A bug was found after acceptance. The user needs a new complete plan revision.";
+export const REOPEN_REFINE_CONTEXT =
+  "The user reopened accepted work with feedback. The user needs a new complete plan revision.";
 
 export const REFINE_PROMPT = [
   "1. This run continues the same session that wrote the plan below. Do not start again from the issue.",
