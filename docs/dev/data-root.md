@@ -72,8 +72,9 @@ no value, so the rows that exist hold NULL.
 
 The column `tracker_marked` is 1 when the task marked the issue in progress on the tracker, and 0 if not. A passed
 `in_progress` write sets it in the same transaction as its `tracker_update` event, so the two agree. Nothing clears it.
-`tasker abort` reads it to decide if it moves a Jira issue to `issueTracker.abortStatus`. Schema version 17 adds it. The
-migration fills it once for each row that exists: it is 1 when the task has a `tracker_update` event with the action
+For a GitHub issue, `tasker abort` reads this column to decide whether to remove the in-progress label. For a Jira
+issue, it reads the column to decide whether to move the issue to `issueTracker.abortStatus`. Schema version 17 adds it.
+The migration fills it once for each row that exists: it is 1 when the task has a `tracker_update` event with the action
 `in_progress` and the result `ok`. Code reads the column and never the event, as the rule of the `events` table says.
 
 The column `published_revision` holds the last task branch revision that tasker recorded on `origin`, or NULL before the
