@@ -133,7 +133,7 @@ describe("show-config-schema", () => {
     expect(byPath.get("repos.<key>.issueTracker.match")?.description).toMatch(/labels.*components/i);
     expect(byPath.get("repos.<key>.issueTracker.account")?.description).toMatch(/GitHub.*requires.*Jira.*refuses/i);
     expect(byPath.get("repos.<key>.issueTracker.doneStatus")?.description).toMatch(
-      /configuration loads without.*updateOnFinish.*doctor warns.*done write.*fails and only warns/i,
+      /configuration loads without.*updateOnFinish.*key is missing.*doctor warns.*done write.*fails and only warns/i,
     );
     expect(byPath.get("trackers")?.default).toEqual({});
     expect(byPath.get("repos.<key>.vcs")?.default).toEqual({ provider: "git", config: {} });
