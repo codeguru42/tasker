@@ -393,3 +393,43 @@ link to open an issue from a reply.
   In one case (2026-10-17), the user asked orchestrator-m13 to watch the tasks of M9 and to tell the user when #274 was
   ready to land. The orchestrator widened the watch to each later ticket of M13 and started it again each 30 minutes. On
   2026-10-18, the user stopped it and said: "the current use isn't even close to the original intent."
+
+- A session with no role that works with the user directly and runs tickets through subagents gives all its work to
+  subagents. This bullet does not cover an orchestrator, a planner or an operator. The main session is the top-level
+  session where the user types. The main session does no work of its own.
+
+  A read of code or docs goes to a subagent. A `gh` command, a `tasker` command, a move on the project board and a draft
+  also go to a subagent. This includes a read of the quota with `tasker show-quota`.
+
+  The main session calls only AskUserQuestion, SendMessage and Agent, with two exceptions. First, the main session does
+  its start reads itself. For example, it reads [The issue-link rule](#the-issue-link-rule) that `AGENTS.md` names.
+
+  Second, the main session does a step that needs a tool that a subagent does not have. If a subagent lacks a tool that
+  a step needs, it tells the main session. The main session then does only that step. For example, it creates a
+  scheduled resume job because [Do not use these](quota.md#do-not-use-these) says that a subagent cannot make a job. A
+  subagent does each other part of a watch, a monitor or a scheduled job that the user asks for.
+
+  For each request of the user, the main session starts a subagent. Its prompt gives the goal, the facts and the sources
+  of the work. The main session then tells the user the result in a few sentences.
+
+  The main session keeps only the direction and decisions of the user and short reports of the work in its conversation.
+  A question for a decision keeps the form in [A decision of the user](#a-decision-of-the-user) and
+  [The form of a reply](#the-form-of-a-reply). The subagent reports the facts, commands and results for that question.
+
+  A subagent does each step that another rule gives the session. For example, it reads
+  [A question of the user](#a-question-of-the-user) and measures facts for
+  [A decision of the user](#a-decision-of-the-user). It follows [Before a post](issues.md#before-a-post) for an issue.
+  For an ad hoc draft, it follows [The ticket subagent](planner.md#the-ticket-subagent).
+
+  The main session shows a draft for approval with the full path of the draft file. It gives a short summary of each
+  section and each change of the draft.
+
+  The user keeps the conversation of the main session for the direction of the user. On 2026-11-10, the user said: "all
+  things should be subagents. Keep this conversation clear for my interaction and direction."
+
+- A fresh subagent starts with only its prompt and does not see the conversation of the main session. The main session
+  runs the parts of `/session-review` that read its transcript. These are step 1, the candidates, and step 7, the open
+  work. They also include the part of the staleness check in step 2 that asks whether a later decision replaced a note.
+
+  A fresh subagent does the other parts of steps 2, 4 and 5. These parts compare memory notes with the docs, the code
+  and the states of issues. Its prompt gives each fact of the session that these parts need.
