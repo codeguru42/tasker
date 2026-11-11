@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { delimiter } from "node:path";
 import { run } from "../../src/cli.js";
 import { openPr } from "../../src/commands/open-pr.js";
 import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
@@ -11,6 +10,7 @@ import {
   openPrTokenAnswer,
   OPEN_PR_FORGE_ACCOUNT as ACCOUNT,
   OPEN_PR_FORGE_TOKEN as TOKEN,
+  forgeGh,
 } from "../helpers/forge-gh.js";
 import {
   databasePathOf,
@@ -22,9 +22,7 @@ import {
   writeRunMarker,
 } from "../helpers/store.js";
 import { useAcceptedTask } from "../helpers/task-fixtures.js";
-import { useDefaultConfigHome } from "../helpers/config.js";
-import { forgeGh } from "../helpers/forge-gh.js";
-import { spawnTasker } from "../helpers/processes.js";
+import { spawnTaskerWithPathAndHome } from "../helpers/processes.js";
 import { deadRunNote } from "../helpers/state-commands.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
@@ -62,16 +60,10 @@ describe("tasker open-pr", () => {
       ],
       ["PATH", "HOME"],
     );
-    const home = useDefaultConfigHome(accepted.configPath);
-    const path = [fake.env.PATH, process.env.PATH].filter((part): part is string => part !== undefined).join(delimiter);
-
-    const result = await spawnTasker(
+    const { result, path, home } = await spawnTaskerWithPathAndHome(
       ["open-pr", KEY, "--repo", REPO],
-      {
-        PATH: path,
-        HOME: home,
-      },
-      { replaceEnv: true },
+      accepted.configPath,
+      fake.env.PATH!,
     );
 
     expect(result.code, result.stderr).toBe(0);

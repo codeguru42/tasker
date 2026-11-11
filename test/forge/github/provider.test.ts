@@ -75,7 +75,6 @@ describe("createGitHubForge", () => {
     const error = await failureOf(
       makeProvider().isPrMerged(prNumber, worktree, {
         ...fake.env,
-        PATH: fake.env.PATH,
         TASKER_PATH: "",
         TASKER_HOME: "/tasker/home",
       }),

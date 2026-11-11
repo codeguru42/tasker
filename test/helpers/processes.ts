@@ -1,9 +1,10 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { onTestFinished } from "vitest";
 import { errnoCode } from "../../src/errno.js";
 import type { LockAttempt } from "../../src/store/locks.js";
+import { useDefaultConfigHome } from "./config.js";
 
 // The repo root, for spawn tests that need it as cwd.
 export const repoRoot = new URL("../..", import.meta.url);
@@ -94,6 +95,22 @@ export function spawnTasker(
     child.on("error", reject);
     child.on("close", (code) => resolve({ code, stdout, stderr }));
   });
+}
+
+// Runs tasker with PATH and HOME defaults for GitHub forge tests.
+export async function spawnTaskerWithPathAndHome(
+  args: readonly string[],
+  configPath: string,
+  firstPath: string,
+): Promise<{
+  result: Awaited<ReturnType<typeof spawnTasker>>;
+  path: string;
+  home: string;
+}> {
+  const path = [firstPath, process.env.PATH].filter((part): part is string => part !== undefined).join(delimiter);
+  const home = useDefaultConfigHome(configPath);
+  const result = await spawnTasker(args, { PATH: path, HOME: home }, { replaceEnv: true });
+  return { result, path, home };
 }
 
 // True when the process runs. A zombie (state Z, not yet reaped) counts as gone.

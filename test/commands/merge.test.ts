@@ -1,5 +1,4 @@
 import { renameSync } from "node:fs";
-import { delimiter } from "node:path";
 import { describe, expect, it } from "vitest";
 import { accept } from "../../src/commands/accept.js";
 import { retry } from "../../src/commands/retry.js";
@@ -10,9 +9,7 @@ import { taskLockName } from "../../src/store/locks.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { commitInWorktree, gitOutput } from "../helpers/git.js";
 import { forgeGh, installForgeGh, openPrTokenAnswer } from "../helpers/forge-gh.js";
-import { useDefaultConfigHome } from "../helpers/config.js";
-import { spawnTasker } from "../helpers/processes.js";
-import { startLockHolder } from "../helpers/processes.js";
+import { spawnTaskerWithPathAndHome, startLockHolder } from "../helpers/processes.js";
 import {
   databasePathOf,
   rejectEvent,
@@ -56,23 +53,16 @@ const expectRefused = async (fixture: Pick<StartFixture, "dataRoot" | "origin">,
 describe("tasker merge", () => {
   it("uses PATH and HOME from the child environment for GitHub calls", async () => {
     const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
-    withDataRootStore(fixture.dataRoot, (store) => store.updateTask(fixture.task.id, { worktreePath: null }));
     const fake = forgeGh(
       useTempDir("tasker-merge-default-environment-"),
       "forge-token-private",
       [openPrTokenAnswer(), { args: ["pr", "view", "42", "--json", "state"], stdout: '{"state":"MERGED"}' }],
       ["PATH", "HOME"],
     );
-    const home = useDefaultConfigHome(fixture.configPath);
-    const path = [fake.env.PATH, process.env.PATH].filter((part): part is string => part !== undefined).join(delimiter);
-
-    const result = await spawnTasker(
+    const { result, path, home } = await spawnTaskerWithPathAndHome(
       ["merge", KEY, "--repo", REPO],
-      {
-        PATH: path,
-        HOME: home,
-      },
-      { replaceEnv: true },
+      fixture.configPath,
+      fake.env.PATH!,
     );
 
     expect(result.code, result.stderr).toBe(0);
