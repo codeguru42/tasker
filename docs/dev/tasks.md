@@ -103,9 +103,14 @@ and the notes of the base step.
 
 ### The tracker writes
 
-If `issueTracker.updateOnStart` is `true`, the start assigns the issue and marks it in progress. Each write appends one
-`tracker_update` event. The data is `{ action, result }` when the write works, and `{ action, result: "failed", error }`
-when it fails. The value of `action` is `assign`, `in_progress`, `clear_in_progress`, `done` or `abort`.
+If `issueTracker.updateOnStart` is `true`, start assigns the issue. When an in-progress target is set, start also marks
+the issue in progress after the task reaches `workspace_ready`. Each tracker write records a `tracker_update` event. The
+data is `{ action, result }` when the write works, and `{ action, result: "failed", error }` when it fails. The value of
+`action` is `assign`, `in_progress`, `clear_in_progress`, `done` or `abort`.
+
+When no in-progress target is set, start skips the in-progress write and prints
+`warning: did not mark <issue> in progress: issueTracker.<key> is not set` on stderr. The command still exits with code
+0 and records no `tracker_update` event with `action: in_progress`. The assignment write still records its event.
 
 The abort also makes a tracker write. If `issueTracker.updateOnStart` is `true`, the repo sets the in-progress label,
 and this GitHub task has `tracker_marked` set, it removes the marker with the action `clear_in_progress`. A failed write
@@ -118,9 +123,9 @@ The start follows the check-before-write rule in the [intro](#the-task-commands)
 
 - A failed write is a warning. The reason: the task and the clone are correct, and a person can mark the issue on the
   tracker.
-- The marker check runs before the task exists. The reason: a refused start leaves no task, as
-  [The order of the steps](#the-order-of-the-steps) says. The check protects against two machines that work on the same
-  issue.
+- When the in-progress target is set, the marker check runs before the task exists. The reason: a refused start leaves
+  no task, as [The order of the steps](#the-order-of-the-steps) says. Without a target, start skips the check; see
+  [the start command](../../skills/tasker/references/start.md#tasker-start).
 - The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked. tasker
   cannot undo the assign, and only an abort of the task that added the marker removes it.
 - The write of finish comes before the move to `finished`. The reason: a second run after a crash runs it again, and the
