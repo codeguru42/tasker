@@ -158,6 +158,22 @@ describe("openPrTask", () => {
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
   });
 
+  it("does not write to the tracker when there is no review target", async () => {
+    const fixture = await pushedTask();
+    const gh = fakeGh(useTempDir("tasker-open-pr-no-review-gh-"), fixture.env, [
+      ghTokenAnswer("codeguru42", "gho_test"),
+    ]);
+
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) =>
+      callOpenPr(fixture, store, forgeStub(), 300, { ...gh.env, PATH: fixture.env.PATH }),
+    );
+
+    expect(result).toMatchObject({ pullRequest: { number: 42 } });
+    expect(gh.calls().map((call) => call.args)).toEqual([]);
+    expect(io.out.join("")).toBe("");
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
+  });
+
   it("adds review after recording the PR, then clears the GitHub marker", async () => {
     const fixture = await pushedTask();
     Object.assign(fixture.config.repos[fixture.repoKey].issueTracker, {
@@ -297,13 +313,29 @@ describe("openPrTask", () => {
 
   it("adopts an open PR on the resolved base without creating another PR", async () => {
     const fixture = await pushedTask();
+    Object.assign(fixture.config.repos[fixture.repoKey].issueTracker, { reviewLabel: "peer-review" });
+    const gh = fakeGh(useTempDir("tasker-open-pr-adopt-review-gh-"), fixture.env, [
+      ghTokenAnswer("codeguru42", "gho_test"),
+      githubWriteAnswer({
+        project: "codeguru42/tasker",
+        number: 5,
+        verb: "edit",
+        rest: ["--add-label", "peer-review"],
+      }),
+    ]);
     const fake = forgeStub({
       openPrs: [{ number: 19, url: "https://example.test/pull/19", base: "main" }],
     });
 
-    await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
+    const { io } = await withDataRootStore(fixture.dataRoot, (store) =>
+      callOpenPr(fixture, store, fake, 300, { ...gh.env, PATH: fixture.env.PATH }),
+    );
 
     expect(fake.calls.created).toEqual([]);
+    expect(gh.calls().map((call) => call.args)).toEqual([
+      ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "peer-review"],
+    ]);
+    expect(io.out.join("")).toBe(`added the label "peer-review" to ${KEY} on the tracker\n`);
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 19 });
     expect(eventsOf(fixture.dataRoot, KEY).at(-1)).toMatchObject({
       type: "pr_opened",
