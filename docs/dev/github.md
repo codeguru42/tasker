@@ -28,6 +28,11 @@ token.
 
 ## Forge environment
 
+The GitHub provider supplies defaults before each provider method calls the forge session. If `TASKER_PATH` is
+undefined, the provider copies `PATH` to `TASKER_PATH`. If both `TASKER_HOME` and `TASKER_GH_CONFIG_DIR` are undefined,
+it copies `HOME` to `TASKER_HOME`. It keeps explicit values, including blank values. It does not add defaults for
+`GH_CONFIG_DIR` or `XDG_CONFIG_HOME`.
+
 The forge session reads only the environment passed to `GhSession.run()`. It does not read `process.env` or copy other
 ambient values into the child environment.
 
