@@ -267,7 +267,7 @@ Accepts the work of a task in `awaiting_work_review`. See [the reference](refere
 
 ### `tasker reopen`
 
-Resyncs accepted or pushed work to its stored base, then continues the plan session with feedback. See
+Resyncs accepted, pushed or peer-reviewed work to its stored base, then continues the plan session with feedback. See
 [the reference](references/landing.md#tasker-reopen).
 
 ### `tasker merge`
