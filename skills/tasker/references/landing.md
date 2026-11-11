@@ -127,28 +127,41 @@ state: in_peer_review
 ```
 
 If the repo sets `issueTracker.reviewLabel` for GitHub or `issueTracker.reviewStatus` for Jira, tasker updates the issue
-after it records the PR and moves the task to `in_peer_review`. The review target is optional. For GitHub, when
-`updateOnStart` is true and `inProgressLabel` is set, a successful review-label add is followed by a marker clear. Jira
-makes no marker-clear call. Successful tracker lines appear before the PR and state lines. For example:
+after it records the PR and moves the task to `in_peer_review`. The review target is optional. Successful tracker lines
+appear before the PR and state lines. For GitHub, tasker prints:
 
 ```text
-marked the review label <label> to <issue key> for review on the tracker
+added the label "<label>" to <issue key> on the tracker
+```
+
+When `updateOnStart` is true, `inProgressLabel` is set, and its name differs from the review label, a successful clear
+also prints:
+
+```text
 cleared the in-progress marker of <issue key> on the tracker
+```
+
+These tracker lines come before the PR and state lines:
+
+```text
 opened PR #<number>: <url>
 state: in_peer_review
 ```
 
-For an adopted PR, the third line starts with `adopted PR` instead of `opened PR`. For Jira, the review line is
-`marked <issue key> to the status "<status>" for review on the tracker`; no marker-clear line follows it.
+For an adopted PR, the first line starts with `adopted PR` instead of `opened PR`. For Jira, tasker prints
+`moved <issue key> to the status "<status>" on the tracker` before the PR and state lines. Jira makes no marker-clear
+call. If the GitHub review and in-progress label names are equal, ignoring case, tasker keeps the review label and skips
+the clear.
 
 If the review write fails, tasker prints a warning to stderr and still exits with code 0. The PR stays open, and the
 task stays in `in_peer_review`. A failed GitHub review-label add keeps the in-progress marker and prevents the clear
-step. A failed marker removal also warns; both labels can remain on the issue. The warning names the failed target or
-marker step. Tasker does not retry these writes directly after it has moved the task to `in_peer_review`.
+step. A failed marker removal also warns. Both labels can remain on the issue. The warning names the failed target or
+marker step. Tasker does not retry these writes directly after it moves the task to `in_peer_review`.
 
 The PR number, `pr_opened` event and move to `in_peer_review` share one database transaction. The task stores the PR
-number for later use. A later push keeps that number and moves the task to `pushed`. Running `tasker open-pr` then
-adopts the same open PR again without changing its title or body.
+number for later use. Each time tasker records a PR, it writes the configured review target. This includes a new PR, an
+adopted PR, and an adopted PR after a later push. It also includes an open-pr run after retry or resume from an
+`opening_pr` failure. Tasker does not change the title or body of an adopted PR.
 
 A lookup, create, other-base conflict or record failure after `opening_pr` moves the task to `failed`, clears its run
 marker and exits with code 1. The error starts with the exact text `opening_pr failed: <reason>`. If tasker created a PR
