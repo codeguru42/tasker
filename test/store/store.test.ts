@@ -813,9 +813,7 @@ describe("task store", () => {
   it("clearTrackerMark clears trackerMarked and records one clear event", () => {
     const task = store.createTask(newTask);
     store.recordTrackerMark(task.id);
-    const clearTrackerMark = Reflect.get(store, "clearTrackerMark") as (taskId: number) => void;
-
-    clearTrackerMark.call(store, task.id);
+    store.clearTrackerMark(task.id);
 
     expect(store.getTask(task.id)?.trackerMarked).toBe(false);
     const events = store.listEvents(task.id).filter((event) => event.type === "tracker_update");
@@ -829,10 +827,8 @@ describe("task store", () => {
     const task = store.createTask(newTask);
     store.recordTrackerMark(task.id);
     const release = rejectEvent(dbPath, "tracker_update");
-    const clearTrackerMark = Reflect.get(store, "clearTrackerMark") as (taskId: number) => void;
-
     try {
-      expect(() => clearTrackerMark.call(store, task.id)).toThrow(/event rejected/);
+      expect(() => store.clearTrackerMark(task.id)).toThrow(/event rejected/);
     } finally {
       release();
     }

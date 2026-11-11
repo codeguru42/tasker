@@ -315,6 +315,8 @@ export interface TaskStore extends LockStore {
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
   // Sets trackerMarked and appends the tracker_update event of a passed in_progress write, in one transaction.
   recordTrackerMark(taskId: number): void;
+  // Clears trackerMarked and appends the tracker_update event of a passed clear_in_progress write, in one transaction.
+  clearTrackerMark(taskId: number): void;
   listEvents(taskId: number): TaskEvent[];
   // The version that the next revision of the task must have. The caller holds the task lock,
   // so the value stays valid until the insert.
@@ -1447,6 +1449,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       writeTask(taskId, { trackerMarked: true }, () => ({
         type: "tracker_update",
         data: { action: "in_progress", result: "ok" },
+      }));
+    },
+
+    clearTrackerMark(taskId) {
+      writeTask(taskId, { trackerMarked: false }, () => ({
+        type: "tracker_update",
+        data: { action: "clear_in_progress", result: "ok" },
       }));
     },
 

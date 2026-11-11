@@ -199,7 +199,11 @@ describe("openPrTask", () => {
 
     expect(result).toMatchObject({ pullRequest: { number: 42 } });
     expect(io.err.join("")).toContain("warning: cannot clear the in-progress marker");
-    expect(eventsOf(fixture.dataRoot, KEY).slice(-2)).toMatchObject([
+    expect(
+      eventsOf(fixture.dataRoot, KEY)
+        .filter((event) => event.type === "tracker_update")
+        .slice(-2),
+    ).toMatchObject([
       { data: { action: "review", result: "ok" } },
       { data: { action: "clear_in_progress", result: "failed" } },
     ]);
@@ -244,9 +248,10 @@ describe("openPrTask", () => {
     const forge = forgeStub();
 
     const trackerEnv = { ...gh.env, PATH: fixture.env.PATH };
-    const { result, io } = await withDataRootStore(fixture.dataRoot, async (store) => {
+    const { opened, afterOpenPr } = await withDataRootStore(fixture.dataRoot, async (store) => {
       store.recordTrackerMark(fixture.task.id);
       const opened = await callOpenPr(fixture, store, forge, 300, trackerEnv);
+      const afterOpenPr = store.getTask(fixture.task.id)!;
       await abortTask(store, {
         config: fixture.config,
         ref: taskRefOf(fixture),
@@ -258,21 +263,25 @@ describe("openPrTask", () => {
         report: () => {},
         trackerIo: { stdout: () => {}, stderr: () => {} },
       });
-      return opened;
+      return { opened, afterOpenPr };
     });
 
-    expect(result).toMatchObject({ adopted: false, pullRequest: { number: 42 } });
+    expect(opened.result).toMatchObject({ adopted: false, pullRequest: { number: 42 } });
     expect(gh.calls().map((call) => call.args)).toEqual([
       ["issue", "edit", "5", "-R", "codeguru42/tasker", "--add-label", "peer-review"],
       ["issue", "edit", "5", "-R", "codeguru42/tasker", "--remove-label", "wip"],
     ]);
     expect(gh.calls().filter((call) => call.args.includes("--remove-label"))).toHaveLength(1);
-    expect(latestTaskOf(fixture.dataRoot, KEY).trackerMarked).toBe(false);
-    expect(io.out.join("")).toBe(
+    expect(afterOpenPr.trackerMarked).toBe(false);
+    expect(opened.io.out.join("")).toBe(
       `added the label "peer-review" to ${KEY} on the tracker\ncleared the in-progress marker of ${KEY} on the tracker\n`,
     );
-    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
-    expect(eventsOf(fixture.dataRoot, KEY).slice(-2)).toMatchObject([
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "cancelled", prNumber: 42 });
+    expect(
+      eventsOf(fixture.dataRoot, KEY)
+        .filter((event) => event.type === "tracker_update")
+        .slice(-2),
+    ).toMatchObject([
       { type: "tracker_update", data: { action: "review", result: "ok" } },
       { type: "tracker_update", data: { action: "clear_in_progress", result: "ok" } },
     ]);
