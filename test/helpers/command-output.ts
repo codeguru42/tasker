@@ -1,6 +1,11 @@
 // The first line of the output of the plan, refine, execute, verify and review commands, built by hand.
 // Tests that compare this text use these functions, so the text has one home.
 
+// Builds expected JSON output independently of the production printer.
+export function printedJson(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
 export function plannedLine(key: string, version: number): string {
   return `planned ${key} as revision v${version}`;
 }

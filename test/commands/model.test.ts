@@ -6,18 +6,13 @@ import { ConfigError, parseConfig } from "../../src/config/schema.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { issueKeyErrorMessage, threeRepoConfig, useConfigFile, validConfig } from "../helpers/config.js";
 import { configIssuesOf } from "../helpers/errors.js";
+import { printedJson } from "../helpers/command-output.js";
 import { dayAt, seedTasks } from "../helpers/store.js";
 
 const KEY = "codeguru42/tasker#5";
 
 // The report lines of the session roles in a file with no entry for them.
 const NONE_SESSIONS = "operator: none\nplanner: none\norchestrator: none\n";
-
-// The text of raw as a file with the indent and the final line end that tasker model writes.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function pretty(raw: Record<string, any>): string {
-  return `${JSON.stringify(raw, null, 2)}\n`;
-}
 
 // Makes sure that the file still holds before and that its folder holds no other file.
 function expectNothingChanged({ dir, path }: { dir: string; path: string }, before: string): void {
@@ -41,7 +36,7 @@ function rawFile(dataRoot: string): Record<string, any> {
 describe("model", () => {
   describe("report", () => {
     it("prints the model and the effort of each role", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawWithProject(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawWithProject(dataRoot)));
       const before = readFileSync(file.path, "utf8");
 
       const result = await runCommand(model, "model", KEY);
@@ -55,7 +50,7 @@ describe("model", () => {
     });
 
     it("prints only the role that --role names", async () => {
-      useConfigFile((dataRoot) => pretty(rawWithProject(dataRoot)));
+      useConfigFile((dataRoot) => printedJson(rawWithProject(dataRoot)));
 
       const result = await runCommand(model, "model", KEY, "--role", "execute");
 
@@ -71,7 +66,7 @@ describe("model", () => {
             orchestrator: { model: "sonnet", effort: "max" },
           },
         };
-        return pretty(raw);
+        return printedJson(raw);
       });
 
       const result = await runCommand(model, "model", KEY);
@@ -89,7 +84,7 @@ describe("model", () => {
       useConfigFile((dataRoot) => {
         const raw = rawWithProject(dataRoot);
         raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "xhigh" } } };
-        return pretty(raw);
+        return printedJson(raw);
       });
 
       const none = await runCommand(model, "model", KEY, "--role", "planner");
@@ -100,7 +95,7 @@ describe("model", () => {
     });
 
     it("fails for an issue key of an unknown project", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawWithProject(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawWithProject(dataRoot)));
       const unknown = "codeguru42/unknown#5";
 
       const result = await runCommand(model, "model", unknown);
@@ -113,7 +108,7 @@ describe("model", () => {
     });
 
     it("prints the loader errors for an invalid configuration", async () => {
-      const file = useConfigFile((dataRoot) => pretty({ ...rawWithProject(dataRoot), bogus: 1 }));
+      const file = useConfigFile((dataRoot) => printedJson({ ...rawWithProject(dataRoot), bogus: 1 }));
       const before = readFileSync(file.path, "utf8");
       let message = "";
       try {
@@ -131,7 +126,7 @@ describe("model", () => {
     });
 
     it("fails for a role that does not exist", async () => {
-      useConfigFile((dataRoot) => pretty(rawWithProject(dataRoot)));
+      useConfigFile((dataRoot) => printedJson(rawWithProject(dataRoot)));
 
       const result = await runCommand(model, "model", KEY, "--role", "chef");
 
@@ -193,49 +188,49 @@ describe("model", () => {
       "note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.\n";
 
     it("sets the model and the effort of the role and prints the new line and the note", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const expected = rawFile(file.dataRoot);
       expected.repos.tasker.assistant.models.plan = { model: "claude-opus-5-5", effort: "low" };
 
       const result = await runCommand(model, "model", KEY, "--role", "plan", "claude-opus-5-5", "--effort", "low");
 
       expect(result).toEqual({ code: 0, out: "plan: claude-opus-5-5 (effort low)\n", err: NOTE });
-      expectNothingChanged(file, pretty(expected));
+      expectNothingChanged(file, printedJson(expected));
     });
 
     it("keeps the model when only the effort is given", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const expected = rawFile(file.dataRoot);
       expected.repos.tasker.assistant.models.review.effort = "low";
 
       const result = await runCommand(model, "model", KEY, "--role", "review", "--effort", "low");
 
       expect(result).toEqual({ code: 0, out: "review: opus (effort low)\n", err: NOTE });
-      expectNothingChanged(file, pretty(expected));
+      expectNothingChanged(file, printedJson(expected));
     });
 
     it("keeps a file without a final line end without one", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)).trimEnd());
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)).trimEnd());
       const expected = rawFile(file.dataRoot);
       expected.repos.tasker.assistant.models.execute.effort = "high";
 
       const result = await runCommand(model, "model", KEY, "--role", "execute", "--effort", "high");
 
       expect(result.code).toBe(0);
-      expectNothingChanged(file, pretty(expected).trimEnd());
+      expectNothingChanged(file, printedJson(expected).trimEnd());
     });
 
     it.each(["operator", "planner", "orchestrator"] as const)(
       "sets a new entry of the session role %s in a file with no sessions key",
       async (role) => {
-        const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+        const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
         const expected = rawFile(file.dataRoot);
         expected.repos.tasker.sessions = { models: { [role]: { model: "claude-opus-5-5", effort: "high" } } };
 
         const result = await runCommand(model, "model", KEY, "--role", role, "claude-opus-5-5", "--effort", "high");
 
         expect(result).toEqual({ code: 0, out: `${role}: claude-opus-5-5 (effort high)\n`, err: NOTE });
-        expectNothingChanged(file, pretty(expected));
+        expectNothingChanged(file, printedJson(expected));
       },
     );
 
@@ -243,7 +238,7 @@ describe("model", () => {
       const file = useConfigFile((dataRoot) => {
         const raw = rawFile(dataRoot);
         raw.repos.tasker.sessions = { kind: "claude" };
-        return pretty(raw);
+        return printedJson(raw);
       });
       const expected = rawFile(file.dataRoot);
       expected.repos.tasker.sessions = {
@@ -254,14 +249,14 @@ describe("model", () => {
       const result = await runCommand(model, "model", KEY, "--role", "planner", "claude-opus-5-5", "--effort", "xhigh");
 
       expect(result).toEqual({ code: 0, out: "planner: claude-opus-5-5 (effort xhigh)\n", err: NOTE });
-      expectNothingChanged(file, pretty(expected));
+      expectNothingChanged(file, printedJson(expected));
     });
 
     it("keeps the model of a session role with an entry when only the effort is given", async () => {
       const file = useConfigFile((dataRoot) => {
         const raw = rawFile(dataRoot);
         raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "low" } } };
-        return pretty(raw);
+        return printedJson(raw);
       });
       const expected = rawFile(file.dataRoot);
       expected.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "max" } } };
@@ -269,14 +264,14 @@ describe("model", () => {
       const result = await runCommand(model, "model", KEY, "--role", "operator", "--effort", "max");
 
       expect(result).toEqual({ code: 0, out: "operator: opus (effort max)\n", err: NOTE });
-      expectNothingChanged(file, pretty(expected));
+      expectNothingChanged(file, printedJson(expected));
     });
 
     it("keeps the effort of a session role with an entry when only the model is given", async () => {
       const file = useConfigFile((dataRoot) => {
         const raw = rawFile(dataRoot);
         raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "xhigh" } } };
-        return pretty(raw);
+        return printedJson(raw);
       });
       const expected = rawFile(file.dataRoot);
       expected.repos.tasker.sessions = { models: { operator: { model: "sonnet", effort: "xhigh" } } };
@@ -284,13 +279,13 @@ describe("model", () => {
       const result = await runCommand(model, "model", KEY, "--role", "operator", "sonnet");
 
       expect(result).toEqual({ code: 0, out: "operator: sonnet (effort xhigh)\n", err: NOTE });
-      expectNothingChanged(file, pretty(expected));
+      expectNothingChanged(file, printedJson(expected));
     });
   });
 
   describe("refusals", () => {
     it("fails before it reads the file or opens the store when a set names no role", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const before = readFileSync(file.path, "utf8");
 
       const result = await runCommand(model, "model", KEY, "opus");
@@ -301,7 +296,7 @@ describe("model", () => {
     });
 
     it("prints the loader errors and changes nothing for a model that the provider refuses", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const before = readFileSync(file.path, "utf8");
       const badRaw = rawFile(file.dataRoot);
       badRaw.repos.tasker.assistant.models.plan.model = "gpt-5";
@@ -315,7 +310,7 @@ describe("model", () => {
     });
 
     it("fails for an effort that does not exist", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const before = readFileSync(file.path, "utf8");
 
       const result = await runCommand(model, "model", KEY, "--role", "plan", "--effort", "extreme");
@@ -329,7 +324,7 @@ describe("model", () => {
       ["only the model is given", ["opus"]],
       ["only --effort is given", ["--effort", "high"]],
     ])("fails for a session role with no entry when %s", async (_name, args) => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const before = readFileSync(file.path, "utf8");
 
       const result = await runCommand(model, "model", KEY, "--role", "operator", ...args);
@@ -343,7 +338,7 @@ describe("model", () => {
     });
 
     it("prints the loader errors and changes nothing for xhigh on an assistant role", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const before = readFileSync(file.path, "utf8");
       const badRaw = rawFile(file.dataRoot);
       badRaw.repos.tasker.assistant.models.plan.effort = "xhigh";
@@ -357,7 +352,7 @@ describe("model", () => {
     });
 
     it("prints the loader errors for a session model that the provider refuses", async () => {
-      const file = useConfigFile((dataRoot) => pretty(rawFile(dataRoot)));
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const before = readFileSync(file.path, "utf8");
 
       const result = await runCommand(model, "model", KEY, "--role", "operator", "gpt-5", "--effort", "high");

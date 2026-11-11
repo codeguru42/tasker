@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { buildConfigSchema } from "../../src/config/schema.js";
 import { commands } from "../../src/commands/index.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { printedJson } from "../helpers/command-output.js";
 import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 
 const showConfigSchemaRun = (...extra: string[]) => runCommand(commands, "show-config-schema", ...extra);
-const printed = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 
 interface SchemaLike {
   _def: Record<string, unknown>;
@@ -54,7 +54,7 @@ describe("show-config-schema", () => {
     expect(result.err).toBe("");
     expect(result.out.endsWith("\n")).toBe(true);
     const entries = entriesOf(result.out);
-    expect(result.out).toBe(printed(entries));
+    expect(result.out).toBe(printedJson(entries));
     expect(
       entries.every(
         (entry) =>

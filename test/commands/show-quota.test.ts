@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { showQuota } from "../../src/commands/show-quota.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
+import { printedJson } from "../helpers/command-output.js";
 import { useThreeRepoDataRoot } from "../helpers/config.js";
 import { claudeRateLimitEvent } from "../helpers/fake-claude.js";
 import { seedQuotaEvent } from "../helpers/store.js";
@@ -17,8 +18,6 @@ const entryOf = (record: ReturnType<typeof seedQuotaEvent>) => ({
   receivedAt: record.receivedAt,
   event: record.event,
 });
-
-const printed = (entries: unknown[]) => `${JSON.stringify(entries, null, 2)}\n`;
 
 describe("show-quota", () => {
   it("prints an empty list when no repo has a record", async () => {
@@ -38,7 +37,7 @@ describe("show-quota", () => {
       }),
     );
 
-    expect(await showQuotaRun()).toEqual({ code: 0, out: printed([entryOf(other), entryOf(tasker)]), err: "" });
+    expect(await showQuotaRun()).toEqual({ code: 0, out: printedJson([entryOf(other), entryOf(tasker)]), err: "" });
   });
 
   it.each(["--repo", "-r"])("prints a list of one entry with %s", async (flag) => {
@@ -46,7 +45,7 @@ describe("show-quota", () => {
     const tasker = seedQuotaEvent(dataRoot, TASKER);
     seedQuotaEvent(dataRoot, OTHER);
 
-    expect(await showQuotaRun(flag, TASKER)).toEqual({ code: 0, out: printed([entryOf(tasker)]), err: "" });
+    expect(await showQuotaRun(flag, TASKER)).toEqual({ code: 0, out: printedJson([entryOf(tasker)]), err: "" });
   });
 
   it("prints an empty list for a configured repo that has no record", async () => {

@@ -3,12 +3,21 @@ import {
   absentRemoteNote,
   executedLine,
   plannedLine,
+  printedJson,
   refinedLine,
   resumedLine,
   reviewedLinePrefix,
   undoHint,
   verifiedLine,
 } from "./command-output.js";
+
+describe("printedJson", () => {
+  it("builds two-space JSON text with one final newline", () => {
+    expect(printedJson({ answer: 42, nested: { ok: true } })).toBe(
+      '{\n  "answer": 42,\n  "nested": {\n    "ok": true\n  }\n}\n',
+    );
+  });
+});
 
 describe("command output lines", () => {
   it("builds the planned line", () => {

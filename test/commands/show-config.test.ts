@@ -4,6 +4,7 @@ import { run } from "../../src/cli.js";
 import { showConfig } from "../../src/commands/show-config.js";
 import { loadConfig } from "../../src/config/load.js";
 import { captureIo } from "../helpers/cli.js";
+import { printedJson } from "../helpers/command-output.js";
 import { useConfigFile, validConfig } from "../helpers/config.js";
 import { useProcessEnv } from "../helpers/temp.js";
 import { expectNoFakeSecret, FAKE_EMAIL, FAKE_TOKEN } from "../helpers/fake-credentials.js";
@@ -18,7 +19,7 @@ describe("show-config", () => {
     expect(code).toBe(0);
     expect(io.err).toEqual([]);
     const expected = loadConfig({ TASKER_CONFIG: written.path });
-    expect(io.out.join("")).toBe(`${JSON.stringify(expected, null, 2)}\n`);
+    expect(io.out.join("")).toBe(printedJson(expected));
     const printed = JSON.parse(io.out.join(""));
     expect(printed.retentionDays).toBe(30);
     expect(printed.limits.planTimeoutMin).toBe(30);
@@ -58,7 +59,7 @@ describe("show-config", () => {
 
     expect(code).toBe(0);
     const expected = loadConfig({ TASKER_CONFIG: written.path }).repos["codeguru42/other"];
-    expect(io.out.join("")).toBe(`${JSON.stringify(expected, null, 2)}\n`);
+    expect(io.out.join("")).toBe(printedJson(expected));
   });
 
   it.each(["missing", "toString"])("reports the repo key %s that does not exist", async (key) => {
