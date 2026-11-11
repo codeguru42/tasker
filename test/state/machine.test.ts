@@ -247,6 +247,7 @@ const SPECIFIC: Record<string, string[]> = {
     "in_peer_review",
     "refining",
     "pushed",
+    "landed",
     "updating_branch",
   ],
 };
@@ -284,8 +285,8 @@ const NO_ASSISTANT = ["verifying", "pushing", "opening_pr", "merging", "finishin
 const ASSISTANT = ["planning", "refining", "executing", "reviewing"] as TaskState[];
 
 describe("table edges", () => {
-  it("has 110 specific edges", () => {
-    expect(TABLE_EDGES).toHaveLength(110);
+  it("has 111 specific edges", () => {
+    expect(TABLE_EDGES).toHaveLength(111);
   });
 
   it.each(TABLE_EDGES)("allows %s -> %s", (from, to) => {
@@ -300,7 +301,11 @@ describe("table edges", () => {
       }
     }
     expect(found).toEqual(LEGAL_EDGES);
-    expect(found.size).toBe(160);
+    expect(found.size).toBe(161);
+  });
+
+  it("allows failed -> landed", () => {
+    expect(canTransition("failed", "landed")).toBe(true);
   });
 
   it.each(ILLEGAL_EDGES)("refuses %s -> %s", (from, to) => {
@@ -888,6 +893,22 @@ describe("task transitions", () => {
         to: "landed",
       });
       expect(store.runStatus(task.id)).toEqual({ status: "none" });
+    });
+
+    it("records failed as the source when it marks a failed task landed", () => {
+      const task = store.createTask(newTask("failed"));
+      store.appendEvent(task.id, "transition", { from: "opening_pr", to: "failed", error: "forge unavailable" });
+      const before = store.listEvents(task.id);
+
+      const moved = mark(task.id);
+
+      expect(moved.state).toBe("landed");
+      expect(
+        store
+          .listEvents(task.id)
+          .slice(before.length)
+          .map((event) => ({ type: event.type, data: event.data })),
+      ).toEqual([{ type: "marked_landed", data: { from: "failed", to: "landed" } }]);
     });
 
     it("writes nothing for an illegal edge", () => {

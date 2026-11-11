@@ -1,6 +1,7 @@
 import { renameSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { markLanded } from "../../src/commands/mark-landed.js";
+import { finish } from "../../src/commands/finish.js";
 import { taskLockName } from "../../src/store/locks.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { readArgLog } from "../helpers/fake-commands.js";
@@ -30,6 +31,7 @@ import {
 } from "../helpers/task-fixtures.js";
 import { useProcessEnv } from "../helpers/temp.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { failTask } from "../../src/state/machine.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -105,6 +107,42 @@ describe("tasker mark-landed", () => {
   it("records a landing for a task in in_peer_review", () =>
     expectMarkedFrom(["pushing", "pushed", "opening_pr", "in_peer_review"], "in_peer_review"));
 
+  it("marks a failed opening-pr task landed without Git or forge calls", async () => {
+    const fixture = await useStartFixture();
+    seedTasks(fixture.dataRoot, [
+      {
+        issueKey: KEY,
+        repoKey: REPO,
+        state: "opening_pr",
+        at: "2026-01-01T00:00:00.000Z",
+        failWith: "forge unavailable",
+      },
+    ]);
+    const before = eventsOf(fixture.dataRoot, KEY);
+
+    const result = await runMarkLanded();
+
+    expect(result).toEqual({ code: 0, out: `marked ${KEY} landed\n`, err: "" });
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("landed");
+    expect(eventsOf(fixture.dataRoot, KEY).slice(before.length)).toEqual([
+      { type: "marked_landed", data: { from: "failed", to: "landed" } },
+    ]);
+  });
+
+  it("lets finish complete a task after mark-landed handles an opening-pr failure", async () => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => {
+      moveTaskThrough(store, accepted.task.id, ["pushing", "pushed", "opening_pr"]);
+      failTask(store, accepted.task.id, "forge unavailable");
+    });
+
+    expect((await runMarkLanded()).code).toBe(0);
+    const finished = await runCommand(finish, "finish", KEY, "--repo", REPO);
+
+    expect(finished.code).toBe(0);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("finished");
+  });
+
   it("marks landed when the base is a local branch of the clone", async () => {
     const accepted = await useAcceptedTask();
     await useLocalBase(accepted, accepted.revision);
@@ -172,6 +210,24 @@ describe("tasker mark-landed", () => {
   });
 
   describe("refusals", () => {
+    it.each([
+      ["another failure origin", "accepted"],
+      ["no valid failure origin", undefined],
+    ])("does not write for %s", async (_label, origin) => {
+      const fixture = await useStartFixture();
+      seedTasks(fixture.dataRoot, [
+        {
+          issueKey: KEY,
+          repoKey: REPO,
+          state: origin ?? "failed",
+          at: "2026-01-01T00:00:00.000Z",
+          ...(origin === undefined ? {} : { failWith: "other failure" }),
+        },
+      ]);
+
+      await expectRefused(fixture, `${wrongStateError("failed", KEY, "mark-landed", NEEDS)}\n`);
+    });
+
     it("refuses a task in another state", async () => {
       const work = await useWorkReviewTask();
 
@@ -242,7 +298,7 @@ describe("tasker mark-landed", () => {
 
     expect(code).toBe(0);
     expect(help).toContain(
-      "Declare that work in accepted, pushed or in_peer_review landed. This command makes no Git or forge calls",
+      "Declare that work in accepted, pushed or in_peer_review landed, or mark a task landed after opening_pr failed. This command makes no Git or forge calls",
     );
     expect(help).toContain("Use the repo with this key when two repos share the project of the issue");
   });

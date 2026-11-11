@@ -397,6 +397,25 @@ describe("show", () => {
     });
   });
 
+  it("lists mark-landed for a task that failed while opening its pull request", async () => {
+    const { dataRoot } = useThreeRepoDataRoot();
+    seedTasks(dataRoot, [
+      {
+        issueKey: `${TASKER}#5`,
+        repoKey: TASKER,
+        state: "opening_pr",
+        at: dayAt(4),
+        failWith: "forge unavailable",
+      },
+    ]);
+
+    const result = await runShow(`${TASKER}#5`, "--repo", TASKER);
+
+    expect(result.out).toContain(
+      `also: tasker refine ${TASKER}#5, tasker update-branch ${TASKER}#5, tasker mark-landed ${TASKER}#5, tasker abort ${TASKER}#5\n`,
+    );
+  });
+
   it("prints no todo block for a task with no pinned revision", async () => {
     const { dataRoot } = useThreeRepoDataRoot();
     const [task] = seedTasks(dataRoot, [{ issueKey: `${TASKER}#5`, repoKey: TASKER, state: "executed", at: dayAt(4) }]);
