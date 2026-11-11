@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { KEY_PARSERS } from "../../../src/issue-key/resolve.js";
+import type { IssueRef } from "../../../src/issue-key/ref.js";
 import { authStatus } from "../../../src/issues/jira/auth.js";
 import { jiraDoctorChecks } from "../../../src/issues/jira/doctor.js";
 import { jiraBaseBranchHint } from "../../../src/issues/jira/hint.js";
@@ -54,6 +55,16 @@ const MEMBERS: Member[] = [
     name: "markAborted",
     run: (p, env) => p.markAborted(ref, "Cancelled", env),
     args: transitionArgs("TEST-1", "Cancelled"),
+  },
+  {
+    name: "markReview",
+    run: (p, env) =>
+      (Reflect.get(p, "markReview") as (ref: IssueRef, target: string, env: NodeJS.ProcessEnv) => Promise<void>)(
+        ref,
+        "In Review",
+        env,
+      ),
+    args: transitionArgs("TEST-1", "In Review"),
   },
 ];
 

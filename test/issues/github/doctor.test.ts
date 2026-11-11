@@ -378,6 +378,7 @@ describe("gh doctor checks", () => {
     });
     const IN_PROGRESS = "issueTracker.inProgressLabel";
     const DONE = "issueTracker.doneLabel";
+    const REVIEW = "issueTracker.reviewLabel";
     const bothLabels = githubRepo("main", {
       updateOnStart: true,
       inProgressLabel: "wip",
@@ -418,6 +419,17 @@ describe("gh doctor checks", () => {
         remediation: `Create each missing label in octo/repo on GitHub, or change ${IN_PROGRESS}.`,
       });
       expect(argLists(fake)).toEqual([tokenArgs, labelArgs("wip")]);
+    });
+
+    it("warns about a missing review label when start and finish updates are disabled", async () => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), notFound("peer-review")]);
+      const repo = githubRepo("main", { updateOnStart: false, updateOnFinish: false, reviewLabel: "peer-review" });
+      expect(await doctor.ghLabelsCheck(repo).run(fake.env)).toEqual({
+        status: "warn",
+        detail: `main:\nthe label "peer-review" of ${REVIEW} does not exist in octo/repo: the review write of each tasker open-pr fails and only warns`,
+        remediation: `Create each missing label in octo/repo on GitHub, or change ${REVIEW}.`,
+      });
+      expect(argLists(fake)).toEqual([tokenArgs, labelArgs("peer-review")]);
     });
 
     it("gives warn for a missing done label, after it reads the in-progress label", async () => {

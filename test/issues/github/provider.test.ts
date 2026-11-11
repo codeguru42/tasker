@@ -162,6 +162,31 @@ describe("createGithubProvider", () => {
     expect(first).toEqual(second);
   });
 
+  it("marks review with a label as markGithubReview does", async () => {
+    const { first, second } = await compareCalls(
+      [{ args: editArgs("--add-label", "peer-review") }],
+      (env) =>
+        (
+          Reflect.get(provider(), "markReview") as (
+            ref: IssueRef,
+            target: string,
+            env: NodeJS.ProcessEnv,
+          ) => Promise<void>
+        )(ref, "peer-review", env),
+      (env) =>
+        (
+          Reflect.get(writeModule, "markGithubReview") as (
+            ref: IssueRef,
+            target: string,
+            account: string,
+            env: NodeJS.ProcessEnv,
+          ) => Promise<void>
+        )(ref, "peer-review", "octo", env),
+    );
+    expect(first).toEqual([editArgs("--add-label", "peer-review")]);
+    expect(first).toEqual(second);
+  });
+
   it("marks done without a label as markGithubDone does", async () => {
     const { first, second } = await compareCalls(
       [{ args: closeArgs }],
