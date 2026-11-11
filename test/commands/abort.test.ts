@@ -497,7 +497,7 @@ describe("abort", () => {
         repo: tracked,
         ghAnswers: [
           fixtureTrackerAnswer("assign"),
-          fixtureTrackerAnswer("inProgress", { stderr: "cannot label\\n", exitCode: 1 }),
+          fixtureTrackerAnswer("inProgress", { stderr: "cannot label\n", exitCode: 1 }),
           fixtureTrackerAnswer("clearInProgress"),
         ],
       });
