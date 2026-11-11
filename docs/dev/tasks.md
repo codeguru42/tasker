@@ -581,9 +581,10 @@ These reasons explain its rules:
   `awaiting_work_review` also need you again, because the findings or the feedback can change. So retry runs nothing for
   the origin `refining`. It moves the task back to the state of the origin of the refine and prints a hint, and you
   decide the next step.
-- A failed reopen needs new feedback from you, so retry prints a hint instead of another assistant run. A pending resync
-  can leave the branch and worktree between revisions. Retry restores the recorded starting HEAD before it changes the
-  state. Retry and resume share the restore operation so both recovery paths follow the same rules.
+- A failed reopen from `accepted`, `pushed` or `in_peer_review` needs new feedback from you, so retry prints a hint
+  instead of another assistant run. A pending resync can leave the branch and worktree between revisions. Retry restores
+  the recorded starting HEAD before it changes the state. Retry and resume share the restore operation so both recovery
+  paths follow the same rules.
 - A trunk merge that failed can leave the work on the base of origin. The on-base check of `tasker merge` finds the work
   on the base, so a second run lands the task with no second push.
 - A PR merge can finish before tasker records its result. Retry uses the first status query to detect that completed
@@ -721,10 +722,10 @@ The base can move after the check of `tasker accept`. Then `tasker merge` fails,
 
 ## Reopen
 
-`tasker reopen <issue> <feedback>` starts a new plan from work in `accepted` or `pushed`. It requires a stored base, a
-clean worktree on the task branch, the latest complete plan revision and its recorded plan session. The landed-parent
-guard must pass. It resyncs the worktree to the tip of the stored base before it continues that session with the exact
-feedback. The new complete plan revision is unapproved and waits in `awaiting_plan_review`.
+`tasker reopen <issue> <feedback>` starts a new plan from work in `accepted`, `pushed` or `in_peer_review`. It requires
+a stored base, a clean worktree on the task branch, the latest complete plan revision and its recorded plan session. The
+landed-parent guard must pass. It resyncs the worktree to the tip of the stored base before it continues that session
+with the exact feedback. The new complete plan revision is unapproved and waits in `awaiting_plan_review`.
 
 Resync before the new plan keeps the plan on the current base. A full approval and review cycle follows acceptance
 because the work changes. Publication and PR records stay for later explicit commands.
@@ -734,10 +735,10 @@ accepted before a later push or other publication. Reopen does not push, open a 
 
 If a reopen stops in `quota_blocked` or `interrupted`, `resume` or eligible `approve-credits` uses the same move that
 resumes other pauses. Before that move, it restores the saved start head when resync did not finish. It clears the
-recovery head in the transaction that returns the task to `accepted` or `pushed`. Then it runs reopen again with the
-feedback recorded when the first run started. If the restore fails, the task stays paused with the recovery head, and no
-assistant starts. The repo lock covers the restore, and the caller releases it before the repeated reopen takes its
-locks.
+recovery head in the transaction that returns the task to `accepted`, `pushed` or `in_peer_review`. Then it runs reopen
+again with the feedback recorded when the first run started. If the restore fails, the task stays paused with the
+recovery head, and no assistant starts. The repo lock covers the restore, and the caller releases it before the repeated
+reopen takes its locks.
 
 See [Retry](#retry) for recovery after a failed reopen.
 
