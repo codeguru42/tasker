@@ -4,6 +4,7 @@ import type { Config } from "../config/schema.js";
 import type { Check } from "../doctor/check.js";
 import { dataRootCheck, freeSpaceCheck } from "../doctor/data-root.js";
 import { runChecks } from "../doctor/run-checks.js";
+import { trackerConfigChecks } from "../doctor/tracker-config.js";
 import { assistantDoctorChecks } from "../assistant/provider.js";
 import { issueDoctorChecks } from "../issues/provider.js";
 import { vcsDoctorChecks } from "../vcs/provider.js";
@@ -15,6 +16,7 @@ function doctorChecks(config: Config): Check[] {
     dataRootCheck(config.dataRoot),
     freeSpaceCheck(config.dataRoot, config.dataRootMinFreeBytes),
     ...vcsDoctorChecks(config, { procRoot: "/proc", platform: process.platform }),
+    ...trackerConfigChecks(config),
     ...issueDoctorChecks(config),
     ...assistantDoctorChecks(config),
   ];

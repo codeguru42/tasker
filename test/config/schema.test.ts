@@ -1070,7 +1070,9 @@ describe("parseConfig named trackers", () => {
 
     it("accepts a repo that leaves doneStatus out of a merged tracker definition", () => {
       const raw = withTracker({ tracker: "acme", project: "TEST" }, { acme: finishing });
-      expect(parsedRepo(raw).issueTracker).toMatchObject({ updateOnFinish: true, doneStatus: undefined });
+      const issueTracker = parsedRepo(raw).issueTracker;
+      expect(issueTracker.updateOnFinish).toBe(true);
+      expect(issueTracker.doneStatus).toBeUndefined();
     });
 
     it("accepts a repo that sets updateOnFinish to false over the definition", () => {
@@ -1203,7 +1205,9 @@ describe("parseConfig jira tracker", () => {
   describe("doneStatus", () => {
     it("accepts updateOnFinish without doneStatus", () => {
       const raw = jiraConfig({ updateOnFinish: true });
-      expect(parsedRepo(raw).issueTracker).toMatchObject({ updateOnFinish: true, doneStatus: undefined });
+      const issueTracker = parsedRepo(raw).issueTracker;
+      expect(issueTracker.updateOnFinish).toBe(true);
+      expect(issueTracker.doneStatus).toBeUndefined();
     });
 
     it("accepts updateOnFinish with doneStatus", () => {
