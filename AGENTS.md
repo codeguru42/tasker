@@ -49,8 +49,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   broken-commit steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the CI wait and "A failed CI run".
 - [docs/dev/review-findings.md](docs/dev/review-findings.md): "Review findings" and the docs-only update.
-- [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the section
-  rule, the hold rule and the stuck-task rule.
+- [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold
+  rule and the stuck-task rule.
 - [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each task subagent", "Schedule a job when a
   task subagent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job",
   "What the task subagent does", "A pi stop", "The pi wait", "Delete the job" and "Do not use these".
