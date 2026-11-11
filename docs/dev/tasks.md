@@ -124,7 +124,7 @@ The start follows the check-before-write rule in the [intro](#the-task-commands)
 - A failed write is a warning. The reason: the task and the clone are correct, and a person can mark the issue on the
   tracker.
 - When the in-progress target is set, the marker check runs before the task exists. The reason: a refused start leaves
-  no task, as [The order of the steps](#the-order-of-the-steps) says. Without a target, start skips the check; see
+  no task, as [The order of the steps](#the-order-of-the-steps) says. Without a target, start skips the check. See
   [the start command](../../skills/tasker/references/start.md#tasker-start).
 - The writes of start come after `workspace_ready`. The reason: a start that fails leaves the issue unmarked. tasker
   cannot undo the assign, and only an abort of the task that added the marker removes it.
