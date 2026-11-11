@@ -255,12 +255,13 @@ pass through unchanged.
 `src/issues/jira/write.ts` writes to Jira with two `acli` commands. tasker writes nothing else to Jira.
 
 - `assignJiraIssue()` runs `acli jira workitem assign --key <key> --assignee <assignee> --yes --json`.
-- `markJiraInProgress()`, `markJiraDone()` and `markJiraAborted()` run
+- `markJiraInProgress()`, `markJiraDone()`, `markJiraAborted()` and `markJiraReview()` run
   `acli jira workitem transition --key <key> --status <status> --yes --json`.
 
 Each write runs [the site guard](#the-site-guard) first, so an error of the guard is never an `IssueWriteError`.
 `markJiraDone()` then makes sure that the status is set. With no status, it rejects with an `Error` that says
-`issueTracker.doneStatus is not set`, and the only `acli` call is `acli jira auth status`.
+`issueTracker.doneStatus is not set`, and the only `acli` call is `acli jira auth status`. `markJiraReview()` moves the
+issue to the configured `issueTracker.reviewStatus`. Jira makes no clear call after this transition.
 
 Each write has the flag `--json`, because `acli` exits with 0 for a refused write.
 [The measure of the writes](#the-measure-of-the-writes) shows this. tasker reads the JSON result of the write. A result
@@ -274,6 +275,7 @@ A failed write is an `IssueWriteError` with the key of the issue and the configu
 - `move <key> to the status "<status>" of issueTracker.inProgressStatus`.
 - `move <key> to the status "<status>" of issueTracker.doneStatus`.
 - `move <key> to the status "<status>" of issueTracker.abortStatus`.
+- `move <key> to the status "<status>" of issueTracker.reviewStatus`.
 
 The assignee and the status are in `JSON.stringify()` form. The text after `: ` has three cases:
 
@@ -372,6 +374,7 @@ lookup of the field id of each repo, also a failure.
 | `clearInProgress`  | A function that rejects with the `Error` `the jira tracker has no in-progress clear`                                                |
 | `markDone`         | `markJiraDone()` of `src/issues/jira/write.ts`                                                                                      |
 | `markAborted`      | `markJiraAborted()` of `src/issues/jira/write.ts`                                                                                   |
+| `markReview`       | `markJiraReview()` of `src/issues/jira/write.ts`                                                                                    |
 | `doctorChecks`     | `jiraDoctorChecks()` of `src/issues/jira/doctor.ts`                                                                                 |
 
 ## The errors
