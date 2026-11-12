@@ -6,13 +6,6 @@ import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 type Tracker = import("../../../src/config/schema.js").RepoConfig["issueTracker"];
-type GithubDoctorWithBoardCheck = typeof import("../../../src/issues/github/doctor.js") & {
-  ghBoardCheck: (
-    repo: import("../../../src/issues/provider.js").IssueDoctorRepo,
-    timeoutMs?: number,
-  ) => import("../../../src/doctor/check.js").Check;
-};
-
 // A github repo for the doctor checks. The overrides replace fields of its issueTracker.
 function githubRepo(key: string, overrides: Partial<Tracker> = {}) {
   const issueTracker = {
@@ -29,7 +22,7 @@ function githubRepo(key: string, overrides: Partial<Tracker> = {}) {
 describe("gh doctor checks", () => {
   // The module loads again before each test, so that each test starts with an empty token cache.
   // Never import doctor.ts or run.ts at the top of this file: a second copy would have other error classes.
-  let doctor: GithubDoctorWithBoardCheck;
+  let doctor: typeof import("../../../src/issues/github/doctor.js");
   let dir: string;
 
   beforeEach(async () => {
