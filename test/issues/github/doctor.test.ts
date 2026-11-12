@@ -6,6 +6,12 @@ import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 type Tracker = import("../../../src/config/schema.js").RepoConfig["issueTracker"];
+type GithubDoctorWithBoardCheck = typeof import("../../../src/issues/github/doctor.js") & {
+  ghBoardCheck: (
+    repo: import("../../../src/issues/provider.js").IssueDoctorRepo,
+    timeoutMs?: number,
+  ) => import("../../../src/doctor/check.js").Check;
+};
 
 // A github repo for the doctor checks. The overrides replace fields of its issueTracker.
 function githubRepo(key: string, overrides: Partial<Tracker> = {}) {
@@ -23,13 +29,13 @@ function githubRepo(key: string, overrides: Partial<Tracker> = {}) {
 describe("gh doctor checks", () => {
   // The module loads again before each test, so that each test starts with an empty token cache.
   // Never import doctor.ts or run.ts at the top of this file: a second copy would have other error classes.
-  let doctor: typeof import("../../../src/issues/github/doctor.js");
+  let doctor: GithubDoctorWithBoardCheck;
   let dir: string;
 
   beforeEach(async () => {
     dir = useTempDir("tasker-gh-doctor-");
     vi.resetModules();
-    doctor = await import("../../../src/issues/github/doctor.js");
+    doctor = (await import("../../../src/issues/github/doctor.js")) as GithubDoctorWithBoardCheck;
   });
 
   describe("ghVersionCheck", () => {
@@ -509,6 +515,174 @@ describe("gh doctor checks", () => {
     });
   });
 
+  describe("ghBoardCheck", () => {
+    const tokenArgs = ["auth", "token", "--hostname", "github.com", "--user", "octo"];
+    const boardArgs = (number = 3) => [
+      "project",
+      "field-list",
+      String(number),
+      "--owner",
+      "octo",
+      "--format",
+      "json",
+      "--limit",
+      "100",
+    ];
+    const remediation = (key: string) =>
+      `Make sure that issueTracker.board of ${key} names a board that the account octo can read. The token of the account needs the scopes project and read:project. A fine-grained token cannot open a board of a user.`;
+    const fieldRemediation = (key: string) =>
+      `Change issueTracker.board.field of ${key} to one single-select field of the configured board.`;
+    const optionRemediation = (keys: string) => `Add each missing option to the field on GitHub, or change ${keys}.`;
+    const board = {
+      owner: "octo",
+      number: 3,
+      field: "Status",
+      inProgress: "In progress",
+      done: "Done",
+      abort: "Aborted",
+    };
+    const configKey = (name: "inProgress" | "done" | "abort") => `issueTracker.board.${name}`;
+    const singleSelect = (name = "Status", options = ["Todo", "In progress", "Done"]) => ({
+      id: "PVTSSF_lADOB9",
+      name,
+      type: "ProjectV2SingleSelectField",
+      options: options.map((option, index) => ({ id: `option-${index}`, name: option })),
+    });
+    const fieldsJson = (...fields: unknown[]) => JSON.stringify({ fields, totalCount: fields.length });
+    const fieldsAnswer = (json: string, number = 3) => ({ args: boardArgs(number), stdout: `${json}\n` });
+    const argLists = (fake: ReturnType<typeof fakeGh>) => fake.calls().map((call) => call.args);
+
+    it("has the name, required and timeoutMs of the board check", () => {
+      const check = doctor.ghBoardCheck(githubRepo("main", { board }));
+      expect({ name: check.name, required: check.required, timeoutMs: check.timeoutMs }).toEqual({
+        name: "gh board: main",
+        required: true,
+        timeoutMs: 15000,
+      });
+    });
+
+    it("reads the configured field and options with the pinned account", async () => {
+      const json = fieldsJson(singleSelect());
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), fieldsAnswer(json)]);
+      const check = doctor.ghBoardCheck(githubRepo("main", { updateOnStart: true, updateOnFinish: true, board }));
+      const result = await check.run(fake.env);
+      expect(result.status).toBe("ok");
+      expect(result.detail).toContain("main");
+      expect(result.detail).toContain("Status");
+      expect(result.detail).toContain("In progress");
+      expect(result.detail).toContain("Done");
+      expect(fake.calls()).toEqual([
+        { args: tokenArgs, ghToken: undefined, env: {} },
+        { args: boardArgs(), ghToken: "gho_test", env: {} },
+      ]);
+      expect(fake.unanswered()).toEqual([]);
+    });
+
+    it("matches field and option names without regard to case", async () => {
+      const json = fieldsJson(singleSelect("sTaTuS", ["todo", "IN PROGRESS", "done"]));
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), fieldsAnswer(json)]);
+      const repo = githubRepo("main", {
+        updateOnStart: true,
+        updateOnFinish: true,
+        board: { ...board, field: "Status", inProgress: "In progress", done: "Done" },
+      });
+      expect((await doctor.ghBoardCheck(repo).run(fake.env)).status).toBe("ok");
+      expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
+    });
+
+    it("warns with the board remediation when field-list fails", async () => {
+      const stderr = "GraphQL: Could not resolve to a ProjectV2 with the number 999. (project)\n";
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: boardArgs(), stderr, exitCode: 1 }]);
+      const repo = githubRepo("main", { updateOnStart: true, board: { ...board, number: 999 } });
+      const result = await doctor.ghBoardCheck(repo).run(fake.env);
+      expect(result.status).toBe("warn");
+      expect(result.detail).toContain("main");
+      expect(result.remediation).toBe(remediation("main"));
+      expect(argLists(fake)).toEqual([tokenArgs, boardArgs(999)]);
+    });
+
+    it.each([
+      ["no matching field", fieldsJson(singleSelect("Other"))],
+      ["multiple case-insensitive fields", fieldsJson(singleSelect("Status"), singleSelect("status"))],
+      ["a field of another type", fieldsJson({ id: "PVTF_lADOB9", name: "Status", type: "ProjectV2Field" })],
+    ])("warns and gives field advice for %s", async (_name, json) => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), fieldsAnswer(json)]);
+      const repo = githubRepo("main", { updateOnStart: true, board: { ...board, inProgress: "In progress" } });
+      const result = await doctor.ghBoardCheck(repo).run(fake.env);
+      expect(result.status).toBe("warn");
+      expect(result.remediation).toBe(fieldRemediation("main"));
+      expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
+    });
+
+    it.each([
+      ["a missing option", ["Todo", "Done"]],
+      ["multiple case-insensitive options", ["Todo", "In progress", "IN PROGRESS", "Done"]],
+    ])("warns and names the configured key for %s", async (_name, options) => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        fieldsAnswer(fieldsJson(singleSelect("Status", options))),
+      ]);
+      const repo = githubRepo("main", { updateOnStart: true, board: { ...board, inProgress: "In progress" } });
+      const result = await doctor.ghBoardCheck(repo).run(fake.env);
+      expect(result.status).toBe("warn");
+      expect(result.remediation).toBe(optionRemediation(configKey("inProgress")));
+      expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
+    });
+
+    it("warns with all keys when multiple configured options are missing", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        fieldsAnswer(fieldsJson(singleSelect("Status", ["Todo"]))),
+      ]);
+      const repo = githubRepo("main", { updateOnStart: true, updateOnFinish: true, board });
+      const result = await doctor.ghBoardCheck(repo).run(fake.env);
+      expect(result.status).toBe("warn");
+      expect(result.remediation).toBe(optionRemediation(`${configKey("inProgress")} and ${configKey("done")}`));
+      expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
+    });
+
+    it("returns an error for malformed JSON", async () => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), fieldsAnswer("not json")]);
+      const result = await doctor.ghBoardCheck(githubRepo("main", { updateOnStart: true, board })).run(fake.env);
+      expect(result.status).toBe("error");
+      expect(result.remediation).toBeUndefined();
+      expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
+    });
+
+    it("returns an error when the account token call fails", async () => {
+      const fake = fakeGh(dir, {}, [{ args: tokenArgs, stderr: "no oauth token found\n", exitCode: 1 }]);
+      const result = await doctor.ghBoardCheck(githubRepo("main", { updateOnStart: true, board })).run(fake.env);
+      expect(result).toEqual({
+        status: "error",
+        detail:
+          "gh has no login for the account octo on github.com: run `gh auth login --hostname github.com` and log in as octo. gh said: no oauth token found",
+      });
+      expect(argLists(fake)).toEqual([tokenArgs]);
+    });
+
+    it("returns the timeout result when field-list is slow", async () => {
+      const fake = fakeGh(dir, {}, [
+        ghTokenAnswer("octo", "gho_test"),
+        { ...fieldsAnswer(fieldsJson(singleSelect())), delaySeconds: 5 },
+      ]);
+      const start = Date.now();
+      const result = await doctor.ghBoardCheck(githubRepo("main", { updateOnStart: true, board }), 200).run(fake.env);
+      expect(result).toEqual({ status: "error", detail: "the check did not finish in 200 ms" });
+      expect(Date.now() - start).toBeLessThan(2000);
+      expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
+    });
+
+    it("does not call gh when no board option qualifies", async () => {
+      const fake = fakeGh(dir, {}, []);
+      const repo = githubRepo("main", { board: { owner: "octo", number: 3, field: "Status" } });
+      expect(await doctor.ghBoardCheck(repo).run(fake.env)).toEqual({
+        status: "ok",
+        detail: "main: no board option to check",
+      });
+      expect(fake.calls()).toEqual([]);
+    });
+  });
+
   describe("githubDoctorChecks", () => {
     const jiraRepo = () => {
       const { issueTracker } = githubRepo("j/jira");
@@ -537,6 +711,27 @@ describe("gh doctor checks", () => {
         { name: "gh labels: a/two", required: true, timeoutMs: 15000 },
         { name: "gh project: b/three", required: true, timeoutMs: 15000 },
         { name: "gh labels: b/three", required: true, timeoutMs: 15000 },
+      ]);
+    });
+
+    it("puts each configured board check after that repo's labels check", () => {
+      const checks = doctor.githubDoctorChecks([
+        githubRepo("a/one", { board: { owner: "octo", number: 1, field: "Status" } }),
+        githubRepo("a/two"),
+        githubRepo("b/three", { account: "hubot", board: { owner: "hubot", number: 3, field: "Status" } }),
+      ]);
+      expect(checkSummaries(checks)).toEqual([
+        { name: "gh version", required: true, timeoutMs: 5000 },
+        { name: "gh auth: octo", required: true, timeoutMs: 15000 },
+        { name: "gh auth: hubot", required: true, timeoutMs: 15000 },
+        { name: "gh project: a/one", required: true, timeoutMs: 15000 },
+        { name: "gh labels: a/one", required: true, timeoutMs: 15000 },
+        { name: "gh board: a/one", required: true, timeoutMs: 15000 },
+        { name: "gh project: a/two", required: true, timeoutMs: 15000 },
+        { name: "gh labels: a/two", required: true, timeoutMs: 15000 },
+        { name: "gh project: b/three", required: true, timeoutMs: 15000 },
+        { name: "gh labels: b/three", required: true, timeoutMs: 15000 },
+        { name: "gh board: b/three", required: true, timeoutMs: 15000 },
       ]);
     });
 
