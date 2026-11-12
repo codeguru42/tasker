@@ -203,7 +203,7 @@ describe("tasker update-branch", () => {
         undoBeforeBase: "alternate",
         undoAfterBase: "main",
       });
-      expect(undone.out).toContain(undoHint(KEY, head));
+      expect(undone.out).toContain(undoHint(KEY, newHead));
 
       const secondUndo = await runUpdateBranch("--undo");
 

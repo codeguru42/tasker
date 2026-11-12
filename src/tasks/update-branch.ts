@@ -60,6 +60,8 @@ interface UpdateFacts {
   moved: boolean;
   // Whether the run wrote an undo record, including a base-only change.
   undoRecorded: boolean;
+  // Whether the undo record holds base and parent values from --base.
+  undoWithBase: boolean;
   // The synced base tip that the replay started after, set when the replay started there.
   replayedAfter?: string;
   // The key of the direct parent that the task is no longer stacked on, set when the task has no parent after the walk.
@@ -446,6 +448,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         headAfter: resynced.head,
         moved,
         undoRecorded: moved || resolved !== undefined,
+        undoWithBase: resolved !== undefined,
         origin,
         state,
       };
@@ -493,8 +496,8 @@ async function failedUpdate(
   return failRun(store, task, io, `updating branch failed: ${message}`);
 }
 
-// Puts the head, the branch and the synced base tip back to the values that the last run which moved the head stored.
-// The base, the base revision and the parent link stay. The checks come first and write nothing.
+// Puts the head, the branch and the synced base tip back to the values that the last run stored. An explicit-base
+// record also restores the base and parent. The checks come first and write nothing.
 async function undoLastUpdate(
   run: UpdateRun,
   request: UpdateBranchRequest,
@@ -514,13 +517,39 @@ async function undoLastUpdate(
     let movedHead = before.head;
     try {
       movedHead = await vcs.moveWorkspace(ctx, { path, revision: undoBeforeHead });
-      const after: BranchSnapshot = { ...before, head: movedHead, syncedBaseTip: task.undoSyncedBaseTip };
-      const state = demotedTarget(origin, failedIn);
+      const undoWithBase = task.undoBeforeBase !== null && task.undoAfterBase !== null;
+      const restoredBase = undoWithBase ? task.undoBeforeBase! : before.base;
+      const restoredParentTaskId = undoWithBase ? task.undoBeforeParentTaskId : task.parentTaskId;
+      const restoredBaseRevision = vcs.baseRevision(restoredBase);
+      const after: BranchSnapshot = {
+        ...before,
+        head: movedHead,
+        base: restoredBase,
+        baseRevision: restoredBaseRevision,
+        syncedBaseTip: task.undoSyncedBaseTip,
+      };
+      const moved = movedHead !== before.head;
+      const unaccepted = (origin === "accepted" || failedIn === "merging") && movedHead !== task.acceptedRevision;
+      const state = moved || unaccepted ? demotedTarget(origin, failedIn) : origin;
       const writes: BranchUpdateWrites = {
         syncedBaseTip: task.undoSyncedBaseTip,
-        undo: undoRecord(before, after),
+        ...(undoWithBase && restoredBase !== before.base
+          ? { base: { base: restoredBase, revision: restoredBaseRevision, source: "undo" as const } }
+          : {}),
+        ...(undoWithBase ? { parentTaskId: restoredParentTaskId } : {}),
+        undo: {
+          ...undoRecord(before, after),
+          ...(undoWithBase
+            ? {
+                beforeBase: before.base,
+                beforeParentTaskId: task.parentTaskId,
+                afterBase: restoredBase,
+                afterParentTaskId: restoredParentTaskId,
+              }
+            : {}),
+        },
       };
-      if (origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
+      if (moved && origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       transitionWithBranchUpdate(store, task.id, state, { before, after, how: "undo", sync: "none" }, writes);
       return {
         issueKey: task.issueKey,
@@ -529,8 +558,9 @@ async function undoLastUpdate(
         sync: "none",
         startHead: before.head,
         headAfter: movedHead,
-        moved: true,
+        moved,
         undoRecorded: true,
+        undoWithBase,
         origin,
         state,
       };

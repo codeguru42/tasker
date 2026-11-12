@@ -277,7 +277,8 @@ export interface BranchUpdateWrites {
   base?:
     | { base: string; revision: string; source: "update" }
     | { base: string; revision: string; source: "parent"; baseOf: string }
-    | { base: string; revision: string; source: "explicit" };
+    | { base: string; revision: string; source: "explicit" }
+    | { base: string; revision: string; source: "undo" };
   parentTaskId?: number | null;
   clearPlanApproval?: number;
   syncedBaseTip?: string | null;

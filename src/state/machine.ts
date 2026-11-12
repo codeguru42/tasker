@@ -337,8 +337,18 @@ export type BranchSync = "absent" | "none" | "fast-forward" | "take-remote";
 // base step (how is not "none") or of the sync step (sync is "fast-forward" or "take-remote") counts. An old event has
 // no sync.
 export function branchUpdateMoved(data: unknown): boolean {
-  const { how, sync, error } = data as { how?: unknown; sync?: unknown; error?: unknown };
+  const { before, after, how, sync, error } = data as {
+    before?: { head?: unknown };
+    after?: { head?: unknown };
+    how?: unknown;
+    sync?: unknown;
+    error?: unknown;
+  };
   if (error !== undefined) return false;
+  if (how === "undo") {
+    if (before?.head === undefined || after?.head === undefined) return true;
+    return before.head !== after.head;
+  }
   return how !== "none" || sync === "fast-forward" || sync === "take-remote";
 }
 
