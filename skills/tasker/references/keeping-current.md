@@ -7,14 +7,17 @@ its base branch. [Shared errors](../SKILL.md#shared-errors) lists the errors tha
 ## `tasker update-branch`
 
 Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base
-branch: `tasker update-branch <issue> [--strategy rebase|merge] [--take-remote] [--undo]`. The task goes through the
-state `updating_branch`. The command accepts a task in `workspace_ready`, `awaiting_plan_review`, `approved`,
-`executed`, `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`, `cleanup_failed` or `failed`.
+branch: `tasker update-branch <issue> [--base <branch>] [--strategy rebase|merge] [--take-remote] [--undo]`. The task
+goes through the state `updating_branch`. The command accepts a task in `workspace_ready`, `awaiting_plan_review`,
+`approved`, `executed`, `awaiting_work_review`, `reviewed`, `accepted`, `pushed`, `in_peer_review`, `cleanup_failed` or
+`failed`.
 
 The strategy is the value of `--strategy`. If the option is absent, the strategy is `updateBranchStrategy` of the repo,
 which is `rebase` by default. The option overrides `updateBranchStrategy` for one run.
 
-The command fetches `origin`. Then it runs the sync step. After that it runs the base step on the new local tip.
+With `--base`, the command resolves only that branch before it enters `updating_branch`. A failed resolve writes no task
+state, base, parent or event. The command then fetches `origin`, runs the sync step and runs the base step on the new
+local tip.
 
 ### The sync step
 
@@ -76,7 +79,8 @@ command moves the worktree onto the tip with a fast-forward, a rebase or a merge
 its start.
 
 If the base step fails after a move of the sync step, the command also moves the task branch and the worktree back to
-the local tip from before the sync step. As a result, a failed update changes nothing.
+the local tip from before the sync step. Without `--base`, a failed update changes nothing. After `--base` resolves, the
+new base, parent and undo record stay stored when a later step fails.
 
 The `branch_updated` event has the key `sync`. Its value is `absent`, `none`, `fast-forward` or `take-remote`.
 `before.head` is the local tip before the sync step. `before.syncedBaseTip` and `after.syncedBaseTip` are the synced
@@ -86,11 +90,12 @@ built on. The key `how` has the value `undo` for an undo.
 After the parent landed, the event of a successful run also has `landedParents`: the issue keys of each landed parent on
 the walk, the direct parent first.
 
-When the sync step or the base step moved the head, the command writes a `base` event
+When the sync step or the base step moves the head without `--base`, the command writes a `base` event
 `{ base, revision, source: "update" }`. The `base` is the stored base. The `revision` is the stored base revision, a
-ref, for example `refs/remotes/origin/main`. The command writes no `base` event when the head did not move. A task whose
+ref, for example `refs/remotes/origin/main`. The command writes no such event when the head does not move. A task whose
 parent landed is the exception: [The base step of a stacked task](#the-base-step-of-a-stacked-task) gives its `base`
-event.
+event. With `--base`, the command writes `{ base, revision, source: "explicit" }` before sync, even when the head does
+not move.
 
 On success, the command prints these lines on stdout:
 
@@ -102,8 +107,9 @@ On success, the command prints these lines on stdout:
   head. `<head before>` is the head at the start of the base step. The value of `<how>` is `fast-forward`, `rebase` or
   `merge`.
 - `demoted <issue key> from <origin> to <target>` only when the target differs from the origin state.
-- `previous HEAD was <head before>; run tasker update-branch <issue key> --undo to restore it` after each run without
-  `--undo` that moved the head. `<head before>` is the head before the sync step.
+- `previous HEAD was <head before>; run tasker update-branch <issue key> --undo to restore it` after a run without
+  `--base` that moved the head, and after each run with `--base`. This includes an undo of an explicit-base record.
+  `<head before>` is the head before the run.
 - `the plan is stale; run tasker refine <issue key> before tasker approve` only when the head moved and the task stays
   in `awaiting_plan_review`.
 - `state: <state>`.
@@ -171,7 +177,9 @@ The `revision` of each `base` event is a ref, never a commit id:
 
 - While the parent is in flight, a move writes
   `{ base: "refs/heads/<parent branch>", revision: "refs/heads/<parent branch>", source: "update" }`. The command writes
-  no `base` event when nothing moved.
+  no `base` event when nothing moved and the run has no `--base`.
+- With `--base`, the command writes `{ base, revision, source: "explicit" }` before sync, also when the head does not
+  move. It stores the matching active task as the parent, or NULL when no task matches.
 - After the parent landed, the command always writes
   `{ base: <base that the walk ends on>, revision: <base revision of that base>, source: "parent", baseOf: <end task key> }`,
   also when the head does not move. The task row gets the new base and the new parent, or no parent. The `revision` is a
@@ -210,7 +218,8 @@ error is
 ### Undo the last update
 
 `tasker update-branch <issue> --undo` puts the task branch and the worktree back at the head from before the last run
-that moved the head. It also puts the synced base tip back. The command reads these values from the task row. It fetches
+that moved the head. It also puts the synced base tip back. After a run with `--base`, it restores the old base and
+parent too. A base-only run with `--base` can be undone. The command reads these values from the task row. It fetches
 nothing and runs no sync step and no base step.
 
 The command makes these checks, in this order, before it moves anything:
@@ -226,9 +235,11 @@ The `HEAD` error is
 `the worktree of <issue key> moved since the last update (HEAD <head>, branch <branch tip>, last update <head of the last run>); nothing undone`.
 A failed read of `HEAD` or of the branch stops the command with the error of the read.
 
-The undo counts as a move of the head. As a result, the demotion table and the rule for a stale plan apply. The undo
-also stores its own values, so a second `--undo` goes back again. The base, the base revision and the parent link stay.
-The undo writes a `branch_updated` event with `how: "undo"` and `sync: "none"`. It writes no `base` event.
+When undo restores a different head, it counts as a head move. The demotion table and the stale-plan rule then apply. A
+base-only undo does not count as a head move. An undo record from `--base` restores the saved base and parent. It stores
+the reverse values, so a second `--undo` goes back again. A record from a run without `--base`, or an old row with NULL
+base values, keeps the base and parent. When the base changes, undo writes a `base` event with `source: "undo"`. Each
+undo writes a `branch_updated` event with `how: "undo"` and `sync: "none"`.
 
 On success, the command prints these lines on stdout:
 
@@ -238,10 +249,11 @@ On success, the command prints these lines on stdout:
   `awaiting_plan_review`.
 - `state: <state>`, then the commands of that state, as for a plain run.
 
-The command prints no `previous HEAD was` line after an undo.
+The command prints no `previous HEAD was` line after an undo of a record without base values. It prints the hint after
+an undo of a record from `--base`, so a second undo is available.
 
 If the move fails, the restore rule of a plain run applies. The worktree goes back to the head from before the undo, and
-the task goes back to its origin state. The three stored values stay as they were. The same holds when the last write
+the task goes back to its origin state. The stored undo values stay as they were. The same holds when the last write
 fails.
 
 These cases are out of scope:
@@ -261,8 +273,10 @@ and of the clone lock belong to this group:
   `the task of <issue key> failed in pushing; run tasker retry <issue key> first, so that tasker records what the push published`.
   Run `tasker retry <issue key>` to record the result of the push.
 - The value of `--strategy` is not `rebase` or `merge`. The error is `--strategy must be rebase or merge: <value>`.
-- The options are `--undo` with `--strategy` or `--take-remote`. The error is
+- The options are `--undo` with `--base`, `--strategy` or `--take-remote`. With `--base`, the error is
+  `--undo cannot be combined with --base, --strategy or --take-remote`. Without `--base`, the error is
   `--undo cannot be combined with --strategy or --take-remote`.
+- The explicit base does not exist. The error is `the base branch does not exist: <base> (from --base)`.
 - The option `--undo` finds no stored move or a moved worktree. [Undo the last update](#undo-the-last-update) gives the
   errors.
 - The chain of parents has a loop. This is the loop error. The error is
@@ -281,7 +295,8 @@ depends on the worktree:
 - The worktree is back at the start when three facts hold: the head is the head of the start, the worktree is on the
   task branch, and the worktree is clean. Then the task goes back to its origin state. The command writes a
   `branch_updated` event with `error`, `how: "none"` and `after` equal to `before`, in place of a `transition` event.
-  The error on stderr and in the event is the bare message.
+  After `--base` resolves, the stored base and parent stay. Its undo record has the start head in both head fields and
+  keeps the old and new base and parent. The error on stderr and in the event is the bare message.
 - In each other case, the task goes to `failed` with the error `updating branch failed: <message>`. The command prints
   the same error on stderr.
 

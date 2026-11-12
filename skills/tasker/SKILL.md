@@ -291,7 +291,7 @@ failure origin. See [the reference](references/landing.md#tasker-mark-landed).
 
 ### `tasker update-branch`
 
-Brings the worktree of a task up to date with its base branch, for a task in a state that the reference lists. See
+Brings the worktree of a task up to date with its base branch, and can change the base with `--base`. See
 [the reference](references/keeping-current.md#tasker-update-branch).
 
 ### `tasker finish`

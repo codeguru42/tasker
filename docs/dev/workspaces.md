@@ -70,8 +70,8 @@ the task branch builds on.
 
 The checks that need no git run first, so a bad input causes no fetch and no write.
 
-The source order is: `--base` of this run, then the issue hint, then the stored base of the task, then the blocker step
-of start, then the learned default, then `defaultBaseBranch`, then a question.
+For `tasker start`, the source order is `--base`, then the issue hint, then the stored base of the task, then the
+blocker step, then the learned default, then `defaultBaseBranch`, then a question.
 
 The reason: the user who passes `--base` names the base of this run on purpose. With `--base`, start does not read the
 hint. As a result, a bad hint does not stop the start.
@@ -84,6 +84,10 @@ hint. As a result, a bad hint does not stop the start.
 - A missing `defaultBaseBranch` fails and does not ask.
 - The hint comes from the issue tracker, so it is untrusted text. It cannot reach `refs/heads/*`, because the check uses
   `refs/remotes/origin/<hint>`, and `git show-ref --verify` matches only the exact ref.
+
+For `tasker update-branch --base`, the resolver uses only the explicit branch. It fetches origin and checks the exact
+ref before tasker enters `updating_branch`. A failed resolve writes no state, base, parent or event. After a successful
+resolve, tasker stores the base, matching parent, explicit base event and undo record before sync.
 
 ### Learned default
 

@@ -872,9 +872,10 @@ These reasons explain its rules:
 - The `transition` event into `updating_branch` is `{ head, from, to }`. The `head` is a commit id of the task branch:
   the head before any step of the update. It has the same form as `before.head` of the `branch_updated` event.
   `tasker resume` reads it.
-- The `base` event is `{ base, revision, source: "update" }`. The command writes it only when the head moved. The
-  `revision` is the stored base revision, a ref. The base change after the parent landed writes the event with the
-  source `parent` and the field `baseOf`: the issue key of the end task of the walk.
+- Without `--base`, the `base` event is `{ base, revision, source: "update" }`. The command writes it only when the head
+  moved. The `revision` is the stored base revision, a ref. With `--base`, it writes
+  `{ base, revision, source: "explicit" }` before sync, also when the head does not move. After the parent landed, the
+  command writes the event with source `parent` and `baseOf`: the issue key of the end task of the walk.
 - The synced base tip of a stacked task: the replay is the `rebase` form of the move of a stacked task. It replays the
   commits after the synced base tip of the task onto the new tip. If the head does not build on the synced base tip, or
   the task has none, it replays the commits after the merge base of the task branch and the new tip, and it writes a
@@ -923,12 +924,15 @@ These reasons explain its rules:
   the sync step, so that a failed update changes nothing.
 - The head of the last move: a rebase rewrites each commit, so the new head does not reach the old head. Only the stored
   head names the commit that the undo goes back to.
-- The demotion of an undo: the undo moves the head, so the old approval or the old verify result no longer describes the
-  tree.
-- The base of an undo: the base, the base revision and the parent link stay, also after a move that changed the base.
-  The commits of the old parent are in the new base.
+- The demotion of an undo: when undo moves the head, the old approval or the old verify result no longer describes the
+  tree. A base-only undo does not move the head.
+- The base of an undo: after a run with `--base`, undo restores the old base and parent with the head and synced base
+  tip. A base-only run also gets an undo record. An undo stores the reverse values, so a second undo returns to the
+  explicit base and parent. A run without `--base`, or an old row with NULL base values, keeps the base and parent.
 - The synced base tip of an undo: the undo puts the old tip back, because the head builds on that tip. The next replay
   of a stacked task starts after that tip, so it replays only the commits of the task.
+- A failed sync after `--base` resolves: the task keeps the new base and parent. The undo record has the start head in
+  both head fields, and it keeps the old and new base and parent values.
 - The demotion: when the head moved, the old approval or the old verify result no longer describes the tree.
 - The demotion of a head that is not the accepted revision: a task in `accepted`, or a task that failed in `merging`,
   goes to `executed` when its head is not the accepted revision, also when the command moved nothing. A commit that

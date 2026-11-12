@@ -64,11 +64,16 @@ clears it. `tasker merge` compares the tip of the task branch with it. Schema ve
 once for each row that exists, from the revision of the newest `accepted` event of the task. Code reads the column and
 never the event, as the rule of the `events` table says.
 
-The columns `undo_before_head`, `undo_after_head` and `undo_synced_base_tip` hold the values that
-`tasker update-branch --undo` reads. Each run that moved the head writes all three in its store write.
-`undo_before_head` is the head before the sync step, and `undo_after_head` is the head after the run.
-`undo_synced_base_tip` is the synced base tip before the run, or NULL. Schema version 16 adds them. The migration writes
-no value, so the rows that exist hold NULL.
+The columns `undo_before_head`, `undo_after_head` and `undo_synced_base_tip` hold values that
+`tasker update-branch --undo` reads. A run that moves the head writes these columns. A run with `--base` also writes
+them when the head does not move. `undo_before_head` is the head before the sync step, and `undo_after_head` is the head
+after the run. `undo_synced_base_tip` is the synced base tip before the run, or NULL. Schema version 16 adds them. The
+migration writes no value, so the rows that exist hold NULL.
+
+The columns `undo_before_base`, `undo_before_parent_task_id`, `undo_after_base` and `undo_after_parent_task_id` hold
+base and parent values for an undo record from `--base`. A run with `--base` writes them even when the head does not
+move. Undo restores the before values and stores the reverse values. Schema version 24 adds these columns. Existing rows
+hold NULL, which keeps the undo behavior they had before.
 
 The column `tracker_marked` is 1 when the task marked the issue in progress on the tracker, and 0 if not. A passed
 `in_progress` write sets it in the same transaction as its `tracker_update` event. A passed `clear_in_progress` write
@@ -87,7 +92,7 @@ removal in one transaction. This keeps the stored revision and task state in syn
 The column `reopen_start_head` holds the worktree HEAD from the start of a reopen that has not recorded its resync yet.
 Schema version 20 adds it. Existing task rows get NULL. `startReopen` writes the head with the move into `refining`, its
 feedback transition event and the run marker in one transaction. After resync, `completeReopen` records
-`synced_base_tip` and clears `reopen_start_head` and the three update-branch undo columns in one write. It keeps
+`synced_base_tip` and clears `reopen_start_head` and all update-branch undo columns in one write. It keeps
 `accepted_revision`, `published_revision` and `pr_number`.
 
 If the process stops before `completeReopen`, `resume` or eligible `approve-credits` restores the saved head under the

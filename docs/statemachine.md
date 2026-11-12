@@ -338,7 +338,9 @@ After either recovery, the PR path checks its status first, so it does not reque
 
 ## Update branch
 
-`tasker update-branch` enters `updating_branch` before any git work, then always leaves it.
+With `--base`, `tasker update-branch` resolves the explicit branch before it enters `updating_branch`. A failed resolve
+writes no state, base, parent or event. After a successful resolve, it stores the new base, parent and undo record
+before sync. Without `--base`, the command enters `updating_branch` before sync. It then always leaves that state.
 
 If a task failed in `pushing`, `tasker update-branch` refuses before it enters `updating_branch`. Run `tasker retry`
 first.
