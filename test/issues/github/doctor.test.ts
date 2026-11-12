@@ -35,7 +35,7 @@ describe("gh doctor checks", () => {
   beforeEach(async () => {
     dir = useTempDir("tasker-gh-doctor-");
     vi.resetModules();
-    doctor = (await import("../../../src/issues/github/doctor.js")) as GithubDoctorWithBoardCheck;
+    doctor = await import("../../../src/issues/github/doctor.js");
   });
 
   describe("ghVersionCheck", () => {
@@ -542,7 +542,7 @@ describe("gh doctor checks", () => {
       abort: "Aborted",
     };
     const configKey = (name: "inProgress" | "done" | "abort") => `issueTracker.board.${name}`;
-    const singleSelect = (name = "Status", options = ["Todo", "In progress", "Done"]) => ({
+    const singleSelect = (name = "Status", options = ["Todo", "In progress", "Done", "Aborted"]) => ({
       id: "PVTSSF_lADOB9",
       name,
       type: "ProjectV2SingleSelectField",
@@ -571,6 +571,7 @@ describe("gh doctor checks", () => {
       expect(result.detail).toContain("Status");
       expect(result.detail).toContain("In progress");
       expect(result.detail).toContain("Done");
+      expect(result.detail).toContain("Aborted");
       expect(fake.calls()).toEqual([
         { args: tokenArgs, ghToken: undefined, env: {} },
         { args: boardArgs(), ghToken: "gho_test", env: {} },
@@ -579,12 +580,12 @@ describe("gh doctor checks", () => {
     });
 
     it("matches field and option names without regard to case", async () => {
-      const json = fieldsJson(singleSelect("sTaTuS", ["todo", "IN PROGRESS", "done"]));
+      const json = fieldsJson(singleSelect("sTaTuS", ["todo", "IN PROGRESS", "done", "ABORTED"]));
       const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), fieldsAnswer(json)]);
       const repo = githubRepo("main", {
         updateOnStart: true,
         updateOnFinish: true,
-        board: { ...board, field: "Status", inProgress: "In progress", done: "Done" },
+        board: { ...board, field: "Status", inProgress: "In progress", done: "Done", abort: undefined },
       });
       expect((await doctor.ghBoardCheck(repo).run(fake.env)).status).toBe("ok");
       expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
@@ -592,7 +593,7 @@ describe("gh doctor checks", () => {
 
     it("warns with the board remediation when field-list fails", async () => {
       const stderr = "GraphQL: Could not resolve to a ProjectV2 with the number 999. (project)\n";
-      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: boardArgs(), stderr, exitCode: 1 }]);
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), { args: boardArgs(999), stderr, exitCode: 1 }]);
       const repo = githubRepo("main", { updateOnStart: true, board: { ...board, number: 999 } });
       const result = await doctor.ghBoardCheck(repo).run(fake.env);
       expect(result.status).toBe("warn");
@@ -607,7 +608,10 @@ describe("gh doctor checks", () => {
       ["a field of another type", fieldsJson({ id: "PVTF_lADOB9", name: "Status", type: "ProjectV2Field" })],
     ])("warns and gives field advice for %s", async (_name, json) => {
       const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), fieldsAnswer(json)]);
-      const repo = githubRepo("main", { updateOnStart: true, board: { ...board, inProgress: "In progress" } });
+      const repo = githubRepo("main", {
+        updateOnStart: true,
+        board: { ...board, inProgress: "In progress", abort: undefined },
+      });
       const result = await doctor.ghBoardCheck(repo).run(fake.env);
       expect(result.status).toBe("warn");
       expect(result.remediation).toBe(fieldRemediation("main"));
@@ -622,7 +626,10 @@ describe("gh doctor checks", () => {
         ghTokenAnswer("octo", "gho_test"),
         fieldsAnswer(fieldsJson(singleSelect("Status", options))),
       ]);
-      const repo = githubRepo("main", { updateOnStart: true, board: { ...board, inProgress: "In progress" } });
+      const repo = githubRepo("main", {
+        updateOnStart: true,
+        board: { ...board, inProgress: "In progress", abort: undefined },
+      });
       const result = await doctor.ghBoardCheck(repo).run(fake.env);
       expect(result.status).toBe("warn");
       expect(result.remediation).toBe(optionRemediation(configKey("inProgress")));
@@ -634,15 +641,36 @@ describe("gh doctor checks", () => {
         ghTokenAnswer("octo", "gho_test"),
         fieldsAnswer(fieldsJson(singleSelect("Status", ["Todo"]))),
       ]);
-      const repo = githubRepo("main", { updateOnStart: true, updateOnFinish: true, board });
+      const repo = githubRepo("main", {
+        updateOnStart: true,
+        updateOnFinish: true,
+        board: { ...board, abort: undefined },
+      });
       const result = await doctor.ghBoardCheck(repo).run(fake.env);
       expect(result.status).toBe("warn");
       expect(result.remediation).toBe(optionRemediation(`${configKey("inProgress")} and ${configKey("done")}`));
       expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
     });
 
-    it("returns an error for malformed JSON", async () => {
-      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), fieldsAnswer("not json")]);
+    it.each([
+      ["invalid JSON", "not json"],
+      ["missing fields", JSON.stringify({ totalCount: 0 })],
+      [
+        "a malformed single-select option",
+        JSON.stringify({
+          fields: [
+            {
+              id: "PVTSSF_lADOB9",
+              name: "Status",
+              type: "ProjectV2SingleSelectField",
+              options: [{ id: "option-0", name: 3 }],
+            },
+          ],
+          totalCount: 1,
+        }),
+      ],
+    ])("returns an error for %s", async (_name, json) => {
+      const fake = fakeGh(dir, {}, [ghTokenAnswer("octo", "gho_test"), fieldsAnswer(json)]);
       const result = await doctor.ghBoardCheck(githubRepo("main", { updateOnStart: true, board })).run(fake.env);
       expect(result.status).toBe("error");
       expect(result.remediation).toBeUndefined();

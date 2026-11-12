@@ -191,13 +191,136 @@ export function ghLabelsCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
   });
 }
 
+interface BoardField {
+  name: string;
+  type: string;
+  options?: { name: string }[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readBoardFields(output: string): BoardField[] {
+  const parsed: unknown = JSON.parse(output);
+  if (!isRecord(parsed) || !Array.isArray(parsed.fields) || !Number.isInteger(parsed.totalCount)) {
+    throw new Error("gh project field-list returned invalid JSON data");
+  }
+  return parsed.fields.map((value): BoardField => {
+    if (
+      !isRecord(value) ||
+      typeof value.id !== "string" ||
+      typeof value.name !== "string" ||
+      typeof value.type !== "string"
+    ) {
+      throw new Error("gh project field-list returned invalid JSON data");
+    }
+    if (value.type !== "ProjectV2SingleSelectField") {
+      return { name: value.name, type: value.type };
+    }
+    if (!Array.isArray(value.options)) {
+      throw new Error("gh project field-list returned invalid JSON data");
+    }
+    const options = value.options.map((option): { name: string } => {
+      if (!isRecord(option) || typeof option.id !== "string" || typeof option.name !== "string") {
+        throw new Error("gh project field-list returned invalid JSON data");
+      }
+      return { name: option.name };
+    });
+    return { name: value.name, type: value.type, options };
+  });
+}
+
+interface BoardOptionToRead {
+  configKey: string;
+  name: string;
+}
+
+export function ghBoardCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
+  return timedCheck({ name: `gh board: ${repo.key}`, required: true, timeoutMs }, async (env, { signal }) => {
+    const issueTracker = repo.issueTracker;
+    const board = issueTracker.board;
+    if (board === undefined) {
+      return { status: "ok", detail: `${repo.key}: no board to check` };
+    }
+    const options: BoardOptionToRead[] = [];
+    if (issueTracker.updateOnStart) {
+      if (board.inProgress !== undefined) {
+        options.push({ configKey: "issueTracker.board.inProgress", name: board.inProgress });
+      }
+      if (board.abort !== undefined) {
+        options.push({ configKey: "issueTracker.board.abort", name: board.abort });
+      }
+    }
+    if (issueTracker.updateOnFinish && board.done !== undefined) {
+      options.push({ configKey: "issueTracker.board.done", name: board.done });
+    }
+    if (options.length === 0) {
+      return { status: "ok", detail: `${repo.key}: no board option to check` };
+    }
+
+    const account = accountOf(repo);
+    let output: string;
+    try {
+      output = await runGh(
+        ["project", "field-list", String(board.number), "--owner", board.owner, "--format", "json", "--limit", "100"],
+        { account, env, signal },
+      );
+    } catch (error) {
+      if (!(error instanceof GhError && error.subcommand === "project field-list" && error.exitCode !== null)) {
+        throw error;
+      }
+      return {
+        status: "warn",
+        detail: `${repo.key}: cannot read board ${board.number}: ${error.message}`,
+        remediation: `Make sure that issueTracker.board of ${repo.key} names a board that the account ${account} can read. The token of the account needs the scopes project and read:project. A fine-grained token cannot open a board of a user.`,
+      };
+    }
+
+    const fields = readBoardFields(output);
+    const matchingFields = fields.filter((field) => field.name.toLowerCase() === board.field.toLowerCase());
+    if (matchingFields.length !== 1) {
+      const state = matchingFields.length === 0 ? "is missing" : "is ambiguous";
+      return {
+        status: "warn",
+        detail: `${repo.key}: field ${JSON.stringify(board.field)} ${state} on board ${board.number}`,
+        remediation: `Change issueTracker.board.field of ${repo.key} to one single-select field of the configured board.`,
+      };
+    }
+    const field = matchingFields[0];
+    if (field.type !== "ProjectV2SingleSelectField") {
+      return {
+        status: "warn",
+        detail: `${repo.key}: field ${JSON.stringify(field.name)} on board ${board.number} is not a single-select field`,
+        remediation: `Change issueTracker.board.field of ${repo.key} to one single-select field of the configured board.`,
+      };
+    }
+
+    const fieldOptions = field.options ?? [];
+    const missingOptions = options.filter(
+      (option) =>
+        fieldOptions.filter((fieldOption) => fieldOption.name.toLowerCase() === option.name.toLowerCase()).length !== 1,
+    );
+    const availableOptions = fieldOptions.map((option) => JSON.stringify(option.name)).join(", ");
+    const fieldSummary = `${repo.key}: board ${board.number}, field ${JSON.stringify(field.name)}, options ${availableOptions}`;
+    if (missingOptions.length > 0) {
+      return {
+        status: "warn",
+        detail: `${fieldSummary}; a configured option is missing or ambiguous`,
+        remediation: `Add each missing option to the field on GitHub, or change ${missingOptions.map((option) => option.configKey).join(" and ")}.`,
+      };
+    }
+    return { status: "ok", detail: fieldSummary };
+  });
+}
+
 // The doctor checks of the repos that use the github tracker, in this order:
 // 1. The version check, once, and only when at least one repo uses the github tracker.
 //    No github repo gives [].
 // 2. One auth check for each distinct account, in the order of first use. The match is exact,
 //    the same as the token cache of runGh().
-// 3. For each github repo, in the order of the configuration, the project check and then the
-//    labels check.
+// 3. For each github repo, in the order of the configuration, the project check, labels check,
+//    and board check when issueTracker.board is set.
 // The checks never change GitHub. They make only read-only gh calls.
 export function githubDoctorChecks(repos: readonly IssueDoctorRepo[]): Check[] {
   const github = repos.filter((repo) => repo.issueTracker.provider === "github");
@@ -208,6 +331,10 @@ export function githubDoctorChecks(repos: readonly IssueDoctorRepo[]): Check[] {
   return [
     ghVersionCheck(),
     ...[...accounts].map((account) => ghAuthCheck(account)),
-    ...github.flatMap((repo) => [ghProjectCheck(repo), ghLabelsCheck(repo)]),
+    ...github.flatMap((repo) => [
+      ghProjectCheck(repo),
+      ghLabelsCheck(repo),
+      ...(repo.issueTracker.board === undefined ? [] : [ghBoardCheck(repo)]),
+    ]),
   ];
 }

@@ -23,6 +23,20 @@ const VERSION = { args: ["--version"], stdout: "gh version 2.101.0 (2026-09-15)\
 const LOGIN = { args: ["api", "user", "--jq", ".login"], stdout: "codeguru42\n" };
 const PROJECT = { args: ["repo", "view", "codeguru42/tasker", "--json", "nameWithOwner"], stdout: "{}" };
 const GOOD_GH: FakeGhAnswer[] = [VERSION, ghTokenAnswer("codeguru42", "gho_test"), LOGIN, PROJECT];
+const BOARD_FIELDS: FakeGhAnswer = {
+  args: ["project", "field-list", "3", "--owner", "octo", "--format", "json", "--limit", "100"],
+  stdout: JSON.stringify({
+    fields: [
+      {
+        id: "PVTSSF_lADOB9",
+        name: "Status",
+        type: "ProjectV2SingleSelectField",
+        options: [{ id: "option-0", name: "In progress" }],
+      },
+    ],
+    totalCount: 1,
+  }),
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RawConfig = Record<string, any>;
@@ -219,7 +233,7 @@ describe("doctor", () => {
   });
 
   it("does not warn for a missing label when board.inProgress is set", async () => {
-    await setUp(GOOD_GH, (raw) => {
+    await setUp([...GOOD_GH, BOARD_FIELDS], (raw) => {
       raw.repos.tasker.issueTracker.updateOnStart = true;
       raw.repos.tasker.issueTracker.board = { owner: "octo", number: 3, inProgress: "In progress" };
     });
