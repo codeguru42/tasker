@@ -62,6 +62,15 @@ const ForgeSchema = z.strictObject({
   mergeMethod: z.enum(["merge", "squash", "rebase"]).default("merge").describe("How to merge a pull request."),
 });
 
+const BoardSchema = z.strictObject({
+  owner: nonEmpty.describe("The account or organization that owns the board."),
+  number: z.number().int().positive().describe("The number of the GitHub Projects board."),
+  field: nonEmpty.default("Status").describe("The single-select field that holds the board status."),
+  inProgress: nonEmpty.optional().describe("The board option that tasker selects at start."),
+  done: nonEmpty.optional().describe("The board option that tasker selects at finish."),
+  abort: nonEmpty.optional().describe("The board option that tasker selects at abort."),
+});
+
 export const VCS_PROVIDER_IDS = ["git"] as const; // the vcs.provider enum
 export type VcsProviderId = (typeof VCS_PROVIDER_IDS)[number];
 
@@ -118,6 +127,7 @@ const IssueTrackerSchema = z.strictObject({
     .describe(
       "The site of the tracker. ASCII uppercase letters fold to lowercase. Jira requires a bare host name with a dot, such as example.atlassian.net.",
     ),
+  board: BoardSchema.optional().describe("The GitHub Projects board that tasker updates."),
   tracker: nonEmpty.optional().describe("The name of an entry under trackers."),
   account: nonEmpty
     .optional()
@@ -381,7 +391,7 @@ function githubTrackerIssues(key: string, issueTracker: Record<string, unknown>)
 }
 
 // acli has no flag for a site or a user for one call, so a Jira repo sets no account. A Jira repo uses statuses, not labels.
-const JIRA_REFUSED_KEYS = ["account", "inProgressLabel", "doneLabel", "reviewLabel"] as const;
+const JIRA_REFUSED_KEYS = ["account", "inProgressLabel", "doneLabel", "reviewLabel", "board"] as const;
 
 const JIRA_PROJECT_PATTERN = new RegExp(`^${JIRA_PROJECT}$`);
 const JIRA_SITE_PATTERN = new RegExp(`^${SITE_LABEL}(?:\\.${SITE_LABEL})+$`);
