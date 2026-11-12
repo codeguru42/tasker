@@ -151,8 +151,12 @@ tracker.
 `gh issue edit` splits the value of `--add-label`, of `--remove-label` and of `--add-assignee` on commas (gh 2.101.0).
 
 `gh project item-edit` uses `--owner` to select the board owner and `--url` to name the issue. It uses `--field` to name
-the single-select field and `--value` to name its option. GitHub matches field and option names without regard to case.
-Two matches make a name ambiguous.
+the single-select field and `--value` to name its option. At tag `v2.102.1`, `gh` matches field and option names without
+regard to case. Two matches make a name ambiguous. The source is `pkg/cmd/project/item-edit/item_edit.go`.
+
+When no card matches the issue URL, `gh` reports that it cannot find the item and points to `gh project item-add`.
+`gh project item-edit` does not add a card. `docs/dev/issues.md` names gh 2.97.0 or later for a card move. tasker keeps
+gh 2.40.0 as its minimum because `gh auth token` has the `--user` flag from that version.
 
 tasker never adds a card to the configured board. The reason: a workflow of a board can add each new issue. An add by
 tasker can put an issue on a board that does not track it. A missing card only warns, because the task and the clone are
