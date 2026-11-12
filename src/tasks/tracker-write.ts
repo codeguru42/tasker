@@ -32,7 +32,16 @@ export function trackerTargets(issueTracker: RepoConfig["issueTracker"]): {
   };
 }
 
-export type TrackerAction = "assign" | "in_progress" | "clear_in_progress" | "done" | "abort" | "review";
+export type TrackerAction =
+  | "assign"
+  | "in_progress"
+  | "clear_in_progress"
+  | "done"
+  | "abort"
+  | "review"
+  | "board_in_progress"
+  | "board_done"
+  | "board_abort";
 
 // One write to the issue tracker. text finishes "warning: cannot ... on the tracker: <error>".
 // success is the line that stdout gets when the write works.
@@ -59,10 +68,11 @@ export async function runTrackerWrite(
     io.stderr(`warning: cannot ${write.text} on the tracker: ${message}\n`);
     return false;
   }
-  // Passed marker writes set or clear trackerMarked with the successful tracker_update event. Code reads the column,
+  // Passed marker writes set or clear their task column with the successful tracker_update event. Code reads the columns,
   // never the event.
   if (write.action === "in_progress") store.recordTrackerMark(taskId);
   else if (write.action === "clear_in_progress") store.clearTrackerMark(taskId);
+  else if (write.action === "board_in_progress") store.recordCardMark(taskId);
   else store.appendEvent(taskId, "tracker_update", { action: write.action, result: "ok" });
   io.stdout(`${write.success}\n`);
   return true;

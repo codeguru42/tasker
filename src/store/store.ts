@@ -72,6 +72,7 @@ export interface Task {
   prNumber: number | null;
   mergeOrigin: string | null;
   trackerMarked: boolean;
+  cardMarked: boolean;
   parentTaskId: number | null;
   attempt: number;
   createdAt: string;
@@ -118,6 +119,7 @@ export interface TaskChanges {
   prNumber?: number | null;
   mergeOrigin?: string | null;
   trackerMarked?: boolean;
+  cardMarked?: boolean;
   parentTaskId?: number | null;
 }
 
@@ -333,6 +335,8 @@ export interface TaskStore extends LockStore {
   appendEvent(taskId: number, type: string, data?: unknown): TaskEvent;
   // Sets trackerMarked and appends the tracker_update event of a passed in_progress write, in one transaction.
   recordTrackerMark(taskId: number): void;
+  // Sets cardMarked and appends the tracker_update event of a passed board_in_progress write, in one transaction.
+  recordCardMark(taskId: number): void;
   // Clears trackerMarked and appends the tracker_update event of a passed clear_in_progress write, in one transaction.
   clearTrackerMark(taskId: number): void;
   listEvents(taskId: number): TaskEvent[];
@@ -548,6 +552,7 @@ interface TaskRow {
   pr_number: number | null;
   merge_origin: string | null;
   tracker_marked: number;
+  card_marked: number;
   parent_task_id: number | null;
   attempt: number;
   created_at: string;
@@ -602,6 +607,7 @@ function rowToTask(row: TaskRow): Task {
     prNumber: row.pr_number,
     mergeOrigin: row.merge_origin,
     trackerMarked: row.tracker_marked === 1,
+    cardMarked: row.card_marked === 1,
     parentTaskId: row.parent_task_id,
     attempt: row.attempt,
     createdAt: row.created_at,
@@ -799,7 +805,7 @@ function setUp(db: DatabaseSync) {
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
            synced_base_tip = ?, undo_before_head = ?, undo_after_head = ?, undo_synced_base_tip = ?,
            undo_before_base = ?, undo_before_parent_task_id = ?, undo_after_base = ?, undo_after_parent_task_id = ?,
-           reopen_start_head = ?, accepted_revision = ?, published_revision = ?, pr_number = ?, merge_origin = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
+           reopen_start_head = ?, accepted_revision = ?, published_revision = ?, pr_number = ?, merge_origin = ?, tracker_marked = ?, card_marked = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
     ),
@@ -1100,6 +1106,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.prNumber !== undefined) next.prNumber = changes.prNumber;
     if (changes.mergeOrigin !== undefined) next.mergeOrigin = changes.mergeOrigin;
     if (changes.trackerMarked !== undefined) next.trackerMarked = changes.trackerMarked;
+    if (changes.cardMarked !== undefined) next.cardMarked = changes.cardMarked;
     if (changes.parentTaskId !== undefined) next.parentTaskId = changes.parentTaskId;
     const row = statements.updateTask.get(
       next.state,
@@ -1122,6 +1129,7 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.prNumber,
       next.mergeOrigin,
       next.trackerMarked ? 1 : 0,
+      next.cardMarked ? 1 : 0,
       next.parentTaskId,
       at,
       current.id,
@@ -1488,6 +1496,13 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       writeTask(taskId, { trackerMarked: true }, () => ({
         type: "tracker_update",
         data: { action: "in_progress", result: "ok" },
+      }));
+    },
+
+    recordCardMark(taskId) {
+      writeTask(taskId, { cardMarked: true }, () => ({
+        type: "tracker_update",
+        data: { action: "board_in_progress", result: "ok" },
       }));
     },
 
