@@ -3,6 +3,7 @@ import { isAbsolute, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { readGithubBlockers } from "../../src/issues/github/blockers.js";
 import { readGithubIssue } from "../../src/issues/github/issue.js";
+import * as fakeGhHelpers from "./fake-gh.js";
 import {
   blockerReadCalls,
   fakeGh,
@@ -16,6 +17,15 @@ import {
   writeFakeGh,
 } from "./fake-gh.js";
 import { useTempDir } from "./temp.js";
+
+const { boardMoveArgs, boardMoveCalls } = fakeGhHelpers as unknown as {
+  boardMoveArgs: (
+    board: { owner: string; number: number; field: string },
+    issue: { project: string; number: number },
+    option: string,
+  ) => string[];
+  boardMoveCalls: (gh: ReturnType<typeof fakeGh>) => string[][];
+};
 
 describe("fakeGh", () => {
   let dir: string;
@@ -263,6 +273,58 @@ describe("trackerWriteCalls", () => {
     const gh = fakeGh(useTempDir("tasker-write-calls-"), {}, []);
 
     expect(trackerWriteCalls(gh)).toEqual([]);
+  });
+});
+
+describe("boardMoveCalls", () => {
+  it("gives an empty list when gh made no card move", () => {
+    const gh = fakeGh(useTempDir("tasker-board-move-calls-"), {}, []);
+
+    expect(boardMoveCalls(gh)).toEqual([]);
+  });
+
+  it("gives the arguments of item-edit calls only, in order", () => {
+    const gh = fakeGh(useTempDir("tasker-board-move-calls-"), {}, [
+      ghTokenAnswer("octo", "t"),
+      githubIssueAnswer({ project: "octo/repo", number: 7 }),
+      {
+        args: boardMoveArgs(
+          { owner: "octo", number: 3, field: "Status" },
+          { project: "octo/repo", number: 7 },
+          "Doing",
+        ),
+      },
+    ]);
+    runFakeGh(gh.env, ghTokenAnswer("octo", "t").args);
+    runFakeGh(gh.env, githubIssueAnswer({ project: "octo/repo", number: 7 }).args);
+    const move = boardMoveArgs(
+      { owner: "octo", number: 3, field: "Status" },
+      { project: "octo/repo", number: 7 },
+      "Doing",
+    );
+    runFakeGh(gh.env, move);
+
+    expect(boardMoveCalls(gh)).toEqual([move]);
+  });
+});
+
+describe("boardMoveArgs", () => {
+  it("builds the full item-edit argument list from board and issue values", () => {
+    expect(
+      boardMoveArgs({ owner: "octo", number: 3, field: "Status" }, { project: "org/repo", number: 27 }, "Doing"),
+    ).toEqual([
+      "project",
+      "item-edit",
+      "3",
+      "--owner",
+      "octo",
+      "--url",
+      "https://github.com/org/repo/issues/27",
+      "--field",
+      "Status",
+      "--value",
+      "Doing",
+    ]);
   });
 });
 
