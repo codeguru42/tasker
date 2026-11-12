@@ -150,7 +150,15 @@ tracker.
 
 `gh issue edit` splits the value of `--add-label`, of `--remove-label` and of `--add-assignee` on commas (gh 2.101.0).
 
-Limit: the in-progress marker is a label only. GitHub Projects (v2) columns are not supported.
+`gh project item-edit` uses `--owner` to select the board owner and `--url` to name the issue. It uses `--field` to name
+the single-select field and `--value` to name its option. GitHub matches field and option names without regard to case.
+Two matches make a name ambiguous.
+
+tasker never adds a card to the configured board. The reason: a workflow of a board can add each new issue. An add by
+tasker can put an issue on a board that does not track it. A missing card only warns, because the task and the clone are
+correct.
+
+Limit: nobody measured the exit code for a missing card, or the oldest gh version with `item-edit --url`.
 
 ## Auth status
 
@@ -195,10 +203,16 @@ the token call, give no project remediation.
   such as `{owner}`.
 - GitHub gives the same 404 for a repo that does not exist, so the project check of the same repo names the real cause.
 
+### Board
+
+The board check reads the configured field and the options used by tasker. It uses `gh project field-list`. Each result
+of the check is ok or warn, never error. The reason: a failed card move only warns.
+
 ### Read-only
 
 The checks never change GitHub. They make only these `gh` calls: `gh --version`, `gh auth token`, `gh api user`,
-`gh repo view` and a GET of `gh api repos/<project>/labels/<name>`. The check never creates a label.
+`gh repo view`, a GET of `gh api repos/<project>/labels/<name>`, and `gh project field-list`. The check never creates a
+label or adds a card.
 
 ## Tests
 
