@@ -6,6 +6,7 @@ import {
   STATES,
   TERMINAL_STATES,
   canTransition,
+  branchUpdateMoved,
   failTask,
   failedFrom,
   originText,
@@ -1434,5 +1435,26 @@ describe("task transitions", () => {
       const task = store.createTask(newTask("planning"));
       expect(originText(store.listEvents(task.id), "failed")).toBe("unknown");
     });
+  });
+
+  it("does not count a base-only undo as a head move", () => {
+    const head = "a".repeat(40);
+
+    expect(
+      branchUpdateMoved({
+        before: { head },
+        after: { head },
+        how: "undo",
+        sync: "none",
+      }),
+    ).toBe(false);
+    expect(
+      branchUpdateMoved({
+        before: { head },
+        after: { head: "b".repeat(40) },
+        how: "undo",
+        sync: "none",
+      }),
+    ).toBe(true);
   });
 });

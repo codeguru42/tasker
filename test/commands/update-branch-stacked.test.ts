@@ -815,6 +815,54 @@ describe("tasker update-branch for a stacked task", () => {
 });
 
 describe("tasker update-branch --undo for a stacked task", () => {
+  it("restores a base-only change without moving the head and supports a second undo", async () => {
+    const fixture = await useStackedTasks();
+    const key = fixture.stacked.key;
+    const head = await inStacked(fixture, "rev-parse", "HEAD");
+    const oldSynced = await inClone(fixture, "rev-parse", "refs/remotes/origin/main");
+    const base = parentRef(fixture);
+    const baseTip = await inClone(fixture, "rev-parse", base);
+    withDataRootStore(fixture.dataRoot, (store) =>
+      store.updateTask(fixture.stacked.task.id, { base: "main", parentTaskId: null, syncedBaseTip: oldSynced }),
+    );
+
+    const changed = await update(fixture, "--base", base);
+
+    expect(changed.code).toBe(0);
+    expect(changed).toEqual({
+      code: 0,
+      out: `${key} is current with ${base} at ${baseTip}; nothing moved\n${undoHint(key, head)}state: executed\n${expectedShowLines("executed", key)}`,
+      err: absentRemoteNote(fixture.stacked.branch),
+    });
+    expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(head);
+    expect(latestTaskOf(fixture.dataRoot, key).state).toBe("executed");
+    expect(changed.out).toContain(undoHint(key, head));
+
+    const undone = await update(fixture, "--undo");
+
+    expect(undone.code).toBe(0);
+    expect(undone.out).toContain(`undid the last update of ${key}: ${head} back to ${head}\n`);
+    expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(head);
+    expect(syncedOf(fixture)).toBe(oldSynced);
+    expect(latestTaskOf(fixture.dataRoot, key)).toMatchObject({ base: "main", parentTaskId: null });
+    expect(eventsOfType(fixture, "branch_updated").at(-1)?.data).toMatchObject({
+      before: { head },
+      after: { head },
+      how: "undo",
+    });
+    expect(undone.out).toContain(undoHint(key, head));
+
+    const second = await update(fixture, "--undo");
+
+    expect(second.code).toBe(0);
+    expect(await inStacked(fixture, "rev-parse", "HEAD")).toBe(head);
+    expect(syncedOf(fixture)).toBe(baseTip);
+    expect(latestTaskOf(fixture.dataRoot, key)).toMatchObject({
+      base,
+      parentTaskId: fixture.parent.task.id,
+    });
+  });
+
   it("puts the head and the synced base tip back, keeps the base and replays only the commits of the task", async () => {
     const fixture = await useStackedTasks({ parentCommits: PARENT_COMMITS });
     const key = fixture.stacked.key;

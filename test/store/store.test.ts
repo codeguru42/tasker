@@ -805,6 +805,42 @@ describe("task store", () => {
     });
   });
 
+  it("adds the explicit-base undo columns and gives old rows null values", () => {
+    const oldPath = join(dir, "old23.db");
+    makeOldDatabase(oldPath, 23);
+    withRawDatabase(oldPath, (raw) => {
+      raw.exec(
+        "INSERT INTO tasks (issue_key, repo_key, state, created_at, updated_at) VALUES ('a/b#1', 'tasker', 'planning', 't', 't')",
+      );
+    });
+
+    withStoreFile(
+      oldPath,
+      (upgraded) => {
+        expect(upgraded.getTask(1)).toMatchObject({
+          undoBeforeBase: null,
+          undoBeforeParentTaskId: null,
+          undoAfterBase: null,
+          undoAfterParentTaskId: null,
+        });
+      },
+      { now },
+    );
+
+    withRawDatabase(oldPath, (raw) => {
+      expect(schemaVersion(raw)).toBe(24);
+      const columns = raw.prepare("PRAGMA table_info(tasks)").all() as { name: string }[];
+      expect(columns.map((column) => column.name)).toEqual(
+        expect.arrayContaining([
+          "undo_before_base",
+          "undo_before_parent_task_id",
+          "undo_after_base",
+          "undo_after_parent_task_id",
+        ]),
+      );
+    });
+  });
+
   it("recordTrackerMark sets trackerMarked and records one in_progress event", () => {
     const task = store.createTask(newTask);
     expect(store.getTask(task.id)?.trackerMarked).toBe(false);
@@ -2272,6 +2308,14 @@ describe("task store", () => {
         expect(store.listEvents(task.id).find((e) => e.type === "base")?.data).toEqual(moved);
       });
 
+      it("writes an explicit base event and parent id", () => {
+        const { task, parent } = linkedTask();
+        const moved = { base: "main", revision: "refs/remotes/origin/main", source: "explicit" as const };
+        store.updateBranchTask(task.id, "executed", { base: moved, parentTaskId: parent.id }, branchUpdated);
+        expect(store.getTask(task.id)).toMatchObject({ base: "main", parentTaskId: parent.id });
+        expect(store.listEvents(task.id).at(-2)?.data).toEqual(moved);
+      });
+
       it("keeps the parent id when the base has the source update", () => {
         const { parent, task } = linkedTask();
         const moved = { base: "refs/heads/parent", revision: "refs/heads/parent", source: "update" as const };
@@ -2300,14 +2344,26 @@ describe("task store", () => {
         expect(store.listEvents(task.id).at(-1)?.type).toBe("branch_updated");
       });
 
-      it("writes the three undo columns from writes.undo", () => {
+      it("writes the undo columns from writes.undo", () => {
         const task = runningTask("updating_branch");
-        const undo = { beforeHead: "aaa", afterHead: "bbb", syncedBaseTip: "ccc" };
+        const undo = {
+          beforeHead: "aaa",
+          afterHead: "bbb",
+          syncedBaseTip: "ccc",
+          beforeBase: "main",
+          beforeParentTaskId: 1,
+          afterBase: "alternate",
+          afterParentTaskId: null,
+        };
         store.updateBranchTask(task.id, "executed", { undo }, branchUpdated);
         expect(store.getTask(task.id)).toMatchObject({
           undoBeforeHead: "aaa",
           undoAfterHead: "bbb",
           undoSyncedBaseTip: "ccc",
+          undoBeforeBase: "main",
+          undoBeforeParentTaskId: 1,
+          undoAfterBase: "alternate",
+          undoAfterParentTaskId: null,
         });
       });
 

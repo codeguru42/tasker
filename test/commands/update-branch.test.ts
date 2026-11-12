@@ -87,6 +87,25 @@ describe("tasker update-branch", () => {
       });
     });
 
+    it("keeps plan approval after undoing a base change without a head move", async () => {
+      const work = await useWorkReviewTask();
+      await work.origin.createBranch("alternate");
+      const pinned = withDataRootStore(work.dataRoot, (store) => {
+        placeTask(store, work.task.id, "awaiting_plan_review");
+        return seedPinnedPlanRevision(store, work.task.id);
+      });
+
+      const updated = await runUpdateBranch("--base", "alternate");
+      const undone = await runUpdateBranch("--undo");
+
+      expect(updated.code).toBe(0);
+      expect(undone.code).toBe(0);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("approved");
+      withDataRootStore(work.dataRoot, (store) => {
+        expect(store.pinnedPlanRevision(work.task.id)?.version).toBe(pinned.version);
+      });
+    });
+
     it("demotes a task when the explicit base moves its head", async () => {
       const work = await useMovedBaseTask();
 
@@ -141,6 +160,81 @@ describe("tasker update-branch", () => {
         undoAfterParentTaskId: null,
       });
       expect(oldBaseTip).not.toBe(await revisionOf(work, "HEAD"));
+
+      const undone = await runUpdateBranch("--undo");
+
+      expect(undone.code).toBe(0);
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(await revisionOf(work, "HEAD")).toBe(head);
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+        base: "main",
+        parentTaskId: oldParent,
+        syncedBaseTip: work.task.syncedBaseTip,
+        undoBeforeBase: "alternate",
+        undoBeforeParentTaskId: null,
+        undoAfterBase: "main",
+        undoAfterParentTaskId: oldParent,
+      });
+    });
+
+    it("restores a moved remote base and head, then makes the base change undoable again", async () => {
+      const work = await useWorkReviewTask();
+      const head = await taskBranchTipOf(work);
+      const oldSynced = latestTaskOf(work.dataRoot, KEY).syncedBaseTip;
+      await work.origin.createBranch("alternate");
+      const baseTip = await work.origin.addCommit("alternate", { file: "alternate.txt" });
+
+      const moved = await runUpdateBranch("--base", "alternate");
+      const newHead = await taskBranchTipOf(work);
+      expect(moved.code).toBe(0);
+      expect(newHead).not.toBe(head);
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({ base: "alternate", syncedBaseTip: baseTip });
+
+      const undone = await runUpdateBranch("--undo");
+
+      expect(undone.code).toBe(0);
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+        base: "main",
+        parentTaskId: null,
+        syncedBaseTip: oldSynced,
+        undoBeforeHead: newHead,
+        undoAfterHead: head,
+        undoBeforeBase: "alternate",
+        undoAfterBase: "main",
+      });
+      expect(undone.out).toContain(undoHint(KEY, head));
+
+      const secondUndo = await runUpdateBranch("--undo");
+
+      expect(secondUndo.code).toBe(0);
+      expect(await taskBranchTipOf(work)).toBe(newHead);
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+        base: "alternate",
+        syncedBaseTip: baseTip,
+        undoBeforeBase: "main",
+        undoAfterBase: "alternate",
+      });
+    });
+
+    it("keeps an explicit base when an old undo row has no base values", async () => {
+      const work = await useWorkReviewTask();
+      await work.origin.createBranch("alternate");
+      await work.origin.addCommit("alternate", { file: "alternate.txt" });
+      expect((await runUpdateBranch("--base", "alternate")).code).toBe(0);
+      withDataRootStore(work.dataRoot, (store) =>
+        store.updateTask(work.task.id, {
+          undoBeforeBase: null,
+          undoBeforeParentTaskId: null,
+          undoAfterBase: null,
+          undoAfterParentTaskId: null,
+        }),
+      );
+
+      const undone = await runUpdateBranch("--undo");
+
+      expect(undone.code).toBe(0);
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({ base: "alternate", parentTaskId: null });
     });
   });
 
