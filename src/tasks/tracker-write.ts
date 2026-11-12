@@ -2,7 +2,7 @@ import type { Io } from "../cli.js";
 import type { Config, RepoConfig } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
 import type { IssueRef } from "../issue-key/ref.js";
-import { issueProviderFor, type IssueTrackerId } from "../issues/provider.js";
+import { issueProviderFor, type IssueProvider, type IssueTrackerId } from "../issues/provider.js";
 import type { Task, TaskStore } from "../store/store.js";
 
 type TargetKey = "inProgressLabel" | "inProgressStatus" | "doneLabel" | "doneStatus" | "reviewLabel" | "reviewStatus";
@@ -55,6 +55,24 @@ export interface TrackerWrite {
   text: string;
   success: string;
   run: () => Promise<void>;
+}
+
+// Builds the tracker write that moves an issue card to a board option.
+export function boardCardMoveWrite(
+  provider: Pick<IssueProvider, "moveCard">,
+  ref: IssueRef,
+  board: NonNullable<RepoConfig["issueTracker"]["board"]>,
+  action: "board_in_progress" | "board_done" | "board_abort",
+  option: string,
+  configKey: string,
+  env: NodeJS.ProcessEnv,
+): TrackerWrite {
+  return {
+    action,
+    text: `move the card of ${ref.key} to ${JSON.stringify(option)}`,
+    success: `moved the card of ${ref.key} to ${JSON.stringify(option)} on the tracker`,
+    run: () => provider.moveCard(ref, board, option, configKey, env),
+  };
 }
 
 // Runs one tracker write and records the result as a tracker_update event. A failed write prints a warning on

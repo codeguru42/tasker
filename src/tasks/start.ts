@@ -14,7 +14,13 @@ import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { blockerBase } from "./blocker-base.js";
 import { newParentId } from "./parent.js";
-import { hasGitHubBoardStartTarget, runTrackerWrite, trackerTargetKeys, trackerTargets } from "./tracker-write.js";
+import {
+  boardCardMoveWrite,
+  hasGitHubBoardStartTarget,
+  runTrackerWrite,
+  trackerTargetKeys,
+  trackerTargets,
+} from "./tracker-write.js";
 import { vcsForRepo, type ResolvedBase } from "../vcs/provider.js";
 
 export interface StartRequest {
@@ -220,15 +226,19 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
     }
     const { board } = repo.issueTracker;
     if (board?.inProgress !== undefined) {
+      const target = board.inProgress;
       await runTrackerWrite(
         store,
         task.id,
-        {
-          action: "board_in_progress",
-          text: `move the card of ${ref.key} to ${JSON.stringify(board.inProgress)}`,
-          success: `moved the card of ${ref.key} to ${JSON.stringify(board.inProgress)} on the tracker`,
-          run: () => issueProvider.moveCard(ref, board, board.inProgress!, "issueTracker.board.inProgress", env),
-        },
+        boardCardMoveWrite(
+          issueProvider,
+          ref,
+          board,
+          "board_in_progress",
+          target,
+          "issueTracker.board.inProgress",
+          env,
+        ),
         request.trackerIo,
       );
     }

@@ -9,7 +9,7 @@ import type { TaskStore } from "../store/store.js";
 import { RemoteTaskRefMovedError } from "../vcs/errors.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { failRunTo } from "./run-outcome.js";
-import { runTrackerWrite, trackerTargets } from "./tracker-write.js";
+import { boardCardMoveWrite, runTrackerWrite, trackerTargets } from "./tracker-write.js";
 import { taskInState } from "./task-state.js";
 import { cleanUpTaskWorkspace, findTaskWorkspace } from "./workspace-cleanup.js";
 
@@ -92,22 +92,19 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
         );
         const { board } = issueTracker;
         if (board?.done !== undefined) {
+          const target = board.done;
           await runTrackerWrite(
             store,
             task.id,
-            {
-              action: "board_done",
-              text: `move the card of ${request.ref.key} to ${JSON.stringify(board.done)}`,
-              success: `moved the card of ${request.ref.key} to ${JSON.stringify(board.done)} on the tracker`,
-              run: () =>
-                issueProviderFor(config, task.repoKey).moveCard(
-                  request.ref,
-                  board,
-                  board.done!,
-                  "issueTracker.board.done",
-                  env,
-                ),
-            },
+            boardCardMoveWrite(
+              issueProviderFor(config, task.repoKey),
+              request.ref,
+              board,
+              "board_done",
+              target,
+              "issueTracker.board.done",
+              env,
+            ),
             io,
           );
         }

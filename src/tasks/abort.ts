@@ -8,7 +8,7 @@ import { acceptsState } from "../state/commands.js";
 import { transitionTask } from "../state/machine.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
-import { clearMarkerWrite, runTrackerWrite, type TrackerWrite } from "./tracker-write.js";
+import { boardCardMoveWrite, clearMarkerWrite, runTrackerWrite, type TrackerWrite } from "./tracker-write.js";
 import { cleanUpTaskWorkspace, findTaskWorkspace } from "./workspace-cleanup.js";
 import { RemoteTaskRefMovedError } from "../vcs/errors.js";
 import { uncommittedChangeText, vcsForRepo } from "../vcs/provider.js";
@@ -100,22 +100,19 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
     if (write !== undefined) await runTrackerWrite(store, task.id, write, request.trackerIo);
     const { board } = issueTracker;
     if (issueTracker.updateOnStart && board?.abort !== undefined && task.cardMarked) {
+      const target = board.abort;
       await runTrackerWrite(
         store,
         task.id,
-        {
-          action: "board_abort",
-          text: `move the card of ${ref.key} to ${JSON.stringify(board.abort)}`,
-          success: `moved the card of ${ref.key} to ${JSON.stringify(board.abort)} on the tracker`,
-          run: () =>
-            issueProviderFor(config, ref.repoKey).moveCard(
-              ref,
-              board,
-              board.abort!,
-              "issueTracker.board.abort",
-              request.env,
-            ),
-        },
+        boardCardMoveWrite(
+          issueProviderFor(config, ref.repoKey),
+          ref,
+          board,
+          "board_abort",
+          target,
+          "issueTracker.board.abort",
+          request.env,
+        ),
         request.trackerIo,
       );
     }
