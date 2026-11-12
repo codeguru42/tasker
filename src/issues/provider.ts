@@ -56,6 +56,14 @@ export interface IssueProvider {
   blockingIssues(ref: IssueRef, env: NodeJS.ProcessEnv): Promise<Blocker[]>;
   // Adds an assignee. The caller passes issueTracker.assignee.
   assign(ref: IssueRef, assignee: string, env: NodeJS.ProcessEnv): Promise<void>;
+  // Moves the issue card to an option on a GitHub Projects board. Jira rejects this write.
+  moveCard(
+    ref: IssueRef,
+    board: NonNullable<RepoConfig["issueTracker"]["board"]>,
+    option: string,
+    configKey: string,
+    env: NodeJS.ProcessEnv,
+  ): Promise<void>;
   // Marks the issue in progress. target is issueTracker.inProgressLabel for github and
   // issueTracker.inProgressStatus for jira. The caller reads issueTracker.updateOnStart to decide if it
   // calls this write at all.

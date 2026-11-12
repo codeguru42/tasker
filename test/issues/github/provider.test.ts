@@ -198,7 +198,6 @@ describe("createGithubProvider", () => {
       "In progress",
     ];
     const fake = fakeGh(dir, {}, [token, { args }]);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await provider().moveCard(ref, board, "In progress", "issueTracker.board.inProgress", fake.env);
     expect(fake.calls().map((call) => call.args)).toEqual([token.args, args]);
     expect(fake.calls()[1].ghToken).toBe("gho_test");

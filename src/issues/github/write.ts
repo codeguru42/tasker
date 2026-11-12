@@ -1,5 +1,6 @@
 import { splitGithubKey } from "../../issue-key/github.js";
 import type { IssueRef } from "../../issue-key/ref.js";
+import type { RepoConfig } from "../../config/schema.js";
 import { IssueWriteError } from "../issue.js";
 import { GhError, runGh } from "./run.js";
 
@@ -12,6 +13,45 @@ export async function assignGithubIssue(
 ): Promise<void> {
   const parts = splitGithubKey(ref.key);
   await runGh(["issue", "edit", parts.number, "-R", parts.project, "--add-assignee", assignee], { account, env });
+}
+
+// Moves an existing issue card to a single-select option on a Projects board.
+export async function moveGithubCard(
+  ref: IssueRef,
+  board: NonNullable<RepoConfig["issueTracker"]["board"]>,
+  option: string,
+  configKey: string,
+  account: string,
+  env: NodeJS.ProcessEnv,
+): Promise<void> {
+  const parts = splitGithubKey(ref.key);
+  try {
+    await runGh(
+      [
+        "project",
+        "item-edit",
+        String(board.number),
+        "--owner",
+        board.owner,
+        "--url",
+        `https://github.com/${parts.project}/issues/${parts.number}`,
+        "--field",
+        board.field,
+        "--value",
+        option,
+      ],
+      { account, env },
+    );
+  } catch (error) {
+    if (error instanceof GhError && error.subcommand === "project item-edit") {
+      throw new IssueWriteError(
+        ref.key,
+        configKey,
+        `could not move the card of ${ref.key} to ${JSON.stringify(option)} on ${configKey}: ${error.message}`,
+      );
+    }
+    throw error;
+  }
 }
 
 // Adds or removes label on the issue of ref with one gh call. A failed issue edit call gives an

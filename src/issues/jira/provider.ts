@@ -62,6 +62,7 @@ export function createJiraProvider({
     baseBranchHint: jiraBaseBranchHint,
     blockingIssues: (ref, env) => readJiraBlockers(ref, site, env),
     assign: (ref, assignee, env) => assignJiraIssue(ref, assignee, site, env),
+    moveCard: () => Promise.reject(new Error("the jira tracker has no board move")),
     transitionStatus: (ref, target, env) => markJiraInProgress(ref, target, site, env),
     inProgressMarker: jiraInProgressMarker,
     clearInProgress: () => Promise.reject(new Error("the jira tracker has no in-progress clear")),

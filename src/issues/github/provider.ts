@@ -11,6 +11,7 @@ import {
   markGithubDone,
   markGithubInProgress,
   markGithubReview,
+  moveGithubCard,
 } from "./write.js";
 
 // Maps the neutral names of IssueProvider to the GitHub functions. It adds no behavior.
@@ -24,6 +25,7 @@ export function createGithubProvider({ account }: { account: string }): IssuePro
     baseBranchHint,
     blockingIssues: (ref, env) => readGithubBlockers(ref, account, env),
     assign: (ref, assignee, env) => assignGithubIssue(ref, assignee, account, env),
+    moveCard: (ref, board, option, configKey, env) => moveGithubCard(ref, board, option, configKey, account, env),
     transitionStatus: (ref, target, env) => markGithubInProgress(ref, target, account, env),
     inProgressMarker,
     clearInProgress: (ref, target, env) => clearGithubInProgress(ref, target, account, env),
