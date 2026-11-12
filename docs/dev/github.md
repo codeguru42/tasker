@@ -28,27 +28,28 @@ token.
 
 ## Forge environment
 
-The GitHub provider supplies defaults before each provider method calls the forge session. If `TASKER_PATH` is
-undefined, the provider copies `PATH` to `TASKER_PATH`. If both `TASKER_HOME` and `TASKER_GH_CONFIG_DIR` are undefined,
-it copies `HOME` to `TASKER_HOME`. It keeps explicit values, including blank values. It does not add defaults for
-`GH_CONFIG_DIR` or `XDG_CONFIG_HOME`.
+The forge session reads only the environment passed to `GhSession.run()`. It does not read `process.env`. It builds the
+child environment with `childEnv()` of `src/process/child-env.ts`, as the phases do. So the child gets each name of
+`ALLOWED_ENV_NAMES` that the supplied environment sets, for example `PATH`, `HOME` and `XDG_CONFIG_HOME`.
 
-The forge session reads only the environment passed to `GhSession.run()`. It does not read `process.env` or copy other
-ambient values into the child environment.
-
-The session requires a nonblank `TASKER_PATH`. It uses this value for the child's `PATH`. It also needs one
-authentication location. If `TASKER_GH_CONFIG_DIR` is nonblank, `TASKER_HOME` can be blank or unset. If `TASKER_HOME` is
-nonblank, `TASKER_GH_CONFIG_DIR` can be blank or unset. If both are blank or unset, tasker names both inputs and asks
-for one. The child receives `TASKER_HOME` as `HOME` and `TASKER_GH_CONFIG_DIR` as `GH_CONFIG_DIR`. It gets these fixed
-values:
+If `TASKER_GH_CONFIG_DIR` is nonblank, the child gets its value as `GH_CONFIG_DIR`. Without it, `gh` uses its default
+folder under `XDG_CONFIG_HOME` or `HOME`. The child also gets these fixed values:
 
 - `GH_PROMPT_DISABLED=1`
 - `GH_NO_UPDATE_NOTIFIER=1`
 - `NO_COLOR=1`
 
-The session rejects supplied `TASKER_GH_TOKEN`, `TASKER_GH_HOST` and `TASKER_GH_REPO` values. It ignores unprefixed
-values such as `GH_TOKEN`, `GH_HOST`, `GH_REPO`, `HOME` and `GH_CONFIG_DIR`. It uses `TASKER_GH_BIN` only to select the
-executable. It does not put that name or any other `TASKER_*` name in the child environment.
+Tasker reads a `TASKER_` form only for a name of one tool, for example `TASKER_GH_CONFIG_DIR`. The reason: a value that
+the user sets for their own `gh` does not change the `gh` of tasker. A generic name such as `PATH` or `HOME` has no
+`TASKER_` form.
+
+The session adds no check of `PATH` or of a home folder. For an unset or empty `PATH`, the shared process code fails
+before `gh` starts, and the session gives its install error. If the child has no `HOME`, no `XDG_CONFIG_HOME` and no
+`GH_CONFIG_DIR`, `gh` finds no login. The token lookup then fails, and the session reports the missing login.
+
+The session rejects supplied `TASKER_GH_TOKEN`, `TASKER_GH_HOST` and `TASKER_GH_REPO` values. It ignores `GH_TOKEN`,
+`GH_HOST`, `GH_REPO` and `GH_CONFIG_DIR`, because `ALLOWED_ENV_NAMES` does not hold them. It uses `TASKER_GH_BIN` only
+to select the executable. It does not put that name or any other `TASKER_*` name in the child environment.
 
 Each repository call uses the supplied worktree as its working directory. The session checks that this folder exists
 before it looks up the account token or selects and starts the executable. A missing folder error names the worktree.
