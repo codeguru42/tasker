@@ -182,6 +182,28 @@ describe("createGithubProvider", () => {
     expect(first).toEqual(second);
   });
 
+  it("moves a board card with the configured account", async () => {
+    const board = { owner: "octo", number: 3, field: "Status" };
+    const args = [
+      "project",
+      "item-edit",
+      "3",
+      "--owner",
+      "octo",
+      "--url",
+      "https://github.com/octo/repo/issues/7",
+      "--field",
+      "Status",
+      "--value",
+      "In progress",
+    ];
+    const fake = fakeGh(dir, {}, [token, { args }]);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await provider().moveCard(ref, board, "In progress", "issueTracker.board.inProgress", fake.env);
+    expect(fake.calls().map((call) => call.args)).toEqual([token.args, args]);
+    expect(fake.calls()[1].ghToken).toBe("gho_test");
+  });
+
   it("rejects with the IssueWriteError of the direct call", async () => {
     const stderr = "failed to update https://github.com/octo/repo/issues/7: HTTP 502\n";
     const fake = fakeGh(dir, {}, [token, { args: editArgs("--add-label", "wip"), exitCode: 1, stderr }]);

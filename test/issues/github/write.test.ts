@@ -172,6 +172,55 @@ describe("clearGithubInProgress", () => {
   });
 });
 
+describe("moveGithubCard", () => {
+  const board = { owner: "octo", number: 3, field: "Status" };
+  const itemEditArgs = [
+    "project",
+    "item-edit",
+    "3",
+    "--owner",
+    "octo",
+    "--url",
+    "https://github.com/octo/repo/issues/7",
+    "--field",
+    "Status",
+    "--value",
+    "In progress",
+  ];
+
+  it("uses one account-pinned item-edit call without reading or adding a card", async () => {
+    const fake = fakeGh(dir, {}, [token, { args: itemEditArgs }]);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await write.moveGithubCard(ref, board, "In progress", "issueTracker.board.inProgress", "octo", fake.env);
+    expect(fake.calls().map((call) => call.args)).toEqual([token.args, itemEditArgs]);
+    expect(fake.calls()[1].ghToken).toBe("gho_test");
+    expect(fake.calls()).toHaveLength(2);
+  });
+
+  it("wraps an item-edit failure with its configuration key", async () => {
+    const fake = fakeGh(dir, {}, [token, { args: itemEditArgs, exitCode: 1, stderr: "GraphQL: card not found\n" }]);
+    const error = await failureOf(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      write.moveGithubCard(ref, board, "In progress", "issueTracker.board.inProgress", "octo", fake.env),
+      issue.IssueWriteError,
+    );
+    expect(error.key).toBe("octo/repo#7");
+    expect(error.configKey).toBe("issueTracker.board.inProgress");
+    expect(fake.calls()).toHaveLength(2);
+  });
+
+  it("passes a token failure through", async () => {
+    const fake = fakeGh(dir, {}, [{ ...token, stdout: "", stderr: "no oauth token found\n", exitCode: 1 }]);
+    const error = await failureOf(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      write.moveGithubCard(ref, board, "In progress", "issueTracker.board.inProgress", "octo", fake.env),
+      gh.GhLoginError,
+    );
+    expect(error).not.toBeInstanceOf(issue.IssueWriteError);
+    expect(fake.calls()).toHaveLength(1);
+  });
+});
+
 describe("markGithubDone without a done label", () => {
   it("closes the issue as completed with one close call", async () => {
     const fake = fakeGh(dir, {}, [token, { args: closeArgs }]);

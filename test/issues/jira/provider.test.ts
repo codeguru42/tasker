@@ -104,6 +104,16 @@ describe("createJiraProvider", () => {
     expect(acli.calls()).toEqual([]);
   });
 
+  it("rejects moveCard and makes no acli call", async () => {
+    const error = await failureOf(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      providerFor(ACTIVE_SITE).moveCard(ref, { owner: "octo", number: 3 }, "Done", "issueTracker.board.done", acli.env),
+      Error,
+    );
+    expect(error.message).toBe("the jira tracker has no board move");
+    expect(acli.calls()).toEqual([]);
+  });
+
   it.each(MEMBERS)("$name passes its site to the site guard", async ({ run }) => {
     await failureOf(run(providerFor("other.atlassian.net"), acli.env), JiraSiteError);
     expect(acli.calls()).toEqual(AUTH_STATUS_CALLS);
