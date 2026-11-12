@@ -106,11 +106,13 @@ and the notes of the base step.
 If `issueTracker.updateOnStart` is `true`, start assigns the issue. When an in-progress target is set, start also marks
 the issue in progress after the task reaches `workspace_ready`. Each tracker write records a `tracker_update` event. The
 data is `{ action, result }` when the write works, and `{ action, result: "failed", error }` when it fails. The value of
-`action` is `assign`, `in_progress`, `clear_in_progress`, `done`, `abort` or `review`.
+`action` is `assign`, `in_progress`, `clear_in_progress`, `done`, `abort`, `review`, `board_in_progress`, `board_done`
+or `board_abort`.
 
-When no in-progress target is set, start skips the in-progress write and prints
+When no in-progress target is set and GitHub `board.inProgress` is absent, start skips the in-progress write and prints
 `warning: did not mark <issue> in progress: issueTracker.<key> is not set` on stderr. The command still exits with code
-0 and records no `tracker_update` event with `action: in_progress`. The assignment write still records its event.
+0 and records no `tracker_update` event with `action: in_progress`. The assignment write still records its event. A
+GitHub `board.inProgress` target prevents this warning.
 
 A passed `in_progress` write sets `tracker_marked` in the same transaction as its event. A passed `clear_in_progress`
 write sets it to 0 in the same transaction as its event. A failed clear keeps it at 1.
@@ -122,7 +124,9 @@ The abort also makes a tracker write. If `issueTracker.updateOnStart` is `true`,
 and this GitHub task has `tracker_marked` set, it removes the marker with the action `clear_in_progress`. A failed write
 is a warning, the same as for the start. If `issueTracker.updateOnStart` is `true`, the repo sets `abortStatus` and the
 task has `tracker_marked` set, the abort of a Jira task moves the issue to that status with the action `abort`. If one
-of these is not true, the abort of a Jira task runs no tracker step.
+of these is not true, the abort of a Jira task runs no tracker step. If `issueTracker.updateOnStart` is `true`,
+`board.abort` is set and `card_marked` is set, the GitHub abort moves the card with `board_abort` after the marker
+clear.
 
 The start follows the check-before-write rule in the [intro](#the-task-commands) and the rules in
 [The locks](#the-locks). These are the reasons of the tracker writes:
@@ -145,7 +149,9 @@ and the branch as they were.
 
 The marker protects an issue against two machines, so a task removes only the marker that it added.
 [The tracker writes](#the-tracker-writes) gives the rule for a failed write. The abort of a Jira task moves the issue to
-`abortStatus` only if this task marked the issue. See [The abort write](jira.md#the-abort-write).
+`abortStatus` only if this task marked the issue. See [The abort write](jira.md#the-abort-write). For GitHub, abort
+moves the card when `issueTracker.updateOnStart` is `true`, `board.abort` is set and `card_marked` is set. The reason:
+another machine can work on an issue that this task did not mark.
 
 A task that is `finished` or `cancelled` is an error, because it has nothing to abort.
 
@@ -958,7 +964,9 @@ before another run. Another deletion error, including a failed read, does not pr
 records a warning and continues. The task can reach `finished` while its remote branch remains on `origin`.
 
 If `issueTracker.updateOnFinish` is `true`, finish marks the issue done after remote cleanup. The `tracker_update` event
-comes before the `finished` event. [The tracker writes](#the-tracker-writes) gives the reason.
+comes before the `finished` event. [The tracker writes](#the-tracker-writes) gives the reason. When
+`issueTracker.updateOnFinish` is `true` and `board.done` is set, the card move at finish uses `board_done`. It follows
+the done write and comes before the `finished` event.
 
 The completion event, task state and run marker change in one transaction. This prevents a `finished` state without its
 event or a cleared marker without a completed record. If this write fails, finish moves the task to `cleanup_failed` and
