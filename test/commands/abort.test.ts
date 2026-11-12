@@ -11,7 +11,7 @@ import { taskLockName } from "../../src/store/locks.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { deleteTaskBranch, removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
-import { githubLabelsAfter, trackerWriteCalls } from "../helpers/fake-gh.js";
+import { boardMoveArgs, boardMoveCalls, githubLabelsAfter, trackerWriteCalls } from "../helpers/fake-gh.js";
 import { captureRejectedRemoteTaskBranchDeletion, gitBeforePushEnv, localBranches } from "../helpers/git.js";
 import { realCommandPath } from "../helpers/fake-commands.js";
 import { startLockHolder } from "../helpers/processes.js";
@@ -425,26 +425,18 @@ describe("abort", () => {
       const result = await runAbort(KEY);
 
       expect(result.code).toBe(0);
-      expect(started.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+      expect(boardMoveCalls(started.gh)).toEqual([]);
       expect(eventDataOf(started.dataRoot, KEY, "tracker_update")).toEqual([
         { action: "board_in_progress", result: "ok" },
       ]);
     });
 
     it("moves to board.abort only when cardMarked is true", async () => {
-      const boardArgs = [
-        "project",
-        "item-edit",
-        "42",
-        "--owner",
-        "octo",
-        "--url",
-        "https://github.com/codeguru42/tasker/issues/5",
-        "--field",
-        "Status",
-        "--value",
+      const boardArgs = boardMoveArgs(
+        { owner: "octo", number: 42, field: "Status" },
+        { project: "codeguru42/tasker", number: 5 },
         "Todo",
-      ];
+      );
       const started = await useStartedTask({
         repo: trackerRepo({ updateOnStart: true, board: { owner: "octo", number: 42, abort: "Todo" } }),
         ghAnswers: [fixtureTrackerAnswer("assign"), { args: boardArgs }],
@@ -458,12 +450,7 @@ describe("abort", () => {
       expect(result.code).toBe(0);
       expect(result.out).toContain(`moved the card of ${KEY} to "Todo" on the tracker\n`);
       expect(result.out.indexOf(`moved the card of ${KEY}`)).toBeLessThan(result.out.indexOf(`cancelled ${KEY}`));
-      expect(
-        started.gh
-          .calls()
-          .map((call) => call.args)
-          .filter((args) => args[0] === "project"),
-      ).toEqual([boardArgs]);
+      expect(boardMoveCalls(started.gh)).toEqual([boardArgs]);
       expect(eventDataOf(started.dataRoot, KEY, "tracker_update").at(-1)).toEqual({
         action: "board_abort",
         result: "ok",
@@ -479,7 +466,7 @@ describe("abort", () => {
       const result = await runAbort(KEY);
 
       expect(result.code).toBe(0);
-      expect(started.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+      expect(boardMoveCalls(started.gh)).toEqual([]);
       expect(eventDataOf(started.dataRoot, KEY, "tracker_update")).toEqual([{ action: "assign", result: "ok" }]);
     });
 
@@ -500,7 +487,7 @@ describe("abort", () => {
       const result = await runAbort(KEY);
 
       expect(result.code).toBe(0);
-      expect(started.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+      expect(boardMoveCalls(started.gh)).toEqual([]);
       expect(eventDataOf(started.dataRoot, KEY, "tracker_update").at(-1)).toEqual({
         action: "clear_in_progress",
         result: "ok",
@@ -508,19 +495,11 @@ describe("abort", () => {
     });
 
     it("moves the board card even when clearing the label fails", async () => {
-      const boardArgs = [
-        "project",
-        "item-edit",
-        "42",
-        "--owner",
-        "octo",
-        "--url",
-        "https://github.com/codeguru42/tasker/issues/5",
-        "--field",
-        "Status",
-        "--value",
+      const boardArgs = boardMoveArgs(
+        { owner: "octo", number: 42, field: "Status" },
+        { project: "codeguru42/tasker", number: 5 },
         "Todo",
-      ];
+      );
       const started = await useStartedTask({
         repo: trackerRepo({
           updateOnStart: true,
@@ -550,28 +529,15 @@ describe("abort", () => {
       ]);
       expect(result.err).toContain(`warning: cannot clear the in-progress marker of ${KEY} on the tracker:`);
       expect(result.out).toContain(`moved the card of ${KEY} to "Todo" on the tracker\n`);
-      expect(
-        started.gh
-          .calls()
-          .map((call) => call.args)
-          .filter((args) => args[0] === "project"),
-      ).toEqual([boardArgs]);
+      expect(boardMoveCalls(started.gh)).toEqual([boardArgs]);
     });
 
     it("warns when the board abort move fails", async () => {
-      const boardArgs = [
-        "project",
-        "item-edit",
-        "42",
-        "--owner",
-        "octo",
-        "--url",
-        "https://github.com/codeguru42/tasker/issues/5",
-        "--field",
-        "Status",
-        "--value",
+      const boardArgs = boardMoveArgs(
+        { owner: "octo", number: 42, field: "Status" },
+        { project: "codeguru42/tasker", number: 5 },
         "Todo",
-      ];
+      );
       const started = await useStartedTask({
         repo: trackerRepo({ updateOnStart: true, board: { owner: "octo", number: 42, abort: "Todo" } }),
         ghAnswers: [fixtureTrackerAnswer("assign"), { args: boardArgs, stderr: "board denied\n", exitCode: 1 }],
@@ -587,12 +553,7 @@ describe("abort", () => {
       const event = eventDataOf(started.dataRoot, KEY, "tracker_update").at(-1) as { action: string; result: string };
       expect(event).toMatchObject({ action: "board_abort", result: "failed" });
       expect(result.err).toContain(`warning: cannot move the card of ${KEY} to "Todo" on the tracker:`);
-      expect(
-        started.gh
-          .calls()
-          .map((call) => call.args)
-          .filter((args) => args[0] === "project"),
-      ).toEqual([boardArgs]);
+      expect(boardMoveCalls(started.gh)).toEqual([boardArgs]);
     });
 
     it("makes no remove call when there is no in-progress label", async () => {

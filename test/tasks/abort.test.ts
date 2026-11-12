@@ -27,7 +27,7 @@ import {
   withDataRootStore,
 } from "../helpers/store.js";
 import { failureOf } from "../helpers/errors.js";
-import { trackerWriteCalls } from "../helpers/fake-gh.js";
+import { boardMoveArgs, trackerWriteCalls } from "../helpers/fake-gh.js";
 import {
   fixtureTrackerAnswer,
   fixtureTrackerCall,
@@ -152,19 +152,11 @@ async function abortJiraTask(
 
 describe("abortTask", () => {
   it("clears the label, moves the board card, then cancels", async () => {
-    const boardArgs = [
-      "project",
-      "item-edit",
-      "42",
-      "--owner",
-      "octo",
-      "--url",
-      "https://github.com/codeguru42/tasker/issues/5",
-      "--field",
-      "Status",
-      "--value",
+    const boardArgs = boardMoveArgs(
+      { owner: "octo", number: 42, field: "Status" },
+      { project: "codeguru42/tasker", number: 5 },
       "Todo",
-    ];
+    );
     const started = await useStartedTask({
       repo: trackerRepo({
         updateOnStart: true,

@@ -79,6 +79,35 @@ export function trackerWriteCalls(gh: FakeGh): string[][] {
     .filter(([command, verb]) => command === "issue" && (verb === "edit" || verb === "close"));
 }
 
+// The argument lists of the calls of gh that moved an issue card, in order.
+export function boardMoveCalls(gh: FakeGh): string[][] {
+  return gh
+    .calls()
+    .map((call) => call.args)
+    .filter(([command, verb]) => command === "project" && verb === "item-edit");
+}
+
+// The expected item-edit arguments for an issue card move. This does not call production code.
+export function boardMoveArgs(
+  board: { owner: string; number: number; field: string },
+  issue: { project: string; number: number },
+  option: string,
+): string[] {
+  return [
+    "project",
+    "item-edit",
+    String(board.number),
+    "--owner",
+    board.owner,
+    "--url",
+    `https://github.com/${issue.project}/issues/${issue.number}`,
+    "--field",
+    board.field,
+    "--value",
+    option,
+  ];
+}
+
 // The labels of an issue after the logged writes of gh. It starts from issue.labels and applies each logged
 // issue edit call of the issue in order: --add-label adds a label once, --remove-label removes it. It models
 // GitHub, so a test can use it as an expected value. It does not read the code under test.

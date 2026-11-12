@@ -3,6 +3,7 @@ import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { BootstrapFailedError, startTask } from "../../src/tasks/start.js";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
+import { boardMoveArgs } from "../helpers/fake-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { eventDataOf, lockNames, withDataRootStore } from "../helpers/store.js";
 import { fixtureTrackerAnswer, trackerRepo, useStartFixture } from "../helpers/task-fixtures.js";
@@ -71,19 +72,11 @@ describe("startTask with a held repo lock", () => {
 
 describe("startTask board move order", () => {
   it("records the board move after assignment", async () => {
-    const boardArgs = [
-      "project",
-      "item-edit",
-      "42",
-      "--owner",
-      "octo",
-      "--url",
-      "https://github.com/codeguru42/tasker/issues/5",
-      "--field",
-      "Status",
-      "--value",
+    const boardArgs = boardMoveArgs(
+      { owner: "octo", number: 42, field: "Status" },
+      { project: "codeguru42/tasker", number: 5 },
       "In progress",
-    ];
+    );
     const fixture = await useStartFixture({
       repo: trackerRepo({ updateOnStart: true, board: { owner: "octo", number: 42, inProgress: "In progress" } }),
       ghAnswers: [fixtureTrackerAnswer("assign"), { args: boardArgs }],

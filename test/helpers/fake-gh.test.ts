@@ -3,9 +3,10 @@ import { isAbsolute, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { readGithubBlockers } from "../../src/issues/github/blockers.js";
 import { readGithubIssue } from "../../src/issues/github/issue.js";
-import * as fakeGhHelpers from "./fake-gh.js";
 import {
   blockerReadCalls,
+  boardMoveArgs,
+  boardMoveCalls,
   fakeGh,
   ghTokenAnswer,
   githubBlockersAnswer,
@@ -17,15 +18,6 @@ import {
   writeFakeGh,
 } from "./fake-gh.js";
 import { useTempDir } from "./temp.js";
-
-const { boardMoveArgs, boardMoveCalls } = fakeGhHelpers as unknown as {
-  boardMoveArgs: (
-    board: { owner: string; number: number; field: string },
-    issue: { project: string; number: number },
-    option: string,
-  ) => string[];
-  boardMoveCalls: (gh: ReturnType<typeof fakeGh>) => string[][];
-};
 
 describe("fakeGh", () => {
   let dir: string;

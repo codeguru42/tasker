@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssueRef } from "../../../src/issue-key/ref.js";
 import { failureOf } from "../../helpers/errors.js";
-import { fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import { boardMoveArgs, fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 // The call of an issue edit. The args are a literal, so that the test checks the call on its own.
@@ -174,19 +174,7 @@ describe("clearGithubInProgress", () => {
 
 describe("moveGithubCard", () => {
   const board = { owner: "octo", number: 3, field: "Status" };
-  const itemEditArgs = [
-    "project",
-    "item-edit",
-    "3",
-    "--owner",
-    "octo",
-    "--url",
-    "https://github.com/octo/repo/issues/7",
-    "--field",
-    "Status",
-    "--value",
-    "In progress",
-  ];
+  const itemEditArgs = boardMoveArgs(board, { project: "octo/repo", number: 7 }, "In progress");
 
   it("uses one account-pinned item-edit call without reading or adding a card", async () => {
     const fake = fakeGh(dir, {}, [token, { args: itemEditArgs }]);

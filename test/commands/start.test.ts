@@ -10,6 +10,8 @@ import { createDataRoot, taskLogsDir } from "../../src/store/layout.js";
 import { repoPaths } from "../../src/vcs/git/repo-paths.js";
 import { captureIo, runCommand, runHelp } from "../helpers/cli.js";
 import {
+  boardMoveArgs,
+  boardMoveCalls,
   blockerReadCalls,
   blockersGraphqlArgs,
   ghTokenAnswer,
@@ -623,19 +625,11 @@ describe("start", () => {
     });
 
     it("moves the board card after assignment when board.inProgress is set", async () => {
-      const boardArgs = [
-        "project",
-        "item-edit",
-        "42",
-        "--owner",
-        "octo",
-        "--url",
-        "https://github.com/codeguru42/tasker/issues/5",
-        "--field",
-        "Status",
-        "--value",
+      const boardArgs = boardMoveArgs(
+        { owner: "octo", number: 42, field: "Status" },
+        { project: "codeguru42/tasker", number: 5 },
         "In progress",
-      ];
+      );
       const fixture = await useStartFixture({
         repo: trackerRepo({
           updateOnStart: true,
@@ -652,9 +646,8 @@ describe("start", () => {
         `${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\n` +
           `moved the card of ${KEY} to "In progress" on the tracker\n`,
       );
-      const calls = fixture.gh.calls();
-      expect(calls.map((call) => call.args).filter((args) => args[0] === "project")).toEqual([boardArgs]);
-      expect(calls.find((call) => call.args[0] === "project")?.ghToken).toBe("gho_test");
+      expect(boardMoveCalls(fixture.gh)).toEqual([boardArgs]);
+      expect(fixture.gh.calls().find((call) => call.args[0] === "project")?.ghToken).toBe("gho_test");
       expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([
         { action: "assign", result: "ok" },
         { action: "board_in_progress", result: "ok" },
@@ -673,7 +666,7 @@ describe("start", () => {
       const result = await runCommand(start, "start", KEY);
 
       expect(result.code).toBe(0);
-      expect(fixture.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+      expect(boardMoveCalls(fixture.gh)).toEqual([]);
       expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([]);
     });
 
@@ -689,23 +682,15 @@ describe("start", () => {
         "tasker saved main as the default base branch of codeguru42/tasker.\n" +
           `warning: did not mark ${KEY} in progress: issueTracker.inProgressLabel is not set\n`,
       );
-      expect(fixture.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+      expect(boardMoveCalls(fixture.gh)).toEqual([]);
     });
 
     it("warns when a board move fails and keeps the task ready", async () => {
-      const boardArgs = [
-        "project",
-        "item-edit",
-        "42",
-        "--owner",
-        "octo",
-        "--url",
-        "https://github.com/codeguru42/tasker/issues/5",
-        "--field",
-        "Status",
-        "--value",
+      const boardArgs = boardMoveArgs(
+        { owner: "octo", number: 42, field: "Status" },
+        { project: "codeguru42/tasker", number: 5 },
         "In progress",
-      ];
+      );
       const fixture = await useStartFixture({
         repo: trackerRepo({
           updateOnStart: true,
@@ -727,12 +712,7 @@ describe("start", () => {
       expect(move).toMatchObject({ action: "board_in_progress", result: "failed" });
       expect(result.err).toContain(`warning: cannot move the card of ${KEY} to "In progress" on the tracker:`);
       expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "workspace_ready", cardMarked: false });
-      expect(
-        fixture.gh
-          .calls()
-          .map((call) => call.args)
-          .filter((args) => args[0] === "project"),
-      ).toEqual([boardArgs]);
+      expect(boardMoveCalls(fixture.gh)).toEqual([boardArgs]);
     });
 
     it("sets trackerMarked after a passed in_progress write", async () => {

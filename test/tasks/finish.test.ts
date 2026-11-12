@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { finishTask } from "../../src/tasks/finish.js";
+import { boardMoveArgs } from "../helpers/fake-gh.js";
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
 import { rejectOriginPush } from "../helpers/git.js";
@@ -42,19 +43,11 @@ const callFinish = async (fixture: LandedTask, store: TaskStore, waitMs = 300) =
 
 describe("finishTask", () => {
   it("records the board move after the done write and before the finished transition", async () => {
-    const boardArgs = [
-      "project",
-      "item-edit",
-      "42",
-      "--owner",
-      "octo",
-      "--url",
-      "https://github.com/codeguru42/tasker/issues/5",
-      "--field",
-      "Status",
-      "--value",
+    const boardArgs = boardMoveArgs(
+      { owner: "octo", number: 42, field: "Status" },
+      { project: "codeguru42/tasker", number: 5 },
       "Done",
-    ];
+    );
     const landed = await useLandedTask({
       repo: {
         issueTracker: {

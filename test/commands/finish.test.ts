@@ -9,7 +9,7 @@ import { taskLockName } from "../../src/store/locks.js";
 import { removeTaskWorktree } from "../../src/vcs/git/worktree.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
-import { trackerWriteCalls } from "../helpers/fake-gh.js";
+import { boardMoveArgs, boardMoveCalls, trackerWriteCalls } from "../helpers/fake-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { useFakeClaudeOnPath } from "../helpers/fake-claude.js";
 import { rejectOriginPush } from "../helpers/git.js";
@@ -379,19 +379,11 @@ describe("finish with the tracker write", () => {
   });
 
   it("moves the board card after the done write and before finished", async () => {
-    const boardArgs = [
-      "project",
-      "item-edit",
-      "42",
-      "--owner",
-      "octo",
-      "--url",
-      "https://github.com/codeguru42/tasker/issues/5",
-      "--field",
-      "Status",
-      "--value",
+    const boardArgs = boardMoveArgs(
+      { owner: "octo", number: 42, field: "Status" },
+      { project: "codeguru42/tasker", number: 5 },
       "Done",
-    ];
+    );
     const landed = await useLandedTask({
       repo: trackerRepo({
         updateOnFinish: true,
@@ -408,8 +400,7 @@ describe("finish with the tracker write", () => {
     expect(result.out).toContain(`moved the card of ${KEY} to "Done" on the tracker\n`);
     expect(result.out.indexOf(`marked ${KEY} done`)).toBeLessThan(result.out.indexOf(`moved the card of ${KEY}`));
     expect(result.out.indexOf(`moved the card of ${KEY}`)).toBeLessThan(result.out.indexOf(`finished ${KEY}`));
-    const calls = landed.gh.calls();
-    expect(calls.map((call) => call.args).filter((args) => args[0] === "project")).toEqual([boardArgs]);
+    expect(boardMoveCalls(landed.gh)).toEqual([boardArgs]);
     const events = eventsOf(landed.dataRoot, KEY);
     expect(events.slice(-3).map((event) => event.type)).toEqual(["tracker_update", "tracker_update", "finished"]);
     expect(eventDataOf(landed.dataRoot, KEY, "tracker_update").slice(-2)).toEqual([
@@ -427,7 +418,7 @@ describe("finish with the tracker write", () => {
     const result = await runFinish();
 
     expect(result.code).toBe(0);
-    expect(landed.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+    expect(boardMoveCalls(landed.gh)).toEqual([]);
     expect(eventDataOf(landed.dataRoot, KEY, "tracker_update")).toEqual([{ action: "done", result: "ok" }]);
   });
 
@@ -439,24 +430,16 @@ describe("finish with the tracker write", () => {
     const result = await runFinish();
 
     expect(result.code).toBe(0);
-    expect(landed.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+    expect(boardMoveCalls(landed.gh)).toEqual([]);
     expect(eventDataOf(landed.dataRoot, KEY, "tracker_update")).toEqual([]);
   });
 
   it("warns for a failed board move and still finishes", async () => {
-    const boardArgs = [
-      "project",
-      "item-edit",
-      "42",
-      "--owner",
-      "octo",
-      "--url",
-      "https://github.com/codeguru42/tasker/issues/5",
-      "--field",
-      "Status",
-      "--value",
+    const boardArgs = boardMoveArgs(
+      { owner: "octo", number: 42, field: "Status" },
+      { project: "codeguru42/tasker", number: 5 },
       "Done",
-    ];
+    );
     const landed = await useLandedTask({
       repo: trackerRepo({ updateOnFinish: true, board: { owner: "octo", number: 42, done: "Done" } }),
       ghAnswers: [fixtureTrackerAnswer("close"), { args: boardArgs, stderr: "board denied\n", exitCode: 1 }],
@@ -474,12 +457,7 @@ describe("finish with the tracker write", () => {
     expect(events.at(-1)).toMatchObject({ action: "board_done", result: "failed" });
     expect(result.err).toContain(`warning: cannot move the card of ${KEY} to "Done" on the tracker:`);
     expect(latestTaskOf(landed.dataRoot, KEY).state).toBe("finished");
-    expect(
-      landed.gh
-        .calls()
-        .map((call) => call.args)
-        .filter((args) => args[0] === "project"),
-    ).toEqual([boardArgs]);
+    expect(boardMoveCalls(landed.gh)).toEqual([boardArgs]);
   });
 
   it("closes the issue as completed when there is no done label", async () => {

@@ -2,7 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssueRef } from "../../../src/issue-key/ref.js";
 import { configWithTrackers } from "../../helpers/config.js";
 import { failureOf } from "../../helpers/errors.js";
-import { blockersGraphqlArgs, blockersNode, blockersPageJson, fakeGh, ghTokenAnswer } from "../../helpers/fake-gh.js";
+import {
+  blockersGraphqlArgs,
+  blockersNode,
+  blockersPageJson,
+  boardMoveArgs,
+  fakeGh,
+  ghTokenAnswer,
+} from "../../helpers/fake-gh.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const ref: IssueRef = { key: "octo/repo#7", repoKey: "octo/repo", shortRef: "issue-7" };
@@ -184,19 +191,7 @@ describe("createGithubProvider", () => {
 
   it("moves a board card with the configured account", async () => {
     const board = { owner: "octo", number: 3, field: "Status" };
-    const args = [
-      "project",
-      "item-edit",
-      "3",
-      "--owner",
-      "octo",
-      "--url",
-      "https://github.com/octo/repo/issues/7",
-      "--field",
-      "Status",
-      "--value",
-      "In progress",
-    ];
+    const args = boardMoveArgs(board, { project: "octo/repo", number: 7 }, "In progress");
     const fake = fakeGh(dir, {}, [token, { args }]);
     await provider().moveCard(ref, board, "In progress", "issueTracker.board.inProgress", fake.env);
     expect(fake.calls().map((call) => call.args)).toEqual([token.args, args]);
