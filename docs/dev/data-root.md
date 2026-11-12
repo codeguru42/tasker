@@ -84,6 +84,11 @@ issue to `issueTracker.abortStatus`. Schema version 17 adds it. The migration fi
 is 1 when the task has a `tracker_update` event with the action `in_progress` and the result `ok`. Code reads the column
 and never the event, as the rule of the `events` table says.
 
+The column `card_marked` is 1 after a successful start move of the card to the in-progress option, and 0 if not. Schema
+version 25 adds it with default 0. The migration does not backfill existing task rows. A successful `board_in_progress`
+write sets it in the same transaction as its `tracker_update` event. No write clears it. The reason for a separate
+column: `tracker_marked` means that the task added the label or moved the Jira status.
+
 The column `published_revision` holds the last task branch revision that tasker recorded on `origin`, or NULL before the
 first recorded publication. Schema version 19 adds it. Existing task rows get NULL. Later pushes read this column
 instead of the event. Publication writes the revision, the state `pushed`, the `published` event and the run-marker
