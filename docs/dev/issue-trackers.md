@@ -151,12 +151,18 @@ tracker.
 `gh issue edit` splits the value of `--add-label`, of `--remove-label` and of `--add-assignee` on commas (gh 2.101.0).
 
 `gh project item-edit` uses `--owner` to select the board owner and `--url` to name the issue. It uses `--field` to name
-the single-select field and `--value` to name its option. At tag `v2.102.1`, `gh` matches field and option names without
-regard to case. Two matches make a name ambiguous. The source is `pkg/cmd/project/item-edit/item_edit.go`.
+the single-select field and `--value` to name its option (gh 2.102.1). These facts come from the source of gh at the tag
+`v2.102.1`:
 
-When no card matches the issue URL, `gh` reports that it cannot find the item and points to `gh project item-add`.
-`gh project item-edit` does not add a card. `docs/dev/issues.md` names gh 2.97.0 or later for a card move. tasker keeps
-gh 2.40.0 as its minimum because `gh auth token` has the `--user` flag from that version.
+- `pkg/cmd/project/shared/queries/resolve_fields.go`, `ResolveFieldByName`: the field name matches without regard to
+  case. Two matches give an ambiguous-field error.
+- `pkg/cmd/project/shared/queries/resolve.go`, `ResolveSingleSelectOptionID`: the option name matches without regard to
+  case. Two options that differ only by case give an ambiguous-option error.
+- The same file, `ProjectItemIDByURL`: `gh` fails for an issue with no card on the board, with the text
+  ``<url> is not an item in project <N>; add it first with `gh project item-add` ``. It adds no card.
+
+[docs/dev/issues.md](issues.md) names gh 2.97.0 or later for a card move. tasker keeps its minimum gh version, as
+[Version](#version) says.
 
 tasker never adds a card to the configured board. The reason: a workflow of a board can add each new issue. An add by
 tasker can put an issue on a board that does not track it. A missing card only warns, because the task and the clone are
@@ -209,8 +215,10 @@ the token call, give no project remediation.
 
 ### Board
 
-The board check reads the configured field and the options used by tasker. It uses `gh project field-list`. Each result
-of the check is ok or warn, never error. The reason: a failed card move only warns.
+The board check reads the configured field and the options used by tasker. It uses `gh project field-list`. Each row of
+the result table of the check is ok or warn, never error. The reason: a failed card move only warns. Other failures
+still give the error result of `timedCheck`, as in the labels check. Examples are a timeout, a failed token call and
+output that is not JSON of the measured form.
 
 ### Read-only
 
