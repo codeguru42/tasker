@@ -334,7 +334,9 @@ cannot delete a branch that moved after tasker published it.
 The command prints one line on stdout for each step that ran: `removed the worktree <path>` and
 `deleted the branch <branch>`. A step with nothing to do prints no line. The remote delete has no success line. After
 remote cleanup, if `issueTracker.updateOnFinish` is `true`, the command marks the issue done on the tracker and prints
-`marked <issue key> done on the tracker`. At the end, the command prints `finished <issue key>`.
+`marked <issue key> done on the tracker`. When `issueTracker.updateOnFinish` is `true` and `issueTracker.board.done` is
+set, it then moves the card and prints `moved the card of <issue key> to "<option>" on the tracker`. The board move
+follows the done write and comes before `finished <issue key>`, which the command prints at the end.
 
 If the remote branch moved from the stored published revision, the command stops before the tracker update. It moves the
 task to `cleanup_failed`, exits with code 1, and prints this form on stderr:
@@ -349,7 +351,9 @@ The task can finish while its remote branch remains on `origin`.
 
 If the write to the tracker fails, the exit code stays 0 and the task still goes to `finished`. The command prints the
 warning `warning: cannot mark <issue key> done on the tracker: <error>` on stderr. The error can span two lines. To
-finish the write, mark the issue done on the tracker yourself.
+finish the write, mark the issue done on the tracker yourself. If the board move fails, the exit code also stays 0 and
+the task still goes to `finished`. The command prints this warning on stderr:
+`warning: cannot move the card of <issue key> to "<option>" on the tracker: <error>`.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. In each case, the task keeps its state
 and nothing is written. The shared errors of no task, of the wrong state, of the task lock and of the clone lock apply
