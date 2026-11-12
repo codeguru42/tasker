@@ -215,10 +215,10 @@ the token call, give no project remediation.
 
 ### Board
 
-The board check reads the configured field and the options used by tasker. It uses `gh project field-list`. Each row of
-the result table of the check is ok or warn, never error. The reason: a failed card move only warns. Other failures
-still give the error result of `timedCheck`, as in the labels check. Examples are a timeout, a failed token call and
-output that is not JSON of the measured form.
+The board check reads the configured field and the options used by tasker. It uses `gh project field-list`. A problem of
+the configured board, its field or its options is a warn, never an error. The reason: a failed card move only warns.
+Other failures still give the error result of `timedCheck`, as in the labels check. Examples are a timeout, a failed
+token call and output that is not JSON of the measured form.
 
 ### Read-only
 
