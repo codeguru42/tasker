@@ -80,23 +80,27 @@ If `issueTracker.updateOnStart` is `true`, the command writes to the issue track
 
 - `assigned <issue key> to <assignee> on the tracker`
 - `marked <issue key> in progress on the tracker`
+- `moved the card of <issue key> to "<option>" on the tracker`
 
 If `issueTracker.updateOnStart` is `true` and the configuration has no in-progress label or status, the command assigns
-the issue but skips the in-progress write. It prints this warning on stderr:
+the issue but skips the in-progress write. For GitHub, it prints the warning only when `board.inProgress` is also
+absent. It prints this warning on stderr:
 
 - GitHub: `warning: did not mark <issue key> in progress: issueTracker.inProgressLabel is not set`
 - Jira: `warning: did not mark <issue key> in progress: issueTracker.inProgressStatus is not set`
 
-The command still exits with code 0. It records no in-progress tracker update event and leaves the tracker mark of the
-task unset. Without a target, it also skips the early check for an existing marker. Another operator can start an issue
-that already has the marker. Set the matching target key in the repo configuration, then mark this issue in progress on
-the tracker yourself.
+The command still exits with code 0. It records no `tracker_update` event with `action: in_progress` and leaves the
+tracker mark of the task unset. The early marker check remains label-only for GitHub. A board option does not serve as a
+marker. Without an in-progress label or status, the command skips the early check for an existing marker. Another
+operator can start an issue that already has the marker. Set the matching target key in the repo configuration, then
+mark this issue in progress on the tracker yourself.
 
 A write that fails does not change the exit code, which stays 0, and does not change the task, which stays in
 `workspace_ready`. The command prints a warning on stderr at once, with the error of the tracker:
 
 - `warning: cannot assign <issue key> to <assignee> on the tracker: <error>`
 - `warning: cannot mark <issue key> in progress on the tracker: <error>`
+- `warning: cannot move the card of <issue key> to "<option>" on the tracker: <error>`
 
 The error can span two lines. To finish the write, mark the issue on the tracker yourself.
 
