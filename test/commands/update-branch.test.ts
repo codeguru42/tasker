@@ -51,6 +51,99 @@ const place = (work: WorkReviewTask, state: TaskState) =>
   withDataRootStore(work.dataRoot, (store) => placeTask(store, work.task.id, state));
 
 describe("tasker update-branch", () => {
+  describe("--base", () => {
+    it("uses an explicit remote base and writes an undo record when the head does not move", async () => {
+      const work = await useWorkReviewTask();
+      const head = await taskBranchTipOf(work);
+      const count = eventsOf(work.dataRoot, KEY).length;
+
+      const result = await runUpdateBranch("--base", "main", "--strategy", "merge");
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain(undoHint(KEY, head));
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+        base: "main",
+        undoBeforeHead: head,
+        undoAfterHead: head,
+      });
+      expect(eventsAfter(work, count)).toContainEqual(
+        expect.objectContaining({ type: "base", data: { base: "main", revision: BASE_REVISION, source: "explicit" } }),
+      );
+    });
+
+    it("records the explicit base in the branch update event when the head does not move", async () => {
+      const work = await useWorkReviewTask();
+      const head = await taskBranchTipOf(work);
+      await work.origin.createBranch("alternate");
+      const count = eventsOf(work.dataRoot, KEY).length;
+
+      const result = await runUpdateBranch("--base", "alternate");
+
+      expect(result.code).toBe(0);
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(eventsAfter(work, count).at(-1)).toMatchObject({
+        type: "branch_updated",
+        data: { after: { base: "alternate", baseRevision: "refs/remotes/origin/alternate" } },
+      });
+    });
+
+    it("demotes a task when the explicit base moves its head", async () => {
+      const work = await useMovedBaseTask();
+
+      const result = await runUpdateBranch("--base", "main");
+
+      expect(result.code).toBe(0);
+      expect(result.out).toContain(`demoted ${KEY} from awaiting_work_review to executed\n`);
+      expect(latestTaskOf(work.dataRoot, KEY).state).toBe("executed");
+    });
+
+    it("leaves task data and events unchanged when the explicit base is missing", async () => {
+      const work = await useWorkReviewTask();
+      const task = latestTaskOf(work.dataRoot, KEY);
+      const events = eventsOf(work.dataRoot, KEY);
+
+      const result = await runUpdateBranch("--base", "missing-base");
+
+      expect(result.code).toBe(1);
+      expect(result.err).toContain("the base branch does not exist: missing-base (from --base)");
+      expect(latestTaskOf(work.dataRoot, KEY)).toEqual(task);
+      expect(eventsOf(work.dataRoot, KEY)).toEqual(events);
+    });
+
+    it("refuses --undo with --base", async () => {
+      await useWorkReviewTask();
+
+      const result = await runUpdateBranch("--undo", "--base", "main");
+
+      expect(result.code).toBe(1);
+      expect(result.err).toContain("--undo cannot be combined with --base");
+    });
+
+    it("keeps the resolved base and undo values after a failed base move", async () => {
+      const work = await useWorkReviewTask();
+      const head = await taskBranchTipOf(work);
+      const oldParent = latestTaskOf(work.dataRoot, KEY).parentTaskId;
+      await work.origin.createBranch("alternate");
+      const oldBaseTip = await work.origin.addCommit("alternate", { file: "work.txt", content: "conflict\n" });
+
+      const result = await runUpdateBranch("--base", "alternate");
+
+      expect(result.code).toBe(1);
+      expect(await taskBranchTipOf(work)).toBe(head);
+      expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
+        base: "refs/remotes/origin/alternate",
+        parentTaskId: null,
+        undoBeforeHead: head,
+        undoAfterHead: head,
+        undoBeforeBase: "main",
+        undoBeforeParentTaskId: oldParent,
+        undoAfterBase: "refs/remotes/origin/alternate",
+        undoAfterParentTaskId: null,
+      });
+      expect(oldBaseTip).not.toBe(await revisionOf(work, "HEAD"));
+    });
+  });
+
   it("moves nothing when the branch contains the base", async () => {
     const work = await useWorkReviewTask();
     const head = await taskBranchTipOf(work);

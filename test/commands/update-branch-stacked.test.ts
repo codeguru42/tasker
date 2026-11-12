@@ -88,6 +88,28 @@ const mergeNote = (fixture: StackedTasks, base: string) =>
   `note: tasker merged ${base} into ${fixture.stacked.key}, so the commits of the parent are now in its history; use --strategy rebase for a stacked task that has no merge move yet\n`;
 
 describe("tasker update-branch for a stacked task", () => {
+  it("resolves an explicit local base and keeps its matching parent", async () => {
+    const fixture = await useStackedTasks();
+    const count = eventsOf(fixture.dataRoot, fixture.stacked.key).length;
+
+    const result = await update(fixture, "--base", `refs/heads/${fixture.parent.branch}`);
+
+    expect(result.code).toBe(0);
+    expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key)).toMatchObject({
+      base: `refs/heads/${fixture.parent.branch}`,
+      parentTaskId: fixture.parent.task.id,
+    });
+    expect(
+      eventsOf(fixture.dataRoot, fixture.stacked.key)
+        .slice(count)
+        .map((event) => event.data),
+    ).toContainEqual({
+      base: `refs/heads/${fixture.parent.branch}`,
+      revision: `refs/heads/${fixture.parent.branch}`,
+      source: "explicit",
+    });
+  });
+
   it("rebases the commits of the task onto new commits of the parent", async () => {
     const fixture = await useStackedTasks();
     const head = await inStacked(fixture, "rev-parse", "HEAD");
