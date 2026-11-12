@@ -619,9 +619,9 @@ describe("gh doctor checks", () => {
     });
 
     it.each([
-      ["a missing option", ["Todo", "Done"]],
-      ["multiple case-insensitive options", ["Todo", "In progress", "IN PROGRESS", "Done"]],
-    ])("warns and names the configured key for %s", async (_name, options) => {
+      ["a missing option", ["Todo", "Done"], ["In progress"]],
+      ["an ambiguous option", ["Todo", "In progress", "IN PROGRESS", "Done"], ["In progress"]],
+    ])("warns and names the affected option and key for %s", async (_name, options, affectedOptions) => {
       const fake = fakeGh(dir, {}, [
         ghTokenAnswer("octo", "gho_test"),
         fieldsAnswer(fieldsJson(singleSelect("Status", options))),
@@ -632,14 +632,18 @@ describe("gh doctor checks", () => {
       });
       const result = await doctor.ghBoardCheck(repo).run(fake.env);
       expect(result.status).toBe("warn");
+      for (const option of affectedOptions) {
+        expect(result.detail).toContain(option);
+        expect(result.detail).toContain(configKey("inProgress"));
+      }
       expect(result.remediation).toBe(optionRemediation(configKey("inProgress")));
       expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
     });
 
-    it("warns with all keys when multiple configured options are missing", async () => {
+    it("names each missing or ambiguous option and key", async () => {
       const fake = fakeGh(dir, {}, [
         ghTokenAnswer("octo", "gho_test"),
-        fieldsAnswer(fieldsJson(singleSelect("Status", ["Todo"]))),
+        fieldsAnswer(fieldsJson(singleSelect("Status", ["Todo", "In progress", "IN PROGRESS"]))),
       ]);
       const repo = githubRepo("main", {
         updateOnStart: true,
@@ -648,6 +652,10 @@ describe("gh doctor checks", () => {
       });
       const result = await doctor.ghBoardCheck(repo).run(fake.env);
       expect(result.status).toBe("warn");
+      expect(result.detail).toContain("In progress");
+      expect(result.detail).toContain(configKey("inProgress"));
+      expect(result.detail).toContain("Done");
+      expect(result.detail).toContain(configKey("done"));
       expect(result.remediation).toBe(optionRemediation(`${configKey("inProgress")} and ${configKey("done")}`));
       expect(argLists(fake)).toEqual([tokenArgs, boardArgs()]);
     });
