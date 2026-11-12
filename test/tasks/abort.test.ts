@@ -29,8 +29,11 @@ import {
 import { failureOf } from "../helpers/errors.js";
 import { trackerWriteCalls } from "../helpers/fake-gh.js";
 import {
+  fixtureTrackerAnswer,
+  fixtureTrackerCall,
   taskRefOf,
   taskWorkspaceState,
+  trackerRepo,
   usePublishedStartedTask,
   useStartFixture,
   useStartedTask,
@@ -148,6 +151,71 @@ async function abortJiraTask(
 }
 
 describe("abortTask", () => {
+  it("clears the label, moves the board card, then cancels", async () => {
+    const boardArgs = [
+      "project",
+      "item-edit",
+      "42",
+      "--owner",
+      "octo",
+      "--url",
+      "https://github.com/codeguru42/tasker/issues/5",
+      "--field",
+      "Status",
+      "--value",
+      "Todo",
+    ];
+    const started = await useStartedTask({
+      repo: trackerRepo({
+        updateOnStart: true,
+        inProgressLabel: "in progress",
+        board: { owner: "octo", number: 42, abort: "Todo" },
+      }),
+      ghAnswers: [
+        fixtureTrackerAnswer("assign"),
+        fixtureTrackerAnswer("inProgress"),
+        fixtureTrackerAnswer("clearInProgress"),
+        { args: boardArgs },
+      ],
+    });
+    withDataRootStore(started.dataRoot, (store) => {
+      store.recordCardMark(latestTaskOf(started.dataRoot, started.key).id);
+    });
+    const lines: string[] = [];
+
+    await withDataRootStore(started.dataRoot, (store) =>
+      abortWith(store, {
+        config: started.config,
+        ref: taskRefOf(started),
+        taskId: latestTaskOf(started.dataRoot, started.key).id,
+        trackerIo: { stdout: (line) => lines.push(line), stderr: (line) => lines.push(line) },
+        report: (line) => lines.push(`${line}\n`),
+      }),
+    );
+
+    const updates = eventDataOf(started.dataRoot, started.key, "tracker_update") as {
+      action: string;
+      result: string;
+    }[];
+    expect(updates.slice(-5)).toEqual([
+      { action: "assign", result: "ok" },
+      { action: "in_progress", result: "ok" },
+      { action: "board_in_progress", result: "ok" },
+      { action: "clear_in_progress", result: "ok" },
+      { action: "board_abort", result: "ok" },
+    ]);
+    expect(eventsOf(started.dataRoot, started.key).at(-1)?.data).toMatchObject({
+      from: "workspace_ready",
+      to: "cancelled",
+    });
+    const writes = started.gh
+      .calls()
+      .map((call) => call.args)
+      .filter((args) => args[0] === "issue" || args[0] === "project");
+    expect(writes.slice(-2)).toEqual([fixtureTrackerCall("clearInProgress"), boardArgs]);
+    expect(lines).toContain('moved the card of codeguru42/tasker#5 to "Todo" on the tracker\n');
+  });
+
   it("deletes a published task branch before local cleanup", async () => {
     const started = await usePublishedStartedTask();
     const lines: string[] = [];

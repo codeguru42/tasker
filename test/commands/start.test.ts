@@ -622,6 +622,119 @@ describe("start", () => {
       ]);
     });
 
+    it("moves the board card after assignment when board.inProgress is set", async () => {
+      const boardArgs = [
+        "project",
+        "item-edit",
+        "42",
+        "--owner",
+        "octo",
+        "--url",
+        "https://github.com/codeguru42/tasker/issues/5",
+        "--field",
+        "Status",
+        "--value",
+        "In progress",
+      ];
+      const fixture = await useStartFixture({
+        repo: trackerRepo({
+          updateOnStart: true,
+          board: { owner: "octo", number: 42, inProgress: "In progress" },
+        }),
+        ghAnswers: [fixtureTrackerAnswer("assign"), { args: boardArgs }],
+      });
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(result.err).toBe("tasker saved main as the default base branch of codeguru42/tasker.\n");
+      expect(result.out).toBe(
+        `${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\n` +
+          `moved the card of ${KEY} to "In progress" on the tracker\n`,
+      );
+      const calls = fixture.gh.calls();
+      expect(calls.map((call) => call.args).filter((args) => args[0] === "project")).toEqual([boardArgs]);
+      expect(calls.find((call) => call.args[0] === "project")?.ghToken).toBe("gho_test");
+      expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([
+        { action: "assign", result: "ok" },
+        { action: "board_in_progress", result: "ok" },
+      ]);
+      expect(latestTaskOf(fixture.dataRoot, KEY).cardMarked).toBe(true);
+    });
+
+    it("does not write to the board when updateOnStart is false", async () => {
+      const fixture = await useStartFixture({
+        repo: trackerRepo({
+          updateOnStart: false,
+          board: { owner: "octo", number: 42, inProgress: "In progress" },
+        }),
+      });
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(fixture.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+      expect(eventDataOf(fixture.dataRoot, KEY, "tracker_update")).toEqual([]);
+    });
+
+    it("keeps the missing in-progress warning when the board has no start option", async () => {
+      const fixture = await useStartFixture({
+        repo: trackerRepo({ updateOnStart: true, board: { owner: "octo", number: 42, done: "Done" } }),
+        ghAnswers: [fixtureTrackerAnswer("assign")],
+      });
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.err).toBe(
+        "tasker saved main as the default base branch of codeguru42/tasker.\n" +
+          `warning: did not mark ${KEY} in progress: issueTracker.inProgressLabel is not set\n`,
+      );
+      expect(fixture.gh.calls().some((call) => call.args[0] === "project" && call.args[1] === "item-edit")).toBe(false);
+    });
+
+    it("warns when a board move fails and keeps the task ready", async () => {
+      const boardArgs = [
+        "project",
+        "item-edit",
+        "42",
+        "--owner",
+        "octo",
+        "--url",
+        "https://github.com/codeguru42/tasker/issues/5",
+        "--field",
+        "Status",
+        "--value",
+        "In progress",
+      ];
+      const fixture = await useStartFixture({
+        repo: trackerRepo({
+          updateOnStart: true,
+          board: { owner: "octo", number: 42, inProgress: "In progress" },
+        }),
+        ghAnswers: [fixtureTrackerAnswer("assign"), { args: boardArgs, stderr: "board denied\n", exitCode: 1 }],
+      });
+
+      const result = await runCommand(start, "start", KEY);
+
+      expect(result.code).toBe(0);
+      expect(result.out).toBe(`${fieldLines(fixture.dataRoot)}assigned ${KEY} to @me on the tracker\n`);
+      const [assignment, move] = eventDataOf(fixture.dataRoot, KEY, "tracker_update") as {
+        action: string;
+        result: string;
+        error?: string;
+      }[];
+      expect(assignment).toEqual({ action: "assign", result: "ok" });
+      expect(move).toMatchObject({ action: "board_in_progress", result: "failed" });
+      expect(result.err).toContain(`warning: cannot move the card of ${KEY} to "In progress" on the tracker:`);
+      expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "workspace_ready", cardMarked: false });
+      expect(
+        fixture.gh
+          .calls()
+          .map((call) => call.args)
+          .filter((args) => args[0] === "project"),
+      ).toEqual([boardArgs]);
+    });
+
     it("sets trackerMarked after a passed in_progress write", async () => {
       const fixture = await useStartFixture({
         repo: trackerRepo({ updateOnStart: true, inProgressLabel: "in progress" }),

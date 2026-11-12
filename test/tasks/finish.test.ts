@@ -21,6 +21,8 @@ import {
   taskWorkspaceState,
   usePublishedLandedTask,
   useLandedTask,
+  fixtureTrackerAnswer,
+  fixtureTrackerCall,
   type LandedTask,
 } from "../helpers/task-fixtures.js";
 
@@ -39,6 +41,48 @@ const callFinish = async (fixture: LandedTask, store: TaskStore, waitMs = 300) =
 };
 
 describe("finishTask", () => {
+  it("records the board move after the done write and before the finished transition", async () => {
+    const boardArgs = [
+      "project",
+      "item-edit",
+      "42",
+      "--owner",
+      "octo",
+      "--url",
+      "https://github.com/codeguru42/tasker/issues/5",
+      "--field",
+      "Status",
+      "--value",
+      "Done",
+    ];
+    const landed = await useLandedTask({
+      repo: {
+        issueTracker: {
+          provider: "github",
+          account: "codeguru42",
+          updateOnFinish: true,
+          doneLabel: "done",
+          board: { owner: "octo", number: 42, done: "Done" },
+        },
+      },
+      ghAnswers: [fixtureTrackerAnswer("doneLabel"), { args: boardArgs }],
+    });
+
+    await withDataRootStore(landed.dataRoot, (store) => callFinish(landed, store));
+
+    const entries = eventsOf(landed.dataRoot, landed.key);
+    expect(entries.slice(-3).map((event) => event.type)).toEqual(["tracker_update", "tracker_update", "finished"]);
+    expect(eventDataOf(landed.dataRoot, landed.key, "tracker_update").slice(-2)).toEqual([
+      { action: "done", result: "ok" },
+      { action: "board_done", result: "ok" },
+    ]);
+    const writes = landed.gh
+      .calls()
+      .map((call) => call.args)
+      .filter((args) => args[0] === "issue" || args[0] === "project");
+    expect(writes.slice(-2)).toEqual([fixtureTrackerCall("doneLabel"), boardArgs]);
+  });
+
   it("leaves everything and releases the task lock when the repo lock is busy", async () => {
     const landed = await useLandedTask();
     const events = eventsOf(landed.dataRoot, landed.key);

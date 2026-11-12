@@ -4,8 +4,8 @@ import { createDataRoot } from "../../src/store/layout.js";
 import { BootstrapFailedError, startTask } from "../../src/tasks/start.js";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
 import { startLockHolder } from "../helpers/processes.js";
-import { lockNames, withDataRootStore } from "../helpers/store.js";
-import { useStartFixture } from "../helpers/task-fixtures.js";
+import { eventDataOf, lockNames, withDataRootStore } from "../helpers/store.js";
+import { fixtureTrackerAnswer, trackerRepo, useStartFixture } from "../helpers/task-fixtures.js";
 
 describe("startTask with a held repo lock", () => {
   it("waits for the lock, then leaves the task in provisioning with no new event", async () => {
@@ -41,6 +41,7 @@ describe("startTask with a held repo lock", () => {
         config: fixture.config,
         ref: { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: githubShortRef("5") },
         env: process.env,
+        repoLockWaitMs: 300,
         ask: () => Promise.reject(new Error("no question expected")),
         note: () => {},
         reclaim: false,
@@ -65,5 +66,55 @@ describe("startTask with a held repo lock", () => {
       expect(toFailed).toHaveLength(1);
       expect(lockNames(fixture.dataRoot)).toEqual([repoLockName(fixture.repoKey)]);
     });
+  });
+});
+
+describe("startTask board move order", () => {
+  it("records the board move after assignment", async () => {
+    const boardArgs = [
+      "project",
+      "item-edit",
+      "42",
+      "--owner",
+      "octo",
+      "--url",
+      "https://github.com/codeguru42/tasker/issues/5",
+      "--field",
+      "Status",
+      "--value",
+      "In progress",
+    ];
+    const fixture = await useStartFixture({
+      repo: trackerRepo({ updateOnStart: true, board: { owner: "octo", number: 42, inProgress: "In progress" } }),
+      ghAnswers: [fixtureTrackerAnswer("assign"), { args: boardArgs }],
+    });
+    const io: string[] = [];
+
+    await withDataRootStore(fixture.dataRoot, (store) =>
+      startTask(store, {
+        config: fixture.config,
+        ref: { key: "codeguru42/tasker#5", repoKey: fixture.repoKey, shortRef: githubShortRef("5") },
+        env: process.env,
+        repoLockWaitMs: 300,
+        ask: () => Promise.reject(new Error("no question expected")),
+        note: () => {},
+        reclaim: false,
+        trackerIo: { stdout: (text) => io.push(text), stderr: (text) => io.push(text) },
+      }),
+    );
+
+    expect(eventDataOf(fixture.dataRoot, "codeguru42/tasker#5", "tracker_update")).toEqual([
+      { action: "assign", result: "ok" },
+      { action: "board_in_progress", result: "ok" },
+    ]);
+    expect(io).toEqual([
+      "assigned codeguru42/tasker#5 to @me on the tracker\n",
+      'moved the card of codeguru42/tasker#5 to "In progress" on the tracker\n',
+    ]);
+    const writes = fixture.gh
+      .calls()
+      .map((call) => call.args)
+      .filter((args) => args[0] === "issue" || args[0] === "project");
+    expect(writes.at(-1)).toEqual(boardArgs);
   });
 });

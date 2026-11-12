@@ -218,6 +218,18 @@ describe("doctor", () => {
     ).toBe(true);
   });
 
+  it("does not warn for a missing label when board.inProgress is set", async () => {
+    await setUp(GOOD_GH, (raw) => {
+      raw.repos.tasker.issueTracker.updateOnStart = true;
+      raw.repos.tasker.issueTracker.board = { owner: "octo", number: 3, inProgress: "In progress" };
+    });
+
+    const { code, out } = await runCommand(doctor, "doctor");
+
+    expect(code).toBe(0);
+    expect(statusLines(out).some((line) => line.startsWith("warn ") && line.includes("inProgressLabel"))).toBe(false);
+  });
+
   it("warns for missing Jira start and finish targets in each repo", async () => {
     const { dir } = await setUp([], (raw) => {
       const tracker = { provider: "jira", project: "TEST", updateOnStart: true, updateOnFinish: true };
