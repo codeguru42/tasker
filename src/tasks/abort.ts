@@ -98,6 +98,27 @@ async function abortLocked(store: TaskStore, request: AbortRequest): Promise<Tas
         ? abortStatusWrite(config, ref, task, request.env)
         : clearMarkerWrite(config, ref, task, request.env);
     if (write !== undefined) await runTrackerWrite(store, task.id, write, request.trackerIo);
+    const { board } = issueTracker;
+    if (issueTracker.updateOnStart && board?.abort !== undefined && task.cardMarked) {
+      await runTrackerWrite(
+        store,
+        task.id,
+        {
+          action: "board_abort",
+          text: `move the card of ${ref.key} to ${JSON.stringify(board.abort)}`,
+          success: `moved the card of ${ref.key} to ${JSON.stringify(board.abort)} on the tracker`,
+          run: () =>
+            issueProviderFor(config, ref.repoKey).moveCard(
+              ref,
+              board,
+              board.abort!,
+              "issueTracker.board.abort",
+              request.env,
+            ),
+        },
+        request.trackerIo,
+      );
+    }
     return transitionTask(store, task.id, "cancelled");
   });
 }

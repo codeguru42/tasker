@@ -214,9 +214,23 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
         },
         request.trackerIo,
       );
-    } else {
+    } else if (!(repo.issueTracker.provider === "github" && repo.issueTracker.board?.inProgress !== undefined)) {
       const key = trackerTargetKeys(repo.issueTracker).inProgress;
       request.trackerIo.stderr(`warning: did not mark ${ref.key} in progress: issueTracker.${key} is not set\n`);
+    }
+    const { board } = repo.issueTracker;
+    if (board?.inProgress !== undefined) {
+      await runTrackerWrite(
+        store,
+        task.id,
+        {
+          action: "board_in_progress",
+          text: `move the card of ${ref.key} to ${JSON.stringify(board.inProgress)}`,
+          success: `moved the card of ${ref.key} to ${JSON.stringify(board.inProgress)} on the tracker`,
+          run: () => issueProvider.moveCard(ref, board, board.inProgress!, "issueTracker.board.inProgress", env),
+        },
+        request.trackerIo,
+      );
     }
   }
   return { started: true, task: ready, baseSource };

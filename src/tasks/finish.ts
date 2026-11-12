@@ -90,6 +90,27 @@ async function finishLocked(store: TaskStore, request: FinishRequest): Promise<F
           },
           io,
         );
+        const { board } = issueTracker;
+        if (board?.done !== undefined) {
+          await runTrackerWrite(
+            store,
+            task.id,
+            {
+              action: "board_done",
+              text: `move the card of ${request.ref.key} to ${JSON.stringify(board.done)}`,
+              success: `moved the card of ${request.ref.key} to ${JSON.stringify(board.done)} on the tracker`,
+              run: () =>
+                issueProviderFor(config, task.repoKey).moveCard(
+                  request.ref,
+                  board,
+                  board.done!,
+                  "issueTracker.board.done",
+                  env,
+                ),
+            },
+            io,
+          );
+        }
       }
       try {
         transitionWithFinish(store, task.id, { ...result });

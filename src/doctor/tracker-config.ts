@@ -25,7 +25,11 @@ export function trackerConfigChecks(config: Config): Check[] {
     const inProgressConfigKey = `repos.${repoKey}.issueTracker.${keys.inProgress}`;
     const doneConfigKey = `repos.${repoKey}.issueTracker.${keys.done}`;
 
-    if (issueTracker.updateOnStart && targets.inProgress === undefined) {
+    if (
+      issueTracker.updateOnStart &&
+      targets.inProgress === undefined &&
+      !(issueTracker.provider === "github" && issueTracker.board?.inProgress !== undefined)
+    ) {
       checks.push(
         missingTargetCheck(
           repoKey,
