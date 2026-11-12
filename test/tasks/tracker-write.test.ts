@@ -86,4 +86,89 @@ describe("runTrackerWrite", () => {
     expect(io.out.join("")).toBe(`marked ${fixture.key} for review\n`);
     expect(io.err.join("")).toContain(`warning: cannot mark ${fixture.key} for review on the tracker: denied\n`);
   });
+
+  it("marks a passed board move without setting trackerMarked", async () => {
+    const fixture = await useAcceptedTask();
+    const io = captureIo();
+    const passed = await withDataRootStore(fixture.dataRoot, (store) =>
+      runTrackerWrite(
+        store,
+        fixture.task.id,
+        {
+          action: "board_in_progress",
+          text: `move the card of ${fixture.key} to "In progress"`,
+          success: `moved the card of ${fixture.key} to "In progress" on the tracker`,
+          run: async () => {},
+        },
+        io,
+      ),
+    );
+    const task = withDataRootStore(fixture.dataRoot, (store) => store.getTask(fixture.task.id));
+    expect(passed).toBe(true);
+    expect(task?.cardMarked).toBe(true);
+    expect(task?.trackerMarked).toBe(false);
+    expect(eventsOf(fixture.dataRoot, fixture.key).at(-1)).toMatchObject({
+      type: "tracker_update",
+      data: { action: "board_in_progress", result: "ok" },
+    });
+    expect(io.out.join("")).toBe(`moved the card of ${fixture.key} to "In progress" on the tracker\n`);
+  });
+
+  it("records a failed board move without marking the card", async () => {
+    const fixture = await useAcceptedTask();
+    const io = captureIo();
+    const passed = await withDataRootStore(fixture.dataRoot, (store) =>
+      runTrackerWrite(
+        store,
+        fixture.task.id,
+        {
+          action: "board_in_progress",
+          text: `move the card of ${fixture.key} to "In progress"`,
+          success: `moved the card of ${fixture.key} to "In progress" on the tracker`,
+          run: async () => {
+            throw new Error("denied");
+          },
+        },
+        io,
+      ),
+    );
+    const task = withDataRootStore(fixture.dataRoot, (store) => store.getTask(fixture.task.id));
+    expect(passed).toBe(false);
+    expect(task?.cardMarked).toBe(false);
+    expect(task?.trackerMarked).toBe(false);
+    expect(eventsOf(fixture.dataRoot, fixture.key).at(-1)).toMatchObject({
+      type: "tracker_update",
+      data: { action: "board_in_progress", result: "failed", error: "denied" },
+    });
+    expect(io.err.join("")).toContain(
+      `warning: cannot move the card of ${fixture.key} to "In progress" on the tracker: denied\n`,
+    );
+  });
+
+  it("does not change trackerMarked for a passed board_done move", async () => {
+    const fixture = await useAcceptedTask();
+    withDataRootStore(fixture.dataRoot, (store) => {
+      store.recordTrackerMark(fixture.task.id);
+    });
+    const io = captureIo();
+    await withDataRootStore(fixture.dataRoot, (store) =>
+      runTrackerWrite(
+        store,
+        fixture.task.id,
+        {
+          action: "board_done",
+          text: `move the card of ${fixture.key} to "Done"`,
+          success: `moved the card of ${fixture.key} to "Done" on the tracker`,
+          run: async () => {},
+        },
+        io,
+      ),
+    );
+    const task = withDataRootStore(fixture.dataRoot, (store) => store.getTask(fixture.task.id));
+    expect(task?.trackerMarked).toBe(true);
+    expect(eventsOf(fixture.dataRoot, fixture.key).at(-1)).toMatchObject({
+      type: "tracker_update",
+      data: { action: "board_done", result: "ok" },
+    });
+  });
 });

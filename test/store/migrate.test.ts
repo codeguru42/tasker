@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { migrate, schemaVersion } from "../../src/store/migrate.js";
+import { migrations } from "../../src/store/migrations.js";
 import { tableNames } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
 
@@ -16,6 +17,13 @@ describe("migrate", () => {
 
   afterEach(() => {
     db.close();
+  });
+
+  it("has a migration for the card mark column", () => {
+    expect(migrations).toHaveLength(25);
+    migrate(db, migrations);
+    const columns = db.prepare("PRAGMA table_info(tasks)").all() as { name: string; dflt_value: string | null }[];
+    expect(columns.find((column) => column.name === "card_marked")?.dflt_value).toBe("0");
   });
 
   it("takes a new database to the last version", () => {

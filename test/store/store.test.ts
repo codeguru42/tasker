@@ -233,6 +233,7 @@ describe("task store", () => {
       prNumber: null,
       mergeOrigin: null,
       trackerMarked: false,
+      cardMarked: false,
       parentTaskId: null,
       attempt: 1,
       createdAt: "2026-01-01T00:00:00.000Z",
@@ -848,6 +849,46 @@ describe("task store", () => {
     expect(store.getTask(task.id)?.trackerMarked).toBe(true);
     const events = store.listEvents(task.id).filter((event) => event.type === "tracker_update");
     expect(events.map((event) => event.data)).toEqual([{ action: "in_progress", result: "ok" }]);
+  });
+
+  it("recordCardMark sets cardMarked and records one board_in_progress event", () => {
+    const task = store.createTask(newTask);
+    expect(store.getTask(task.id)?.cardMarked).toBe(false);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    store.recordCardMark(task.id);
+    expect(store.getTask(task.id)?.cardMarked).toBe(true);
+    expect(store.getTask(task.id)?.trackerMarked).toBe(false);
+    const events = store.listEvents(task.id).filter((event) => event.type === "tracker_update");
+    expect(events.map((event) => event.data)).toEqual([{ action: "board_in_progress", result: "ok" }]);
+  });
+
+  it("rolls back cardMarked when the board event insert fails", () => {
+    const task = store.createTask(newTask);
+    const release = rejectEvent(dbPath, "tracker_update");
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      expect(() => store.recordCardMark(task.id)).toThrow(/event rejected/);
+    } finally {
+      release();
+    }
+
+    expect(store.getTask(task.id)?.cardMarked).toBe(false);
+    expect(store.getTask(task.id)?.trackerMarked).toBe(false);
+    expect(store.listEvents(task.id).filter((event) => event.type === "tracker_update")).toEqual([]);
+  });
+
+  it("migrates an old task with cardMarked false", () => {
+    const oldPath = join(dir, "old-card-mark.db");
+    makeOldDatabase(oldPath, 24);
+    withRawDatabase(oldPath, (raw) => insertRawTask(raw, "tasker", "new"));
+
+    withStoreFile(
+      oldPath,
+      (upgraded) => {
+        expect(upgraded.getTask(1)?.cardMarked).toBe(false);
+      },
+      { now },
+    );
   });
 
   it("clearTrackerMark clears trackerMarked and records one clear event", () => {
