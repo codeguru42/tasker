@@ -343,8 +343,8 @@ task must also have marked the issue in progress. The command moves the issue to
 `moved <issue> to the status "<status>" on the tracker`. If this write fails, stderr gets
 `warning: cannot move <issue> to the status "<status>" on the tracker: <error>`.
 
-For Jira, in each other case, the step makes no call and prints no line. The assignee stays. A step that has nothing to
-do prints no line. The files under `artifacts/` stay.
+When no configured tracker step runs, the step makes no call and prints no line. The assignee stays. A step that has
+nothing to do prints no line. The files under `artifacts/` stay.
 
 If the run of the task is dead, the notes of the dead run come on stderr before the steps. See
 [A dead run](../SKILL.md#a-dead-run).
