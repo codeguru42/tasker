@@ -32,7 +32,7 @@ describe("the forge gh helper", () => {
     expect(fake.env.TASKER_GH_BIN).toBeTruthy();
     expect(process.env.TASKER_GH_BIN).toBe(fake.env.TASKER_GH_BIN);
     expect(process.env.TASKER_GH_CONFIG_DIR).toBe("/tasker/open-pr-forge-gh-config");
-    expect(process.env.TASKER_HOME).toBe("/tasker/open-pr-forge-home");
+    expect(process.env.PATH?.startsWith(String(fake.env.PATH))).toBe(true);
     expect(openPrTokenAnswer()).toEqual(token);
   });
 
@@ -63,8 +63,8 @@ describe("the forge gh helper", () => {
   it("records environment values and whether the token matches without saving the token", () => {
     const dir = useTempDir("tasker-forge-gh-helper-");
     const token = "synthetic-token-value";
-    const fake = forgeGh(dir, token, [{ args: ["repo", "view"], stdout: "ok" }], ["TASKER_HOME", "NO_COLOR"]);
-    const env = { ...fake.env, TASKER_HOME: "/home/tester", NO_COLOR: "1", GH_TOKEN: token };
+    const fake = forgeGh(dir, token, [{ args: ["repo", "view"], stdout: "ok" }], ["HOME", "NO_COLOR"]);
+    const env = { ...fake.env, HOME: "/home/tester", NO_COLOR: "1", GH_TOKEN: token };
 
     expect(runFakeGh(env, ["repo", "view"])).toMatchObject({ status: 0, stdout: "ok" });
     expect(fake.calls()).toEqual([
@@ -72,7 +72,7 @@ describe("the forge gh helper", () => {
         args: ["repo", "view"],
         tokenMatches: true,
         cwd: process.cwd(),
-        env: { TASKER_HOME: "/home/tester", NO_COLOR: "1" },
+        env: { HOME: "/home/tester", NO_COLOR: "1" },
       },
     ]);
     expect(JSON.stringify(fake.calls())).not.toContain(token);

@@ -17,8 +17,8 @@ const tokenMatch = `"$(if [ "\${GH_TOKEN-}" = ${shellQuote(token)} ]; then print
 writeFakeCommand(binDir, "gh", fakeAnswerScript("gh", logPath, answers, [tokenMatch, '"set:$PWD"']));
 const session = createGhSession("octo");
 const env = {
-  TASKER_PATH: binDir,
-  TASKER_HOME: `${dir}/home`,
+  PATH: binDir,
+  HOME: `${dir}/home`,
   TASKER_GH_CONFIG_DIR: `${dir}/gh-config`,
   TASKER_GH_BIN: join(binDir, "gh"),
 };

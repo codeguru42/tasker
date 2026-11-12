@@ -16,8 +16,8 @@ const byArgs = (left: string[] | { args: string[] }, right: string[] | { args: s
   return JSON.stringify(leftArgs).localeCompare(JSON.stringify(rightArgs));
 };
 const taskerEnv = (fakeEnv: NodeJS.ProcessEnv): NodeJS.ProcessEnv => ({
-  TASKER_PATH: fakeEnv.PATH,
-  TASKER_HOME: "/tasker/home",
+  PATH: fakeEnv.PATH,
+  HOME: "/tasker/home",
   TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
   ...fakeEnv,
 });
@@ -187,7 +187,7 @@ describe("ciStatus", () => {
     ).toEqual(
       Array.from({ length: 3 }, () => ({
         PATH: fake.env.PATH,
-        HOME: "/tasker/home",
+        HOME: "/caller/home",
         GH_CONFIG_DIR: "/tasker/gh-config",
         GH_REPO: undefined,
         GH_HOST: undefined,

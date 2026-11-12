@@ -1,4 +1,4 @@
-// The phases and the assistant child share this list through childEnv().
+// The phases, the assistant children and the gh of the forge share this list through childEnv().
 export const ALLOWED_ENV_NAMES: readonly string[] = [
   "PATH",
   "HOME",

@@ -63,8 +63,8 @@ function setup(
   const fake = forgeGh(dir, token, [tokenAnswer(), ...answers], [...baseEnvNames, ...extraEnvNames]);
   const env: NodeJS.ProcessEnv = {
     ...fake.env,
-    TASKER_PATH: fake.env.PATH,
-    TASKER_HOME: "/tasker/home",
+    PATH: fake.env.PATH,
+    HOME: "/tasker/home",
     TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
     TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
   };

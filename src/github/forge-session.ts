@@ -1,4 +1,5 @@
 import { isSet } from "../config/path.js";
+import { childEnv } from "../process/child-env.js";
 import { CommandNotFoundError, type ChildResult } from "../process/run-child.js";
 import { ProgramFileError } from "../process/resolve-program.js";
 import { startFolderError } from "../process/start-folder.js";
@@ -6,15 +7,6 @@ import { GhProcessError, runGhProcess } from "./process.js";
 
 export interface GhSession {
   run(args: readonly string[], options: { cwd: string; env: NodeJS.ProcessEnv }): Promise<string>;
-}
-
-export function forgeEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const forgeEnv = { ...env };
-  forgeEnv.TASKER_PATH ??= forgeEnv.PATH;
-  if (forgeEnv.TASKER_HOME === undefined && forgeEnv.TASKER_GH_CONFIG_DIR === undefined) {
-    forgeEnv.TASKER_HOME = forgeEnv.HOME;
-  }
-  return forgeEnv;
 }
 
 const forbiddenCommands = new Set(["token", "login", "logout", "switch"]);
@@ -87,26 +79,21 @@ export function createGhSession(account: string): GhSession {
       for (const name of forbiddenEnvironment) {
         if (env[name] !== undefined) return Promise.reject(new Error(`${name} must not be supplied`));
       }
-      if (!isSet(env.TASKER_PATH)) return Promise.reject(new Error("TASKER_PATH must be a nonblank path"));
-      if (!isSet(env.TASKER_HOME) && !isSet(env.TASKER_GH_CONFIG_DIR)) {
-        return Promise.reject(new Error("TASKER_HOME or TASKER_GH_CONFIG_DIR must be nonblank"));
-      }
       const folderError = startFolderError(env.TASKER_GH_BIN ?? "gh", cwd);
       if (folderError !== undefined) return Promise.reject(new Error(folderError));
 
-      const childEnv: NodeJS.ProcessEnv = {
-        PATH: env.TASKER_PATH,
-        ...(isSet(env.TASKER_HOME) ? { HOME: env.TASKER_HOME } : {}),
+      const ghEnv: NodeJS.ProcessEnv = {
+        ...childEnv(env, []),
         ...(isSet(env.TASKER_GH_CONFIG_DIR) ? { GH_CONFIG_DIR: env.TASKER_GH_CONFIG_DIR } : {}),
         GH_PROMPT_DISABLED: "1",
         GH_NO_UPDATE_NOTIFIER: "1",
         NO_COLOR: "1",
       };
-      const programEnv = { ...childEnv, TASKER_GH_BIN: env.TASKER_GH_BIN };
-      return accountToken(childEnv, programEnv).then((accountTokenValue) =>
+      const programEnv = { ...ghEnv, TASKER_GH_BIN: env.TASKER_GH_BIN };
+      return accountToken(ghEnv, programEnv).then((accountTokenValue) =>
         runGhProcess(
           args,
-          { ...childEnv, GH_TOKEN: accountTokenValue },
+          { ...ghEnv, GH_TOKEN: accountTokenValue },
           { cwd, programEnv, token: accountTokenValue },
         ).then(
           (result) => redact(result.stdout, accountTokenValue),
@@ -116,11 +103,11 @@ export function createGhSession(account: string): GhSession {
     },
   };
 
-  function accountToken(childEnv: NodeJS.ProcessEnv, programEnv: NodeJS.ProcessEnv): Promise<string> {
+  function accountToken(ghEnv: NodeJS.ProcessEnv, programEnv: NodeJS.ProcessEnv): Promise<string> {
     if (token !== undefined) return Promise.resolve(token);
     if (tokenRead !== undefined) return tokenRead;
 
-    const read = readAccountToken(account, childEnv, programEnv);
+    const read = readAccountToken(account, ghEnv, programEnv);
     tokenRead = read;
     read.then(
       (value) => {
@@ -137,12 +124,12 @@ export function createGhSession(account: string): GhSession {
 
 async function readAccountToken(
   account: string,
-  childEnv: NodeJS.ProcessEnv,
+  ghEnv: NodeJS.ProcessEnv,
   programEnv: NodeJS.ProcessEnv,
 ): Promise<string> {
   let result: ChildResult;
   try {
-    result = await runGhProcess(["auth", "token", "--user", account], childEnv, { programEnv, dropStdout: true });
+    result = await runGhProcess(["auth", "token", "--user", account], ghEnv, { programEnv, dropStdout: true });
   } catch (error) {
     if (error instanceof GhProcessError) {
       if (error.exitCode === null) {

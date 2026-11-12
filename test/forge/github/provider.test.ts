@@ -46,8 +46,8 @@ function fixture(answers: Parameters<typeof forgeGh>[2] = [], envNames: string[]
   );
   const env = {
     ...fake.env,
-    TASKER_PATH: fake.env.PATH,
-    TASKER_HOME: "/tasker/home",
+    PATH: fake.env.PATH,
+    HOME: "/tasker/home",
     TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
   };
   return { dir, fake, env, worktree };
@@ -62,7 +62,7 @@ describe("createGitHubForge", () => {
 
     await makeProvider().isPrMerged(prNumber, worktree, {
       ...fake.env,
-      TASKER_PATH: fake.env.PATH,
+      PATH: fake.env.PATH,
       TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
       HOME: "/tasker/home",
     });
@@ -169,14 +169,14 @@ describe("createGitHubForge", () => {
     ]);
     const firstEnv: NodeJS.ProcessEnv = {
       ...firstFake.env,
-      TASKER_PATH: firstFake.env.PATH,
-      TASKER_HOME: "/tasker/home",
+      PATH: firstFake.env.PATH,
+      HOME: "/tasker/home",
       TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
     };
     const secondEnv: NodeJS.ProcessEnv = {
       ...secondFake.env,
-      TASKER_PATH: secondFake.env.PATH,
-      TASKER_HOME: "/tasker/home",
+      PATH: secondFake.env.PATH,
+      HOME: "/tasker/home",
       TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
     };
     const firstEnvBefore = { ...firstEnv };
@@ -294,8 +294,8 @@ describe("createGitHubForge", () => {
     const error = await failureOf(
       makeProvider().isPrMerged(prNumber, worktree, {
         ...fake.env,
-        TASKER_PATH: fake.env.PATH,
-        TASKER_HOME: "/tasker/home",
+        PATH: fake.env.PATH,
+        HOME: "/tasker/home",
       }),
       Error,
     );

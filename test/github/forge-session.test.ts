@@ -16,8 +16,8 @@ const tokenAnswer = (account: string, stdout = `${forgeToken}\n`, exitCode = 0) 
   exitCode,
 });
 const taskerEnv = (ghPath: string | undefined, rest: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({
-  TASKER_PATH: ghPath,
-  TASKER_HOME: "/tasker/home",
+  PATH: ghPath,
+  HOME: "/tasker/home",
   TASKER_GH_CONFIG_DIR: "/tasker/gh-config",
   ...rest,
 });

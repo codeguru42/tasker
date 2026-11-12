@@ -58,9 +58,8 @@ export function installForgeGh(answers: readonly FakeAnswer[], prefix: string): 
   const fake = forgeGh(useTempDir(prefix), OPEN_PR_FORGE_TOKEN, answers);
   useProcessEnv({
     TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
-    TASKER_PATH: `${String(fake.env.PATH)}:${String(process.env.PATH)}`,
+    PATH: `${String(fake.env.PATH)}:${String(process.env.PATH)}`,
     TASKER_GH_CONFIG_DIR: "/tasker/open-pr-forge-gh-config",
-    TASKER_HOME: "/tasker/open-pr-forge-home",
   });
   return fake;
 }
