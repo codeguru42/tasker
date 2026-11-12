@@ -1185,6 +1185,62 @@ describe("parseConfig abortStatus", () => {
   });
 });
 
+describe("parseConfig GitHub board", () => {
+  function withBoard(board: unknown): Record<string, unknown> {
+    const raw = validConfig();
+    const repos = raw.repos as Record<string, { issueTracker: Record<string, unknown> }>;
+    repos.tasker.issueTracker.board = board;
+    return raw;
+  }
+
+  it("accepts a board and defaults its field to Status", () => {
+    const raw = withBoard({ owner: "codeguru42", number: 3, inProgress: "In progress", done: "Done", abort: "Todo" });
+    expect(parsedRepo(raw).issueTracker.board).toEqual({
+      owner: "codeguru42",
+      number: 3,
+      field: "Status",
+      inProgress: "In progress",
+      done: "Done",
+      abort: "Todo",
+    });
+  });
+
+  it("requires an owner", () => {
+    expectIssueAt(issuesOf(withBoard({ number: 3 })), "repos.tasker.issueTracker.board.owner");
+  });
+
+  it("requires a positive board number", () => {
+    expectIssueAt(issuesOf(withBoard({ owner: "codeguru42", number: 0 })), "repos.tasker.issueTracker.board.number");
+  });
+
+  it("rejects unknown board keys", () => {
+    expect(issuesOf(withBoard({ owner: "codeguru42", number: 3, status: "In progress" }))).toContain(
+      "repos.tasker.issueTracker.board.status: unrecognized key",
+    );
+  });
+
+  it("refuses a board on a Jira tracker", () => {
+    const raw = validConfig();
+    raw.repos.tasker.issueTracker = { provider: "jira", project: "TEST", board: { owner: "me", number: 3 } };
+    expect(issuesOf(raw)).toContain("repos.tasker.issueTracker.board: is not accepted for the jira tracker");
+  });
+
+  it("keeps the GitHub abortStatus refusal with a board", () => {
+    const raw = withBoard({ owner: "codeguru42", number: 3 });
+    const repos = raw.repos as Record<string, { issueTracker: Record<string, unknown> }>;
+    Object.assign(repos.tasker.issueTracker, { abortStatus: "Cancelled" });
+    expect(issuesOf(raw)).toContain("repos.tasker.issueTracker.abortStatus: is not accepted for the github tracker");
+  });
+
+  it("replaces a definition board with the whole repo board", () => {
+    const raw = withTracker(
+      { tracker: "hub", account: "codeguru42", board: { owner: "repo-owner", number: 8 } },
+      { hub: { provider: "github", board: { owner: "definition-owner", number: 3, done: "Done" } } },
+    );
+    expect(parsedRepo(raw).issueTracker.board).toEqual({ owner: "repo-owner", number: 8, field: "Status" });
+  });
+});
+
 describe("parseConfig review targets", () => {
   it("accepts review targets on their matching providers and definitions", () => {
     const gh = validConfig();
