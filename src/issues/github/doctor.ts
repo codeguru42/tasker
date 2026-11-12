@@ -304,9 +304,12 @@ export function ghBoardCheck(repo: IssueDoctorRepo, timeoutMs = 15000): Check {
     const availableOptions = fieldOptions.map((option) => JSON.stringify(option.name)).join(", ");
     const fieldSummary = `${repo.key}: board ${board.number}, field ${JSON.stringify(field.name)}, options ${availableOptions}`;
     if (missingOptions.length > 0) {
+      const invalidOptions = missingOptions
+        .map((option) => `${JSON.stringify(option.name)} (${option.configKey})`)
+        .join(", ");
       return {
         status: "warn",
-        detail: `${fieldSummary}; a configured option is missing or ambiguous`,
+        detail: `${fieldSummary}; configured options ${invalidOptions} are missing or ambiguous`,
         remediation: `Add each missing option to the field on GitHub, or change ${missingOptions.map((option) => option.configKey).join(" and ")}.`,
       };
     }
