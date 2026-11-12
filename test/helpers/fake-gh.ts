@@ -87,6 +87,18 @@ export function boardMoveCalls(gh: FakeGh): string[][] {
     .filter(([command, verb]) => command === "project" && verb === "item-edit");
 }
 
+// The argument lists of issue writes and card moves in their original call order.
+export function orderedTrackerWriteCalls(gh: FakeGh): string[][] {
+  return gh
+    .calls()
+    .map((call) => call.args)
+    .filter(
+      ([command, verb]) =>
+        (command === "issue" && (verb === "edit" || verb === "close")) ||
+        (command === "project" && verb === "item-edit"),
+    );
+}
+
 // The expected item-edit arguments for an issue card move. This does not call production code.
 export function boardMoveArgs(
   board: { owner: string; number: number; field: string },

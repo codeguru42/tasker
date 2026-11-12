@@ -3,7 +3,7 @@ import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import { createDataRoot } from "../../src/store/layout.js";
 import { BootstrapFailedError, startTask } from "../../src/tasks/start.js";
 import { githubShortRef } from "../../src/issue-key/short-ref.js";
-import { boardMoveArgs } from "../helpers/fake-gh.js";
+import { boardMoveArgs, orderedTrackerWriteCalls } from "../helpers/fake-gh.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { eventDataOf, lockNames, withDataRootStore } from "../helpers/store.js";
 import { fixtureTrackerAnswer, trackerRepo, useStartFixture } from "../helpers/task-fixtures.js";
@@ -104,10 +104,7 @@ describe("startTask board move order", () => {
       "assigned codeguru42/tasker#5 to @me on the tracker\n",
       'moved the card of codeguru42/tasker#5 to "In progress" on the tracker\n',
     ]);
-    const writes = fixture.gh
-      .calls()
-      .map((call) => call.args)
-      .filter((args) => args[0] === "issue" || args[0] === "project");
+    const writes = orderedTrackerWriteCalls(fixture.gh);
     expect(writes.at(-1)).toEqual(boardArgs);
   });
 });

@@ -27,7 +27,7 @@ import {
   withDataRootStore,
 } from "../helpers/store.js";
 import { failureOf } from "../helpers/errors.js";
-import { boardMoveArgs, trackerWriteCalls } from "../helpers/fake-gh.js";
+import { boardMoveArgs, orderedTrackerWriteCalls, trackerWriteCalls } from "../helpers/fake-gh.js";
 import {
   fixtureTrackerAnswer,
   fixtureTrackerCall,
@@ -200,10 +200,7 @@ describe("abortTask", () => {
       from: "workspace_ready",
       to: "cancelled",
     });
-    const writes = started.gh
-      .calls()
-      .map((call) => call.args)
-      .filter((args) => args[0] === "issue" || args[0] === "project");
+    const writes = orderedTrackerWriteCalls(started.gh);
     expect(writes.slice(-2)).toEqual([fixtureTrackerCall("clearInProgress"), boardArgs]);
     expect(lines).toContain('moved the card of codeguru42/tasker#5 to "Todo" on the tracker\n');
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { LockBusyError, repoLockName } from "../../src/store/locks.js";
 import type { TaskStore } from "../../src/store/store.js";
 import { finishTask } from "../../src/tasks/finish.js";
-import { boardMoveArgs } from "../helpers/fake-gh.js";
+import { boardMoveArgs, orderedTrackerWriteCalls } from "../helpers/fake-gh.js";
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
 import { rejectOriginPush } from "../helpers/git.js";
@@ -69,10 +69,7 @@ describe("finishTask", () => {
       { action: "done", result: "ok" },
       { action: "board_done", result: "ok" },
     ]);
-    const writes = landed.gh
-      .calls()
-      .map((call) => call.args)
-      .filter((args) => args[0] === "issue" || args[0] === "project");
+    const writes = orderedTrackerWriteCalls(landed.gh);
     expect(writes.slice(-2)).toEqual([fixtureTrackerCall("doneLabel"), boardArgs]);
   });
 

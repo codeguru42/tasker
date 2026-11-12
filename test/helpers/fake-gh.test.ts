@@ -7,6 +7,7 @@ import {
   blockerReadCalls,
   boardMoveArgs,
   boardMoveCalls,
+  orderedTrackerWriteCalls,
   fakeGh,
   ghTokenAnswer,
   githubBlockersAnswer,
@@ -27,6 +28,27 @@ describe("fakeGh", () => {
   });
 
   const run = (env: NodeJS.ProcessEnv, ...args: string[]) => runFakeGh(env, args);
+
+  it("keeps issue and card writes in call order and excludes reads", () => {
+    const gh = fakeGh(dir, {}, [
+      ghTokenAnswer("octo", "tok"),
+      { args: ["issue", "edit", "1"] },
+      { args: ["issue", "view", "1"] },
+      { args: ["project", "item-edit", "2"] },
+      { args: ["issue", "close", "1"] },
+    ]);
+    run(gh.env, "auth", "token", "--hostname", "github.com", "--user", "octo");
+    run(gh.env, "issue", "edit", "1");
+    run(gh.env, "issue", "view", "1");
+    run(gh.env, "project", "item-edit", "2");
+    run(gh.env, "issue", "close", "1");
+
+    expect(orderedTrackerWriteCalls(gh)).toEqual([
+      ["issue", "edit", "1"],
+      ["project", "item-edit", "2"],
+      ["issue", "close", "1"],
+    ]);
+  });
 
   it("runs the selected fake gh with the supplied environment and arguments", () => {
     const gh = fakeGh(dir, {}, [{ args: ["listed"], stdout: "listed\n" }], { logEnv: ["FAKE_GH_MARKER"] });
