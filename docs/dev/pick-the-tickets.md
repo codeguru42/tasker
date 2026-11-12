@@ -134,9 +134,10 @@ The orchestrator does all the steps of this section.
   moving ticket now. The orchestrator follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
   If the user answers "start now", [the overlap rule](land-the-work.md#the-overlap-rule) says whether the moving ticket
   and that task in flight get a landing order.
-- When a ticket starts, the orchestrator moves its card to In progress, with the move command of
-  [The project board](issues.md#the-project-board). `tasker start` does not move the card. The board moves the card to
-  Done when `tasker finish` closes the issue.
+- When a ticket starts, the orchestrator reads stdout from `tasker start`. If stdout contains
+  `moved the card of <issue key> to "<option>" on the tracker`, the orchestrator skips its own move. Otherwise, the
+  orchestrator moves the card to In progress with the move command of [The project board](issues.md#the-project-board).
+  The board moves the card to Done when `tasker finish` closes the issue.
 - When the Todo column of the milestone is empty, the orchestrator waits until the last ticket of the milestone closes
   and no task of the milestone is in flight. If the orchestrator did not send the report that the close started yet, it
   now sends this report to the operator, as step 1 of
