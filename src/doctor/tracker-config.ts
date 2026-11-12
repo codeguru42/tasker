@@ -1,6 +1,6 @@
 import type { Config } from "../config/schema.js";
 import type { Check } from "./check.js";
-import { trackerTargetKeys, trackerTargets } from "../tasks/tracker-write.js";
+import { hasGitHubBoardStartTarget, trackerTargetKeys, trackerTargets } from "../tasks/tracker-write.js";
 
 const CHECK_TIMEOUT_MS = 1000;
 
@@ -25,11 +25,7 @@ export function trackerConfigChecks(config: Config): Check[] {
     const inProgressConfigKey = `repos.${repoKey}.issueTracker.${keys.inProgress}`;
     const doneConfigKey = `repos.${repoKey}.issueTracker.${keys.done}`;
 
-    if (
-      issueTracker.updateOnStart &&
-      targets.inProgress === undefined &&
-      !(issueTracker.provider === "github" && issueTracker.board?.inProgress !== undefined)
-    ) {
+    if (issueTracker.updateOnStart && targets.inProgress === undefined && !hasGitHubBoardStartTarget(issueTracker)) {
       checks.push(
         missingTargetCheck(
           repoKey,

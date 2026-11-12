@@ -32,6 +32,11 @@ export function trackerTargets(issueTracker: RepoConfig["issueTracker"]): {
   };
 }
 
+// A configured GitHub board target replaces the missing issue start target.
+export function hasGitHubBoardStartTarget(issueTracker: RepoConfig["issueTracker"]): boolean {
+  return issueTracker.provider === "github" && issueTracker.board?.inProgress !== undefined;
+}
+
 export type TrackerAction =
   | "assign"
   | "in_progress"

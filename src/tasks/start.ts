@@ -14,7 +14,7 @@ import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { Task, TaskStore } from "../store/store.js";
 import { blockerBase } from "./blocker-base.js";
 import { newParentId } from "./parent.js";
-import { runTrackerWrite, trackerTargetKeys, trackerTargets } from "./tracker-write.js";
+import { hasGitHubBoardStartTarget, runTrackerWrite, trackerTargetKeys, trackerTargets } from "./tracker-write.js";
 import { vcsForRepo, type ResolvedBase } from "../vcs/provider.js";
 
 export interface StartRequest {
@@ -214,7 +214,7 @@ async function startLocked(store: TaskStore, request: StartRequest): Promise<Sta
         },
         request.trackerIo,
       );
-    } else if (!(repo.issueTracker.provider === "github" && repo.issueTracker.board?.inProgress !== undefined)) {
+    } else if (!hasGitHubBoardStartTarget(repo.issueTracker)) {
       const key = trackerTargetKeys(repo.issueTracker).inProgress;
       request.trackerIo.stderr(`warning: did not mark ${ref.key} in progress: issueTracker.${key} is not set\n`);
     }
