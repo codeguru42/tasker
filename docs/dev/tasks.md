@@ -111,8 +111,7 @@ or `board_abort`.
 
 When no in-progress target is set and GitHub `board.inProgress` is absent, start skips the in-progress write and prints
 `warning: did not mark <issue> in progress: issueTracker.<key> is not set` on stderr. The command still exits with code
-0 and records no `tracker_update` event with `action: in_progress`. The assignment write still records its event. A
-GitHub `board.inProgress` target prevents this warning.
+0 and records no `tracker_update` event with `action: in_progress`. The assignment write still records its event.
 
 A passed `in_progress` write sets `tracker_marked` in the same transaction as its event. A passed `clear_in_progress`
 write sets it to 0 in the same transaction as its event. A failed clear keeps it at 1.
