@@ -22,7 +22,7 @@ import {
   vcsForRepo,
 } from "../vcs/provider.js";
 import { LOCAL_PREFIX } from "../vcs/local-branch.js";
-import { parentOf, walkLandedParents } from "./parent.js";
+import { newParentId, parentOf, walkLandedParents } from "./parent.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 
@@ -31,6 +31,8 @@ export interface UpdateBranchRequest {
   ref: IssueRef;
   // The task that the lookup found. The command reads it again under the task lock.
   taskId: number;
+  // The raw value of --base, or undefined when the option is absent.
+  base: string | undefined;
   // The raw value of --strategy, or undefined when the option is absent.
   strategy: string | undefined;
   // True with --take-remote: the sync step moves the branch and the worktree to the remote tip for each divergence, also
@@ -56,6 +58,8 @@ interface UpdateFacts {
   headAfter: string;
   // Whether the head moved, in the sync step, in the base step or in an undo.
   moved: boolean;
+  // Whether the run wrote an undo record, including a base-only change.
+  undoRecorded: boolean;
   // The synced base tip that the replay started after, set when the replay started there.
   replayedAfter?: string;
   // The key of the direct parent that the task is no longer stacked on, set when the task has no parent after the walk.
@@ -280,13 +284,53 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
   if (request.undo) return undoLastUpdate(run, request, failedIn);
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
     // The walk reads only rows. A loop or a local base with no parent throws here, before any write.
-    const walk = walkLandedParents(store, task);
+    const resolved =
+      request.base === undefined
+        ? undefined
+        : await vcs.resolveBase(ctx, {
+            memory: store,
+            issueKey: task.issueKey,
+            note: (line) => io.stderr(line),
+            explicit: request.base,
+            ask: async () => {
+              throw new Error("cannot ask for a base when --base is set");
+            },
+          });
+    const walk = resolved === undefined ? walkLandedParents(store, task) : undefined;
     const target =
-      walk === undefined
+      resolved ??
+      (walk === undefined
         ? { base, revision: baseRevision }
-        : { base: walk.base, revision: vcs.baseRevision(walk.base) };
-    const stackedOn = walk === undefined ? parent : walk.newParent;
+        : { base: walk.base, revision: vcs.baseRevision(walk.base) });
+    const explicitParentId = resolved === undefined ? undefined : newParentId(store, task.repoKey, resolved.base);
+    const explicitParent =
+      explicitParentId === undefined
+        ? undefined
+        : explicitParentId === null
+          ? undefined
+          : store.getTask(explicitParentId);
+    const stackedOn = resolved === undefined ? (walk === undefined ? parent : walk.newParent) : explicitParent;
+    const afterBase: BranchSnapshot = { ...before, base: target.base, baseRevision: target.revision };
     transitionTask(store, task.id, "updating_branch", { head: before.head });
+    if (resolved !== undefined) {
+      const parentTaskId = explicitParentId ?? null;
+      run.failureAfter = afterBase;
+      store.updateTask(
+        task.id,
+        {
+          base: resolved.base,
+          parentTaskId,
+          undoBeforeHead: before.head,
+          undoAfterHead: before.head,
+          undoSyncedBaseTip: before.syncedBaseTip,
+          undoBeforeBase: base,
+          undoBeforeParentTaskId: task.parentTaskId,
+          undoAfterBase: resolved.base,
+          undoAfterParentTaskId: parentTaskId,
+        },
+        () => ({ type: "base", data: { base: resolved.base, revision: resolved.revision, source: "explicit" } }),
+      );
+    }
     // What the sync step did, and the head after it. The catch reads both to undo a sync move.
     let synced: SyncOutcome = { sync: "none" };
     let syncedHead = before.head;
@@ -328,7 +372,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         currentHead: syncedHead,
         contains: upToDate,
         syncedBaseTip: task.syncedBaseTip,
-        parent,
+        parent: resolved === undefined ? parent : explicitParent,
         strategy,
         issueKey: task.issueKey,
         io,
@@ -344,19 +388,33 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
       if (walk !== undefined) {
         writes.base = { ...target, source: "parent", baseOf: walk.end.issueKey };
         writes.parentTaskId = walk.newParent?.id ?? null;
-      } else if (moved) {
+      }
+      // A head move without a parent walk or explicit base writes an update event.
+      if (walk === undefined && resolved === undefined && moved) {
         writes.base = { ...target, source: "update" };
       }
       // Each move of the base step, and the switch after the parent landed, build the branch on the base tip.
-      if (resynced.how !== "none" || walk !== undefined) writes.syncedBaseTip = baseTip;
+      if (resynced.how !== "none" || walk !== undefined || resolved !== undefined) writes.syncedBaseTip = baseTip;
       if (moved && origin === "approved") writes.clearPlanApproval = store.pinnedPlanRevision(task.id)?.version;
       const after: BranchSnapshot = {
         head: resynced.head,
-        base: writes.base?.base ?? base,
-        baseRevision: writes.base?.revision ?? baseRevision,
+        base: target.base,
+        baseRevision: target.revision,
         syncedBaseTip: writes.syncedBaseTip ?? before.syncedBaseTip,
       };
-      if (moved) writes.undo = undoRecord(before, after);
+      if (moved || resolved !== undefined) {
+        writes.undo = {
+          ...undoRecord(before, after),
+          ...(resolved === undefined
+            ? {}
+            : {
+                beforeBase: base,
+                beforeParentTaskId: task.parentTaskId,
+                afterBase: resolved.base,
+                afterParentTaskId: explicitParentId ?? null,
+              }),
+        };
+      }
       transitionWithBranchUpdate(
         store,
         task.id,
@@ -370,7 +428,9 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         },
         writes,
       );
-      if (parent !== undefined && resynced.how === "merge") io.stderr(mergeMoveNote(target.base, task.issueKey));
+      if ((resolved === undefined ? parent : explicitParent) !== undefined && resynced.how === "merge") {
+        io.stderr(mergeMoveNote(target.base, task.issueKey));
+      }
       return {
         issueKey: task.issueKey,
         base: target.base,
@@ -385,6 +445,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         startHead: before.head,
         headAfter: resynced.head,
         moved,
+        undoRecorded: moved || resolved !== undefined,
         origin,
         state,
       };
@@ -405,6 +466,7 @@ interface UpdateRun {
   branch: string;
   before: BranchSnapshot;
   origin: TaskState;
+  failureAfter?: BranchSnapshot;
 }
 
 // The failure path of a run in updating_branch. movedHead is the head that a step left. When it differs from the head
@@ -417,19 +479,14 @@ async function failedUpdate(
   sync: SyncOutcome["sync"],
 ): Promise<UpdateBranchResult> {
   const { store, task, vcs, ctx, io, path, branch, before, origin } = run;
+  const after = run.failureAfter ?? before;
   if (movedHead !== before.head) {
     // Move back. A failed move back shows in backAtStart, so its error is dropped.
     await vcs.moveWorkspace(ctx, { path, revision: before.head }).catch(() => undefined);
   }
   if (await backAtStart(vcs, ctx, { path, branch, head: before.head })) {
     // This step does not call failRunTo: the branch_updated event takes the place of the transition event.
-    transitionWithBranchUpdate(
-      store,
-      task.id,
-      origin,
-      { before, after: before, how: "none", sync, error: message },
-      {},
-    );
+    transitionWithBranchUpdate(store, task.id, origin, { before, after, how: "none", sync, error: message }, {});
     io.stderr(`${message}\n`);
     return { exitCode: 1 };
   }
@@ -473,6 +530,7 @@ async function undoLastUpdate(
         startHead: before.head,
         headAfter: movedHead,
         moved: true,
+        undoRecorded: true,
         origin,
         state,
       };

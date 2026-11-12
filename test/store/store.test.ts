@@ -223,6 +223,10 @@ describe("task store", () => {
       undoBeforeHead: null,
       undoAfterHead: null,
       undoSyncedBaseTip: null,
+      undoBeforeBase: null,
+      undoBeforeParentTaskId: null,
+      undoAfterBase: null,
+      undoAfterParentTaskId: null,
       reopenStartHead: null,
       acceptedRevision: null,
       publishedRevision: null,
@@ -1044,7 +1048,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(23);
+        expect(schemaVersion(raw)).toBe(24);
         expect(raw.prepare("SELECT published_revision FROM tasks WHERE id = 1").get()).toEqual({
           published_revision: null,
         });
@@ -1100,7 +1104,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(23);
+        expect(schemaVersion(raw)).toBe(24);
         expect(raw.prepare("SELECT pr_number FROM tasks WHERE id = 1").get()).toEqual({ pr_number: null });
       });
     });
@@ -1160,7 +1164,7 @@ describe("task store", () => {
         { now },
       );
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(23);
+        expect(schemaVersion(raw)).toBe(24);
         expect(raw.prepare("SELECT reopen_start_head FROM tasks WHERE id = 1").get()).toEqual({
           reopen_start_head: null,
         });
@@ -1357,7 +1361,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(23);
+        expect(migrations.length).toBe(24);
       });
     });
 
@@ -1411,7 +1415,7 @@ describe("task store", () => {
 
       withStoreFile(oldPath, () => {}, { now });
       withRawDatabase(oldPath, (raw) => {
-        expect(schemaVersion(raw)).toBe(23);
+        expect(schemaVersion(raw)).toBe(24);
         expect(raw.prepare("SELECT merge_origin FROM tasks ORDER BY id").all()).toEqual([
           { merge_origin: "in_peer_review" },
           { merge_origin: null },

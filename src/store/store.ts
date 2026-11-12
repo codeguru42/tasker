@@ -62,6 +62,10 @@ export interface Task {
   undoBeforeHead: string | null;
   undoAfterHead: string | null;
   undoSyncedBaseTip: string | null;
+  undoBeforeBase: string | null;
+  undoBeforeParentTaskId: number | null;
+  undoAfterBase: string | null;
+  undoAfterParentTaskId: number | null;
   reopenStartHead: string | null;
   acceptedRevision: string | null;
   publishedRevision: string | null;
@@ -104,6 +108,10 @@ export interface TaskChanges {
   undoBeforeHead?: string | null;
   undoAfterHead?: string | null;
   undoSyncedBaseTip?: string | null;
+  undoBeforeBase?: string | null;
+  undoBeforeParentTaskId?: number | null;
+  undoAfterBase?: string | null;
+  undoAfterParentTaskId?: number | null;
   reopenStartHead?: string | null;
   acceptedRevision?: string | null;
   publishedRevision?: string | null;
@@ -268,12 +276,21 @@ export interface PullRequestRecord {
 export interface BranchUpdateWrites {
   base?:
     | { base: string; revision: string; source: "update" }
-    | { base: string; revision: string; source: "parent"; baseOf: string };
+    | { base: string; revision: string; source: "parent"; baseOf: string }
+    | { base: string; revision: string; source: "explicit" };
   parentTaskId?: number | null;
   clearPlanApproval?: number;
   syncedBaseTip?: string | null;
   // The values that tasker update-branch --undo reads. A null syncedBaseTip is written as NULL.
-  undo?: { beforeHead: string; afterHead: string; syncedBaseTip: string | null };
+  undo?: {
+    beforeHead: string;
+    afterHead: string;
+    syncedBaseTip: string | null;
+    beforeBase?: string;
+    beforeParentTaskId?: number | null;
+    afterBase?: string;
+    afterParentTaskId?: number | null;
+  };
 }
 
 export interface TaskStore extends LockStore {
@@ -520,6 +537,10 @@ interface TaskRow {
   undo_before_head: string | null;
   undo_after_head: string | null;
   undo_synced_base_tip: string | null;
+  undo_before_base: string | null;
+  undo_before_parent_task_id: number | null;
+  undo_after_base: string | null;
+  undo_after_parent_task_id: number | null;
   reopen_start_head: string | null;
   accepted_revision: string | null;
   published_revision: string | null;
@@ -570,6 +591,10 @@ function rowToTask(row: TaskRow): Task {
     undoBeforeHead: row.undo_before_head,
     undoAfterHead: row.undo_after_head,
     undoSyncedBaseTip: row.undo_synced_base_tip,
+    undoBeforeBase: row.undo_before_base,
+    undoBeforeParentTaskId: row.undo_before_parent_task_id,
+    undoAfterBase: row.undo_after_base,
+    undoAfterParentTaskId: row.undo_after_parent_task_id,
     reopenStartHead: row.reopen_start_head,
     acceptedRevision: row.accepted_revision,
     publishedRevision: row.published_revision,
@@ -772,6 +797,7 @@ function setUp(db: DatabaseSync) {
       `UPDATE tasks
        SET state = ?, branch = ?, worktree_path = ?, title = ?, short_ref = ?, base = ?,
            synced_base_tip = ?, undo_before_head = ?, undo_after_head = ?, undo_synced_base_tip = ?,
+           undo_before_base = ?, undo_before_parent_task_id = ?, undo_after_base = ?, undo_after_parent_task_id = ?,
            reopen_start_head = ?, accepted_revision = ?, published_revision = ?, pr_number = ?, merge_origin = ?, tracker_marked = ?, parent_task_id = ?, updated_at = ?
        WHERE id = ?
        RETURNING *`,
@@ -1063,6 +1089,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
     if (changes.undoBeforeHead !== undefined) next.undoBeforeHead = changes.undoBeforeHead;
     if (changes.undoAfterHead !== undefined) next.undoAfterHead = changes.undoAfterHead;
     if (changes.undoSyncedBaseTip !== undefined) next.undoSyncedBaseTip = changes.undoSyncedBaseTip;
+    if (changes.undoBeforeBase !== undefined) next.undoBeforeBase = changes.undoBeforeBase;
+    if (changes.undoBeforeParentTaskId !== undefined) next.undoBeforeParentTaskId = changes.undoBeforeParentTaskId;
+    if (changes.undoAfterBase !== undefined) next.undoAfterBase = changes.undoAfterBase;
+    if (changes.undoAfterParentTaskId !== undefined) next.undoAfterParentTaskId = changes.undoAfterParentTaskId;
     if (changes.reopenStartHead !== undefined) next.reopenStartHead = changes.reopenStartHead;
     if (changes.acceptedRevision !== undefined) next.acceptedRevision = changes.acceptedRevision;
     if (changes.publishedRevision !== undefined) next.publishedRevision = changes.publishedRevision;
@@ -1081,6 +1111,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       next.undoBeforeHead,
       next.undoAfterHead,
       next.undoSyncedBaseTip,
+      next.undoBeforeBase,
+      next.undoBeforeParentTaskId,
+      next.undoAfterBase,
+      next.undoAfterParentTaskId,
       next.reopenStartHead,
       next.acceptedRevision,
       next.publishedRevision,
@@ -1402,6 +1436,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
           undoBeforeHead: null,
           undoAfterHead: null,
           undoSyncedBaseTip: null,
+          undoBeforeBase: null,
+          undoBeforeParentTaskId: null,
+          undoAfterBase: null,
+          undoAfterParentTaskId: null,
         },
         undefined,
       );
@@ -1785,6 +1823,14 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
         undoBeforeHead: writes.undo?.beforeHead,
         undoAfterHead: writes.undo?.afterHead,
         undoSyncedBaseTip: writes.undo?.syncedBaseTip,
+        ...(writes.undo === undefined
+          ? {}
+          : {
+              undoBeforeBase: writes.undo.beforeBase ?? null,
+              undoBeforeParentTaskId: writes.undo.beforeParentTaskId ?? null,
+              undoAfterBase: writes.undo.afterBase ?? null,
+              undoAfterParentTaskId: writes.undo.afterParentTaskId ?? null,
+            }),
         parentTaskId: writes.parentTaskId,
       };
       return writeTask(taskId, changes, check, (at) => {

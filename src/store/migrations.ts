@@ -186,4 +186,8 @@ WHERE state = 'merging'
      LIMIT 1
    ) = 'merging');`,
   `ALTER TABLE sessions ADD COLUMN trusted_extensions TEXT;`,
+  `ALTER TABLE tasks ADD COLUMN undo_before_base TEXT;
+ALTER TABLE tasks ADD COLUMN undo_before_parent_task_id INTEGER;
+ALTER TABLE tasks ADD COLUMN undo_after_base TEXT;
+ALTER TABLE tasks ADD COLUMN undo_after_parent_task_id INTEGER;`,
 ];

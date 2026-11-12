@@ -131,13 +131,13 @@ describe("tasker update-branch", () => {
       expect(result.code).toBe(1);
       expect(await taskBranchTipOf(work)).toBe(head);
       expect(latestTaskOf(work.dataRoot, KEY)).toMatchObject({
-        base: "refs/remotes/origin/alternate",
+        base: "alternate",
         parentTaskId: null,
         undoBeforeHead: head,
         undoAfterHead: head,
         undoBeforeBase: "main",
         undoBeforeParentTaskId: oldParent,
-        undoAfterBase: "refs/remotes/origin/alternate",
+        undoAfterBase: "alternate",
         undoAfterParentTaskId: null,
       });
       expect(oldBaseTip).not.toBe(await revisionOf(work, "HEAD"));
