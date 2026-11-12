@@ -333,13 +333,18 @@ For a GitHub repo, the tracker step runs only when `issueTracker.updateOnStart` 
 `warning: cannot clear the in-progress marker of <issue> on the tracker: <error>`. A passed `tasker open-pr` clear ends
 this task's ownership of the marker, so a later abort skips the remove call.
 
+For a GitHub repo, abort also moves the card when `issueTracker.updateOnStart` is `true`, `board.abort` is set, and
+`card_marked` is set. The move follows the in-progress marker clear. A failed clear does not stop the move. On success,
+stdout gets `moved the card of <issue key> to "<option>" on the tracker`. On failure, stderr gets
+`warning: cannot move the card of <issue key> to "<option>" on the tracker: <error>`.
+
 For a Jira repo, the step runs only when `issueTracker.updateOnStart` is `true` and the repo sets `abortStatus`. This
 task must also have marked the issue in progress. The command moves the issue to that status and prints
 `moved <issue> to the status "<status>" on the tracker`. If this write fails, stderr gets
 `warning: cannot move <issue> to the status "<status>" on the tracker: <error>`.
 
-In each other case, the step makes no call and prints no line. The assignee stays. A step that has nothing to do prints
-no line. The files under `artifacts/` stay.
+For Jira, in each other case, the step makes no call and prints no line. The assignee stays. A step that has nothing to
+do prints no line. The files under `artifacts/` stay.
 
 If the run of the task is dead, the notes of the dead run come on stderr before the steps. See
 [A dead run](../SKILL.md#a-dead-run).
