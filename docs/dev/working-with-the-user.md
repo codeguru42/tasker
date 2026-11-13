@@ -56,6 +56,28 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   twice that its rules banned the install, and the user asked "the orchestrator rules ban you from installing?". The
   install bullet of [Limits](limits.md#limits) bans only an install from a task worktree and `npm link`, and the session
   had to take the claim back.
+- A rule of the docs on `origin/main` can answer a question before the session asks the user. Then the question is not a
+  question for the user. The session follows the rule and does not ask the user. The session reads the rule as the
+  bullet about `git show origin/main:<path>` of [A question of the user](#a-question-of-the-user) says. The session can
+  name the rule in its next reply or report. Then the session quotes the rule and names its doc and its section, as the
+  bullet that starts "Before the session tells the user" says.
+
+  The words of a rule can leave the case of the question open. Then the question stays a question for the user. Whether
+  the words of a rule answer a question is a judgment. The judgment is open on purpose, and the session makes it.
+
+  A rule can keep a choice or an approval for the user. Examples are a
+  [question for the user alone](operator-items.md#the-open-items) and "Only the user changes a landing order of the
+  overlap rule" (see [Land the work](land-the-work.md#land-the-work)). Then the session still asks the user, because
+  that rule gives the answer. This bullet does not cover an open question of an issue, which
+  [the open-question rule](pick-the-tickets.md#the-open-question-rule) covers. This bullet does not cover a change of a
+  rule of the docs. A session that wants such a change still asks the user or drafts an issue.
+
+  The hold record of the GitHub milestone M24 stood at the end of its description. Rule 2 of
+  [A milestone hold](#a-milestone-hold) puts the hold record at the start of the description. Rule 3 makes the word of
+  the user for the hold the approval of the write of the hold record. The operator asked the user whether to move the
+  record. On 2026-11-13, in the [question pane](operator-conversations.md#a-question-pane) question-m24-record, the user
+  said: "yes...this shouldn't even be a question for me to decide."
+
 - Do not ask with a popup that holds only a short summary. In one case, the user rejected such a popup and wrote "I need
   more context. What is happening?".
 - When you list open items or proposed issues, give each item what happened, why it matters and a recommendation. If you
