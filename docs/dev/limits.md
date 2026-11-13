@@ -46,6 +46,8 @@ These limits apply to the orchestrator and to the task subagents, except where a
   the task branch in step 10. On GitHub Actions, the rerun of step 9 of [the CI wait](ci-wait.md#the-ci-wait)
   (`gh run rerun <run id> --failed`) is the only write of the task subagent.
 - If tasker stops for a quota, follow ["Quota"](quota.md#quota). Never run `tasker approve-credits`.
+- If a `tasker` run fails and the task is a possible Codex limit, do the steps of
+  [A Codex limit](quota.md#a-codex-limit). Do them before any `tasker` command that changes the task.
 - Do not install `tasker` from a task worktree, also not with `npm link`. Install `tasker` with
   `npm run install:global`, as [the Install section of README.md](../../README.md#install) says. The install runs in the
   current clone, on the commit that is checked out. The installed `tasker` runs the tickets, and an install replaces it.
