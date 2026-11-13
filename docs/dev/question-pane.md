@@ -9,8 +9,8 @@ said "pull out the rules for the question pane from the rules for the operator i
 
 ### Terms
 
-A [question pane](#a-question-pane) is a herdr pane that the operator opens next to its own pane for one
-[open question](operator-items.md#the-open-items).
+A [question pane](#a-question-pane) is a herdr pane that an opener subagent opens next to the pane of the operator for
+one [open question](operator-items.md#the-open-items).
 
 A [question session](../sessions.md) is the Claude Code session in a question pane.
 
@@ -19,6 +19,9 @@ operator's list.
 
 A [decision message](#a-question-pane) is a message with `SendMessage` from the question session to the operator. It
 gives the decision of the user.
+
+An [opener subagent](#the-prompts) is a subagent of the operator that opens one question pane and starts its question
+session.
 
 A question pane is open from its start until the operator closes it. The pane also stops being open if the user tells
 the operator that it is closed.
@@ -48,22 +51,32 @@ their arrival line and notification stay the same.
 Before each pane start or close, the operator reads this page again.
 [Start a session](operator-start.md#start-a-session) keeps its own reread rule.
 
-The operator opens the question pane next to its pane, in a folder Claude Code trusts. An operator whose kind is not
-`claude` starts no pane and tells the user.
+An operator whose kind is not `claude` starts no pane and tells the user. For each pane, the operator starts an opener
+subagent with the opener prompt of [The prompts](#the-prompts). The opener subagent opens the question pane next to the
+pane of the operator, in the local clone, a folder that Claude Code trusts. It starts the question session and ends with
+a report to the operator.
+
+While the opener subagent runs, the question pane counts as open. If the opener subagent ends with no report, the
+operator tells the user and stops the run until the user speaks. The question pane then counts as open until the user
+tells the operator that it is closed.
 
 The pane name starts with `question-` and is unique. See the
 [`agent_name_taken` fact](operator-start.md#start-a-session).
 
-If herdr does not open a pane next to the operator, the operator reports the command and error and starts no question
-session. The operator stops the run.
+If the report of the opener subagent says that no pane opened, the operator tells the user the command and the error.
+The operator stops the run.
 
-A start succeeds when the pane shows the question as its first reply, even if herdr reports an error. If no question
-appears, the operator reports the command and error, leaves the pane open, and stops the run until the user speaks.
+A pane that shows the first reply is a successful start, also after an error of herdr. The report of the opener subagent
+can say that the pane shows no first reply. Then the operator tells the user the command and the error. The operator
+leaves the pane open and stops the run until the user speaks.
 
 ### The question session
 
-Before the start, the operator gives the question session its own name and the operator's name and session ref. The
-operator also gives the item id, the sender's question number, and the full question.
+The operator gives each part of this paragraph through the opener prompt of [The prompts](#the-prompts). This also holds
+for the paragraphs that start "The operator gives all offered choices", "The operator gives relevant earlier decisions"
+and "The operator prepares first-reply text". Before the start, the operator gives the question session its own name and
+the operator's name and session ref. The operator also gives the item id, the sender's question number, and the full
+question.
 
 The operator gives all offered choices and costs, the sender's recommendation, and each draft or report path named by
 the item.
@@ -73,7 +86,8 @@ a guess.
 
 The operator prepares first-reply text that follows [The form of a reply](working-with-the-user.md#the-form-of-a-reply)
 and the [issue-link rule](working-with-the-user.md#the-issue-link-rule). The operator attributes item facts and measures
-to the sender.
+to the sender. The first-reply text holds the question, the choices and costs, the recommendation, the paths and the
+decisions so far.
 
 [Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
 newline.
@@ -98,6 +112,63 @@ For a request outside its question, the question session directs the user to the
 
 The first reply gives no fact of the question session's own. Some bullets of “A decision of the user” ask the session to
 measure or to read a rule first. These bullets hold from the second reply on.
+
+### The prompts
+
+This subsection holds the opener prompt and the session prompt of a question pane. The opener prompt is the prompt of
+the opener subagent. The session prompt is the prompt of the question session. The operator puts a value in place of
+each placeholder of the list after the opener prompt and adds no other words. The operator does not write or fill the
+session prompt.
+
+````text question-opener
+You are the opener subagent of the question pane <name> of the operator <operator name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session.
+1. Run git -C <local clone> fetch origin. If the fetch fails, go on with the last origin/main.
+2. Run git -C <local clone> show origin/main:docs/dev/question-pane.md. In its output, find the fenced block whose first line, at the start of a line, is ```text question-session. That block is the session prompt.
+3. In the session prompt, replace each placeholder with the value of the same name in the list of values. Replace <first reply> last. Change nothing inside its value, apart from the join of step 4.
+4. Join the lines of the session prompt into one line, with one space between two lines. Write each single quote of the result as '\''. Then put the result in single quotes.
+5. Run tasker show-config --repo <repo key>. Keep .sessions.kind and the entry .sessions.models.question of the output. If .sessions.kind is not claude, do no later step.
+6. Run herdr pane split <operator pane id> --direction right --cwd <local clone>. Keep the new pane id from .result.pane.pane_id of the output.
+7. Run herdr agent start <name> --kind <kind> --pane <new pane id> -- -n <name> <model flags> <quoted prompt>. If it fails, still do step 8.
+In step 7, <kind> is the kind of step 5, and <new pane id> is the pane id of step 6. <model flags> are --model and --effort with the values of the entry of step 5. With no entry, leave them out. <quoted prompt> is the result of step 4.
+8. Run herdr pane read with the new pane id. If the pane shows no first reply, run timeout 20 bash -c 'sleep 10' and read it again. Read the pane at most 6 times. If the pane shows the first reply, the start worked.
+Your final report gives the new pane id and each command with its exit code and its error. It also says whether the pane shows the first reply. Keep the report short.
+The list of values: name <name>, operator name <operator name>, operator session ref <operator session ref>. The list goes on: item id <item id>, question number <question number>, local clone <local clone>.
+The value of first reply is all the text after the last word FIRST-REPLY of this prompt. FIRST-REPLY <first reply>
+````
+
+- `<name>`: the own name of the question session. It starts with `question-` and is unique.
+- `<operator name>` and `<operator session ref>`: the own name and the session ref of the operator, as
+  [docs/sessions.md](../sessions.md) defines them.
+- `<operator pane id>`: the pane id of the operator, the value of `$HERDR_PANE_ID` in its shell.
+- `<local clone>`: the path of the local clone, as [the doc-read rule](doc-reads.md#the-doc-read-rule) uses it.
+- `<repo key>`: the repo key of the repo of the local clone, for example `codeguru42/tasker`.
+- `<item id>` and `<question number>`: the item id and the question number of the sender.
+- `<first reply>`: the first-reply text, with its lines as the operator wrote them.
+
+```text question-session
+You are the question session <name>. You discuss one open question with the user for the operator <operator name>, with the session ref <operator session ref>. The question is number <question number> of the item <item id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. Before that reply, read no file, run no command and use no AskUserQuestion tool.
+After that reply, run git -C <local clone> fetch origin. If the fetch fails, tell the user, and use the last origin/main. Then read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md. Also read the section The doc-read rule of docs/dev/doc-reads.md. Read each file with git -C <local clone> show origin/main: and its path.
+These docs give the rules of your work. Send your decision message to <operator name> with SendMessage, as the section A question pane says. FIRST-REPLY <first reply>
+```
+
+The opener subagent reads the session prompt from `origin/main` and fills it. The session prompt holds no single quote.
+Step 4 of the opener prompt writes each single quote of the first-reply text so that the shell keeps it.
+
+The two blocks are the only place of the words of the two prompts. The rules of "A question pane" stay the home of each
+rule that the blocks state. Step 3 of [Start a session](operator-start.md#start-a-session),
+[the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), [`sessions`](../config.md#sessions),
+[the doc-read rule](doc-reads.md#the-doc-read-rule) and `AGENTS.md` are also such homes. An issue that changes such a
+rule also changes the block. The blocks are an exception to [the one-home rule](rules.md#code).
+
+The question session runs with the model and the effort of the entry `sessions.models.question` of
+[`sessions`](../config.md#sessions). If `sessions.models` has no entry `question`, the rule of that section for a role
+with no entry applies.
+
+The reason: on 2026-11-13, operator-docs wrote the prompt of the question session in its own words at each pane start,
+and the words differed. The user said: "File an issue to make it a tracked doc rather than embedded in the operator
+instructions". The user then decided on an opener subagent with two prompts in a tracked doc. The user also gave a
+reason for the session prompt. A session prompt that the operator writes adds tokens to the context of the operator that
+a real use does not have.
 
 ### Send a decision
 
@@ -189,12 +260,13 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 
 | Event                                                                            | Question session                    | Operator                                                                                                     | Sender                     | Who tells whom                          |
 | -------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------- | --------------------------------------- |
-| A word of the user starts a pane or a run                                        | Not started                         | Opens a pane and starts the session                                                                          | Continues its other work   | The user tells the operator             |
+| A word of the user starts a pane or a run                                        | Not started                         | Starts the opener subagent, which opens a pane and starts the session                                        | Continues its other work   | The user tells the operator             |
 | A word of the user asks for the chat or answers in the chat                      | Not started                         | Starts no pane. Handles an answer of the user in the chat                                                    |                            | The user tells the operator             |
 | A word of the user starts a pane while a pane is open                            | Running                             | Starts nothing                                                                                               |                            | The operator tells the user             |
 | The operator is of a kind other than `claude`                                    | Not started                         | Starts nothing                                                                                               |                            | The operator tells the user             |
 | No pane opens next to the operator                                               | Not started                         | No pane exists. A run stops                                                                                  |                            | The operator tells the user             |
 | The pane does not show the question                                              | Not started, or running at a prompt | The pane stays open. A run stops                                                                             |                            | The operator tells the user             |
+| The opener subagent ends with no report                                          | Not started, or running at a prompt | The pane counts as open. A run stops                                                                         |                            | The operator tells the user             |
 | The session starts                                                               | Running. Shows the question         | The question stays open                                                                                      |                            | The question session tells the user     |
 | The decision message settles the question                                        | Waits at its prompt until the close | Sends the answer and the draft changes, closes the pane, starts the next pane of a run                       | The answer starts it again | The question session tells the operator |
 | The send of the answer fails                                                     | Waits at its prompt until the close | The question stays answered. Closes the pane. The failure rule applies                                       |                            | The operator tells the user             |
