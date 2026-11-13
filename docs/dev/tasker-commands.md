@@ -298,9 +298,28 @@ these usual run times. The times come from the tickets of this repo.
   [the facts of the installed tasker](#the-facts-of-the-installed-tasker).
 - `tasker plan`: about 1 to 2 minutes for a small issue, and about 4 to 6 minutes for a large issue.
 - `tasker refine`: about 1 to 4 minutes.
-- `tasker execute`: about 1 to 2 minutes for 2 to 4 todos, and about 8 to 15 minutes for 20 to 30 todos.
+- `tasker execute`: since #833 (2026-11-08), each todo that makes a commit runs the commands of [Check](rules.md#check)
+  before the commit. In this repo, these commands are `npm run format`, `npm run lint:fix` and `npm run check`. Before
+  #833, a run of 2 to 4 todos took about 1 to 2 minutes. A run of 20 to 30 todos took about 8 to 15 minutes. On #848
+  (landed on 2026-11-11), a run of 20 todos ended with a timeout after 11 todos.
 - `tasker verify` (`npm run check`): more than 2 minutes on a local run. On #508 (2026-11-01), a local run passed
   [the default limit of one Bash call](ci-wait.md#the-ci-wait). In the `Check` workflow, the same command takes about 3
   to 4 minutes.
 - `tasker review`: about 25 seconds to 2 minutes.
-- A docs ticket: about 1 to 2 minutes for each of plan, refine and execute.
+- A docs ticket: about 1 to 2 minutes for each of plan and refine. Since #833, an execute run of 1 todo took about 2
+  minutes on #844 and about 7 minutes on #845 (both landed on 2026-11-09). On #851 (landed on 2026-11-11), an execute
+  run of 5 todos took about 21 to 23 minutes.
+
+Since #833, an execute run of a plan with many todos can reach the deadline of `limits.executeTimeoutMin` before all
+todos are done. This timeout is expected. The run fails with an error that ends with `timed out after <n> min`, and the
+task goes to `failed`. A done todo stays done, as [Execute](tasks.md#execute) of `docs/dev/tasks.md` says. On #848, one
+`tasker retry` ran the other todos.
+
+If `tasker execute` fails with a timeout, run `tasker retry <issue>` one time for that run. Run it in the background, as
+[the command rules](#the-command-rules) say for a long command. The retry runs `tasker execute` again with a new
+deadline, and a done todo gets no turn. If the execute run of the retry also fails with a timeout,
+[stop](limits.md#the-answer-wait-rule). Otherwise, run `tasker show <issue>` after the retry. Follow the commands that
+it prints.
+
+The user can raise `limits.executeTimeoutMin` in the configuration file of tasker. [`limits`](../config.md#limits) of
+`docs/config.md` gives the default of 90 minutes.
