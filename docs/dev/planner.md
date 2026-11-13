@@ -922,15 +922,25 @@ likely edit the same file", which name the planner.
   link. The reason: such a link can stall a ticket while the milestone of its blocker makes no progress. The milestone
   of the blocked ticket can often land its own tickets first.
 
-- Two issues that edit one shared doc in different sections get no blocked-by link for that doc, for example two
-  sections of `docs/dev/tasks.md`. A link stays for a real need of code or docs, as the bullet "The planner links two
-  issues when one issue needs ..." says. A link also stays for a shared file where both issues edit the same place, for
-  example one table or one list. The bullet "A ticket that changes the form or the layout of a file goes early in its
-  chain" wins over this bullet. The bullet "A ticket that renames a doc ..." also wins over this bullet. The table of
-  the needs and the likely files of each issue names the section of each shared doc that an issue edits. The planner
-  names the risk of a conflict in the chat with the user. The planner prefers parallel lines of tickets over one chain.
-  The reason: the user wants the tickets of a milestone to run in parallel where possible. On 2026-10-18, for M13, the
-  user chose two parallel lines over one chain of six tickets.
+- Two issues that edit only different places of one shared doc get no blocked-by link for that doc. The shared-file
+  bullet of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) defines a doc and its different places. A link
+  stays for a real need of code or docs. The bullet that starts "The planner links two issues" gives such a link. A link
+  also stays where both issues edit the same place of the doc.
+
+  The bullet that starts "A ticket that changes the form or the layout of a file" wins over this bullet. The bullet "A
+  ticket that renames a doc ..." also wins over this bullet. The table of the needs and the likely files names the
+  places of each shared doc that each issue edits. The planner judges the places of each issue from its Requirements
+  section and its Docs section. This judgment is open on purpose.
+
+  The planner names the risk of a conflict in the chat with the user. The planner prefers parallel lines of tickets over
+  one chain. The reason: the user wants the tickets of a milestone to run in parallel where possible. On 2026-10-18, for
+  M13, the user chose two parallel lines over one chain of six tickets.
+
+  On 2026-11-12, the user widened this bullet from two sections to the different places of the shared-file bullet.
+  Before that day, a link stayed for two entries of one list. On 2026-11-12, planner-docs added the link "#876 blocked
+  by #872" for two entries of the index of `AGENTS.md`. It also added the link "#871 blocked by #858" for two bullets of
+  "The body of an issue". #828 and #769 also edit two entries of that index, with no link.
+
 - A ticket that changes the form or the layout of a file goes early in its chain. Each open ticket of its milestone that
   edits that file is blocked by it, so that each of them writes the new form. This bullet gives the direction of the
   link of the bullet "The planner also links two issues that will likely edit the same file". The planner adds each
