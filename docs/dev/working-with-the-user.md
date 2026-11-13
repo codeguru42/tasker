@@ -349,7 +349,9 @@ link to open an issue from a reply.
 - Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at
   once. Say when the gap starts, from the code on `origin/main` and from the machine.
   [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the steps for
-  a finding of a review.
+  a finding of a review. On 2026-11-07, with no measure, planner-m16 told the user that a security gap for three secret
+  files of `pi` starts after #726 lands. A read of `origin/main` for the draft of #814 showed that the gap was already
+  live for the runs of `claude-code` and `codex`.
 - Each piece of work that waits becomes an issue in its later milestone, as
   [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md says. [issues.md](issues.md) gives the
   steps to file the issue. An edge case that a ticket subagent of a planner decided as "later" with no proposed later
