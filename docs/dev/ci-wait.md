@@ -153,13 +153,14 @@ issue of a failed CI run gets the priority `P0`. The priority rule of
 priority. [The project board](issues.md#the-project-board) gives the commands of the priority. The repo has the label
 `broken-test`.
 
-1. File a new issue: `gh issue create --title "<title>" --body-file <file> --milestone "<milestone in progress>"`. The
-   milestone in progress is the current milestone of ["Pick the tickets"](pick-the-tickets.md#pick-the-tickets). If the
-   verdict is broken, also add `--label broken-test` to the command. The body gives the run URL, the failed tests, the
-   verdict and the evidence of the task subagent (the result of the rerun and of the local run). The body asks for the
-   cause and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists,
-   and [the failure rule](limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task stays in
-   `landed`.
+1. The orchestrator makes the body file in its own step. File a new issue:
+   `gh issue create --title "<title>" --body-file <absolute path of the body file> --milestone "<milestone in progress>"`.
+   The milestone in progress is the current milestone of ["Pick the tickets"](pick-the-tickets.md#pick-the-tickets). If
+   the verdict is broken, also add `--label broken-test` to the command. The body gives the run URL, the failed tests,
+   the verdict and the evidence of the task subagent (the result of the rerun and of the local run). The body asks for
+   the cause and a fix. It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue
+   exists, and [the failure rule](limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task
+   stays in `landed`.
 
    If `gh issue create` worked, set the priority `P0` on the card of the new issue. First, wait for the card:
    `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`.
