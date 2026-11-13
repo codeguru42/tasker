@@ -190,12 +190,11 @@ Each time that the operator does this section, it first reads `docs/dev/operator
 [the doc-read rule](doc-reads.md#the-doc-read-rule) says. Then it does the steps of the text that it read.
 [Start a session](#start-a-session) gives the reason and the rule of the new text.
 
-The operator stops a session only on a request of the user. [A question pane](operator-conversations.md#a-question-pane)
-gives the close of a question pane. In a handoff of an orchestrator or a follow-up planner, the rule of the user of
-2026-10-25 in [The end of a handoff](handoff.md#the-end-of-a-handoff) is that request, for step 4 of
-[A handoff](#a-handoff). The operator closes only a tab that it opened in its own session, or a tab that an earlier
-operator of its slug opened. In a handoff, the operator also stops a session in a tab that it did not open, for example
-a tab that the user opened.
+The operator stops a session only on a request of the user. [A question pane](question-pane.md#a-question-pane) gives
+the close of a question pane. In a handoff of an orchestrator or a follow-up planner, the rule of the user of 2026-10-25
+in [The end of a handoff](handoff.md#the-end-of-a-handoff) is that request, for step 4 of [A handoff](#a-handoff). The
+operator closes only a tab that it opened in its own session, or a tab that an earlier operator of its slug opened. In a
+handoff, the operator also stops a session in a tab that it did not open, for example a tab that the user opened.
 
 In a handoff of the operator, the old operator closes its own tab with no request of the user. This sentence wins over
 two rules for the own tab of the old operator. The first rule is "The operator closes only a tab that it opened in its
@@ -317,10 +316,10 @@ These steps of the close need no other word of the user:
 - The GitHub milestone closure of a milestone with no work left
 
 The user still gives each approval that only the user gives: new scope, a security decision, a permission prompt and a
-failed operation. [A question pane](operator-conversations.md#a-question-pane) holds the start of the close. While a
-pane is open, the operator starts neither its handoff nor the close, and it tells the user when either is due. The state
-table of that section has the row "A handoff or a close of the milestone is due". That row wins over the rule that the
-steps of the close need no other word of the user.
+failed operation. [A question pane](question-pane.md#a-question-pane) holds the start of the close. While a pane is
+open, the operator starts neither its handoff nor the close, and it tells the user when either is due. The state table
+of that section has the row "A handoff or a close of the milestone is due". That row wins over the rule that the steps
+of the close need no other word of the user.
 
 Use this order only for the close of a milestone. A handoff, the end of the initial planning and each other stop of a
 session keep their own procedures. During the close, no session starts a new session of a role or a next milestone on
