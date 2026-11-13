@@ -35,7 +35,8 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    `gh api -X POST repos/codeguru42/tasker/milestones -f title='<title>' -F description=@<file>`. To change a milestone,
    it runs `gh api -X PATCH repos/codeguru42/tasker/milestones/<number>` with `-f title='<title>'`,
    `-F description=@<file>` or both. `<file>` is the path of the draft file. If the command fails, the failure rule
-   applies, and the operator starts no initial planner.
+   applies, and the operator starts no initial planner. A change of the description of a held milestone keeps its hold
+   record, as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
 
    For a denied create or change command, the operator follows
    [A denied command of the operator](#a-denied-command-of-the-operator). If the command ran, the operator goes on as
