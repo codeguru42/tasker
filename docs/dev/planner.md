@@ -55,9 +55,11 @@ The operator starts the follow-up planner after the initial planning.
   [its operator](../operator.md) as an item, in the form of
   [The form of an item](operator-items.md#the-form-of-an-item).
   [The review loop of a draft](#the-review-loop-of-a-draft) says which drafts wait.
-- At the end of a milestone, the follow-up planner does steps 3 and 5 of
-  [The close of a milestone](operator-start.md#the-close-of-a-milestone). [Its operator](../operator.md) tells it when
-  each step starts. After the stop of the orchestrator, the follow-up planner tells that session nothing.
+- At the end of a milestone, the follow-up planner works in the order of
+  [The close of a milestone](operator-start.md#the-close-of-a-milestone).
+  [The close duties of the follow-up planner](#the-close-duties-of-the-follow-up-planner) give its work. After the end
+  of the role of the operator, it talks to the user directly, as [The operator](working-with-the-user.md#the-operator)
+  of working-with-the-user.md says.
 - The ticket subagent of each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner
   puts the path in the item, not the draft.
 - For a draft that waits for a decision of the user, [The escape hatch](#the-escape-hatch) says what the answer of the
@@ -66,6 +68,43 @@ The operator starts the follow-up planner after the initial planning.
 The reason for the folder: the drafts go in `/tmp`, so they do not fill the `Documents` folder of the user, and the
 system deletes them. The limit: a reboot deletes the open drafts, and the follow-up planner then starts a new ticket
 subagent for each of them.
+
+### The close duties of the follow-up planner
+
+The planner starts its final rounds only after the end of the role of the operator. It waits for the report of the
+ticket subagent of each draft before it ends its rounds. It handles each finding as the docs say: a reviewed post, a
+change of an open issue or a drop. It gets each decision for the user alone before the action that needs it. It runs its
+rounds of [Session-review rounds](session-review-rounds.md) until a round finds nothing new.
+
+The planner keeps each open decision about later work in its last report to the user. An open item about work outside
+the milestone does not hold the end of the role of the planner. The planner makes no post and no change of scope without
+authority, only to empty the list of open items.
+
+After its rounds, the planner does the reads and the GitHub milestone closure of [Milestones](issues.md#milestones).
+Then it gives the user a last report directly. The report gives these parts:
+
+- The rounds of the planner
+- The handled findings
+- The open decisions about later work
+- The URL of the milestone
+- The result of the read of the milestone after the write
+
+After that report, the planner ends its role.
+
+If a round of the planner or a send of a finding fails, the rounds of the planner end. The close then stops at this
+stage. The planner tells the user about the failure directly. It keeps the drafts and the state of the milestone for a
+later recovery. A failed round is not a round that finds nothing new.
+
+The planner handles a proposal that it gets in the close in this way:
+
+- An accepted proposal follows its post rules.
+- A changed proposal goes again through the review of a draft or a refine that it needs.
+- A rejected or dropped proposal gets its outcome with no post.
+- A proposal about later work can still have no answer after the end of the role of the operator. Such a proposal stays
+  in the last report of the planner. It does not hold the end of the role of the planner.
+- This rule of the planner never lets the operator move its own open question to the planner. The operator still passes
+  its question gate.
+- New work of the milestone still holds the GitHub milestone closure, as [Milestones](issues.md#milestones) says.
 
 ## The order of the work
 
@@ -539,8 +578,9 @@ Each planner goes on with the other drafts.
 
 The post of a draft by each planner with no approval of the user does not cover these rules:
 
-- The close of a milestone, in [Milestones](issues.md#milestones). The escape hatch does not cover it. It stays with the
-  user.
+- The close of a milestone, in [Milestones](issues.md#milestones). The start of
+  [The close of a milestone](operator-start.md#the-close-of-a-milestone) gives the authority for the GitHub milestone
+  closure. The escape hatch does not cover it.
 - The start of a milestone and the question about the kinds of GitHub objects, in
   [The order of the work](#the-order-of-the-work). The escape hatch does not cover them. They stay with the user.
 - A comment on an issue. It is not a draft of this section, so it still needs the approval of the user.
