@@ -42,7 +42,8 @@ finds the cause of the failure. Then the task subagent does the first case of th
 
 If a command fails or the task is in another state, run `tasker show <issue>` and follow the commands that it prints. If
 the task is a possible Codex limit, do the steps of [A Codex limit](quota.md#a-codex-limit) before a command that
-`tasker show <issue>` prints.
+`tasker show <issue>` prints. For a timeout of `tasker execute`, follow the paragraph of
+[the run times](tasker-commands.md#the-run-times) that starts "If `tasker execute` fails with a timeout".
 
 To find the next command, use these:
 
