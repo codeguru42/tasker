@@ -529,13 +529,25 @@ link to open an issue from a reply.
   A read of code or docs goes to a subagent. A `gh` command, a `tasker` command, a move on the project board and a draft
   also go to a subagent. This includes a read of the quota with `tasker show-quota`.
 
-  The main session calls only AskUserQuestion, SendMessage and Agent, with two exceptions. First, the main session does
-  its start reads itself. For example, it reads [The issue-link rule](#the-issue-link-rule) that `AGENTS.md` names.
+  The main session calls only AskUserQuestion, SendMessage and Agent, with three exceptions. First, the main session
+  does its start reads itself. For example, it reads [The issue-link rule](#the-issue-link-rule) that `AGENTS.md` names.
 
   Second, the main session does a step that needs a tool that a subagent does not have. If a subagent lacks a tool that
   a step needs, it tells the main session. The main session then does only that step. For example, it creates a
   scheduled resume job because [Do not use these](quota.md#do-not-use-these) says that a subagent cannot make a job. A
   subagent does each other part of a watch, a monitor or a scheduled job that the user asks for.
+
+  Third, the main session runs a call that the classifier of auto mode denied to its subagent. It runs the call only on
+  a direct word of the user. The subagent stops and reports the exact call, the exact text of the denial and the purpose
+  of the call. The main session gives the user these facts, as
+  [the tool-block rule](tasker-commands.md#the-tool-block-rule) says for the orchestrator. The main session runs that
+  exact call, word for word, and in no other form.
+
+  A rule of the docs can put a read right before the call, in the same session. Then the main session also runs that
+  read itself, right before the call. A subagent still does each other step of the work. The reason: on 2026-11-11 and
+  2026-11-12, the classifier denied a delete with a lease and two posts of issues to subagents. The same calls passed in
+  the main session, right after a direct word of the user. An example of such a word is "go ahead and post the issues
+  here".
 
   For each request of the user, the main session starts a subagent. Its prompt gives the goal, the facts and the sources
   of the work. The main session then tells the user the result in a few sentences.
