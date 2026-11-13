@@ -426,6 +426,21 @@ orchestrator.
   and after the edit. The two counts differ only by the rows that the issue adds or removes. On #738 (2026-11-04), new
   text went into the wrong column of a row with similar cells, and a cell lost the words "and starts the new sender". On
   #739 (2026-11-04), a changed row of "Common mistakes" of the session-review skill became a new row beside the old row.
+- An issue can ask that a doc section holds its numbered requirements. Ask the plan to write the text of each
+  requirement paragraph into its todo, from the words of the issue. Also ask the plan to compare that text with the
+  issue, requirement by requirement. The compare is a judgment of the plan session, open on purpose. If the section has
+  no requirement numbers, ask the plan to link each reference such as "requirement 4.8" to its rule. This also holds in
+  a table cell, and it wins over the word-for-word copy of the hint that starts "If the issue gives a table that a doc
+  gets".
+
+  On #872 (2026-11-12), the issue asked for each paragraph of a requirement as its own paragraph, but it did not say
+  "word for word". Plan v3 gave a list for each requirement, but the execute run still left out small rules of the
+  issue. Examples are the words "that it started", the last sentence of a requirement and a link to a measured fact. Two
+  table cells also kept the words "requirement 4.8" and "requirement 4.1", but the doc has no numbered requirements.
+  Review 1 did not find these gaps, but [the diff read](run-one-ticket.md#the-diff-read) did. One run of
+  [the add-work rule](run-one-ticket.md#the-add-work-rule) fixed them, at the cost of one more plan, execute, verify and
+  review run.
+
 - A ticket can give doc text word for word in its Docs section. Then ask the plan for a search step in each todo that
   adds or changes such text. The step runs in the execute run, after the edits and before `npm run format`. In the task
   worktree, the step searches the doc of each Docs item of the todo. It searches for each piece of the new text of that
