@@ -465,9 +465,38 @@ stays open.
 
 ### The open-question rule
 
-Before the start of a ticket, the orchestrator reads the issue with `gh issue view <number> --json body,comments`. In
-the comments, only a comment of the account of the orchestrator counts, as
-[the issue check](plan-review.md#the-issue-check) says. If the command fails,
+The orchestrator reads the issue of a ticket right before the start, with
+`gh issue view <number> --json body,comments,updatedAt`. It does this read only for a ticket that can start now. In the
+comments, only a comment of the account of the orchestrator counts, as [the issue check](plan-review.md#the-issue-check)
+says. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and that ticket does not start.
+
+A ticket that can start now is a ticket with each of these facts:
+
+- A slot is free, or the orchestrator keeps a slot for the ticket, as [the stacking rule](#the-stacking-rule) says. The
+  ticket gets that slot.
+- The ticket comes next for the slot in the order of Pick the tickets. The tickets that the third item or a kept result
+  of a read stops do not count for this order.
+- Each other rule of the orchestration pages that needs no read of the issue lets the ticket start. Examples are the
+  stacking rule, [A ticket on hold](#a-ticket-on-hold), the pi gate and the ban of
+  [A failed CI run](ci-wait.md#a-failed-ci-run).
+
+Until a ticket can start now, the orchestrator reads no body and no comment of its issue for its start. This also holds
+at each read of the board. The order of Pick the tickets uses only the board and the kept results of a read, for example
+the field `Priority`. This also holds for the judgment of a live security gap in the bullet that starts "A ticket that
+closes a live security gap". Other rules can still read an issue at other times, for example A ticket on hold at the end
+of a hold. The reason: a read ahead of the start costs tokens, and its result can wait for hours or days.
+
+Right after the read, the orchestrator applies each rule that needs the text of the issue. Examples are the bullet of a
+manual-steps issue, the shared-file bullet, the move rule, [the link offer](#the-link-offer) and this rule.
+[The prompt of a task subagent](#the-prompt-of-a-task-subagent) also takes the links of its comments from this read.
+Each file that the shared-file bullet counts from the issue comes from this read. The compare before the start of
+[the overlap rule](land-the-work.md#the-overlap-rule) also uses these files.
+
+A rule that needs the text of the issue can stop the start, for example the shared-file bullet. Then the orchestrator
+keeps the result of the read and the value of `updatedAt`. At each read of the board and before each later start of the
+ticket, the orchestrator runs `gh issue view <number> --json updatedAt -q .updatedAt`. If the output is the kept value,
+the orchestrator keeps the result, and a start uses it with no new read. If the output differs, the orchestrator drops
+the kept result, and the next start reads the issue again. If the command fails,
 [the failure rule](limits.md#the-failure-rule) applies, and that ticket does not start.
 
 An issue can hold an open question that stops its start. The note of

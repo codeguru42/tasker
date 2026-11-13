@@ -33,7 +33,8 @@ The board watch rule has these parts:
 - The prompt of the job starts with "Board watch:". The rest of the prompt says: read the board, as
   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
 - When the job fires, the orchestrator reads the board as the prompt says. It starts each ticket that the rules of Pick
-  the tickets allow. The job changes none of these rules.
+  the tickets allow. It reads the issue of a ticket only right before its start, as
+  [the open-question rule](pick-the-tickets.md#the-open-question-rule) says. The job changes none of these rules.
 - A read by the job is a read of the board that does not come at a landing. The general rule of the bullet "Each time a
   ticket lands, read the board again" of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) applies to it.
 - Each rule that stops a start wins over the job. Examples are the ban of [A failed CI run](ci-wait.md#a-failed-ci-run),
