@@ -58,8 +58,8 @@ The operator pages are `docs/operator.md` and the pages of this list, "The pages
   session".
 - [docs/dev/operator-items.md](dev/operator-items.md): "The form of an item", "The open items", "The answer" and "The
   states of an item".
-- [docs/dev/operator-conversations.md](dev/operator-conversations.md): "A side conversation", "The word of the user" and
-  "A question pane".
+- [docs/dev/operator-conversations.md](dev/operator-conversations.md): "A side conversation" and "The word of the user".
+- [docs/dev/question-pane.md](dev/question-pane.md): "A question pane".
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
   topic handoff" and "The hold of the items".
