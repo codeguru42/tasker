@@ -1,6 +1,7 @@
 # Quota jobs
 
-The readers of this page are the orchestrator, and the task subagent for "What the task subagent does".
+The readers of this page are the orchestrator, and the task subagent for "What the task subagent does" and "A Codex
+limit".
 
 ## Quota
 
@@ -483,6 +484,92 @@ An answer of the user to the question of a task has one of these outcomes:
   [the defer rule](pick-the-tickets.md#the-defer-rule) with its delete of the jobs. The task leaves the pi wait.
 - Words that pick no choice: the question stays open, as [The answer](operator-items.md#the-answer) says. The task stays
   in the pi wait.
+
+### A Codex limit
+
+A Codex run can stop at a usage limit whose form tasker does not know. The task then ends as `failure`. These steps
+capture a real stop for the issue that adds the Codex quota outcome. No session forces a limit or runs extra work to
+reach one.
+
+A possible Codex limit is a task in `failed` whose `repo:` has provider `codex`. Its `failed in:` is `planning`,
+`refining`, `executing`, or `reviewing`. Its `error:` can come from a usage limit. Test the provider with
+`tasker show-config --repo <repo> | jq -r '.assistant.provider'`. A plausible error can contain `limit`, `quota`,
+`rate`, `usage`, or `429`. The error `<phase> timed out after <N> min` is also possible because Codex can wait until the
+deadline. No one has measured this case. The task subagent makes this judgment. After the orchestrator answers “no,” the
+report is no longer a possible Codex limit for that failure.
+
+#### The task subagent
+
+Before any `tasker` command that changes the task, keep the `repo:`, `attempt:`, `failed in:`, and `error:` lines from
+`tasker show <issue>`. Run `date -u +%FT%TZ` and `codex --version`. Keep each output, or the name of a failed read. Send
+the lines and outputs to the orchestrator with the words “a possible Codex limit.” Wait under the
+[answer-wait rule](limits.md#the-answer-wait-rule). The task stays in `failed`.
+
+These steps take priority over retry instructions in [verify failures](verify-failures.md),
+[tasker commands](tasker-commands.md), and the comeback rule of [Run one ticket](run-one-ticket.md#the-comeback-rule). A
+retry can append a new run to the same transcript. On the orchestrator’s answer, follow the existing “If a command
+fails” paragraph, wait, or run `tasker retry <issue>`, as directed. Keep the slot while waiting.
+
+#### The orchestrator's data root and questions
+
+1. Read the data root with `tasker show-config | jq -r '.dataRoot'`.
+2. Send the user one item with two questions. The first question asks whether the run stopped at a Codex usage limit.
+   Give these choices: (a) yes, (b) no, and (c) not known.
+3. The second question asks permission to read the failed run's transcript. Give the transcript folder path, the
+   applicable file-selection command, and the `jq` command below. Its choices are (a) yes and (b) no. Give the report's
+   lines and outputs in the item.
+4. If the data-root read fails, name the failed read in the item and ask only the first question. Such a capture has no
+   transcript copy.
+
+#### The permitted transcript read
+
+Use `<dataRoot>/artifacts/<issue slug>/attempt-<N>/transcripts/`, with `<N>` from `attempt:`. Form the issue slug by
+replacing each run of characters other than letters and digits with `-`. For example, `codeguru42/tasker#837` becomes
+`codeguru42-tasker-837`.
+
+Use `plan-v*.jsonl` for `planning` or `refining`, `execute-v*.jsonl` for `executing`, and `review-*.jsonl` for
+`reviewing`. Select the newest file of its kind with `ls -t <folder>/execute-v*.jsonl | head -1`, substituting the right
+pattern.
+
+Make the copy with this exact filter:
+
+```bash
+jq -c -s '(map(.type) | rindex("thread.started") // 0) as $i | .[$i:][] | select(((.type | tostring) | startswith("item.") | not) or ((.item.type? // "") | IN("agent_message", "reasoning", "command_execution", "file_change", "mcp_tool_call", "web_search", "todo_list") | not))' <file>
+```
+
+The copy begins at the last `thread.started` and keeps every other event, including an item of an unknown type. Remove
+personal data, such as a user-name path, email address, or account id. The orchestrator judges what else is personal
+data. State whether the copy ends with `error` or `turn.failed`.
+
+If the copy does not end with either event, state that it can come from an earlier appended run. In that case, `error:`
+is the only stop record. If either command fails or prints no line, tell the user and make no copy by other means.
+
+#### The answers
+
+| First answer             | Second answer                                    | Outcome                                                                                                                                               |
+| ------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (b) no                   | Any                                              | No capture. Tell the task subagent to follow “If a command fails” in `docs/dev/verify-failures.md`. This failure is no longer a possible Codex limit. |
+| (a) yes or (c) not known | (a) yes                                          | Read the copy as above. Keep it with the report lines and outputs in the capture.                                                                     |
+| (a) yes or (c) not known | (b) no                                           | Keep only the report lines and outputs in the capture.                                                                                                |
+| (a) yes or (c) not known | No second question after a failed data-root read | Keep only the report lines and outputs, and name the failed read.                                                                                     |
+
+A “no” to the first question ends the item without a second answer. Every other row needs an answer to each question
+presented. Until then, read nothing and tell the task subagent nothing. An answer that picks no choice leaves its
+question open. The task stays in `failed`.
+
+#### The capture and the next step
+
+Make the capture a proposed comment with the date, `codex --version` output, first user answer, report lines, and any
+permitted copy in a code block. If an open issue adds the Codex quota outcome, propose the comment there; on 2026-11-11
+that issue was #662. Otherwise send the capture to `planner-<slug>` as a proposed issue.
+
+If the issue-state read fails, post nothing, tell the user, and keep the capture only in the item. Show the comment
+draft in a new item. Post only after user approval, using any changes the user requests. If the user rejects or drops
+it, post nothing and keep it only in the item.
+
+Do not edit a document to claim the form of the stop; the later quota-outcome issue owns that work. Keep this task in
+`failed`. The reset time is unknown. After the answers, tell the task subagent to wait. Tell it to run
+`tasker retry <issue>` only on the word of the user. Say this in the capture item.
 
 ### Delete the job
 
