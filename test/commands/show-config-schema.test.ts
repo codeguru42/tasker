@@ -166,7 +166,7 @@ describe("show-config-schema", () => {
     expect(byPath.get("repos.<key>.assistant.trustedExtensions")?.description).toMatch(/only pi/i);
     expect(byPath.get("repos.<key>.assistant.models.plan.model")?.description).toMatch(/provider/i);
     expect(byPath.get("repos.<key>.sessions")?.description).toMatch(
-      /operator.*planner.*orchestrator.*question.*models/i,
+      /operator.*planner.*orchestrator.*models of question sessions/i,
     );
     expect(byPath.get("repos.<key>.sessions.models.operator.model")?.description).toMatch(/provider/i);
     expect(byPath.get("repos.<key>.issueTracker.site")?.description).toMatch(/site of the tracker/i);

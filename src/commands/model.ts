@@ -71,7 +71,7 @@ export const model: RegisterCommand = (program, io) => {
     .addOption(
       new Option(
         "--role <role>",
-        "The role to print or to set: an assistant role (plan, execute, review) or a session role (operator, planner, orchestrator)",
+        "The role to print or to set: an assistant role (plan, execute, review) or a session role (operator, planner, orchestrator, question)",
       ).choices(ROLES),
     )
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)

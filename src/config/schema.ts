@@ -294,6 +294,7 @@ const SessionModelsSchema = z.strictObject({
   operator: SessionRoleSchema.optional().describe("The model and effort for operator sessions."),
   planner: SessionRoleSchema.optional().describe("The model and effort for planner sessions."),
   orchestrator: SessionRoleSchema.optional().describe("The model and effort for orchestrator sessions."),
+  question: SessionRoleSchema.optional().describe("The model and effort for question sessions."),
 });
 
 // The session roles, in the order of the report of tasker model.
@@ -329,7 +330,7 @@ const RepoSchema = z
     issueTracker: IssueTrackerSchema.describe("The issue tracker for this repo."),
     assistant: AssistantSchema.describe("The assistant and role models for this repo."),
     sessions: SessionsSchema.default({ kind: "claude", models: {} }).describe(
-      "The agent kind and models of operator, planner, and orchestrator sessions.",
+      "The agent kind and models of operator, planner, and orchestrator sessions, and the models of question sessions.",
     ),
     verify: VerifySchema.describe("The commands and environment for the verify phase."),
     bootstrap: BootstrapSchema.default({ commands: [], env: [] }).describe(
