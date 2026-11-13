@@ -4,9 +4,11 @@ Each assistant session reads this index first. It does not follow each link of t
 session of a role reads the role index of its role and the start docs that the index names. The task subagent of a
 ticket reads the docs that its prompt names. Each other session, for example a session that tasker starts, reads the
 docs that its task needs. A session that works with the user and has no role also reads
-[the issue-link rule](docs/dev/working-with-the-user.md#the-issue-link-rule) at its start. After its start, a session
-reads another doc only for a step of its work that needs the doc. A link that the session follows for a step is a doc
-read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
+[the issue-link rule](docs/dev/working-with-the-user.md#the-issue-link-rule) and
+[the tracked-change rule](docs/dev/rules.md#changes) at its start.
+
+After its start, a session reads another doc only for a step of its work that needs the doc. A link that the session
+follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 
 - [docs/orchestrator.md](docs/orchestrator.md): the role index of the orchestrator, with the terms of the orchestration,
   the request rule, the start docs of the orchestrator and the index of the orchestration pages.
