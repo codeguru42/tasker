@@ -495,29 +495,30 @@ A possible Codex limit is a task in `failed` whose `repo:` has provider `codex`.
 `refining`, `executing`, or `reviewing`. Its `error:` can come from a usage limit. Test the provider with
 `tasker show-config --repo <repo> | jq -r '.assistant.provider'`. A plausible error can contain `limit`, `quota`,
 `rate`, `usage`, or `429`. The error `<phase> timed out after <N> min` is also possible because Codex can wait until the
-deadline. No one has measured this case. The task subagent makes this judgment. After the orchestrator answers “no,” the
+deadline. No one has measured this case. The task subagent makes this judgment. After the orchestrator answers "no," the
 report is no longer a possible Codex limit for that failure.
 
 #### The task subagent
 
 Before any `tasker` command that changes the task, keep the `repo:`, `attempt:`, `failed in:`, and `error:` lines from
 `tasker show <issue>`. Run `date -u +%FT%TZ` and `codex --version`. Keep each output, or the name of a failed read. Send
-the lines and outputs to the orchestrator with the words “a possible Codex limit.” Wait under the
+the lines and outputs to the orchestrator with the words "a possible Codex limit." Wait under the
 [answer-wait rule](limits.md#the-answer-wait-rule). The task stays in `failed`.
 
 These steps take priority over retry instructions in [verify failures](verify-failures.md),
 [tasker commands](tasker-commands.md), and the comeback rule of [Run one ticket](run-one-ticket.md#the-comeback-rule). A
-retry can append a new run to the same transcript. On the orchestrator’s answer, follow the existing “If a command
-fails” paragraph, wait, or run `tasker retry <issue>`, as directed. Keep the slot while waiting.
+retry can append a new run to the same transcript. On the orchestrator's answer, follow the existing "If a command
+fails" paragraph, wait, or run `tasker retry <issue>`, as directed. Keep the slot while waiting.
 
 #### The orchestrator's data root and questions
 
 1. Read the data root with `tasker show-config | jq -r '.dataRoot'`.
 2. Send the user one item with two questions. The first question asks whether the run stopped at a Codex usage limit.
-   Give these choices: (a) yes, (b) no, and (c) not known.
-3. The second question asks permission to read the failed run's transcript. Give the transcript folder path, the
-   applicable file-selection command, and the `jq` command below. Its choices are (a) yes and (b) no. Give the report's
-   lines and outputs in the item.
+   The choices are (a) yes, (b) no and (c) not known.
+3. The second question asks for the permission to read the transcript of the failed run. It gives the path of the
+   transcript folder of the attempt and the two commands of
+   [The permitted transcript read](#the-permitted-transcript-read). The choices are (a) yes and (b) no. The item gives
+   the lines and the outputs of the report.
 4. If the data-root read fails, name the failed read in the item and ask only the first question. Such a capture has no
    transcript copy.
 
@@ -548,12 +549,12 @@ is the only stop record. If either command fails or prints no line, tell the use
 
 | First answer             | Second answer                                    | Outcome                                                                                                                                               |
 | ------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| (b) no                   | Any                                              | No capture. Tell the task subagent to follow “If a command fails” in `docs/dev/verify-failures.md`. This failure is no longer a possible Codex limit. |
+| (b) no                   | Any                                              | No capture. Tell the task subagent to follow "If a command fails" in `docs/dev/verify-failures.md`. This failure is no longer a possible Codex limit. |
 | (a) yes or (c) not known | (a) yes                                          | Read the copy as above. Keep it with the report lines and outputs in the capture.                                                                     |
 | (a) yes or (c) not known | (b) no                                           | Keep only the report lines and outputs in the capture.                                                                                                |
 | (a) yes or (c) not known | No second question after a failed data-root read | Keep only the report lines and outputs, and name the failed read.                                                                                     |
 
-A “no” to the first question ends the item without a second answer. Every other row needs an answer to each question
+A "no" to the first question ends the item without a second answer. Every other row needs an answer to each question
 presented. Until then, read nothing and tell the task subagent nothing. An answer that picks no choice leaves its
 question open. The task stays in `failed`.
 
@@ -567,9 +568,10 @@ If the issue-state read fails, post nothing, tell the user, and keep the capture
 draft in a new item. Post only after user approval, using any changes the user requests. If the user rejects or drops
 it, post nothing and keep it only in the item.
 
-Do not edit a document to claim the form of the stop; the later quota-outcome issue owns that work. Keep this task in
-`failed`. The reset time is unknown. After the answers, tell the task subagent to wait. Tell it to run
-`tasker retry <issue>` only on the word of the user. Say this in the capture item.
+Do not edit a document to claim the form of the stop; the later quota-outcome issue owns that work. An answer of (b) no
+is not a capture, so this paragraph does not apply to that answer. For a capture, keep this task in `failed`. The reset
+time is unknown. After the answers of a capture, tell the task subagent to wait. Tell it to run `tasker retry <issue>`
+only on the word of the user. Say this in the capture item.
 
 ### Delete the job
 
