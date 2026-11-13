@@ -53,7 +53,7 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   rule and the stuck-task rule.
 - [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each task subagent", "Schedule a job when a
   task subagent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job",
-  "What the task subagent does", "A pi stop", "The pi wait", "Delete the job" and "Do not use these".
+  "What the task subagent does", "A pi stop", "The pi wait", "A Codex limit", "Delete the job" and "Do not use these".
 - [docs/dev/handoff.md](docs/dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
   topic handoff" and "The hold of the items".
