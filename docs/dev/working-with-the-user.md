@@ -84,8 +84,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   The hold record of the GitHub milestone M24 stood at the end of its description. Rule 2 of
   [A milestone hold](#a-milestone-hold) puts the hold record at the start of the description. Rule 3 makes the word of
   the user for the hold the approval of the write of the hold record. The operator asked the user whether to move the
-  record. On 2026-11-13, in the [question pane](operator-conversations.md#a-question-pane) question-m24-record, the user
-  said: "yes...this shouldn't even be a question for me to decide."
+  record. On 2026-11-13, in the [question pane](question-pane.md#a-question-pane) question-m24-record, the user said:
+  "yes...this shouldn't even be a question for me to decide."
 
 - A question can have a clear recommendation, and the only effect of its answer can be a harmless cleanup. Then the
   question is not a question for the user. The session does the cleanup and does not ask the user. In its next reply or
@@ -109,10 +109,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   On 2026-11-13, the description of the GitHub milestone M24 held two hold texts. The hold record of rule 2 of
   [A milestone hold](#a-milestone-hold) stood at its start, and an older hold text stood after it. planner-docs named
   the older text as a side fact in item planner-docs-247, and operator-docs then asked the user in the
-  [question pane](operator-conversations.md#a-question-pane) question-m24-old-record. The user said: "clean up the
-  description." The decision message of the question session also reported an earlier comment of the user. In the words
-  of the question session, a question with a clear recommendation and only a harmless cleanup effect does not go to the
-  user.
+  [question pane](question-pane.md#a-question-pane) question-m24-old-record. The user said: "clean up the description."
+  The decision message of the question session also reported an earlier comment of the user. In the words of the
+  question session, a question with a clear recommendation and only a harmless cleanup effect does not go to the user.
 
 - Do not ask with a popup that holds only a short summary. In one case, the user rejected such a popup and wrote "I need
   more context. What is happening?".
