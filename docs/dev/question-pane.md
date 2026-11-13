@@ -116,11 +116,27 @@ and the [issue-link rule](working-with-the-user.md#the-issue-link-rule). The ope
 to the sender. The first-reply text holds the question, the choices and costs, the recommendation, the paths and the
 decisions so far.
 
-[Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
-newline.
+The first-reply text gives its one question with no number. For the first-reply text, this paragraph wins over each rule
+of [The form of a reply](working-with-the-user.md#the-form-of-a-reply) that numbers or lists the open questions.
+Examples are the bullets that start "A reply gives all open questions in one numbered list", "The list holds each
+question that is still open", "Each question has its own number" and "The list numbers from 1", and the number "1." of
+the example of that section. For each other rule of that section, the question of the first-reply text counts as
+question 1, for example for the full details. The reason: on 2026-11-13, the user said: "In the question pane, the
+question itself no longer needs to be numbered."
 
-The question session shows that text as its first reply without changing a word. Before that reply, the session reads no
-file, runs no command, and uses no AskUserQuestion tool. It then waits for conversation.
+[Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
+newline. So the opener subagent puts the word `LINE-BREAK` in place of each newline of the first-reply text. Step 3 of
+the opener prompt of [The prompts](#the-prompts) gives this step, with one space on each side of the word. The question
+session puts each newline back.
+
+The question session shows that text as its first reply and changes no word, apart from each word `LINE-BREAK`. It puts
+a newline in place of each such word, as the session prompt says. Before that reply, the session reads no file, runs no
+command, and uses no AskUserQuestion tool. It then waits for conversation.
+
+The reason: on 2026-11-13, the user said in the operator chat about the first replies of the question panes: "we need to
+do something about the text you send to the question pane. It needs to be formatted better in the same way that
+questions are formatted here." On that day, operator-docs saw that the first replies of the question panes showed as one
+block of text, with no list and no paragraph.
 
 After its first reply, the question session reads [A question pane](#a-question-pane),
 [working with the user](working-with-the-user.md), and [the rules](rules.md). The existing `AGENTS.md` rule for a
@@ -151,7 +167,7 @@ session prompt.
 You are the opener subagent of the question pane <name> of the operator <operator name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session.
 1. Run git -C <local clone> fetch origin. If the fetch fails, go on with the last origin/main.
 2. Run git -C <local clone> show origin/main:docs/dev/question-pane.md. In its output, find the fenced block whose first line, at the start of a line, is ```text question-session. That block is the session prompt.
-3. In the session prompt, replace each placeholder with the value of the same name in the list of values. Replace <first reply> last. Change nothing inside its value, apart from the join of step 4.
+3. In the session prompt, replace each placeholder with the value of the same name in the list of values. Replace <first reply> last. In its value, put one space, the word LINE-BREAK and one space in place of each newline. Change nothing else inside its value, apart from step 4.
 4. Join the lines of the session prompt into one line, with one space between two lines. Write each single quote of the result as '\''. Then put the result in single quotes.
 5. Run tasker show-config --repo <repo key>. Keep .sessions.kind and the entry .sessions.models.question of the output. If .sessions.kind is not claude, do no later step.
 6. Run herdr pane split <operator pane id> --direction right --cwd <local clone>. Keep the new pane id from .result.pane.pane_id of the output.
@@ -173,7 +189,7 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 - `<first reply>`: the first-reply text, with its lines as the operator wrote them.
 
 ```text question-session
-You are the question session <name>. You discuss one open question with the user for the operator <operator name>, with the session ref <operator session ref>. The question is number <question number> of the item <item id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. Before that reply, read no file, run no command and use no AskUserQuestion tool.
+You are the question session <name>. You discuss one open question with the user for the operator <operator name>, with the session ref <operator session ref>. The question is number <question number> of the item <item id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. Only the next two sentences change that text. In your first reply, write a newline in place of each word LINE-BREAK. Also remove the one space on each side of it. Before that reply, read no file, run no command and use no AskUserQuestion tool.
 After that reply, run git -C <local clone> fetch origin. If the fetch fails, tell the user, and use the last origin/main. Then read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md. Also read the section The doc-read rule of docs/dev/doc-reads.md. Read each file with git -C <local clone> show origin/main: and its path.
 These docs give the rules of your work. Send your decision message to <operator name> with SendMessage, as the section A question pane says. FIRST-REPLY <first reply>
 ```
