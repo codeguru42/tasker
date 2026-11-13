@@ -244,9 +244,12 @@ the planner does not close it and tells the user.
 
 Then the planner reads the open issues of the milestone and the tasks in flight of the milestone again. It reads the
 open issues with `gh issue list --milestone "<title>" --state open --limit 1000 --json number`. The title comes from the
-read above, because a title that no milestone has prints `[]` and exits with 0. It reads the tasks in flight with
-`tasker status`. The output has no milestone, so the planner reads the milestone of the issue of each listed task with
-`gh issue view <number> --json milestone`. It matches that milestone with the milestone of the close by the issue key.
+read above, because a title that no milestone has prints `[]` and exits with 0.
+
+It reads the tasks in flight with `tasker status`. The output has no milestone. For each listed task, the planner takes
+the issue number from the issue key of the task. It reads the milestone of that issue with
+`gh issue view <number> --json milestone`. The task belongs to the milestone when that read gives the number of the
+milestone of the close.
 
 If new work belongs to the milestone, the milestone stays open. The planner tells the user about that work directly. It
 starts no new orchestrator and does not report the close of the milestone as done. The planner keeps its role, and the
