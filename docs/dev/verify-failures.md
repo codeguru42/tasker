@@ -157,11 +157,12 @@ the task subagent holds no start base for a stacked task, the task subagent [sto
 task stays stacked when the `base:` line of `tasker show <issue>` still has the form `refs/heads/<parent branch>`.
 Otherwise, the task subagent runs `git fetch --multiple tasker origin`, then
 `git merge-base tasker/<task branch> origin/<base branch>`. If a command fails, the task subagent
-[stops](limits.md#the-answer-wait-rule). This refine of step 4 is part of the same fix, not a new refine of the
-verify-failure rule, so the limits of that rule do not change. Then the task subagent continues as usual.
-`tasker verify` runs after `tasker approve` and `tasker execute`, as the steps of "Run one ticket" say. The feedback
-tells the session (the execute session that tasker starts) to diagnose again on its current history and base, then fix
-established cause commits with these steps:
+[stops](limits.md#the-answer-wait-rule). If the task is a possible Codex limit, do the steps of
+[A Codex limit](quota.md#a-codex-limit) before a command that `tasker show <issue>` prints. This refine of step 4 is
+part of the same fix, not a new refine of the verify-failure rule, so the limits of that rule do not change. Then the
+task subagent continues as usual. `tasker verify` runs after `tasker approve` and `tasker execute`, as the steps of "Run
+one ticket" say. The feedback tells the session (the execute session that tasker starts) to diagnose again on its
+current history and base, then fix established cause commits with these steps:
 
 1. Diagnose the current failure as [the bisect diagnosis](#the-bisect-diagnosis) says. If diagnosis is incomplete, stop
    without rewriting history.
