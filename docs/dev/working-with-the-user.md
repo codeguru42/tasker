@@ -78,6 +78,33 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   record. On 2026-11-13, in the [question pane](operator-conversations.md#a-question-pane) question-m24-record, the user
   said: "yes...this shouldn't even be a question for me to decide."
 
+- A question can have a clear recommendation, and the only effect of its answer can be a harmless cleanup. Then the
+  question is not a question for the user. The session does the cleanup and does not ask the user. In its next reply or
+  report, the session names the cleanup and gives its reason. This bullet permits the write of the cleanup, unless a
+  rule keeps the approval of that write for the user. The session still uses only the commands that its role permits.
+
+  A harmless cleanup removes or fixes a duplicate text or a stale text. It changes no decision of the user, no rule of
+  the docs and no scope of an issue. It changes nothing beyond that text, and one edit undoes it. Whether a
+  recommendation is clear and whether a cleanup is harmless are judgments. The judgments are open on purpose, and the
+  session makes them.
+
+  A decision of a kind of [the escape hatch](planner.md#the-escape-hatch) still goes to the user. A rule can keep a
+  choice or an approval for the user, for example a [question for the user alone](operator-items.md#the-open-items).
+  Another example is the approval of a comment on an issue in [Before a post](issues.md#before-a-post). Such a choice or
+  approval also goes to the user. If the session is in doubt whether a cleanup is harmless, it asks the user.
+
+  The ban of [The state of the user](plan-review.md#the-state-of-the-user) still applies to each session that it covers.
+  For a question of this bullet in an item of another session, the operator sends an answer of the operator, as
+  [The answer](operator-items.md#the-answer) says.
+
+  On 2026-11-13, the description of the GitHub milestone M24 held two hold texts. The hold record of rule 2 of
+  [A milestone hold](#a-milestone-hold) stood at its start, and an older hold text stood after it. planner-docs named
+  the older text as a side fact in item planner-docs-247, and operator-docs then asked the user in the
+  [question pane](operator-conversations.md#a-question-pane) question-m24-old-record. The user said: "clean up the
+  description." The decision message of the question session also reported an earlier comment of the user. In the words
+  of the question session, a question with a clear recommendation and only a harmless cleanup effect does not go to the
+  user.
+
 - Do not ask with a popup that holds only a short summary. In one case, the user rejected such a popup and wrote "I need
   more context. What is happening?".
 - When you list open items or proposed issues, give each item what happened, why it matters and a recommendation. If you
