@@ -487,7 +487,8 @@ milestone. The orchestrator then reads the board, as [Pick the tickets](pick-the
 Before the message, the follow-up planner makes sure that the session list of the tools, for example `ListAgents`, has
 `orchestrator-<milestone>`. If the list has no such session, the follow-up planner sends nothing. No such session is an
 answer, not a failure. If the list or the send fails, [the failure rule](limits.md#the-failure-rule) applies to the
-follow-up planner. Then the orchestrator finds the change at its next read of the board.
+follow-up planner. Then the orchestrator finds the change at its next read of the board. A milestone hold can stop this
+message, as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
 
 If the session that sent the lesson or the proposed issue is that `orchestrator-<milestone>`, one message covers both.
 
