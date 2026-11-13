@@ -838,7 +838,7 @@ describe("task store", () => {
     );
 
     withRawDatabase(oldPath, (raw) => {
-      expect(schemaVersion(raw)).toBe(25);
+      expect(schemaVersion(raw)).toBe(26);
       const columns = raw.prepare("PRAGMA table_info(tasks)").all() as { name: string }[];
       expect(columns.map((column) => column.name)).toEqual(
         expect.arrayContaining([

@@ -20,7 +20,7 @@ describe("migrate", () => {
   });
 
   it("has a migration for the card mark column", () => {
-    expect(migrations).toHaveLength(25);
+    expect(migrations).toHaveLength(26);
     migrate(db, migrations);
     const columns = db.prepare("PRAGMA table_info(tasks)").all() as { name: string; dflt_value: string | null }[];
     expect(columns.find((column) => column.name === "card_marked")?.dflt_value).toBe("0");
@@ -70,7 +70,7 @@ describe("migrate", () => {
     migrate(db, migrations);
 
     expect(schemaVersion(db)).toBe(migrations.length);
-    expect(migrations.length).toBe(24);
+    expect(migrations.length).toBe(26);
     expect(
       db
         .prepare("PRAGMA table_info(protected_execute_turns)")
@@ -92,7 +92,7 @@ describe("migrate", () => {
     migrate(db, migrations.slice(0, 23));
     migrate(db, migrations);
 
-    expect(schemaVersion(db)).toBe(24);
+    expect(schemaVersion(db)).toBe(26);
     expect(
       db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'protected_execute_turns'").get(),
     ).toEqual({ name: "protected_execute_turns" });
