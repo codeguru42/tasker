@@ -121,14 +121,45 @@ The orchestrator does all the steps of this section.
   [the link offer](#the-link-offer) applies. This bullet covers two tickets of the milestone of the orchestrator. For a
   task in flight of another milestone, [the overlap rule](land-the-work.md#the-overlap-rule) applies instead. For a
   stacked ticket and its parent, [the stacking rule](#the-stacking-rule) wins.
+
+  If two tickets edit only different places of each shared file, the second ticket can start. The first ticket can still
+  be in flight then. The ticket that lands second runs `tasker update-branch`, as
+  [the overlap rule](land-the-work.md#the-overlap-rule) says. In this bullet, a place is a section or a list entry of a
+  doc. A doc is a Markdown file of the repo, for example `AGENTS.md` or a file under `docs/`.
+
+  Two different sections of one doc are different places. A section is the text under one heading of any level, up to
+  the next heading. The text before the first heading is also a section. Two entries of one list are also different
+  places, for example two entries of the index of `AGENTS.md` or two bullets of one section. Two new entries at one
+  place of a list, for example both at its end, are one place. Two rows of one table are one place.
+
+  A ticket that moves, splits or renames the doc edits each place of it. A change of the form or the layout of the whole
+  doc also edits each place. A change of a heading line is an edit of its section. The orchestrator judges the places of
+  each ticket from the items and the hints that this bullet counts. This judgment is open on purpose. If the
+  orchestrator cannot name the places of a ticket, the sentence "Start the second ticket after the first one lands."
+  applies.
+
+  The user decided the case of different places on 2026-11-12. The reason is in the bullet of
+  [The blocked-by links](planner.md#the-blocked-by-links) that starts "Two issues that edit only different places". The
+  cost: a clash of meaning between two places shows late, in the review or the diff read of the ticket that lands
+  second. Two edits on lines next to each other can still give a conflict at `tasker update-branch`.
+  [docs/dev/rebase-conflicts.md](rebase-conflicts.md) gives the steps for such a conflict. Before that day, this bullet
+  counted the whole file.
+
+  #853 edited "The tools of a session" of `docs/dev/working-with-the-user.md`. #822 asked for an edit of "The form of a
+  reply" of the same doc. #853 waited until the user gave a one-time exception, because #822 waited for a decision of
+  the user with no date.
+
+  On 2026-11-12, #877 edited "The fact test" of `docs/dev/plan-review.md`. #871 asked for edits of two other sections of
+  that doc. #877 started only because no task of #871 was in flight.
+
 - The move rule: a moving ticket is a ticket that moves or splits a whole shared file, for example the split of
   `test/helpers.ts` into the folder `test/helpers/` on #140. The orchestrator starts a moving ticket only after each
   task in flight that changes that file has landed. This rule covers the tasks of every milestone, except a parked task
-  (see [the defer rule](#the-defer-rule)). For the start of a moving ticket, this rule wins over the last sentence of
-  the bullet before it. [The overlap rule](land-the-work.md#the-overlap-rule) gives the steps that list the tasks in
-  flight and their files. The reason: a moving ticket changes each line of the file. As a result, a ticket that lands
-  later in that file causes a rebase conflict in each commit, or one more refine before `tasker approve`.
-  [The stacking rule](#the-stacking-rule) gives one exception for a parent.
+  (see [the defer rule](#the-defer-rule)). For the start of a moving ticket, this rule wins over the shared-file bullet.
+  [The overlap rule](land-the-work.md#the-overlap-rule) gives the steps that list the tasks in flight and their files.
+  The reason: a moving ticket changes each line of the file. As a result, a ticket that lands later in that file causes
+  a rebase conflict in each commit, or one more refine before `tasker approve`. [The stacking rule](#the-stacking-rule)
+  gives one exception for a parent.
 - If a task in flight that changes the file of a moving ticket is far from landing, for example in
   `awaiting_plan_review`, the orchestrator asks the user. The user decides whether the orchestrator waits or starts the
   moving ticket now. The orchestrator follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
