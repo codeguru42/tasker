@@ -13,13 +13,15 @@ how to do it on GitHub.
 - Each session that posts an issue, or changes the title or the body of an open issue, drafts the text first. The
   session shows the draft to the [user](../sessions.md) who works with that session. A request of the user such as "file
   an issue" or "draft a ticket" gets a draft first. For a change to an open issue, the draft shows the changed text. The
-  session posts only after the user approves that draft, for example with "file it" or "post it". The follow-up planner
-  posts a reviewed draft with no approval of the user, as
-  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The approval of the user still
-  covers a draft of the initial planner and a comment. For a draft of the follow-up planner that waits for a decision of
-  the user, [The escape hatch](planner.md#the-escape-hatch) of planner.md says what the answer of the item does. The
-  planner also makes sure of the kinds of GitHub objects to make, as
-  [The order of the work](planner.md#the-order-of-the-work) of planner.md says.
+  session posts only after the user approves that draft, for example with "file it" or "post it".
+
+  Each planner posts a reviewed draft with no approval of the user, as
+  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. Approval still covers a
+  comment and a draft that runs no review loop of that section. For a planner draft that waits for a decision of the
+  user, [The escape hatch](planner.md#the-escape-hatch) of planner.md says what the answer does. The planner also makes
+  sure of the kinds of GitHub objects to make, as [The order of the work](planner.md#the-order-of-the-work) of
+  planner.md says.
+
 - For a change of the title or the body of an open issue, the session reads both at the start of the draft. The draft
   starts from that read, not from an older draft file. The same read gives the start hash, the output of `sha256sum`
   over the JSON of the read. An example of such a read is
@@ -41,16 +43,20 @@ how to do it on GitHub.
   one item of #307. A later edit of both issues moved the item.
 - If an issue already covers the change, the session that posts the issue offers the user an extension of that issue
   (its body or its links) instead of a new issue. That session tells the user what each draft has that the other one
-  does not have. For a match of the follow-up planner,
-  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md gives the steps.
-- Each session that posts an issue and is not a planner, also a session with no role, decides the blocked-by links of
-  its draft. The session finds the open issues and the tasks in flight that edit the same files as the draft. The
-  session also finds the issues that the draft needs. The session uses the rules of
-  [The blocked-by links](planner.md#the-blocked-by-links) of planner.md.
+  does not have. For a match of a planner, [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of
+  planner.md gives the steps.
+- Each session that posts an issue and is not a planner decides the blocked-by links of its draft. The session finds the
+  open issues and tasks in flight that edit the same files as the draft. It also finds the issues that the draft needs.
+  It uses [The blocked-by links](planner.md#the-blocked-by-links). A session with no role is an ad hoc planner for a
+  draft of its ticket subagent.
 
-  The session shows the result with the draft: each link to add and its reason, or the words "no links" and the reason.
-  The session names each file of the check. After the post, the session adds each approved link, as
-  [The blocked-by links](#the-blocked-by-links) and [The read in the write call](#the-read-in-the-write-call) say.
+  A session that is not a planner shows the result with the draft: each link and its reason, or "no links" and the
+  reason. It names each file of the check. After the post, it adds each approved link under
+  [The blocked-by links](#the-blocked-by-links) and [The read in the write call](#the-read-in-the-write-call).
+
+  For a draft of its ticket subagent, the ad hoc planner adds the links in that subagent's report with no approval of
+  the user. It gives each link and its reason in the report of
+  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
 
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md. Before a session shows a
   draft to the user, the session runs the self-check of the simple-english skill over the file of the draft. The ticket
