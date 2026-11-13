@@ -7,9 +7,9 @@ session that [Before a post](issues.md#before-a-post) of issues.md sends to
 
 An ad hoc planner is a session that drafts issues for the user outside initial or follow-up milestone planning. For each
 draft, it follows [The ticket subagent](#the-ticket-subagent) and
-[The review loop of a draft](#the-review-loop-of-a-draft). It follows [Before a post](issues.md#before-a-post) and  
-posts each draft after its loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner). The post
-rules and [The escape hatch](#the-escape-hatch) apply to each planner.
+[The review loop of a draft](#the-review-loop-of-a-draft). It follows [Before a post](issues.md#before-a-post) and posts
+each draft after its loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner). The post rules
+and [The escape hatch](#the-escape-hatch) apply to each planner.
 
 The page does not cover the work of the orchestrator and of the task subagents of the tickets.
 [The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines
