@@ -104,6 +104,37 @@ The operator does these things for the open items:
   text" of the first sentence of this bullet. For a request of one item, that bullet does not hold, and each question
   gives its full details.
 
+- The list order of the operator is the order of the open questions in its one list. The operator sorts its open
+  questions by these keys, in this order:
+
+  1. The sender: a question of an item of `orchestrator-<slug>` comes before a question of an item of `planner-<slug>`.
+  2. The priority of the issue of the question: `P0` first, then `P1`, then no priority, then `P2`. This is the order of
+     [the priority rule](pick-the-tickets.md#pick-the-tickets).
+  3. The number of the issue of the question: the lower number first. Among the questions with the same keys 1 and 2, a
+     question with no issue comes after each question with an issue.
+  4. The arrival of the item: a question of an item that arrived earlier comes first. In one item, the lower question
+     number of the sender comes first.
+
+  The issue of a question is the issue that the question is about, for example the ticket of a question of an
+  orchestrator. The operator judges the issue of each question, and this judgment is open on purpose. A question about a
+  draft of a new issue has no issue, and so it has no priority. If a question is about two or more issues, it takes the
+  issue that comes first by keys 2 and 3. After a handoff of the operator, the order of the open items in the handoff
+  file counts as their order of arrival.
+
+  The operator reads the priorities before each reply that gives the list of open questions. It also reads them before
+  it takes the next open question of [Start](question-pane.md#start). The read is
+  `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .priority != null) | "\(.content.number) \(.priority)"'`.
+  Each line of the output gives the number of an issue and its priority, for example `587 P0`. An issue with no line has
+  no priority. If the read fails, [the failure rule](limits.md#the-failure-rule) applies, and the operator sorts each
+  question as a question with no priority, and a run goes on.
+
+  The list can also hold a question of the operator itself, with no item, as
+  [The form of a reply](working-with-the-user.md#the-form-of-a-reply) says. Such a question comes after each open
+  question, and two such questions keep the order in which the operator asked them.
+
+  The reason: on 2026-11-13, the user said, as operator-docs relayed it: "the question queue should use this priority:
+  1. orchestrator over planner questions 2. priority order of the issue (P0, P1, P2) 3. older issues first".
+
 - When the operator shows an item to the user, it writes each issue key of the item as a link, as
   [the issue-link rule](working-with-the-user.md#the-issue-link-rule) says. A key inside a code span or a code block
   stays as it is.
