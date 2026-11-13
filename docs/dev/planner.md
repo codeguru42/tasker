@@ -7,9 +7,9 @@ session that [Before a post](issues.md#before-a-post) of issues.md sends to
 
 An ad hoc planner is a session that drafts issues for the user outside initial or follow-up milestone planning. For each
 draft, it follows [The ticket subagent](#the-ticket-subagent) and
-[The review loop of a draft](#the-review-loop-of-a-draft). It also follows [Before a post](issues.md#before-a-post),
-including the approval, duplicate search, and blocked-by link steps. This case changes no rule that names only the
-initial planner or the follow-up planner.
+[The review loop of a draft](#the-review-loop-of-a-draft). It follows [Before a post](issues.md#before-a-post) and  
+posts each draft after its loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner). The post
+rules and [The escape hatch](#the-escape-hatch) apply to each planner.
 
 The page does not cover the work of the orchestrator and of the task subagents of the tickets.
 [The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines
@@ -37,8 +37,12 @@ The operator starts the follow-up planner after the initial planning.
   of step 3 of [The order of a milestone](operator-start.md#the-order-of-a-milestone). Then it starts the drafts of the
   issues at once. The prompt names no kinds of GitHub objects to make, so the initial planner still asks the user before
   a post, as [The order of the work](#the-order-of-the-work) says.
-- When the user says that the initial planning is done, the initial planner posts each approved draft. Then it runs the
-  rounds of [Session-review rounds](session-review-rounds.md). Only after the last round does it tell
+- When the user says that the initial planning is done, the initial planner waits for the report of each ticket subagent
+  that still runs. It posts each such draft after its loops, under
+  [The post of the follow-up planner](#the-post-of-the-follow-up-planner). Then it runs the rounds of
+  [Session-review rounds](session-review-rounds.md).
+
+  It posts each draft of a finding of its rounds after that draft's loops. Only then does it tell
   [its operator](../operator.md) with `SendMessage` that the initial planning is done. The message holds the report of
   the rounds. Then it ends its work.
 
@@ -67,8 +71,8 @@ subagent for each of them.
 
 - The user decides when a milestone starts. The planner plans one milestone at a time. If the user asks, the planner
   writes the issues of the next milestone before the current milestone ends.
-- The initial planner first starts one ticket subagent for each issue of the milestone. Then it shows the drafts to the
-  user. It posts nothing before the user approves.
+- The initial planner first starts one ticket subagent for each issue of the milestone. It posts each draft after its
+  loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner).
 - If the request does not say which kinds of GitHub objects to make (milestones, issues, project items), the planner
   asks the user before a post. In one case, "post everything" meant milestones only, and the session made more than 100
   unwanted issues.
@@ -141,7 +145,7 @@ Before the planner sends a question of a report to the user, it applies the para
 question for the user". A question about an edge case that is not a security gap or a bug in the core path does not go
 to the user. The planner decides it as "later" and adds it to the list of the edge cases of the report. The planner
 gives that list in each place where it gives the findings that it dismissed. Examples are the report of a post, an item
-of the escape hatch and a draft that the initial planner shows to the user.
+of the escape hatch and an item of the escape hatch.
 
 A change of the draft after a report starts a new ticket subagent. An example is a change from an answer of the user.
 Another example is the change of the draft into a change of an open issue after the duplicate search. A change that
@@ -205,7 +209,7 @@ needs the measure, the ticket subagent makes the question an open question in it
 tool" gives the words that no one tested the fact. This subsection wins over that bullet and over the bullet that starts
 "An issue can name a read of an outside tool".
 
-The initial planner asks the user in the chat. The follow-up planner sends the question to
+The initial planner and the ad hoc planner ask the user in their chat. The follow-up planner sends the question to
 [its operator](../operator.md) as an item. The draft waits for the answer, as a draft of
 [the escape hatch](#the-escape-hatch) does. Paragraphs 5 and 6 of the subsection of plan-review.md also hold for the
 planner when it handles the answer. The answer of the user has one of these outcomes:
@@ -218,8 +222,8 @@ planner when it handles the answer. The answer of the user has one of these outc
 - The user runs the command and gives the result. Then the planner starts a new ticket subagent with the draft file and
   the result. That ticket subagent changes the draft with the result and starts at step 2.
 - The user declines the measure. Then the draft keeps the words that no one tested the fact, and the measure is no
-  longer an open question. For the follow-up planner, the bullet of the escape hatch that starts "If the answer accepts
-  the draft with no change" then applies.
+  longer an open question. For each planner, the bullet of the escape hatch that starts "If the answer accepts the draft
+  with no change" then applies.
 - The user rejects or drops the draft. Then the planner drops the draft, as the escape hatch says.
 
 ### The wait for a report
@@ -328,14 +332,14 @@ For a late report, the planner uses the first bullet of this list that matches:
 
 - If a ticket subagent of the draft runs, the late report waits for its report. Then the planner uses this list again
   for the late report.
-- If the draft waits for the answer of an item, the late report waits for that answer. Then the planner uses this list
-  again for the late report. An answer that accepts the draft with no change makes the planner post the draft, so the
-  bullet "If the planner posted the draft" then applies.
+- If the draft waits for a decision of the user, the late report waits for that answer. This includes an item and a
+  question in the chat of the initial planner or the ad hoc planner. Then the planner uses this list again for the late
+  report. An answer that accepts the draft with no change makes the planner post the draft, so the bullet "If the
+  planner posted the draft" then applies.
 - If the planner dropped the draft, the planner drops the late report too.
 - If the planner did not post the draft, the planner starts a new ticket subagent with the draft file and the report
   file. The new ticket subagent starts at step 5 of [The review loop of a draft](#the-review-loop-of-a-draft). The
-  findings of the late report are the findings of its loop 1. The initial planner shows the changed draft to the user
-  again.
+  findings of the late report are the findings of its loop 1.
 - If the planner posted the draft and the issue is open, the planner starts a new ticket subagent with the report file.
   That ticket subagent turns the findings into a change of the open issue. [The escape hatch](#the-escape-hatch) still
   applies, for example to a change of scope of an issue in flight.
@@ -371,9 +375,9 @@ The ticket subagent of a draft does these steps:
    reason.
 6. If the loop changed the draft, run the next loop from step 3. Run at most 3 loops for one draft.
 
-The work on a draft ends after a loop with no finding that the ticket subagent takes, or after loop 3. After loop 3, the
-follow-up planner posts the draft as it stands after the decisions of the ticket subagent on the findings of loop 3. If
-a finding of an escape-hatch kind is still not resolved, that finding sends the draft to
+The work on a draft ends after a loop with no finding that the ticket subagent takes, or after loop 3. After loop 3,
+each planner posts the draft as it stands after the decisions of the ticket subagent on the findings of loop 3. If a
+finding of an escape-hatch kind is still not resolved, that finding sends the draft to
 [the escape hatch](#the-escape-hatch).
 
 The review agent tests the draft against these items:
@@ -421,36 +425,41 @@ tool, although its prompt banned each read under `$HOME/.claude/projects`. The a
 
 ### The post of the follow-up planner
 
-After the loops, the follow-up planner posts the issue, or posts the change to the open issue, with no approval of the
-user. These rules still apply to the post:
+After the loops, each planner posts the issue, or posts the change to the open issue, with no approval of the user.
+These rules still apply to the post:
 
 - The duplicate search right before the post of [Before a post](issues.md#before-a-post).
 - [The blocked-by links](#the-blocked-by-links), and the in-flight check of the bullet "A ticket that changes the form
   or the layout of a file goes early in its chain".
 - [The milestone of an issue](#the-milestone-of-an-issue).
 
-If the duplicate search right before the post finds an open issue that covers the change, the follow-up planner starts a
-new ticket subagent. That ticket subagent turns the draft into a change of that issue and runs the review loops for that
-change. Then the follow-up planner posts the change with no approval of the user. The escape hatch still applies to the
-change, for example for a change of scope of an issue in flight.
+On 2026-11-12, the user gave this reason for the post with no approval of the user: "Have the planner run the review
+cycles defined in its rules. Then post the final result."
 
-If the match right before the post is a closed issue, the follow-up planner compares the draft with what the closed
-issue landed:
+If the duplicate search right before the post finds an open issue that covers the change,  
+each planner starts a new ticket subagent. That ticket subagent turns the draft into a change of that issue and runs the
+review loops for that change. Then the planner posts the change with no approval of the user. The escape hatch still
+applies to the change, for example for a change of scope of an issue in flight.
 
-- If the draft is a true duplicate, because the change already landed, the follow-up planner drops the draft and reports
-  the match.
-- If the draft asks for more than the closed issue landed, the follow-up planner posts a new follow-up issue that names
-  the closed issue, with no approval of the user. The escape hatch still applies.
-- If the follow-up planner cannot tell which case applies, the draft waits for a decision of the user as an item. The
-  follow-up planner posts nothing for it.
+If the match right before the post is a closed issue, each planner compares the draft with what the closed issue landed:
+
+- If the draft is a true duplicate, because the change already landed, the planner drops the draft and  
+  reports the match.
+- If the draft asks for more than the closed issue landed, the planner posts a new follow-up issue that  
+  names the closed issue, with no approval of the user. The escape hatch still applies.
+- If the planner cannot tell which case applies, the draft waits for a decision of the user. The follow-up planner sends
+  an item; the initial planner and the ad hoc planner ask in their chat. The planner posts nothing for that draft.
 
 The follow-up planner can also drop a lesson or a proposed issue with no approval of the user. A drop needs no review.
 
-After each post or drop, the follow-up planner tells the user in a short report. The report gives the link or the drop,
-the source, and each finding that the planner dismissed, with its reason. The report also gives the command and the
-result of each test of a fact about an outside tool, as [The body of an issue](#the-body-of-an-issue) says. The
-follow-up planner also tells the session that sent the lesson or the proposed issue, if that session is not
-[the operator of the follow-up planner](../operator.md).
+After each post or drop, each planner tells the user in a short report. The report gives the link or the drop, the
+source, and each finding that the planner dismissed, with its reason. It gives each blocked-by link with its reason and
+the list of edge cases of [The ticket subagent](#the-ticket-subagent). It also gives the command and result of each test
+of a fact about an outside tool, as [The body of an issue](#the-body-of-an-issue) says.
+
+The follow-up planner sends this report as an item to its operator. The initial planner and the ad hoc planner give it
+in their chat. The follow-up planner also tells the session that sent the lesson or the proposed issue, if that session
+is not [the operator of the follow-up planner](../operator.md).
 
 These posts also give a message to an orchestrator:
 
@@ -484,10 +493,17 @@ If the session that sent the lesson or the proposed issue is that `orchestrator-
 
 ### The escape hatch
 
-When a draft needs one of these decisions, the follow-up planner asks the user before the post, as
+When a draft needs one of these decisions, each planner asks the user before the post, as
 [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says:
 
-- A new feature, or a change of a behavior that a user sees, for example the text of an output or an exit code.
+- A new feature, or a change of a behavior that a user sees, for example the text of an output or an exit code. If the
+  feature or the behavior change is in the source of the draft, the draft needs no such decision. The source is a
+  request of the user or the description of a milestone that the user approved.
+
+  A request that another session passes on with the words of the user is a request of the user.  
+  An example is a request through the operator. A lesson or proposed issue from another session, without those words,
+  does not supply such a request.
+
 - A choice between two or more designs, where each one has a real cost. A choice of the implementation is not such a
   choice, because the plan of the ticket makes it.
 - A change of scope of an issue in flight.
@@ -498,29 +514,29 @@ When a draft needs one of these decisions, the follow-up planner asks the user b
 An edge case that a ticket subagent decided as "later" needs none of these decisions, as
 [The ticket subagent](#the-ticket-subagent) says.
 
-For a draft that waits for such a decision, the follow-up planner posts nothing. The follow-up planner sends the draft
-as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed.
-The answer of the item is the decision of the user or an [answer of the operator](operator-items.md#the-answer). The
-follow-up planner posts nothing for a draft item until each question of the item has an answer.
+For a draft that waits for such a decision, each planner posts nothing. The follow-up planner  
+sends the draft as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that
+it dismissed. The answer of the item is the decision of the user or an
+[answer of the operator](operator-items.md#the-answer). The initial planner and the ad hoc planner ask in their chat,
+with each finding that they dismissed. A planner posts nothing for such a draft until each question has an answer.
 
-- If the answer rejects the draft or says to drop it, the follow-up planner drops the draft and reports the drop, as
+- If the answer rejects the draft or says to drop it, the planner drops the draft and reports the drop, as
   [The post of the follow-up planner](#the-post-of-the-follow-up-planner) says. A
   [partial answer](operator-items.md#the-open-items) that rejects the draft or says to drop it also ends the draft.
-- If the answer accepts the draft with no change, the answer is also the approval of the draft, and the follow-up
-  planner posts the draft.
-- If the answer changes the draft, the follow-up planner starts a new ticket subagent with the change. That ticket
-  subagent runs the review loops for the changed draft. Then the follow-up planner posts it with no approval of the
-  user. The escape hatch still applies to the changed draft.
+- If the answer accepts the draft with no change, the planner posts the draft.
+- If the answer changes the draft, the planner starts a new ticket subagent with the change. That ticket subagent runs
+  the review loops for the changed draft. Then the planner posts it with no approval of the user. The escape hatch still
+  applies to the changed draft.
 - The user can say that the sender decides the open part of a question, as [The answer](operator-items.md#the-answer)
-  says. Then the follow-up planner decides the open part by its recommendation. If that decision changes the draft, the
-  bullet "If the answer changes the draft" applies. Otherwise the bullet "If the answer accepts the draft" applies. If
-  the words of the user say to reject or drop the draft, the first bullet of this list applies.
+  says. Then the planner decides the open part by its recommendation. If that decision changes the draft, the bullet "If
+  the answer changes the draft" applies. Otherwise the bullet "If the answer accepts the draft" applies. If the words of
+  the user say to reject or drop the draft, the first bullet of this list applies.
 
-The follow-up planner goes on with the other drafts.
+Each planner goes on with the other drafts.
 
 ### The rules for the user alone
 
-The post with no approval of the user does not cover these rules:
+The post of a draft by each planner with no approval of the user does not cover these rules:
 
 - The close of a milestone, in [Milestones](issues.md#milestones). The escape hatch does not cover it. It stays with the
   user.
@@ -533,8 +549,9 @@ The post with no approval of the user does not cover these rules:
 
 ### The initial planner
 
-The ticket subagent of the initial planner runs the same review loops. Then the initial planner shows the draft to the
-user with each finding that it dismissed. The initial planner posts only after the approval of the user.
+The ticket subagent of the initial planner runs the same review loops. The initial planner posts each draft after its
+loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner). Then it  
+reports the post in its chat under that subsection.
 
 ## The body of an issue
 
@@ -841,11 +858,9 @@ user with each finding that it dismissed. The initial planner posts only after t
   [the fact test](plan-review.md#the-fact-test), in the way that the second bullet of
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. If the planner does not test a fact,
   the issue says next to the fact that no one tested it. The planner gives the command and the result of each test to
-  the user (the follow-up planner in the report of
-  [The post of the follow-up planner](#the-post-of-the-follow-up-planner), the initial planner in the chat with the
-  user). A fact that the issue copies from a ticket stays under the bullet "A fact that an issue copies from a ticket
-  can be true in only one case". On #413 (2026-10-25), the reason about the hook at `/clear` was false, and the fix cost
-  a change of scope.
+  the user in the report of [The post of the follow-up planner](#the-post-of-the-follow-up-planner). A fact that the
+  issue copies from a ticket stays under the bullet "A fact that an issue copies from a ticket can be true in only one
+  case". On #413 (2026-10-25), the reason about the hook at `/clear` was false, and the fix cost a change of scope.
 - An issue can name a read of an outside tool and use fields of its output. Before the post, the planner runs that read
   one time with [the fact test](plan-review.md#the-fact-test), on a small case that holds a value of each such field.
   The planner picks the case, and this choice is open on purpose. The planner makes sure that the output gives each
