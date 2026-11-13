@@ -265,13 +265,15 @@ The operator starts the planner and the orchestrator of a milestone. The key `se
 sessions and the model and the effort of each role. It is separate from `assistant`, because `assistant` configures the
 runs that tasker starts.
 
-A session role is one of `operator`, `planner` and `orchestrator`. The agent kind is the program of a session, in the
-form that herdr names it in `herdr agent start --kind`.
+A session role is one of `operator`, `planner`, `orchestrator` and `question`. The session role `question` is for a
+[question session](dev/operator-conversations.md#a-question-pane). A question session has no role in the terms of
+[docs/sessions.md](sessions.md), so `question` names only a key of `models`. The agent kind is the program of a session,
+in the form that herdr names it in `herdr agent start --kind`.
 
-| Key      | Type       | Default    | Notes                                                           |
-| -------- | ---------- | ---------- | --------------------------------------------------------------- |
-| `kind`   | `"claude"` | `"claude"` | The agent kind of each session role.                            |
-| `models` | object     | `{}`       | Has the optional keys `operator`, `planner` and `orchestrator`. |
+| Key      | Type       | Default    | Notes                                                                       |
+| -------- | ---------- | ---------- | --------------------------------------------------------------------------- |
+| `kind`   | `"claude"` | `"claude"` | The agent kind of each session role.                                        |
+| `models` | object     | `{}`       | Has the optional keys `operator`, `planner`, `orchestrator` and `question`. |
 
 Each entry of `models` is an object with the required keys `model` (non-empty string) and `effort` (`"low"`, `"medium"`,
 `"high"`, `"xhigh"` or `"max"`).
