@@ -602,6 +602,8 @@ before each start, the orchestrator runs `gh issue list --state open --label "on
 the read fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket and makes
 no offer until the read works.
 
+A hold of a whole milestone is another rule, [A milestone hold](working-with-the-user.md#a-milestone-hold).
+
 If the ticket has a task in flight, the orchestrator does the steps of [the defer rule](#the-defer-rule), with two
 changes. Step 4 adds the label, and the milestone stays. Step 7 lists each open issue that the ticket blocks, also in
 its milestone. The task of a ticket on hold is a parked task. For each ticket on hold, with or without a task, the
