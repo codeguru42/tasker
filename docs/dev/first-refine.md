@@ -436,9 +436,10 @@ orchestrator.
   The lines inside a fenced block belong to that one piece. New text inside one existing paragraph is one piece.
 
   For each piece, the step searches for a key word or a short part that only this piece holds. The plan picks a word or
-  part that the doc lacks before the todo. Also ask the plan to list each piece of a Docs item with its key word in the
-  todo. The reason: an execute run can add some pieces of a Docs item and leave out other pieces. A hit for a key word
-  of one piece does not show that another piece is there.
+  part that the doc lacks before the todo. Ask the plan to search the other new pieces of that doc for the key word.
+  Also ask the plan to list each piece of a Docs item with its key word in the todo. The reason: an execute run can add
+  some pieces of a Docs item and leave out other pieces. A hit for a key word of one piece does not show that another
+  piece is there.
 
   An example for one word is `git grep -n -F --untracked '<word>' -- <file>`, and its flag `--untracked` also searches a
   new doc that git does not track yet. The pass condition of each search is exit code 0. Exit code 1 is an answer: no
@@ -480,6 +481,11 @@ orchestrator.
   The search step of plan v2 searched only for words of the first paragraph and the block. On 2026-11-07, a search of
   the commit of plan v2 for "short reply rules", a key word that only Docs item 1 adds, exits with 0. So one search for
   each Docs item does not find the gap.
+
+  On #865 (2026-11-12), the issue gave five new paragraphs word for word for step 5 of "The CI wait" in
+  `docs/dev/ci-wait.md`. Before the ticket, the doc lacked `headBranch`, but the fourth and the fifth new paragraphs
+  both held it. Plan v2 used `headBranch` as the key word of the fifth paragraph. So a search for that key word gives a
+  hit with or without the fifth paragraph. The fix cost one refine, refine 2.
 
 - The red `test:` commit ([rules.md](rules.md#commits)) of a new store method changes only test files and fails the type
   check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
