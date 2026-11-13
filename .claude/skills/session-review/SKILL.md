@@ -13,6 +13,8 @@ Run the skill only on a request, for example `/session-review` before `/clear` o
 
 The skill runs in a loop with the user before the clear. In the loop, the session answers the questions of the user and refines the proposed issues. In some cases, the session also writes a handoff file. The clear can come only after the loop ends. A session with no role that works with the user directly follows the bullet about a fresh subagent in [The tools of a session](../../../docs/dev/working-with-the-user.md#the-tools-of-a-session).
 
+A question session runs this skill in the rounds of [The rounds before the close](../../../docs/dev/question-pane.md#the-rounds-before-the-close). That subsection gives the steps that a question session skips and the target of its proposals. For a question session, it wins over each step of this skill.
+
 ## Steps
 
 1. Find the candidates in the transcript. A candidate is a decision, a correction or a confirmation of how to work, a settled design tradeoff, or a state that changed. Examples of a state are a deadline, an owner and an outside reference.
