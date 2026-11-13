@@ -56,6 +56,15 @@ and this choice is open on purpose. The result then names the highest count, and
 count. On #550 (2026-10-31), `acli jira workitem view` gave all 60 of 60 comments, but only the newest 100 entries of
 1,010.
 
+A fact test can decide between two or more options, for example before a decision of the user. Then it runs each option
+in the way that the option will run after the choice. It does not run a smaller or a simpler form of an option, because
+such a form can give another result. An issue that gives the runs of such a fact test gives each run in that way.
+
+On 2026-11-12, the body of #875 gave a fact test of two options for a question pane, before a decision of the user. A
+question pane is a herdr pane for one open question of the user. In option A, one subagent opens the pane, and after the
+decision of the user, a second subagent closes it. The session asked whether run 2 uses one subagent or two. The user
+said: "yes, we want to measure how it will be run when we use it". So run 2 kept two subagents.
+
 Each session that runs a fact test follows this rule: a task subagent, the orchestrator and the planner. In a fact test,
 the session starts each shell command that works in a scratch folder with `cd <folder> || exit 1`. If the command also
 makes the folder, the session starts it with `mkdir -p <folder> && cd <folder> || exit 1`.
