@@ -5,7 +5,11 @@ its report that the milestone is done, as [Pick the tickets](pick-the-tickets.md
 [The close of a milestone](operator-start.md#the-close-of-a-milestone) gives the order of the rounds of each session at
 the end of a milestone. The orchestrator runs its rounds first. The operator runs its rounds after the stop of the
 orchestrator. The planner runs its rounds after the end of the role of the operator. This page covers only an
-orchestrator, a planner and an operator. A task subagent runs no round, as [Limits](limits.md#limits) says.
+orchestrator, a planner, an operator and a [question session](question-pane.md#a-question-pane). A task subagent runs no
+round, as [Limits](limits.md#limits) says.
+
+For a question session, [The rounds before the close](question-pane.md#the-rounds-before-the-close) gives the target of
+the report and the steps of a failure. That subsection wins over this page.
 
 A round is one run of `/session-review`. A session runs a round again after each round that found something. A memory
 change, a new proposal and new open work that no earlier round listed each count as something. A round can find a lesson
