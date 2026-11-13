@@ -79,8 +79,8 @@ read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
   session.
 - [docs/dev/operator-items.md](docs/dev/operator-items.md): the form of an item, the open items, the answer and the
   states of an item.
-- [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): a side conversation and the word of the
-  user.
+- [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): a side conversation, the word of the user
+  and a question pane.
 - [docs/dev/session-review-rounds.md](docs/dev/session-review-rounds.md): the rounds of `/session-review` that a session
   runs before it stops, and an orchestrator before its report that the milestone is done: a round, the end of the
   rounds, a handled finding, the report of the rounds and the report again.
