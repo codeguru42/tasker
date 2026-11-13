@@ -73,7 +73,7 @@ The task subagent of the ticket runs steps 1 to 11. Each step gives the state of
    reads of the same-patch rule. That rule gives the result of a failed read. After a `tasker merge` that succeeds, do
    [the CI wait](ci-wait.md#the-ci-wait). The task stays in `landed`. If the CI wait passes, run `tasker finish`. The
    task goes to `finished`, and the issue closes. If a run failed, step 12 of the CI wait runs `tasker finish`. If the
-   CI wait stops, do not run `tasker finish`, and do not do steps 10 and 11.
+   CI wait stops and never passes, do not run `tasker finish` or do steps 10 and 11.
 10. After `tasker finish`, make sure that `origin` has no task branch of the ticket. Do not rely on `tasker finish` for
     this. Do this step after each `tasker finish`. At the end of this step, whatever its result, run
     `git fetch --prune tasker` in the local clone of the orchestrator. The fetch deletes each ref `tasker/<branch>`
