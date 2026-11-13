@@ -189,8 +189,9 @@ Each time that the operator does this section, it first reads `docs/dev/operator
 [the doc-read rule](doc-reads.md#the-doc-read-rule) says. Then it does the steps of the text that it read.
 [Start a session](#start-a-session) gives the reason and the rule of the new text.
 
-The operator stops a session only on a request of the user. In a handoff of an orchestrator or a follow-up planner, the
-rule of the user of 2026-10-25 in [The end of a handoff](handoff.md#the-end-of-a-handoff) is that request, for step 4 of
+The operator stops a session only on a request of the user. [A question pane](operator-conversations.md#a-question-pane)
+gives the close of a question pane. In a handoff of an orchestrator or a follow-up planner, the rule of the user of
+2026-10-25 in [The end of a handoff](handoff.md#the-end-of-a-handoff) is that request, for step 4 of
 [A handoff](#a-handoff). The operator closes only a tab that it opened in its own session, or a tab that an earlier
 operator of its slug opened. In a handoff, the operator also stops a session in a tab that it did not open, for example
 a tab that the user opened.
