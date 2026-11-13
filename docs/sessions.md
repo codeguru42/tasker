@@ -18,7 +18,7 @@ subagent.
 
 The own name of a session is in the first line of the output of `ListAgents`, in the form "This session is <name>". The
 role is the part of the name before the first `-`. The slug is the part after it. A
-[question session](dev/operator-conversations.md#a-question-pane) has no role and no slug, although its name starts with
+[question session](dev/question-pane.md#a-question-pane) has no role and no slug, although its name starts with
 `question-`.
 
 The session ref is the id in brackets after the name of a session in the output of `ListAgents`, for example `[bc2d80]`.
