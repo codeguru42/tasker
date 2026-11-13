@@ -221,6 +221,28 @@ orchestrator.
   the rule. Review 1 found the gap as [a design gap](plan-review.md#the-design-gap-rule).
 - Ask the plan to start each item of a vertical list with an uppercase letter, as the simple-english skill says
   ([rules.md](rules.md#docs)). On #227, plan v4 had list items with a lowercase start, and one more refine fixed them.
+- An issue can add or change a sentence of a doc. Such a sentence can be over its word limit in the simple-english
+  skill. Before the first refine, count the words of such a sentence. Count them as
+  [The body of an issue](planner.md#the-body-of-an-issue) says for the doc text of an issue.
+
+  For a sentence over its limit, ask the plan in the first refine to split it in two. The split adds no fact and changes
+  only the words that the two sentences need. Give the two sentences as exact final text, as the hint that starts "If
+  the issue gives the exact form of an entry" says. Name the split and its reason as
+  [the issue check](plan-review.md#the-issue-check) says for a conflict. Also name them in the comment of step 11 of
+  [Run one ticket](run-one-ticket.md#run-one-ticket).
+
+  Such a sentence is a conflict of the issue check. If the split breaks no count of the issue, it does not change what
+  the ticket must do. Then the fifth case of [the stop rule](plan-review.md#the-stop-rule) does not apply, and the task
+  subagent asks the orchestrator no question. The hint that starts "Ask the plan to count the sentences again" covers
+  the counts of the issue that a split can break. A split that breaks such a count changes what the ticket must do. Then
+  the fifth case of the stop rule applies.
+
+  On #890 and #892 (2026-11-13), each task subagent asked the orchestrator before the first refine. Each question cost
+  one wait, and the answer of the orchestrator was a split into two sentences both times. On #892, a sentence of
+  `skills/tasker/references/setup.md` had 26 words, and a change of the issue made it 27 words. On #890, a sentence of
+  the issue had 26 words only with each word of a text in parentheses. With the count of the first paragraph of this
+  bullet, the sentence had 23 words and needed no split.
+
 - Ask the plan to count the sentences again after each split of a sentence for the word limit of the simple-english
   skill. The plan compares the count with each requirement of the issue that sets a count, for example "in one
   sentence". On #432 (2026-10-25), the split of a sentence of 29 words made an example three sentences, but the issue
