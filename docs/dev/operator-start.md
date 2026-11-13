@@ -285,59 +285,140 @@ wait, a `blocked` session and a failed `herdr tab close`.
 
 ## The close of a milestone
 
-This section gives the close, the order of the end of a milestone in steps 1 to 4. Step 5, the close of the milestone on
-GitHub, comes after the close. A round and the end of the rounds work as
-[Session-review rounds](session-review-rounds.md) says. The close starts with no word of the user. It starts when the
-last ticket of the milestone closes and no task of the milestone is in flight. During the close, no session of the slug
-starts a handoff, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
+This section gives the close. The close is the set of steps at the end of a milestone. The order is: the orchestrator
+ends first, then the operator, then the follow-up planner. In this section, "the planner" means the follow-up planner of
+the milestone. A round and the end of the rounds work as [Session-review rounds](session-review-rounds.md) says.
 
-The close ends with step 4, at the stop of the orchestrator. For a long-running orchestrator, the close starts only when
-it moves to the next milestone. It ends at a report of step 3 that names no issue of the milestone. If no orchestrator
-runs, steps 1 and 4 do not apply, and the operator starts step 2 on the word of the user. Then the close ends with the
-report of step 3.
+These terms apply in this section:
 
-1. Before its first rounds of the close, the orchestrator tells the operator in a report that the close started. The
-   orchestrator runs its rounds before its report that the milestone is done, as
-   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
-2. When the report that the close started arrives, the operator tells the follow-up planner that the close started. With
-   no orchestrator, the operator tells it at the word of the user that starts step 2. This word also takes the place of
-   the report that the milestone is done.
+- A terminal delegation is the last message of the operator to the planner. It gives the remaining close duties to the
+  planner before the operator ends its role.
+- The end of a role: the session does no more work of its role.
+- A session closure ends the session on its host, for example with the close of its herdr tab.
+- A GitHub milestone closure changes the state of the milestone on GitHub to `closed`.
 
-   After the report that the milestone is done, the operator runs its own rounds or gives the report again. It does this
-   as [Session-review rounds](session-review-rounds.md) says. It sends each finding to the follow-up planner. If no
-   follow-up planner runs, it gives the finding to the user. When its rounds end, it tells the follow-up planner.
+The end of a role, a session closure and a GitHub milestone closure are separate outcomes.
 
-3. After this word of the operator, the follow-up planner waits for the report of the ticket subagent of each draft.
-   Then it handles each finding: it posts the finding, adds it to an open issue or drops it. Then it runs its rounds, or
-   gives the report again. It handles the findings of its own rounds in the same way. The operator runs no new round for
-   them.
+### The start and the authority
 
-   When each ticket subagent of these findings reported, the follow-up planner sends the report of the rounds to the
-   operator. The report names each issue that the follow-up planner posted or moved into the milestone in this step. If
-   no operator runs, the user tells the follow-up planner that the close started and when to start step 3. Then the
-   follow-up planner gives the report to the user.
+The close starts only after the last ticket of the milestone closes and no task of the milestone is in flight. Before
+its first rounds of the close, the orchestrator tells the operator in a report that the close started. The orchestrator
+runs its rounds before its report that the milestone is done, as
+[Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. When the report that the close started arrives, the
+operator tells the planner that the close started. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff)
+keeps these reports and this word as the start of the close for each session.
 
-4. Steps 1 to 3 are one pass. If the report of step 3 names an issue of the milestone, the orchestrator runs it, as
-   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The next report that the milestone is done starts the
-   next pass. In the next pass, a session that did no work after its rounds runs no new round, as
-   [Session-review rounds](session-review-rounds.md) says.
+The start of the close is the authority for the end of each role of the close and for the GitHub milestone closure.
+These steps of the close need no other word of the user:
 
-   If the report of step 3 names no issue of the milestone, the operator stops the orchestrator, as "Stop a session"
-   says. If no follow-up planner runs, the end of the rounds of step 2 replaces the report of step 3. This step is the
-   request of the user for this stop. The operator needs no new word of the user.
+- The end of the role of the orchestrator, with its stop
+- The end of the role of the operator
+- The end of the role of the planner
+- The GitHub milestone closure of a milestone with no work left
 
-   A long-running orchestrator that moves to the next milestone does not stop. A draft that still waits for a decision
-   of the user does not hold this stop. [The milestone of an issue](planner.md#the-milestone-of-an-issue) gives the
-   milestone of its issue.
+The user still gives each approval that only the user gives: new scope, a security decision, a permission prompt and a
+failed operation. [A question pane](operator-conversations.md#a-question-pane) holds the start of the close. While a
+pane is open, the operator starts neither its handoff nor the close, and it tells the user when either is due. The state
+table of that section has the row "A handoff or a close of the milestone is due". That row wins over the rule that the
+steps of the close need no other word of the user.
 
-5. The user says when to close the milestone on GitHub. After the end of the close, the operator relays this word to the
-   follow-up planner. If the word comes earlier, the operator tells the user that it waits for the end of the close. The
-   follow-up planner closes the milestone, as [Milestones](issues.md#milestones) says. If no follow-up planner runs, the
-   operator tells the user and closes nothing.
-6. When the user says to stop the follow-up planner, the operator stops it, as "Stop a session" says. If step 5 did not
-   run, or the follow-up planner has an open item, the operator first tells the user. It then stops the session only on
-   a new word of the user.
-7. The operator ends last, and only on the word of the user. The user closes the tab of the operator.
+Use this order only for the close of a milestone. A handoff, the end of the initial planning and each other stop of a
+session keep their own procedures. During the close, no session starts a new session of a role or a next milestone on
+its own. A word of the user can still start one.
+
+A session that starts the close ends its role. It does not keep its role for the next milestone.
+
+The milestone of a long-running orchestrator, for example "Docs", stays open after its last ticket closes. At the empty
+Todo column, the long-running orchestrator runs its rounds and gives its report that the milestone is done, as
+[Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The close of that milestone starts only on the word of
+the user. That word starts the report of the long-running orchestrator that the close started. Then the close runs in
+the order of this section. Until that word, the long-running orchestrator keeps its role and its other rules outside the
+close.
+
+### The orchestrator ends
+
+After the report of the orchestrator that the milestone is done arrives, the operator stops the orchestrator as
+[Stop a session](#stop-a-session) says. The operator keeps each check of that section. Examples are the report of the
+rounds, the row of the session, the wait, the tab list and the shared tab. The gate of that section starts "The operator
+stops a session only on a request of the user". The start of the close is that request for this stop. The operator
+starts its final rounds only after the stop of the orchestrator worked.
+
+### The rounds of the operator
+
+The operator runs its rounds of [Session-review rounds](session-review-rounds.md) until a round finds nothing new. It
+sends each finding to the planner, under the rules for a draft and its review in
+[The review loop of a draft](planner.md#the-review-loop-of-a-draft). A round does not list again the open work that an
+earlier round listed, as step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md) says.
+
+If a round of the operator or a send of a finding fails, the rounds of the operator end. The close then stops at this
+stage. The operator tells the user about the failure directly. It keeps the findings and the state of the terminal
+delegation for a later recovery. It does not end its role after a failed round.
+
+### The terminal delegation
+
+Before the terminal delegation, the operator does
+[the question gate of the close](operator-items.md#the-question-gate-of-the-close). With an open question, the operator
+sends no terminal delegation and does not end its role.
+
+The terminal delegation gives the milestone, the report of the rounds of the operator, the state of each finding and the
+remaining close duties. It also gives the id of each item with a settled question and the decision of that question. It
+says that the planner talks to the user directly after the end of the role of the operator. The operator sends it to the
+planner with `SendMessage`. If the send fails, [the failure rule](limits.md#the-failure-rule) applies, and the operator
+keeps its role.
+
+The terminal delegation is the last message of the operator to another session and the last action of its role. The
+operator waits for no result of the rounds of the planner and for no result of the GitHub milestone closure.
+
+### The work of the planner
+
+The planner starts its final rounds only after the end of the role of the operator.
+[The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner) give its work.
+[Milestones](issues.md#milestones) gives the GitHub milestone closure. After the end of the role of the operator, the
+planner talks to the user directly, as [The operator](working-with-the-user.md#the-operator) says.
+
+### Missing roles
+
+If no orchestrator runs, the operator makes sure of that before it starts its rounds. The close then starts on the word
+of the user. The operator takes an orchestrator that already ended as done only with proof of its role and its
+milestone. An example of proof is the report of the orchestrator that the milestone is done. The judgment of the proof
+is open on purpose, and the operator makes it.
+
+If no planner runs, the operator keeps its role and tells the user that no session can do the rest of the close. The
+word of the user decides the next step. If no operator runs, the user tells the planner that the close started. Then the
+planner gives each report to the user directly. The user stops a running orchestrator. The word of the user takes the
+place of the terminal delegation for the start of the final rounds of the planner.
+
+### The steps that end each role
+
+1. The operator stops the orchestrator, as [The orchestrator ends](#the-orchestrator-ends) says.
+2. The operator sends the terminal delegation to the planner, as [The terminal delegation](#the-terminal-delegation)
+   says.
+3. The end of the role of the operator is the send of the terminal delegation that worked. The planner takes the arrival
+   of the terminal delegation as the end of the role of the operator.
+4. After the end of its role, the operator tells the user one time that its role ended and that the planner is now the
+   contact. The user then closes the tab of the operator.
+5. After its last report, the planner tells the user that its role ended. The user then closes the tab of the planner,
+   in the same way as the tab of the operator.
+
+No session closes its own tab or pane in the close.
+
+### The table of the close
+
+Each actor keeps its own report of the rounds and its own state in the close. The operator also keeps the name of the
+planner and the state of its terminal delegation. The planner keeps the terminal delegation and the end of the role of
+the operator. The GitHub milestone keeps its own state, open or closed.
+
+| Stage                         | Session that acts           | Change of state                                                                                                   | Who tells whom                                                                                                     | Outcome of a failure                                                                                                                           |
+| ----------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| The orchestrator ends         | Orchestrator, then operator | The report of the rounds arrives, the wait ends, and the operator closes the tab or the pane of the orchestrator. | The orchestrator gives the operator the report that the milestone is done. The operator sends the stop message.    | The operator tells the user about the failed stop. It starts no final round.                                                                   |
+| The rounds of the operator    | Operator                    | A round finds nothing new.                                                                                        | The operator sends each finding to the planner.                                                                    | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                       |
+| The questions of the operator | Operator                    | Each open question gets an answer that the question gate of the close gives, before the terminal delegation.      | The operator gives the user the full text of each open question. The operator sends each answer to its sender.     | The operator does not end its role while a question is open.                                                                                   |
+| The terminal delegation       | Operator, then planner      | The question gate passes, and the send of the terminal delegation to the planner works.                           | The operator sends the terminal delegation to the planner.                                                         | A failed send keeps the operator in its role. The operator tells the user.                                                                     |
+| The operator ends             | Operator                    | The operator ends its role, and the planner starts its final rounds.                                              | The operator tells the user one time that the planner is now the contact. The user closes the tab of the operator. | No outcome of its own. A failed send of the terminal delegation keeps the operator in its role, as the section "The terminal delegation" says. |
+| The planner finishes          | Planner                     | The reports of the drafts arrive, and a round finds nothing new.                                                  | The planner talks to the user directly.                                                                            | The rounds end, and the close stops at this stage. The planner tells the user directly.                                                        |
+| The milestone guard           | Planner                     | New reads of the open issues and the tasks in flight show no work left in the milestone.                          | The planner tells the user about new work directly.                                                                | A failed read or new work keeps the milestone open, and the planner keeps its role.                                                            |
+| The GitHub milestone closure  | Planner                     | The milestone closes, and a new read shows its number and the state `closed`.                                     | The planner gives the result in its last report to the user.                                                       | A failed write or read keeps the planner in its role for a recovery. The planner tells the user.                                               |
+| The planner ends              | Planner                     | The last report to the user comes before the end of its role.                                                     | The planner gives the user its last report. The user closes the tab of the planner.                                | If the last report fails, the failure rule applies, and the planner keeps its role.                                                            |
 
 The operator does not wait in a loop for a report. If a report does not come, the operator tells the user, and the word
 of the user decides.
