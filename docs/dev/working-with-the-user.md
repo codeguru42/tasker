@@ -423,8 +423,14 @@ link to open an issue from a reply.
   [A decision of the user](#a-decision-of-the-user). It follows [Before a post](issues.md#before-a-post) for an issue.
   For an ad hoc draft, it follows [The ticket subagent](planner.md#the-ticket-subagent).
 
-  The main session shows a draft for approval with the full path of the draft file. It gives a short summary of each
-  section and each change of the draft.
+  A subagent of the main session posts a reviewed ad hoc draft under
+  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner),\
+  because the main session runs no `gh` command. After the post, the main session gives the user the report of the post.
+  The report gives the issue link, the full path of the draft file and a short summary of each section.
+
+  If the draft waits for a decision under [The escape hatch](planner.md#the-escape-hatch), the main session gives the
+  user the full path of the draft file. The main session shows a draft of a comment for approval with the full path of
+  the draft file. It gives a short summary of each section and each change of the draft.
 
   The user keeps the conversation of the main session for the direction of the user. On 2026-11-10, the user said: "all
   things should be subagents. Keep this conversation clear for my interaction and direction."
