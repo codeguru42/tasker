@@ -142,7 +142,9 @@ The operator does these things for the open items:
 
 - If the operator judges that the words do not fully settle the question, it does not send them as the answer of that
   question. In its reply, the operator tells the user in one line what stays open. The operator also asks whether the
-  sender decides. It sends the answers to the other questions of the item as the first bullet of this section says.
+  sender decides. It sends the answers to the other questions of the item as the first bullet of this section says. For
+  a question pane, [A question pane](operator-conversations.md#a-question-pane) wins over this bullet and the bullet
+  that starts "If the reply of the user does neither".
 - If the user says that the sender decides, the words of the user with that decision are the answer of the question. If
   the reply of the user picks a choice or fully settles the question, the reply is the answer of the question. In each
   case, the question becomes an answered question, and the operator sends it as the first bullet of this section says.
