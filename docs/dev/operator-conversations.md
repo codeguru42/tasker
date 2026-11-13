@@ -102,12 +102,15 @@ The operator prepares first-reply text that follows [The form of a reply](workin
 and the [issue-link rule](working-with-the-user.md#the-issue-link-rule). The operator attributes item facts and measures
 to the sender.
 
+[Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
+newline.
+
 The question session shows that text as its first reply without changing a word. Before that reply, the session reads no
 file, runs no command, and uses no AskUserQuestion tool. It then waits for conversation.
 
 After its first reply, the question session reads [A question pane](#a-question-pane),
 [working with the user](working-with-the-user.md), and [the rules](rules.md). The existing `AGENTS.md` rule for a
-user-facing session with no role still applies.
+user-facing session with no role still applies. This rule changes only when the reads happen and adds these docs.
 
 The question session follows the general user-facing, simple-English, [memory](rules.md#the-memory-rule), and
 [doc-read](doc-reads.md#the-doc-read-rule) rules from its first reply.
@@ -141,8 +144,9 @@ question session tells the user in the pane; the question stays open.
 
 ### The operator handles a decision
 
-The operator accepts a decision message only from the question session of its open pane for that question. For every
-other decision message, the operator tells the user in one line, sends nothing, and keeps the question's state.
+The operator accepts a decision message only from the question session of its open pane that it started for that
+question. For every other decision message, the operator tells the user in one line, sends nothing, and keeps the
+question's state.
 
 The operator judges whether the quoted words fully settle that question, with or without choices. A settled message is
 the user's decision without a second word in the operator chat.
@@ -164,7 +168,8 @@ This rule takes precedence over the two named bullets of [The answer](operator-i
 message fails, the failure rule applies and the run stops until the user speaks.
 
 A decision message covers only its question. It does not approve a Claude Code permission prompt or a separate tasker
-setting.
+setting. It is not the request of the user that [the operator page](../operator.md) needs before the operator sets a
+value with a `tasker` command.
 
 A **No decision** message leaves the question open. The operator closes the pane and skips that question for the rest of
 this run.
@@ -178,14 +183,20 @@ After a settled answer or **No decision**, the operator closes the pane without 
 leaves the question answered, but the operator still closes the pane.
 
 This pane close has no tab-list entry, stop message, session-review rounds, or
-[Stop a session](operator-start.md#stop-a-session) procedure. The user's request to start the pane counts as the request
-needed for its close.
+[Stop a session](operator-start.md#stop-a-session) procedure. For a question pane, this section wins over the sentence
+"The operator stops a session only on a request of the user" of [Stop a session](operator-start.md#stop-a-session). The
+word of the user that starts the pane counts as that request.
+
+The close of a question pane closes a pane, not a tab. So the sentence of [the operator page](../operator.md) that
+starts "The tab list is the list of the tabs" does not limit it.
 
 If herdr reports `pane_not_found`, the pane is already gone and the operator proceeds. For another close failure, the
 operator tells the user and stops the run until the user speaks.
 
 Before a later question, the operator reviews decisions so far and passes relevant ones as decisions so far. It does not
-change the sender's question or apply an earlier answer to it.
+change the sender's question or apply an earlier answer to it. The bullet of [The answer](operator-items.md#the-answer)
+that starts "An answer of the user or an answer of the operator covers only" gives this rule. The user decides the later
+question in its own pane, with the decisions so far in view.
 
 If no open question remains, the run ends and the operator tells the user in one line.
 
@@ -203,32 +214,32 @@ While a pane is open, the operator starts neither its handoff nor
 
 The user holds no state of its own in this table. The column "Who tells whom" gives each step of the user.
 
-| Event                                           | Question session                    | Operator                                                                               | Sender                     | Who tells whom                          |
-| ----------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------- |
-| The user asks for a pane or a run               | Not started                         | Opens a pane and starts the session                                                    | Continues its other work   | The user tells the operator             |
-| The user asks for a pane while a pane is open   | Running                             | Starts nothing                                                                         |                            | The operator tells the user             |
-| The operator is of a kind other than `claude`   | Not started                         | Starts nothing                                                                         |                            | The operator tells the user             |
-| No pane opens next to the operator              | Not started                         | No pane exists. A run stops                                                            |                            | The operator tells the user             |
-| The pane does not show the question             | Not started, or running at a prompt | The pane stays open. A run stops                                                       |                            | The operator tells the user             |
-| The session starts                              | Running. Shows the question         | The question stays open                                                                |                            | The question session tells the user     |
-| The decision message settles the question       | Waits at its prompt until the close | Sends the answer and the draft changes, closes the pane, starts the next pane of a run | The answer starts it again | The question session tells the operator |
-| The send of the answer fails                    | Waits at its prompt until the close | The question stays answered. Closes the pane. The failure rule applies                 |                            | The operator tells the user             |
-| The decision message does not settle it         | Running                             | Sends what stays open. The question stays open                                         |                            | The operator tells the question session |
-| The send of what stays open fails               | Running                             | The question stays open. A run stops. The failure rule applies                         |                            | The operator tells the user             |
-| A send of the question session fails            | Running                             | The question stays open                                                                |                            | The question session tells the user     |
-| A "No decision" message                         | Waits at its prompt until the close | Closes the pane. The question stays open. A run goes on                                |                            | The question session tells the operator |
-| A message gives a rule, a fact or a preference  | Waits at its prompt until the close | Sends each one to `planner-<slug>` (requirement 4.8)                                   |                            | The operator tells the planner          |
-| The send to `planner-<slug>` fails              | Waits at its prompt until the close | The failure rule applies                                                               |                            | The operator tells the user             |
-| The user asks the session for a step outside it | Running                             | No change                                                                              |                            | The question session tells the user     |
-| The fetch of the question session fails         | Running                             | No change                                                                              |                            | The question session tells the user     |
-| A decision message that requirement 4.1 refuses | Any                                 | Sends nothing. The question keeps its state                                            |                            | The operator tells the user             |
-| The user answers in the chat of the operator    | Running until the close             | Handles the answer and closes the pane                                                 | The answer starts it again | The user tells the operator             |
-| The user closes the pane with no decision       | Ended                               | The question stays open. A run waits for the word of the user                          |                            | The user tells the operator             |
-| herdr reports that the pane is already gone     | Ended                               | Goes on                                                                                |                            |                                         |
-| The close fails in another way                  | Running or waits at its prompt      | A run stops until the word of the user                                                 |                            | The operator tells the user             |
-| A handoff or a close of the milestone is due    | Running                             | Starts neither while the pane is open. The word of the user decides                    |                            | The operator tells the user             |
-| The user ends the run                           | A running session keeps running     | Starts no next pane                                                                    |                            | The user tells the operator             |
-| No open question of the run is left             | Ended                               | The run ends                                                                           |                            | The operator tells the user             |
+| Event                                                                            | Question session                    | Operator                                                                                                     | Sender                     | Who tells whom                          |
+| -------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------- | --------------------------------------- |
+| The user asks for a pane or a run                                                | Not started                         | Opens a pane and starts the session                                                                          | Continues its other work   | The user tells the operator             |
+| The user asks for a pane while a pane is open                                    | Running                             | Starts nothing                                                                                               |                            | The operator tells the user             |
+| The operator is of a kind other than `claude`                                    | Not started                         | Starts nothing                                                                                               |                            | The operator tells the user             |
+| No pane opens next to the operator                                               | Not started                         | No pane exists. A run stops                                                                                  |                            | The operator tells the user             |
+| The pane does not show the question                                              | Not started, or running at a prompt | The pane stays open. A run stops                                                                             |                            | The operator tells the user             |
+| The session starts                                                               | Running. Shows the question         | The question stays open                                                                                      |                            | The question session tells the user     |
+| The decision message settles the question                                        | Waits at its prompt until the close | Sends the answer and the draft changes, closes the pane, starts the next pane of a run                       | The answer starts it again | The question session tells the operator |
+| The send of the answer fails                                                     | Waits at its prompt until the close | The question stays answered. Closes the pane. The failure rule applies                                       |                            | The operator tells the user             |
+| The decision message does not settle it                                          | Running                             | Sends what stays open. The question stays open                                                               |                            | The operator tells the question session |
+| The send of what stays open fails                                                | Running                             | The question stays open. A run stops. The failure rule applies                                               |                            | The operator tells the user             |
+| A send of the question session fails                                             | Running                             | The question stays open                                                                                      |                            | The question session tells the user     |
+| A "No decision" message                                                          | Waits at its prompt until the close | Closes the pane. The question stays open. A run goes on                                                      |                            | The question session tells the operator |
+| A message gives a rule, a fact or a preference                                   | Waits at its prompt until the close | Sends each one to `planner-<slug>` (see [The operator handles a decision](#the-operator-handles-a-decision)) |                            | The operator tells the planner          |
+| The send to `planner-<slug>` fails                                               | Waits at its prompt until the close | The failure rule applies                                                                                     |                            | The operator tells the user             |
+| The user asks the session for a step outside it                                  | Running                             | No change                                                                                                    |                            | The question session tells the user     |
+| The fetch of the question session fails                                          | Running                             | No change                                                                                                    |                            | The question session tells the user     |
+| A decision message that [the operator refuses](#the-operator-handles-a-decision) | Any                                 | Sends nothing. The question keeps its state                                                                  |                            | The operator tells the user             |
+| The user answers in the chat of the operator                                     | Running until the close             | Handles the answer and closes the pane                                                                       | The answer starts it again | The user tells the operator             |
+| The user closes the pane with no decision                                        | Ended                               | The question stays open. A run waits for the word of the user                                                |                            | The user tells the operator             |
+| herdr reports that the pane is already gone                                      | Ended                               | Goes on                                                                                                      |                            |                                         |
+| The close fails in another way                                                   | Running or waits at its prompt      | A run stops until the word of the user                                                                       |                            | The operator tells the user             |
+| A handoff or a close of the milestone is due                                     | Running                             | Starts neither while the pane is open. The word of the user decides                                          |                            | The operator tells the user             |
+| The user ends the run                                                            | A running session keeps running     | Starts no next pane                                                                                          |                            | The user tells the operator             |
+| No open question of the run is left                                              | Ended                               | The run ends                                                                                                 |                            | The operator tells the user             |
 
 ### Measured facts
 
@@ -262,7 +273,7 @@ them again.
 - 2026-11-12: the question session did not know where to send its decision. Then the planner gave it its session name.
   The user said: "tell the pane your id so it can send a response back". Each later prompt named the planner by the name
   of its Claude Code session, `codeguru42/tasker#850`, and gave its session ref. Each decision came back with
-  `SendMessage`. See the [newline-prompt fact](operator-start.md#start-a-session).
+  `SendMessage`.
 - 2026-11-12: one pane held three questions. The user then asked for the third question in a new pane: "Tell the parent
   pane to start this in a new pane so I can discuss further." Then the user said: "For future question panes, send one
   question at a time. Do not group questions even if they are all for the same underlying action."
