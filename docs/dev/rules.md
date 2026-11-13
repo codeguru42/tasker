@@ -4,6 +4,13 @@ This page gives the rules for each change to this repo and for all text that an 
 [Code conventions](code-conventions.md) gives the details of the layout, the steps to add a command, the imports, the
 zod facts and the tests.
 
+## Changes
+
+- The tracked-change rule: each change of a tracked file goes through an issue. A tracked file is a file that git tracks
+  in this repo, for example a doc, a file under `src/` or `.claude/settings.json`. The rule does not say who makes the
+  commit of a change. On 2026-11-04, about the commit of the key of #756 to `.claude/settings.json`, the user said: "I
+  mean that a change to a tracked file requires an issue".
+
 ## Check
 
 `npm run check` must pass before a change is complete.

@@ -1100,9 +1100,9 @@ likely edit the same file", which name the planner.
 
 - [Core features first](working-with-the-user.md#core-features-first) gives the rules for the core features, an edge
   case, a security gap, containers, UTF-8 and a collision of derived names.
-- If the user states a design fact or a rule, the planner puts it in a doc of the repo through a ticket: in the plan of
-  a ticket in progress (before `tasker approve` when possible), in the body of a ticket that has not started, or in a
-  new issue.
+- If the user states a design fact or a rule, the planner puts it in a doc of the repo. This doc change follows
+  [the tracked-change rule](rules.md#changes) of rules.md. The change goes in the plan of a ticket in progress, before
+  `tasker approve` when possible. It can also go in the body of a ticket that has not started, or in a new issue.
 - The work on this repo must continue on any machine. Each new rule, fact or preference goes to a doc of the repo, as
   the bullet before this one says. This includes the preferences of the user about how to work. No rule, fact or
   preference goes to memory, as [the memory rule](rules.md#docs) of rules.md says.
