@@ -71,11 +71,120 @@ with the same commands, a split of the action into several calls, and the same c
 2026-10-17, the user declined a fact test with `rm -rf`, and the task subagent of #231 ran it from two script files
 before the answer came.
 
+Claude Code checks a Bash call against the allow rules part by part. A compound call is one Bash call that holds two or
+more commands, for example a chain with `&&`, `||` or `;`, or a pipe. A part is one command of a compound call. For a
+match, each part of the call must match an allow rule. Claude Code splits a call at `&&`, `||`, `;`, `|`, `|&`, `&` and
+newlines. This holds for each allow rule, not only for `gh`.
+
+On 2026-11-12, the section "Compound commands" of https://code.claude.com/docs/en/permissions said:
+
+> Claude Code is aware of shell operators, so a rule like `Bash(safe-cmd *)` won't give it permission to run the command
+> `safe-cmd && other-cmd`. The recognized command separators are `&&`, `||`, `;`, `|`, `|&`, `&`, and newlines. Every
+> subcommand must be allowed for a compound command to run without a prompt, for example because the subcommand matches
+> an allow rule or is a read-only command.
+
+Claude Code checks the target of a redirect by itself. A redirect is a `> file`, `>> file` or `2> file` in a Bash call.
+The check uses the `Edit` rules, the protected paths and the working directories. A working directory is a folder where
+Claude Code allows file edits with no prompt. An allow rule of the command does not cover its target. A target outside
+the working directories, with no `Edit` allow rule, matches no rule.
+
+On the same day, the section "Redirections" of the same page said:
+
+> When a command redirects output or input, Claude Code checks the redirect target against your file rules as if Claude
+> wrote or read that file directly:
+>
+> - **Output redirects**: for `> file`, `>> file`, or `2> file`, the check covers your `Edit` allow and deny rules,
+>   protected paths, and the working directories. A rule such as `Bash(git commit *)` allows the command, not the
+>   target. A target that starts with `~` or contains a glob character needs your approval.
+
+A call that matches no rule goes to the classifier. The classifier decides from the context of the conversation. In a
+subagent, the same decision order and the same rules apply as in the parent session.
+
+A background subagent is a subagent of the Agent tool that runs in the background of a top-level session. The user types
+no message in the conversation of a background subagent. A word of the user reaches it only in the prompt or in a
+message of the parent session. No one measured how the classifier weighs such a word.
+
+On the same day, the section "How the classifier evaluates actions" of https://code.claude.com/docs/en/permission-modes
+said:
+
+> Each action goes through a fixed decision order. The first matching step wins:
+>
+> 1. Actions matching your allow, ask, or deny rules resolve immediately, with these exceptions:
+
+The list of exceptions names no `gh` command. Step 3 of the same list said:
+
+> Everything else goes to the classifier, apart from critical-path removals under their default handling.
+
+After the list, the same section said:
+
+> In the classifier requests sent by Claude Code itself, the classifier sees user messages, tool calls other than
+> read-only lookups such as file reads and searches, and your CLAUDE.md content.
+
+The section "How auto mode handles subagents" of the same page said:
+
+> While the subagent runs, each of its actions goes through the same decision order as in the parent session, with the
+> same block and allow rules.
+
+No part of a denied call runs. This includes a redirect or a command before the denied part. The reason is evidence a
+below. At 2026-11-12T00:36:59Z, the classifier denied call a. The report of the subagent said that the call ran up to
+the `gh` call and wrote `title.txt` and `body.md`. At 2026-11-12T00:40:41Z, the top-level session ran this call:
+
+```sh
+cd <scratchpad> && gh issue create -R codeguru42/tasker --title "$(head -1 draft-execute-skips-todos.md)" --body-file body.md --milestone "M19 — Polish"
+```
+
+It failed with exit code 1 and this output:
+
+```text
+open body.md: no such file or directory
+```
+
+The calls of the evidence below ran in background subagents of one top-level session, with Claude Code 2.1.322 in auto
+mode. In these calls, `<scratchpad>` replaces the path of the scratch folder of the session. That folder is under
+`/tmp`. The user file `$HOME/.claude/settings.json` holds the allow rules `Bash(gh issue create *)` and
+`Bash(gh issue edit *)`.
+
+Calls a, b and c are compound calls. At least one part of each matches no allow rule, so each went to the classifier.
+The classifier denied each with the reason "[External System Writes]". Call a, denied at 2026-11-12T00:36:59Z:
+
+```sh
+cd <scratchpad>; head -1 draft-execute-skips-todos.md > title.txt; tail -n +3 draft-execute-skips-todos.md > body.md; gh issue create -R codeguru42/tasker --title "$(cat title.txt)" --body-file body.md --milestone "M19 — Polish"
+```
+
+Call b, denied at 2026-11-12T00:37:03Z:
+
+```sh
+cd <scratchpad> && tail -n +3 lease-delete-denial-issue.md > lease-delete-denial-body.md && gh issue create -R codeguru42/tasker --title "$(head -1 lease-delete-denial-issue.md)" --body-file lease-delete-denial-body.md --milestone "Docs"
+```
+
+Call c, denied at 2026-11-12T00:41:19Z. It held `$(...)`, `if` and `printf`:
+
+```sh
+s=$(tasker status) || { echo "tasker status failed; skip"; exit 1; }; st=$(gh issue view 863 -R codeguru42/tasker --json state -q .state) || { echo "state read failed; skip"; exit 1; }; if printf '%s\n' "$s" | grep -q 'codeguru42/tasker#863 '; then echo "IN FLIGHT: skip"; elif [ "$st" != OPEN ]; then echo "state $st: skip"; else gh issue edit 863 -R codeguru42/tasker --add-blocked-by 756 && echo "link added"; fi
+```
+
+Calls d and e are plain calls. Each matches one allow rule of the user file. At 2026-11-13T02:45:02Z, a background
+subagent ran call d with no denial, and it posted #881:
+
+```sh
+gh issue create -R codeguru42/tasker --title 'Issues: run each `gh` write alone in a plain call, after the reads' --body-file <scratchpad>/read-write-split-body.md --milestone 'Docs'
+```
+
+At 2026-11-13T02:45:34Z, the same subagent ran call e with no denial:
+
+```sh
+gh issue edit 881 -R codeguru42/tasker --add-blocked-by 878
+```
+
+No one measured whether the classifier saw calls d and e.
+
 After a tool block, the task subagent [stops](limits.md#the-answer-wait-rule). It reports the exact text of the denial,
 the exact command, the step of the work that the command belongs to, and the purpose of the command. The orchestrator
 tells the user these facts. The orchestrator does not run the blocked action for the task subagent, unless the user
 tells it to. The recommendation mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) does
-not cover a tool block: the orchestrator always waits for the user.
+not cover a tool block: the orchestrator always waits for the user. The report says that the denied call did not run. It
+names no file and no output of the denied call as made. This also applies to each other report of a denial, as the
+paragraph that starts "Each report of a denial quotes" lists them.
 
 Each report of a denial quotes the exact denied call word for word, as the transcript of the session that ran the call
 holds it. A short form or a description of the call does not take its place. This also applies to an item, a later
