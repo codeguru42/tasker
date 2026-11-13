@@ -605,9 +605,57 @@ no offer until the read works.
 A hold of a whole milestone is another rule, [A milestone hold](working-with-the-user.md#a-milestone-hold).
 
 If the ticket has a task in flight, the orchestrator does the steps of [the defer rule](#the-defer-rule), with two
-changes. Step 4 adds the label, and the milestone stays. Step 7 lists each open issue that the ticket blocks, also in
-its milestone. The task of a ticket on hold is a parked task. For each ticket on hold, with or without a task, the
-orchestrator lists each open issue that the ticket blocks. The user says which links to remove.
+changes. Step 4 adds the label, and the milestone stays. In place of step 7, the orchestrator does the link removal of a
+hold below. The task of a ticket on hold is a parked task.
+
+A same-file link is one kind of soft blocker of [The reads before the write](issues.md#the-reads-before-the-write). It
+is a blocked-by link that exists only because both issues edit one file, or one place of a doc. Each bullet of
+[The blocked-by links](planner.md#the-blocked-by-links) that links two issues only for a shared file gives such links.
+Three examples are the bullets that start "The planner also links two issues", "Inside a chain of issues" and "A line of
+tickets". A link for a real need of code or docs is not a same-file link. The links of three bullets are also not
+same-file links: "A ticket that changes the form or the layout", "A ticket that renames a doc ..." and "A manual-steps
+issue gets its links".
+
+GitHub keeps no reason for a link. So the orchestrator judges each link from the Requirements and the Docs sections of
+both issues. If the blocked issue cannot start before the ticket on hold lands, the link is not a same-file link. If the
+blocked issue starts first and its body is then false, the link is also not a same-file link. This judgment is open on
+purpose. If the orchestrator cannot tell the kind of a link, the link is not a same-file link.
+
+The link removal of a hold removes the same-file links of a ticket on hold. The word of the user that puts the ticket on
+hold is the approval of each removal. For a ticket with no task in flight, the orchestrator does these steps right after
+it adds the label. If the label is already on the ticket, the orchestrator does not add it again. It then does the steps
+at the word of the user. For a ticket with a task in flight, the steps come in place of step 7 of the defer rule.
+
+1. List each open issue that the ticket blocks:
+   `gh issue view <number> -R <repo> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. If
+   the output is empty, the link removal ends.
+2. Judge the kind of the link of each listed issue.
+3. For each same-file link, do steps 1 and 2 of [The reads before the write](issues.md#the-reads-before-the-write) for
+   the blocked issue. If the blocked issue is in flight or closed, skip its removal.
+4. Remove each same-file link that step 3 does not skip. Run
+   `gh issue edit <blocked issue> -R <repo> --remove-blocked-by <number>` alone in a plain call.
+5. If step 4 removed a link, read the board at once.
+6. Tell the user each removed link and each skipped removal with its reason. If other links exist, ask the user which of
+   them to remove. Then remove each link that the user names, and read the board again.
+7. A removed link of step 4 or step 6 can free an issue of another milestone. If the session list of the tools has
+   `orchestrator-<milestone>` of that milestone, tell that session the removed link.
+
+If the list of step 1 fails, [the failure rule](limits.md#the-failure-rule) applies, and no link changes. A later word
+of the user can start the link removal again. If `tasker status` or the read of the state fails, the orchestrator skips
+that removal and tells the user. If a removal, the session list or a message fails, the failure rule applies.
+
+The task of an issue in flight already started, so its link no longer stops a start. A stacked task on the task of the
+ticket on hold follows the postpone bullet of [the stacked-ticket rule](#the-stacked-ticket-rule).
+
+The link removal adds no link. In a chain of three issues of one file, the middle issue can go on hold. Then the link
+removal removes the link of the third issue and adds no link to the first issue. The shared-file bullet of
+[Pick the tickets](#pick-the-tickets) then gives the order of the first and the third issue.
+
+At the end of the hold, no session adds a removed link again. The ticket and each issue that the link removal freed then
+follow the shared-file bullet and [the overlap rule](land-the-work.md#the-overlap-rule).
+
+On 2026-11-13, the user said: "more generally, any issue that is on hold should automatically unblock any downstream
+issues that are only blocked due to the "same file" rule."
 
 Each rule of the orchestration pages leaves out a ticket on hold and its task, as if they are outside the milestone.
 This covers the start of a ticket, an empty Todo column, the shared-file bullet, the link offer and the earlier-blocker
