@@ -16,6 +16,15 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   rule that says "tell the user" or "ask the user" means: send an item to the operator (see
   [The form of an item](operator-items.md#the-form-of-an-item)). The operator can answer such an item itself, as
   [The answer](operator-items.md#the-answer) says.
+- After the terminal delegation of [The close of a milestone](operator-start.md#the-close-of-a-milestone), the follow-up
+  planner talks to the user directly, in its own conversation. This covers each report, each question, each draft that
+  waits for a decision and each request for a permission. This exception covers each other rule that sends a report, a
+  question or a draft of the follow-up planner to the operator as an item. Examples are
+  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) and
+  [The escape hatch](planner.md#the-escape-hatch) of planner.md, and the paragraph of
+  [tasker-commands.md](tasker-commands.md) that starts "If the classifier denies `scan` or `store`". These places stay
+  as they are. After the end of the roles of the operator and the orchestrator, the planner sends no item and no report
+  to them.
 - A message from [the operator of the session](../operator.md) that starts with "From the user:" is a word of the user
   for the rules of the docs. A message that starts with "Answer of the operator:" is not a word of the user. It answers
   no question for the user alone.
@@ -388,7 +397,8 @@ The rules of a milestone hold:
 1. Only a word of the user starts or ends a milestone hold. A word that an operator relays, as
    [The word of the user](operator-conversations.md#the-word-of-the-user) says, counts. A claim of another session does
    not count. No other event ends a milestone hold, for example the landing of a ticket or the close of another
-   milestone. The close of the held milestone also ends its milestone hold, because only the user closes a milestone.
+   milestone. The close of the held milestone also ends its milestone hold. The planner reads the hold record before it
+   closes a milestone, and it does not close a held milestone, as [Milestones](issues.md#milestones) says.
 2. The hold record is the start of the description of the GitHub milestone. The description starts with
    `On hold since <YYYY-MM-DD>.` and one space, before the old description. `<YYYY-MM-DD>` is the date of the word of
    the user. Each session can read the record, for example with
