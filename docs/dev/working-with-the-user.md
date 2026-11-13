@@ -424,9 +424,9 @@ link to open an issue from a reply.
   For an ad hoc draft, it follows [The ticket subagent](planner.md#the-ticket-subagent).
 
   A subagent of the main session posts a reviewed ad hoc draft under
-  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner),\
-  because the main session runs no `gh` command. After the post, the main session gives the user the report of the post.
-  The report gives the issue link, the full path of the draft file and a short summary of each section.
+  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner), because the main session runs no
+  `gh` command. After the post, the main session gives the user the report of the post. The report gives the issue link,
+  the full path of the draft file and a short summary of each section.
 
   If the draft waits for a decision under [The escape hatch](planner.md#the-escape-hatch), the main session gives the
   user the full path of the draft file. The main session shows a draft of a comment for approval with the full path of

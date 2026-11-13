@@ -144,8 +144,8 @@ the planner, from its table of the needs and the likely files.
 Before the planner sends a question of a report to the user, it applies the paragraph that starts "The report gives a
 question for the user". A question about an edge case that is not a security gap or a bug in the core path does not go
 to the user. The planner decides it as "later" and adds it to the list of the edge cases of the report. The planner
-gives that list in each place where it gives the findings that it dismissed. Examples are the report of a post, an item
-of the escape hatch and an item of the escape hatch.
+gives that list in each place where it gives the findings that it dismissed. Examples are the report of a post and an
+item of the escape hatch.
 
 A change of the draft after a report starts a new ticket subagent. An example is a change from an answer of the user.
 Another example is the change of the draft into a change of an open issue after the duplicate search. A change that
@@ -436,17 +436,17 @@ These rules still apply to the post:
 On 2026-11-12, the user gave this reason for the post with no approval of the user: "Have the planner run the review
 cycles defined in its rules. Then post the final result."
 
-If the duplicate search right before the post finds an open issue that covers the change,  
-each planner starts a new ticket subagent. That ticket subagent turns the draft into a change of that issue and runs the
-review loops for that change. Then the planner posts the change with no approval of the user. The escape hatch still
-applies to the change, for example for a change of scope of an issue in flight.
+If the duplicate search right before the post finds an open issue that covers the change, each planner starts a new
+ticket subagent. That ticket subagent turns the draft into a change of that issue and runs the review loops for that
+change. Then the planner posts the change with no approval of the user. The escape hatch still applies to the change,
+for example for a change of scope of an issue in flight.
 
 If the match right before the post is a closed issue, each planner compares the draft with what the closed issue landed:
 
-- If the draft is a true duplicate, because the change already landed, the planner drops the draft and  
-  reports the match.
-- If the draft asks for more than the closed issue landed, the planner posts a new follow-up issue that  
-  names the closed issue, with no approval of the user. The escape hatch still applies.
+- If the draft is a true duplicate, because the change already landed, the planner drops the draft and reports the
+  match.
+- If the draft asks for more than the closed issue landed, the planner posts a new follow-up issue that names the closed
+  issue, with no approval of the user. The escape hatch still applies.
 - If the planner cannot tell which case applies, the draft waits for a decision of the user. The follow-up planner sends
   an item; the initial planner and the ad hoc planner ask in their chat. The planner posts nothing for that draft.
 
@@ -500,9 +500,9 @@ When a draft needs one of these decisions, each planner asks the user before the
   feature or the behavior change is in the source of the draft, the draft needs no such decision. The source is a
   request of the user or the description of a milestone that the user approved.
 
-  A request that another session passes on with the words of the user is a request of the user.  
-  An example is a request through the operator. A lesson or proposed issue from another session, without those words,
-  does not supply such a request.
+  A request that another session passes on with the words of the user is a request of the user. An example is a request
+  through the operator. A lesson or proposed issue from another session, without those words, does not supply such a
+  request.
 
 - A choice between two or more designs, where each one has a real cost. A choice of the implementation is not such a
   choice, because the plan of the ticket makes it.
@@ -514,11 +514,11 @@ When a draft needs one of these decisions, each planner asks the user before the
 An edge case that a ticket subagent decided as "later" needs none of these decisions, as
 [The ticket subagent](#the-ticket-subagent) says.
 
-For a draft that waits for such a decision, each planner posts nothing. The follow-up planner  
-sends the draft as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that
-it dismissed. The answer of the item is the decision of the user or an
-[answer of the operator](operator-items.md#the-answer). The initial planner and the ad hoc planner ask in their chat,
-with each finding that they dismissed. A planner posts nothing for such a draft until each question has an answer.
+For a draft that waits for such a decision, each planner posts nothing. The follow-up planner sends the draft as an
+item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed. The
+answer of the item is the decision of the user or an [answer of the operator](operator-items.md#the-answer). The initial
+planner and the ad hoc planner ask in their chat, with each finding that they dismissed. A planner posts nothing for
+such a draft until each question has an answer.
 
 - If the answer rejects the draft or says to drop it, the planner drops the draft and reports the drop, as
   [The post of the follow-up planner](#the-post-of-the-follow-up-planner) says. A
@@ -550,8 +550,8 @@ The post of a draft by each planner with no approval of the user does not cover 
 ### The initial planner
 
 The ticket subagent of the initial planner runs the same review loops. The initial planner posts each draft after its
-loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner). Then it  
-reports the post in its chat under that subsection.
+loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner). Then it reports the post in its
+chat under that subsection.
 
 ## The body of an issue
 
