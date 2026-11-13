@@ -62,10 +62,9 @@ From the start of the close of a milestone, each session of its slug suggests no
 no handoff file. The reason: the session stops soon after the close, so a handoff file only costs tokens.
 
 [The close of a milestone](operator-start.md#the-close-of-a-milestone) gives the start for each session. For the
-orchestrator and the operator, it is the report of step 1 that says that the close started. With no orchestrator, it is
-the word of the user that starts step 2 for the operator. For the follow-up planner, it is the word that the close
-started, from the operator or, with no operator, from the user. The rule lasts until the session stops. For the sessions
-of the slug of a long-running orchestrator, it lasts until the end of the close.
+orchestrator and the operator, it is the report of the orchestrator that the close started. With no orchestrator, it is
+the word of the user that starts the close for the operator. For the follow-up planner, it is the word that the close
+started, from the operator or, with no operator, from the user. The rule lasts until the end of the role of the session.
 
 This rule wins over each rule that makes a session suggest or start a handoff, also over the go of the operator. Each
 recommendation of a handoff is then "not yet", and its reason is the close. If the user asks for a handoff during the
