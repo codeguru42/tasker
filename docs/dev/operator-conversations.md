@@ -62,8 +62,18 @@ the operator that it is closed.
 
 ### Start
 
-The operator starts a pane only after a word of the user in the operator chat. The user can name one open question or
-ask for a run; an item from another session does not start a pane.
+The operator starts a pane only after a word of the user in the operator chat. An item from another session does not
+start a pane. A pane is the default place of the conversation about an open question. So a word of the user that names
+an open question starts a pane. A word of the user that asks to discuss the open questions starts a run. The operator
+does not ask the user first whether to use a pane or the chat.
+
+The user can still choose the chat. A word of the user that asks for the chat, or that answers a question in the chat,
+starts no pane. A request for the list of open items, for one item or for a draft also starts no pane.
+[The open items](operator-items.md#the-open-items) gives the reply to such a request. The operator judges which kind of
+word the user gave, and this judgment is open on purpose.
+
+The reason: on 2026-11-12, in the session operator-m16, the user said: "always open a pane for each question from now
+on".
 
 Each pane holds one question, even when questions belong to one item or concern one action.
 
@@ -216,8 +226,9 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 
 | Event                                                                            | Question session                    | Operator                                                                                                     | Sender                     | Who tells whom                          |
 | -------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------- | --------------------------------------- |
-| The user asks for a pane or a run                                                | Not started                         | Opens a pane and starts the session                                                                          | Continues its other work   | The user tells the operator             |
-| The user asks for a pane while a pane is open                                    | Running                             | Starts nothing                                                                                               |                            | The operator tells the user             |
+| A word of the user starts a pane or a run                                        | Not started                         | Opens a pane and starts the session                                                                          | Continues its other work   | The user tells the operator             |
+| A word of the user asks for the chat or answers in the chat                      | Not started                         | Starts no pane. Handles an answer of the user in the chat                                                    |                            | The user tells the operator             |
+| A word of the user starts a pane while a pane is open                            | Running                             | Starts nothing                                                                                               |                            | The operator tells the user             |
 | The operator is of a kind other than `claude`                                    | Not started                         | Starts nothing                                                                                               |                            | The operator tells the user             |
 | No pane opens next to the operator                                               | Not started                         | No pane exists. A run stops                                                                                  |                            | The operator tells the user             |
 | The pane does not show the question                                              | Not started, or running at a prompt | The pane stays open. A run stops                                                                             |                            | The operator tells the user             |
