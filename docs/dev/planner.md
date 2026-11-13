@@ -973,6 +973,16 @@ likely edit the same file", which name the planner.
   planner first ordered the chain of the Docs milestone by impact. Then the user chose the order by issue number, oldest
   first.
 
+- A ticket on hold gets no new same-file link as the blocker. [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold)
+  defines a ticket on hold and a same-file link. Before a session adds a same-file link, it reads the labels of the
+  blocker with `gh issue view <blocker> -R <repo> --json labels -q '.labels[].name'`. This read comes before the reads
+  of [The reads before the write](issues.md#the-reads-before-the-write). If the output has the line `on hold`, the
+  session adds no such link. If the read fails, the session adds no such link, and it tells the user.
+
+  A new issue whose chain ends with a ticket on hold gets no link for that file. This bullet wins over each other bullet
+  of this page that adds a same-file link. At the start of a hold, the orchestrator removes each same-file link of the
+  ticket. At the end of the hold, no session adds the link again.
+
 - A ticket that closes a live security gap goes first in its chain, ahead of each ticket that it does not need, as
   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. This bullet wins over the order by issue number.
 - An edit of a file under `test/helpers/` alone gets no blocked-by link.
