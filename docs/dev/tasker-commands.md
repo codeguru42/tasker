@@ -56,6 +56,15 @@ A task subagent runs a git command in the local clone of the orchestrator with `
 `cd <clone> && git fetch -q origin && git diff ...` with the reason "[Modify Shared Resources]". A plain
 `git -C <clone> fetch --multiple tasker origin` ran with no denial.
 
+On 2026-11-11, the classifier of auto mode denied the delete with a lease of a task branch on `origin`, with Claude Code
+2.1.322. The task subagent of #847 ran
+`git -C $HOME/src/mine/tasker push --force-with-lease=refs/heads/issue-847-tasker-open-pr-move-the-issue-to-a-configured-review-status:764b9be2ab5156ff4c575a2f7af08be5cf637dd9 origin --delete issue-847-tasker-open-pr-move-the-issue-to-a-configured-review-status`,
+and the reason of the denial was "[Git Destructive]". Thirty-one measure runs of `claude -p --permission-mode auto`
+deleted a scratch branch with a lease, and each run passed with no denial. Thirty runs used a local bare `origin` with
+Claude Code 2.1.322, and one run used the real `origin` with Claude Code 2.1.323. The measures did not find the cause.
+If the classifier denies this delete, the task subagent reports the exact text and the exact call, as the paragraph that
+starts "After a tool block" says.
+
 A denial covers the whole action of the call, not only its form. After a tool block, the task subagent runs the denied
 action in no other form, and no part of it, until the orchestrator sends the answer. Other forms include a script file
 with the same commands, a split of the action into several calls, and the same commands with other paths or names. On
