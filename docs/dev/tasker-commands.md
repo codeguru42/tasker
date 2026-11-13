@@ -326,6 +326,18 @@ plain-form rule and do not change it.
   subagent runs the same wait again. After the report, the task subagent reads the state with `tasker show <issue>`.
   When the orchestrator starts the task subagent again, the task subagent follows
   ["What the task subagent does"](quota.md#what-the-task-subagent-does) in ["Quota"](quota.md#quota).
+- Start a `tasker` command that reads a feedback file only after the result of the last write of that file. A feedback
+  file holds the feedback text of a `tasker` command in the form `"$(cat <absolute path of the file>)"` of
+  [the plain-form rule](#the-plain-form-rule). Never send the write of the file and the command as parallel calls of one
+  message. If the result of the write reports a problem in the text of the file, fix the file first. Then wait for the
+  result of the write of the fix too.
+
+  The session gets the results of the calls of one message only after it sends all of them. A hook of Claude Code is a
+  command that Claude Code runs at an event of a session. The setup of a user can have such a hook that checks the text
+  of each file that the Write tool writes. On #857 (2026-11-11), the task subagent started each `tasker refine` in the
+  same message as the write of its file. Each report of the hook reached the session only after the Bash call of the
+  refine read the file. No one tested these facts beyond that case.
+
 - When the output of a read-only `tasker` command goes into a pipe, start the call with `set -o pipefail`. As a result,
   a failed `tasker` command stops the chain. To keep only some lines, use `sed -n`, for example `sed -n '1,20p'`, not
   `head`. With `pipefail`, `head` can make the pipe exit with 141 when tasker succeeded, because `head` stops reading
