@@ -171,22 +171,20 @@ The orchestrator does all the steps of this section.
   The board moves the card to Done when `tasker finish` closes the issue.
 - When the Todo column of the milestone is empty, the orchestrator waits until the last ticket of the milestone closes
   and no task of the milestone is in flight. If the orchestrator did not send the report that the close started yet, it
-  now sends this report to the operator, as step 1 of
-  [The close of a milestone](operator-start.md#the-close-of-a-milestone) says. Then the orchestrator runs the rounds of
-  [Session-review rounds](session-review-rounds.md), before it tells the user that the milestone is done and before it
-  stops. Do not write the issues of the next milestone. When the rounds end, the orchestrator tells the user one time
-  that the milestone is done, and it lists each finding with its state. If a pass of
-  [The close of a milestone](operator-start.md#the-close-of-a-milestone) adds an issue to the milestone, this bullet
-  applies again after the orchestrator runs that issue.
+  now sends this report to the operator, as [The start and the authority](operator-start.md#the-start-and-the-authority)
+  says. Then the orchestrator runs the rounds of [Session-review rounds](session-review-rounds.md), before it tells the
+  user that the milestone is done and before it stops. Do not write the issues of the next milestone. When the rounds
+  end, the orchestrator tells the user one time that the milestone is done, and it lists each finding with its state.
 
   The orchestrator does not ask the user to close the milestone, and it does not bring the milestone up again in later
   replies. On 2026-10-25, orchestrator-m21 asked the user several times whether to ask the planner to close M21, and the
-  user said: "I will decide when to close M21". The milestone closes only when the user says so, as
-  [Milestones](issues.md#milestones) of issues.md says. The stop of this bullet does not cover a long-running
-  orchestrator (see [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review
-  rounds of this bullet, the list of the findings and the report that the milestone is done cover a long-running
-  orchestrator, before it moves to the next milestone. A long-running orchestrator sends the report that the close
-  started only at its move to the next milestone, after its report that the milestone is done.
+  user said: "I will decide when to close M21". The planner closes the milestone at the end of
+  [The close of a milestone](operator-start.md#the-close-of-a-milestone), as [Milestones](issues.md#milestones) of
+  issues.md says. The stop of this bullet does not cover a long-running orchestrator (see
+  [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review rounds and the
+  list of the findings of this bullet cover a long-running orchestrator at the empty Todo column. So does the report
+  that the milestone is done. A long-running orchestrator sends the report that the close started only after the word of
+  the user that starts the close. See [The start and the authority](operator-start.md#the-start-and-the-authority).
 
 ### The stacking rule
 
