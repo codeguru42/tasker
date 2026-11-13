@@ -211,6 +211,9 @@ claim, the current fact and the command that shows it in its report of the stop 
 puts the requirement, the conflicting rule or decision, and the command or the doc that shows it in that report. In each
 case, the task subagent also lists each false claim and each conflict in its final report.
 
+In an issue, a measure of an outside tool is the one exception to "A requirement is not a claim". It is also a
+requirement, as [The body of an issue](planner.md#the-body-of-an-issue) says.
+
 The current code standards of the repo win over an old requirement of the issue that conflicts with them. The current
 code standards are the rules of [docs/dev/rules.md](rules.md) and [docs/dev/code-conventions.md](code-conventions.md),
 and the form of the code on the base branch. Examples of such a conflict:
@@ -236,8 +239,11 @@ Each time before the task subagent runs `tasker approve` in step 5 of
 [Run one ticket](run-one-ticket.md#run-one-ticket), the task subagent [stops](limits.md#the-answer-wait-rule) in each of
 these cases:
 
-- The plan has an open question that the issue does not answer.
-- The plan makes a design choice that the issue does not make.
+- The plan has an open question that the issue does not answer. A question about a choice of the implementation is not
+  such a question.
+- The plan makes a design choice that the issue does not make. A choice of the implementation is not such a choice. The
+  bullet of [The body of an issue](planner.md#the-body-of-an-issue) that starts "An issue never dictates the
+  implementation" defines the implementation.
 - The plan has a security gap.
 - The plan changes a file that the issue does not name, and another task in progress also changes that file. For
   example, `tasker refine` prints a warning for such a file (see ["Land the work"](land-the-work.md#land-the-work)). If
