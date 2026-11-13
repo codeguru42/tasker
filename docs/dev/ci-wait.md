@@ -43,8 +43,39 @@ The task subagent does these steps:
    the task subagent. The task subagent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means
    that the run passed. Exit code 124 means that the run is still in progress. In that case, run the same command again.
    The 30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a
-   run is not complete when the 30 minutes end, stop. Any other exit code means that the run failed, or that `gh`
-   failed. In that case, go to step 6 of the CI wait.
+   run is not complete when the 30 minutes end, follow the paragraphs at the end of this step. Any other exit code means
+   that the run failed, or that `gh` failed. In that case, go to step 6 of the CI wait.
+
+   When the 30 minutes end, read each run of the list of step 4 that is not complete. The read is
+   `gh run view <run id> --json status,jobs`, and a failed read is a stop with its error. The queued case is the case
+   that each such run has the `status` `queued` and an empty `jobs` list. In the queued case, search for the covering
+   run, as the next paragraphs say, and then stop. In each other case, stop at once. The queued case does not cover the
+   rerun of step 9.
+
+   The covering run is the newest `Check` run on `main` whose commit contains the landed commit. To search for it, run
+   `git fetch origin`. Then run
+   `gh run list --workflow Check --branch main --limit 20 --json databaseId,headSha,status,conclusion`. The list starts
+   with the newest run. Skip each run whose `headSha` is the landed commit. For each other run, in the order of the
+   list, run `git merge-base --is-ancestor <landed commit> <headSha>`.
+
+   Exit code 0 means that the run contains the landed commit, so this run is the covering run. Exit code 1 means that
+   the run does not contain it. Then go to the next run. Any other exit code ends the search with the error. A failed
+   `git fetch` or `gh run list` also ends the search with its error. If no run of the list contains the landed commit,
+   the search finds no covering run.
+
+   The stop report gives each queued run id, and the run id, `status` and `conclusion` of the covering run. If the
+   search found no covering run, the report gives the error or says that no covering run showed. The report asks whether
+   the user takes a covering run in place of the queued runs. An answer that takes a covering run can give its run id.
+   With no run id, search for the covering run again, as the paragraphs before say. For the taken run, run
+   `git fetch origin` and `gh run view <run id> --json status,conclusion,headSha,headBranch,workflowName`.
+
+   The taken run must have the `status` `completed`, the `conclusion` `success`, the `headBranch` `main` and the
+   `workflowName` `Check`. Its `headSha` must also contain the landed commit, so
+   `git merge-base --is-ancestor <landed commit> <headSha>` must exit with 0. If the taken run meets these conditions,
+   the stop ends, and the CI wait passes. If a command fails, or the taken run does not meet them, report the result to
+   the orchestrator. Then wait again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. An answer that
+   does not take a covering run keeps the stop.
+
 6. Run `gh run view <run id> --json status,conclusion,url,jobs`. If the command fails, stop and report the error. If
    `status` is `completed` and `conclusion` is `success`, the run passed. If `status` is not `completed`, `gh run watch`
    failed and the run is still in progress. In that case, do step 5 of the CI wait again. If `status` is `completed` and
@@ -97,13 +128,13 @@ call and no other long wait. While you wait, run only the short wait of the bull
 command" of [the command rules](tasker-commands.md#the-command-rules). After the report, do step 6 of the CI wait. For a
 moved call, step 6 takes the place of the exit codes of step 5.
 
-The CI wait passes only when each run of the list passed in step 5 or step 6 of the CI wait. A rerun that passes in step
-9 of the CI wait does not make the CI wait pass. The task subagent still does steps 10 to 12 of the CI wait. Other task
-subagents can land on `main` during the wait. The task subagent waits only for the runs of its own landed commit, not
-for a later run on `main`. If a git command of the CI wait fails, the task subagent stops and reports the error. A stop
-of the CI wait also skips steps 10 and 11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the
-task subagent gets a resume message while the task is in `landed` (see
-["When the job fires"](quota.md#when-the-job-fires) and
+The CI wait passes only when each run of the list passed in step 5 or 6, or the queued case of step 5 passes. A rerun
+that passes in step 9 of the CI wait does not make the CI wait pass. The task subagent still does steps 10 to 12 of the
+CI wait. Other task subagents can land on `main` during the wait. The task subagent waits only for the runs of its own
+landed commit, and the queued case of step 5 only reads a later run. If a git command of the CI wait fails, the task
+subagent stops and reports the error. Without a pass through the queued case of step 5, a stop also skips steps 10 and
+11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the task subagent gets a resume message
+while the task is in `landed` (see ["When the job fires"](quota.md#when-the-job-fires) and
 ["What the task subagent does"](quota.md#what-the-task-subagent-does) in ["Quota"](quota.md#quota)), the rule depends on
 what the task subagent did before. If the task subagent did not run `gh run rerun` yet, it does the CI wait again from
 step 1 of the CI wait. If it ran `gh run rerun` and did not send the report of step 11 yet, it does not run
