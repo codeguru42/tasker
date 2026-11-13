@@ -15,8 +15,15 @@ The operator reads them at its start, as [the doc-read rule](dev/doc-reads.md#th
 [The form of a reply](dev/working-with-the-user.md#the-form-of-a-reply) gives the form of each reply to the user.
 
 Messages of the other sessions break into the conversation of the user, and open questions scroll out of view. A planner
-or an orchestrator sends each item that needs the user to the operator. Then the user reads the items in one place and
-answers the questions for the user alone.
+or an orchestrator sends each item that needs the user to the operator. This holds until the end of the role of the
+operator in [the close of a milestone](dev/operator-start.md#the-close-of-a-milestone). Then the user reads the items in
+one place and answers the questions for the user alone.
+
+In the close of a milestone, the operator settles each open question with
+[the question gate of the close](dev/operator-items.md#the-question-gate-of-the-close) before its terminal delegation.
+[The terminal delegation](dev/operator-start.md#the-terminal-delegation) is the last message of the operator to the
+planner. After the end of the role of the operator, the planner talks to the user directly, as
+[The operator](dev/working-with-the-user.md#the-operator) says.
 
 [docs/sessions.md](sessions.md) defines the user, the slug, the sessions of a slug, an item, the own name of a session,
 the session ref and the socket address. The operator is named `operator-<slug>`. The operator of a session is the
