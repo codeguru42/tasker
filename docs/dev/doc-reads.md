@@ -195,8 +195,7 @@ The local clone holds the checkout of the user, for example a commit of a pre-re
 come from `origin/main`, not from that checkout.
 
 1. Before the orchestrator, the operator, a planner, a task subagent or a
-   [question session](operator-conversations.md#a-question-pane) reads a doc, it runs
-   `git -C <local clone> fetch origin`.
+   [question session](question-pane.md#a-question-pane) reads a doc, it runs `git -C <local clone> fetch origin`.
 2. Then it reads each doc with `git -C <local clone> show origin/main:<path>`, in a Bash call. `<path>` is the path of
    the doc from the root of the repo, for example `docs/dev/limits.md`.
 
@@ -234,5 +233,4 @@ or a planner, [the failure rule](limits.md#the-failure-rule) of `docs/dev/limits
 session reads the doc with `git -C <local clone> show origin/main:<path>`. The read uses the `origin/main` of the last
 fetch that worked. Then that session continues its work.
 
-If the fetch fails for a question session, [A question pane](operator-conversations.md#a-question-pane) gives the next
-step.
+If the fetch fails for a question session, [A question pane](question-pane.md#a-question-pane) gives the next step.
