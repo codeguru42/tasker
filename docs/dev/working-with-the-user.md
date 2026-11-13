@@ -227,6 +227,22 @@ These rules hold for each list of the decisions that the user must make, and for
   can answer a question itself. [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) gives the rule and
   the reason for a handoff file.
 
+  In the operator chat, each [open question](operator-items.md#the-open-items) is short, also question 1. Each rule of
+  the paragraph that starts "Each later question can be short" then also holds for question 1. The first reply of each
+  [question pane](question-pane.md#a-question-pane) gives the full details of its question, as the first paragraph of
+  this bullet says. In the operator chat, this paragraph wins over each rule of this section that asks for the full
+  details of question 1. So a reminder of the operator also gives question 1 in short, as the bullet that starts "When
+  the session reminds the user" says.
+
+  If the user asks to discuss a question in the operator chat, the reply gives the full details of that question. An
+  operator whose kind is not `claude` starts no question pane, so question 1 of its reply keeps the full details. A
+  question of the operator itself, with no item, also keeps the full details. This paragraph wins over the paragraph
+  before it. A rule that asks for the full text of each open question at one step also wins over that paragraph.
+
+  The reason: on 2026-11-13, the user said to operator-docs: "Since questions are no longer being answered here, you no
+  longer need to show the full details of question 1. Instead, follow the same rules for those details in the question
+  pane."
+
 - Inside a question, only the proposed steps and the choices of the question are lists. Each of them is a nested list,
   as the bullet that starts "A nested list uses letters" says. The other details of a question are plain sentences or
   short paragraphs, not a list. Examples are what happened, what the problem is, and the command and the result of each
