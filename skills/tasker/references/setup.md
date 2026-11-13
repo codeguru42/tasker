@@ -100,15 +100,16 @@ Prints or sets the model and the effort of each assistant role and each session 
 changes no task. For the configuration file, see [the Configuration section](../SKILL.md#configuration).
 
 `<model>` and `--effort` need `--role`. The assistant roles are `plan`, `execute` and `review`. The session roles are
-`operator`, `planner` and `orchestrator`. The efforts are `low`, `medium`, `high`, `xhigh` and `max`. The efforts
-`xhigh` and `max` are for a session role only.
+`operator`, `planner`, `orchestrator` and `question`. The efforts are `low`, `medium`, `high`, `xhigh` and `max`. The
+efforts `xhigh` and `max` are for a session role only.
 
 If the issue key fits more than one repo and you do not give `--repo`, the active task of the issue picks the repo. If
 no repo, or more than one repo, has an active task for the issue, the command prints an error.
 
 Without `<model>` and `--effort`, the command prints one line for each role, in the order plan, execute, review,
-operator, planner, orchestrator, as `<role>: <model> (effort <effort>)`, for example `plan: opus (effort high)`. A
-session role with no entry prints `<role>: none`, for example `operator: none`. With `--role`, it prints only that role.
+operator, planner, orchestrator, question. Each line has the form `<role>: <model> (effort <effort>)`, for example
+`plan: opus (effort high)`. A session role with no entry prints `<role>: none`, for example `operator: none`. With
+`--role`, it prints only that role.
 
 With `<model>`, `--effort` or both, the command changes the model, the effort or both of the role that `--role` names.
 For an assistant role, it changes `repos.<key>.assistant.models.<role>`. For a session role, it changes
