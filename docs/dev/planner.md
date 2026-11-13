@@ -154,9 +154,9 @@ draft file and the change. The new ticket subagent starts at step 2, and its cou
 
 For a change of an open issue, the report of the ticket subagent gives the start hash of
 [Before a post](issues.md#before-a-post). The planner gives that start hash to each later ticket subagent of the same
-change, with the draft file. After the post of the change, or if
-[the read in the write call](issues.md#the-read-in-the-write-call) skips the post because the hash changed, the planner
-drops the start hash. After such a skip, it starts a new ticket subagent with the same change and no start hash.
+change, with the draft file. After the post of the change, the planner drops the start hash. If
+[the reads before the write](issues.md#the-reads-before-the-write) skip the post because the hash changed, the planner
+also drops the start hash. After such a skip, it starts a new ticket subagent with the same change and no start hash.
 
 A ticket subagent of a change of an open issue with no start hash first reads the issue, as
 [Before a post](issues.md#before-a-post) says. It then writes its draft file from that read and the change. If the read
@@ -934,13 +934,13 @@ likely edit the same file", which name the planner.
 - A ticket that changes the form or the layout of a file goes early in its chain. Each open ticket of its milestone that
   edits that file is blocked by it, so that each of them writes the new form. This bullet gives the direction of the
   link of the bullet "The planner also links two issues that will likely edit the same file". The planner adds each
-  blocked-by link as [The read in the write call](issues.md#the-read-in-the-write-call) of issues.md says. An issue in
+  blocked-by link as [The reads before the write](issues.md#the-reads-before-the-write) of issues.md says. An issue in
   flight gets no link, because its task already builds on the old form. The orchestrator of the task decides what the
   ticket does with the change.
 - A ticket that renames a doc blocks each open issue whose body names that doc, not only each open issue that edits the
   doc. After the rename, such a body names a file that does not exist. Before the post of the rename ticket, the planner
   finds each open issue whose body names the old path. The planner adds each link and makes each body edit as
-  [The read in the write call](issues.md#the-read-in-the-write-call) of issues.md says. An issue in flight gets no link
+  [The reads before the write](issues.md#the-reads-before-the-write) of issues.md says. An issue in flight gets no link
   and no body edit, because the task subagent of the task already read the body. The orchestrator of the task decides.
   The bullet "An issue of an earlier milestone never waits ..." wins for an issue of an earlier milestone. For such an
   issue, the planner adds no link and edits no body. It tells the user, as for an issue in flight. For each other issue,
