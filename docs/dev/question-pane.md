@@ -71,9 +71,11 @@ Each pane holds one question, even when questions belong to one item or concern 
 
 The operator opens at most one pane at a time. If one is open, the operator tells the user and starts nothing.
 
-The next open question is the first open question in the list order of the operator that can get an automatic start. A
-word of the user that names an open question starts the pane of that question first. New open questions join the end of
-the run. Their arrival line and notification stay the same.
+The next open question is the first open question in [the list order of the operator](operator-items.md#the-open-items)
+that can get an automatic start. A word of the user that names an open question starts the pane of that question first.
+An open question of an item that arrives later takes its place in the list order, so it can come before an older open
+question. This holds before, during and after a run. The arrival line and the notification of such a question stay the
+same.
 
 Before each pane start, each [close request](#the-rounds-before-the-close) and each close, the operator reads this page
 again. [Start a session](operator-start.md#start-a-session) keeps its own reread rule.
