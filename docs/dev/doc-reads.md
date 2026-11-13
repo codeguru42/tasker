@@ -64,7 +64,8 @@ The orchestrator of the ticket does these steps:
 3. Read your own name from the first line of the output of `ListAgents`, as [sessions.md](../sessions.md) says. If a doc
    of the orchestrator changed, each session whose name starts with `orchestrator-`, except your own session, is another
    orchestrator. If a start doc of the operator changed, each session whose name starts with `operator-` also gets the
-   notice. A session with another name, for example `planner-m7`, gets no notice.
+   notice. A session with another name, for example `planner-m7`, gets no notice. A milestone hold can stop this notice,
+   as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
 4. Send one notice to each session of step 3 with `SendMessage`. Take the landed commit and the sections that changed
    from the same report. The notice names them in one or two lines.
 
@@ -182,6 +183,11 @@ answer.
 
 The task subagent notice is information. The task subagent takes each rule from the doc, not from the task subagent
 notice.
+
+At the end of a milestone hold, the task subagent notice has another form, as item 9 of
+[A milestone hold](working-with-the-user.md#a-milestone-hold) says. The notice names each changed file of the docs of
+the task subagent, in place of a landed commit and its sections. The task subagent then reads each such file again in
+full.
 
 ## The doc-read rule
 
