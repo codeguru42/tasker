@@ -27,7 +27,7 @@ how to do it on GitHub.
   over the JSON of the read. An example of such a read is
   `json=$(gh issue view <number> --json title,body) && printf '%s\n' "$json" | sha256sum && printf '%s\n' "$json" | jq -r '.title, .body'`.
   If the read fails, the session does not start the draft, and it tells the user.
-  [The read in the write call](#the-read-in-the-write-call) compares the start hash with a new hash of the issue right
+  [The reads before the write](#the-reads-before-the-write) compares the start hash with a new hash of the issue right
   before the write.
 
   Other sessions can change an open issue after a post, and a post of an older text undoes their change. On 2026-11-04,
@@ -41,6 +41,15 @@ how to do it on GitHub.
   and a post in one command post the issue before the session sees a match. For example, on 2026-10-18, orchestrator-m13
   ran the search and `gh issue create` in one command and posted #307. The search had found #285, which already covered
   one item of #307. A later edit of both issues moved the item.
+- The session makes the body file in its own step with the Write tool or a separate call whose target is an absolute
+  path. The body file is the draft file with its title line and the blank line after it taken out. Then the session runs
+  `gh issue create -R <repo> --title '<literal title>' --body-file <absolute path of the body file> --milestone '<milestone>'`
+  alone in a [plain call](#the-reads-before-the-write). Add `--label '<label>'` in the same call when the issue needs a
+  label. The title is the title text, not a command that reads it. If the title has a single quote, use double quotes.
+
+  Such a title holds no `$`, backtick, `\` or `\"`. On 2026-11-12, auto mode denied two compound `gh issue create`
+  calls. A compound call needs an allow rule for each part, and a redirect gets its own check.
+
 - If an issue already covers the change, the session that posts the issue offers the user an extension of that issue
   (its body or its links) instead of a new issue. That session tells the user what each draft has that the other one
   does not have. For a match of a planner, [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of
@@ -52,7 +61,7 @@ how to do it on GitHub.
 
   A session that is not a planner shows the result with the draft: each link and its reason, or "no links" and the
   reason. It names each file of the check. After the post, it adds each approved link under
-  [The blocked-by links](#the-blocked-by-links) and [The read in the write call](#the-read-in-the-write-call).
+  [The blocked-by links](#the-blocked-by-links) and [The reads before the write](#the-reads-before-the-write).
 
   For a draft of its ticket subagent, the ad hoc planner adds the links in that subagent's report with no approval of
   the user. It gives each link and its reason in the report of
@@ -72,34 +81,42 @@ how to do it on GitHub.
   compare is `diff <(gh issue view <number> --json body -q .body) <body of the draft>`. The compare ignores blank lines
   at the end, because the read adds one.
 
-  A difference is a failed post. The session then posts the body again, as
-  [The read in the write call](#the-read-in-the-write-call) says, and compares again. If the read fails, or the second
-  compare also fails, the session stops and tells the user. On 2026-10-26, a script left an old second design after the
-  Docs section of #604, and only a review agent saw it.
+  A difference is a failed post. The session then follows [The reads before the write](#the-reads-before-the-write) and
+  runs `gh issue edit <number> -R <repo> --body-file <absolute path of the body file>` alone in a plain call. It
+  compares again. If the read fails, or the second compare also fails, the session stops and tells the user. On
+  2026-10-26, a script left an old second design after the Docs section of #604, and only a review agent saw it.
 
-### The read in the write call
+### The reads before the write
 
 This rule covers each session that adds a blocked-by link to an issue, or changes the title or the body of an issue. The
-session runs one Bash call with these steps, in this order:
+session runs each read in its own Bash call before the write. The session reads each output itself. No shell test, `if`
+or `$(...)` decides the write.
 
-1. Run `tasker status`.
-2. Read the state of the issue, for example with `gh issue view <number> --json state -q .state`.
-3. For a change of the title or the body, run
-   `json=$(gh issue view <number> --json title,body) && printf '%s\n' "$json" | sha256sum`. If the command prints a hash
-   that is not the [start hash](#before-a-post), skip step 4.
-4. If `tasker status` lists no task for the full key of the issue and the state is `OPEN`, do the write.
+1. Run `tasker status` in its own call.
+2. Read the issue state in its own call, for example with `gh issue view <number> --json state -q .state`.
+3. For a title or body change, read the hash in its own call. The read can use
+   `json=$(gh issue view <number> --json title,body) && printf '%s\n' "$json" | sha256sum` because it writes nothing.
+4. After the last read, run the write alone in a plain call.
 
-If the issue is in flight or closed, the call skips the write, and the session tells the user. The issue is in flight
+Run no other step between the last read and the write. Run no other write between the reads and the write. A plain call
+is one Bash call that holds one command. It has no `cd`, no `;`, no `&&`, no `||`, no pipe, no `if`, no redirect and no
+`$(...)`.
+
+For a link, run `gh issue edit <blocked number> -R <repo> --add-blocked-by <blocker number>`. For a title or body
+change, run `gh issue edit <number> -R <repo> --title '<literal title>' --body-file <absolute path of the body file>`.
+Use only the flags for the change.
+
+If the issue is in flight or closed, the session skips the write, and the session tells the user. The issue is in flight
 when `tasker status` lists a task for the full key of the issue. If `tasker status` or a read of the issue fails, the
-call skips the write, and the session tells the user.
+session skips the write, and the session tells the user.
 
-If step 3 prints a hash that is not the start hash, the call skips the write, and the session tells the user. In that
-case, the issue changed after the start of the draft. The session starts the draft again from the new title and body, as
-[Before a post](#before-a-post) says. A second post after a failed compare of [Before a post](#before-a-post) skips step
-3, because the issue then holds the text of the failed post. A change of both the title and the body goes in one write,
-because a first write changes the hash for a second write.
+If the hash read prints a hash that is not the start hash, the session skips the write, and the session tells the user.
+In that case, the issue changed after the start of the draft. The session starts the draft again from the new title and
+body, as [Before a post](#before-a-post) says. A second post after a failed compare of [Before a post](#before-a-post)
+skips the hash read. The issue then holds the text of the failed post. A change of both the title and the body goes in
+one write because the first write changes the hash.
 
-Before this call for a new blocked-by link, the session does a walk of the open blockers. The walk starts at the blocker
+Before the reads for a new blocked-by link, the session does a walk of the open blockers. The walk starts at the blocker
 of the new link. The session reads the blockers of each issue with `--paginate` and the read command of
 [The blocked-by links](#the-blocked-by-links). It follows only blockers with the `state` `open`, in lowercase, and it
 reads each issue one time. If the walk reaches the blocked issue of the new link, the link closes a cycle. A cycle is a
@@ -118,9 +135,23 @@ A read in an earlier call can be old, because a task can start or the issue can 
 tasks in flight. The same day, a script changed the body of #288 after #288 closed, because its check covered only the
 tasks in flight.
 
-A link can still land on a task that started between the read and the write. Then the session removes the link with the
+The reads and the write are now separate calls of one session, a few seconds apart. The section already accepts an older
+read: a walk in an earlier call can be old at the write. For #302, the read came at an earlier step of the planning, not
+right before the write. On 2026-11-04, the body of #766 changed about 15 minutes after the post. The race paragraph
+still removes a link that lands on a task in flight.
+
+A link can still land on a task that started between the reads and the write. Then the session removes the link with the
 command of [The blocked-by links](#the-blocked-by-links). The session tells the user that the link was a race. In that
 case, the orchestrator did not skip a blocker.
+
+Before a session asks the user to approve a write that the reads can skip, it runs `tasker status` and reads the issue
+state. The question names the result, for example: "#863 is in flight in orchestrator-docs, in `awaiting_plan_review`.
+Do you want the link anyway?" One answer of the user then covers the case of a skip too. This rule does not apply to a
+session that already has the approval of the user and does not ask.
+
+On 2026-11-12, the main session asked the user to approve the link "#863 is blocked by #756". It said that no task ran
+for #863, but it did not read `tasker status` first. The user said "do it", and the guard printed `IN FLIGHT: skip`. The
+session then needed a second question, and the user said "go ahead and add the link".
 
 For a blocked-by link, the skip of an issue in flight covers only a soft blocker. A soft blocker is a link with no need
 of the work of the other ticket, for example for two tickets that edit one file. A hard blocker is a link for a ticket
