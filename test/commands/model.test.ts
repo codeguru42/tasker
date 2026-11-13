@@ -12,7 +12,7 @@ import { dayAt, seedTasks } from "../helpers/store.js";
 const KEY = "codeguru42/tasker#5";
 
 // The report lines of the session roles in a file with no entry for them.
-const NONE_SESSIONS = "operator: none\nplanner: none\norchestrator: none\n";
+const NONE_SESSIONS = "operator: none\nplanner: none\norchestrator: none\nquestion: none\n";
 
 // Makes sure that the file still holds before and that its folder holds no other file.
 function expectNothingChanged({ dir, path }: { dir: string; path: string }, before: string): void {
@@ -64,6 +64,7 @@ describe("model", () => {
           models: {
             operator: { model: "opus", effort: "xhigh" },
             orchestrator: { model: "sonnet", effort: "max" },
+            question: { model: "opus", effort: "max" },
           },
         };
         return printedJson(raw);
@@ -75,7 +76,8 @@ describe("model", () => {
         code: 0,
         out:
           "plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n" +
-          "operator: opus (effort xhigh)\nplanner: none\norchestrator: sonnet (effort max)\n",
+          "operator: opus (effort xhigh)\nplanner: none\norchestrator: sonnet (effort max)\n" +
+          "question: opus (effort max)\n",
         err: "",
       });
     });
@@ -89,9 +91,11 @@ describe("model", () => {
 
       const none = await runCommand(model, "model", KEY, "--role", "planner");
       const entry = await runCommand(model, "model", KEY, "--role", "operator");
+      const question = await runCommand(model, "model", KEY, "--role", "question");
 
       expect(none).toEqual({ code: 0, out: "planner: none\n", err: "" });
       expect(entry).toEqual({ code: 0, out: "operator: opus (effort xhigh)\n", err: "" });
+      expect(question).toEqual({ code: 0, out: "question: none\n", err: "" });
     });
 
     it("fails for an issue key of an unknown project", async () => {
@@ -220,7 +224,7 @@ describe("model", () => {
       expectNothingChanged(file, printedJson(expected).trimEnd());
     });
 
-    it.each(["operator", "planner", "orchestrator"] as const)(
+    it.each(["operator", "planner", "orchestrator", "question"] as const)(
       "sets a new entry of the session role %s in a file with no sessions key",
       async (role) => {
         const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
@@ -337,6 +341,20 @@ describe("model", () => {
       expectNothingChanged(file, before);
     });
 
+    it("requires a question model entry when only the effort is given", async () => {
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "--role", "question", "--effort", "high");
+
+      expect(result).toEqual({
+        code: 1,
+        out: "",
+        err: "the role question has no entry: give the model and --effort\n",
+      });
+      expectNothingChanged(file, before);
+    });
+
     it("prints the loader errors and changes nothing for xhigh on an assistant role", async () => {
       const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const before = readFileSync(file.path, "utf8");
@@ -351,15 +369,19 @@ describe("model", () => {
       expectNothingChanged(file, before);
     });
 
-    it("prints the loader errors for a session model that the provider refuses", async () => {
-      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+    it("prints the loader errors for a question model that the provider refuses", async () => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { models: { question: { model: "opus", effort: "high" } } };
+        return printedJson(raw);
+      });
       const before = readFileSync(file.path, "utf8");
 
-      const result = await runCommand(model, "model", KEY, "--role", "operator", "gpt-5", "--effort", "high");
+      const result = await runCommand(model, "model", KEY, "--role", "question", "gpt-5");
 
       expect(result.code).toBe(1);
       expect(result.out).toBe("");
-      expect(result.err).toContain("repos.tasker.sessions.models.operator.model: is not a claude-code model: gpt-5");
+      expect(result.err).toContain("repos.tasker.sessions.models.question.model: is not a claude-code model: gpt-5");
       expectNothingChanged(file, before);
     });
 
@@ -367,7 +389,9 @@ describe("model", () => {
       const { code, help } = await runHelp(model, "model");
 
       expect(code).toBe(0);
-      expect(help).toContain("a session role (operator, planner, orchestrator)");
+      expect(help).toContain(
+        "The role to print or to set: an assistant role (plan, execute, review) or a session role (operator, planner, orchestrator, question)",
+      );
       expect(help).toContain("xhigh and max are for a session role only");
     });
   });

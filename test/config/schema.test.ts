@@ -645,7 +645,7 @@ describe("parseConfig assistant", () => {
 });
 
 describe("parseConfig sessions", () => {
-  const sessionRoles = ["operator", "planner", "orchestrator"];
+  const sessionRoles = ["operator", "planner", "orchestrator", "question"];
 
   it("fills in the defaults when sessions is missing", () => {
     expect(parsedRepo(validConfig()).sessions).toEqual({ kind: "claude", models: {} });
@@ -663,6 +663,7 @@ describe("parseConfig sessions", () => {
       operator: { model: "opus", effort: "max" },
       planner: { model: "claude-opus-5-5", effort: "xhigh" },
       orchestrator: { model: "sonnet[1m]", effort: "low" },
+      question: { model: "opus", effort: "max" },
     };
     raw.repos.tasker.sessions = { models };
     expect(parsedRepo(raw).sessions.models).toEqual(models);
@@ -717,6 +718,22 @@ describe("parseConfig sessions", () => {
     expectIssueAt(issuesOf(raw), "repos.tasker.sessions.models.operator.effort");
   });
 
+  it("reports question model entry faults at their paths", () => {
+    const extra = validConfig();
+    extra.repos.tasker.sessions = { models: { question: { model: "opus", effort: "high", extra: 1 } } };
+    expect(issuesOf(extra)).toContain("repos.tasker.sessions.models.question.extra: unrecognized key");
+
+    const missing = validConfig();
+    missing.repos.tasker.sessions = { models: { question: {} } };
+    const missingIssues = issuesOf(missing);
+    expectIssueAt(missingIssues, "repos.tasker.sessions.models.question.model");
+    expectIssueAt(missingIssues, "repos.tasker.sessions.models.question.effort");
+
+    const effort = validConfig();
+    effort.repos.tasker.sessions = { models: { question: { model: "opus", effort: "extreme" } } };
+    expectIssueAt(issuesOf(effort), "repos.tasker.sessions.models.question.effort");
+  });
+
   it("rejects a role given as a bare string", () => {
     const raw = validConfig();
     raw.repos.tasker.sessions = { models: { planner: "opus" } };
@@ -733,7 +750,7 @@ describe("parseConfig sessions", () => {
 
   it.each(sessionRoles)("rejects a claude model of an unknown form in %s", (role) => {
     const raw = validConfig();
-    raw.repos.tasker.sessions = { models: { [role]: { model: "gpt-5", effort: "high" } } };
+    raw.repos.tasker.sessions = { kind: "claude", models: { [role]: { model: "gpt-5", effort: "high" } } };
     expect(issuesOf(raw)).toEqual([`repos.tasker.sessions.models.${role}.model: is not a claude-code model: gpt-5`]);
   });
 
@@ -752,6 +769,7 @@ describe("parseConfig sessions", () => {
       models: {
         operator: { model: "opus", effort: "huge" },
         planner: { model: "gpt-5", effort: "high" },
+        question: { model: "gpt-5", effort: "high" },
       },
     };
     raw.bogus = 1;
@@ -759,6 +777,7 @@ describe("parseConfig sessions", () => {
     expectIssueAt(issues, "repos.tasker.verify");
     expectIssueAt(issues, "repos.tasker.sessions.models.operator.effort");
     expect(issues).toContain("repos.tasker.sessions.models.planner.model: is not a claude-code model: gpt-5");
+    expect(issues).toContain("repos.tasker.sessions.models.question.model: is not a claude-code model: gpt-5");
     expect(issues).toContain("bogus: unrecognized key");
   });
 

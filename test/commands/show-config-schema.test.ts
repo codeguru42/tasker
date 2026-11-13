@@ -160,9 +160,14 @@ describe("show-config-schema", () => {
     expect(byPath.get("repos.<key>.issueTracker.provider")?.description).toMatch(/^The kind of tracker\./);
     expect(byPath.get("repos.<key>.issueTracker.project")?.description).toMatch(/If it is absent.*repo key/i);
     expect(byPath.get("repos.<key>.sessions.models.operator.model")?.description).toMatch(/model of the agent kind/i);
+    expect(byPath.has("repos.<key>.sessions.models.question.model")).toBe(true);
+    expect(byPath.has("repos.<key>.sessions.models.question.effort")).toBe(true);
+    expect(byPath.get("repos.<key>.sessions.models.question")?.description).toMatch(/question sessions/i);
     expect(byPath.get("repos.<key>.assistant.trustedExtensions")?.description).toMatch(/only pi/i);
     expect(byPath.get("repos.<key>.assistant.models.plan.model")?.description).toMatch(/provider/i);
-    expect(byPath.get("repos.<key>.sessions")?.description).toMatch(/operator.*planner.*orchestrator/i);
+    expect(byPath.get("repos.<key>.sessions")?.description).toMatch(
+      /operator.*planner.*orchestrator.*question.*models/i,
+    );
     expect(byPath.get("repos.<key>.sessions.models.operator.model")?.description).toMatch(/provider/i);
     expect(byPath.get("repos.<key>.issueTracker.site")?.description).toMatch(/site of the tracker/i);
     expect(byPath.get("repos.<key>.issueTracker.abortStatus")?.provider).toBe("jira");
