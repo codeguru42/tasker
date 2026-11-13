@@ -9,8 +9,9 @@ A long-running orchestrator is the orchestrator of a milestone that stays open w
 for example "Docs" (see [docs/dev/planner.md](planner.md)). In a handoff, the old orchestrator gives its work to a new
 orchestrator in a new session.
 
-The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone stops at step 4
-of [The close of a milestone](operator-start.md#the-close-of-a-milestone). The rules of this page do not cover it.
+The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone stops at the stop
+of the orchestrator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). The rules of this page do
+not cover it. A long-running orchestrator stops there too, after its close starts on the word of the user.
 
 A long-running orchestrator also reads the board with one recurring job, the board watch job. A new issue can arrive
 when no ticket of the milestone runs. Then no landing comes, and no read of the board follows. On 2026-10-25,
