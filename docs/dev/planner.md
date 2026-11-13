@@ -741,9 +741,9 @@ user with each finding that it dismissed. The initial planner posts only after t
 
 - When the doc text of an issue names a part of a doc, it uses words that stay true in the doc. Examples of a part are a
   bullet, a paragraph, a step and a section. Examples of such words are the topic, the first words, the heading, and
-  [the number of a step with its page](first-refine.md#all-tickets). The doc text avoids issue-only names such as "the
-  new bullet" or "the second new bullet". Outside its doc text, the issue can still use words that are true only in the
-  issue. For example, it can use them to give the place of a bullet.
+  [the number of a step with its page](first-refine.md#all-tickets). The doc text does not name a part by words that are
+  true only in the issue, for example "the new bullet" or "the second new bullet". Outside its doc text, the issue can
+  still use words that are true only in the issue. For example, it can use them to give the place of a bullet.
 
   The reason: the plan follows the words of the issue, so the words of the doc text go into the doc. On #853
   (2026-11-11), the Docs section said "The sentence says that a session of the first new bullet follows the second new
