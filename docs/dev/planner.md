@@ -809,15 +809,16 @@ chat under that subsection.
   the issue adds or changes. If an issue asks for a sentence count, for example "in one sentence", the issue gives the
   text of that sentence word for word.
 
-  The limits are Rules 6.6, 6.3 and 5.1 of the simple-english skill, and the words count as Rules 8.5-8.7 say. The
-  simple-english bullet of [Docs](rules.md#docs) of `docs/dev/rules.md` says that each session writes its text with that
-  skill.
+  The limits are Rules 6.6, 6.3 and 5.1 of the simple-english skill, and the words count as Rules 8.5-8.7 say. For
+  example, a text in parentheses and a quoted text count as one word each. Link text counts word by word. The target of
+  a link counts as no word. The simple-english bullet of [Docs](rules.md#docs) of `docs/dev/rules.md` says that each
+  session writes its text with that skill.
 
   If a new paragraph or a new bullet is over six sentences, the issue gives two or more paragraphs. It names the
   sentences of each one. If a sentence is over its word limit, the issue gives it as two sentences. Then the planner
   counts the sentences of its paragraph again.
 
-  The reason: the task subagent also keeps a sentence over its word limit. The self-check of
+  The reason: the task subagent can also keep a sentence over its word limit. The self-check of
   [Before a post](issues.md#before-a-post) in `docs/dev/issues.md` does not count the doc text as it will stand in the
   doc. On #575 (2026-10-25), the issue gave a new bullet of `docs/dev/first-refine.md` with 7 sentences and two
   sentences of 26 words. The landed bullet kept the sentence that gives the source of the bullet, with 26 words.
