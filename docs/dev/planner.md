@@ -488,7 +488,8 @@ When a draft needs one of these decisions, the follow-up planner asks the user b
 [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says:
 
 - A new feature, or a change of a behavior that a user sees, for example the text of an output or an exit code.
-- A choice between two or more designs, where each one has a real cost.
+- A choice between two or more designs, where each one has a real cost. A choice of the implementation is not such a
+  choice, because the plan of the ticket makes it.
 - A change of scope of an issue in flight.
 - A security gap.
 - A measure that needs a change of [the state of the user](plan-review.md#the-state-of-the-user).
@@ -538,7 +539,11 @@ user with each finding that it dismissed. The initial planner posts only after t
 ## The body of an issue
 
 - An issue is complete by itself. It gives the rules, the shapes, the signatures, the payloads, the lists, the edge
-  cases, the states and the diagrams that the work needs.
+  cases, the states and the diagrams that the work needs. If the code of another ticket calls a function, its signature
+  is a requirement. An issue gives no other signature. For the other parts of the second sentence of this bullet, an
+  issue gives no implementation.
+  [The bullet that starts "An issue never dictates the implementation"](#the-body-of-an-issue) defines the
+  implementation.
 - The task subagent of a ticket uses no other source, as [the Limits of limits.md](limits.md#limits) say.
   [The design-gap rule](plan-review.md#the-design-gap-rule) says who answers a gap.
 - An issue puts each table, list or diagram in its body. It does not say "as described elsewhere". The plan session that
@@ -595,8 +600,27 @@ user with each finding that it dismissed. The initial planner posts only after t
   output. When the task subagent cannot measure the output itself with [the fact test](plan-review.md#the-fact-test),
   the ticket and the date are its evidence for [the issue check](plan-review.md#the-issue-check). On #240, the task
   subagent was unable to measure the output of `tasker dismiss-review`, because no task of its own was in `reviewed`.
-- An issue dictates each requirement. A requirement says what the software does. An issue can say why, as the purpose of
-  the requirement. It gives no justification for a requirement and does not say where the requirement came from.
+- An issue dictates each requirement. A requirement says what the software does, or it gives a measure of an outside
+  tool that the work rests on. An issue can say why, as the purpose of the requirement. It gives no justification for a
+  requirement and does not say where the requirement came from.
+- An issue never dictates the implementation. What the software does is a behavior that a user, a session or the code of
+  another ticket sees. Examples are a command, an output, an exit code, a configuration key, a stored form and a test
+  case with its input and result. The implementation is how the code gets the behavior. Examples are a line of code, the
+  name or the place of an internal function, a mock and the setup of a test. The plan of the ticket chooses the
+  implementation.
+
+  A measure of an outside tool, for example timed runs, gives the command, the tool version, the date and the output.
+  [The issue check](plan-review.md#the-issue-check) still tests such a measure as a claim.
+
+  The doc text of an issue counts as a requirement, so an issue can give it word for word. If the purpose of a ticket is
+  the form of the code, for example the split of a file, that form is a requirement. The rule of this bullet covers the
+  text of a new issue, so a plan can still follow an implementation that an older issue gives.
+
+  On 2026-11-11, a draft change of the body of #751 removed the name `TASKER_SCHEDULER`. The draft offered the user two
+  designs of the implementation. One design was a Vitest setup file that mocked a module with `vi.mock` and
+  `importOriginal`. The other design passed a scheduler through the code. The user chose neither design and dropped the
+  draft. The draft also asked the user a question that the plan of the ticket can answer.
+
 - Before the post, the planner compares each reason in an example of the issue with the docs. A reason that no doc
   supports goes out of the example, or the issue states it as a requirement with its own reason. On #265, the Summary of
   the issue gave such a reason, the plan copied it, and review 1 found it.
@@ -610,13 +634,14 @@ user with each finding that it dismissed. The initial planner posts only after t
   can share one outcome. On #426 (2026-10-25), review 2 found the case of a change, and review 3 found the case of a
   reject or a drop. Each case cost one review loop.
 - If an issue asks the code to read a revision of a task, the issue names the revision: the tip of the task branch, or
-  `HEAD` of the worktree. The issue also gives the exact ref of the read, for example `refs/heads/<branch>` in the clone
-  of tasker. The two revisions differ when the worktree is not on the task branch. On #155, the issue said "the revision
-  of the task", the code read `HEAD` of the worktree, but the user wanted the tip of the task branch.
+  `HEAD` of the worktree. The two revisions differ when the worktree is not on the task branch. On #155, the issue said
+  "the revision of the task", the code read `HEAD` of the worktree, but the user wanted the tip of the task branch.
   [The Revisions section of workspaces.md](workspaces.md#revisions) gives the rule of the exact ref reads.
-- An issue names a git operation by its purpose and links to the doc section of the operation. It does not name the
-  mechanism, for example "a plain push with no lease". On #178, #43 changed the mechanism after the draft of the issue,
-  and a Docs item of the issue became stale.
+- An issue names a git operation by its purpose and links to the doc section of the operation. The mechanism, for
+  example "a plain push with no lease", is the implementation.
+  [The bullet that starts "An issue never dictates the implementation"](#the-body-of-an-issue) bans the implementation
+  in an issue. On #178, #43 changed the mechanism after the draft of the issue, and a Docs item of the issue became
+  stale.
 - If an issue moves the members of a file by a table, the issue also says where a member goes that the table does not
   list: in the row of its kind. An example of such a move is the split of a file into one file for each kind. If no row
   fits, the plan asks a plan question. The reason: other tickets can add a member to the file between the draft of the
