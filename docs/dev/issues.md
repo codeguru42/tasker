@@ -47,8 +47,8 @@ how to do it on GitHub.
   alone in a [plain call](#the-reads-before-the-write). Add `--label '<label>'` in the same call when the issue needs a
   label. The title is the title text, not a command that reads it. If the title has a single quote, use double quotes.
 
-  Such a title holds no `$`, backtick, `\` or `\"`. On 2026-11-12, auto mode denied two compound `gh issue create`
-  calls. A compound call needs an allow rule for each part, and a redirect gets its own check.
+  Such a title holds no `$`, backtick, `\` or `"`. On 2026-11-12, auto mode denied two compound `gh issue create` calls.
+  A compound call needs an allow rule for each part, and a redirect gets its own check.
 
 - If an issue already covers the change, the session that posts the issue offers the user an extension of that issue
   (its body or its links) instead of a new issue. That session tells the user what each draft has that the other one
@@ -129,6 +129,10 @@ the walk.
 While no ticket of a cycle is in flight, a cycle stops each ticket of the cycle and each ticket that waits for one of
 them. A walk in an earlier call can be old at the write, and this rule accepts that. On 2026-10-26, the link "#477 waits
 for #572" closed a cycle of four issues, and GitHub took the link.
+
+On 2026-11-12, the classifier of auto mode denied the compound call for the link "#863 is blocked by #756". That call
+ran `tasker status`, a state read, an `if` and the write. A compound call needs an allow rule for each part. A redirect
+gets its own check.
 
 A read in an earlier call can be old, because a task can start or the issue can close between the read and the write. On
 2026-10-18, a new link of the relinked Docs chains landed on #302, which started after the planning session read the
