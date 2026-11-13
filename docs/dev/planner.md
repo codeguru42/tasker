@@ -956,7 +956,8 @@ likely edit the same file", which name the planner.
   of this page that adds a link for a shared file, except the bullet "A ticket that renames a doc ...". A link for a
   real need of code or docs can still join two issues of different milestones, as the other bullets permit. The bullet
   "The planner links two issues when one issue needs ..." gives such a link. The link of the bullet "A ticket that
-  renames a doc ..." also stays across milestones, because after the rename a body names a file that does not exist.
+  renames a doc ..." also stays across milestones. After the rename or the move, the old path in a body no longer leads
+  to the renamed doc or the moved part.
 
   [The overlap rule](land-the-work.md#the-overlap-rule) of land-the-work.md handles a shared file between two tickets of
   different milestones. On 2026-11-07, the user chose to handle such a file in the work of the orchestrators, not with a
@@ -1003,10 +1004,32 @@ likely edit the same file", which name the planner.
   moved to another page. Then the planner changes the path to the page that holds the rule today. On 2026-10-24, #400
   renamed `planning.md` and #409 renamed `orchestration.md`. Fourteen open bodies named the old paths. Five of them
   named rules that the split of 2026-10-18 had moved to other pages, and three lines recorded history.
+
+  This bullet also covers a ticket that moves a part of a doc, for example a section, into another doc. The old doc
+  holds the part before the move, and the new doc holds it after the move. For such a ticket, the bullet covers each
+  open issue whose body names the old place of the part. A line that gives the path of the old doc for the part names
+  the old place. Examples are a link to an anchor of the part and the heading of the part with the old path. After the
+  move, such a line sends the task of the issue to a doc that no longer holds the part.
+
+  The rules of this bullet for a rename ticket then apply to the ticket of the move and to each such issue. For a move,
+  the next paragraph takes the place of the sentence that starts "The planner changes each line that describes the doc".
+
+  The body edit changes the path to the path of the new doc in each line that describes the part as it is today. The
+  other words of such a line stay, for example an anchor of the part. If the move changes or removes the heading of the
+  part, the body edit also changes or removes the anchor. The body edit also changes words about the place of the part
+  in the old doc, for example "the last section". A line that names another part of the old doc keeps the old path. The
+  planner judges which part each line names, and this judgment is open on purpose.
+
+  On 2026-11-13, planner-docs posted #898, which moves the section "A question pane" of
+  `docs/dev/operator-conversations.md` into `docs/dev/question-pane.md`. #893 and #894 got the link "blocked by #898".
+  The bullet that starts "A ticket that changes the form or the layout of a file" gave that link but no body edit. Step
+  2 of the opener prompt of #893 read the old doc to find the session block. Requirement 6 of #894 linked to
+  `operator-conversations.md#start`. Then planner-docs changed 5 lines of #893 and 4 lines of #894 to the new doc.
+
 - Inside a chain of issues of one milestone that edit one file, the order is by issue number, oldest first. A new issue
   goes to the end of the chain of its file. The bullet "A ticket that changes the form or the layout of a file goes
   early in its chain" wins for a ticket that changes the form of a file. The bullet "A ticket that renames a doc ..."
-  wins for a ticket that renames a doc. A link for a real need also wins, for example a ticket that needs the text of
+  wins for each ticket that it covers. A link for a real need also wins, for example a ticket that needs the text of
   another ticket.
 
   The reason: an older issue most often holds the older decision, and a later issue builds on it. On 2026-10-17, the
@@ -1035,9 +1058,9 @@ likely edit the same file", which name the planner.
   every blocked-by link of both milestones and makes sure of this rule.
 - An issue of the milestone "Future" has no blocked-by link to an open issue, in either direction. Such an issue moves
   into another milestone before its work starts. This bullet wins over each other bullet of this page that adds a link.
-  For a ticket that renames a doc, the planner still edits the body of such an issue. The session that moves an issue
-  into "Future" removes each link of the issue to an open issue in the same step. It uses the commands of step 7 of
-  [the defer rule](pick-the-tickets.md#the-defer-rule).
+  For a ticket of the bullet "A ticket that renames a doc ...", the planner still edits the body of such an issue. The
+  session that moves an issue into "Future" removes each link of the issue to an open issue in the same step. It uses
+  the commands of step 7 of [the defer rule](pick-the-tickets.md#the-defer-rule).
 - The planner gives the reasons for the links in the chat with the user, not in the issue.
 
 ## The milestone of an issue
