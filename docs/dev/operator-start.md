@@ -316,10 +316,11 @@ These steps of the close need no other word of the user:
 - The GitHub milestone closure of a milestone with no work left
 
 The user still gives each approval that only the user gives: new scope, a security decision, a permission prompt and a
-failed operation. [A question pane](question-pane.md#a-question-pane) holds the start of the close. While a pane is
-open, the operator starts neither its handoff nor the close, and it tells the user when either is due. The state table
-of that section has the row "A handoff or a close of the milestone is due". That row wins over the rule that the steps
-of the close need no other word of the user.
+failed operation. [A question pane](question-pane.md#a-question-pane) holds the start of the close. While a pane is open
+or a [write subagent](question-pane.md#terms) runs, the operator starts neither its handoff nor the close. If either is
+due, it tells the user. The state table of that section has the rows "A handoff or a close of the milestone is due while
+a pane is open" and "A handoff or a close of the milestone is due while a write subagent runs". These rows win over the
+rule that the steps of the close need no other word of the user.
 
 Use this order only for the close of a milestone. A handoff, the end of the initial planning and each other stop of a
 session keep their own procedures. During the close, no session starts a new session of a role or a next milestone on
@@ -482,9 +483,12 @@ of more than one row, the row "More than one row has the name" wins over the row
 
 ## A denied command of the operator
 
-This section covers a [tool block](tasker-commands.md#the-tool-block-rule) of two commands that the operator runs
-itself. They are the create or change command of step 3 of [The order of a milestone](#the-order-of-a-milestone) and the
-removal of the label "on hold" in [The close of a milestone](#the-close-of-a-milestone). A denied command of an item of
+This section covers a [tool block](tasker-commands.md#the-tool-block-rule) of three kinds of call. Two of them are
+commands that the operator runs itself. They are the create or change command of step 3 of
+[The order of a milestone](#the-order-of-a-milestone) and the removal of the label "on hold" in
+[The close of a milestone](#the-close-of-a-milestone). The third is a call of a
+[write subagent](question-pane.md#terms), as
+[The operator handles a decision](question-pane.md#the-operator-handles-a-decision) says. A denied command of an item of
 another session stays with the tool-block rule, apart from the item of the last paragraph of this section.
 
 If the user declined the call at a permission prompt, the command did not run. Then the operator gives no choices and
@@ -493,7 +497,9 @@ waits for a new word of the user.
 After a [check failure](tasker-commands.md#the-tool-block-rule), the operator first runs the same call again one time,
 in the same form, as the tool-block rule says for the orchestrator. If the try runs, the operator goes on. If the try
 also gets a check failure, the next paragraph applies. The operator then also gives the user the link
-https://status.claude.com/.
+https://status.claude.com/. For a call of a write subagent, the retry of the write subagent takes the place of the retry
+of the operator. After its second check failure, the operator gives the choices of the next paragraph and the link at
+once.
 
 For each other denial, the operator tells the user the exact command and the folder of the call. It also gives the exact
 text of the denial, the purpose of the command and its step. Then it gives the user these choices, in this order:
