@@ -240,10 +240,11 @@ Each time before the task subagent runs `tasker approve` in step 5 of
 these cases:
 
 - The plan has an open question that the issue does not answer. A question about a choice of the implementation is not
-  such a question.
-- The plan makes a design choice that the issue does not make. A choice of the implementation is not such a choice. The
-  bullet of [The body of an issue](planner.md#the-body-of-an-issue) that starts "An issue never dictates the
-  implementation" defines the implementation.
+  such a question. A choice of the place or words of a doc change is a choice of the implementation.
+- The plan makes a design choice that the issue does not make. A choice of the implementation is not such a choice. A
+  choice of the place or words of a doc change is a choice of the implementation. The bullet of
+  [The body of an issue](planner.md#the-body-of-an-issue) that starts "An issue never dictates the implementation"
+  defines the implementation.
 - The plan has a security gap.
 - The plan changes a file that the issue does not name, and another task in progress also changes that file. For
   example, `tasker refine` prints a warning for such a file (see ["Land the work"](land-the-work.md#land-the-work)). If
@@ -365,8 +366,9 @@ open-question note treated the milestone item of #427 as the last item of the li
 ## The design-gap rule
 
 A design gap is a detail that the plan needs and that the issue does not give, in the first or the second case of the
-stop rule. If the gap has exactly one workable answer inside the intent of the issue, the orchestrator gives that answer
-to the task subagent. The orchestrator also tells the user the answer. If the gap has more than one workable answer, the
+stop rule. A missing place or missing words for a doc change alone is not a design gap. The plan chooses them. If the
+gap has exactly one workable answer inside the intent of the issue, the orchestrator gives that answer to the task
+subagent. The orchestrator also tells the user the answer. If the gap has more than one workable answer, the
 orchestrator asks the user. A security gap (the third case) always goes to the user. If a stop for a design gap is also
 the fifth case of [the stop rule](#the-stop-rule), the stop rule says who answers.
 
