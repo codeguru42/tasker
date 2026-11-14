@@ -430,9 +430,8 @@ operator then tells the user the result in one line.
 The write subagent keeps each rule of the docs for that kind of write. Examples are
 [Before a post](issues.md#before-a-post) and [The reads before the write](issues.md#the-reads-before-the-write), with
 the start hash of the message. The approval of the user in the message is the approval of Before a post. It also covers
-each write that such a rule adds to the action, for example the links of a new issue. If such a rule gives a step with
-the user, the write subagent stops before that write and reports. The operator then tells the user, and the action does
-not run.
+each write that such a rule adds to the action. If such a rule gives a step with the user, the write subagent stops
+before that write and reports. The operator then tells the user, and the action does not run.
 
 The operator relays two kinds of write action under
 [The word of the user](operator-conversations.md#the-word-of-the-user), also to a session of another slug. The first
@@ -483,6 +482,27 @@ names it starts its pane again.
 
 The operator relays stated doc rules, facts, and preferences to `planner-<slug>`. If the planner is the sender, the
 operator combines that relay with the answer. A failed relay invokes the failure rule.
+
+The operator sends each [request for a new issue](#terms) of a decision message to `planner-<slug>`. It sends the
+request one time, also when the message does not settle the question. The message starts with `From the user:`. It names
+the question pane, the item id and the question number. It gives the words of the user word for word and each guess of
+the question session, still marked as a guess.
+
+If the planner is the sender and the message settles the question, the request goes in the answer to the planner. In
+each other case, the request goes in a message of its own. Such a message is a relay to `planner-<slug>`, not an answer
+to the sender. So the rule that the operator sends nothing to the sender for a message that does not settle the question
+does not stop it.
+
+The operator drafts no issue and starts no write subagent for a request for a new issue. After the send, the operator
+tells the user in one line that `planner-<slug>` has the request. If the send fails,
+[the failure rule](limits.md#the-failure-rule) applies, as for the relay of a doc rule of the user. The planner handles
+the request as a proposed issue of the operator, with its review loops and its post rules. The planner then reports the
+post or the drop to the operator. For a draft that waits for a decision of the user, it sends an item.
+
+The reason: the planner runs its review loops on each new issue that the user asks for, also from a question pane. On
+2026-11-13, operator-docs relayed a proposal of the question session question-914-codex. In that pane, the user said
+"file separate tickets for codex and pi. Put them in the appropriate milestones". The session sent the request to the
+sender as a requested draft change, with no command.
 
 ### The rounds before the close
 
