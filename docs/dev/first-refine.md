@@ -457,6 +457,11 @@ orchestrator.
   a table cell, and it wins over the word-for-word copy of the hint that starts "If the issue gives a table that a doc
   gets".
 
+  The hint also covers an issue that gives its rules as requirements and gives no doc text for them. Ask the plan to
+  write the exact text of each item of a requirement into its todo. That text has the form of the item in the doc, for
+  example a bullet. The new text of the doc holds no number of a part of the issue that the doc does not hold. This ban
+  also covers the text of a link. Examples of such a number are "requirement 5", "Item 2" and "items 3 to 5".
+
   On #872 (2026-11-12), the issue asked for each paragraph of a requirement as its own paragraph, but it did not say
   "word for word". Plan v3 gave a list for each requirement, but the execute run still left out small rules of the
   issue. Examples are the words "that it started", the last sentence of a requirement and a link to a measured fact. Two
@@ -464,6 +469,10 @@ orchestrator.
   Review 1 did not find these gaps, but [the diff read](run-one-ticket.md#the-diff-read) did. One run of
   [the add-work rule](run-one-ticket.md#the-add-work-rule) fixed them, at the cost of one more plan, execute, verify and
   review run.
+
+  On #914 (2026-11-13), the issue asked a subsection to hold the rules of two requirements. The new text of the doc then
+  held "Item 2", the number of an item of one of those requirements. The fix cost one run of
+  [the add-work rule](run-one-ticket.md#the-add-work-rule). No one measured whether the cost repeats.
 
 - A ticket can give doc text word for word in its Docs section. Then ask the plan for a search step in each todo that
   adds or changes such text. The step runs in the execute run, after the edits and before `npm run format`. In the task
@@ -676,6 +685,17 @@ orchestrator.
   first refine asks the plan to keep each new rule out of the middle of that order, for example after the last line of
   the order, as #468 did. On #468 (2026-10-25), the diff read caught new bullets in the middle of "The form of an item"
   of `docs/dev/operator-items.md`, and review 1 did not.
+
+- The target list is the list of a doc that gets the new bullets of a ticket. In the first refine, name the heading
+  above the target list. Also name the first words of the first bullet and of the last bullet of the list before the
+  change. Ask the plan to copy these names into the todo that adds the bullets. The reason: the first words of one
+  bullet can match a bullet of another list. Then a search for the place can hit the wrong list.
+
+  On #914 (2026-11-13), plan v2 searched for the place "after the GitHub milestone closure term" and hit the wrong list.
+  Two lists of `docs/dev/operator-start.md` each hold a bullet with the words "GitHub milestone closure". They are the
+  list of the terms and the list under "The start and the authority". [The diff read](run-one-ticket.md#the-diff-read)
+  found the wrong list. No one measured whether the cost repeats.
+
 - If a refine puts a new sentence in the middle of a paragraph, ask the plan to read the sentences around it again. On
   #238, the task subagent learned this. A new sentence in the middle of a short section can also change what an "it" in
   the next sentence points to. On #244, review 1 found this in "Milestones" of `docs/dev/issues.md`: after the new
@@ -695,6 +715,16 @@ orchestrator.
   #735 and #736 (2026-11-04), "The" and "Then" stayed as stray words in `docs/dev/ci-wait.md` and `docs/dev/planner.md`.
   On #738 (2026-11-04), the execute session removed the two sentences right before an edited range of "Stop a session"
   in `docs/dev/operator-start.md`.
+
+  A ticket can remove sentences and keep a sentence next to them. Then, in the first refine, name the exact old text and
+  the exact new final text of each kept sentence. Ask the plan to copy both texts into the todo of that removal. The
+  reason: a stray word of the paragraph before can be the lead words of a removed sentence, at the start of a kept
+  sentence.
+
+  On #916 (2026-11-13), the first refine said to remove two sentences and to keep the next one. The execute run left
+  "For a new issue," at the start of the kept sentence. These words started the first removed sentence. Review 1 and
+  [the diff read](run-one-ticket.md#the-diff-read) found it, and the fix cost one review loop. No one measured whether
+  the cost repeats.
 
 - If a refine removes a name from a list inside a sentence, ask the plan to fix the "and" of that sentence. Also ask it
   to search each doc for the same list. The search follows [the doc-search rule](rules.md#docs). On #20, a refine
