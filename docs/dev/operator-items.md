@@ -70,10 +70,11 @@ The operator does these things for the open items:
   2026-10-25, the user said: "the operator continues to print out the full request when a new question arives rather
   than adding it to its list and waiting for me to request the details."
 
-  With an automatic start, the question pane shows the full text of an open question, with no request of the user.
+  With an automatic start, the first reply of the question pane shows an open question, with no request of the user.
   [Start](question-pane.md#start) of "A question pane" gives this rule and its reason. For an open question, this rule
   of 2026-11-13 wins over the first sentence of this bullet and over its reason of 2026-10-25. The operator chat still
-  shows only the arrival line.
+  shows only the arrival line. [The question session](question-pane.md#the-question-session) gives the form of the first
+  reply of a question pane.
 
 - For each new item, the operator runs `herdr notification show "<operator name>: new item <id>" --sound request` in its
   shell. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the item stays open. A report

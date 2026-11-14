@@ -229,10 +229,10 @@ These rules hold for each list of the decisions that the user must make, and for
 
   In the operator chat, each [open question](operator-items.md#the-open-items) is short, also question 1. Each rule of
   the paragraph that starts "Each later question can be short" then also holds for question 1. The first reply of each
-  [question pane](question-pane.md#a-question-pane) gives the full details of its question, as the first paragraph of
-  this bullet says. In the operator chat, this paragraph wins over each rule of this section that asks for the full
-  details of question 1. So a reminder of the operator also gives question 1 in short, as the bullet that starts "When
-  the session reminds the user" says.
+  [question pane](question-pane.md#a-question-pane) gives the details of its question within the limit that
+  [The question session](question-pane.md#the-question-session) gives. In the operator chat, this paragraph wins over
+  each rule of this section that asks for the full details of question 1. So a reminder of the operator also gives
+  question 1 in short, as the bullet that starts "When the session reminds the user" says.
 
   If the user asks to discuss a question in the operator chat, the reply gives the full details of that question. An
   operator whose kind is not `claude` starts no question pane, so question 1 of its reply keeps the full details. A
