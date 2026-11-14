@@ -34,8 +34,9 @@ zod facts and the tests.
   the files in `test/helpers/` must hold no code that `src/` uses.
 - Code in `src/` and in `test/` must call an existing helper for the job of that helper, not repeat its steps. When two
   or more places repeat the same steps and no helper exists, add one helper and call it from each place. A place repeats
-  a helper only when it repeats all its steps. A place that already holds the input of a later step, for example an open
-  store, and does only that step, keeps its own call. There, a call of the helper does the earlier steps again.
+  a helper only when it repeats all the steps of the helper. A place that already holds the input of a later step, for
+  example an open store, and does only that step, keeps its own call. There, a call of the helper does the earlier steps
+  again.
 - The expected-value exception to the helper rule above: a test helper that computes the expected value of a test
   without the code under test is not a copy of a helper of `src/`. If the test calls the helper of `src/`, a bug there
   changes the expected value and the real value in the same way. Then the test passes.
@@ -169,10 +170,10 @@ task.
   stays in an [item](../sessions.md), in the word of the user or in an open issue that it is about. A
   [handoff file](handoff.md#the-items-of-a-handoff-file) carries it as a decision of the user that still applies.
 
-  Whether an exception ends soon is a judgment, open on purpose. The session that drafts the doc change makes it, for
-  example the planner that writes its issue. For a short exception, this rule wins over two bullets of
-  [What goes in a ticket](planner.md#what-goes-in-a-ticket) in planner.md. Those bullets start "If the user states a
-  design fact or a rule" and "The work on this repo must continue on any machine".
+  Whether an exception ends soon is a judgment, open on purpose. The session that drafts the doc change makes it. For a
+  short exception, this rule wins over two bullets of [What goes in a ticket](planner.md#what-goes-in-a-ticket) in
+  planner.md. Those bullets start "If the user states a design fact or a rule" and "The work on this repo must continue
+  on any machine".
 
   On 2026-10-31, on a draft of a landing-order rule, the user said: "Tracked rules should not generally name a specific
   issue. Rule overrides such as "M26 lands first" don't need to be in tracked documents." The same day, the user
