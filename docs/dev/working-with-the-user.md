@@ -118,7 +118,27 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 - When you list open items or proposed issues, give each item what happened, why it matters and a recommendation. If you
   ask about an issue outside your milestone or topic, say why your work cares about it. If your work has no such reason,
   say so.
-- Define each term that the user did not see before, at its first use. An example is a label convention.
+- Define each term that the user did not see before, at its first use. An example is a label convention. This bullet
+  covers each text that the user reads, not only a decision of the user.
+
+  A name that a session gives to a thing with no number or no fixed name is also a term. An example is the name of a
+  proposed issue with no number, such as "the narrow Docs issue". Another example is a short name of a problem, such as
+  "the cut start reads" (start reads of long docs that Claude Code showed only in part).
+
+  A session can take a term from an item, a report or another message between two sessions. Such a term counts as a term
+  that the user did not see before. This holds until a text in the same chat or pane defines the term for the user. The
+  session that writes the text judges whether the user saw another term before. For the first reply of a question pane,
+  the operator judges. This judgment is open on purpose.
+
+  The definition of a term stands in the sentence of the term, for example in parentheses, or in the sentence right
+  before it. For a term in the sentence of a question, the definition stands in that sentence. The reason: the order of
+  the parts of a question in [The form of a reply](#the-form-of-a-reply) puts the question first, and that order wins.
+
+  The reason for these rules: on 2026-11-14, the question sentence of the first reply of the question pane
+  question-915-milestone used "the cut start reads" and "a narrow Docs issue". The reply defined both names only in
+  later sentences. These words came from item planner-docs-325. The user asked "What is "the cut start reads"" and "1.
+  What narrow docs issue?".
+
 - A question to the user about rules or data in the code says where they live, for example the file. If a word of the
   question can also mean another thing of the repo, the question names that other thing. The question says that it does
   not mean that thing. The reason: a word with two meanings in the repo can lead the user to answer another question.
