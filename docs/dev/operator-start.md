@@ -475,6 +475,28 @@ the gates for questions, decisions and review rounds.
   [the session-review skill](../../.claude/skills/session-review/SKILL.md) also holds them. The session finishes that
   work, drops it as moot under step 7 (c), or asks the user.
 - In step 10, the planner asks the user directly because the operator's role ended.
+- If an answer asks for more work, the session does that work first. Then it goes on with step 7 or step 11. The
+  operator follows [The question gate of the close](operator-items.md#the-question-gate-of-the-close). The planner
+  follows [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner).
+- For authority and drafts, follow
+  [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner). The planner
+  finishes each held draft before step 12.
+- A running [write subagent](question-pane.md#terms) holds the operator at step 8. If none started, or each one ended,
+  this hold ends. If one ends without a report, follow [the failure rule](limits.md#the-failure-rule). A write subagent
+  can run after its question pane closes. Step 9 ends the operator's session.
+- In the close, each new issue goes to the planner as a proposal, including an issue requested by an answer in step 6.
+  The operator and its write subagents post no new issue. This rule wins over an issue-posting write action in
+  [The operator handles a decision](question-pane.md#the-operator-handles-a-decision). The operator sends that action to
+  the planner as a proposal.
+- Run the rounds of steps 7 and 11 even after no new work, as [Session-review rounds](session-review-rounds.md) says.
+- A finding sent to the planner stays open until the planner handles it, as
+  [Session-review rounds](session-review-rounds.md) says. That finding is not a step 6 question or decision, so the
+  operator does not wait for it. A planner draft that needs a user decision returns to the operator as an item. That
+  item is an open question of step 6.
+- The planner handles findings as
+  [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner) says.
+- A failed round or a failed send ends the session's rounds. The close stops at that stage. A failed round is not a
+  round that found nothing new.
 
 ### The table of the close
 
