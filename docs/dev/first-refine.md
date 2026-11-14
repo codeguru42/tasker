@@ -12,8 +12,9 @@ The task subagent gives each hint that fits its ticket in the first refine. The 
 fits a later refine in the feedback of that refine, for example in a fix of a review loop. On #342 and #344, a later
 refine broke the hint that starts "Ask the plan to write no claim about a count in new text". On #373, the fix of loop 1
 moved the target of "Without that", which broke the hint that starts "If a refine puts a new sentence in the middle of a
-paragraph", and [the diff read](run-one-ticket.md#the-diff-read) found it. Each cost one loop. The drafter of an issue
-can put a hint in the issue body ([planner.md](planner.md#the-body-of-an-issue)).
+paragraph", and [the diff read](run-one-ticket.md#the-diff-read) found it. Each cost one loop. An issue gives exact hint
+words only when they are the requirement. The ticket plan chooses the target and words of a doc change, as
+[the body of an issue](planner.md#the-body-of-an-issue) says.
 
 Before the task subagent gives a hint, it compares the hint with the Out of scope section of the issue. If the Out of
 scope section excludes what the hint asks for, the task subagent does not give the hint, also when the hint fits its
@@ -195,10 +196,10 @@ orchestrator.
   its facts and named no source for its changes. Plan v2 still wrote "the user measured" and "the user decided", and
   this cost refine 2. On #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
 
-- If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
-  [The body of an issue](planner.md#the-body-of-an-issue) asks the planner for the same compare before the post. If no
-  doc supports the reason, ask the plan to drop it from the example. On #265, the Summary of the issue gave the reason
-  "an agent changes only its own task". The plan copied it into the example, and review 1 found it.
+- If an issue gives a reason in an example, ask the plan to compare that reason with the docs. The body of an issue asks
+  the planner to make the same compare before posting. If no doc supports the reason, ask the plan to drop it from the
+  example. On #265, the Summary of the issue gave the reason "an agent changes only its own task". The plan copied it
+  into the example, and review 1 found it.
 - A condition of the issue that now holds is not a difference, for example "After #199 lands" when #199 is closed. Say
   this in the first refine. On #204, plan v1 called such a condition a difference.
 - After [a change of scope](plan-review.md#the-stop-rule), compare the hints of the earlier refines with the new text
@@ -662,14 +663,13 @@ orchestrator.
 - If a refine removes a bullet of a list, ask the plan to read the lead-in sentence of that list again. On #215, a
   refine removed bullets of "Shared errors" in `skills/tasker/SKILL.md`. The lead-in sentence of the section then became
   false. The diff read found it before the first review.
-- A list can hold bullets that point to "the bullet before this one", for example in
-  [The body of an issue](planner.md#the-body-of-an-issue). Before a ticket inserts a bullet into such a list, the first
-  refine names each such pointer and asks the plan to keep each one true. On #357, the new bullet went into such a list.
-  A bullet can also hold a pointer inside it, for example "both cases". If an extension must keep such a pointer true,
-  ask the plan for the new text at the end of the bullet. Also ask the plan to give the reason: the end keeps the
-  pointer true. Expect a review finding that asks to move the text next to the sentence that it changes. The reason of
-  the dismissal says that the move breaks the pointer. On #488 (2026-10-25), the end of the hint that starts "The agent
-  of a stacked task runs" kept the pointer "both cases" true. Review 1 asked to move the text, and the task subagent
+- A list can hold bullets that point to "the bullet before this one". Before a ticket inserts a bullet into such a list,
+  ask the plan to read the current list and keep each pointer true. On #357, the new bullet went into such a list. A
+  bullet can also hold a pointer inside it, for example "both cases". If an extension must keep such a pointer true, ask
+  the plan for the new text at the end of the bullet. Also ask the plan to give the reason: the end keeps the pointer
+  true. Expect a review finding that asks to move the text next to the sentence that it changes. The reason of the
+  dismissal says that the move breaks the pointer. On #488 (2026-10-25), the end of the hint that starts "The agent of a
+  stacked task runs" kept the pointer "both cases" true. Review 1 asked to move the text, and the task subagent
   dismissed the finding.
 - A doc can give the lines of an item in order with "Then" bullets. Before a ticket adds a rule to such a list, the
   first refine asks the plan to keep each new rule out of the middle of that order, for example after the last line of
@@ -1511,14 +1511,12 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its
   lead-in names. If a hint links to a rule to prevent a repeat, put the link on the sentence that the rule supports, not
   on the new fact. On #149, review 1 found two links that only pointed near the topic.
-- Before the task subagent asks a plan to extend a bullet, the task subagent runs
-  `git blame --ignore-revs-file .git-blame-ignore-revs` on that bullet. The task subagent runs the command at the root
-  of its [task worktree](limits.md#the-own-worktree-rule). A plain `git blame` shows the wrap commit of #506 for most
-  lines of the docs. The issue can put the bullets of earlier tickets out of scope (#169). If an issue says to extend a
-  hint that already gives part of a new hint, and it also puts the other hints out of scope, the issue names the hint to
-  extend, as the bullet "An issue that adds hints to a page" of [The body of an issue](planner.md#the-body-of-an-issue)
-  says, or the drafter says that the move of a sentence is in scope. On #219, the plan asked this question, and the
-  answer cost one more stop before `tasker approve`.
+- Before the task subagent asks the plan to extend a bullet, the plan chooses the target from current doc text. If an
+  older issue names the target bullet, the task subagent follows that direction, as the hint that starts "If an older
+  issue names a hint's target bullet" says. The task subagent runs `git blame --ignore-revs-file .git-blame-ignore-revs`
+  on the target bullet at the root of its [task worktree](limits.md#the-own-worktree-rule). A plain `git blame` shows
+  the wrap commit of #506 for most lines of the docs. The issue can put the bullets of earlier tickets out of scope
+  (#169).
 - On #228, one hint of an issue used "check" as a verb, and the comment draft used "checked".
   [Before a post](issues.md#before-a-post) gives the self-check of each draft.
 - If a hint of the issue starts with a rule that a doc already gives, ask the plan to state only the new fact. Then the
@@ -1536,8 +1534,5 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   refine. On #228, plan v1 made a new section for one hint.
 - If a hint uses a term that another doc defines, ask the plan for a link on the term, not a sentence that defines it
   again. On #214, the plan defined "[home](rules.md#code)" again, and review 1 found the copy.
-- If a hint asks the plan for one sentence that covers the facts of two bullets, the hint also names the place of that
-  sentence. An example of a place is "at the end of the second bullet". Without the place, the plan makes a design
-  choice, and the task subagent stops under the second case of [the stop rule](plan-review.md#the-stop-rule). On #310,
-  plan v2 chose the end of the second bullet, and the question of that place cost one stop before `tasker approve`. See
-  [the bullet that starts "An issue that adds a bullet to a section"](planner.md#the-body-of-an-issue).
+- If a hint asks the plan for one sentence that covers the facts of two bullets, ask the plan to choose its place from
+  current doc text. The plan chooses the place as part of the implementation.
