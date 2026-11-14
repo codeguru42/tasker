@@ -33,9 +33,14 @@ and the state of each finding. An initial planner sends it with `SendMessage`. E
 it as a report, as [The form of an item](operator-items.md#the-form-of-an-item) says. An operator gives it to the user
 in a reply.
 
-In the close, the planner keeps each open decision about later work in its last report to the user. An open item about
-work outside the milestone does not keep the rounds running, as
-[The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner) says.
+In the close of a milestone, the operator and the planner each resolve each open question and each open decision first.
+Steps 6, 7, 10 and 11 of [The steps that end each role](operator-start.md#the-steps-that-end-each-role) give this rule.
+It also covers an open decision about work outside the milestone. Open work with no answer still does not keep the
+rounds running, as step 7 (e) of [the session-review skill](../../.claude/skills/session-review/SKILL.md) says.
+
+In the close of a milestone, the operator and the planner each run the round of step 7 or of step 11. They run it also
+with no work after their earlier rounds. This rule wins over the next paragraph. The close report of the operator or the
+planner holds its report of the rounds to the user.
 
 If the rounds of a session already ended and the session did no work after them, it runs no new round. It gives the
 report again. The steps that a doc gives after the rounds and before the stop, apart from the run of a ticket, are not
