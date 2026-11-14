@@ -49,7 +49,9 @@ operator in the place of the orchestrator. When the operator gets a notice, the 
 [the notice rule](dev/doc-reads.md#the-notice-rule). For an item with a denied command, the operator follows
 [the tool-block rule](dev/tasker-commands.md#the-tool-block-rule). For a denied command of step 3 of "The order of a
 milestone" or a denied removal of the label "on hold", the operator follows
-[A denied command of the operator](dev/operator-start.md#a-denied-command-of-the-operator).
+[A denied command of the operator](dev/operator-start.md#a-denied-command-of-the-operator). The operator also follows
+[A denied command of the operator](dev/operator-start.md#a-denied-command-of-the-operator) for a denied call of a
+[write subagent](dev/question-pane.md#terms).
 
 The operator pages are `docs/operator.md` and the pages of this list, "The pages":
 
