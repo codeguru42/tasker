@@ -301,7 +301,24 @@ decide.
 The decision message first gives the item id and sender's question number. It then gives the decision and the user's
 settling words verbatim, each requested draft change, and each doc rule, fact, or preference the user stated.
 
-For a measure that changes user state, the question session also gives the command and undo step verbatim.
+For a measure that changes user state, the question session also gives the command and undo step verbatim. It gives the
+same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. Before
+the send, the question session shows the user the command, the undo step and the text of each input file. The message
+gives the word of the user that approves them verbatim.
+
+Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
+itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
+`--body-file`, the command names a new path under `/tmp/tasker/<slug>/drafts/`. The slug is the slug of the operator.
+The message then gives the text of the file verbatim.
+
+For a write or an edit of a file, the message gives the absolute path and the full new text, not a command. Its undo
+step gives the old text, or the delete of a new file. For a message to a session other than the operator, the message
+gives the name of the session and the text verbatim. Such a message has no command and no undo step.
+
+For a change of the title or the body of an issue, the question session reads both at the start of the draft.
+[Before a post](issues.md#before-a-post) gives this read. The message gives the start hash of that read. For a new
+issue, the question session shows the user the blocked-by links of Before a post with the draft. The message gives these
+links. The question session runs the self-check of Before a post over the text that it shows, with no file.
 
 If the user ends without a decision, the question session sends **No decision**, the item id, and the question number.
 It also sends any stated doc rule, fact, or preference.
@@ -359,10 +376,10 @@ question of a pane. Each question of a pane gets its own rounds before its conte
 a later pane message that an answer in the operator chat wins over.
 
 After the close request, the question session runs the rounds of [Session-review rounds](session-review-rounds.md) with
-the user in its pane. The rounds keep each ban of [The question session](#the-question-session). So the question session
-skips steps 2, 4 and 5 of `/session-review`, the steps of the memory notes. Steps 4 and 5 delete notes, and step 2
-serves only these steps. The question of the pane is not open work of the rounds, because the operator already holds its
-state. Each proposal of step 6 goes to the operator in the report.
+the user in its pane. The rounds keep each rule of [The question session](#the-question-session). So the question
+session skips steps 2, 4 and 5 of `/session-review`, the steps of the memory notes. Steps 4 and 5 delete notes, and step
+2 serves only these steps. The question of the pane is not open work of the rounds, because the operator already holds
+its state. Each proposal of step 6 goes to the operator in the report.
 
 Each waiting decision and each open question of steps 6, 7 and 8 goes to the user in the pane, not as an item. After its
 rounds end, the question session sends the report to the operator with `SendMessage`. The report gives the item id, the
@@ -476,10 +493,10 @@ An answer in the operator chat wins over a later pane message, and the pane gets
 If the user reports closing the pane with no decision, the question stays open and the run waits for the user's next
 word. That question also gets no automatic start, as for a **No decision** message.
 
-While a pane is open, the operator starts neither its handoff nor
-[The close of a milestone](operator-start.md#the-close-of-a-milestone). The operator tells the user when either is due.
-A pane stays open through each reuse, so this rule holds while the reuse subagent runs. The operator makes no reuse
-while either is due, so such a close waits only for the rounds of the current question.
+While a pane is open or a [write subagent](#terms) runs, the operator starts neither its handoff nor
+[The close of a milestone](operator-start.md#the-close-of-a-milestone). If either is due, the operator tells the user. A
+write subagent can still run after the close of its pane. The close request, the close of the pane and the next pane
+start do not wait for a write subagent.
 
 The reason: on 2026-11-13, the user said, as operator-docs relayed it: "File an issue to modify the process for closing
 a question. After the session review passes with no findings, clear the session instead of closing it entirely. Then
