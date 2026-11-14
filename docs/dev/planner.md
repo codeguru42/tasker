@@ -653,42 +653,20 @@ chat under that subsection.
 - Before the post, the planner tests each outside-tool fact it writes, including a reason, with
   [the fact test](plan-review.md#the-fact-test). If no one tested it, the issue says so beside the fact. The planner
   reports each command and result to the user.
-- An issue can name a read of an outside tool and use fields of its output. Before the post, the planner runs that read
-  one time with [the fact test](plan-review.md#the-fact-test), on a small case that holds a value of each such field.
-  The planner picks the case, and this choice is open on purpose. The planner makes sure that the output gives each
-  field that the issue uses, in the form that the issue uses. If a field is missing or has another form, the planner
-  changes the issue before the post. The bullet before this one covers a read that the planner cannot run.
-
-  An earlier measure of the same tool version with a value of each field takes the place of this run. On #550
-  (2026-10-31), the issue gave only a measure with no comments. `acli jira workitem comment list` then gave no `created`
-  field and a flat `body`, and the fix cost one stop and three decisions of the user.
-
-- An issue can rest on a fact of an outside tool that no session can measure before an earlier ticket lands. Then the
-  issue lists the measures of the tool and says when the task subagent runs them. The issue also gives the outcome of
-  each failed measure, for example a stop for a [design gap](plan-review.md#the-design-gap-rule) or a refusal of the
-  run. The reason: with no outcome, the plan makes the design choice itself.
-- An issue can let a session decide choices that other rules send to the user. Then the issue also names the rules that
-  keep an action for the user alone, for example "Only the user changes a landing order of the overlap rule" (see
-  [Land the work](land-the-work.md#land-the-work)). The issue says that the new rule does not cover them. On #375,
-  review 1 found this gap in [the recommendation mode](working-with-the-user.md#a-decision-of-the-user) as a
-  [design gap](plan-review.md#the-design-gap-rule).
-- Each issue gives the scope hints that past tickets needed. [first-refine.md](first-refine.md) lists the hints by the
-  kind of ticket. Examples:
-  - The report of every configuration error in one run, as [rules.md](rules.md#code) says.
-  - [The fact test](plan-review.md#the-fact-test) for each fact about an outside tool.
-- An issue can be about a fact of a program of the local machine, for example `herdr` or `claude`. Then the issue body
-  says that the plan session runs no command of that program that reads or changes something outside the worktree (see
-  [the repo-files rule](plan-review.md#the-repo-files-rule)). The reason: the plan session of plan v1 sees only the
-  issue and the repo, and the installed tasker does not block these commands yet. On #557 (2026-10-25), plan v1 ran
-  `herdr --version` and `herdr agent list` before any feedback. Plan v1 of #523 also ran `herdr --version`.
-- An issue body has no dependency text, for example no "Depends on" section. The blocked-by links hold the order.
-- When the planner plans an issue, the issue gets no priority. The planner sets no value of the field `Priority` of
-  [the project board](issues.md#the-project-board) on its card. The blocked-by links hold the order of the work in a
-  milestone. Only an issue outside the plan, or a planned issue after a recurrence, gets a priority. An example of an
-  issue outside the plan is an issue of a failed CI run, as [A failed CI run](ci-wait.md#a-failed-ci-run) of ci-wait.md
-  says. For a recurrence, see [A recurrence](issues.md#a-recurrence) of issues.md.
-- An issue needs no line for commit style, because the prompts of the installed tasker already name it.
-  [rules.md](rules.md#commits) is the home of the commit rules.
+- An issue can name a read of an outside tool and use its output fields. Before the post, the planner measures a small
+  case with every used field. The planner chooses the case. An earlier measure of the same tool version can replace that
+  run. If a field or form differs, the planner changes the issue.
+- If no session can measure an outside-tool fact before another ticket lands, the issue names later measures and their
+  time. It gives the outcome of each failed measure.
+- If an issue delegates a choice, it names the rules that still keep actions for the user alone. It says that delegation
+  does not cover those actions.
+- If an issue concerns a program on the local machine, its body bans plan-session commands of that program that read or
+  change outside the worktree. See [the repo-files rule](plan-review.md#the-repo-files-rule).
+- An issue body has no dependency section. Blocked-by links hold the work order.
+- When the planner plans an issue, the issue gets no priority. The planner sets no `Priority` value on its card.
+  Blocked-by links order planned work. An issue outside the plan, or a planned issue after a recurrence, can get
+  priority.
+- An issue needs no commit-style line. [The commit rules](rules.md#commits) have one home, and tasker prompts name them.
 
 ## The blocked-by links
 
