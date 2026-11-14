@@ -320,13 +320,14 @@ These steps of the close need no other word of the user:
 - The end of the role of the planner
 - The GitHub milestone closure of a milestone with no work left
 
-An own-session closure is a session closure that a session runs on its own herdr tab. In the close, an open question is
-an open question of [The open items](operator-items.md#the-open-items). It is also an open question of step 7 of
-[the session-review skill](../../.claude/skills/session-review/SKILL.md). An open decision is a decision that waits for
-the user. It is a waiting decision of step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md)
-whose wait did not end. It is also a proposal or a draft that waits for a decision of the user. A close report is the
-last report of the operator or of the planner to the user in the close. It asks the user for the approval to close the
-session, as [The own-session closure](#the-own-session-closure) says.
+- An own-session closure is a session closure that a session runs on its own herdr tab.
+- In the close, an open question is an open question of [The open items](operator-items.md#the-open-items). It is also
+  an open question of step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md).
+- An open decision is a decision that waits for the user. It is a waiting decision of step 7 of
+  [the session-review skill](../../.claude/skills/session-review/SKILL.md) whose wait did not end. It is also a proposal
+  or a draft that waits for a decision of the user.
+- A close report is the last report of the operator or of the planner to the user in the close. It asks the user for the
+  approval to close the session, as [The own-session closure](#the-own-session-closure) says.
 
 The start of the close is not the authority for an own-session closure. The operator and the planner each close their
 own session only on the approval of the user, as [The own-session closure](#the-own-session-closure) says. The
