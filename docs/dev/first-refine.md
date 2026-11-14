@@ -871,9 +871,9 @@ orchestrator.
 - If an issue uses a term that docs can define, ask the plan to search for its definition. Ask it to keep the existing
   meaning or use another term.
 - If a rule limits session reads, ask the plan to find each doc link and path to the limited files. Ask it to name each
-  hit. For each hit, check whether Docs names its doc and Out of scope excludes it. For a covered hit, ask the plan to
-  change a conflicting use or explain why that use stays. If a hit changes what the ticket must do, apply
-  [the issue check](plan-review.md#the-issue-check).
+  hit. For each hit, check whether Docs names the doc of the hit and Out of scope does not exclude it. For such a hit,
+  ask the plan to change a conflicting use or explain why that use stays. If a hit changes what the ticket must do,
+  apply [the issue check](plan-review.md#the-issue-check).
 - If an issue changes a bullet, paragraph or sentence, ask the plan to choose its place from current doc text. Ask it to
   say whether text joins an existing part or starts a new part. A bullet with one paragraph counts as one paragraph. In
   a bullet with more paragraphs, each paragraph counts on its own. Ask the plan to count existing sentences in the
@@ -1099,9 +1099,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a handoff records numbered steps, ask the plan to place each new case inside an existing step. Ask it to keep
   recorded step numbers stable.
 - If an issue adds a command, trigger or text, ask the plan to read current lists and gates. Ask it to name each
-  conflict. For each conflict, check whether Docs names its doc and Out of scope excludes the affected part. For a
-  covered conflict, ask it to update old triggers and keep the stated priority of rules. If a conflict changes what the
-  ticket must do, apply [the issue check](plan-review.md#the-issue-check).
+  conflict. For each conflict, check whether Docs names the doc of the conflict and Out of scope does not exclude the
+  affected part. For such a conflict, ask it to update old triggers and keep the stated priority of rules. If a conflict
+  changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
 
 - If a procedure waits for a decision of the user, ask the plan for each answer's outcome. The kinds are accept with no
   change, change, reject and drop. Reject and drop can share one outcome.
