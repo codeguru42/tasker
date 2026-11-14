@@ -852,6 +852,15 @@ orchestrator.
   as [the own-worktree rule](limits.md#the-own-worktree-rule) says. The worktree that tasker makes for a task is a
   worktree of tasker. On #366, plan v1 used "the task worktree" for the worktree of tasker.
 
+- If an issue lists current code behavior, ask the plan to read the current code. Ask it to compare each listed case
+  with that code and name any difference.
+- If an issue gives a value for an existing stored field, ask the plan to compare it with the current stored form. If
+  the form differs, ask whether the issue requires that change.
+- If an issue names a tasker command, ask the plan to find it in the current command index. If the command is missing,
+  the claim of the issue is false. Apply [the issue check](plan-review.md#the-issue-check).
+- If an issue gives a case table, ask the plan whether two rows can match one case. If they can, ask it to name the
+  winning row or the missing requirement.
+
 ## A ticket that only adds a layer, for example a schema
 
 - Say that the wiring is out of scope. Otherwise the review finds "a key that nothing reads".
@@ -1061,6 +1070,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   covered only the signal path.
 
 ## A ticket that changes a procedure doc
+
+- If a procedure waits for a decision of the user, ask the plan for each answer's outcome. The kinds are accept with no
+  change, change, reject and drop. Reject and drop can share one outcome.
 
 - Say who runs each step, with which binary, in which repo and path, and the state of the task after each command. Each
   git command of a step names the checkout or worktree where it runs, for example the local clone or the worktree of the
