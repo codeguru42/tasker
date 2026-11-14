@@ -857,15 +857,17 @@ orchestrator.
   with that code and name any difference.
 - If an issue gives a value for an existing stored field, ask the plan to compare it with the current stored form. If
   the form differs, ask whether the issue requires that change.
-- If an issue names a tasker command, ask the plan to find it in the current command index. If the command is missing,
-  the claim of the issue is false. Apply [the issue check](plan-review.md#the-issue-check).
+- If an issue asks for work on an existing tasker command, ask the plan to find that command in the current command
+  index. If the command is missing, the claim of the issue is false. Apply
+  [the issue check](plan-review.md#the-issue-check).
 - If an issue gives a case table, ask the plan whether two rows can match one case. If they can, ask it to name the
   winning row or the missing requirement.
 
 - If an issue gives a file-member table, ask the plan to read current members. Ask it to put each unlisted member in the
   row of its kind. If no row fits, ask a plan question.
 - If an issue says no doc names a thing, ask the plan to search current docs, skills, README and AGENTS files. Ask it to
-  name each hit and update the Docs scope. No match is an answer.
+  name each hit. If a hit changes what the ticket must do, the issue's claim is false. Apply
+  [the issue check](plan-review.md#the-issue-check). No match is an answer.
 - If an issue uses a term that docs can define, ask the plan to search for its definition. Ask it to keep the existing
   meaning or use another term.
 - If a rule limits session reads, ask the plan to find each doc link and path to the limited files. Ask it to change
