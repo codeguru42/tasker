@@ -382,8 +382,8 @@ step gives the old text, or the delete of a new file. For a message to a session
 gives the name of the session and the text verbatim. Such a message has no command and no undo step.
 
 For a change of the title or the body of an issue, the question session reads both at the start of the draft.
-[Before a post](issues.md#before-a-post) gives this read. The message gives the start hash of that read. For a new
-issue, the question session runs the self-check of Before a post over the text that it shows, with no file.
+[Before a post](issues.md#before-a-post) gives this read. The message gives the start hash of that read. The question
+session runs the self-check of Before a post over the text that it shows, with no file.
 
 The decision message also gives each [request for a new issue](#terms), with the words of the user word for word. The
 question session can add its own reading of the words, for example which issue or milestone a word names. It marks each
