@@ -633,10 +633,9 @@ chat under that subsection.
 - If an issue requires a task revision, it says whether the behavior reads the task-branch tip or worktree `HEAD`.
   [Revisions](workspaces.md#revisions) gives the ref-read rule.
 - An issue names a git operation by its purpose and links to its doc section. The plan chooses its mechanism.
-- Each issue has a "Docs" section. It names every doc to change and gives the rule, fact or reason to add. A Docs item
-  asks only for what [the Docs rule](rules.md#docs) permits. If a doc must give a requirement's reason, the Docs item
-  gives that reason as doc content. The Requirements section does not give that doc instruction. A new command follows
-  [the Docs rule](rules.md#docs).
+- Each issue has a "Docs" section. A Docs item asks only for what [the Docs rule](rules.md#docs) permits. If a doc must
+  give a requirement's reason, the Docs item gives that reason as doc content. The Requirements section does not give
+  that doc instruction. A new command follows [the Docs rule](rules.md#docs).
 - A Docs item does not say that no command uses a part yet. Another ticket can make that sentence false.
 - If a Docs item says that no doc names a thing, the planner supports that claim with a current search. A search with no
   match supports the claim.
