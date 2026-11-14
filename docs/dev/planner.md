@@ -243,9 +243,9 @@ scratch folder under `/tmp`. The review agents of a ticket subagent also keep
 
 A review agent gives a measure that needs a change of the state of the user as a finding with its command. If the draft
 needs the measure, the ticket subagent makes the question an open question in its report. The bullet of
-[The body of an issue](#the-body-of-an-issue) that starts "Before the post, the planner tests each fact about an outside
-tool" gives the words that no one tested the fact. This subsection wins over that bullet and over the bullet that starts
-"An issue can name a read of an outside tool".
+[The body of an issue](#the-body-of-an-issue) that starts "Before the post, the planner tests each outside-tool fact it
+writes" gives the words that no one tested the fact. This subsection wins over that bullet and over the bullet that
+starts "An issue can name a read of an outside tool".
 
 The initial planner and the ad hoc planner ask the user in their chat. The follow-up planner sends the question to
 [its operator](../operator.md) as an item. The draft waits for the answer, as a draft of
@@ -543,8 +543,8 @@ When a draft needs one of these decisions, each planner asks the user before the
   through the operator. A lesson or proposed issue from another session, without those words, does not supply such a
   request.
 
-- A choice between two or more designs, where each one has a real cost. A choice of the implementation is not such a
-  choice, because the plan of the ticket makes it.
+- A choice between two or more designs, where each one has a real cost. A choice of the place or words of a doc change
+  is a choice of the implementation. The ticket plan makes it.
 - A change of scope of an issue in flight.
 - A security gap.
 - A measure that needs a change of [the state of the user](plan-review.md#the-state-of-the-user).
