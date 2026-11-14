@@ -455,6 +455,27 @@ place of the terminal delegation for the start of step 10 of the planner.
 
 Only the operator and the planner close their own sessions in the close, each on the approval of the user.
 
+### The questions and the rounds of the close
+
+This subsection covers steps 6, 7, 10 and 11 of [The steps that end each role](#the-steps-that-end-each-role). It gives
+the gates for questions, decisions and review rounds.
+
+- For the operator, only an end listed in
+  [The question gate of the close](operator-items.md#the-question-gate-of-the-close) resolves an open question or
+  decision. A waiting decision of [the session-review skill](../../.claude/skills/session-review/SKILL.md) also follows
+  its step 8.
+- In step 10, only a user answer, a withdrawal, or the user's choice to let the planner decide can resolve a question or
+  decision. The choice must be one that the user can give to the sender. In step 10, no answer of the operator resolves
+  it. The third end of the skill's step 8 wait does not apply in step 10.
+- Step 8 of [the session-review skill](../../.claude/skills/session-review/SKILL.md) also ends a waiting decision when
+  its listed conditions hold. An operator answer does not resolve the operator's waiting decision.
+- A missing user answer, a deferral, a send to another session, and another round each leave the question or decision
+  open.
+- An open question or decision outside the milestone also holds steps 7 and 11. Unfinished work from step 7 of
+  [the session-review skill](../../.claude/skills/session-review/SKILL.md) also holds them. The session finishes that
+  work, drops it as moot under step 7 (c), or asks the user.
+- In step 10, the planner asks the user directly because the operator's role ended.
+
 ### The table of the close
 
 Each actor keeps its own report of the rounds and its own state in the close. The operator also keeps the name of the
