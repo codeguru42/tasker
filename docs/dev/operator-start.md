@@ -498,6 +498,45 @@ the gates for questions, decisions and review rounds.
 - A failed round or a failed send ends the session's rounds. The close stops at that stage. A failed round is not a
   round that found nothing new.
 
+### The own-session closure
+
+The operator and planner use this procedure after their close reports.
+[Own-session closure](codex-sessions.md#own-session-closure) records the measured facts.
+
+- Give the close report in the reply that asks for approval, before closing the session. Give no report after
+  own-session closure.
+- The operator's close report says that its last round found nothing new. It says that the planner is now the user's
+  contact.
+- The planner's close report says that its last round found nothing new. It gives the milestone URL and the result of
+  the read after the write.
+- Each close report includes the report of the rounds under [Session-review rounds](session-review-rounds.md). Give no
+  other report of those rounds to the user in the close.
+- Approval to close must be the user's word in that session's conversation. The close-start word, a recommendation, an
+  operator answer, and a relayed word do not approve closure. This rule wins over the `From the user:` rule in
+  [The operator](working-with-the-user.md#the-operator).
+- An approval makes the session run its own-session closure.
+- If the planner receives an answer that opens a question or decision, or asks for work, it takes its role again. It
+  returns to step 10 and gives a new close report after step 13. Put new work after a closed milestone in the milestone
+  from [The milestone of an issue](planner.md#the-milestone-of-an-issue). Do not reopen the closed milestone, as
+  [Milestones](issues.md#milestones) says.
+- If the operator receives such an answer, it does no work of its role because its role ended. It tells the user that
+  the planner is the contact. It closes nothing until an approval.
+- On another answer, such as a wait, rejection or drop, the session closes nothing and stays open. The user's word
+  decides the next step.
+- With no answer, the session closes nothing and stays open.
+- Each agent kind uses the same closure procedure. The user assumes each kind can close its herdr tab. No one tested
+  that assumption for a kind other than `claude`.
+- A session that the user resumed, restarted, or opened in a pane cannot close itself. It also cannot close if it cannot
+  establish its own pane, tab, and one-pane tab. Whether the session knows that the user resumed, restarted or opened it
+  is open on purpose. The session judges it. No one tested those bindings.
+- Read `HERDR_TAB_ID` and `HERDR_PANE_ID`. If either is unset, close nothing.
+- Run `herdr agent list`. Exactly one row in `.result.agents` must have `terminal_title_stripped` equal to the session's
+  own name. Its `tab_id` and `pane_id` must match the two environment variables. Otherwise, close nothing. The measured
+  binding covered only a new pane started by herdr, not an older stale inherited id.
+- Run `herdr tab get <tab id>`. If `.result.tab.pane_count` is not 1, close nothing. The closure measure covered only a
+  one-pane tab; no one tested own closure in a tab with more panes. The own-tab close of an operator handoff keeps its
+  own procedure under [Stop a session](#stop-a-session).
+
 ### The table of the close
 
 Each actor keeps its own report of the rounds and its own state in the close. The operator also keeps the name of the
