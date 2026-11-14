@@ -491,6 +491,18 @@ The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but i
 case (2026-10-18), the planner of the Docs milestone wrote plain keys such as `#303` in each reply, and the user had no
 link to open an issue from a reply.
 
+The first mention of an issue in a text that the user reads also gives the content of the issue next to its link. The
+content is a few words that say what the issue is about, for example a few words of its title. The link text stays the
+issue key. A later mention of the same issue in the same text gives only the link. The session that writes the text
+chooses the words of the content, and this choice is open on purpose. A key inside a code span or a code block needs no
+content, as it needs no link.
+
+An item also gives the content of each issue next to its plain key, at the first mention of the issue in the item.
+[The open items](operator-items.md#the-open-items) says how the operator shows that content.
+
+The reason for the content: on 2026-11-14, the first reply of the question pane question-915-milestone named #770 and
+#916 with no content. The user asked "what does 770 have to do with it? Isn't it specific to codex?".
+
 ## Core features first
 
 - The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge
