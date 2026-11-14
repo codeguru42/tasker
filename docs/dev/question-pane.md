@@ -346,6 +346,32 @@ words, and requested draft changes.
 
 The sender treats that message as any other `From the user:` message.
 
+A settled message can give [write actions](#terms), as [Send a decision](#send-a-decision) says. The approval of the
+user in the message covers one run of the command of each write action, word for word. Words of the user that let the
+sender decide approve no write action. A message that does not settle the question starts no write subagent.
+
+The answer of the operator to the sender names each write action and says that the operator tells the user the result.
+After the answer, also after a failed send of it, the operator starts one [write subagent](#terms) for the write actions
+of the message. The operator runs one write subagent at a time, and a later one starts after the earlier one ends. The
+write subagent first writes each input file of the message at its path. Then it does the write actions in their order,
+and it writes the full new text of each file write. It reports the exit code and the output of each command, and the
+operator then tells the user the result in one line.
+
+The write subagent keeps each rule of the docs for that kind of write. Examples are
+[Before a post](issues.md#before-a-post) and [The reads before the write](issues.md#the-reads-before-the-write), with
+the start hash of the message. The approval of the user in the message is the approval of Before a post. It also covers
+each write that such a rule adds to the action, for example the links of a new issue. If such a rule gives a step with
+the user, the write subagent stops before that write and reports. The operator then tells the user, and the action does
+not run.
+
+The operator relays two kinds of write action under
+[The word of the user](operator-conversations.md#the-word-of-the-user), also to a session of another slug. The first
+kind is a message to a session other than the operator. The second kind is a `tasker` command that
+[the operator page](../operator.md) does not permit. The write subagent runs only the `tasker` commands that the
+operator page permits. The operator relays such a `tasker` command to the orchestrator of the milestone of the issue of
+the command. If the command names no issue, or no such orchestrator runs, the operator tells the user, and the action
+does not run.
+
 If the words do not settle the question, the operator sends only the question session one message saying what remains
 open; the pane conversation continues. The operator sends nothing to the sender.
 
