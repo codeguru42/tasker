@@ -51,6 +51,10 @@ is a write action:
 A message to the operator is not a write action. A step that the item of the sender proposes and the user approves is
 also not a write action. Examples are the post of a draft, a comment and a measure. The sender does that step.
 
+A request for a new issue is words of the user in a question pane that ask for one or more new issues. The item of the
+sender did not propose these issues. Such a request is about the question of the pane or its item. A request about
+another topic stays a request outside the question. A request for a new issue is not a write action.
+
 A [write subagent](#the-operator-handles-a-decision) is a subagent of the operator that does the write actions of one
 settled decision message.
 
@@ -254,6 +258,18 @@ The question session sends each [write action](#terms) back to the operator, in 
 [Send a decision](#send-a-decision) says. The operator starts a [write subagent](#terms) that does the action, as
 [The operator handles a decision](#the-operator-handles-a-decision) says. After a close request, the question session
 directs the user to the operator chat for a write action.
+
+For a [request for a new issue](#terms), the question session does not draft the issue and asks for no approval of a
+draft. It gives no command, no undo step, no input file and no blocked-by links for it. The operator sends the request
+to `planner-<slug>`, as [The operator handles a decision](#the-operator-handles-a-decision) says. After a close request,
+the question session directs the user to the operator chat for such a request.
+
+A change of the draft of the sender stays with the sender, as a requested draft change. A split of such a draft into two
+or more issues is also such a change. The question session judges whether the item proposed the issue. This judgment is
+open on purpose.
+
+If the question session is not sure, it gives the words as a request for a new issue. It adds its guess that they can be
+a change of the draft of the sender. The planner then decides.
 
 For a request outside its question, the question session directs the user to the operator chat.
 
