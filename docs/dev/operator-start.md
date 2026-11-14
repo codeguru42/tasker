@@ -315,6 +315,19 @@ These steps of the close need no other word of the user:
 - The end of the role of the planner
 - The GitHub milestone closure of a milestone with no work left
 
+An own-session closure is a session closure that a session runs on its own herdr tab. In the close, an open question is
+an open question of [The open items](operator-items.md#the-open-items). It is also an open question of step 7 of
+[the session-review skill](../../.claude/skills/session-review/SKILL.md). An open decision is a decision that waits for
+the user. It is a waiting decision of step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md)
+whose wait did not end. It is also a proposal or a draft that waits for a decision of the user. A close report is the
+last report of the operator or of the planner to the user in the close. It asks the user for the approval to close the
+session, as [The own-session closure](#the-own-session-closure) says.
+
+The start of the close is not the authority for an own-session closure. The operator and the planner each close their
+own session only on the approval of the user, as [The own-session closure](#the-own-session-closure) says. The
+recommendation mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) does not cover this
+approval.
+
 The user still gives each approval that only the user gives: new scope, a security decision, a permission prompt and a
 failed operation. [A question pane](question-pane.md#a-question-pane) holds the start of the close. While a pane is open
 or a [write subagent](question-pane.md#terms) runs, the operator starts neither its handoff nor the close. If either is
@@ -341,7 +354,7 @@ After the report of the orchestrator that the milestone is done arrives, the ope
 [Stop a session](#stop-a-session) says. The operator keeps each check of that section. Examples are the report of the
 rounds, the row of the session, the wait, the tab list and the shared tab. The gate of that section starts "The operator
 stops a session only on a request of the user". The start of the close is that request for this stop. The operator
-starts its final rounds only after the stop of the orchestrator worked.
+starts its rounds of step 5 only after the stop of the orchestrator worked.
 
 ### The rounds of the operator
 
@@ -356,25 +369,28 @@ delegation for a later recovery. It does not end its role after a failed round.
 
 ### The terminal delegation
 
-Before the terminal delegation, the operator does
-[the question gate of the close](operator-items.md#the-question-gate-of-the-close). With an open question, the operator
-sends no terminal delegation and does not end its role.
+Before the terminal delegation, the operator does steps 6 and 7 of
+[The steps that end each role](#the-steps-that-end-each-role). Step 6 follows
+[the question gate of the close](operator-items.md#the-question-gate-of-the-close). With an open question or an open
+decision, the operator sends no terminal delegation and does not end its role. It also sends none before a round of step
+7 finds nothing new. It also sends none while a [write subagent](question-pane.md#terms) runs.
 
 The terminal delegation gives the milestone, the report of the rounds of the operator, the state of each finding and the
 remaining close duties. It also gives the id of each item with a settled question and the decision of that question. It
-says that the planner talks to the user directly after the end of the role of the operator. The operator sends it to the
-planner with `SendMessage`. If the send fails, [the failure rule](limits.md#the-failure-rule) applies, and the operator
-keeps its role.
+also gives the pane id of the operator, or says that it gives none, as
+[The own-session closure](#the-own-session-closure) says. It says that the planner talks to the user directly after the
+end of the role of the operator. The operator sends it to the planner with `SendMessage`. If the send fails,
+[the failure rule](limits.md#the-failure-rule) applies, and the operator keeps its role.
 
 The terminal delegation is the last message of the operator to another session and the last action of its role. The
 operator waits for no result of the rounds of the planner and for no result of the GitHub milestone closure.
 
 ### The work of the planner
 
-The planner starts its final rounds only after the end of the role of the operator.
-[The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner) give its work.
-[Milestones](issues.md#milestones) gives the GitHub milestone closure. After the end of the role of the operator, the
-planner talks to the user directly, as [The operator](working-with-the-user.md#the-operator) says.
+The planner starts step 10 of [The steps that end each role](#the-steps-that-end-each-role) only after the end of the
+role of the operator. [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner)
+give its work. [Milestones](issues.md#milestones) gives the GitHub milestone closure. After the end of the role of the
+operator, the planner talks to the user directly, as [The operator](working-with-the-user.md#the-operator) says.
 
 ### Missing roles
 
@@ -386,7 +402,7 @@ is open on purpose, and the operator makes it.
 If no planner runs, the operator keeps its role and tells the user that no session can do the rest of the close. The
 word of the user decides the next step. If no operator runs, the user tells the planner that the close started. Then the
 planner gives each report to the user directly. The user stops a running orchestrator. The word of the user takes the
-place of the terminal delegation for the start of the final rounds of the planner.
+place of the terminal delegation for the start of step 10 of the planner.
 
 ### The steps that end each role
 
