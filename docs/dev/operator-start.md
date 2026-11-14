@@ -485,9 +485,7 @@ the gates for questions, decisions and review rounds.
   this hold ends. If one ends without a report, follow [the failure rule](limits.md#the-failure-rule). A write subagent
   can run after its question pane closes. Step 9 ends the operator's session.
 - In the close, each new issue goes to the planner as a proposal, including an issue requested by an answer in step 6.
-  The operator and its write subagents post no new issue. This rule wins over an issue-posting write action in
-  [The operator handles a decision](question-pane.md#the-operator-handles-a-decision). The operator sends that action to
-  the planner as a proposal.
+  The operator and its write subagents post no new issue.
 - Run the rounds of steps 7 and 11 even after no new work, as [Session-review rounds](session-review-rounds.md) says.
 - A finding sent to the planner stays open until the planner handles it, as
   [Session-review rounds](session-review-rounds.md) says. That finding is not a step 6 question or decision, so the
