@@ -19,7 +19,7 @@ zod facts and the tests.
   `test:` commit must also pass the format check and the lint (see [Commits](#commits) for its failing tests).
   `tasker verify` runs `npm run check`, so a format or lint problem fails it before any review.
 - Run a tool of the repo through a script of `package.json`, not with `npx`. The tools are dev dependencies, so a script
-  can call them by name. If a tool has no script, add one.
+  can call them by name. If a step needs a tool that has no script, add one.
 
 ## Tests
 
@@ -90,7 +90,8 @@ task.
 - When the cases differ in code, each case gets its own function. An `if` or a `switch` on the case that runs other
   steps is a difference in code. Steps that only some cases do are also a difference in code.
 - Separate functions share code only where the steps are truly the same. Find the shared steps during the work, when two
-  functions show them. Do not build a shared core at the start. Then the helper rule in [Tests](#tests) applies to them.
+  functions show them. Do not build a shared core at the start. Then the helper rule in [Tests](#tests) applies to the
+  steps.
 - These rules do not split a function only because its cases differ in values, for example a limit, a message or a
   model. Such values are data.
 
@@ -134,11 +135,11 @@ task.
 - Each session writes all its text with the simple-english skill. A session is an assistant session, for example the
   orchestrator, a task subagent or the planner. The skill holds the rules of the text, for example the banned words and
   the sentence limits. The text includes the docs and the text on GitHub: titles, bodies, comments, milestone
-  descriptions and project field text. It also includes the title and the description of a pull request. Examples are
-  the comment of step 11 of [Run one ticket](run-one-ticket.md#run-one-ticket) and the body of an issue. It also
-  includes the replies to the user, the reports and messages between sessions, and the feedback texts of `tasker refine`
-  and `tasker review <issue> "<feedback>"`. This rule does not apply to the sessions that tasker starts for plan,
-  execute and review, except for the docs that they write.
+  descriptions and project field text. Examples are the comment of step 11 of
+  [Run one ticket](run-one-ticket.md#run-one-ticket) and the body of an issue. It also includes the title and the
+  description of a pull request. It also includes the replies to the user, the reports and messages between sessions,
+  and the feedback texts of `tasker refine` and `tasker review <issue> "<feedback>"`. This rule does not apply to the
+  sessions that tasker starts for plan, execute and review, except for the docs that they write.
 - Each session writes "task subagent" for the session that [docs/sessions.md](../sessions.md) defines as a task
   subagent, also where the text of an issue says "agent".
 - The memory rule: no session writes memory. A session makes no new memory note and adds no text to a memory note. A
@@ -188,12 +189,12 @@ task.
 - The doc-search rule: a search for words of a doc, for example with `git grep`, matches one line, and a sentence can
   span two lines. So the search uses a short part that fits on one line, and then reads the hit. Each place that names a
   search of doc words links to this bullet. A short part of two or more words can still span two lines. Then the search
-  joins the lines of a file first. Between two words, the pattern takes ` +` in place of one space. In a list item, the
-  join puts the indent of the next line between the words. The search runs `tr '\n' ' ' < FILE | grep -o -E '<pattern>'`
-  on each file. The joined text has no line numbers. So the search finds the line break of a hit with each word of the
-  hit at the end of a line. It shows the next line too, for example `git grep -n -A1 -E 'index$'`. The right hit is the
-  line whose next line starts with the next word of the hit. On #506, plan v1 searched for `index lines?`. It missed
-  "index" at the end of one line and "line" at the start of the next line.
+  joins the lines of a file. Between two words, the pattern takes ` +` in place of one space. In a list item, the join
+  puts the indent of the next line between the words. The search runs `tr '\n' ' ' < FILE | grep -o -E '<pattern>'` on
+  each file. The joined text has no line numbers. So the search finds the line break of a hit. It searches for each word
+  of the hit at the end of a line and shows the next line too, for example `git grep -n -A1 -E 'index$'`. The right hit
+  is the line whose next line starts with the next word of the hit. On #506, plan v1 searched for `index lines?`. It
+  missed "index" at the end of one line and "line" at the start of the next line.
 
 ## The installed skill
 
