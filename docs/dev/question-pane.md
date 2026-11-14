@@ -372,15 +372,40 @@ operator page permits. The operator relays such a `tasker` command to the orches
 the command. If the command names no issue, or no such orchestrator runs, the operator tells the user, and the action
 does not run.
 
+If a command fails, the write subagent runs nothing more, also no undo step, and it reports the state that stays. A
+failed command is a command that cannot start or that exits with an error. A write that "The reads before the write"
+skips also counts as a failed command. The operator then tells the user the command and the error, as
+[the failure rule](limits.md#the-failure-rule) says. If the write subagent ends with no report, the operator tells the
+user that the results are not known.
+
+A call of the write subagent can get a [tool block](tasker-commands.md#the-tool-block-rule). After a check failure of
+that rule, the write subagent first runs the same call again one time, in the same form. After each other tool block,
+and after a second check failure, the write subagent stops. It reports the exact call, the exact text of the denial, the
+folder of the call and the purpose. The operator then follows
+[A denied command of the operator](operator-start.md#a-denied-command-of-the-operator) for that call.
+
+The commands after the denied call wait for the answer of the user. If the denied call ran in any choice of that
+section, the operator starts a new write subagent. It runs the commands after the denied call, under the same approval.
+If the user declines the call, or the result is "did not run", the operator tells the user each command that does not
+run.
+
+The reason: on 2026-11-13, operator-docs reported that the question session question-move-522-822 ran two
+`gh issue edit` calls itself. The calls moved #522 and #822 into the milestone "M31 — Orchestrator". The user then said:
+"Write the rule in the positive voice: All write actions are sent back to the operator, including Github, (fill in
+anything else that is appropriate). The operator spawns a subagent to perform the action." The user also approved the
+list of write actions of [Terms](#terms). A message of the operator that starts with "From the user:" is a word of the
+user, as [The operator](working-with-the-user.md#the-operator) says. So the operator relays a message to another session
+itself.
+
 If the words do not settle the question, the operator sends only the question session one message saying what remains
 open; the pane conversation continues. The operator sends nothing to the sender.
 
 This rule takes precedence over the two named bullets of [The answer](operator-items.md#the-answer). If the return
 message fails, the failure rule applies and the run stops until the user speaks.
 
-A decision message covers only its question. It does not approve a Claude Code permission prompt or a separate tasker
-setting. It is not the request of the user that [the operator page](../operator.md) needs before the operator sets a
-value with a `tasker` command.
+A decision message covers only its question. It does not approve a Claude Code permission prompt or a `tasker` setting
+outside its write actions. A write action of a settled message is a request of the user for its `tasker` command.
+[The operator page](../operator.md) needs such a request before the operator sets a value with a `tasker` command.
 
 A **No decision** message leaves the question open. The operator closes the pane or gives it a reuse, as
 [Close and continue](#close-and-continue) says. That question gets no automatic start, and only a word of the user that
