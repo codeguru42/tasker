@@ -406,15 +406,22 @@ place of the terminal delegation for the start of step 10 of the planner.
 
 ### The steps that end each role
 
-1. The operator stops the orchestrator, as [The orchestrator ends](#the-orchestrator-ends) says.
-2. The operator sends the terminal delegation to the planner, as [The terminal delegation](#the-terminal-delegation)
-   says.
-3. The end of the role of the operator is the send of the terminal delegation that worked. The planner takes the arrival
-   of the terminal delegation as the end of the role of the operator.
-4. After the end of its role, the operator tells the user one time that its role ended and that the planner is now the
-   contact. The user then closes the tab of the operator.
-5. After its last report, the planner tells the user that its role ended. The user then closes the tab of the planner,
-   in the same way as the tab of the operator.
+1. The last ticket of the milestone closes, and no task of the milestone is in flight. For a long-running milestone, for
+   example "Docs", the close starts only on the word of the user.
+   [The start and the authority](#the-start-and-the-authority) gives the details.
+2. The orchestrator tells the operator that the close started. The operator tells the planner.
+   [The start and the authority](#the-start-and-the-authority) gives the details.
+3. The orchestrator runs its rounds and reports that the milestone is done.
+4. The operator stops the orchestrator, as "[The orchestrator ends](#the-orchestrator-ends)" says.
+5. The operator runs its rounds until a round finds nothing new. It sends each finding to the planner as a proposal.
+   [The rounds of the operator](#the-rounds-of-the-operator) gives the details.
+6. The operator keeps working until each open question and each open decision is resolved.
+   [the question gate of the close](operator-items.md#the-question-gate-of-the-close) gives the details.
+   [The questions and the rounds of the close](#the-questions-and-the-rounds-of-the-close) also applies.
+7. The operator runs a round. If the round finds something new, the operator sends it to the planner, as step 5 says.
+   Then the operator goes back to step 6 and runs a round again. The operator goes to step 8 only after each open
+   question and each open decision is resolved and a round finds nothing new.
+   [The questions and the rounds of the close](#the-questions-and-the-rounds-of-the-close) gives the details.
 
 No session closes its own tab or pane in the close.
 
