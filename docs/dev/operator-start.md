@@ -300,6 +300,14 @@ These terms apply in this section:
 - The end of a role: the session does no more work of its role.
 - A session closure ends the session on its host, for example with the close of its herdr tab.
 - A GitHub milestone closure changes the state of the milestone on GitHub to `closed`.
+- An own-session closure is a session closure that a session runs on its own herdr tab.
+- In the close, an open question is an open question of [The open items](operator-items.md#the-open-items). It is also
+  an open question of step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md).
+- An open decision is a decision that waits for the user. It is a waiting decision of step 7 of
+  [the session-review skill](../../.claude/skills/session-review/SKILL.md) whose wait did not end. It is also a proposal
+  or a draft that waits for a decision of the user.
+- A close report is the last report of the operator or of the planner to the user in the close. It asks the user for the
+  approval to close the session, as [The own-session closure](#the-own-session-closure) says.
 
 The end of a role, a session closure and a GitHub milestone closure are separate outcomes.
 
@@ -319,15 +327,6 @@ These steps of the close need no other word of the user:
 - The end of the role of the operator
 - The end of the role of the planner
 - The GitHub milestone closure of a milestone with no work left
-
-- An own-session closure is a session closure that a session runs on its own herdr tab.
-- In the close, an open question is an open question of [The open items](operator-items.md#the-open-items). It is also
-  an open question of step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md).
-- An open decision is a decision that waits for the user. It is a waiting decision of step 7 of
-  [the session-review skill](../../.claude/skills/session-review/SKILL.md) whose wait did not end. It is also a proposal
-  or a draft that waits for a decision of the user.
-- A close report is the last report of the operator or of the planner to the user in the close. It asks the user for the
-  approval to close the session, as [The own-session closure](#the-own-session-closure) says.
 
 The start of the close is not the authority for an own-session closure. The operator and the planner each close their
 own session only on the approval of the user, as [The own-session closure](#the-own-session-closure) says. The
@@ -418,11 +417,11 @@ place of the terminal delegation for the start of step 10 of the planner.
 2. The orchestrator tells the operator that the close started. The operator tells the planner.
    [The start and the authority](#the-start-and-the-authority) gives the details.
 3. The orchestrator runs its rounds and reports that the milestone is done.
-4. The operator stops the orchestrator, as "[The orchestrator ends](#the-orchestrator-ends)" says.
+4. The operator stops the orchestrator, as [The orchestrator ends](#the-orchestrator-ends) says.
 5. The operator runs its rounds until a round finds nothing new. It sends each finding to the planner as a proposal.
    [The rounds of the operator](#the-rounds-of-the-operator) gives the details.
 6. The operator keeps working until each open question and each open decision is resolved.
-   [the question gate of the close](operator-items.md#the-question-gate-of-the-close) gives the details.
+   [The question gate of the close](operator-items.md#the-question-gate-of-the-close) gives the details.
    [The questions and the rounds of the close](#the-questions-and-the-rounds-of-the-close) also applies.
 7. The operator runs a round. If the round finds something new, the operator sends it to the planner, as step 5 says.
    Then the operator goes back to step 6 and runs a round again. The operator goes to step 8 only after each open
@@ -433,7 +432,7 @@ place of the terminal delegation for the start of step 10 of the planner.
    operator.
 9. The operator gives the user its close report and asks for the approval to close. The report says that the last round
    found nothing new, and that the planner is now the contact of the user. On the approval, the operator closes its own
-   session, as "[The own-session closure](#the-own-session-closure)" says.
+   session, as [The own-session closure](#the-own-session-closure) says.
 10. At the arrival of the terminal delegation, the planner talks to the user directly. It works with the user until each
     open question and each open decision is resolved.
     [The questions and the rounds of the close](#the-questions-and-the-rounds-of-the-close) gives the details.
@@ -446,13 +445,13 @@ place of the terminal delegation for the start of step 10 of the planner.
     its state is `closed`. New work or a failed read holds steps 13 and 14. [Milestones](issues.md#milestones) gives the
     details.
 13. The planner makes sure that the session of the operator closed, with the operator check of
-    "[The own-session closure](#the-own-session-closure)". If the pane of the operator is still open, the planner tells
+    [The own-session closure](#the-own-session-closure). If the pane of the operator is still open, the planner tells
     the user. After the next word of the user, it runs the operator check again. If the check shows that the session
     closed, the planner goes to step 14. After a failed check, or with no pane id, the planner also goes to step 14, but
     it cannot close itself.
 14. The planner gives the user its close report and asks for the approval to close. The report says that the last round
     found nothing new. The close report ends the role of the planner. On the approval, the planner closes its own
-    session, as "[The own-session closure](#the-own-session-closure)" says.
+    session, as [The own-session closure](#the-own-session-closure) says.
 
 Only the operator and the planner close their own sessions in the close, each on the approval of the user.
 
@@ -569,11 +568,13 @@ The operator and planner use this procedure after their close reports.
   [Own-session closure](codex-sessions.md#own-session-closure) records. A measured Codex display title was not its exact
   session name, so the exact-name check closes nothing and supplies no operator pane id.
 
+The own-session closure has these states.
+
 | State                    | What the session does                                                                                                                                                                        | Who tells whom                                        |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | Not started              | Steps 1 to 8 for the operator, or steps 10 to 13 for the planner                                                                                                                             | None                                                  |
 | Waits for the approval   | Gives its close report and closes nothing. Approval moves it to Running. An answer that returns the planner to step 10 moves it to Not started. Other answers and no answer keep this state. | The session asks the user for approval.               |
-| Running                  | Does the checks above, then runs herdr tab close as its last call                                                                                                                            | None                                                  |
+| Running                  | Does the checks above, then runs `herdr tab close` as its last call                                                                                                                          | None                                                  |
 | Ended: the tab is closed | No session runs                                                                                                                                                                              | None. The close report came before closure.           |
 | Ended: no closure        | Stays open when the session cannot close itself, or when a check or a command fails.                                                                                                         | The session tells the user. The user closes its pane. |
 
