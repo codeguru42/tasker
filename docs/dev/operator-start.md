@@ -422,8 +422,33 @@ place of the terminal delegation for the start of step 10 of the planner.
    Then the operator goes back to step 6 and runs a round again. The operator goes to step 8 only after each open
    question and each open decision is resolved and a round finds nothing new.
    [The questions and the rounds of the close](#the-questions-and-the-rounds-of-the-close) gives the details.
+8. The operator sends the [terminal delegation](#the-terminal-delegation) to the planner. A send that works ends the
+   role of the operator. The planner takes the arrival of the terminal delegation as the end of the role of the
+   operator.
+9. The operator gives the user its close report and asks for the approval to close. The report says that the last round
+   found nothing new, and that the planner is now the contact of the user. On the approval, the operator closes its own
+   session, as "[The own-session closure](#the-own-session-closure)" says.
+10. At the arrival of the terminal delegation, the planner talks to the user directly. It works with the user until each
+    open question and each open decision is resolved.
+    [The questions and the rounds of the close](#the-questions-and-the-rounds-of-the-close) gives the details.
+11. The planner runs a round. If the round finds something new, the planner handles it, goes back to step 10, and runs a
+    round again. The planner goes to step 12 only after each open question and each open decision is resolved and a
+    round finds nothing new. [The questions and the rounds of the close](#the-questions-and-the-rounds-of-the-close)
+    gives the details.
+12. The planner reads the open issues and the tasks in flight of the milestone again, to make sure that no work is left.
+    This read is the milestone guard. Then the planner closes the GitHub milestone and reads it again, to make sure that
+    its state is `closed`. New work or a failed read holds steps 13 and 14. [Milestones](issues.md#milestones) gives the
+    details.
+13. The planner makes sure that the session of the operator closed, with the operator check of
+    "[The own-session closure](#the-own-session-closure)". If the pane of the operator is still open, the planner tells
+    the user. After the next word of the user, it runs the operator check again. If the check shows that the session
+    closed, the planner goes to step 14. After a failed check, or with no pane id, the planner also goes to step 14, but
+    it cannot close itself.
+14. The planner gives the user its close report and asks for the approval to close. The report says that the last round
+    found nothing new. The close report ends the role of the planner. On the approval, the planner closes its own
+    session, as "[The own-session closure](#the-own-session-closure)" says.
 
-No session closes its own tab or pane in the close.
+Only the operator and the planner close their own sessions in the close, each on the approval of the user.
 
 ### The table of the close
 
