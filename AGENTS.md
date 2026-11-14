@@ -10,119 +10,52 @@ docs that its task needs. A session that works with the user and has no role als
 After its start, a session reads another doc only for a step of its work that needs the doc. A link that the session
 follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#the-doc-read-rule) says.
 
-- [docs/orchestrator.md](docs/orchestrator.md): the role index of the orchestrator, with the terms of the orchestration,
-  the request rule, the start docs of the orchestrator and the index of the orchestration pages.
-- [docs/planner.md](docs/planner.md): the role index of the planner, with the start docs of the planner and the index of
-  the planner pages.
-- [docs/operator.md](docs/operator.md): the role index of the operator, with the terms of the operator, the start docs
-  of the operator and the index of the operator pages.
-- [docs/sessions.md](docs/sessions.md): the terms that each role uses: the user, the slug, the sessions of a slug, an
-  item, task subagent, ticket subagent, the own name of a session, the session ref and the socket address.
-- [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo (the tracked-change rule, the check, test first, the
-  commits, the docs, the test helpers, the code rules, the simple-english skill, the memory rule, the outside-document
-  rule, the short-exception rule, the installed skill and `AGENTS.md`).
-- [CONTRIBUTING.md](CONTRIBUTING.md): how to start work as a contributor to tasker.
-- [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the layout, the steps to add a command and a forge
-  provider, the imports, the zod facts and the tests.
+- [docs/orchestrator.md](docs/orchestrator.md): the role index of the orchestrator.
+- [docs/planner.md](docs/planner.md): the role index of the planner.
+- [docs/operator.md](docs/operator.md): the role index of the operator.
+- [docs/sessions.md](docs/sessions.md): the terms that each role uses.
+- [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo.
+- [CONTRIBUTING.md](CONTRIBUTING.md): how a contributor starts work.
+- [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the conventions of the code.
 - [docs/config.md](docs/config.md): the configuration.
-- [docs/statemachine.md](docs/statemachine.md): the task states, the rules of the edges, the main lifecycle, the plan,
-  build, work review and landing sections, the pauses, the failure and retry targets, update branch and the demotion
-  rules.
-- [docs/dev/data-root.md](docs/dev/data-root.md): the folders, the database and the rule that code reads no event as
-  data.
-- [docs/dev/version-control.md](docs/dev/version-control.md): the git code: the git boundary, how tasker uses git, the
-  git environment, provision, the ssh key, the push guard, publish and land, the doctor checks and the repo slug.
-- [docs/dev/doctor.md](docs/dev/doctor.md): the code that all doctor checks share: the timeout rules and the signal
-  rule.
-- [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the procedure when `tasker update-branch` reports a
-  rebase conflict.
-- [docs/dev/pick-the-tickets.md](docs/dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the
-  stacked-ticket rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold"
-  and "The prompt of a task subagent".
-- [docs/dev/doc-reads.md](docs/dev/doc-reads.md): the re-read rule, the notice rule, the task subagent notice and the
-  doc-read rule.
-- [docs/dev/run-one-ticket.md](docs/dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the
-  base rule, the add-work rule, the diff read and the measure rule.
-- [docs/dev/plan-review.md](docs/dev/plan-review.md): the repo-files rule, the fact test, the issue check, the stop
-  rule, the change-of-scope comment, the design-gap rule and the quote check.
-- [docs/dev/tasker-commands.md](docs/dev/tasker-commands.md): the plain-form rule, the tool-block rule, the command
-  rules, the facts of the installed tasker and the run times.
-- [docs/dev/verify-failures.md](docs/dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the
-  broken-commit steps, the session check, the manual fix and the commit check.
-- [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the CI wait and "A failed CI run".
-- [docs/dev/review-findings.md](docs/dev/review-findings.md): "Review findings" and the docs-only update.
-- [docs/dev/land-the-work.md](docs/dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold
-  rule and the stuck-task rule.
-- [docs/dev/quota.md](docs/dev/quota.md): "Quota", "Terms", "The delay of each task subagent", "Schedule a job when a
-  task subagent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job",
-  "What the task subagent does", "A pi stop", "The pi wait", "A Codex limit", "Delete the job" and "Do not use these".
-- [docs/dev/handoff.md](docs/dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
-  file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
-  topic handoff" and "The hold of the items".
-- [docs/dev/handoff-orchestrator.md](docs/dev/handoff-orchestrator.md): "The long-running orchestrator", "The landing
-  count", "The steps of the old orchestrator", "The handoff file of the orchestrator" and "The start of the new
-  orchestrator".
-- [docs/dev/handoff-planner.md](docs/dev/handoff-planner.md): "The follow-up planner", "An open draft", "The post
-  count", "The steps of the old planner", "The handoff file of the planner" and "The start of the new planner".
-- [docs/dev/handoff-operator.md](docs/dev/handoff-operator.md): "The handoff of the operator", "The close count", "The
-  steps of the old operator", "The handoff file of the operator" and "The start of the new operator".
-- [docs/dev/limits.md](docs/dev/limits.md): "Limits", the own-worktree rule, the update rule, the local-commit rule, the
-  shared-clone rule, the address rule, the answer-wait rule and the failure rule.
-- [docs/dev/planner.md](docs/dev/planner.md): the rules for milestone planning and ad hoc drafts: the initial planner
-  and the follow-up planner, the order of the work, the ticket subagent, the review loop of a draft, the body of an
-  issue, the blocked-by links, the milestone of an issue, what goes in a ticket and the work with the user.
-- [docs/dev/issues.md](docs/dev/issues.md): the rules of each session that posts an issue, "A recurrence", and the steps
-  of the planner for the blocked-by links, the project board and the milestones.
-- [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how an assistant session works with the user:
-  the operator, a decision of the user, the form of a reply, a question of the user, a note for later, a milestone hold,
-  the issue-link rule, core features first and the work that waits, simplify over special rules, and the tools of a
-  session.
-- [docs/dev/operator-start.md](docs/dev/operator-start.md): the order of a milestone, the start of a session, the start
-  prompts, the stop of a session, the close of a milestone, a handoff, a denied command of the operator and a blocked
-  session.
-- [docs/dev/operator-items.md](docs/dev/operator-items.md): the form of an item, the open items, the answer and the
-  states of an item.
-- [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): a side conversation and the word of the
-  user.
-- [docs/dev/question-pane.md](docs/dev/question-pane.md): a question pane, the herdr pane where the user discusses one
-  open question of the operator with a question session.
-- [docs/dev/session-review-rounds.md](docs/dev/session-review-rounds.md): the rounds of `/session-review` that a session
-  runs before it stops, and an orchestrator before its report that the milestone is done: a round, the end of the
-  rounds, a handled finding, the report of the rounds and the report again.
-- [docs/dev/first-refine.md](docs/dev/first-refine.md): the hints that a task subagent gives in the first refine of a
-  ticket, sorted by the kind of ticket.
-- [docs/dev/workspaces.md](docs/dev/workspaces.md): the base branch and the workspace of a task: the forms, the source
-  order of the resolve, the learned default, the guard, the branch name, and the reasons for the git flags of the diff
-  and the reconcile.
-- [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code: the gh boundary, the gh token and
-  environment, the gh and GitHub facts that the code guards against, and the doctor checks.
-- [docs/dev/github.md](docs/dev/github.md): the shared GitHub process boundary and the separate tracker and forge
-  environment and credential rules.
-- [docs/dev/forge.md](docs/dev/forge.md): the forge purpose and provider boundary, provider selection, and how the forge
-  account differs from the issue tracker account.
-- [docs/dev/jira.md](docs/dev/jira.md): the Jira tracker code: the Jira folder, `runAcli()`, the commands that tasker
-  never runs, `TASKER_ACLI_BIN`, the active site, the site guard, the conversion of ADF, the read of an issue and its
-  comments, the blockers of an issue, the writes, the in-progress check, the in-progress clear, the abort write, the
-  auth status, the doctor check, the provider, the errors, the measure of a failed `acli` call, the measure of the
-  login, the measure of an ADF description, the measure of an issue read, the measure of the blockers, the measure of
-  the comments, the measure of the writes and the measure of a custom field.
-- [docs/dev/issue-keys.md](docs/dev/issue-keys.md): the issue key forms, the short refs, the resolve of a key to its
-  repo and the stored spelling.
-- [docs/dev/tasks.md](docs/dev/tasks.md): the task commands start, abort, plan, refine, approve, unapprove, execute,
-  verify, review, retry, accept, reopen, open-pr, merge, push and mark-landed, and the result of an assistant run: the
-  purpose of start, the order of its steps, the locks and the lock order, the rules of a second run, the reasons of
-  abort, the order of the steps of plan and refine, the approve, the execute run, the verify run, the review, the retry,
-  the accept, the reopen, the open PR, the merge, the push, the mark-landed and the result of an assistant run.
-- [docs/dev/phases.md](docs/dev/phases.md): the phases: the environment of a phase, the deadline, the stop rules, the
-  log and the marker.
-- [docs/dev/assistants.md](docs/dev/assistants.md): the assistant provider interface: its purpose, the rule "refuse,
-  never drop", the session id, the prompt on stdin, the provider of a new and a continued session, the limits of a run,
-  the codex provider and the pi provider.
-- [docs/dev/codex-sessions.md](docs/dev/codex-sessions.md): measured Codex tools and limits for the session roles and
-  the measures of the own-session closure in Claude Code and Codex.
-- [docs/dev/release.md](docs/dev/release.md): the releases: the version forms, the steps to make a stable release, the
-  steps to install a pre-release, the step for an untracked path, the reason that the installed tasker does not change,
-  the hold before an install and the npm facts of the package file.
-- [docs/dev/setup.md](docs/dev/setup.md): the steps to set up a new machine for an orchestrator: the tools, the local
-  clone, the installed tasker and its configuration, the Claude Code settings, skills and plugin, the Codex section and
-  the pi section.
+- [docs/statemachine.md](docs/statemachine.md): the task states and their edges.
+- [docs/dev/data-root.md](docs/dev/data-root.md): the data root and the database.
+- [docs/dev/version-control.md](docs/dev/version-control.md): the git code.
+- [docs/dev/doctor.md](docs/dev/doctor.md): the code that all doctor checks share.
+- [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the steps for a rebase conflict.
+- [docs/dev/pick-the-tickets.md](docs/dev/pick-the-tickets.md): how the orchestrator picks the tickets.
+- [docs/dev/doc-reads.md](docs/dev/doc-reads.md): when a session reads a doc.
+- [docs/dev/run-one-ticket.md](docs/dev/run-one-ticket.md): how the task subagent runs one ticket.
+- [docs/dev/plan-review.md](docs/dev/plan-review.md): the review of a plan.
+- [docs/dev/tasker-commands.md](docs/dev/tasker-commands.md): how a session runs the tasker commands.
+- [docs/dev/verify-failures.md](docs/dev/verify-failures.md): the steps after a failed verify run.
+- [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the wait for CI.
+- [docs/dev/review-findings.md](docs/dev/review-findings.md): the steps for review findings.
+- [docs/dev/land-the-work.md](docs/dev/land-the-work.md): how the orchestrator lands the work.
+- [docs/dev/quota.md](docs/dev/quota.md): the steps when a quota stops a task subagent.
+- [docs/dev/handoff.md](docs/dev/handoff.md): the handoff of a session.
+- [docs/dev/handoff-orchestrator.md](docs/dev/handoff-orchestrator.md): the handoff of the orchestrator.
+- [docs/dev/handoff-planner.md](docs/dev/handoff-planner.md): the handoff of the planner.
+- [docs/dev/handoff-operator.md](docs/dev/handoff-operator.md): the handoff of the operator.
+- [docs/dev/limits.md](docs/dev/limits.md): the limits of the orchestrator and the task subagents.
+- [docs/dev/planner.md](docs/dev/planner.md): the rules of a planner.
+- [docs/dev/issues.md](docs/dev/issues.md): the steps to file issues on GitHub.
+- [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how a session works with the user.
+- [docs/dev/operator-start.md](docs/dev/operator-start.md): how the operator starts and stops sessions.
+- [docs/dev/operator-items.md](docs/dev/operator-items.md): the items of the operator.
+- [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): the side conversations of the operator.
+- [docs/dev/question-pane.md](docs/dev/question-pane.md): a question pane.
+- [docs/dev/session-review-rounds.md](docs/dev/session-review-rounds.md): the rounds of `/session-review`.
+- [docs/dev/first-refine.md](docs/dev/first-refine.md): the hints for the first refine of a ticket.
+- [docs/dev/workspaces.md](docs/dev/workspaces.md): the base branch and the workspace of a task.
+- [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code.
+- [docs/dev/github.md](docs/dev/github.md): the shared GitHub code.
+- [docs/dev/forge.md](docs/dev/forge.md): the forge code.
+- [docs/dev/jira.md](docs/dev/jira.md): the Jira tracker code.
+- [docs/dev/issue-keys.md](docs/dev/issue-keys.md): the issue keys.
+- [docs/dev/tasks.md](docs/dev/tasks.md): the task commands.
+- [docs/dev/phases.md](docs/dev/phases.md): the phases.
+- [docs/dev/assistants.md](docs/dev/assistants.md): the assistant providers.
+- [docs/dev/codex-sessions.md](docs/dev/codex-sessions.md): the measured facts of Codex sessions.
+- [docs/dev/release.md](docs/dev/release.md): the releases.
+- [docs/dev/setup.md](docs/dev/setup.md): the setup of a new machine for an orchestrator.
