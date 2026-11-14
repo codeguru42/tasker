@@ -265,4 +265,5 @@ read shows the number of the milestone and the state `closed`.
 The planner does not run the command again after a write that worked. If the write or the read after it fails, the
 planner tells the user about the failure. It does not end its role, and it keeps the work for a later recovery. After
 the read shows the state `closed`, the planner deletes only each memory note whose delete condition is the close of that
-milestone. Then the planner gives the result in its last report to the user.
+milestone. Then the planner gives the result in its close report, as step 14 of
+[The steps that end each role](operator-start.md#the-steps-that-end-each-role) says.

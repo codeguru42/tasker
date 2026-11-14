@@ -71,25 +71,24 @@ subagent for each of them.
 
 ### The close duties of the follow-up planner
 
-The planner starts its final rounds only after the end of the role of the operator. It waits for the report of the
-ticket subagent of each draft before it ends its rounds. It handles each finding as the docs say: a reviewed post, a
-change of an open issue or a drop. It gets each decision for the user alone before the action that needs it. It runs its
-rounds of [Session-review rounds](session-review-rounds.md) until a round finds nothing new.
+The planner does steps 10 to 14 of [The steps that end each role](operator-start.md#the-steps-that-end-each-role). It
+starts step 10 only after the end of the role of the operator. It waits for the report of the ticket subagent of each
+draft before step 11 ends. It handles each finding as the docs say: a reviewed post, a change of an open issue or a
+drop. It gets each decision for the user alone before the action that needs it.
 
-The planner keeps each open decision about later work in its last report to the user. An open item about work outside
-the milestone does not hold the end of the role of the planner. The planner makes no post and no change of scope without
-authority, only to empty the list of open items.
+Each open question and each open decision holds step 11, also one about work outside the milestone. No session remains
+after the planner to take it. The planner asks the user directly, as step 10 says. To resolve an open question or an
+open decision, the planner makes no post and no change of scope without authority. Before step 12, the planner posts or
+drops each draft that it holds. A draft that waits for a decision of the user gets that decision in step 10, before
+step 11.
 
-After its rounds, the planner does the reads and the GitHub milestone closure of [Milestones](issues.md#milestones).
-Then it gives the user a last report directly. The report gives these parts:
+After step 11, the planner does the reads and the GitHub milestone closure of [Milestones](issues.md#milestones). Then
+it makes sure that the session of the operator closed, as step 13 says.
 
-- The rounds of the planner
-- The handled findings
-- The open decisions about later work
-- The URL of the milestone
-- The result of the read of the milestone after the write
-
-After that report, the planner ends its role.
+Then the planner gives the user its close report and asks for the approval to close, as step 14 says. The close report
+says that the last round found nothing new. It also gives the URL of the milestone and the result of the read after the
+write. The close report ends the role of the planner. On the approval, the planner closes its own session, as
+[The own-session closure](operator-start.md#the-own-session-closure) says.
 
 If a round of the planner or a send of a finding fails, the rounds of the planner end. The close then stops at this
 stage. The planner tells the user about the failure directly. It keeps the drafts and the state of the milestone for a
@@ -100,8 +99,8 @@ The planner handles a proposal that it gets in the close in this way:
 - An accepted proposal follows its post rules.
 - A changed proposal goes again through the review of a draft or a refine that it needs.
 - A rejected or dropped proposal gets its outcome with no post.
-- A proposal about later work can still have no answer after the end of the role of the operator. Such a proposal stays
-  in the last report of the planner. It does not hold the end of the role of the planner.
+- A proposal about later work can still have no answer after the end of the role of the operator. Such a proposal is an
+  open decision of step 10, and it holds step 11.
 - This rule of the planner never lets the operator move its own open question to the planner. The operator still passes
   its question gate.
 - New work of the milestone still holds the GitHub milestone closure, as [Milestones](issues.md#milestones) says.
