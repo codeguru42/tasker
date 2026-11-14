@@ -634,53 +634,11 @@ chat under that subsection.
   asks only for what [the Docs rule](rules.md#docs) permits. If a doc must give a requirement's reason, the Docs item
   gives that reason as doc content. The Requirements section does not give that doc instruction. A new command follows
   [the Docs rule](rules.md#docs).
-- A Docs item never asks for a sentence that says that no command uses a part yet. Such a sentence is false as soon as
-  the next ticket wires the part, and that ticket must find and remove it. The rules of what a doc describes are in
-  [rules.md](rules.md#docs). For a ticket that adds only a layer, the hint "Say that the wiring is out of scope" of
-  [first-refine.md](first-refine.md#a-ticket-that-only-adds-a-layer-for-example-a-schema) covers the plan.
-- An issue can say in its Docs section that no doc names a thing. Examples of a thing are a rule, a flag and a file
-  name. Before the post, the planner runs `git fetch origin` in the local clone. Right after the fetch, the planner
-  searches `docs/`, `skills/`, `README.md` and `AGENTS.md` of `origin/main` for the thing, for example with
-  `git grep -n '<words>' origin/main -- docs skills README.md AGENTS.md`. The search follows
-  [the doc-search rule](rules.md#docs). If the search finds a doc that names the thing, the planner puts that doc and
-  its section in the Docs section of the issue. A search with no match is an answer, not a failure. For example, if
-  `git grep` finds no match, it exits with 1. Then the Docs section can say that no doc names the thing. On #428, the
-  Docs section said "None. No doc names the `Write` deny rules." That was false. On `main` (8d154163),
-  `docs/dev/assistants.md` said "The deny list blocks `Edit` and `Write` for the `.git` entry of the worktree and for
-  the shared git folder of the clone." The task subagent of #428 found the sentence at
-  [the issue check](plan-review.md#the-issue-check) with ``git grep -n 'blocks `Edit` and `Write`' 8d154163 -- docs``.
-  The fix cost a stop before `tasker approve` and a change of scope
-  (https://github.com/codeguru42/tasker/issues/428#issuecomment-6394115049).
-- An issue can require a doc to hold a sentence. Before the post, the planner compares that sentence with the bullets
-  around its place in the doc. A sentence that repeats a bullet in other words goes out of the issue. On #305, the issue
-  required the sentence "The Requirements state only what the software does". The bullet "A requirement says what the
-  software does" already stood in the same section.
-- An example in an issue names its ticket or tickets exactly. On #305, the issue said "the ticket" and then listed four
-  tickets, #171, #172, #98 and #173. On #305, the case of this bullet and the case of the bullet before it each cost one
-  stop of the task subagent before `tasker approve`.
-- Before the post, the planner searches the files under `docs/` for a definition of each term of the draft that a doc
-  can define. The planner chooses these terms, for example "tool block", and this choice is open on purpose. The search
-  follows [the doc-search rule](rules.md#docs) and covers the forms of a definition, for example `<term> is`,
-  `defines <term>` and `<term>:`. The list of forms is an example, not a full list. If a doc defines the term, the issue
-  uses it only in the meaning of that doc, and it uses other words for another meaning. On #444 (2026-10-25), the issue
-  said "the same tool block" for parallel calls of one message. The tool-block rule of `tasker-commands.md` defines a
-  tool block as a denial of a tool call.
-- An issue can add a general rule to a doc. Before the post, the planner searches the other docs for a narrower form of
-  the rule. The search follows [the doc-search rule](rules.md#docs). The Docs section of the issue names each such
-  place. The ticket then replaces each narrower form with a link to the new rule, as [the one-home rule](rules.md#code)
-  says. On #251, the new self-check rule of `docs/dev/issues.md` made the hint of #228 in `docs/dev/first-refine.md` a
-  copy, and the fix cost one review loop. The issue also names each other rule that uses the new rule, and it says for
-  each one whether the ticket covers it. On #387, the issue named only the shared-file bullet and the link offer. Plan
-  v1 also widened the overlap rule, refine 1 took that out, and review 1 still found the gap.
-- An issue that renames a name or a term of the docs names each doc that uses the old name. Each such place goes in the
-  Docs section of the issue or in its Out of scope section. Before the post, the planner searches the docs of
-  `origin/main` for the old name, for example with `git grep -n '<old name>' origin/main -- docs AGENTS.md`. The search
-  follows [the doc-search rule](rules.md#docs), and the planner gives the command and the hits in its message to the
-  user. On #405 (2026-10-25), `docs/dev/planner.md` changed `planner-<milestone>` to `planner-<slug>`, and
-  `docs/dev/pick-the-tickets.md` still named `planner-<milestone>` in the planner bullet of "The prompt of an agent".
-  Review 2 of #405 found it, and the task subagent dismissed the finding, because the issue did not name that doc. For
-  the rename of a doc, see the bullet "A ticket that renames a doc blocks each open issue whose body names that doc" in
-  [The blocked-by links](#the-blocked-by-links).
+- A Docs item does not say that no command uses a part yet. Another ticket can make that sentence false.
+- If a Docs item says that no doc names a thing, the planner supports that claim with a current search. A search with no
+  match supports the claim.
+- An issue example names each ticket that the example covers.
+- An issue that renames a doc name or term names each affected doc in Docs or Out of scope.
 - An issue can add a section to a doc. Then the Docs section of the issue names each index that lists the sections of
   that doc. Examples are the entry of the doc in `AGENTS.md` and the list "The pages" of `docs/orchestrator.md` for an
   orchestration page. On #336 (2026-10-18), plan v1 found only the entry of `AGENTS.md` and missed the list "The pages".
