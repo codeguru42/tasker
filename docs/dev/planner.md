@@ -643,64 +643,16 @@ chat under that subsection.
 - If a rule uses an intentionally open judgment, the issue says that the judgment is open and names who makes it. If a
   review finding asks for a test, the task subagent dismisses it with the issue's words.
   [Review findings](review-findings.md#review-findings) gives that dismissal rule.
-- An issue that adds a command, a [trigger](first-refine.md#a-ticket-that-changes-a-procedure-doc) or a text names each
-  list or gate that limits it. A gate is a rule that limits when a session does a step, or which reply or list of a
-  session holds a text. The hint of `docs/dev/first-refine.md` that starts "If an issue adds a second trigger to a
-  bullet" defines a trigger. A trigger sentence is a sentence that gives a trigger. The cases are these:
-  - Some docs give the list of the commands that a session runs, for example the list of the operator in
-    [`docs/operator.md`](../operator.md). An issue that adds a command to the steps of such a session compares the
-    command with that list before the post. If the list does not hold the command, the issue also adds the command to
-    the list, with its reason. Or the issue gives the steps in another form. On #408 (2026-10-25), the list was still
-    the old rule "runs no `tasker` command". The task subagent stopped under the fifth case of
-    [the stop rule](plan-review.md#the-stop-rule), and the user changed the scope.
-  - An example of the first kind is the sentence of [Stop a session](operator-start.md#stop-a-session) that starts "The
-    operator stops a session only". "The operator stops a session only on a request of the user." An issue that gives a
-    step a new trigger names each gate of that step, and it says how the new trigger meets the gate. On #453
-    (2026-10-25), the new trigger of step 6 was the message of the initial planner, with no request of the user. The
-    orchestrator answered the [design gap](plan-review.md#the-design-gap-rule): the word of the user to the planner in
-    step 5 is that request.
-  - An example of the second kind is [The landing count](handoff-orchestrator.md#the-landing-count) of
-    `docs/dev/handoff-orchestrator.md`, which names the replies that hold a suggestion of a handoff. An issue that adds
-    a text to each reply or list of a session names each gate that limits which reply or list holds it. The issue also
-    says which rule wins: the new rule or the gate. On #445 (2026-10-25), the issue added a handoff recommendation to
-    each list of open questions. It did not name the landing count of `docs/dev/handoff-orchestrator.md`. Review 1 found
-    the conflict after `tasker approve`, and the fix cost one stop and one
-    [review loop](review-findings.md#review-findings).
-  - An issue can give a step or a bullet a new trigger next to an old trigger. Then the issue puts no old trigger
-    sentence of that step or bullet, or a part that holds it, out of scope. The issue also says how the two triggers fit
-    together, for example as one rule, or with the old trigger removed. On #439 (2026-10-25), the Out of scope section
-    kept "the list of the findings", which held the old trigger sentence. The plan kept both trigger sentences. Review 1
-    found two moments for one report, and the user changed the scope.
-- An issue that adds hints to a page says, for each hint, which bullet of the page it extends, or that it goes in as a
-  new bullet. The issue does not use the sentence "If a hint of the page already gives part of a hint above, extend that
-  hint" without the name of the bullet. On #321, #355 and #356 (2026-10-24), each plan picked a bullet to extend, and
-  each task subagent stopped before `tasker approve` for a design gap. Each answer was a new bullet. The issue also
-  marks each 'On #N' sentence that only gives the context of the ticket. The mark is the words 'Context, not for the
-  doc:' at the start of the sentence. Each 'On #N' sentence of a hint with no such mark goes into the doc with the hint.
-  A marked sentence is not a requirement, so the bullet that starts 'An issue dictates each requirement' does not cover
-  it. On #412 (2026-10-25), the task subagent left out the #389 and #419 sentences on the design-gap answers of the
-  orchestrator. It kept the #356 example of the moved hint about `docs/statemachine.md`. Both were choices of the task
-  subagent. See [the bullet that starts "An issue that adds a bullet to a section"](#the-body-of-an-issue).
-- An issue that names a git check gives the meaning and the action of each exit code, or it says that the other exit
-  codes are out of scope. On #356, review 2 asked about the exit codes that the hint did not name.
-- An issue can give a rule that lets a session do a write only after a read. Examples are a read of `tasker status` and
-  a read of the state of an issue. Each such read is a guard of the write. The issue gives the case of a failed read for
-  each guard. The case says whether the write goes on or stops. The reason: a failed read prints no answer, for example
-  no task list. So a rule with no such case can read the failure as a pass of the guard and do the write. On #441
-  (2026-10-25), the rule let a session write only if `tasker status` listed no task, and a failed `tasker status` prints
-  no task list. Review 1 found the gap, and the fix cost one more review loop.
-- A fact that an issue copies from a ticket can be true in only one case. Before the post, the planner measures the
-  fact, or it writes the fact with its case. On #369, the issue said that the format check fails after a fenced block.
-  The task subagent measured that the check fails only when indented text of the same step follows the block. A design
-  gap then changed the words to "can fail".
-- Before the post, the planner tests each fact about an outside tool (for example Claude Code, herdr, git or gh) that it
-  writes itself, also in the reason of a requirement. The planner does this with
-  [the fact test](plan-review.md#the-fact-test), in the way that the second bullet of
-  [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. If the planner does not test a fact,
-  the issue says next to the fact that no one tested it. The planner gives the command and the result of each test to
-  the user in the report of [The post of the follow-up planner](#the-post-of-the-follow-up-planner). A fact that the
-  issue copies from a ticket stays under the bullet "A fact that an issue copies from a ticket can be true in only one
-  case". On #413 (2026-10-25), the reason about the hook at `/clear` was false, and the fix cost a change of scope.
+- An issue that adds a command, trigger or text names each list and gate that limits it. It says how the new rule meets
+  each gate. If rules conflict, it says which wins. It does not exclude an old trigger that the change must update.
+- An issue that names a git check gives each covered exit code's meaning and action. It says when other exit codes are
+  out of scope.
+- If a write depends on a read, the issue gives the failed-read case for each read. It says whether the write stops or
+  continues. A failed read gives no answer, so it cannot silently pass the guard.
+- If an issue copies a fact from a ticket, the planner measures it or names the case in which it is true.
+- Before the post, the planner tests each outside-tool fact it writes, including a reason, with
+  [the fact test](plan-review.md#the-fact-test). If no one tested it, the issue says so beside the fact. The planner
+  reports each command and result to the user.
 - An issue can name a read of an outside tool and use fields of its output. Before the post, the planner runs that read
   one time with [the fact test](plan-review.md#the-fact-test), on a small case that holds a value of each such field.
   The planner picks the case, and this choice is open on purpose. The planner makes sure that the output gives each
