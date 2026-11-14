@@ -595,17 +595,13 @@ chat under that subsection.
 
 ## The body of an issue
 
-- An issue is complete by itself. It gives the rules, the shapes, the signatures, the payloads, the lists, the edge
-  cases, the states and the diagrams that the work needs. If the code of another ticket calls a function, its signature
-  is a requirement. An issue gives no other signature. For the other parts of the second sentence of this bullet, an
-  issue gives no implementation.
-  [The bullet that starts "An issue never dictates the implementation"](#the-body-of-an-issue) defines the
-  implementation.
-- The task subagent of a ticket uses no other source, as [the Limits of limits.md](limits.md#limits) say.
+- State requirements, not implementation details. An issue gives behavior, acceptance cases and facts that the work
+  rests on.
+- An issue is complete by itself. If another ticket calls a function, its signature is a requirement. An issue gives no
+  other signature.
+- The task subagent uses only the sources in [Limits](limits.md#limits).
   [The design-gap rule](plan-review.md#the-design-gap-rule) says who answers a gap.
-- An issue puts each table, list or diagram in its body. It does not say "as described elsewhere". The plan session that
-  tasker starts for a ticket sees only the issue and the repo. A phrase such as "the diagrams of the design" with no
-  diagram is a gap.
+- An issue includes each required table, list or diagram in its body. It does not refer to missing material elsewhere.
 - An issue can give a list or a table of the current behavior of the code. An example is a table of the commands that
   each state accepts. Before the post, the planner makes sure that each row or item matches what the code does. The
   planner gives the command that it used in the chat with the user, for example a `grep` of the calls. On #215, the
@@ -657,27 +653,21 @@ chat under that subsection.
   output. When the task subagent cannot measure the output itself with [the fact test](plan-review.md#the-fact-test),
   the ticket and the date are its evidence for [the issue check](plan-review.md#the-issue-check). On #240, the task
   subagent was unable to measure the output of `tasker dismiss-review`, because no task of its own was in `reviewed`.
-- An issue dictates each requirement. A requirement says what the software does, or it gives a measure of an outside
-  tool that the work rests on. An issue can say why, as the purpose of the requirement. It gives no justification for a
-  requirement and does not say where the requirement came from.
-- An issue never dictates the implementation. What the software does is a behavior that a user, a session or the code of
-  another ticket sees. Examples are a command, an output, an exit code, a configuration key, a stored form and a test
-  case with its input and result. The implementation is how the code gets the behavior. Examples are a line of code, the
-  name or the place of an internal function, a mock and the setup of a test. The plan of the ticket chooses the
-  implementation.
+- A requirement says what the software does. The behavior is what a user, a session or the code of another ticket sees.
+  Examples are a command, output, exit code, configuration key, stored form and test case. A measure of an outside tool
+  is also a requirement. It gives the command, tool version, date and output.
+  [The issue check](plan-review.md#the-issue-check) still tests that measure as a claim.
 
-  A measure of an outside tool, for example timed runs, gives the command, the tool version, the date and the output.
-  [The issue check](plan-review.md#the-issue-check) still tests such a measure as a claim.
+  An issue can give the purpose of a requirement. It gives no account of where the requirement came from.
 
-  The doc text of an issue counts as a requirement, so an issue can give it word for word. If the purpose of a ticket is
-  the form of the code, for example the split of a file, that form is a requirement. The rule of this bullet covers the
-  text of a new issue, so a plan can still follow an implementation that an older issue gives.
-
-  On 2026-11-11, a draft change of the body of #751 removed the name `TASKER_SCHEDULER`. The draft offered the user two
-  designs of the implementation. One design was a Vitest setup file that mocked a module with `vi.mock` and
-  `importOriginal`. The other design passed a scheduler through the code. The user chose neither design and dropped the
-  draft. The draft also asked the user a question that the plan of the ticket can answer.
-
+- An issue never dictates the implementation. Implementation means how code produces behavior, including internal
+  functions, mocks and test setup. It also includes the place and words of a doc change, except when exact words are the
+  requirement. The ticket plan chooses the implementation at task time. If the form of code itself is the requirement,
+  the issue states that form. These rules cover new issues. A plan still follows exact details in an older issue.
+- An issue names each doc that changes and gives the rule, fact or reason to add. Its plan chooses the bullet, paragraph
+  or step and the words.
+- An issue gives exact words only when the words are the requirement, such as a term, a user quote or output text. The
+  planner judges this case.
 - Before the post, the planner compares each reason in an example of the issue with the docs. A reason that no doc
   supports goes out of the example, or the issue states it as a requirement with its own reason. On #265, the Summary of
   the issue gave such a reason, the plan copied it, and review 1 found it.
