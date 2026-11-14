@@ -623,38 +623,17 @@ chat under that subsection.
   or step and the words.
 - An issue gives exact words only when the words are the requirement, such as a term, a user quote or output text. The
   planner judges this case.
-- Before the post, the planner compares each reason in an example of the issue with the docs. A reason that no doc
-  supports goes out of the example, or the issue states it as a requirement with its own reason. On #265, the Summary of
-  the issue gave such a reason, the plan copied it, and review 1 found it.
-- An issue that lists files to install names the source of each file. On #119, the plan asked where four skills come
-  from, because the issue named only the target folder.
-- An issue for a protocol or a procedure gives its state model: the actors, the states that each actor holds, and who
-  tells whom when a state changes. An issue that gives only the target text draws a new gap in each review loop. A step
-  or a rule of the protocol can wait for a decision of the user, for example a draft in
-  [the escape hatch](#the-escape-hatch). Then, before the post of the issue, the state model gives the outcome of each
-  kind of answer. The kinds of answer are an accept with no change, a change, a reject and a drop. A reject and a drop
-  can share one outcome. On #426 (2026-10-25), review 2 found the case of a change, and review 3 found the case of a
-  reject or a drop. Each case cost one review loop.
-- If an issue asks the code to read a revision of a task, the issue names the revision: the tip of the task branch, or
-  `HEAD` of the worktree. The two revisions differ when the worktree is not on the task branch. On #155, the issue said
-  "the revision of the task", the code read `HEAD` of the worktree, but the user wanted the tip of the task branch.
-  [The Revisions section of workspaces.md](workspaces.md#revisions) gives the rule of the exact ref reads.
-- An issue names a git operation by its purpose and links to the doc section of the operation. The mechanism, for
-  example "a plain push with no lease", is the implementation.
-  [The bullet that starts "An issue never dictates the implementation"](#the-body-of-an-issue) bans the implementation
-  in an issue. On #178, #43 changed the mechanism after the draft of the issue, and a Docs item of the issue became
-  stale.
-- If an issue moves the members of a file by a table, the issue also says where a member goes that the table does not
-  list: in the row of its kind. An example of such a move is the split of a file into one file for each kind. If no row
-  fits, the plan asks a plan question. The reason: other tickets can add a member to the file between the draft of the
-  issue and its start, and the plan follows an exact table. On #140, #94 landed after the draft of the issue and added
-  three exports that the table did not list. The first refine placed them. #127 was in flight and added three more
-  exports, and a second refine placed them after `tasker update-branch`.
-- Each issue has a "Docs" section. The section names each doc to update with the code. A Docs item asks only for what
-  [rules.md](rules.md#docs) permits, and a new command goes where [rules.md](rules.md#docs) says. When a doc must give
-  the reason of a requirement, the Docs item states it as the content of the doc (for example "Give these reasons:
-  ..."), not the Requirements. On 2026-10-17, an audit of M9 moved the reasons in the Requirements of #171, #172, #98
-  and #173 to the Docs item of each issue.
+- Before the post, the planner compares reasons in issue examples with the docs. If no doc supports a reason, remove it
+  or state it as a requirement with its own reason.
+- If an issue lists files to install, it names the source of each file.
+- An issue for a protocol or procedure names its actors, their states and who reports each state change.
+- If an issue requires a task revision, it says whether the behavior reads the task-branch tip or worktree `HEAD`.
+  [Revisions](workspaces.md#revisions) gives the ref-read rule.
+- An issue names a git operation by its purpose and links to its doc section. The plan chooses its mechanism.
+- Each issue has a "Docs" section. It names every doc to change and gives the rule, fact or reason to add. A Docs item
+  asks only for what [the Docs rule](rules.md#docs) permits. If a doc must give a requirement's reason, the Docs item
+  gives that reason as doc content. The Requirements section does not give that doc instruction. A new command follows
+  [the Docs rule](rules.md#docs).
 - A Docs item never asks for a sentence that says that no command uses a part yet. Such a sentence is false as soon as
   the next ticket wires the part, and that ticket must find and remove it. The rules of what a doc describes are in
   [rules.md](rules.md#docs). For a ticket that adds only a layer, the hint "Say that the wiring is out of scope" of
