@@ -536,6 +536,45 @@ The operator and planner use this procedure after their close reports.
 - Run `herdr tab get <tab id>`. If `.result.tab.pane_count` is not 1, close nothing. The closure measure covered only a
   one-pane tab; no one tested own closure in a tab with more panes. The own-tab close of an operator handoff keeps its
   own procedure under [Stop a session](#stop-a-session).
+- Run `herdr tab close <tab id>` as the last tool call. Plan no text after the call.
+- If the session cannot close itself, a check fails, or a command fails, close nothing more and stay open. Tell the user
+  that the session cannot close itself. After a failed check or command, give the command and output. The user closes
+  the pane in herdr.
+- A permission prompt during `herdr agent list`, `herdr tab get`, `herdr tab close`, or `herdr pane get` puts the
+  session in `blocked`. Only the user answers it. No one tested these prompts.
+- Failed own-session closure does not change the end of the operator's or planner's role. Only step 13 waits for the
+  operator's pane to close.
+- Own-session closure is not [Stop a session](#stop-a-session). Do not run that section's stop steps for own closure.
+- Before step 8, the operator runs the environment and agent-list checks above. If both pass, its delegation gives the
+  `pane_id` of its own row. Otherwise, the delegation states that it gives no pane id. Item 2 does not change this rule,
+  so a session that the user opened in a pane still gives its pane id.
+- At step 13, run `herdr pane get <pane id>` with the id from the delegation. Exit code 1 with JSON stderr `.error.code`
+  equal to `pane_not_found` proves the operator pane closed. Exit code 0 means that the pane is still open. The planner
+  tells the user its pane id and closes nothing. After the next word of the user, the planner runs the operator check
+  again.
+- For any other exit, code, or non-JSON result, apply [the failure rule](limits.md#the-failure-rule) and report the
+  command and output. With no pane id, run no read. Examples are a terminal delegation that gives no pane id and the
+  user's word under [Missing roles](#missing-roles) in place of a terminal delegation.
+- After a failed operator check or with no pane id, the planner cannot close itself. Its step 14 close report asks for
+  no approval. Tell the user that the planner cannot close itself; the user closes its pane.
+- Matching the agent row with the environment prevents a stale inherited id from closing another session's tab. The
+  operator check uses a pane id, not a name. A replacement session with the same name in another pane does not prove
+  closure.
+- [Own-session closure](codex-sessions.md#own-session-closure) records the measured facts. Its observer read used an
+  idle recipient. No one tested a busy or blocked recipient or a permission-prompt wait. No one tested the check after a
+  user closed the operator pane or after another agent kind closed. No one tested a reused pane id; an exit code 0 then
+  leaves the planner waiting.
+- The `codex` closure measures were declined on 2026-11-13, as
+  [Own-session closure](codex-sessions.md#own-session-closure) records. A measured Codex display title was not its exact
+  session name, so the exact-name check closes nothing and supplies no operator pane id.
+
+| State                    | What the session does                                                                                                                                                                        | Who tells whom                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Not started              | Steps 1 to 8 for the operator, or steps 10 to 13 for the planner                                                                                                                             | None                                                  |
+| Waits for the approval   | Gives its close report and closes nothing. Approval moves it to Running. An answer that returns the planner to step 10 moves it to Not started. Other answers and no answer keep this state. | The session asks the user for approval.               |
+| Running                  | Does the checks above, then runs herdr tab close as its last call                                                                                                                            | None                                                  |
+| Ended: the tab is closed | No session runs                                                                                                                                                                              | None. The close report came before closure.           |
+| Ended: no closure        | Stays open when the session cannot close itself, or when a check or a command fails.                                                                                                         | The session tells the user. The user closes its pane. |
 
 ### The table of the close
 
