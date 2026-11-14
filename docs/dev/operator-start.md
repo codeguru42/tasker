@@ -524,8 +524,6 @@ The operator and planner use this procedure after their close reports.
 - On another answer, such as a wait, rejection or drop, the session closes nothing and stays open. The user's word
   decides the next step.
 - With no answer, the session closes nothing and stays open.
-- Each agent kind uses the same closure procedure. The user assumes each kind can close its herdr tab. No one tested
-  that assumption for a kind other than `claude`.
 - A session that the user resumed, restarted, or opened in a pane cannot close itself. It also cannot close if it cannot
   establish its own pane, tab, and one-pane tab. Whether the session knows that the user resumed, restarted or opened it
   is open on purpose. The session judges it. No one tested those bindings.
@@ -546,8 +544,8 @@ The operator and planner use this procedure after their close reports.
   operator's pane to close.
 - Own-session closure is not [Stop a session](#stop-a-session). Do not run that section's stop steps for own closure.
 - Before step 8, the operator runs the environment and agent-list checks above. If both pass, its delegation gives the
-  `pane_id` of its own row. Otherwise, the delegation states that it gives no pane id. Item 2 does not change this rule,
-  so a session that the user opened in a pane still gives its pane id.
+  `pane_id` of its own row. Otherwise, the delegation states that it gives no pane id. A session that the user opened in
+  a pane still gives its pane id, although it cannot close itself.
 - At step 13, run `herdr pane get <pane id>` with the id from the delegation. Exit code 1 with JSON stderr `.error.code`
   equal to `pane_not_found` proves the operator pane closed. Exit code 0 means that the pane is still open. The planner
   tells the user its pane id and closes nothing. After the next word of the user, the planner runs the operator check
@@ -562,11 +560,7 @@ The operator and planner use this procedure after their close reports.
   closure.
 - [Own-session closure](codex-sessions.md#own-session-closure) records the measured facts. Its observer read used an
   idle recipient. No one tested a busy or blocked recipient or a permission-prompt wait. No one tested the check after a
-  user closed the operator pane or after another agent kind closed. No one tested a reused pane id; an exit code 0 then
-  leaves the planner waiting.
-- The `codex` closure measures were declined on 2026-11-13, as
-  [Own-session closure](codex-sessions.md#own-session-closure) records. A measured Codex display title was not its exact
-  session name, so the exact-name check closes nothing and supplies no operator pane id.
+  user closed the operator pane. No one tested a reused pane id; an exit code 0 then leaves the planner waiting.
 
 The own-session closure has these states.
 
