@@ -201,6 +201,18 @@ word. It also gives each other part of such a question that
 each change. These parts do not count in the limit. The question session needs them for its decision message, as
 [Send a decision](#send-a-decision) says.
 
+The reason: on 2026-11-13, the user said, as operator-docs relayed it: "details sent to the question pane need to be
+shorter, like 5 sentences max". On that day, operator-docs reported a paragraph each for what happened, the problem and
+the facts in the first replies of the question panes. These words narrow the earlier words of the user on the details in
+the question pane, in [The form of a reply](working-with-the-user.md#the-form-of-a-reply).
+
+The first replies of question-769-bullet and question-910-marker on 2026-11-13 gave no definition of some terms, for
+example "old path" and "marker word". The user asked what some of them meant. In question-910-marker, the user also gave
+the order of the steps of a test back to the session and asked whether it was right.
+
+On 2026-11-13, the user chose that the definitions and the order of the steps stay past five sentences, as operator-docs
+relayed it. The words of the user were: "keep it short as possible but going over 5 sentences is allowed".
+
 [Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
 newline. So the opener subagent and the reuse subagent put the word `LINE-BREAK` in place of each newline of the
 first-reply text. Step 3 of the opener prompt and step 6 of the reuse prompt of [The prompts](#the-prompts) give this
