@@ -11,6 +11,9 @@ The sender sends each [item](../sessions.md) to the operator with `SendMessage`.
   sender never gives one number to two items.
 - Then the text follows the rules of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) and
   [The form of a reply](working-with-the-user.md#the-form-of-a-reply).
+- The text of an item also gives the content of each issue that it names. The content stands next to the plain key, at
+  the first mention of the issue in the item. [The issue-link rule](working-with-the-user.md#the-issue-link-rule) says
+  what the content is.
 - An item about a draft gives a summary of the draft and the path of the draft file, not the draft. The path is
   `/tmp/tasker/<slug>/drafts/<file>.md`.
 - A report is an item that gives the user a fact and needs no answer.
@@ -69,6 +72,10 @@ The operator does these things for the open items:
   request of the user. The arrival line is not a list of open items, and it asks the user no question. The reason: on
   2026-10-25, the user said: "the operator continues to print out the full request when a new question arives rather
   than adding it to its list and waiting for me to request the details."
+
+  The arrival line keeps the first line of the item word for word, with the content that the item gives. The operator
+  adds no content to the arrival line, also when the item gives none. The operator still writes each key of the line as
+  a link, as [the issue-link rule](working-with-the-user.md#the-issue-link-rule) says.
 
   With an automatic start, the first reply of the question pane shows an open question, with no request of the user.
   [Start](question-pane.md#start) of "A question pane" gives this rule and its reason. For an open question, this rule
@@ -138,7 +145,10 @@ The operator does these things for the open items:
 
 - When the operator shows an item to the user, it writes each issue key of the item as a link, as
   [the issue-link rule](working-with-the-user.md#the-issue-link-rule) says. A key inside a code span or a code block
-  stays as it is.
+  stays as it is. The operator keeps the content that the item gives next to each key. If the item gives no content for
+  an issue, the operator adds a few words of the content in the text that it shows. This also holds for an open question
+  in short form. The content is a few words inside a sentence, so it adds no sentence to a short form or to a limit of
+  sentences.
 - When the user asks for a draft, the operator reads the draft file and shows its text. If the file does not exist, the
   operator tells the user that the file does not exist.
 - When the user asks for an item, the operator gives its full text. The user names the item, for example by its id. The
