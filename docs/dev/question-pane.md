@@ -37,6 +37,23 @@ session. It asks for the rounds of `/session-review` before the close of the pan
 An [opener subagent](#the-prompts) is a subagent of the operator that opens one question pane and starts its question
 session.
 
+A [write action](#the-question-session) is an action that the question session sends back to the operator. Each of these
+is a write action:
+
+- A write to GitHub, for example to an issue, a comment, a label, a milestone, the project board or a pull request
+- A write or an edit of a file
+- A git write, for example a commit, a branch or a push, apart from `git fetch origin`
+- A change of tasker state
+- A `herdr` command
+- A change of the configuration of Claude Code
+- A message to a session other than the operator
+
+A message to the operator is not a write action. A step that the item of the sender proposes and the user approves is
+also not a write action. Examples are the post of a draft, a comment and a measure. The sender does that step.
+
+A [write subagent](#the-operator-handles-a-decision) is a subagent of the operator that does the write actions of one
+settled decision message.
+
 A context clear is a step that removes the context of the question session and keeps its pane and its Claude Code
 process. The context is each prompt, each reply and each tool output that the session holds.
 
@@ -180,11 +197,13 @@ the user the cause of that wait.
 The question session follows the general user-facing, simple-English, [memory](rules.md#the-memory-rule), and
 [doc-read](doc-reads.md#the-doc-read-rule) rules from its start.
 
-After the first reply, the question session can read drafts and reports, use read-only commands, and run
-`git fetch origin`. If fetch fails, it tells the user and reads the last successful `origin/main`.
+After the first reply, the question session can read drafts and reports, use read-only commands other than `herdr`
+commands, and run `git fetch origin`. If fetch fails, it tells the user and reads the last successful `origin/main`.
 
-The question session posts nothing to GitHub, edits or writes no file, and changes no tasker state. It runs no herdr
-command and messages no session except the operator.
+The question session sends each [write action](#terms) back to the operator, in its decision message, as
+[Send a decision](#send-a-decision) says. The operator starts a [write subagent](#terms) that does the action, as
+[The operator handles a decision](#the-operator-handles-a-decision) says. After a close request, the question session
+directs the user to the operator chat for a write action.
 
 For a request outside its question, the question session directs the user to the operator chat.
 
@@ -250,7 +269,7 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 ```text question-session
 You are the question session <name>. You discuss one open question with the user for the operator <operator name>, with the session ref <operator session ref>. The question is number <question number> of the item <item id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. Only the next two sentences change that text. In your first reply, write a newline in place of each word LINE-BREAK. Also remove the one space on each side of it. Before that reply, do only the three steps that follow, in their order, and use no AskUserQuestion tool.
 First, show the start line with no other text. The start line is: I read my rules first, and then I show the question. The start line is not your first reply. Second, run git -C <local clone> fetch origin. If the fetch fails, use the last origin/main. Tell the user about the failure in your second reply. Third, read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md. Also read the section The doc-read rule of docs/dev/doc-reads.md. Read each file with git -C <local clone> show origin/main: and its path. The rules of these docs change no word of your first reply.
-These docs give the rules of your work. Send your decision message to <operator name> with SendMessage, as the section A question pane says. FIRST-REPLY <first reply>
+These docs give the rules of your work. Send your decision message to <operator name> with SendMessage, as the section A question pane says. If the user asks for a write action, send the action back to <operator name> in your decision message. Give the command and the undo step of the action, as the section A question pane says. A write action is a write to GitHub, a file, git, tasker state or the Claude Code configuration, or a herdr command. The fetch above is not a write action. A message to a session other than <operator name> is also a write action. <operator name> starts a subagent that does the action, or relays the action to another session. FIRST-REPLY <first reply>
 ```
 
 The opener subagent and the reuse subagent read the session prompt from `origin/main` and fill it. The session prompt
