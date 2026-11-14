@@ -618,7 +618,10 @@ chat under that subsection.
 - An issue never dictates the implementation. Implementation means how code produces behavior, including internal
   functions, mocks and test setup. It also includes the place and words of a doc change, except when exact words are the
   requirement. The ticket plan chooses the implementation at task time. If the form of code itself is the requirement,
-  the issue states that form. These rules cover new issues. A plan still follows exact details in an older issue.
+  the issue states that form.
+
+  These rules cover new issues. A plan still follows exact details in an older issue.
+
 - An issue names each doc that changes and gives the rule, fact or reason to add. Its plan chooses the bullet, paragraph
   or step and the words.
 - An issue gives exact words only when the words are the requirement, such as a term, a user quote or output text. The

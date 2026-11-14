@@ -12,9 +12,10 @@ The task subagent gives each hint that fits its ticket in the first refine. The 
 fits a later refine in the feedback of that refine, for example in a fix of a review loop. On #342 and #344, a later
 refine broke the hint that starts "Ask the plan to write no claim about a count in new text". On #373, the fix of loop 1
 moved the target of "Without that", which broke the hint that starts "If a refine puts a new sentence in the middle of a
-paragraph", and [the diff read](run-one-ticket.md#the-diff-read) found it. Each cost one loop. An issue gives exact hint
-words only when they are the requirement. The ticket plan chooses the target and words of a doc change, as
-[the body of an issue](planner.md#the-body-of-an-issue) says.
+paragraph", and [the diff read](run-one-ticket.md#the-diff-read) found it. Each cost one loop.
+
+An issue gives exact hint words only when they are the requirement. The ticket plan chooses the target and words of a
+doc change, as [the body of an issue](planner.md#the-body-of-an-issue) says.
 
 Before the task subagent gives a hint, it compares the hint with the Out of scope section of the issue. If the Out of
 scope section excludes what the hint asks for, the task subagent does not give the hint, also when the hint fits its
@@ -196,10 +197,10 @@ orchestrator.
   its facts and named no source for its changes. Plan v2 still wrote "the user measured" and "the user decided", and
   this cost refine 2. On #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
 
-- If an issue gives a reason in an example, ask the plan to compare that reason with the docs. The body of an issue asks
-  the planner to make the same compare before posting. If no doc supports the reason, ask the plan to drop it from the
-  example. On #265, the Summary of the issue gave the reason "an agent changes only its own task". The plan copied it
-  into the example, and review 1 found it.
+- If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
+  [The body of an issue](planner.md#the-body-of-an-issue) asks the planner to make the same compare before posting. If
+  no doc supports the reason, ask the plan to drop it from the example. On #265, the Summary of the issue gave the
+  reason "an agent changes only its own task". The plan copied it into the example, and review 1 found it.
 - A condition of the issue that now holds is not a difference, for example "After #199 lands" when #199 is closed. Say
   this in the first refine. On #204, plan v1 called such a condition a difference.
 - After [a change of scope](plan-review.md#the-stop-rule), compare the hints of the earlier refines with the new text
@@ -223,8 +224,8 @@ orchestrator.
 - Ask the plan to start each item of a vertical list with an uppercase letter, as the simple-english skill says
   ([rules.md](rules.md#docs)). On #227, plan v4 had list items with a lowercase start, and one more refine fixed them.
 - An issue can add or change a sentence of a doc. Such a sentence can be over its word limit in the simple-english
-  skill. Before the first refine, count the words of such a sentence. Count them as [the H16 hint](#all-tickets) gives
-  this word count.
+  skill. Before the first refine, count the words of such a sentence. Count them as
+  [the hint that starts "If an issue gives exact doc text"](#all-tickets) says.
 
   For a sentence over its limit, ask the plan in the first refine to split it in two. The split adds no fact and changes
   only the words that the two sentences need. Give the two sentences as exact final text, as the hint that starts "If
@@ -875,9 +876,9 @@ orchestrator.
   paragraph and add the new sentences. If the total exceeds six, ask the plan to start a new paragraph under Rule 6.6 of
   the simple-english skill.
 - If an issue gives exact doc text, ask the plan to count each new paragraph's sentences and each new sentence's words.
-  Apply Rules 6.6, 6.3 and 5.1 of the simple-english skill. Count words under Rules 8.5 to 8.7. Parenthetical and quoted
-  text each count as one word. Link text counts word by word. Its target counts as no word. For a sentence over its
-  limit, use the hint that starts "An issue can add or change a sentence of a doc" in this section.
+  Apply Rules 6.6, 6.3 and 5.1 of the simple-english skill, and count words under Rules 8.5 to 8.7. Parenthetical and
+  quoted text each count as one word. Link text counts word by word. Its target counts as no word. For a sentence over
+  its limit, use the hint that starts "An issue can add or change a sentence of a doc" in this section.
 - If exact issue text names a doc part, ask the plan whether those words stay true in the finished doc. Ask it to
   replace temporary names such as "the new bullet".
 
@@ -1534,5 +1535,5 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   refine. On #228, plan v1 made a new section for one hint.
 - If a hint uses a term that another doc defines, ask the plan for a link on the term, not a sentence that defines it
   again. On #214, the plan defined "[home](rules.md#code)" again, and review 1 found the copy.
-- If a hint asks the plan for one sentence that covers the facts of two bullets, ask the plan to choose its place from
-  current doc text. The plan chooses the place as part of the implementation.
+- If a hint asks the plan for one sentence that covers the facts of two bullets, ask the plan to choose its place. The
+  plan uses current doc text.
