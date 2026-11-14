@@ -602,57 +602,12 @@ chat under that subsection.
 - The task subagent uses only the sources in [Limits](limits.md#limits).
   [The design-gap rule](plan-review.md#the-design-gap-rule) says who answers a gap.
 - An issue includes each required table, list or diagram in its body. It does not refer to missing material elsewhere.
-- An issue can give a list or a table of the current behavior of the code. An example is a table of the commands that
-  each state accepts. Before the post, the planner makes sure that each row or item matches what the code does. The
-  planner gives the command that it used in the chat with the user, for example a `grep` of the calls. On #215, the
-  first table claimed to hold the commands of today. But it left out six of them, for example `refine` from `reviewed`
-  and `finish` from `landed`. The task subagent found the gap with one `grep`, and the fix needed a stop and an edit of
-  the issue body.
-- An issue can give a value for a field of an existing event. Before the post, the planner compares each such value with
-  the form that the code stores in that field today. Examples of a form are a ref and a commit id. The issue gives the
-  stored form, or it states the change of the form as a requirement with its own reason. For the command of the compare,
-  the bullet before this one applies. An example is a `grep` of the writes of the event. On #273, step 5 said that the
-  `revision` of the `base` event is the base tip, a commit id. The code stores a ref, `refs/remotes/origin/<base>`, and
-  resolves it after each fetch. A commit id freezes the base tip. The task subagent stopped under the fifth case of
-  [the stop rule](plan-review.md#the-stop-rule), and the user changed the scope with a comment.
-- An issue can ask for work on a command of tasker. Before the post, the planner runs `git fetch origin` and makes sure
-  that `src/commands/index.ts` of `origin/main` holds the command. If the file does not hold it, the issue adds the
-  command, or the issue gets a blocked-by link to the issue that adds it. The issue can also omit the command, and a
-  separate issue adds it. If the bullet "An issue of an earlier milestone never waits ..." bans the link, the issue
-  takes this choice. On #233 (2026-10-30), the issue named `tasker push`, no such command existed, and the fix cost one
-  stop and one change of scope.
-- An issue that stores a value that code reads back puts it in a column, as
-  [the rule of the `events` table](data-root.md#events-table) in `docs/dev/data-root.md` says. On #391 (2026-10-25), a
-  revision of the body kept the [parent](pick-the-tickets.md#the-stacked-ticket-rule) tip in the `workspace` and `base`
-  events. The user changed it to a column.
-- An issue can give a table of cases. Before the post, the planner reads each table of cases of the issue. It makes sure
-  that no two rows match the same case. If two rows still match one case, the issue names the row that wins. On #346
-  (2026-10-18), the rows "Diverged, no commit only on origin" and "Diverged, local work at risk" of the sync table both
-  matched one case: a pushed and rebased branch with a new local commit.
-- An issue can ask for a new or changed guard or parser. This bullet uses the terms of
-  [A ticket that adds or changes a guard or a parser](first-refine.md#a-ticket-that-adds-or-changes-a-guard-or-a-parser)
-  of first-refine.md. These terms are a guard, a parser, the check, a place of the check, an option form, a table test
-  and a Block row. In this bullet, a guard is not the read before a write of the bullet that starts "An issue can give a
-  rule that lets a session do a write".
-
-  Before the post, the planner makes sure that such an issue gives a table test of the check. The table has one Block
-  row for each place of the check that the issue names. It also has one Block row for each option form of each option
-  that the issue names for the check. The table needs no row for each pair of a place and an option form. The hint that
-  starts "A place of the check is a part of the input" in the section of first-refine.md still applies in the first
-  refine of the ticket.
-
-  The reason: plan v1 sees only the issue and the repo, and the plan follows an exact table of the issue. So with this
-  rule, plan v1 already holds these rows before the first refine. The section of first-refine.md gives the case of #729
-  (2026-11-09), with its missing rows and its cost. No one measured whether this rule prevents such a gap.
-
-- An issue can give a rule with a time condition, for example "while X runs" or "after X ends". Before the post, the
-  planner names at least these states of X in the issue: not started, running and ended. The issue says what the rule
-  does in each state. On #440 (2026-10-25), the issue gave the states "still runs" and "has ended" of the orchestrator
-  of a milestone, but it missed the state not started.
-- An issue that records an output of the installed tasker names the ticket and the date of the run that showed the
-  output. When the task subagent cannot measure the output itself with [the fact test](plan-review.md#the-fact-test),
-  the ticket and the date are its evidence for [the issue check](plan-review.md#the-issue-check). On #240, the task
-  subagent was unable to measure the output of `tasker dismiss-review`, because no task of its own was in `reviewed`.
+- An issue that stores a value for later code reads puts it in a column, as
+  [the events-table rule](data-root.md#events-table) says.
+- If an issue gives a time condition, it names the states not started, running and ended. It says what the rule does in
+  each state.
+- If an issue records installed-tasker output, it names the ticket and run date. Those facts support
+  [the issue check](plan-review.md#the-issue-check) when the task subagent cannot measure the output.
 - A requirement says what the software does. The behavior is what a user, a session or the code of another ticket sees.
   Examples are a command, output, exit code, configuration key, stored form and test case. A measure of an outside tool
   is also a requirement. It gives the command, tool version, date and output.
