@@ -28,14 +28,14 @@ zod facts and the tests.
   kind gets a new file. Do not copy a helper into a test file.
 - A change can edit an existing helper to fix a bug or to make it useful in more places. It must not break the code that
   uses the helper.
-- Tests must cover the behavior of each helper that other code uses, so a change that breaks that code makes a test
-  fail.
+- Tests must cover the behavior of each helper that other code uses. As a result, a change to a helper that breaks that
+  code makes a test fail.
 - The code in `src/` can have its own helpers, separate from the test helpers. `src/` must not import from `test/`, and
   the files in `test/helpers/` must hold no code that `src/` uses.
 - Code in `src/` and in `test/` must call an existing helper for the job of that helper, not repeat its steps. When two
   or more places repeat the same steps and no helper exists, add one helper and call it from each place. A place repeats
   a helper only when it repeats all its steps. A place that already holds the input of a later step, for example an open
-  store, and does only that step, keeps its own call. A call of the helper does the earlier steps again.
+  store, and does only that step, keeps its own call. There, a call of the helper does the earlier steps again.
 - The expected-value exception to the helper rule above: a test helper that computes the expected value of a test
   without the code under test is not a copy of a helper of `src/`. If the test calls the helper of `src/`, a bug there
   changes the expected value and the real value in the same way. Then the test passes.
@@ -182,9 +182,9 @@ task.
 - When a doc gives a path in the home folder, write it as `$HOME/...`. Do not write it as `~/...` or as an absolute path
   such as `/home/<user>/...`.
 - Prettier wraps the prose of each Markdown file that it formats at 120 characters (`proseWrap` "always" in
-  `.prettierrc.json`). A reader then reads no long prose lines. It does not change a table, a code block or the front
-  matter. A long code span does not break, so its line can stay over 120 characters. `.prettierignore` keeps the files
-  under `.claude/` out.
+  `.prettierrc.json`). A reader then reads no long prose lines. Prettier does not change a table, a code block or the
+  front matter. A long code span does not break, so its line can stay over 120 characters. `.prettierignore` keeps the
+  files under `.claude/` out.
 - The doc-search rule: a search for words of a doc, for example with `git grep`, matches one line, and a sentence can
   span two lines. So the search uses a short part that fits on one line, and then reads the hit. Each place that names a
   search of doc words links to this bullet. A short part of two or more words can still span two lines. Then the search
