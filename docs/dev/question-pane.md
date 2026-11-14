@@ -153,15 +153,23 @@ a guess.
 The operator prepares first-reply text that follows [The form of a reply](working-with-the-user.md#the-form-of-a-reply)
 and the [issue-link rule](working-with-the-user.md#the-issue-link-rule). The operator attributes item facts and measures
 to the sender. The first-reply text holds the question, the choices and costs, the recommendation, the paths and the
-decisions so far.
+decisions so far. The first-reply text also follows the bullet of
+[A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "Define each term".
 
 The first-reply text gives its one question with no number. For the first-reply text, this paragraph wins over each rule
 of [The form of a reply](working-with-the-user.md#the-form-of-a-reply) that numbers or lists the open questions.
 Examples are the bullets that start "A reply gives all open questions in one numbered list", "The list holds each
 question that is still open", "Each question has its own number" and "The list numbers from 1", and the number "1." of
 the example of that section. For each other rule of that section, the question of the first-reply text counts as
-question 1, for example for the full details. The reason: on 2026-11-13, the user said: "In the question pane, the
-question itself no longer needs to be numbered."
+question 1. The reason: on 2026-11-13, the user said: "In the question pane, the question itself no longer needs to be
+numbered."
+
+The other details of the first-reply text have a limit: at most five sentences.
+[The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives examples of the other details, in its bullet
+that starts "Inside a question, only". The question, its proposed steps, its choices, the paths and the decisions so far
+do not count. If what a choice does, its cost or the recommendation stands in the item of the choice, it does not count.
+A code block counts as one sentence. Next to each fact that no one measured, the first-reply text still says that no one
+measured it, in the sentence of the fact.
 
 [Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
 newline. So the opener subagent and the reuse subagent put the word `LINE-BREAK` in place of each newline of the
