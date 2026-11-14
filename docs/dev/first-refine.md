@@ -1402,6 +1402,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 ## A ticket that moves or trims a doc
 
+- If an issue renames a doc name or term, ask the plan to search current docs for each use. Ask it to account for each
+  hit in Docs or Out of scope.
+
 - Each kept rule keeps its conditions and its definitions. When a rule moves from one doc to another, keep every fact of
   each moved sentence. On #118, the moved UTF-8 rule lost its "reads" half. In a ticket that moves text, ask the plan to
   keep each old sentence and to change only the words that point to a place. On #206, a sentence that the plan reworded
@@ -1476,6 +1479,13 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   not "the same answer". On #373, "gets the same answer as such a plan" drew a finding in review 1.
 
 ## A ticket that adds a doc of rules or hints
+
+- If an issue requires a doc sentence, ask the plan to compare it with nearby rules. Ask it to remove a repeat or link
+  to the rule's home.
+- If a ticket adds a general rule, ask the plan to find narrower copies and related rules. Ask it to link copies to the
+  new home and keep each affected rule in scope.
+- If a ticket adds a section, ask the plan to find every index that lists that doc's sections. Ask it to update each
+  index.
 
 - Name the docs that already hold some of the rules or hints, because they draw duplication findings (#116).
 - Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its
