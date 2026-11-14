@@ -184,6 +184,23 @@ item of the choice, so they do not count. In each case, the first-reply text kee
 also the definitions and this order past five sentences. The operator judges how short each detail is, and this judgment
 is open on purpose.
 
+For the first-reply text, this limit wins over each rule that asks for more details in a question. An example is the
+bullet of [The form of a reply](working-with-the-user.md#the-form-of-a-reply) that starts "Question 1 of the list".
+Another example is the words "The session gives the command and the result" of
+[A decision of the user](working-with-the-user.md#a-decision-of-the-user). This limit does not win over the bullet of
+that section that starts "Define each term".
+
+If a detail of the item does not fit in this limit, the first-reply text names where the user can read it. A path of a
+draft or a report of the item comes first. The item in the operator chat is the place only for a detail with no such
+path. A sentence that names such a place does not count. [The open items](operator-items.md#the-open-items) gives the
+reply to a request for an item in the operator chat.
+
+For a measure that changes the state of the user, the first-reply text gives the command and its undo step word for
+word. It also gives each other part of such a question that
+[The state of the user](plan-review.md#the-state-of-the-user) asks for. An example is what the command and the undo step
+each change. These parts do not count in the limit. The question session needs them for its decision message, as
+[Send a decision](#send-a-decision) says.
+
 [Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
 newline. So the opener subagent and the reuse subagent put the word `LINE-BREAK` in place of each newline of the
 first-reply text. Step 3 of the opener prompt and step 6 of the reuse prompt of [The prompts](#the-prompts) give this
