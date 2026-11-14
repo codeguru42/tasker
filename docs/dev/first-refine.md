@@ -222,8 +222,8 @@ orchestrator.
 - Ask the plan to start each item of a vertical list with an uppercase letter, as the simple-english skill says
   ([rules.md](rules.md#docs)). On #227, plan v4 had list items with a lowercase start, and one more refine fixed them.
 - An issue can add or change a sentence of a doc. Such a sentence can be over its word limit in the simple-english
-  skill. Before the first refine, count the words of such a sentence. Count them as
-  [The body of an issue](planner.md#the-body-of-an-issue) says for the doc text of an issue.
+  skill. Before the first refine, count the words of such a sentence. Count them as [the H16 hint](#all-tickets) gives
+  this word count.
 
   For a sentence over its limit, ask the plan in the first refine to split it in two. The split adds no fact and changes
   only the words that the two sentences need. Give the two sentences as exact final text, as the hint that starts "If
@@ -869,6 +869,17 @@ orchestrator.
   meaning or use another term.
 - If a rule limits session reads, ask the plan to find each doc link and path to the limited files. Ask it to change
   each conflicting use or explain why that use stays.
+- If an issue changes a bullet, paragraph or sentence, ask the plan to choose its place from current doc text. Ask it to
+  say whether text joins an existing part or starts a new part. A bullet with one paragraph counts as one paragraph. In
+  a bullet with more paragraphs, each paragraph counts on its own. Ask the plan to count existing sentences in the
+  paragraph and add the new sentences. If the total exceeds six, ask the plan to start a new paragraph under Rule 6.6 of
+  the simple-english skill.
+- If an issue gives exact doc text, ask the plan to count each new paragraph's sentences and each new sentence's words.
+  Apply Rules 6.6, 6.3 and 5.1 of the simple-english skill. Count words under Rules 8.5 to 8.7. Parenthetical and quoted
+  text each count as one word. Link text counts word by word. Its target counts as no word. For a sentence over its
+  limit, use the hint that starts "An issue can add or change a sentence of a doc" in this section.
+- If exact issue text names a doc part, ask the plan whether those words stay true in the finished doc. Ask it to
+  replace temporary names such as "the new bullet".
 
 ## A ticket that only adds a layer, for example a schema
 
@@ -1079,6 +1090,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   covered only the signal path.
 
 ## A ticket that changes a procedure doc
+
+- If a handoff records numbered steps, ask the plan to place each new case inside an existing step. Ask it to keep
+  recorded step numbers stable.
+- If an issue adds a command, trigger or text, ask the plan to read current lists and gates. Ask it to update
+  conflicting old triggers and keep the stated priority of rules.
 
 - If a procedure waits for a decision of the user, ask the plan for each answer's outcome. The kinds are accept with no
   change, change, reject and drop. Reject and drop can share one outcome.
@@ -1479,6 +1495,10 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   not "the same answer". On #373, "gets the same answer as such a plan" drew a finding in review 1.
 
 ## A ticket that adds a doc of rules or hints
+
+- If an older issue names a hint's target bullet, ask the plan to follow that exact direction. Otherwise ask the plan to
+  choose the target from current doc text. For an older issue, a sentence marked "Context, not for the doc:" is not for
+  the doc. A sentence of the hint with no such mark goes into the doc with the hint.
 
 - If an issue requires a doc sentence, ask the plan to compare it with nearby rules. Ask it to remove a repeat or link
   to the rule's home.
