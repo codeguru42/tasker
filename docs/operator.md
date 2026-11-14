@@ -19,8 +19,8 @@ or an orchestrator sends each item that needs the user to the operator. This hol
 operator in [the close of a milestone](dev/operator-start.md#the-close-of-a-milestone). Then the user reads the items in
 one place and answers the questions for the user alone.
 
-In the close of a milestone, the operator settles each open question with
-[the question gate of the close](dev/operator-items.md#the-question-gate-of-the-close) before its terminal delegation.
+In the close of a milestone, the operator settles each open question and each open decision before its terminal
+delegation. It uses [the question gate of the close](dev/operator-items.md#the-question-gate-of-the-close).
 [The terminal delegation](dev/operator-start.md#the-terminal-delegation) is the last message of the operator to the
 planner. After the end of the role of the operator, the planner talks to the user directly, as
 [The operator](dev/working-with-the-user.md#the-operator) says.
@@ -35,7 +35,9 @@ names `planner-<slug>` or `orchestrator-<slug>` still takes the slug of the own 
 
 The tab list is the list of the tabs that an operator can close. Each entry gives the tab id and the session name of one
 tab. In a handoff of the operator, the old operator also closes its own tab, as
-[Stop a session](dev/operator-start.md#stop-a-session) says.
+[Stop a session](dev/operator-start.md#stop-a-session) says. In the close of a milestone, the operator also closes its
+own tab on the approval of the user. [The own-session closure](dev/operator-start.md#the-own-session-closure) gives the
+steps.
 
 The operator runs only these `tasker` commands: `show-config`, `show-quota`, `show`, `show-bootstrap`, `show-plan`,
 `show-questions`, `show-verify`, `show-review`, `model`, `status` and `doctor`. The operator also runs each `tasker`
