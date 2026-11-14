@@ -171,6 +171,19 @@ do not count. If what a choice does, its cost or the recommendation stands in th
 A code block counts as one sentence. Next to each fact that no one measured, the first-reply text still says that no one
 measured it, in the sentence of the fact.
 
+A definition of a term in the sentence of the term, for example in parentheses, does not count in the limit. The
+first-reply text also gives the order of the steps that the question rests on, for example the steps of a test. These
+are steps of the item, not the proposed steps of the question. A definition that needs its own sentence and the order of
+these steps count in the limit. The operator judges which steps the question rests on, which definition needs its own
+sentence and which details fit in the limit. This judgment is open on purpose.
+
+If the limit has no room for each detail, the definitions and this order stay, and other details go out. If the
+definitions and this order alone need more than five sentences, the first-reply text gives them all. It then gives no
+other detail that counts in the limit. In this case, what each choice does, its cost and the recommendation stand in the
+item of the choice, so they do not count. In each case, the first-reply text keeps each detail as short as possible,
+also the definitions and this order past five sentences. The operator judges how short each detail is, and this judgment
+is open on purpose.
+
 [Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
 newline. So the opener subagent and the reuse subagent put the word `LINE-BREAK` in place of each newline of the
 first-reply text. Step 3 of the opener prompt and step 6 of the reuse prompt of [The prompts](#the-prompts) give this
