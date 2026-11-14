@@ -383,11 +383,15 @@ gives the name of the session and the text verbatim. Such a message has no comma
 
 For a change of the title or the body of an issue, the question session reads both at the start of the draft.
 [Before a post](issues.md#before-a-post) gives this read. The message gives the start hash of that read. For a new
-issue, the question session shows the user the blocked-by links of Before a post with the draft. The message gives these
-links. The question session runs the self-check of Before a post over the text that it shows, with no file.
+issue, the question session runs the self-check of Before a post over the text that it shows, with no file.
+
+The decision message also gives each [request for a new issue](#terms), with the words of the user word for word. The
+question session can add its own reading of the words, for example which issue or milestone a word names. It marks each
+such reading as a guess. A later decision message of the same question gives only the requests that no earlier message
+gave.
 
 If the user ends without a decision, the question session sends **No decision**, the item id, and the question number.
-It also sends any stated doc rule, fact, or preference.
+It also sends any stated doc rule, fact, or preference and each request for a new issue.
 
 After the send, the question session waits at its prompt for a message of the operator: what stays open, or a
 [close request](#the-rounds-before-the-close). If the send fails, the question session tells the user in the pane; the
@@ -504,10 +508,11 @@ question number and the parts that [Session-review rounds](session-review-rounds
 user in the rounds, it gives the words of the user word for word. It gives each waiting decision and each open question
 that has no answer as an open finding.
 
-The report leaves out each doc rule, fact or preference that the decision message already gave. After the close request,
-the question session sends no decision message. For a new word of the user on the question of the pane, it directs the
-user to the operator chat. If a round fails, the question session tells the user in the pane. Its rounds then end, and
-the report names the failure. If the send of the report fails, the question session tells the user in the pane.
+The report leaves out each doc rule, fact, preference or request for a new issue that a decision message already gave.
+After the close request, the question session sends no decision message. For a new word of the user on the question of
+the pane, it directs the user to the operator chat. If a round fails, the question session tells the user in the pane.
+Its rounds then end, and the report names the failure. If the send of the report fails, the question session tells the
+user in the pane.
 
 The operator accepts a report only from the question session of its open pane, for its current question, after its close
 request. For each other report, the operator tells the user in one line, sends nothing and keeps the state of the
