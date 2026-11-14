@@ -861,6 +861,15 @@ orchestrator.
 - If an issue gives a case table, ask the plan whether two rows can match one case. If they can, ask it to name the
   winning row or the missing requirement.
 
+- If an issue gives a file-member table, ask the plan to read current members. Ask it to put each unlisted member in the
+  row of its kind. If no row fits, ask a plan question.
+- If an issue says no doc names a thing, ask the plan to search current docs, skills, README and AGENTS files. Ask it to
+  name each hit and update the Docs scope. No match is an answer.
+- If an issue uses a term that docs can define, ask the plan to search for its definition. Ask it to keep the existing
+  meaning or use another term.
+- If a rule limits session reads, ask the plan to find each doc link and path to the limited files. Ask it to change
+  each conflicting use or explain why that use stays.
+
 ## A ticket that only adds a layer, for example a schema
 
 - Say that the wiring is out of scope. Otherwise the review finds "a key that nothing reads".
