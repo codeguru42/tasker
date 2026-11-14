@@ -871,8 +871,9 @@ orchestrator.
 - If an issue uses a term that docs can define, ask the plan to search for its definition. Ask it to keep the existing
   meaning or use another term.
 - If a rule limits session reads, ask the plan to find each doc link and path to the limited files. Ask it to name each
-  hit. For a hit in a doc the issue names, ask it to change a conflicting use or explain why that use stays. If a hit
-  changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
+  hit. For each hit, check whether Docs names its doc and Out of scope excludes it. For a covered hit, ask the plan to
+  change a conflicting use or explain why that use stays. If a hit changes what the ticket must do, apply
+  [the issue check](plan-review.md#the-issue-check).
 - If an issue changes a bullet, paragraph or sentence, ask the plan to choose its place from current doc text. Ask it to
   say whether text joins an existing part or starts a new part. A bullet with one paragraph counts as one paragraph. In
   a bullet with more paragraphs, each paragraph counts on its own. Ask the plan to count existing sentences in the
@@ -1098,8 +1099,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a handoff records numbered steps, ask the plan to place each new case inside an existing step. Ask it to keep
   recorded step numbers stable.
 - If an issue adds a command, trigger or text, ask the plan to read current lists and gates. Ask it to name each
-  conflict. For a conflict within the issue's scope, ask it to update old triggers and keep the stated priority of
-  rules. If a conflict changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
+  conflict. For each conflict, check whether Docs names its doc and Out of scope excludes the affected part. For a
+  covered conflict, ask it to update old triggers and keep the stated priority of rules. If a conflict changes what the
+  ticket must do, apply [the issue check](plan-review.md#the-issue-check).
 
 - If a procedure waits for a decision of the user, ask the plan for each answer's outcome. The kinds are accept with no
   change, change, reject and drop. Reject and drop can share one outcome.
@@ -1509,10 +1511,11 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If an issue requires a doc sentence, ask the plan to compare it with nearby rules. Ask it to remove a repeat or link
   to the rule's home.
 - If a ticket adds a general rule, ask the plan to find narrower copies and related rules. Ask it to name each hit. For
-  each copy in a doc the issue names, ask it to link the copy to the new home. If a hit changes what the ticket must do,
-  apply [the issue check](plan-review.md#the-issue-check).
+  a copy in a doc that Docs names, check Out of scope. If Out of scope does not exclude the copy, ask the plan to link
+  it to the new home. If a hit changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
 - If a ticket adds a section, ask the plan to find every index that lists that doc's sections. Ask it to update each
-  index.
+  index that Docs names and Out of scope does not exclude. Ask it to name each other index it finds. If an unnamed or
+  excluded index changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
 
 - Name the docs that already hold some of the rules or hints, because they draw duplication findings (#116).
 - Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its
