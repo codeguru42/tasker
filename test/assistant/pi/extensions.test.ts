@@ -6,6 +6,8 @@ import {
   listPiExtensions,
   piExtensionRefusal,
   maskExtensionKey,
+  isLocalPiSource,
+  realPathFailureReason,
   PI_BUILT_IN_EXTENSIONS,
 } from "../../../src/assistant/pi/extensions.js";
 
@@ -349,4 +351,37 @@ describe("pi extension keys", () => {
       reason: `${expected(file)}\ntasker cannot list ${join(agentDir, "extensions")}: ENOTDIR`,
     });
   });
+});
+
+describe("realPathFailureReason", () => {
+  it("names the folder and the error code", () => {
+    const error = Object.assign(new Error("gone"), { code: "ENOENT" });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- the export does not exist until the green commit
+    expect(realPathFailureReason("/some/folder", error)).toBe(
+      "tasker cannot find the real path of /some/folder: ENOENT",
+    );
+  });
+
+  it("uses unknown when the error has no code", () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- the export does not exist until the green commit
+    expect(realPathFailureReason("/some/folder", new Error("x"))).toBe(
+      "tasker cannot find the real path of /some/folder: unknown",
+    );
+  });
+});
+
+describe("isLocalPiSource", () => {
+  it.each(["file:../superpowers", "./pkg", "../pkg", "/abs/pkg", "pkg"])("treats %s as local", (source) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- the export does not exist until the green commit
+    expect(isLocalPiSource(source)).toBe(true);
+  });
+
+  it.each(["npm:pkg", "git:github.com/u/r", "github:u/r", "http://h/p", "https://h/p", "ssh://h/p", "builtin:mcp"])(
+    "treats %s as not local",
+    (source) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- the export does not exist until the green commit
+      expect(isLocalPiSource(source)).toBe(false);
+    },
+  );
 });

@@ -606,6 +606,31 @@ describe("superpowersCheck", () => {
     });
   });
 
+  it.each(["npm:superpowers", "git:github.com/u/superpowers", "https://example.com/superpowers"])(
+    "gives the remote source %s an update command",
+    async (source) => {
+      const folder = useTempDir("tasker-superpowers-remote-");
+      addSuperpowersPackage(folder, "6.4.0");
+      const fake = useFakePi([{ args: LIST_ARGS, stdout: listOutput("User packages", source, folder) }]);
+
+      expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toEqual({
+        status: "error",
+        detail: "superpowers 6.4.0 is older than 6.4.1",
+        remediation: `Run pi update --extension ${source}. If ${source} names a ref or a version, run pi install with the source that names none.`,
+      });
+    },
+  );
+
+  it.each(["./superpowers", "/abs/superpowers"])("gives the path source %s a file update fix", async (source) => {
+    const folder = useTempDir("tasker-superpowers-path-");
+    addSuperpowersPackage(folder, "6.4.0");
+    const fake = useFakePi([{ args: LIST_ARGS, stdout: listOutput("User packages", source, folder) }]);
+
+    expect(await superpowersCheck().run({ ...fake.env, HOME: "/home/user" })).toMatchObject({
+      remediation: `Update the files at ${folder}.`,
+    });
+  });
+
   it("removes the filtered marker from a source", async () => {
     const folder = useTempDir("tasker-superpowers-filtered-");
     addSuperpowersPackage(folder, "6.4.1");
