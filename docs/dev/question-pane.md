@@ -497,9 +497,9 @@ sender as a requested draft change, with no command.
 
 ### The rounds before the close
 
-Before the operator closes or reuses a question pane, it sends the question session a close request. Then it waits for
-the report of the rounds. The rule covers a close and a reuse. It holds after a settled answer, a failed answer send, a
-**No decision** message and an answer in the operator chat.
+Before the operator closes or reuses a question pane, it sends the question session a close request. The rule covers a
+close and a reuse. It holds after a settled answer, a failed answer send, a **No decision** message and an answer in the
+operator chat.
 
 The close request is this message with `SendMessage`:
 `Operator: close. Run the rounds of docs/dev/session-review-rounds.md, then report.` It is a word of the operator, not a
@@ -521,23 +521,23 @@ that has no answer as an open finding.
 
 The report leaves out each doc rule, fact, preference or request for a new issue that a decision message already gave.
 After the close request, the question session sends no decision message. For a new word of the user on the question of
-the pane, it directs the user to the operator chat. If a round fails, the question session tells the user in the pane.
-Its rounds then end, and the report names the failure. If the send of the report fails, the question session tells the
-user in the pane.
+the pane, it directs the user to the operator chat. Examples are a write action and a request for a new issue. If a
+round fails, the question session tells the user in the pane, its rounds end, and the report names the failure. If the
+send of the report fails, the question session tells the user in the pane.
 
 The operator accepts a report only from the question session of its open pane, for its current question, after its close
 request. For each other report, the operator tells the user in one line, sends nothing and keeps the state of the
 question. After a report that it accepts, the operator sends each open finding to `planner-<slug>`, with the words of
 the user for that finding. The paragraph of [The operator handles a decision](#the-operator-handles-a-decision) that
-starts "The operator relays" gives this relay and its failure. Then the operator decides between a reuse and a close,
-also after a failed relay, as [Close and continue](#close-and-continue) says. The operator tells the user in one line
-how many findings it sent, and the question keeps its state.
+starts "The operator relays stated doc rules" gives this relay and its failure. Then the operator decides between a
+reuse and a close, also after a failed relay, as [Close and continue](#close-and-continue) says. The operator tells the
+user in one line how many findings it sent, and the question keeps its state.
 
 While the operator waits for the report, the pane is open, and the wait has no time limit. If the send of the close
 request fails, the failure rule applies, the pane stays open, and the run stops until the user speaks. Before a report
 arrives, the user can tell the operator to close the pane, or that the pane is closed. If the pane is still open, the
 operator then closes it with no report. In both cases, the question keeps its state, and the run waits for the next word
-of the user. This paragraph wins over the paragraph that starts "Before the operator closes a question pane".
+of the user. This paragraph wins over the paragraph that starts "Before the operator closes or reuses a question pane".
 
 The reason: on 2026-11-13, the user said to operator-docs: "file an issue to run `/session-review` in question panes
 before closing". No one measured the tokens of the rounds in a question pane.
@@ -546,8 +546,7 @@ before closing". No one measured the tokens of the rounds in a question pane.
 
 After a settled answer or **No decision**, the operator gets the report of the rounds of
 [The rounds before the close](#the-rounds-before-the-close). Then it gives the pane a reuse or closes it, as the next
-paragraphs say. A failed answer send leaves the question answered, but the operator still makes this choice after these
-rounds.
+paragraphs say.
 
 The operator makes a reuse only in one case, with each of these conditions:
 
@@ -561,14 +560,14 @@ The operator makes a reuse only in one case, with each of these conditions:
 In each other case, the operator closes the pane. A close with no rounds stays a close. Examples are a close that the
 user asks for and the close after a report that the operator refuses.
 
-For a reuse, the operator reads this page again. Then it starts one reuse subagent with the reuse prompt of
-[The prompts](#the-prompts). The pane stays open while the reuse subagent runs. The operator gives the first-reply text
-of the next question under the rules of [The question session](#the-question-session), as for a new pane.
+For a reuse, the operator starts one reuse subagent with the reuse prompt of [The prompts](#the-prompts). The pane stays
+open while the reuse subagent runs. The operator gives the first-reply text of the next question under the rules of
+[The question session](#the-question-session), as for a new pane.
 
-The reuse subagent waits until the question session waits at its input prompt, in the state `idle` or `done`, with a
-time limit. It sends no input to a session in a turn or in `blocked`. It runs the context clear and the after-clear
-read. Only after a read that shows the context clear, it sends the session prompt of the next question. Then it reads
-the pane for the first reply and reports to the operator.
+The reuse subagent waits, with a time limit, until the question session waits at its input prompt, in the state `idle`
+or `done`. It sends no input to a session in a turn or in `blocked`. It runs the context clear and the after-clear read.
+Only after a read that shows the context clear, it sends the session prompt of the next question. Then it reads the pane
+for the first reply and reports to the operator.
 
 After a reuse that ends with the first reply in the pane, the question session holds the next question. The rules of
 [A question pane](#a-question-pane) for that question then hold, as for a pane of a new start. After the context clear,
@@ -585,10 +584,9 @@ A step of a reuse can fail or can find a session that is not ready. Then the out
 - The context clear fails, or the after-clear read fails or does not show the context clear. The reuse subagent sends no
   session prompt. The operator closes the pane. The next question gets a new pane with an opener subagent.
 - The send of the session prompt fails, or the pane shows no first reply. Then the paragraphs of [Start](#start) for a
-  pane that shows no first reply apply. The operator tells the user the command and the error. The pane stays open, and
-  the run stops until the user speaks.
+  pane that shows no first reply apply.
 - The reuse subagent ends with no report. Then the paragraph of [Start](#start) for an opener subagent that ends with no
-  report applies. The pane counts as open until the user tells the operator that it is closed.
+  report applies.
 - The user tells the operator to close the pane, or that it is closed, before the reuse subagent ends. Then the operator
   waits for the report of the reuse subagent. If the pane is still open after the report, the operator closes it. The
   next question keeps its state, and the run waits for the next word of the user.
@@ -611,10 +609,10 @@ starts "The tab list is the list of the tabs" does not limit it.
 If herdr reports `pane_not_found`, the pane is already gone and the operator proceeds. For another close failure, the
 operator tells the user and stops the run until the user speaks.
 
-Before a later question, the operator reviews decisions so far and passes relevant ones as decisions so far. It does not
-change the sender's question or apply an earlier answer to it. The bullet of [The answer](operator-items.md#the-answer)
-that starts "An answer of the user or an answer of the operator covers only" gives this rule. The user decides the later
-question in the pane of that question, with the decisions so far in view.
+Before a later question, the operator reviews decisions so far and passes the relevant ones on. It does not change the
+sender's question or apply an earlier answer to it. The bullet of [The answer](operator-items.md#the-answer) that starts
+"An answer of the user or an answer of the operator covers only" gives this rule. The user decides the later question in
+the pane of that question, with the decisions so far in view.
 
 If no open question remains, the run ends and the operator tells the user in one line.
 
