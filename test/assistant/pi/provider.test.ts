@@ -591,7 +591,7 @@ describe("createPiProvider execute runs", () => {
     expect(readLimits(setup.input).sandbox).toMatchObject({ writePaths: [] });
   });
 
-  it("makes a new temp folder for each start", async () => {
+  it("makes a new temp folder for each start of separate runs", async () => {
     const fixture = measures.text;
     const first = executeSetup({}, [{ args: [], stream: fixture.stdout, session: fixture.session }]);
     const second = executeSetup({}, [{ args: [], stream: fixture.stdout, session: fixture.session }]);
@@ -606,6 +606,44 @@ describe("createPiProvider execute runs", () => {
     expect(one).not.toBe(two);
     expect(startTempFolders(first.tempRoot)).toEqual([]);
     expect(startTempFolders(second.tempRoot)).toEqual([]);
+  });
+
+  it("makes a new temp folder for the corrective start of one run", async () => {
+    const holder: { setup?: ExecuteSetup; firstTemp?: string } = {};
+    const input = correctiveInput();
+    let checks = 0;
+    const setup = executeSetup(
+      {
+        sessionId: CORRECTIVE_ID,
+        jsonSchema: CORRECTIVE_SCHEMA,
+        correctiveTurns: 1,
+        onSpawn: () => {
+          const [temp] = startTempFolders(holder.setup!.tempRoot);
+          holder.firstTemp ??= join(holder.setup!.tempRoot, temp);
+        },
+        checkAnswer: () => {
+          checks += 1;
+          return checks === 1 ? { ok: false, problems: ["bad"] } : { ok: true };
+        },
+      },
+      [
+        { args: [], stream: firstCallStream(input), session: firstSession(input) },
+        { args: [], stream: continuationCallStream({ findings: [] }), session: continuationSession() },
+      ],
+    );
+    holder.setup = setup;
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(outcome.kind).toBe("success");
+    expect(setup.fake.calls()).toHaveLength(2);
+    const second = readLimits(setup.input).sandbox?.tempFolder;
+    expect(holder.firstTemp).toBeDefined();
+    expect(second).toBeDefined();
+    expect(second).not.toBe(holder.firstTemp);
+    expect(existsSync(holder.firstTemp!)).toBe(false);
+    expect(existsSync(second!)).toBe(false);
+    expect(startTempFolders(setup.tempRoot)).toEqual([]);
   });
 
   it("refuses at step 1 with no temp folder, before the sandbox check", async () => {
@@ -677,7 +715,7 @@ describe("createPiProvider execute runs", () => {
     const outcome = await callPi(setup.input, setup.files);
 
     expect(refusalOf(outcome).reason).toBe(
-      `a trusted extension of pi is in a path that the run can write: ${extension} (a path of sandbox.allowWrite). Keep each trusted extension out of the write paths of the run.`,
+      `pi can load trusted extensions that the run can change: ${extension} (in a path of sandbox.allowWrite). Move each extension out of the write paths of the run.`,
     );
     expectNothingStarted(setup, onSpawn);
   });

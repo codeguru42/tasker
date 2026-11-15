@@ -68,6 +68,17 @@ function runInput(access: RunInput["access"] = "read-only"): RunInput {
 const tools = [{ name: "read", path: "builtin:read", source: "builtin" }];
 const bashTool = { name: "bash", path: guardExtensionPath, source: "cli" };
 
+describe("guardLimits agent folder type", () => {
+  it("rejects a missing agent folder at compile time", () => {
+    const input = sharedRunInput({ access: "workspace-write" });
+
+    // @ts-expect-error the agent folder is a required string
+    const call = () => guardLimits(input, [], undefined);
+
+    expect(call).toBeTypeOf("function");
+  });
+});
+
 describe("guardLimits", () => {
   it("accepts permitted denied command entries when bash is enabled", () => {
     for (const deniedCommands of [["git push"], ["git remote"], ["herdr"], ["a.b_c+d-e9"]]) {

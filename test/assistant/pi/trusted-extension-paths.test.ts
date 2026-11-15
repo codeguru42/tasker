@@ -3,13 +3,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PiSandboxLimits } from "../../../src/assistant/pi/guard-limits.js";
 import { trustedExtensionRefusal } from "../../../src/assistant/pi/trusted-extension-paths.js";
+import { piSandboxLimits } from "../../helpers/pi-sandbox.js";
 import { useTempDir } from "../../helpers/temp.js";
 
-const PREFIX = "a trusted extension of pi is in a path that the run can write: ";
-const SUFFIX = "Keep each trusted extension out of the write paths of the run.";
-const WORKTREE = "the worktree";
-const WRITE_PATH = "a path of sandbox.allowWrite";
-const TEMP = "the temp folder of the start";
+const PREFIX = "pi can load trusted extensions that the run can change: ";
+const SUFFIX = "Move each extension out of the write paths of the run.";
+const WORKTREE = "in the worktree";
+const WRITE_PATH = "in a path of sandbox.allowWrite";
+const TEMP = "in the temp folder of the start";
 
 interface Layout {
   root: string;
@@ -29,14 +30,7 @@ function layout(settings?: unknown): Layout {
 }
 
 function sandbox(l: Layout, overrides: Partial<PiSandboxLimits> = {}): PiSandboxLimits {
-  return {
-    bwrap: "/usr/bin/bwrap",
-    worktree: l.worktree,
-    writePaths: [],
-    tempFolder: l.temp,
-    hidePaths: [],
-    ...overrides,
-  };
+  return piSandboxLimits({ worktree: l.worktree, tempFolder: l.temp, ...overrides });
 }
 
 function callRefusal(l: Layout, trusted: string[], part: PiSandboxLimits): string | undefined {
@@ -107,6 +101,15 @@ describe("trustedExtensionRefusal", () => {
       reason(
         `npm:pkg (${WRITE_PATH}), git:github.com/u/r (${WRITE_PATH}), https://***@example.com/pkg (${WRITE_PATH})`,
       ),
+    );
+  });
+
+  it("masks the URL user in a refusal reason", () => {
+    const key = "https://user:secret@example.com/pkg";
+    const l = layout({ packages: [key] });
+
+    expect(callRefusal(l, [key], sandbox(l, { writePaths: [l.root] }))).toBe(
+      reason(`https://***@example.com/pkg (${WRITE_PATH})`),
     );
   });
 

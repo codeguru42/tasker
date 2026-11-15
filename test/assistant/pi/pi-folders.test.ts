@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PiSandboxLimits } from "../../../src/assistant/pi/guard-limits.js";
 import { piFolderRefusal } from "../../../src/assistant/pi/pi-folders.js";
+import { piSandboxLimits } from "../../helpers/pi-sandbox.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 const SUFFIX = "Keep each write path of the run out of the folders of pi.";
@@ -30,14 +31,7 @@ function layout(): Layout {
 }
 
 function sandbox(root: string, overrides: Partial<PiSandboxLimits> = {}): PiSandboxLimits {
-  return {
-    bwrap: "/usr/bin/bwrap",
-    worktree: join(root, "work"),
-    writePaths: [],
-    tempFolder: join(root, "start"),
-    hidePaths: [],
-    ...overrides,
-  };
+  return piSandboxLimits({ worktree: join(root, "work"), tempFolder: join(root, "start"), ...overrides });
 }
 
 function callRefusal(agentDir: string, home: string | undefined, part: PiSandboxLimits): string | undefined {
@@ -121,13 +115,27 @@ describe("piFolderRefusal", () => {
     );
   });
 
-  it("follows links on both sides", () => {
+  it("follows an agent folder link and reports the given path", () => {
     const l = layout();
     const agentLink = join(l.root, "agent-link");
     symlinkSync(l.agentDir, agentLink);
 
     expect(callRefusal(agentLink, l.home, sandbox(l.root, { writePaths: [join(l.agentDir, "sessions")] }))).toBe(
-      `${PREFIX}${l.agentDir} (${WRITE_PATH}), ${l.piFolder} (${WRITE_PATH}). ${SUFFIX}`,
+      `${PREFIX}${agentLink} (${WRITE_PATH}), ${l.piFolder} (${WRITE_PATH}). ${SUFFIX}`,
+    );
+  });
+
+  it("follows a $HOME/.pi link and reports the given path", () => {
+    const root = realpathSync(useTempDir("tasker-pi-folders-home-link-"));
+    const home = join(root, "home");
+    const target = join(root, "pi-target");
+    const agentDir = join(root, "agent");
+    for (const folder of [home, target, agentDir, join(root, "work"), join(root, "start")]) mkdirSync(folder);
+    const link = join(home, ".pi");
+    symlinkSync(target, link);
+
+    expect(callRefusal(agentDir, home, sandbox(root, { writePaths: [join(target, "x")] }))).toBe(
+      `${PREFIX}${link} (${WRITE_PATH}). ${SUFFIX}`,
     );
   });
 
