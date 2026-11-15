@@ -57,5 +57,6 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/phases.md](docs/dev/phases.md): the phases.
 - [docs/dev/assistants.md](docs/dev/assistants.md): the assistant providers.
 - [docs/dev/codex-sessions.md](docs/dev/codex-sessions.md): the measured facts of Codex sessions.
+- [docs/dev/pi-sessions.md](docs/dev/pi-sessions.md): measured pi tools and limits for a pi session in a herdr pane.
 - [docs/dev/release.md](docs/dev/release.md): the releases.
 - [docs/dev/setup.md](docs/dev/setup.md): the setup of a new machine for an orchestrator.
