@@ -45,6 +45,16 @@ The task subagent of the ticket runs steps 1 to 11. Each step gives the state of
 7. Dismiss each finding that is not real, with a reason: `tasker dismiss-review <issue> --finding N "<reason>"`. The
    task stays in `reviewed` while a finding is still open. If you dismiss all the findings, the task goes to
    `awaiting_work_review`, and you go to step 9.
+
+   Before each `tasker dismiss-review`, test each statement of the reason about the code, the docs or the history of the
+   repo. Read the task worktree for the work of the ticket, and `origin/<base branch>` for the state before the ticket.
+   A judgment is not such a statement, for example that the finding is an edge case outside the issue. If a statement is
+   false or a file read fails, change the reason, or take the finding as real.
+
+   On #857 (2026-11-11), a reason said wrongly that the gap of a test fixture came before the ticket. It said this for
+   each state that `tasker reopen` accepts. #857 itself added the state `in_peer_review` to `tasker reopen`, with the
+   same gap. A second comment had to correct the comment of step 11.
+
 8. If real findings are still open, run one `tasker refine <issue> "<feedback>"`. It acts on all the open findings. Add
    the repo-files rule to the feedback text. The task goes to `awaiting_plan_review`. After the refine, do steps 3 and 4
    for the new plan. Then do steps 5 to 8 again, starting with `tasker approve`. The
