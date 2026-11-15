@@ -1555,10 +1555,10 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   Also, the Out of scope section of the issue does not exclude that hit. If a hit changes what the ticket must do, the
   task subagent applies [the issue check](plan-review.md#the-issue-check).
 
-  Also ask the plan for a search hint that asks for no change of the scope of the issue. Words such as "update the Docs
-  scope" and "keep each affected rule in scope" ask for such a change. Such words widen the scope of the issue, and the
-  review finds them one loop at a time. On #912, three review loops changed the words of its search hints. A defect of
-  the new words then cost a sixth review over the limit of five loops.
+  Also ask the plan to make sure that the search hint asks for no change of the scope of the issue. Words such as
+  "update the Docs scope" and "keep each affected rule in scope" ask for such a change. Such words widen the scope of
+  the issue, and the review finds them one loop at a time. On #912, three review loops changed the words of its search
+  hints. A defect of the new words then cost a sixth review over the limit of five loops.
 
 - Name the docs that already hold some of the rules or hints, because they draw duplication findings (#116).
 - Ask the plan to make sure that the new page has no repeats, and that each example link points to a doc that its
