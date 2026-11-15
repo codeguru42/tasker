@@ -89,18 +89,17 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
 - A question can have a clear recommendation, and the only effect of its answer can be a harmless cleanup. Then the
   question is not a question for the user. The session does the cleanup and does not ask the user. In its next reply or
-  report, the session names the cleanup and gives its reason. This bullet permits the write of the cleanup, unless a
-  rule keeps the approval of that write for the user. The session still uses only the commands that its role permits.
+  report, it names the cleanup and gives its reason. This bullet permits the write of the cleanup, unless a rule keeps
+  the approval of that write for the user. The session still uses only the commands that its role permits.
 
   A harmless cleanup removes or fixes a duplicate text or a stale text. It changes no decision of the user, no rule of
   the docs and no scope of an issue. It changes nothing beyond that text, and one edit undoes it. Whether a
-  recommendation is clear and whether a cleanup is harmless are judgments. The judgments are open on purpose, and the
-  session makes them.
+  recommendation is clear and whether a cleanup is harmless are judgments of the session, open on purpose.
 
-  A decision of a kind of [the escape hatch](planner.md#the-escape-hatch) still goes to the user. A rule can keep a
-  choice or an approval for the user, for example a [question for the user alone](operator-items.md#the-open-items).
-  Another example is the approval of a comment on an issue in [Before a post](issues.md#before-a-post). Such a choice or
-  approval also goes to the user. If the session is in doubt whether a cleanup is harmless, it asks the user.
+  A decision of a kind of [the escape hatch](planner.md#the-escape-hatch) still goes to the user. So does a choice or an
+  approval that a rule keeps for the user. Examples are a
+  [question for the user alone](operator-items.md#the-open-items) and the approval of a comment on an issue in
+  [Before a post](issues.md#before-a-post). If the session is in doubt whether a cleanup is harmless, it asks the user.
 
   The ban of [The state of the user](plan-review.md#the-state-of-the-user) still applies to each session that it covers.
   For a question of this bullet in an item of another session, the operator sends an answer of the operator, as
@@ -111,7 +110,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   the older text as a side fact in item planner-docs-247, and operator-docs then asked the user in the
   [question pane](question-pane.md#a-question-pane) question-m24-old-record. The user said: "clean up the description."
   The decision message of the question session also reported an earlier comment of the user. In the words of the
-  question session, a question with a clear recommendation and only a harmless cleanup effect does not go to the user.
+  question session, such a question does not go to the user.
 
 - Do not ask with a popup that holds only a short summary. In one case, the user rejected such a popup and wrote "I need
   more context. What is happening?".
@@ -125,32 +124,31 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   proposed issue with no number, such as "the narrow Docs issue". Another example is a short name of a problem, such as
   "the cut start reads" (start reads of long docs that Claude Code showed only in part).
 
-  A session can take a term from an item, a report or another message between two sessions. Such a term counts as a term
-  that the user did not see before. This holds until a text in the same chat or pane defines the term for the user. The
-  session that writes the text judges whether the user saw another term before. For the first reply of a question pane,
-  the operator judges. This judgment is open on purpose.
+  A term from an item, a report or another message between two sessions counts as a term that the user did not see
+  before. This holds until a text in the same chat or pane defines the term for the user. The session that writes the
+  text judges whether the user saw another term before. For the first reply of a question pane, the operator judges.
+  This judgment is open on purpose.
 
   The definition of a term stands in the sentence of the term, for example in parentheses, or in the sentence right
   before it. For a term in the sentence of a question, the definition stands in that sentence. The reason: the order of
   the parts of a question in [The form of a reply](#the-form-of-a-reply) puts the question first, and that order wins.
 
-  The reason for these rules: on 2026-11-14, the question sentence of the first reply of the question pane
-  question-915-milestone used "the cut start reads" and "a narrow Docs issue". The reply defined both names only in
-  later sentences. These words came from item planner-docs-325. The user asked "What is "the cut start reads"" and "1.
-  What narrow docs issue?".
+  The reason: on 2026-11-14, the question sentence of the first reply of the question pane question-915-milestone used
+  "the cut start reads" and "a narrow Docs issue". The reply defined both only in later sentences. These words came from
+  item planner-docs-325. The user asked "What is "the cut start reads"" and "1. What narrow docs issue?".
 
 - A question to the user about rules or data in the code says where they live, for example the file. If a word of the
   question can also mean another thing of the repo, the question names that other thing. The question says that it does
   not mean that thing. The reason: a word with two meanings in the repo can lead the user to answer another question.
 - Say what the code does. Do not write "by hand" or "manually" about code. This rule covers text about code. It does not
   cover an action of a person or a session, for example a change by hand to a clone. In one case, "the test opens the
-  store by hand" read as if a session opened the files of tasker, which is not allowed. Write "the test writes the open
-  and close steps itself instead of calling the helper".
-- When the session asks the user about a landing order, the session gives each ticket of the order one line. In that
-  line, the session gives the state of the task of the ticket and its distance from landing, in time, for example "in
-  `accepted`, minutes from its merge". The session does not give only a phrase such as "close to landing". In one case
-  (2026-10-17), the options for #182 said that #98 was "in `executed`" and "close to landing". The user did not see that
-  #98 was minutes from its merge. Later, the user said that #98 was the right ticket to land first.
+  store by hand" read as if a session opened the files of tasker. Write "the test writes the open and close steps itself
+  instead of calling the helper".
+- When the session asks the user about a landing order, it gives each ticket of the order one line. The line gives the
+  state of the task of the ticket and its distance from landing, in time, for example "in `accepted`, minutes from its
+  merge". A phrase such as "close to landing" alone is not enough. In one case (2026-10-17), the options for #182 said
+  that #98 was "in `executed`" and "close to landing". The user did not see that #98 was minutes from its merge, and
+  later said that #98 was the right ticket to land first.
 - This bullet covers a decision of the user that another orchestrator relays (see the bullet "Only the user changes a
   landing order of the overlap rule" of [Land the work](land-the-work.md#land-the-work) of land-the-work.md). When the
   relayed decision differs from an answer that the user gave this session, the session starts the question with one
