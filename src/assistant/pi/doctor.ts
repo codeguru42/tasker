@@ -12,6 +12,7 @@ import { runProgramCheck, sandboxProgramCheck } from "../program-check.js";
 import { upstreamOf } from "../models.js";
 import type { AssistantDoctorRepo } from "../provider.js";
 import { piChildEnv, relativeHomeReason } from "./child-env.js";
+import { isLocalPiSource } from "./extensions.js";
 import { piSkillFolders } from "./skill-folders.js";
 import { piNotInstalled, piProgram } from "./program.js";
 
@@ -192,7 +193,7 @@ export function superpowersCheck(timeoutMs = 5000): Check {
     if (!isOlderVersion(parts, MINIMUM_SUPERPOWERS)) {
       return { status: "ok", detail: `superpowers ${versionText} at ${installed.installPath}` };
     }
-    const local = !/^(?:npm:|git:|github:|http:|https:|ssh:|builtin:)/.test(installed.source);
+    const local = isLocalPiSource(installed.source);
     const remediation = local
       ? `Update the files at ${installed.installPath}.`
       : `Run pi update --extension ${installed.source}. If ${installed.source} names a ref or a version, run pi install with the source that names none.`;

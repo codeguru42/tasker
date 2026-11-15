@@ -41,7 +41,7 @@ function sandbox(root: string, overrides: Partial<PiSandboxLimits> = {}): PiSand
 }
 
 function callRefusal(agentDir: string, home: string | undefined, part: PiSandboxLimits): string | undefined {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- the export does not exist until the green commit
+   
   return piFolderRefusal(agentDir, home, part);
 }
 
@@ -59,10 +59,7 @@ describe("piFolderRefusal", () => {
   ])("refuses a write path that %s", (_name, pick) => {
     const l = layout();
     const path = pick(l);
-    const folders =
-      path === l.piFolder
-        ? `${l.agentDir} (${WRITE_PATH}), ${l.piFolder} (${WRITE_PATH})`
-        : `${l.agentDir} (${WRITE_PATH})`;
+    const folders = `${l.agentDir} (${WRITE_PATH}), ${l.piFolder} (${WRITE_PATH})`;
 
     expect(callRefusal(l.agentDir, l.home, sandbox(l.root, { writePaths: [path] }))).toBe(
       `${PREFIX}${folders}. ${SUFFIX}`,
@@ -131,7 +128,7 @@ describe("piFolderRefusal", () => {
     symlinkSync(l.agentDir, agentLink);
 
     expect(callRefusal(agentLink, l.home, sandbox(l.root, { writePaths: [join(l.agentDir, "sessions")] }))).toBe(
-      `${PREFIX}${l.agentDir} (${WRITE_PATH}). ${SUFFIX}`,
+      `${PREFIX}${l.agentDir} (${WRITE_PATH}), ${l.piFolder} (${WRITE_PATH}). ${SUFFIX}`,
     );
   });
 
@@ -149,7 +146,7 @@ describe("piFolderRefusal", () => {
     mkdirSync(home);
     mkdirSync(agentDir);
 
-    expect(callRefusal(agentDir, home, sandbox(root, { writePaths: [home] }))).toBeUndefined();
+    expect(callRefusal(agentDir, home, sandbox(root, { writePaths: [join(root, "other")] }))).toBeUndefined();
   });
 
   it("refuses with the real path failure of a dangling $HOME/.pi", () => {

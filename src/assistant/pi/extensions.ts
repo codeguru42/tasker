@@ -22,6 +22,15 @@ function codeOf(error: unknown): string {
   return errnoCode(error) ?? "unknown";
 }
 
+export function realPathFailureReason(path: string, error: unknown): string {
+  return `tasker cannot find the real path of ${path}: ${codeOf(error)}`;
+}
+
+// A package source that names no npm, git, URL or built-in scheme is a path on this machine.
+export function isLocalPiSource(source: string): boolean {
+  return !/^(?:npm:|git:|github:|http:|https:|ssh:|builtin:)/.test(source);
+}
+
 function settingsReason(file: string, field: "extensions" | "packages"): string {
   return field === "extensions"
     ? `${file}: extensions is not a list of strings`
@@ -84,13 +93,13 @@ export function listPiExtensions(
   try {
     realAgent = realPathWithMissingParents(agentPath);
   } catch (error) {
-    return { reason: `tasker cannot find the real path of ${agentPath}: ${codeOf(error)}` };
+    return { reason: realPathFailureReason(agentPath, error) };
   }
   let realWorktree: string;
   try {
     realWorktree = realPathWithMissingParents(worktreePath);
   } catch (error) {
-    return { reason: `tasker cannot find the real path of ${worktreePath}: ${codeOf(error)}` };
+    return { reason: realPathFailureReason(worktreePath, error) };
   }
   if (isInside(realAgent, realWorktree)) {
     return { reason: `the agent folder of pi is in the worktree: ${agentPath}` };

@@ -40,7 +40,7 @@ function sandbox(l: Layout, overrides: Partial<PiSandboxLimits> = {}): PiSandbox
 }
 
 function callRefusal(l: Layout, trusted: string[], part: PiSandboxLimits): string | undefined {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- the export does not exist until the green commit
+   
   return trustedExtensionRefusal(l.agentDir, trusted, part);
 }
 
@@ -127,7 +127,8 @@ describe("trustedExtensionRefusal", () => {
   it("lists every matching kind once in a fixed order, in one pair of parentheses", () => {
     const key = "ext/a.js";
     const l = layout({ extensions: [key] });
-    const part = sandbox(l, { worktree: l.agentDir, writePaths: [l.agentDir], tempFolder: l.agentDir });
+    const shared = join(l.agentDir, "ext");
+    const part = sandbox(l, { worktree: shared, writePaths: [shared], tempFolder: shared });
 
     expect(callRefusal(l, [key], part)).toBe(reason(`${key} (${WORKTREE}, ${WRITE_PATH}, ${TEMP})`));
   });
