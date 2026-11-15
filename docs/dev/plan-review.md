@@ -436,6 +436,22 @@ worktree. The reason: [rules.md](rules.md#docs) makes the skill the home of the 
 outside source of fact. This exception wins over [the repo-files rule](#the-repo-files-rule) for the skill only. On #630
 (2026-10-31) and #700 (2026-11-01), each such plan cost one refine.
 
+A plan can also name a skill that the plan prompt or the refine prompt of tasker tells the plan session to use. The
+`skills` entry of `SHARED_RULES` in `src/prompts/shared.ts` of the task worktree gives these skills, and the task
+subagent reads the list there. The plan can say that a session reads, uses or follows such a skill. It can also tell a
+session to use such a skill, or give the purpose of the skill as the prompt of tasker gives it. Such a plan does not
+count like a quote of a file outside the worktree. The reason: the prompt of tasker tells the plan session to use the
+skill, so such a plan gives no outside source of fact.
+
+This exception wins over [the repo-files rule](#the-repo-files-rule) for these skills only. Each other text from the
+file of such a skill still counts like a quote, for example a rule of the `writing-plans` skill. A rule of the
+simple-english skill still does not count like a quote, because of the exception above for that skill. A skill that no
+prompt of tasker tells the plan session to use is outside the exception for these skills. An example is a skill that the
+plan session read during its discovery.
+
+On #912 and #914 (2026-11-14), plans named the skills of the prompt of tasker. On each ticket, this cost one stop of the
+task subagent and one item of the operator.
+
 If a plan or a finding quotes a file outside the worktree, the task subagent tells the orchestrator. Then the
 orchestrator tells the user. After this report, the task subagent can still do the steps that come before
 `tasker approve` or `tasker accept`. For example, it can run a refine of step 4 or step 8 of
