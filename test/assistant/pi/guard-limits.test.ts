@@ -7,6 +7,7 @@ import { useTempDir } from "../../helpers/temp.js";
 import {
   builtInTool,
   guardLimits,
+  realDeniedWriteEntry,
   writeGuardLimits,
   type PiSandboxLimits,
 } from "../../../src/assistant/pi/guard-limits.js";
@@ -17,8 +18,13 @@ import type { RunInput } from "../../../src/assistant/provider.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
 import { runInput as sharedRunInput } from "../../helpers/fake-claude.js";
 
-function makeLimits(input: RunInput, tools: { name: string; path: string; source: string }[]) {
-  return guardLimits(input, tools);
+function makeLimits(input: RunInput, tools: { name: string; path: string; source: string }[], agentDir = "/agent") {
+  return guardLimits(input, tools, agentDir);
+}
+
+function makeRealDeniedEntry(entry: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- the export does not exist until the green commit
+  return realDeniedWriteEntry(entry);
 }
 
 function makeSandboxPart(input: RunInput, bwrap: string, tempFolder: string): PiSandboxLimits {
@@ -169,12 +175,119 @@ describe("guardLimits", () => {
     });
   });
 
-  it("refuses workspace-write access", () => {
-    expect(() => makeLimits(runInput("workspace-write"), tools)).toThrow();
-  });
-
   it("makes a built-in tool source", () => {
     expect(makeBuiltInTool("read")).toEqual({ name: "read", path: "builtin:read", source: "builtin" });
+  });
+});
+
+describe("guardLimits for workspace-write", () => {
+  const executeTools = [
+    { name: "read", path: "builtin:read", source: "builtin" },
+    { name: "bash", path: guardExtensionPath, source: "cli" },
+  ];
+
+  it("gives the execute roots, denials and protected paths with HOME set", () => {
+    const input = {
+      ...runInput("workspace-write"),
+      env: { HOME: "/home/user", PI_CODING_AGENT_DIR: "/ignored" },
+      sandbox: { allowWrite: [], denyRead: ["/secret"], trackedPaths: async () => [], sharedFolder: "/shared" },
+      deniedEditPaths: ["/work/tree/.git/**", "/work/tree/.env"],
+    };
+
+    expect(makeLimits(input, executeTools, "/home/user/.pi/agent")).toEqual({
+      version: 1,
+      cwd: "/work/tree",
+      tools: executeTools,
+      readRoots: ["/work/tree"],
+      skillRoots: ["/home/user/.pi/agent/skills", "/home/user/.agents/skills"],
+      protectedPaths: [
+        "/home/user",
+        "/home/user/.pi/agent",
+        "/home/user/.pi/agent/auth.json",
+        "/home/user/.pi/agent/settings.json",
+        "/home/user/.pi/agent/sessions",
+        "/home/user/.pi/agent/extensions",
+      ],
+      denyRead: ["/secret"],
+      writeRoots: ["/work/tree"],
+      denyWrite: ["/work/tree/.git/**", "/work/tree/.env"],
+      deniedCommands: ["git push"],
+      sandbox: null,
+    });
+  });
+
+  it("leaves the HOME entries out when HOME is unset or blank", () => {
+    for (const env of [{}, { HOME: "" }]) {
+      const limits = makeLimits({ ...runInput("workspace-write"), env }, executeTools, "/custom/agent");
+
+      expect(limits.skillRoots).toEqual(["/custom/agent/skills"]);
+      expect(limits.protectedPaths).toEqual([
+        "/custom/agent",
+        "/custom/agent/auth.json",
+        "/custom/agent/settings.json",
+        "/custom/agent/sessions",
+        "/custom/agent/extensions",
+      ]);
+    }
+  });
+
+  it("takes denied edit paths only and writes their real bases", () => {
+    const root = useTempDir("tasker-pi-denied-");
+    const real = join(root, "real");
+    mkdirSync(real);
+    symlinkSync(real, join(root, "link"));
+    const input = {
+      ...runInput("workspace-write"),
+      cwd: root,
+      deniedEditPaths: [join(root, "link", "file"), join(root, "link", "tree", "**"), join(root, "missing", "x")],
+    };
+
+    expect(makeLimits(input, executeTools).denyWrite).toEqual([
+      join(realpathSync(root), "real", "file"),
+      join(realpathSync(root), "real", "tree", "**"),
+      join(realpathSync(root), "missing", "x"),
+    ]);
+  });
+
+  it("validates denied command entries for a bash run", () => {
+    const deniedCommands = ["gh api"];
+
+    expect(() => makeLimits({ ...runInput("workspace-write"), deniedCommands }, executeTools)).toThrow(/gh api/u);
+  });
+});
+
+describe("realDeniedWriteEntry", () => {
+  it("resolves an exact entry through a link", () => {
+    const root = useTempDir("tasker-pi-real-entry-");
+    mkdirSync(join(root, "real"));
+    symlinkSync(join(root, "real"), join(root, "link"));
+
+    expect(makeRealDeniedEntry(join(root, "link", "file"))).toBe(join(realpathSync(root), "real", "file"));
+  });
+
+  it("keeps the glob suffix after it resolves the base", () => {
+    const root = useTempDir("tasker-pi-real-entry-");
+    mkdirSync(join(root, "real"));
+    symlinkSync(join(root, "real"), join(root, "link"));
+
+    expect(makeRealDeniedEntry(join(root, "link", "**"))).toBe(`${join(realpathSync(root), "real")}/**`);
+  });
+
+  it("resolves a missing base from its nearest real parent", () => {
+    const root = useTempDir("tasker-pi-real-entry-");
+
+    expect(makeRealDeniedEntry(join(root, "a", "b", "**"))).toBe(`${join(realpathSync(root), "a", "b")}/**`);
+  });
+
+  it("treats an empty glob base as the root", () => {
+    expect(makeRealDeniedEntry("/**")).toBe("/**");
+  });
+
+  it("throws for a dangling link", () => {
+    const root = useTempDir("tasker-pi-real-entry-");
+    symlinkSync(join(root, "gone"), join(root, "dangling"));
+
+    expect(() => makeRealDeniedEntry(join(root, "dangling", "x"))).toThrow();
   });
 });
 

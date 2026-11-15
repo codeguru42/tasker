@@ -85,4 +85,43 @@ describe("piArgs", () => {
       "openrouter/openrouter/anthropic/claude",
     );
   });
+
+  it("gives a workspace-write run the execute tools without a schema", () => {
+    const args = callPiArgs(runInput({ access: "workspace-write" }), files, "/limits", undefined);
+
+    expect(args.slice(args.indexOf("--tools"))).toEqual([
+      "--tools",
+      "read,bash,edit,write,grep,find,ls",
+      "--no-mcp",
+      "-e",
+      "/extensions/guard.js",
+      "--tasker-guard-limits",
+      "/limits",
+    ]);
+  });
+
+  it("gives a workspace-write run the answer tool and the guard before the answer file", () => {
+    const args = callPiArgs(runInput({ access: "workspace-write" }), files, "/limits", "/schema/session-1.json");
+
+    expect(args.slice(args.indexOf("--tools"))).toEqual([
+      "--tools",
+      "read,bash,edit,write,grep,find,ls,submit_answer",
+      "--no-mcp",
+      "-e",
+      "/extensions/guard.js",
+      "--tasker-guard-limits",
+      "/limits",
+      "-e",
+      "/extensions/answer.js",
+      "--tasker-answer-schema",
+      "/schema/session-1.json",
+    ]);
+  });
+
+  it("keeps the read tools for a read-only run", () => {
+    const args = callPiArgs(runInput({ access: "read-only" }), files, "/limits", undefined);
+
+    expect(args).toContain("read,grep,find,ls");
+    expect(args).not.toContain("read,bash,edit,write,grep,find,ls");
+  });
 });

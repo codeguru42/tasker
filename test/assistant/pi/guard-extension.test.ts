@@ -847,6 +847,61 @@ describe("guard extension file path checks", () => {
   });
 });
 
+describe("guard extension execute write checks", () => {
+  it.each(["edit", "write"] as const)("blocks %s calls through a link to a denied base", async (name) => {
+    const cwd = useTempDir("tasker-guard-exec-");
+    fs.mkdirSync(join(cwd, "real"));
+    fs.symlinkSync(join(cwd, "real"), join(cwd, "link"));
+    const { fake } = guardedFileTool(name, cwd, { writeRoots: [cwd], denyWrite: [join(cwd, "link", "**")] });
+
+    expectFileBlock(await fileToolCall(fake, name, { path: join(cwd, "real", "file") }, cwd));
+    expectFileBlock(await fileToolCall(fake, name, { path: join(cwd, "link", "file") }, cwd));
+    expect(await fileToolCall(fake, name, { path: join(cwd, "other") }, cwd)).toBe("tool result");
+  });
+
+  it.each(["edit", "write"] as const)("blocks %s calls for exact and missing denied bases", async (name) => {
+    const cwd = useTempDir("tasker-guard-exec-");
+    const { fake } = guardedFileTool(name, cwd, {
+      writeRoots: [cwd],
+      denyWrite: [join(cwd, "exact.txt"), join(cwd, "missing", "deep", "**")],
+    });
+
+    expectFileBlock(await fileToolCall(fake, name, { path: join(cwd, "exact.txt") }, cwd));
+    expectFileBlock(await fileToolCall(fake, name, { path: join(cwd, "missing", "deep", "x", "y") }, cwd));
+    expect(await fileToolCall(fake, name, { path: join(cwd, "missing", "ok") }, cwd)).toBe("tool result");
+  });
+
+  it.each(["edit", "write"] as const)("blocks %s calls that use path forms of a denied path", async (name) => {
+    const cwd = useTempDir("tasker-guard-exec-");
+    const denied = join(cwd, "private");
+    const { fake } = guardedFileTool(name, cwd, { writeRoots: [cwd], denyWrite: [`${denied}/**`] });
+
+    for (const path of [`@${denied}/a`, `file://${denied}/a`, "sub/../private/a", "private/a"]) {
+      expectFileBlock(await fileToolCall(fake, name, { path }, cwd));
+    }
+    expect(await fileToolCall(fake, name, { path: "sub/../public/a" }, cwd)).toBe("tool result");
+    expect(await fileToolCall(fake, name, { path: `@${join(cwd, "public", "a")}` }, cwd)).toBe("tool result");
+  });
+
+  it.each(["edit", "write"] as const)("blocks %s calls with a home form of a denied path", async (name) => {
+    const cwd = useTempDir("tasker-guard-exec-");
+    const denied = join(homedir(), "tasker-denied-home-test");
+    const { fake } = guardedFileTool(name, cwd, { writeRoots: [cwd, homedir()], denyWrite: [`${denied}/**`] });
+
+    expectFileBlock(await fileToolCall(fake, name, { path: "~/tasker-denied-home-test/a" }, cwd));
+  });
+
+  it.each(["edit", "write"] as const)("allows %s calls under each configuration folder", async (name) => {
+    const cwd = useTempDir("tasker-guard-exec-");
+    fs.mkdirSync(join(cwd, ".claude"));
+    const { fake } = guardedFileTool(name, cwd, { writeRoots: [cwd], denyWrite: [join(cwd, ".git", "**")] });
+
+    for (const folder of [".claude", ".codex", ".agents", ".pi"]) {
+      expect(await fileToolCall(fake, name, { path: join(cwd, folder, "settings.json") }, cwd)).toBe("tool result");
+    }
+  });
+});
+
 describe("guard extension skill roots", () => {
   it("uses initial skill roots from the limits", async () => {
     const cwd = useTempDir("tasker-guard-skill-");
@@ -894,7 +949,6 @@ describe("guard extension skill roots", () => {
 
   it.each([
     ["protected", "on"],
-    ["protected", "under"],
     ["protected", "above"],
     ["denied", "on"],
     ["denied", "under"],
@@ -932,6 +986,64 @@ describe("guard extension skill roots", () => {
       await fileToolCall(fake, "read", { path: candidate }, cwd),
       kind === "denied" ? limits.denyRead?.[0] : limits.protectedPaths?.[0],
     );
+  });
+
+  it("keeps a skill root under a protected path and still reads from it", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const protectedPath = useTempDir("tasker-guard-protected-");
+    const skillRoot = join(protectedPath, "skills");
+    fs.mkdirSync(skillRoot);
+    const { fake } = guardedFileTool("read", cwd, {
+      readRoots: [cwd],
+      skillRoots: [skillRoot],
+      protectedPaths: [protectedPath],
+    });
+
+    expect(await fileToolCall(fake, "read", { path: join(skillRoot, "content.txt") }, cwd)).toBe("tool result");
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(protectedPath, "auth.json") }, cwd));
+  });
+
+  it("keeps an event skill root under a protected path", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const protectedPath = useTempDir("tasker-guard-protected-");
+    const skillRoot = join(protectedPath, "skills");
+    fs.mkdirSync(skillRoot);
+    const { fake } = guardedFileTool("read", cwd, { readRoots: [cwd], protectedPaths: [protectedPath] });
+
+    await beforeAgentStart(fake, skillEvent([join(skillRoot, "SKILL.md")]));
+
+    expect(await fileToolCall(fake, "read", { path: join(skillRoot, "content.txt") }, cwd)).toBe("tool result");
+  });
+
+  it("drops a skill root under a denied path even when a protected path holds it", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const protectedPath = useTempDir("tasker-guard-protected-");
+    const skillRoot = join(protectedPath, "skills");
+    fs.mkdirSync(skillRoot);
+    const { fake } = guardedFileTool("read", cwd, {
+      readRoots: [cwd],
+      skillRoots: [skillRoot],
+      protectedPaths: [protectedPath],
+      denyRead: [skillRoot],
+    });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(skillRoot, "content.txt") }, cwd));
+  });
+
+  it("drops a skill root whose link reaches a protected boundary", async () => {
+    const cwd = useTempDir("tasker-guard-skill-");
+    const base = useTempDir("tasker-guard-skill-link-");
+    const protectedPath = join(base, "protected");
+    fs.mkdirSync(protectedPath);
+    const link = join(base, "link");
+    fs.symlinkSync(protectedPath, link);
+    const { fake } = guardedFileTool("read", cwd, {
+      readRoots: [cwd],
+      skillRoots: [link],
+      protectedPaths: [protectedPath],
+    });
+
+    expectFileBlock(await fileToolCall(fake, "read", { path: join(link, "content.txt") }, cwd));
   });
 
   it("drops skill access from proc", async () => {
