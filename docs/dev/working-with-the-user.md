@@ -18,8 +18,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [The answer](operator-items.md#the-answer) says.
 - After the terminal delegation of [The close of a milestone](operator-start.md#the-close-of-a-milestone), the follow-up
   planner talks to the user directly, in its own conversation. This covers each report, each question, each draft that
-  waits for a decision and each request for a permission. It also covers each other rule that sends such a report,
-  question or draft to the operator as an item. Examples are
+  waits for a decision and each request for a permission. It also covers each other rule that sends a report, a question
+  or a draft of the follow-up planner to the operator as an item. Examples are
   [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) and
   [The escape hatch](planner.md#the-escape-hatch) of planner.md, and the paragraph of
   [tasker-commands.md](tasker-commands.md) that starts "If the classifier denies `scan` or `store`". These places stay
@@ -54,8 +54,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   Docs orchestrator told the user that Claude Code blocks each write to `.claude/`. The test showed that in `dontAsk`,
   Claude Code denies the Write tool under `.claude/`, and the sandbox blocks a shell write only under `.claude/skills/`.
   On 2026-11-03, planner-m14 asked the user whether a missing deny rule for `acli` was a live security gap. The user
-  said "Measure this". A `claude -p` run with a copy of the sandbox configuration that `sandboxSettings()` of
-  `src/assistant/claude-code/sandbox.ts` builds then settled it (#715).
+  said "Measure this". A `claude -p` run with a copy of the sandbox configuration, built as `sandboxSettings()` of
+  `src/assistant/claude-code/sandbox.ts` builds it, then settled it (#715).
 
 - Before the session tells the user that a rule of the repo bans or requires an action, it reads the rule on
   `origin/main`. It reads the rule as the bullet about `git show origin/main:<path>` of
@@ -83,9 +83,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
   The hold record of the GitHub milestone M24 stood at the end of its description. Rule 2 of
   [A milestone hold](#a-milestone-hold) puts the hold record at the start. Rule 3 makes the word of the user for the
-  hold the approval of that write. The operator asked the user whether to move it. On 2026-11-13, in the
-  [question pane](question-pane.md#a-question-pane) question-m24-record, the user said: "yes...this shouldn't even be a
-  question for me to decide."
+  hold the approval of the write of the hold record. The operator asked the user whether to move the record. On
+  2026-11-13, in the [question pane](question-pane.md#a-question-pane) question-m24-record, the user said: "yes...this
+  shouldn't even be a question for me to decide."
 
 - A question can have a clear recommendation, and the only effect of its answer can be a harmless cleanup. Then the
   question is not a question for the user. The session does the cleanup and does not ask the user. In its next reply or
@@ -137,9 +137,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   "the cut start reads" and "a narrow Docs issue". The reply defined both only in later sentences. These words came from
   item planner-docs-325. The user asked "What is "the cut start reads"" and "1. What narrow docs issue?".
 
-- A question to the user about rules or data in the code says where they live, for example the file. If a word of the
-  question can also mean another thing of the repo, the question names that other thing. The question says that it does
-  not mean that thing. The reason: a word with two meanings in the repo can lead the user to answer another question.
+- A question to the user about rules or data in the code says where they live. If a word of the question can also mean
+  another thing of the repo, the question names that other thing. The question says that it does not mean that thing.
+  The reason: a word with two meanings in the repo can lead the user to answer another question.
 - Say what the code does. Do not write "by hand" or "manually" about code. This rule covers text about code. It does not
   cover an action of a person or a session, for example a change by hand to a clone. In one case, "the test opens the
   store by hand" read as if a session opened the files of tasker. Write "the test writes the open and close steps itself
@@ -397,8 +397,8 @@ a landing order and each other message that the intro of [docs/orchestrator.md](
   action now." and names the trigger. The reader keeps the note in its handoff file until the trigger.
 - A message can name a later time with no trigger that the reader can test. The reader then asks the sender for the
   trigger. Until the sender answers, the reader takes no action on that message and sends no item on it. If the send
-  fails, or no session of that name runs, [the failure rule](limits.md#the-failure-rule) applies. The reader still takes
-  no action on the message.
+  fails, or no session of that name runs, [the failure rule](limits.md#the-failure-rule) applies, and the reader still
+  takes no action on the message.
 
 On 2026-10-31, planner-m26 wrote to orchestrator-m22: "When you reach #635, ask the user through your operator." The
 user meant a note for later. orchestrator-m22 read it as "now" and sent an item on a question that was not needed yet.
@@ -516,8 +516,8 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
 
 - The goal is the core features of each command. An edge case waits until later. Do not ask the user about each edge
   case. Decide it as "later", and keep the ticket in its scope. The goal of the numbered milestones is parity with
-  [the installed tasker](../orchestrator.md): each command of the installed tasker, with its core features. A feature
-  that the installed tasker does not have also waits until later, as an edge case does.
+  [the installed tasker](../orchestrator.md): each command of it, with its core features. A feature that the installed
+  tasker does not have also waits until later, as an edge case does.
 - Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at
   once. Say when the gap starts, from the code on `origin/main` and from the machine.
   [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the steps for
@@ -529,7 +529,7 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   steps to file the issue. An edge case that a ticket subagent of a planner decided as "later" with no proposed later
   issue gets no issue, as [The ticket subagent](planner.md#the-ticket-subagent) says.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is
-  a process with the same pid at each start.
+  a process with the same pid at each start, so that the lock row of a crashed run looks like its own.
 - tasker writes and reads UTF-8 text only. The output code does not write raw bytes.
 - A compare of names folds ASCII letters only, with `asciiFold()` in [`src/ascii-fold.ts`](../../src/ascii-fold.ts). A
   fold of letters outside ASCII waits, as the first bullet of [Core features first](#core-features-first) says for an
@@ -611,8 +611,8 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   the full path of the draft file and a short summary of each section.
 
   If the draft waits for a decision under [The escape hatch](planner.md#the-escape-hatch), the main session gives the
-  user the full path of the draft file. The main session shows a draft of a comment for approval with the full path of
-  the draft file. It gives a short summary of each section and each change of the draft.
+  user the full path of the draft file. It shows a draft of a comment for approval with the full path of the draft file.
+  It gives a short summary of each section and each change of the draft.
 
   The user keeps the conversation of the main session for the direction of the user. On 2026-11-10, the user said: "all
   things should be subagents. Keep this conversation clear for my interaction and direction."
