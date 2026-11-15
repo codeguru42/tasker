@@ -527,7 +527,8 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   steps to file the issue. An edge case that a ticket subagent of a planner decided as "later" with no proposed later
   issue gets no issue, as [The ticket subagent](planner.md#the-ticket-subagent) says.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is
-  a process with the same pid at each start, so that the lock row of a crashed run looks like its own.
+  a process that has the same pid at each start, so that the lock row of a crashed run looks like the lock row of the
+  process itself.
 - tasker writes and reads UTF-8 text only. The output code does not write raw bytes.
 - A compare of names folds ASCII letters only, with `asciiFold()` in [`src/ascii-fold.ts`](../../src/ascii-fold.ts). A
   fold of letters outside ASCII waits, as the first bullet of [Core features first](#core-features-first) says for an
