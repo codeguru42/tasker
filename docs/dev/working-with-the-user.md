@@ -152,15 +152,13 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 - This bullet covers a decision of the user that another orchestrator relays (see the bullet "Only the user changes a
   landing order of the overlap rule" of [Land the work](land-the-work.md#land-the-work) of land-the-work.md). When the
   relayed decision differs from an answer that the user gave this session, the session starts the question with one
-  line. In that line, the session says that the two answers differ and names both answers. Then the session gives the
-  options. The bullet also covers an answer that the user gave an earlier session of the same role. That answer counts
-  when the [handoff file](handoff.md#the-items-of-a-handoff-file) that the session works from lists it under the
-  decisions of the user. The answer also counts when the file gives it through the number of an open issue. The session
-  then reads that issue. After the issue lands, the file no longer lists the answer. In the first line of its question,
-  the session names that handoff file as the source of that answer. For example, the user tells the Docs orchestrator
-  "land ticket X first", the handoff file lists that answer, and then, after the handoff, orchestrator-m13 relays "land
-  ticket Y first". In one case (2026-10-17), the session started the question with the relay. The user read the question
-  as a confirmation of the earlier answer and asked "I already told you to land #182, right?".
+  line. The line says that the two answers differ and names both. Then the session gives the options. The bullet also
+  covers an answer that the user gave an earlier session of the same role. That answer counts when the
+  [handoff file](handoff.md#the-items-of-a-handoff-file) that the session works from lists it under the decisions of the
+  user. The answer also counts when the file gives it through the number of an open issue. The session then reads that
+  issue. After the issue lands, the file no longer lists the answer. In the first line of its question, the session
+  names that handoff file as the source. In one case (2026-10-17), the session started the question with the relay. The
+  user read the question as a confirmation of the earlier answer and asked "I already told you to land #182, right?".
 - When the session reminds the user of a decision that still waits, the session gives the question again in short, with
   its choices. A line such as "A or B still waits" is not enough. In one case (2026-10-18), a reminder of
   orchestrator-m13 said only "still waits for your choice: A or B", and the user asked "what are the open questions?"
@@ -168,20 +166,19 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   content. A label that only a report of a task subagent or a ticket defines is not enough, for example "the mode",
   "item 2" or "finding 2". The session can give the label after the content. In one case (2026-10-24), orchestrator-docs
   reminded the user of three open decisions with such labels: "Does the mode pass through a handoff file?", "B: one
-  sentence that says it does not" and "Does item 2 of #320 go in as written?". The user asked "what is "the mode"?",
-  "What is the full question?" and "What is item 2?". Only the reports of the task subagents of #375 and #320 defined
-  those labels.
+  sentence that says it does not" and "Does item 2 of #320 go in as written?". Only the reports of the task subagents of
+  #375 and #320 defined those labels. The user asked "what is "the mode"?", "What is the full question?" and "What is
+  item 2?".
 - A short reply of the user can refer to more than one open question. Then, before the session acts on the reply, it
-  asks which question the reply answers. The session asks in one line and names each candidate question. On 2026-10-24,
+  asks which question the reply answers. It asks in one line and names each candidate question. On 2026-10-24,
   orchestrator-m21 had two open questions: gap A of #395 and the planner of a proposed issue. The user wrote "There is
-  an issue in M22 that will add this rule." and meant #404, but the session took it as the answer to gap A, sent two
+  an issue in M22 that will add this rule." and meant #404. The session took it as the answer to gap A, sent two
   messages and took back both.
 - The session can ask the user to approve a plan or a change of scope. If the approval settles a choice that the session
-  and the user discussed before, the question names each choice that the approval drops. An example is "this keeps the
-  release commit; the tag-only design drops out". On 2026-10-19, in the plan review of #377, the task subagent described
-  a tag-only release design, but on 2026-10-24, the user approved the commit design. No one named the tag-only design in
-  that approval, and later that day the user said "I thought we were using tags for the version and not updating nor
-  committing a version in package.json" and chose tag only (#425).
+  and the user discussed before, the question names each choice that the approval drops. On 2026-10-19, in the plan
+  review of #377, the task subagent described a tag-only release design. On 2026-10-24, the user approved the commit
+  design. No one named the tag-only design in that approval. Later that day the user said "I thought we were using tags
+  for the version and not updating nor committing a version in package.json" and chose tag only (#425).
 - The user can let the session decide open choices by its own recommendation. The session then tells the user each
   choice and its reason in its reply. In this mode, this bullet wins over the first bullet of this section. It also wins
   over each rule that sends such a choice to the user, for example
@@ -195,17 +192,16 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [handoff file](handoff.md#the-items-of-a-handoff-file). The new session then holds the mode until the user ends it. On
   2026-10-18, the user told orchestrator-docs: "Default to your evaluation and recommendation from here on."
 - Pending work is moot after a fact that the session read removes the purpose of the work. For example, a closed issue
-  makes an edit of its body moot. Whether the purpose of the work is gone is a judgment. The judgment is open on
-  purpose, and the session makes it.
+  makes an edit of its body moot. Whether the purpose of the work is gone is a judgment of the session, open on purpose.
 - The session drops moot work with no question to the user. This also covers work that waits for an approval of the
-  user. In its next reply to the user, the session names the dropped work and gives the reason. The reason names the
-  fact that the session read.
+  user. In its next reply to the user, it names the dropped work and gives the reason. The reason names the fact that
+  the session read.
 - The two bullets before this one do not cover an action that a doc keeps for the user alone. An example is "Only the
   user changes a landing order of the overlap rule" (see [Land the work](land-the-work.md#land-the-work)).
 - A question of the user about a decision of the session asks for the reasoning. The session answers the question, and
   it does not treat the decision as wrong unless the user says so. On 2026-10-30, a session dropped seven planned edits
-  of issue bodies after #536 landed. Then the user asked why, and the session said that the drop needed a question. The
-  user said: "no, deciding without me is fine. I am just making sure I understand the reasoning."
+  of issue bodies after #536 landed. The user asked why, and the session said that the drop needed a question. The user
+  said: "no, deciding without me is fine. I am just making sure I understand the reasoning."
 
 ## The form of a reply
 
@@ -303,9 +299,9 @@ An example:
 ```
 
 In one case (2026-10-15), a question about the link commands of #117 sat in a sub-bullet of the scope question of #117.
-The user answered only the scope question. On 2026-10-24, a reply of planner-m14 numbered its answers 3 and 6 by the
-items of the user. Then it gave open questions 1 to 6. It also gave a code block with proposed steps 3 to 6, and the
-user asked "why are 3-6 repeated?".
+The user answered only the scope question. On 2026-10-24, planner-m14 numbered its answers 3 and 6 by the items of the
+user, then gave open questions 1 to 6. It also gave a code block with proposed steps 3 to 6, and the user asked "why are
+3-6 repeated?".
 
 On 2026-11-07, operator-m16 used unordered lists in many replies. The user said: "remember to list questions in a
 numbered list. And give details for the first one".
