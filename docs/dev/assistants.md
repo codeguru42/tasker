@@ -665,7 +665,8 @@ add their items to this list:
 - The path forms, Unicode-space handling, read variants and default paths of pi file tools.
 - Project file loading under `--no-approve` and relative imports from a built extension loaded with `-e`.
 - The folders where `pi` installs npm and git packages, and the folder of the npm cache.
-- The skill paths of project files under `--no-approve`, including links inside `.agents/skills` and `.pi/skills`.
+- The skill paths of project files under `--no-approve`, including the links `.agents/skills`, `.pi/skills`, `.agents`
+  and `.pi`, and one skill folder inside each project skill folder.
 
 ### The agent folder
 
@@ -805,12 +806,18 @@ list. The guard checks each tool's name and source against its limits. See [the 
 Pi runs the execute role with the access `workspace-write`. It gets the tools `read`, `bash`, `edit`, `write`, `grep`,
 `find` and `ls`, and `submit_answer` when the run has a schema. The read roots and the write roots are the worktree. The
 guard gets the read deny list, the denied commands and the denied edit paths from tasker. It resolves each denied edit
-path through links before the provider writes the limits.
+path through links before the provider writes the limits. Bash runs in [the sandbox](#the-sandbox), and the guard tests
+each command as [the check of the shell commands](#the-check-of-the-shell-commands) says.
 
 The skill roots are the `skills` folder of the agent folder and `$HOME/.agents/skills`. The protected paths are `$HOME`,
 the agent folder, and its `auth.json`, `settings.json`, `sessions` and `extensions`. The guard drops a skill root on or
 above a protected path. It keeps a skill root under a protected path, so the two skill folders work. The read deny list
 still applies to each skill root.
+
+Bash can already read paths under the protected parents. Only the read deny list limits an allowed skill root. The
+measured `--no-approve` runs took no project skill path from `.pi/settings.json`. They also took no skill through any of
+the six measured links. Those forms did not add a skill root for a later start. Another link form can still place a
+skill root under `$HOME`.
 
 The agent folder comes from `TASKER_PI_CODING_AGENT_DIR` or its default. A `PI_CODING_AGENT_DIR` in the run input does
 not select it.
@@ -858,8 +865,9 @@ ran on 2026-11-10. Measure 4 ran on 2026-11-11, and its link part ran on 2026-11
 - A write to `$HOME/x` failed.
 - `herdr agent list`, `ssh-add -l` and a connection to a D-Bus socket failed inside the sandbox and worked outside it.
 - The npm and git packages installed under the scratch agent folder. Only the npm cache was under the scratch `HOME`.
-- Under `--no-approve`, pi took no skill from the project file `.pi/settings.json`. It took no skill through the linked
-  folders `.agents/skills` and `.pi/skills`. The matching `--approve` runs took these skills.
+- Under `--no-approve`, pi took no skill from the project file `.pi/settings.json`. It took no skill through six links:
+  `.agents/skills`, `.pi/skills`, `.agents`, `.pi`, a skill folder inside `.agents/skills` and a skill folder inside
+  `.pi/skills`. Each matching `--approve` run took the skill on 2026-11-15.
 
 ### The answer tool
 
