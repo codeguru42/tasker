@@ -18,8 +18,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [The answer](operator-items.md#the-answer) says.
 - After the terminal delegation of [The close of a milestone](operator-start.md#the-close-of-a-milestone), the follow-up
   planner talks to the user directly, in its own conversation. This covers each report, each question, each draft that
-  waits for a decision and each request for a permission. This exception covers each other rule that sends a report, a
-  question or a draft of the follow-up planner to the operator as an item. Examples are
+  waits for a decision and each request for a permission. It also covers each other rule that sends such a report,
+  question or draft to the operator as an item. Examples are
   [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) and
   [The escape hatch](planner.md#the-escape-hatch) of planner.md, and the paragraph of
   [tasker-commands.md](tasker-commands.md) that starts "If the classifier denies `scan` or `store`". These places stay
@@ -45,7 +45,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
   This bullet also covers a question to the user about a fact, for example whether a gap is a
   [live security gap](pick-the-tickets.md#pick-the-tickets). A cheap read-only measure comes before such a question.
-  Whether a measure is cheap is a judgment. The judgment is open on purpose, and the session makes it.
+  Whether a measure is cheap is a judgment of the session, open on purpose.
 
   A measure that changes [the state of the user](planner.md#the-state-of-the-user) waits for the word of the user. The
   recommendation mode of this section does not cover such a measure.
@@ -54,8 +54,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   Docs orchestrator told the user that Claude Code blocks each write to `.claude/`. The test showed that in `dontAsk`,
   Claude Code denies the Write tool under `.claude/`, and the sandbox blocks a shell write only under `.claude/skills/`.
   On 2026-11-03, planner-m14 asked the user whether a missing deny rule for `acli` was a live security gap. The user
-  said "Measure this". A `claude -p` run with a copy of the sandbox configuration, built by hand as `sandboxSettings()`
-  of `src/assistant/claude-code/sandbox.ts` builds it, then settled the question (#715).
+  said "Measure this". A `claude -p` run with a copy of the sandbox configuration that `sandboxSettings()` of
+  `src/assistant/claude-code/sandbox.ts` builds then settled it (#715).
 
 - Before the session tells the user that a rule of the repo bans or requires an action, it reads the rule on
   `origin/main`. It reads the rule as the bullet about `git show origin/main:<path>` of
@@ -63,29 +63,29 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   section. If the session finds no such rule, it does not make the claim. This bullet covers each such claim, also when
   the claim is not an answer to a question of the user. On 2026-10-24 and 2026-10-25, orchestrator-m21 told the user
   twice that its rules banned the install, and the user asked "the orchestrator rules ban you from installing?". The
-  install bullet of [Limits](limits.md#limits) bans only an install from a task worktree and `npm link`, and the session
-  had to take the claim back.
+  install bullet of [Limits](limits.md#limits) bans only an install from a task worktree and `npm link`, so the session
+  took the claim back.
 - A rule of the docs on `origin/main` can answer a question before the session asks the user. Then the question is not a
-  question for the user. The session follows the rule and does not ask the user. The session reads the rule as the
-  bullet about `git show origin/main:<path>` of [A question of the user](#a-question-of-the-user) says. The session can
-  name the rule in its next reply or report. Then the session quotes the rule and names its doc and its section, as the
-  bullet that starts "Before the session tells the user" says.
+  question for the user. The session follows the rule and does not ask the user. It reads the rule as the bullet about
+  `git show origin/main:<path>` of [A question of the user](#a-question-of-the-user) says. It can name the rule in its
+  next reply or report. Then it quotes the rule and names its doc and its section, as the bullet that starts "Before the
+  session tells the user" says.
 
   The words of a rule can leave the case of the question open. Then the question stays a question for the user. Whether
-  the words of a rule answer a question is a judgment. The judgment is open on purpose, and the session makes it.
+  the words of a rule answer a question is a judgment of the session, open on purpose.
 
   A rule can keep a choice or an approval for the user. Examples are a
   [question for the user alone](operator-items.md#the-open-items) and "Only the user changes a landing order of the
   overlap rule" (see [Land the work](land-the-work.md#land-the-work)). Then the session still asks the user, because
   that rule gives the answer. This bullet does not cover an open question of an issue, which
-  [the open-question rule](pick-the-tickets.md#the-open-question-rule) covers. This bullet does not cover a change of a
-  rule of the docs. A session that wants such a change still asks the user or drafts an issue.
+  [the open-question rule](pick-the-tickets.md#the-open-question-rule) covers. It does not cover a change of a rule of
+  the docs. A session that wants such a change still asks the user or drafts an issue.
 
   The hold record of the GitHub milestone M24 stood at the end of its description. Rule 2 of
-  [A milestone hold](#a-milestone-hold) puts the hold record at the start of the description. Rule 3 makes the word of
-  the user for the hold the approval of the write of the hold record. The operator asked the user whether to move the
-  record. On 2026-11-13, in the [question pane](question-pane.md#a-question-pane) question-m24-record, the user said:
-  "yes...this shouldn't even be a question for me to decide."
+  [A milestone hold](#a-milestone-hold) puts the hold record at the start. Rule 3 makes the word of the user for the
+  hold the approval of that write. The operator asked the user whether to move it. On 2026-11-13, in the
+  [question pane](question-pane.md#a-question-pane) question-m24-record, the user said: "yes...this shouldn't even be a
+  question for me to decide."
 
 - A question can have a clear recommendation, and the only effect of its answer can be a harmless cleanup. Then the
   question is not a question for the user. The session does the cleanup and does not ask the user. In its next reply or
