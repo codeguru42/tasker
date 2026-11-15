@@ -522,15 +522,14 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   once. Say when the gap starts, from the code on `origin/main` and from the machine.
   [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the steps for
   a finding of a review. On 2026-11-07, with no measure, planner-m16 told the user that a security gap for three secret
-  files of `pi` starts after #726 lands. A read of `origin/main` for the draft of #814 showed that the gap was already
-  live for the runs of `claude-code` and `codex`.
+  files of `pi` starts after #726 lands. A read of `origin/main` for the draft of #814 showed the gap already live for
+  the runs of `claude-code` and `codex`.
 - Each piece of work that waits becomes an issue in its later milestone, as
   [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md says. [issues.md](issues.md) gives the
   steps to file the issue. An edge case that a ticket subagent of a planner decided as "later" with no proposed later
   issue gets no issue, as [The ticket subagent](planner.md#the-ticket-subagent) says.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is
-  a process that has the same pid at each start, so that the lock row of a crashed run looks like the lock row of the
-  process itself.
+  a process with the same pid at each start.
 - tasker writes and reads UTF-8 text only. The output code does not write raw bytes.
 - A compare of names folds ASCII letters only, with `asciiFold()` in [`src/ascii-fold.ts`](../../src/ascii-fold.ts). A
   fold of letters outside ASCII waits, as the first bullet of [Core features first](#core-features-first) says for an
@@ -547,14 +546,14 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   as the second choice.
 - In one case, an exception for one more loop drew a new edge case in each of 4 loops. The user replaced all the special
   loop rules with one rule: "up to 5 loops, then report". [Review findings](review-findings.md#review-findings) of
-  review-findings.md holds that rule.
+  review-findings.md holds it.
 - When the orchestrator gives the user the simpler rule as a choice, the orchestrator also tells the task subagent of
   the ticket to wait. The task subagent does not run its next `tasker approve` or `tasker accept` until the user
   decides. The task subagent waits as [the answer-wait rule](limits.md#the-answer-wait-rule) says. Then the orchestrator
   sends the task subagent the decision of the user. The reason: if the user then picks the simpler rule, a landing with
-  the patch costs a second ticket. On 2026-10-17, the task subagent of #250 went on. Ticket #250 landed with the patch
-  before the user chose the simpler rule, and #306 undoes the patch. The task subagent also stops by itself under the
-  case "Two reviews in a row" of [the stop rule](plan-review.md#the-stop-rule).
+  the patch costs a second ticket. On 2026-10-17, the task subagent of #250 went on, and #250 landed with the patch
+  before the user chose the simpler rule. #306 undoes the patch. The task subagent also stops by itself under the case
+  "Two reviews in a row" of [the stop rule](plan-review.md#the-stop-rule).
 
 ## The tools of a session
 
@@ -565,12 +564,12 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   purpose ends, and it tells the user. This rule covers only a watch, a monitor or a scheduled job that the user asks
   for. It does not cover a job that a doc tells the session to schedule, for example a job of [Quota](quota.md#quota).
   In one case (2026-10-17), the user asked orchestrator-m13 to watch the tasks of M9 and to tell the user when #274 was
-  ready to land. The orchestrator widened the watch to each later ticket of M13 and started it again each 30 minutes. On
+  ready to land. The orchestrator widened the watch to each later ticket of M13 and ran it each 30 minutes. On
   2026-10-18, the user stopped it and said: "the current use isn't even close to the original intent."
 
 - A session with no role that works with the user directly and runs tickets through subagents gives all its work to
   subagents. This bullet does not cover an orchestrator, a planner or an operator. The main session is the top-level
-  session where the user types. The main session does no work of its own.
+  session where the user types. It does no work of its own.
 
   A read of code or docs goes to a subagent. A `gh` command, a `tasker` command, a move on the project board and a draft
   also go to a subagent. This includes a read of the quota with `tasker show-quota`.
@@ -592,11 +591,10 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   A rule of the docs can put a read right before the call, in the same session. Then the main session also runs that
   read itself, right before the call. A subagent still does each other step of the work. The reason: on 2026-11-11 and
   2026-11-12, the classifier denied a delete with a lease and two posts of issues to subagents. The same calls passed in
-  the main session, right after a direct word of the user. An example of such a word is "go ahead and post the issues
-  here".
+  the main session, right after a direct word of the user, for example "go ahead and post the issues here".
 
   For each request of the user, the main session starts a subagent. Its prompt gives the goal, the facts and the sources
-  of the work. The main session then tells the user the result in a few sentences.
+  of the work. The main session tells the user the result in a few sentences.
 
   The main session keeps only the direction and decisions of the user and short reports of the work in its conversation.
   A question for a decision keeps the form in [A decision of the user](#a-decision-of-the-user) and
