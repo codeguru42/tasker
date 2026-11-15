@@ -448,7 +448,7 @@ function executeSetup(overrides: Partial<RunInput> = {}, scripts: FakePiAnswer[]
   const agentDir = join(root, "agent");
   const worktree = join(root, "worktree");
   const tempRoot = join(root, "tmp");
-  for (const folder of [home, agentDir, worktree, tempRoot]) mkdirSync(folder);
+  for (const folder of [home, agentDir, join(worktree, ".git"), tempRoot]) mkdirSync(folder, { recursive: true });
   const files = makeFiles();
   const fake = useFakePi(scripts);
   const input = validInput({
@@ -507,7 +507,12 @@ function expectNothingStarted(setup: ExecuteSetup, onSpawn: ReturnType<typeof vi
   expect(onSpawn).not.toHaveBeenCalled();
   expect(existsSync(guardLimitsPath(setup.input.sessionDir, setup.input.sessionId))).toBe(false);
   expect(existsSync(assistantSchemaPath(setup.input.sessionDir, setup.input.sessionId))).toBe(false);
-  expect(readdirSync(setup.tempRoot)).toEqual([]);
+  expect(startTempFolders(setup.tempRoot)).toEqual([]);
+}
+
+// The start temp folders in a temp root. The tsx loader of the fake pi also makes a folder there.
+function startTempFolders(tempRoot: string): string[] {
+  return readdirSync(tempRoot).filter((name) => name.startsWith("tasker-pi-"));
 }
 
 function overlapReason(folder: string): string {
@@ -549,7 +554,7 @@ describe("createPiProvider execute runs", () => {
       calls[0].args[calls[0].args.indexOf("-e") + 1],
     );
     expect(existsSync(assistantSchemaPath(input.sessionDir, input.sessionId))).toBe(withSchema);
-    expect(readdirSync(setup.tempRoot)).toEqual([]);
+    expect(startTempFolders(setup.tempRoot)).toEqual([]);
   });
 
   it("gives the limits file the execute roots and the sandbox of the same start", async () => {
@@ -599,8 +604,8 @@ describe("createPiProvider execute runs", () => {
     expect(one).toBeDefined();
     expect(two).toBeDefined();
     expect(one).not.toBe(two);
-    expect(readdirSync(first.tempRoot)).toEqual([]);
-    expect(readdirSync(second.tempRoot)).toEqual([]);
+    expect(startTempFolders(first.tempRoot)).toEqual([]);
+    expect(startTempFolders(second.tempRoot)).toEqual([]);
   });
 
   it("refuses at step 1 with no temp folder, before the sandbox check", async () => {
@@ -687,41 +692,48 @@ describe("createPiProvider execute runs", () => {
     expectNothingStarted(setup, onSpawn);
   });
 
-  it("returns the prior outcome with the cleanup error when a corrective start is refused before pi starts", async () => {
-    const holder: { setup?: ExecuteSetup } = {};
-    const setup = executeSetup(
-      {
-        sessionId: CORRECTIVE_ID,
-        jsonSchema: CORRECTIVE_SCHEMA,
-        correctiveTurns: 1,
-        checkAnswer: () => {
-          const current = holder.setup!;
-          const [temp] = readdirSync(current.tempRoot);
-          const stuck = join(current.tempRoot, temp, "stuck");
-          mkdirSync(stuck);
-          writeFileSync(join(stuck, "file"), "");
-          chmodSync(stuck, 0o500);
-          mkdirSync(join(current.agentDir, "extensions"), { recursive: true });
-          writeFileSync(join(current.agentDir, "extensions", "untrusted.js"), "");
-          return { ok: false, problems: [] };
+  it.skipIf(process.getuid?.() === 0)(
+    "returns the prior outcome with the cleanup error when a corrective start is refused before pi starts",
+    async () => {
+      const holder: { setup?: ExecuteSetup } = {};
+      const input = correctiveInput();
+      const setup = executeSetup(
+        {
+          sessionId: CORRECTIVE_ID,
+          jsonSchema: CORRECTIVE_SCHEMA,
+          correctiveTurns: 1,
+          // The temp folder cannot be removed while it holds a read-only folder with a file.
+          onSpawn: () => {
+            const current = holder.setup!;
+            const [temp] = startTempFolders(current.tempRoot);
+            const stuck = join(current.tempRoot, temp, "stuck");
+            mkdirSync(stuck);
+            writeFileSync(join(stuck, "file"), "");
+            chmodSync(stuck, 0o500);
+          },
+          checkAnswer: () => {
+            const current = holder.setup!;
+            mkdirSync(join(current.agentDir, "extensions"), { recursive: true });
+            writeFileSync(join(current.agentDir, "extensions", "untrusted.js"), "");
+            return { ok: false, problems: [] };
+          },
         },
-      },
-      [{ args: [], stream: firstCallStream(correctiveInput()), session: firstSession(correctiveInput()) }],
-    );
-    holder.setup = setup;
-    setup.input.sessionId = CORRECTIVE_ID;
+        [{ args: [], stream: firstCallStream(input), session: firstSession(input) }],
+      );
+      holder.setup = setup;
 
-    const outcome = await callPi(setup.input, setup.files);
+      const outcome = await callPi(setup.input, setup.files);
 
-    for (const entry of readdirSync(setup.tempRoot)) {
-      chmodSync(join(setup.tempRoot, entry, "stuck"), 0o700);
-    }
-    expect(setup.fake.calls()).toHaveLength(1);
-    expect(refusalOf(outcome).reason).toBe(
-      "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
-    );
-    expect(outcome.sandboxCleanup).toEqual({ error: "sandbox temp folder cleanup failed: EACCES" });
-  });
+      for (const entry of startTempFolders(setup.tempRoot)) {
+        chmodSync(join(setup.tempRoot, entry, "stuck"), 0o700);
+      }
+      expect(setup.fake.calls()).toHaveLength(1);
+      expect(refusalOf(outcome).reason).toBe(
+        "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+      );
+      expect(outcome.sandboxCleanup).toEqual({ error: "sandbox temp folder cleanup failed: EACCES" });
+    },
+  );
 });
 
 describe("createPiProvider runs", () => {

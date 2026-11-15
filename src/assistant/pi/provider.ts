@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { detailSuffix } from "../../detail-suffix.js";
 import { errorMessage } from "../../error-message.js";
 import { type AssistantResult, runAssistant } from "../../process/run-assistant.js";
-import { assistantSchemaPath } from "../../store/layout.js";
+import { assistantSchemaPath, guardLimitsPath } from "../../store/layout.js";
 import { isObject } from "../../object.js";
 import { appendEventLine } from "../event-line.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
@@ -16,7 +16,10 @@ import { type PiFiles, piArgs } from "./args.js";
 import { piChildEnv } from "./child-env.js";
 import { piDoctorChecks } from "./doctor.js";
 import { piExtensionRefusal } from "./extensions.js";
-import { builtInTool, guardLimits, writeGuardLimits } from "./guard-limits.js";
+import { piFolderRefusal } from "./pi-folders.js";
+import { trustedExtensionRefusal } from "./trusted-extension-paths.js";
+import { runSandboxPrecheck } from "./sandbox-precheck.js";
+import { builtInTool, guardLimits, writeGuardLimits, type PiSandboxLimits } from "./guard-limits.js";
 import { PI_READ_TOOL_NAMES } from "./args.js";
 import { PI_ANSWER_TOOL_NAME } from "./answer-tool.js";
 import { piNotInstalled, piProgram } from "./program.js";
@@ -131,9 +134,6 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
         if (os.platform() !== "linux") {
           return { failure: failed(input, `the pi assistant runs only on Linux; this host is ${os.platform()}`) };
         }
-        if (processInput.access !== "read-only") {
-          return { failure: failed(input, "the pi assistant cannot run the execute role in this version") };
-        }
 
         const childEnvironment = piChildEnv(processInput.env);
         if ("reason" in childEnvironment) return { failure: failed(input, childEnvironment.reason) };
@@ -170,21 +170,24 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
       const initialCheck = checkBeforeSpawn(input);
       if ("failure" in initialCheck) return initialCheck.failure;
 
+      const execute = input.access === "workspace-write";
       const schemaPath =
         input.jsonSchema === undefined ? undefined : assistantSchemaPath(input.sessionDir, input.sessionId);
-      let limitsPath: string;
-      try {
-        const tools = PI_READ_TOOL_NAMES.map(builtInTool);
-        if (schemaPath !== undefined) {
-          tools.push({ name: PI_ANSWER_TOOL_NAME, path: files.answerFile, source: "cli" });
+      let limitsPath = guardLimitsPath(input.sessionDir, input.sessionId);
+      if (!execute) {
+        try {
+          const tools = PI_READ_TOOL_NAMES.map(builtInTool);
+          if (schemaPath !== undefined) {
+            tools.push({ name: PI_ANSWER_TOOL_NAME, path: files.answerFile, source: "cli" });
+          }
+          limitsPath = writeGuardLimits(
+            input,
+            guardLimits(input, tools, initialCheck.childEnvironment.PI_CODING_AGENT_DIR),
+          );
+          if (schemaPath !== undefined) writeFileSync(schemaPath, JSON.stringify(input.jsonSchema), { mode: 0o600 });
+        } catch (error) {
+          return failed(input, errorMessage(error));
         }
-        limitsPath = writeGuardLimits(
-          input,
-          guardLimits(input, tools, initialCheck.childEnvironment.PI_CODING_AGENT_DIR),
-        );
-        if (schemaPath !== undefined) writeFileSync(schemaPath, JSON.stringify(input.jsonSchema), { mode: 0o600 });
-      } catch (error) {
-        return failed(input, errorMessage(error));
       }
 
       let program: string;
@@ -202,6 +205,30 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
       } catch (error) {
         return failed(input, errorMessage(error));
       }
+
+      // Steps 3 and 4 of an execute start: the pi folders, the trusted extensions, then the limits and the schema.
+      const prepareExecuteStart = (
+        processInput: RunInput,
+        sandbox: PiSandboxLimits,
+        agentDir: string,
+      ): Failure | undefined => {
+        const folderReason = piFolderRefusal(agentDir, processInput.env.HOME, sandbox);
+        if (folderReason !== undefined) return failed(input, folderReason);
+        const extensionReason = trustedExtensionRefusal(agentDir, processInput.trustedExtensions, sandbox);
+        if (extensionReason !== undefined) return failed(input, extensionReason);
+        try {
+          const tools = [
+            ...["read", "edit", "write", "grep", "find", "ls"].map(builtInTool),
+            { name: "bash", path: files.guardFile, source: "cli" },
+            ...(schemaPath === undefined ? [] : [{ name: PI_ANSWER_TOOL_NAME, path: files.answerFile, source: "cli" }]),
+          ];
+          writeGuardLimits(processInput, { ...guardLimits(processInput, tools, agentDir), sandbox });
+          if (schemaPath !== undefined) writeFileSync(schemaPath, JSON.stringify(input.jsonSchema), { mode: 0o600 });
+        } catch (error) {
+          return failed(input, errorMessage(error));
+        }
+        return undefined;
+      };
 
       const deadline = Date.now() + input.timeoutMs;
       const allEvents: AssistantEvent[] = [];
@@ -235,38 +262,66 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
 
         const startSize = fileSize(path);
         const processEvents: AssistantEvent[] = [];
-        let run: AssistantResult;
-        try {
-          run = await runAssistant(program, processArgs, {
-            cwd: input.cwd,
-            env: childEnvironment,
-            prompt,
-            deadline,
-            onLine: (line) => appendEventLine(line, processEvents, input.onEvent),
-            onSpawn: input.onSpawn ?? (() => {}),
+        const launch = async (): Promise<{ run: AssistantResult } | { error: unknown }> => {
+          try {
+            return {
+              run: await runAssistant(program, processArgs, {
+                cwd: input.cwd,
+                env: childEnvironment,
+                prompt,
+                deadline,
+                onLine: (line) => appendEventLine(line, processEvents, input.onEvent),
+                onSpawn: input.onSpawn ?? (() => {}),
+              }),
+            };
+          } catch (error) {
+            return { error };
+          }
+        };
+        let launched: { run: AssistantResult } | { error: unknown };
+        let startCleanup: RunOutcome["sandboxCleanup"];
+        if (!execute) {
+          launched = await launch();
+        } else {
+          let started: typeof launched | undefined;
+          const wrapped = await runSandboxPrecheck(processInput, async (sandbox, markSpawned) => {
+            const refusal = prepareExecuteStart(processInput, sandbox, childEnvironment.PI_CODING_AGENT_DIR!);
+            if (refusal !== undefined) return refusal;
+            markSpawned();
+            started = await launch();
+            return failed(input, "pi started");
           });
-        } catch (error) {
-          const failedProcess = failed(input, errorMessage(error));
+          if (started === undefined) {
+            if (corrections > 0) return combined(priorOutcome!);
+            return wrapped;
+          }
+          launched = started;
+          startCleanup = wrapped.sandboxCleanup;
+        }
+        if (startCleanup !== undefined && "error" in startCleanup) cleanupErrors.push(startCleanup.error);
+        const withCleanup = (outcome: RunOutcome): RunOutcome =>
+          startCleanup === undefined ? outcome : { ...outcome, sandboxCleanup: startCleanup };
+
+        if ("error" in launched) {
+          const failedProcess = withCleanup(failed(input, errorMessage(launched.error)));
           return priorOutcome === undefined
             ? failedProcess
-            : { ...priorOutcome, events: [...allEvents, ...processEvents], permissionDenials };
+            : withCleanup({ ...priorOutcome, events: [...allEvents, ...processEvents], permissionDenials });
         }
+        const run = launched.run;
 
         allEvents.push(...processEvents);
         path ??= sessionFile(input.sessionDir, input.sessionId);
         if (!run.started) {
           const failedProcess = failed(input, run.notFound ? piNotInstalled(program) : run.error);
           return priorOutcome === undefined
-            ? { ...failedProcess, events: allEvents, permissionDenials }
-            : { ...priorOutcome, events: allEvents, permissionDenials };
+            ? withCleanup({ ...failedProcess, events: allEvents, permissionDenials })
+            : withCleanup({ ...priorOutcome, events: allEvents, permissionDenials });
         }
 
         const processResult = outcomeOfRun(input, run, processEvents, path, startSize);
         const current = processResult.outcome;
         permissionDenials.push(...current.permissionDenials);
-        if (current.sandboxCleanup !== undefined && "error" in current.sandboxCleanup) {
-          cleanupErrors.push(current.sandboxCleanup.error);
-        }
 
         if (processResult.noAnswerProblems === undefined) {
           if (corrections > 0 && (current.kind === "failure" || current.kind === "timeout")) {
