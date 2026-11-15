@@ -65,6 +65,31 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   twice that its rules banned the install, and the user asked "the orchestrator rules ban you from installing?". The
   install bullet of [Limits](limits.md#limits) bans only an install from a task worktree and `npm link`, so the session
   took the claim back.
+- Before a claim to the user about what an issue needs or whether an issue changes, the session reads the current state
+  of the issue. Such a claim says whether the issue needs a change of its body or its scope, a comment or a follow-up
+  issue. The state is open or closed. The state also gives the task of the issue in `tasker status`, or no task.
+
+  The read is current: the session reads the state for this reply. A read for an earlier reply does not count, because
+  an issue can land and close at any time. The bullet that starts "A session with no role" of
+  [The tools of a session](#the-tools-of-a-session) defines the main session. For a main session, a read by a subagent
+  that it starts for this reply counts as current.
+
+  The reply names the state that the read gave, so that the user sees that the claim rests on a current read. This
+  follows the bullet that starts "Before a decision of the user or a recommendation", which gives the command and the
+  result of each fact. If a read fails, the reply says so. It then makes no claim about what the issue needs or whether
+  the issue changes.
+
+  This bullet covers only a claim that no other rule covers, for example a reply after a decision of the user, with no
+  question. The bullet that starts "Before a decision of the user or a recommendation" still covers each fact of a
+  decision or a recommendation. The paragraph of [The reads before the write](issues.md#the-reads-before-the-write) that
+  starts "Before a session asks the user to approve a write that the reads can skip" still covers a question about a
+  write.
+
+  On 2026-11-13, an ad hoc session posted #879, and #879 landed and closed the same day. On 2026-11-14, the user decided
+  an open question about #879. The session answered that #879 needs no change, with no read of its state. The user
+  asked: "Wait...did you edit 879? It is implemented and closed already". The session did not edit #879, but its reply
+  treated a closed issue as an open issue. After a read of the state, its answer about a memory note also changed.
+
 - A rule of the docs on `origin/main` can answer a question before the session asks the user. Then the question is not a
   question for the user. The session follows the rule and does not ask the user. It reads the rule as the bullet about
   `git show origin/main:<path>` of [A question of the user](#a-question-of-the-user) says. It can name the rule in its
