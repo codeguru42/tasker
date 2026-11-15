@@ -169,11 +169,36 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   sentence that says it does not" and "Does item 2 of #320 go in as written?". Only the reports of the task subagents of
   #375 and #320 defined those labels. The user asked "what is "the mode"?", "What is the full question?" and "What is
   item 2?".
-- A short reply of the user can refer to more than one open question. Then, before the session acts on the reply, it
-  asks which question the reply answers. It asks in one line and names each candidate question. On 2026-10-24,
-  orchestrator-m21 had two open questions: gap A of #395 and the planner of a proposed issue. The user wrote "There is
-  an issue in M22 that will add this rule." and meant #404. The session took it as the answer to gap A, sent two
-  messages and took back both.
+- An unclear answer of the user is an answer whose meaning the session cannot be sure of. The main example is an answer
+  with two or more meanings. Before the session acts on an unclear answer, it asks the user what the answer means. An
+  action includes each write, for example a post on GitHub. If the session sees two or more meanings, the question names
+  each of them. Whether an answer is unclear is a judgment of the session, open on purpose.
+
+  The meaning of an unclear answer is a kind of choice that still goes to the user first in the recommendation mode. It
+  is also a [question for the user alone](operator-items.md#the-open-items), and the operator does not answer it with an
+  [answer of the operator](operator-items.md#the-open-items). The reason: only the user knows what the user meant.
+
+  This bullet covers the session that acts on an answer of the user, also after the operator relays the answer. It does
+  not cover an answer of the operator. For an answer of the user to an item, the rules of the operator still win for the
+  operator. These rules are in [The answer](operator-items.md#the-answer) and in
+  [The operator handles a decision](question-pane.md#the-operator-handles-a-decision). A rule of a narrower case also
+  keeps its own steps, for example [The word of the user](operator-conversations.md#the-word-of-the-user). Other
+  examples are the bullets that start "When the user names a rule" and "The list numbers from 1 in each reply".
+
+  A short reply of the user can refer to more than one open question. Then it is an unclear answer, and the session asks
+  in one line which question the reply answers. On 2026-10-24, orchestrator-m21 had two open questions: gap A of #395
+  and the planner of a proposed issue. The user wrote "There is an issue in M22 that will add this rule." and meant
+  #404. The session took it as the answer to gap A, sent two messages and took back both.
+
+  An answer to one question can also mean two different choices or steps of that question. On 2026-11-14, a session with
+  no role gave the user a numbered list. The first item recommended an order: first a change of a draft of an issue,
+  then its review loops again, then its post. The user answered "1 post it", and the session posted the draft as it
+  stood (#927).
+
+  Then the user said "I mean follow your recommendation". The session had to change the posted body of #927 with a new
+  ticket subagent and a body edit. The answer can mean the draft as it stood or the recommended order. Under this
+  bullet, the session asks first.
+
 - The session can ask the user to approve a plan or a change of scope. If the approval settles a choice that the session
   and the user discussed before, the question names each choice that the approval drops. On 2026-10-19, in the plan
   review of #377, the task subagent described a tag-only release design. On 2026-10-24, the user approved the commit
@@ -184,13 +209,19 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   over each rule that sends such a choice to the user, for example
   [the design-gap rule](plan-review.md#the-design-gap-rule). The mode does not cover a rule that says that only the user
   does an action, for example "Only the user changes a landing order of the overlap rule" (see
-  [Land the work](land-the-work.md#land-the-work)). Some kinds of choice still go to the user first: a security gap, a
-  change of scope, a landing order across milestones, an extra review loop, a request of
-  [the request rule](../orchestrator.md#the-request-rule), a [tool block](tasker-commands.md#the-tool-block-rule), a
-  read of a file of the data folder and a run of `tasker abort`. The mode holds for the session that got it, until the
-  user ends it. The mode also passes through a handoff. The old session lists the mode as a decision of the user in its
-  [handoff file](handoff.md#the-items-of-a-handoff-file). The new session then holds the mode until the user ends it. On
-  2026-10-18, the user told orchestrator-docs: "Default to your evaluation and recommendation from here on."
+  [Land the work](land-the-work.md#land-the-work)).
+
+  Some kinds of choice still go to the user first. These kinds are a security gap, a change of scope, a landing order
+  across milestones and an extra review loop. They also include a request of
+  [the request rule](../orchestrator.md#the-request-rule), a [tool block](tasker-commands.md#the-tool-block-rule) and a
+  read of a file of the data folder. A run of `tasker abort` and the meaning of an unclear answer of the user are also
+  such kinds.
+
+  The mode holds for the session that got it, until the user ends it. The mode also passes through a handoff. The old
+  session lists the mode as a decision of the user in its [handoff file](handoff.md#the-items-of-a-handoff-file). The
+  new session then holds the mode until the user ends it. On 2026-10-18, the user told orchestrator-docs: "Default to
+  your evaluation and recommendation from here on."
+
 - Pending work is moot after a fact that the session read removes the purpose of the work. For example, a closed issue
   makes an edit of its body moot. Whether the purpose of the work is gone is a judgment of the session, open on purpose.
 - The session drops moot work with no question to the user. This also covers work that waits for an approval of the
