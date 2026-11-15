@@ -142,9 +142,9 @@ leaves the pane open and stops the run until the user speaks.
 
 The operator gives each part of this paragraph through the opener prompt or the reuse prompt of
 [The prompts](#the-prompts). This also holds for the paragraphs that start "The operator gives all offered choices",
-"The operator gives relevant earlier decisions" and "The operator prepares first-reply text". Before the start, the
-operator gives the question session its own name and the operator's name and session ref. The operator also gives the
-item id, the sender's question number, and the full question.
+"The operator gives relevant earlier decisions" and "The operator prepares first-reply text". Before the start, it gives
+the question session its own name and the operator's name and session ref. It also gives the item id, the sender's
+question number, and the full question.
 
 The operator gives all offered choices and costs, the sender's recommendation, and each draft or report path named by
 the item.
@@ -153,10 +153,10 @@ The operator gives relevant earlier decisions, each marked as a decision so far.
 a guess.
 
 The operator prepares first-reply text that follows [The form of a reply](working-with-the-user.md#the-form-of-a-reply)
-and the [issue-link rule](working-with-the-user.md#the-issue-link-rule). The operator attributes item facts and measures
-to the sender. The first-reply text holds the question, the choices and costs, the recommendation, the paths and the
-decisions so far. The first-reply text also follows the bullet of
-[A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "Define each term".
+and the [issue-link rule](working-with-the-user.md#the-issue-link-rule). It attributes item facts and measures to the
+sender. The text holds the question, the choices and costs, the recommendation, the paths and the decisions so far. It
+also follows the bullet of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "Define
+each term".
 
 The first-reply text gives its one question with no number. For the first-reply text, this paragraph wins over each rule
 of [The form of a reply](working-with-the-user.md#the-form-of-a-reply) that numbers or lists the open questions.
@@ -167,10 +167,10 @@ question 1. The reason: on 2026-11-13, the user said: "In the question pane, the
 numbered."
 
 The other details of the first-reply text have a limit: at most five sentences.
-[The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives examples of the other details, in its bullet
-that starts "Inside a question, only". The question, its proposed steps, its choices, the paths and the decisions so far
-do not count. If what a choice does, its cost or the recommendation stands in the item of the choice, it does not count.
-A code block counts as one sentence. Next to each fact that no one measured, the first-reply text still says that no one
+[The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives examples of them, in its bullet that starts
+"Inside a question, only". The question, its proposed steps, its choices, the paths and the decisions so far do not
+count. If what a choice does, its cost or the recommendation stands in the item of the choice, it does not count. A code
+block counts as one sentence. Next to each fact that no one measured, the first-reply text still says that no one
 measured it, in the sentence of the fact.
 
 A definition of a term in the sentence of the term, for example in parentheses, does not count in the limit. The
@@ -181,10 +181,9 @@ sentence and which details fit in the limit. This judgment is open on purpose.
 
 If the limit has no room for each detail, the definitions and this order stay, and other details go out. If the
 definitions and this order alone need more than five sentences, the first-reply text gives them all. It then gives no
-other detail that counts in the limit. In this case, what each choice does, its cost and the recommendation stand in the
-item of the choice, so they do not count. In each case, the first-reply text keeps each detail as short as possible,
-also the definitions and this order past five sentences. The operator judges how short each detail is, and this judgment
-is open on purpose.
+other detail that counts in the limit. In each case, the first-reply text keeps each detail as short as possible, also
+the definitions and this order past five sentences. The operator judges how short each detail is, and this judgment is
+open on purpose.
 
 For the first-reply text, this limit wins over each rule that asks for more details in a question. An example is the
 bullet of [The form of a reply](working-with-the-user.md#the-form-of-a-reply) that starts "Question 1 of the list".
@@ -210,10 +209,9 @@ the question pane, in [The form of a reply](working-with-the-user.md#the-form-of
 
 The first replies of question-769-bullet and question-910-marker on 2026-11-13 gave no definition of some terms, for
 example "old path" and "marker word". The user asked what some of them meant. In question-910-marker, the user also gave
-the order of the steps of a test back to the session and asked whether it was right.
-
-On 2026-11-13, the user chose that the definitions and the order of the steps stay past five sentences, as operator-docs
-relayed it. The words of the user were: "keep it short as possible but going over 5 sentences is allowed".
+the order of the steps of a test back to the session and asked whether it was right. On the same day, the user chose
+that the definitions and the order of the steps stay past five sentences, as operator-docs relayed it. The words of the
+user were: "keep it short as possible but going over 5 sentences is allowed".
 
 [Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
 newline. So the opener subagent and the reuse subagent put the word `LINE-BREAK` in place of each newline of the
@@ -246,21 +244,18 @@ the question". These words reverse the words of the user of 2026-11-11 in [Measu
 day, a question session reported that the user waited for its first reply while it read its docs. The start line tells
 the user the cause of that wait.
 
-The question session follows the general user-facing, simple-English, [memory](rules.md#the-memory-rule), and
+The question session follows the general user-facing, simple-English, [memory](rules.md#docs), and
 [doc-read](doc-reads.md#the-doc-read-rule) rules from its start.
 
 After the first reply, the question session can read drafts and reports, use read-only commands other than `herdr`
 commands, and run `git fetch origin`. If fetch fails, it tells the user and reads the last successful `origin/main`.
 
-The question session sends each [write action](#terms) back to the operator, in its decision message, as
-[Send a decision](#send-a-decision) says. The operator starts a [write subagent](#terms) that does the action, as
-[The operator handles a decision](#the-operator-handles-a-decision) says. After a close request, the question session
-directs the user to the operator chat for a write action.
+The question session sends each [write action](#terms) back to the operator, as [Send a decision](#send-a-decision)
+says. The operator starts a [write subagent](#terms), as
+[The operator handles a decision](#the-operator-handles-a-decision) says.
 
 For a [request for a new issue](#terms), the question session does not draft the issue and asks for no approval of a
-draft. It gives no command, no undo step, no input file and no blocked-by links for it. The operator sends the request
-to `planner-<slug>`, as [The operator handles a decision](#the-operator-handles-a-decision) says. After a close request,
-the question session directs the user to the operator chat for such a request.
+draft. It gives no command, no undo step, no input file and no blocked-by links for it.
 
 A change of the draft of the sender stays with the sender, as a requested draft change. A split of such a draft into two
 or more issues is also such a change. The question session judges whether the item proposed the issue. This judgment is
