@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { piAgentDir as fromPiAgentDir, piAgentDirs as fromPiAgentDirs } from "../../src/assistant/config-folders.js";
+import {
+  expandPiHomeKey,
+  piAgentDir as fromPiAgentDir,
+  piAgentDirs as fromPiAgentDirs,
+} from "../../src/assistant/config-folders.js";
 
 function piAgentDir(env: NodeJS.ProcessEnv) {
   return fromPiAgentDir(env);
@@ -72,5 +76,21 @@ describe("piAgentDirs", () => {
     ["ignores a blank HOME", { HOME: " ", PI_CODING_AGENT_DIR: "/u" }, ["/u"]],
   ] as const)("%s", (_name, env, expected) => {
     expect(piAgentDirs(env)).toEqual(expected);
+  });
+});
+
+describe("expandPiHomeKey", () => {
+  it.each([
+    ["tilde alone", "~", "/h", "/h"],
+    ["tilde path", "~/pkg", "/h", "/h/pkg"],
+    ["tilde path with no HOME", "~/pkg", undefined, undefined],
+    ["tilde path with blank HOME", "~/pkg", " ", undefined],
+    ["tilde alone with no HOME", "~", undefined, undefined],
+    ["tilde alone with blank HOME", "~", " ", undefined],
+    ["tilde user path", "~user/x", "/h", "~user/x"],
+    ["ordinary key", "rel/x", "/h", "rel/x"],
+    ["absolute key", "/abs/x", undefined, "/abs/x"],
+  ])("expands %s", (_name, key, home, expected) => {
+    expect(expandPiHomeKey(key, home)).toBe(expected);
   });
 });

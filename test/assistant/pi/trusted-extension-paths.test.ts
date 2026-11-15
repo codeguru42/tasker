@@ -33,8 +33,8 @@ function sandbox(l: Layout, overrides: Partial<PiSandboxLimits> = {}): PiSandbox
   return piSandboxLimits({ worktree: l.worktree, tempFolder: l.temp, ...overrides });
 }
 
-function callRefusal(l: Layout, trusted: string[], part: PiSandboxLimits): string | undefined {
-  return trustedExtensionRefusal(l.agentDir, trusted, part);
+function callRefusal(l: Layout, trusted: string[], part: PiSandboxLimits, home?: string): string | undefined {
+  return trustedExtensionRefusal(l.agentDir, trusted, part, home);
 }
 
 function reason(details: string): string {
@@ -222,5 +222,57 @@ describe("trustedExtensionRefusal", () => {
     expect(callRefusal(l, [], sandbox(l, { worktree: l.root }))).toBe(
       `the agent folder of pi is in the worktree: ${l.agentDir}`,
     );
+  });
+
+  describe("keys that start with a tilde", () => {
+    it("resolves a package key ~/pkg from HOME and refuses it in the worktree", () => {
+      const l = layout({ packages: ["~/pkg"] });
+      mkdirSync(join(l.worktree, "pkg"));
+
+      expect(callRefusal(l, ["~/pkg"], sandbox(l), l.worktree)).toBe(reason(`~/pkg (${WORKTREE})`));
+    });
+
+    it("resolves an extension key ~/ext.js from HOME and refuses it in an allowed write path", () => {
+      const l = layout({ extensions: ["~/ext.js"] });
+      const writable = join(l.root, "writable");
+      mkdirSync(writable);
+      writeFileSync(join(writable, "ext.js"), "");
+
+      expect(callRefusal(l, ["~/ext.js"], sandbox(l, { writePaths: [writable] }), writable)).toBe(
+        reason(`~/ext.js (${WRITE_PATH})`),
+      );
+    });
+
+    it("refuses the key ~ when HOME holds the worktree", () => {
+      const l = layout({ packages: ["~"] });
+
+      expect(callRefusal(l, ["~"], sandbox(l), l.root)).toBe(reason(`~ (${WORKTREE})`));
+    });
+
+    it("passes a ~/pkg key that overlaps no write path", () => {
+      const l = layout({ packages: ["~/pkg"] });
+      const home = join(l.root, "home");
+      mkdirSync(home);
+
+      expect(callRefusal(l, ["~/pkg"], sandbox(l), home)).toBeUndefined();
+    });
+
+    it.each([
+      ["unset", undefined],
+      ["blank", "  "],
+    ])("refuses a ~/pkg key when HOME is %s", (_name, home) => {
+      const l = layout({ packages: ["~/pkg"] });
+
+      expect(callRefusal(l, ["~/pkg"], sandbox(l), home)).toBe("tasker cannot find the real path of ~/pkg: EINVAL");
+    });
+
+    it("keeps a file: package key as a key relative to the agent folder", () => {
+      const l = layout({ packages: ["file:pkg"] });
+      mkdirSync(join(l.agentDir, "file:pkg"));
+
+      expect(callRefusal(l, ["file:pkg"], sandbox(l, { writePaths: [l.agentDir] }), l.root)).toBe(
+        reason(`file:pkg (${WRITE_PATH})`),
+      );
+    });
   });
 });

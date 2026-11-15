@@ -678,6 +678,25 @@ describe("createPiProvider execute runs", () => {
     expectNothingStarted(setup, onSpawn);
   });
 
+  it("resolves a trusted tilde extension from the HOME of the run input", async () => {
+    const onSpawn = vi.fn();
+    const setup = executeSetup({ onSpawn, deniedCommands: ["gh api"] });
+    const home = setup.input.env.HOME!;
+    const extensionFolder = join(home, "ext-source");
+    mkdirSync(extensionFolder);
+    writeFileSync(join(extensionFolder, "ext.js"), "");
+    writeFileSync(join(setup.agentDir, "settings.json"), JSON.stringify({ extensions: ["~/ext-source/ext.js"] }));
+    setup.input.trustedExtensions = [...TRUSTED, "~/ext-source/ext.js"];
+    setup.input.sandbox = sandboxLimits({ allowWrite: [extensionFolder] });
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(refusalOf(outcome).reason).toBe(
+      "pi can load trusted extensions that the run can change: ~/ext-source/ext.js (in a path of sandbox.allowWrite). Move each extension out of the write paths of the run.",
+    );
+    expectNothingStarted(setup, onSpawn);
+  });
+
   it("refuses a missing bwrap at step 2 and leaves no temp folder", async () => {
     const onSpawn = vi.fn();
     const setup = executeSetup({ onSpawn, sandbox: sandboxLimits({ allowWrite: [] }) });
