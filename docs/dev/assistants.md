@@ -844,8 +844,9 @@ The check of trusted extensions uses the keys that [the precheck of extensions](
 `folder` key is its own path. A key of `extensions` in `settings.json` and a local package source are absolute paths or
 paths from the agent folder. Another package source uses the agent folder. A built-in key needs no path.
 
-The check refuses a trusted extension at or under the worktree, an allowed write path or the temp folder. A trusted
-extension that one start can change can bring new code into a later start. The reason masks the user part of a URL.
+The check refuses a trusted extension that is equal to, under or above the worktree, an allowed write path or the temp
+folder. A trusted extension that one start can change can bring new code into a later start. The reason masks the user
+part of a URL.
 
 Development needs to update `.claude`, `.codex`, `.agents` and `.pi` in the worktree. The `claude-code` provider allows
 edits only under `<worktree>/.claude/skills/`. The codex sandbox protects `.codex` and `.agents`. Pi execute can edit
