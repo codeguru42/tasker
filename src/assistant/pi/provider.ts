@@ -216,7 +216,12 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
       ): Failure | undefined => {
         const folderReason = piFolderRefusal(agentDir, processInput.env.HOME, sandbox);
         if (folderReason !== undefined) return failed(input, folderReason);
-        const extensionReason = trustedExtensionRefusal(agentDir, processInput.trustedExtensions, sandbox);
+        const extensionReason = trustedExtensionRefusal(
+          agentDir,
+          processInput.trustedExtensions,
+          sandbox,
+          processInput.env.HOME,
+        );
         if (extensionReason !== undefined) return failed(input, extensionReason);
         try {
           const tools = [

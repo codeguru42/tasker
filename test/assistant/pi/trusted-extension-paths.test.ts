@@ -246,7 +246,7 @@ describe("trustedExtensionRefusal", () => {
     it("refuses the key ~ when HOME holds the worktree", () => {
       const l = layout({ packages: ["~"] });
 
-      expect(callRefusal(l, ["~"], sandbox(l), l.root)).toBe(reason(`~ (${WORKTREE})`));
+      expect(callRefusal(l, ["~"], sandbox(l), l.root)).toBe(reason(`~ (${WORKTREE}, ${TEMP})`));
     });
 
     it("passes a ~/pkg key that overlaps no write path", () => {

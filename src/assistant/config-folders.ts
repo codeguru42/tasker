@@ -37,9 +37,16 @@ export function piAgentDirs(env: NodeJS.ProcessEnv): string[] {
   return dirs;
 }
 
+// Expands "~" and "~/..." with HOME. Gives no path for such a key when HOME is not set. Other keys stay as they are.
+export function expandPiHomeKey(key: string, home: string | undefined): string | undefined {
+  if (key === "~") return isSet(home) ? home : undefined;
+  if (key.startsWith("~/")) return isSet(home) ? join(home, key.slice(2)) : undefined;
+  return key;
+}
+
 function parsePiAgentValue(value: string, env: NodeJS.ProcessEnv): string | undefined {
-  if (value === "~") return isSet(env.HOME) ? env.HOME : undefined;
-  if (value.startsWith("~/")) return isSet(env.HOME) ? join(env.HOME, value.slice(2)) : undefined;
+  const expanded = expandPiHomeKey(value, env.HOME);
+  if (expanded !== value) return expanded;
   if (value.startsWith("file://")) {
     try {
       return fileURLToPath(value);

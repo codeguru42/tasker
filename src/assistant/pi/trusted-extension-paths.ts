@@ -1,4 +1,5 @@
 import { isAbsolute, resolve } from "node:path";
+import { expandPiHomeKey } from "../config-folders.js";
 import { isInside, realPathWithMissingParents } from "../../real-path.js";
 import {
   isLocalPiSource,
@@ -9,8 +10,13 @@ import {
 } from "./extensions.js";
 import type { PiSandboxLimits } from "./guard-limits.js";
 
-function extensionPath(agentDir: string, extension: PiExtension): string {
-  const fromAgent = (key: string) => (isAbsolute(key) ? key : resolve(agentDir, key));
+// A key that starts with a tilde resolves from HOME. Without HOME, it has no path and the caller gets undefined.
+function extensionPath(agentDir: string, extension: PiExtension, home: string | undefined): string | undefined {
+  const fromAgent = (key: string) => {
+    const expanded = expandPiHomeKey(key, home);
+    if (expanded === undefined) return undefined;
+    return isAbsolute(expanded) ? expanded : resolve(agentDir, expanded);
+  };
   if (extension.source === "folder") return extension.key;
   if (extension.source === "settings-extensions") return fromAgent(extension.key);
   return isLocalPiSource(extension.key) ? fromAgent(extension.key) : agentDir;
@@ -26,6 +32,7 @@ export function trustedExtensionRefusal(
   agentDir: string,
   trusted: readonly string[],
   sandbox: PiSandboxLimits,
+  home?: string,
 ): string | undefined {
   const listed = listPiExtensions(agentDir, sandbox.worktree);
   if ("reason" in listed) return listed.reason;
@@ -34,9 +41,11 @@ export function trustedExtensionRefusal(
   for (const extension of listed.extensions) {
     if (extension.source === "builtin" || !trustedKeys.has(extension.key)) continue;
     const masked = maskExtensionKey(extension.key);
+    const path = extensionPath(agentDir, extension, home);
+    if (path === undefined) return realPathFailureReason(masked, { code: "EINVAL" });
     let real: string;
     try {
-      real = realPathWithMissingParents(extensionPath(agentDir, extension));
+      real = realPathWithMissingParents(path);
     } catch (error) {
       return realPathFailureReason(masked, error);
     }
