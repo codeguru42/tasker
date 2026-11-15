@@ -10,7 +10,8 @@ said "pull out the rules for the question pane from the rules for the operator i
 ### Terms
 
 A [question pane](#a-question-pane) is a herdr pane that an opener subagent opens next to the pane of the operator. It
-holds one [open question](operator-items.md#the-open-items) at a time. After a reuse, it holds the next open question.
+holds one [open question](operator-items.md#the-open-items) at a time, even when questions belong to one item or concern
+one action. After a reuse, it holds the next open question.
 
 A [question session](../sessions.md) is the Claude Code session in a question pane.
 
@@ -58,8 +59,8 @@ another topic stays a request outside the question. A request for a new issue is
 A [write subagent](#the-operator-handles-a-decision) is a subagent of the operator that does the write actions of one
 settled decision message.
 
-A context clear is a step that removes the context of the question session and keeps its pane and its Claude Code
-process. The context is each prompt, each reply and each tool output that the session holds.
+A context clear is a step that removes the context of the question session. The context is each prompt, each reply and
+each tool output that the session holds.
 
 A clean context is the context of a question session that holds nothing of an earlier question.
 
@@ -78,9 +79,8 @@ the operator that it is closed. A pane stays open through each reuse.
 
 ### Start
 
-A pane is the default place of the conversation about an open question. The operator starts the pane of the next open
-question with no word of the user. This is an automatic start. The operator makes an automatic start each time that all
-of these hold:
+A pane is the default place of the conversation about an open question. The operator makes an automatic start each time
+that all of these hold:
 
 - No pane is open.
 - No [stop of a run](#terms) holds.
@@ -91,8 +91,8 @@ of these hold:
 
 An example of an automatic start comes at the arrival of an item with an open question. Before that start, the operator
 sends each answer of the operator for that item. A word of the user that names an open question starts a pane. A word of
-the user that asks to discuss the open questions starts a run. The operator does not ask the user first whether to use a
-pane or the chat.
+the user that asks to discuss the open questions starts a run. The operator does not first ask the user to choose a pane
+or the chat.
 
 The user can still choose the chat. A word of the user that answers a question in the chat starts no pane. A word of the
 user that asks for the chat starts no pane, and it stops the run. A request for the list of open items, for one item or
@@ -103,8 +103,6 @@ The reason: on 2026-11-12, in the session operator-m16, the user said: "always o
 on". On 2026-11-13, the user said to operator-docs: "always chain another pane for the next open question". On the same
 day, the user also said: "Always open the next question in a pane. Don't wait for me to ask for it."
 
-Each pane holds one question at a time, even when questions belong to one item or concern one action.
-
 The operator opens at most one pane at a time. If one is open, the operator tells the user and starts nothing.
 
 The next open question is the first open question in [the list order of the operator](operator-items.md#the-open-items)
@@ -114,8 +112,8 @@ question. This holds before, during and after a run. The arrival line and the no
 same.
 
 A reuse for the next open question is an automatic start of the pane of that question. Each rule of this section for a
-pane start holds for it, apart from the new pane and the opener subagent. The same holds for each rule for an automatic
-start. The condition "No pane is open" does not apply to a reuse.
+pane start or an automatic start holds for it. The new pane, the opener subagent and the condition "No pane is open" do
+not apply to it.
 
 Before each pane start, each start of a reuse subagent, each [close request](#the-rounds-before-the-close) and each
 close, the operator reads this page again. [Start a session](operator-start.md#start-a-session) keeps its own reread
