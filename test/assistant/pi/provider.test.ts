@@ -13,7 +13,7 @@ import { delimiter, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { assistantSchemaPath } from "../../../src/store/layout.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
-import { PI_READ_TOOL_NAMES, piArgs } from "../../../src/assistant/pi/args.js";
+import { PI_EXECUTE_TOOL_NAMES, PI_READ_TOOL_NAMES, piArgs } from "../../../src/assistant/pi/args.js";
 import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
 import { builtInTool, type GuardLimits } from "../../../src/assistant/pi/guard-limits.js";
 import type { PiFiles } from "../../../src/assistant/pi/args.js";
@@ -550,6 +550,11 @@ describe("createPiProvider execute runs", () => {
       { name: "bash", path: files.guardFile, source: "cli" },
       ...(withSchema ? [{ name: PI_ANSWER_TOOL_NAME, path: files.answerFile, source: "cli" }] : []),
     ]);
+    for (const name of PI_EXECUTE_TOOL_NAMES) {
+      expect(limits.tools).toContainEqual(
+        name === "bash" ? { name: "bash", path: files.guardFile, source: "cli" } : builtInTool(name),
+      );
+    }
     expect(limits.tools.find((tool) => tool.name === "bash")?.path).toBe(
       calls[0].args[calls[0].args.indexOf("-e") + 1],
     );
@@ -770,6 +775,58 @@ describe("createPiProvider execute runs", () => {
         "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
       );
       expect(outcome.sandboxCleanup).toEqual({ error: "sandbox temp folder cleanup failed: EACCES" });
+    },
+  );
+
+  it.skipIf(process.getuid?.() === 0)(
+    "keeps the cleanup errors of every start when a later launch fails after spawn",
+    async () => {
+      const holder: { setup?: ExecuteSetup } = {};
+      const input = correctiveInput();
+      let spawns = 0;
+      const setup = executeSetup(
+        {
+          sessionId: CORRECTIVE_ID,
+          jsonSchema: CORRECTIVE_SCHEMA,
+          correctiveTurns: 1,
+          // Each start leaves a read-only folder with a file, so its temp folder cannot be removed.
+          onSpawn: () => {
+            spawns += 1;
+            const current = holder.setup!;
+            const temp = startTempFolders(current.tempRoot).find(
+              (name) => !existsSync(join(current.tempRoot, name, "stuck")),
+            )!;
+            const stuck = join(current.tempRoot, temp, "stuck");
+            mkdirSync(stuck);
+            writeFileSync(join(stuck, "file"), "");
+            chmodSync(stuck, 0o500);
+            if (spawns === 2) throw new Error("spawn hook failed");
+          },
+          checkAnswer: () => ({ ok: false, problems: [] }),
+        },
+        [
+          { args: [], stream: firstCallStream(input), session: firstSession(input) },
+          { args: [], stream: firstCallStream(input), session: firstSession(input) },
+        ],
+      );
+      holder.setup = setup;
+
+      try {
+        const outcome = await callPi(setup.input, setup.files);
+
+        expect(spawns).toBe(2);
+        expect(refusalOf(outcome).reason).toBe(
+          "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+        );
+        expect(outcome.sandboxCleanup).toEqual({
+          error: "sandbox temp folder cleanup failed: EACCES\nsandbox temp folder cleanup failed: EACCES",
+        });
+      } finally {
+        for (const entry of startTempFolders(setup.tempRoot)) {
+          const stuck = join(setup.tempRoot, entry, "stuck");
+          if (existsSync(stuck)) chmodSync(stuck, 0o700);
+        }
+      }
     },
   );
 });

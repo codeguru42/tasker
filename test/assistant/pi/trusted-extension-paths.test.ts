@@ -164,6 +164,58 @@ describe("trustedExtensionRefusal", () => {
     );
   });
 
+  it("refuses a local package folder that contains an allowed write path", () => {
+    const l = layout({ packages: ["./pkg"] });
+    mkdirSync(join(l.agentDir, "pkg", "sub"), { recursive: true });
+    const part = sandbox(l, { writePaths: [join(l.agentDir, "pkg", "sub")] });
+
+    expect(callRefusal(l, ["./pkg"], part)).toBe(reason(`./pkg (${WRITE_PATH})`));
+  });
+
+  it("refuses a folder source that contains the temp folder", () => {
+    const l = layout();
+    const holder = join(l.root, "holder");
+    mkdirSync(join(holder, "start"), { recursive: true });
+
+    writeFileSync(join(l.agentDir, "settings.json"), JSON.stringify({ extensions: [holder] }));
+    expect(callRefusal(l, [holder], sandbox(l, { tempFolder: join(holder, "start") }))).toBe(
+      reason(`${holder} (${TEMP})`),
+    );
+  });
+
+  it("refuses an extension path that contains the worktree", () => {
+    const l = layout();
+    const holder = join(l.root, "holder");
+    mkdirSync(join(holder, "work"), { recursive: true });
+    writeFileSync(join(l.agentDir, "settings.json"), JSON.stringify({ extensions: [holder] }));
+
+    expect(callRefusal(l, [holder], sandbox(l, { worktree: join(holder, "work") }))).toBe(
+      reason(`${holder} (${WORKTREE})`),
+    );
+  });
+
+  it("passes an adjacent path that only shares a name prefix", () => {
+    const l = layout();
+    const adjacent = join(l.root, "pkg2");
+    mkdirSync(join(l.root, "pkg"));
+    mkdirSync(adjacent);
+    writeFileSync(join(l.agentDir, "settings.json"), JSON.stringify({ extensions: [join(l.root, "pkg")] }));
+
+    expect(callRefusal(l, [join(l.root, "pkg")], sandbox(l, { writePaths: [adjacent] }))).toBeUndefined();
+  });
+
+  it("refuses a link whose real folder contains an allowed write path", () => {
+    const l = layout();
+    mkdirSync(join(l.root, "real", "sub"), { recursive: true });
+    const link = join(l.agentDir, "link");
+    symlinkSync(join(l.root, "real"), link);
+    writeFileSync(join(l.agentDir, "settings.json"), JSON.stringify({ extensions: [link] }));
+
+    expect(callRefusal(l, [link], sandbox(l, { writePaths: [join(l.root, "real", "sub")] }))).toBe(
+      reason(`${link} (${WRITE_PATH})`),
+    );
+  });
+
   it("returns the listing reason when the agent folder is in the worktree", () => {
     const l = layout();
 
