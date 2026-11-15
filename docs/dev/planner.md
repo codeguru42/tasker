@@ -228,11 +228,34 @@ of a ticket subagent gives this rule and says that the tool accepts `name` but d
 ticket subagents of planner-m16 did not see `name` in the list of the options of their Agent tool. They put the name of
 each review agent only in the description and the prompt of the review agent.
 
+A bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) starts "The list of the
+options of the Agent tool". The fact of its first sentence also holds for the Agent tool of the planner. If that list
+shows no `name`, the planner still passes the name of each ticket subagent with the `name` option. On 2026-11-11, the ad
+hoc planner `codeguru42/tasker#857` saw no `name` in that list. It put the name of each ticket subagent only in the
+prompt, and it did not try the option. No record gives the version of Claude Code of that day.
+
+On 2026-11-15, the same planner called its Agent tool with `name: "adhoc-857-name-test-1"`. That day, `claude --version`
+printed `2.1.325 (Claude Code)`. The list of the options of the tool showed no `name`. The JSON schema of that list had
+`additionalProperties: false`. The call did not fail. The agent started, and its `SubagentHandback` report came as a
+message from `adhoc-857-name-test-1`.
+
 The planner gives each draft file a name of at most 24 characters, of lowercase letters, digits and `-`. The prompt of a
 ticket subagent gives the name of the ticket subagent. The Agent tool refuses a name of more than 64 characters, and
 other names, as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If the Agent
 tool refuses a name, the planner gives the draft file a shorter name. A subagent is not a session of a role, so its name
 gives no role and no slug in the sense of [docs/sessions.md](../sessions.md).
+
+An ad hoc planner uses an ad hoc name in two places. The ad hoc name takes the place of `<slug>` in the path of each
+draft file. It also takes the place of `<own name>` in the name of each ticket subagent. On 2026-11-11, `ListAgents`
+gave the own name `codeguru42/tasker#857` to a session that started with `/tasker start codeguru42/tasker#857`. That
+session later drafted issues as an ad hoc planner. That own name has no slug, and the Agent tool refuses a name that
+holds `/` or `#`.
+
+If the own name is a GitHub issue key of the form `<owner>/<repo>#<number>`, the ad hoc name is `adhoc-<number>`. An
+example is `adhoc-857`. For each other own name, the ad hoc planner picks an ad hoc name of the form `adhoc-<word>`. The
+choice of the word is open on purpose, and the ad hoc planner makes it. Each ad hoc name has at most 12 characters, of
+lowercase letters, digits and `-`. With this limit, each name of a review agent has at most 64 characters, as the Agent
+tool requires.
 
 ### The state of the user
 
