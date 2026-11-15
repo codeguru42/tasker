@@ -40,8 +40,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   recommendation rests on. A fact about an outside tool comes from [a fact test](plan-review.md#the-fact-test). A fact
   about the code or the docs comes from a read of the ref that holds the fact, for example `origin/main`. The bullet
   about `git show origin/main:<path>` of [A question of the user](#a-question-of-the-user) gives the read. A fact about
-  a task comes from a read-only `tasker` command, for example `tasker show-plan`. The session gives the command and the
-  result, and next to each fact that it did not measure, it says so.
+  a task comes from a read-only `tasker` command. The session gives the command and the result, and next to each fact
+  that it did not measure, it says so.
 
   This bullet also covers a question to the user about a fact, for example whether a gap is a
   [live security gap](pick-the-tickets.md#pick-the-tickets). A cheap read-only measure comes before such a question.
@@ -110,7 +110,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   the older text as a side fact in item planner-docs-247, and operator-docs then asked the user in the
   [question pane](question-pane.md#a-question-pane) question-m24-old-record. The user said: "clean up the description."
   The decision message of the question session also reported an earlier comment of the user. In the words of the
-  question session, such a question does not go to the user.
+  question session, a question with a clear recommendation and only a harmless cleanup effect does not go to the user.
 
 - Do not ask with a popup that holds only a short summary. In one case, the user rejected such a popup and wrote "I need
   more context. What is happening?".
@@ -141,9 +141,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   another thing of the repo, the question names that other thing. The question says that it does not mean that thing.
   The reason: a word with two meanings in the repo can lead the user to answer another question.
 - Say what the code does. Do not write "by hand" or "manually" about code. This rule covers text about code. It does not
-  cover an action of a person or a session, for example a change by hand to a clone. In one case, "the test opens the
-  store by hand" read as if a session opened the files of tasker. Write "the test writes the open and close steps itself
-  instead of calling the helper".
+  cover an action of a person or a session. In one case, "the test opens the store by hand" read as if a session opened
+  the files of tasker, which is not allowed. Write "the test writes the open and close steps itself instead of calling
+  the helper".
 - When the session asks the user about a landing order, it gives each ticket of the order one line. The line gives the
   state of the task of the ticket and its distance from landing, in time, for example "in `accepted`, minutes from its
   merge". A phrase such as "close to landing" alone is not enough. In one case (2026-10-17), the options for #182 said
@@ -494,17 +494,15 @@ The rule covers each text that the user reads in a session. This includes each r
 operator shows to the user. The text on GitHub, and the text of a draft that goes there, keeps the plain key, because
 GitHub links it. A message between two sessions keeps the plain key, because a session reads it as text. An item from a
 planner or an orchestrator to the operator is such a message. The operator writes the links when it shows the item, as
-[The open items](operator-items.md#the-open-items) says. A key inside a code span or a code block stays as it is, for
-example a command line with an issue key.
+[The open items](operator-items.md#the-open-items) says. A key inside a code span or a code block stays as it is.
 
 The reason: the user opens the issue by hand, and in the terminal `#159` is plain text. In one case (2026-10-18), the
 planner of the Docs milestone wrote plain keys such as `#303` in each reply. The user had no link to open an issue.
 
 The first mention of an issue in a text that the user reads also gives the content of the issue next to its link. The
-content is a few words that say what the issue is about, for example of its title. The link text stays the issue key. A
-later mention of the same issue in the same text gives only the link. The session that writes the text chooses the words
-of the content, and this choice is open on purpose. A key inside a code span or a code block needs no content, as it
-needs no link.
+content is a few words that say what the issue is about. The link text stays the issue key. A later mention of the same
+issue in the same text gives only the link. The session that writes the text chooses the words of the content, and this
+choice is open on purpose. A key inside a code span or a code block needs no content, as it needs no link.
 
 An item also gives the content of each issue next to its plain key, at the first mention of the issue in the item.
 [The open items](operator-items.md#the-open-items) says how the operator shows that content.
