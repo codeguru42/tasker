@@ -149,6 +149,13 @@ The operator does these things for the open items:
   an issue, the operator adds a few words of the content in the text that it shows. This also holds for an open question
   in short form. The content is a few words inside a sentence, so it adds no sentence to a short form or to a limit of
   sentences.
+
+  The operator also keeps the title and the words about the change of each draft that the item names. This also holds
+  for an open question in short form. If the item names a draft with no title, the operator adds nothing, because the
+  rule binds the sender of the item. The bullet of
+  [A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "In this bullet, a draft is"
+  gives the rule.
+
 - When the user asks for a draft, the operator reads the draft file and shows its text. If the file does not exist, the
   operator tells the user that the file does not exist.
 - When the user asks for an item, the operator gives its full text. The user names the item, for example by its id. The

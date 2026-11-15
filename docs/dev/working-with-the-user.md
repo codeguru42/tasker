@@ -194,6 +194,35 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   sentence that says it does not" and "Does item 2 of #320 go in as written?". Only the reports of the task subagents of
   #375 and #320 defined those labels. The user asked "what is "the mode"?", "What is the full question?" and "What is
   item 2?".
+- In this bullet, a draft is the text of a new issue before its post. A draft of a comment on an issue is not such a
+  draft, and a change of an open issue is not one either. A draft has no issue number, so
+  [the issue-link rule](#the-issue-link-rule) gives it no content. This bullet gives a case of a sentence of the bullet
+  that starts "When the session reminds the user". That sentence is "In a question or a reminder to the user, the
+  session names each item by its content." For a draft, the content is its title and a few words about its change.
+
+  A reply or an item can show a draft or ask the user a question about a draft. A list of candidate drafts is such a
+  question. Then the first mention of the draft in that reply or item gives its title and a few words about its change.
+  At that first mention, the name of a draft file alone is not enough. Another short name that a session gives to a
+  draft is also not enough. This holds also after an earlier reply in the same chat or pane described the draft.
+
+  A later mention of the same draft in the same reply or item can use a short name. For the name of a draft, this bullet
+  wins over the bullet that starts "Define each term". That bullet asks for a definition only at the first use of a term
+  in the chat or pane. The session that writes the reply or the item chooses the words about the change, and this choice
+  is open on purpose.
+
+  The title and the words about the change stand inside the sentence of the mention. They add no sentence to a short
+  form of a question or to a limit of sentences. Examples are later questions of
+  [The form of a reply](#the-form-of-a-reply), open questions in the operator chat and the first reply of a
+  [question pane](question-pane.md#a-question-pane). [The open items](operator-items.md#the-open-items) gives the step
+  of the operator for an item that it shows.
+
+  The reason: on 2026-11-15, a session with no role worked as an ad hoc planner. At the report of each ticket subagent,
+  the session described its draft once, in prose. Later replies gave the open decisions in numbered lists, and they
+  named the drafts only by the names of their draft files. Examples are "The rule of the `one-line-fix` draft: A, B or
+  C" and "Which drafts do you want me to post? The candidates are `adhoc-own-name`, `dismissal-claims`, and
+  `one-line-fix` after decision 1." Before each decision, the user had to ask what the draft was: "What is the one line
+  fix?", "What is the adhoc own name draft?" and "what is 'adhoc own name' that needs posted?".
+
 - An unclear answer of the user is an answer whose meaning the session cannot be sure of. The main example is an answer
   with two or more meanings. Before the session acts on an unclear answer, it asks the user what the answer means. An
   action includes each write, for example a post on GitHub. If the session sees two or more meanings, the question names
@@ -344,11 +373,11 @@ These rules hold for each list of the decisions that the user must make, and for
 An example:
 
 ```text
-1. New question: do you accept the draft?
+1. New question: do you accept the draft "Working with the user: end each reply with the next step", which adds
+   one bullet to "The form of a reply"?
 
-   The draft adds one bullet to "The form of a reply". The search
-   `gh issue list --state all --search "<words> in:title,body" --limit 1000` found no other issue for this
-   change. The draft waits for your word before the post. For the post, the session takes these steps:
+   The search `gh issue list --state all --search "<words> in:title,body" --limit 1000` found no other issue for
+   this change. The draft waits for your word before the post. For the post, the session takes these steps:
 
    i. Search the issues again for the same change.
    ii. Post the issue.
