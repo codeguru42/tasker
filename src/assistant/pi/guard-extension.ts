@@ -4,7 +4,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { errnoCode } from "../../errno.js";
 import { isDeniedPath, isInside, realPathWithMissingParents } from "../../real-path.js";
-import type { GuardLimits, GuardTool } from "./guard-limits.js";
+import { realDeniedWriteEntry, type GuardLimits, type GuardTool } from "./guard-limits.js";
 import { invalidDeniedCommandEntries } from "./denied-command-entry.js";
 import { checkBashCommand } from "./bash-command-check.js";
 import { createBashToolDefinition } from "@earendil-works/pi-coding-agent";
@@ -263,12 +263,7 @@ function checkFileCall(
     // 10. Writes also obey read denials. They then obey write denials and roots.
     let denied: ResolvedPath[];
     try {
-      denied = limits.denyWrite.map((supplied) => {
-        const glob = supplied.endsWith("/**");
-        const base = glob ? supplied.slice(0, -3) || "/" : supplied;
-        const realBase = realPathWithMissingParents(base);
-        return { supplied, real: glob ? `${realBase.replace(/\/$/u, "")}/**` : realBase };
-      });
+      denied = limits.denyWrite.map((supplied) => ({ supplied, real: realDeniedWriteEntry(supplied) }));
     } catch (error) {
       return pathResolutionBlock(error);
     }
@@ -341,8 +336,10 @@ function skillRootsWithoutDeniedPaths(
   protectedPaths: readonly string[],
   denyRead: readonly string[],
 ): string[] {
-  const entries = [...protectedPaths, ...denyRead, "/proc"];
-  const resolvedEntries = entries.map((supplied) => ({ supplied, real: realPathWithMissingParents(supplied) }));
+  const resolve = (entries: readonly string[]) =>
+    entries.map((supplied) => ({ supplied, real: realPathWithMissingParents(supplied) }));
+  const resolvedProtected = resolve(protectedPaths);
+  const resolvedDenied = resolve([...denyRead, "/proc"]);
   const allowed: string[] = [];
 
   for (const supplied of roots) {
@@ -355,13 +352,16 @@ function skillRootsWithoutDeniedPaths(
       throw error;
     }
     const rootPaths = [supplied, real];
-    const overlapsDenied = resolvedEntries.some((entry) => {
-      const entryPaths = [entry.supplied, entry.real];
-      return rootPaths.some((rootPath) =>
-        entryPaths.some((entryPath) => isInside(rootPath, entryPath) || isInside(entryPath, rootPath)),
+    const dropped =
+      resolvedProtected.some((entry) =>
+        [entry.supplied, entry.real].some((entryPath) => rootPaths.some((rootPath) => isInside(entryPath, rootPath))),
+      ) ||
+      resolvedDenied.some((entry) =>
+        [entry.supplied, entry.real].some((entryPath) =>
+          rootPaths.some((rootPath) => isInside(rootPath, entryPath) || isInside(entryPath, rootPath)),
+        ),
       );
-    });
-    if (!overlapsDenied) allowed.push(supplied);
+    if (!dropped) allowed.push(supplied);
   }
   return allowed;
 }

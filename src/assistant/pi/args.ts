@@ -5,6 +5,8 @@ import { PI_ANSWER_TOOL_NAME } from "./answer-tool.js";
 
 export const PI_READ_TOOL_NAMES = ["read", "grep", "find", "ls"] as const;
 
+export const PI_EXECUTE_TOOL_NAMES = ["read", "bash", "edit", "write", "grep", "find", "ls"] as const;
+
 export interface PiFiles {
   guardFile: string;
   answerFile: string;
@@ -31,7 +33,10 @@ export function piArgs(input: RunInput, files: PiFiles, limitsPath: string, sche
     "--session-dir",
     input.sessionDir,
     "--tools",
-    [...PI_READ_TOOL_NAMES, ...(hasAnswerTool ? [PI_ANSWER_TOOL_NAME] : [])].join(","),
+    [
+      ...(input.access === "workspace-write" ? PI_EXECUTE_TOOL_NAMES : PI_READ_TOOL_NAMES),
+      ...(hasAnswerTool ? [PI_ANSWER_TOOL_NAME] : []),
+    ].join(","),
     ...guardStartArgs(limitsPath, files.guardFile),
     ...(hasAnswerTool ? ["-e", files.answerFile, "--tasker-answer-schema", schemaPath] : []),
   ];

@@ -178,7 +178,10 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
         if (schemaPath !== undefined) {
           tools.push({ name: PI_ANSWER_TOOL_NAME, path: files.answerFile, source: "cli" });
         }
-        limitsPath = writeGuardLimits(input, guardLimits(input, tools));
+        limitsPath = writeGuardLimits(
+          input,
+          guardLimits(input, tools, initialCheck.childEnvironment.PI_CODING_AGENT_DIR),
+        );
         if (schemaPath !== undefined) writeFileSync(schemaPath, JSON.stringify(input.jsonSchema), { mode: 0o600 });
       } catch (error) {
         return failed(input, errorMessage(error));

@@ -1,7 +1,7 @@
 import * as os from "node:os";
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { isSet, relativePathReason } from "../../config/path.js";
+import { relativePathReason } from "../../config/path.js";
 import type { Check, CheckResult } from "../../doctor/check.js";
 import { firstLine } from "../../doctor/first-line.js";
 import { isOlderVersion } from "../../doctor/version-compare.js";
@@ -12,6 +12,7 @@ import { runProgramCheck, sandboxProgramCheck } from "../program-check.js";
 import { upstreamOf } from "../models.js";
 import type { AssistantDoctorRepo } from "../provider.js";
 import { piChildEnv, relativeHomeReason } from "./child-env.js";
+import { piSkillFolders } from "./skill-folders.js";
 import { piNotInstalled, piProgram } from "./program.js";
 
 const PI_INSTALL_FIX = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
@@ -206,8 +207,10 @@ export function superpowersCheck(timeoutMs = 5000): Check {
 export function simpleEnglishCheck(timeoutMs = 1000): Check {
   return timedCheck({ name: "simple-english:pi", required: true, timeoutMs }, async (env) => {
     const piEnv = piChildEnv(env);
-    const agentFolder = "env" in piEnv ? join(piEnv.env.PI_CODING_AGENT_DIR, "skills") : undefined;
-    const homeFolder = isSet(env.HOME) ? join(env.HOME, ".agents", "skills") : undefined;
+    const { agentFolder, homeFolder } = piSkillFolders(
+      "env" in piEnv ? piEnv.env.PI_CODING_AGENT_DIR : undefined,
+      env.HOME,
+    );
     const lastFolder = homeFolder ?? agentFolder;
     if (lastFolder === undefined) {
       return { status: "error", detail: "tasker cannot find the skill folders of pi, because HOME is not set" };

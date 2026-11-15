@@ -23,7 +23,6 @@ function makeLimits(input: RunInput, tools: { name: string; path: string; source
 }
 
 function makeRealDeniedEntry(entry: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- the export does not exist until the green commit
   return realDeniedWriteEntry(entry);
 }
 
