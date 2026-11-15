@@ -664,6 +664,8 @@ add their items to this list:
 - The source and path of tools loaded with `-e`, including tool replacement.
 - The path forms, Unicode-space handling, read variants and default paths of pi file tools.
 - Project file loading under `--no-approve` and relative imports from a built extension loaded with `-e`.
+- The folders where `pi` installs npm and git packages, and the folder of the npm cache.
+- The skill paths of project files under `--no-approve`, including links inside `.agents/skills` and `.pi/skills`.
 
 ### The agent folder
 
@@ -777,15 +779,19 @@ For a continued session, tasker uses `--session <sessionId>` in place of `--sess
 answer schema, `--tools` lists only `read,grep,find,ls`. The command also leaves out the answer extension and
 `--tasker-answer-schema`.
 
-`--no-approve` keeps pi from loading extensions of the worktree. `--tools` gives pi only the read tools and, when the
-run has a schema, `submit_answer`. Pi trims the prompt before it makes the user message. `--no-mcp`, `-e <guard file>`
-and `--tasker-guard-limits <limits path>` load and configure [the guard extension](#the-guard-extension).
+For a run with the access `workspace-write`, `--tools` lists `read,bash,edit,write,grep,find,ls`, plus `submit_answer`
+when the run has a schema. The other arguments stay the same.
 
-The run never gives pi `edit` or `write`. With sandbox limits, the guard registers `bash`. It never gives `--no-skills`,
-`-ns`, `--no-tools`, `-nt`, `--no-builtin-tools` or `-nbt`. When the model reads the `SKILL.md` of a skill, pi loads the
-skill, so the run keeps the `read` tool and the discovery of skills. The run never gives `--no-extensions` or `-ne`,
-because this flag also turns off the built-in extensions of pi. The run loads each extension that the user trusts in
-`assistant.trustedExtensions`.
+`--no-approve` keeps pi from loading extensions of the worktree. For a read-only run, `--tools` gives pi only the read
+tools and, when the run has a schema, `submit_answer`. Pi trims the prompt before it makes the user message. `--no-mcp`,
+`-e <guard file>` and `--tasker-guard-limits <limits path>` load and configure
+[the guard extension](#the-guard-extension).
+
+A read-only run never gives pi `edit` or `write`. With sandbox limits, the guard registers `bash`. It never gives
+`--no-skills`, `-ns`, `--no-tools`, `-nt`, `--no-builtin-tools` or `-nbt`. When the model reads the `SKILL.md` of a
+skill, pi loads the skill, so the run keeps the `read` tool and the discovery of skills. The run never gives
+`--no-extensions` or `-ne`, because this flag also turns off the built-in extensions of pi. The run loads each extension
+that the user trusts in `assistant.trustedExtensions`.
 
 ### The limits of the plan and review roles
 
@@ -793,6 +799,67 @@ Pi runs the plan and review roles with read-only access. It has no shell tool an
 `grep`, `find` and `ls`. The guard limits have no read roots, skill roots, protected paths, write roots or denied write
 paths. The guard gets the read deny list and denied commands from tasker. The read tools cannot read a path on the deny
 list. The guard checks each tool's name and source against its limits. See [the guard extension](#the-guard-extension).
+
+### The limits of the execute role
+
+Pi runs the execute role with the access `workspace-write`. It gets the tools `read`, `bash`, `edit`, `write`, `grep`,
+`find` and `ls`, and `submit_answer` when the run has a schema. The read roots and the write roots are the worktree. The
+guard gets the read deny list, the denied commands and the denied edit paths from tasker. It resolves each denied edit
+path through links before the provider writes the limits.
+
+The skill roots are the `skills` folder of the agent folder and `$HOME/.agents/skills`. The protected paths are `$HOME`,
+the agent folder, and its `auth.json`, `settings.json`, `sessions` and `extensions`. The guard drops a skill root on or
+above a protected path. It keeps a skill root under a protected path, so the two skill folders work. The read deny list
+still applies to each skill root.
+
+The agent folder comes from `TASKER_PI_CODING_AGENT_DIR` or its default. A `PI_CODING_AGENT_DIR` in the run input does
+not select it.
+
+Each start of an execute run takes these steps in order:
+
+1. Tasker checks the host, the child environment, the extensions, the file of a continued session, the injected files,
+   the answer check, the program and the arguments. This step makes no temp folder.
+2. Tasker checks the sandbox and makes a new temp folder. See [The sandbox](#the-sandbox).
+3. Tasker checks the pi folders, then the trusted extensions.
+4. Tasker writes the limits and, for a run with a schema, the schema file.
+5. Tasker marks the spawn and starts pi.
+
+A refusal after step 1 removes the temp folder. If the removal fails before the spawn, its code joins the reason. If it
+fails after the spawn, the outcome has `sandboxCleanup`. A corrective turn repeats these steps. If a corrective start
+fails before the spawn, the run returns the outcome of the turn before.
+
+The pi folders are the agent folder and, when `HOME` is an absolute path, `$HOME/.pi`. The check uses real paths. An
+allowed write path or the temp folder of the start must not equal, contain or lie under a pi folder. The worktree must
+not equal or lie under a pi folder. It can contain one, so `<worktree>/.pi` stays writable. If tasker cannot find the
+real path of a folder, the refusal says `tasker cannot find the real path of <folder>: <code>`.
+
+The check of trusted extensions uses the keys that [the precheck of extensions](#the-precheck-of-extensions) lists. A
+`folder` key is its own path. A key of `extensions` in `settings.json` and a local package source are absolute paths or
+paths from the agent folder. Another package source uses the agent folder. A built-in key needs no path.
+
+The check refuses a trusted extension at or under the worktree, an allowed write path or the temp folder. A trusted
+extension that one start can change can bring new code into a later start. The reason masks the user part of a URL.
+
+Development needs to update `.claude`, `.codex`, `.agents` and `.pi` in the worktree. The `claude-code` provider allows
+edits only under `<worktree>/.claude/skills/`. The codex sandbox protects `.codex` and `.agents`. Pi execute can edit
+all four folders. The guard and the sandbox give these four folders no separate rule.
+
+A Bash write path that equals, lies under or contains a pi folder can write there. A path that equals or contains the
+agent folder can write `settings.json` and `sessions`. It can also make a missing `auth.json`. The folder `$HOME/.pi`
+holds the default agent folder. The decision of 2026-11-12 forbids writes under it.
+
+An execute run can change the configuration that a later `claude` or `codex` session loads in the worktree. For example,
+`.claude/settings.json` can set the permissions of a later Claude session.
+
+A task subagent measured these facts with pi 1.1.0, Debian Linux 6.12, bubblewrap 0.12.0 and git 2.47.3. Measures 1 to 3
+ran on 2026-11-10. Measure 4 ran on 2026-11-11, and its link part ran on 2026-11-15.
+
+- A commit in a linked worktree moved its branch, but git printed a read-only error for `packed-refs.lock`.
+- A write to `$HOME/x` failed.
+- `herdr agent list`, `ssh-add -l` and a connection to a D-Bus socket failed inside the sandbox and worked outside it.
+- The npm and git packages installed under the scratch agent folder. Only the npm cache was under the scratch `HOME`.
+- Under `--no-approve`, pi took no skill from the project file `.pi/settings.json`. It took no skill through the linked
+  folders `.agents/skills` and `.pi/skills`. The matching `--approve` runs took these skills.
 
 ### The answer tool
 
@@ -867,10 +934,10 @@ its path as `transcriptPath`.
 
 ### The outcome of pi
 
-The pi provider runs only on Linux. It refuses a run that has an execute step. It runs its checks before it starts pi:
-the host, access mode, child environment, extension trust, continued-session file, injected extension files and, for a
-run with a schema, `RunInput.checkAnswer`. A run with a schema and no `RunInput.checkAnswer` gives `failure` with the
-reason `a run with a JSON Schema needs RunInput.checkAnswer`.
+The pi provider runs only on Linux. It runs its checks before it starts pi: the host, child environment, extension
+trust, continued-session file, injected extension files and, for a run with a schema, `RunInput.checkAnswer`. A run with
+a schema and no `RunInput.checkAnswer` gives `failure` with the reason
+`a run with a JSON Schema needs RunInput.checkAnswer`.
 
 After it starts pi, the first matching result sets the outcome:
 
@@ -995,7 +1062,7 @@ These measures ran with pi 1.1.0 on Linux on 2026-11-07. Each run used a new scr
 ### The guard extension
 
 The guard extension checks each tool call before the tool runs. It defines limits for a pi run. The pi provider loads it
-with `-e` for the plan and review roles.
+with `-e` for every role.
 
 The guard trusts a tool only when its name and source match the limits file and pi still reports that source. It checks
 the current source on each call, including a call made through `ctx.executeTool()`.
@@ -1009,10 +1076,14 @@ Before valid limits exist, each tool call blocks. An unreadable or invalid limit
 provider request. A tool-handler error blocks the call with a fixed reason. A skill-handler error removes all skill
 folders supplied by pi.
 
-`skillRoots` adds read roots only when `readRoots` is a list. The guard drops a skill root on, under or above a
-protected or denied path. Missing roots grant no access. The guard blocks each call of the `powershell` tool. For a
-sandboxed run, it tests each call of the `bash` tool as
+`skillRoots` adds read roots only when `readRoots` is a list. The guard drops a skill root on or above a protected path,
+and a skill root on, under or above a denied path. Missing roots grant no access. The guard blocks each call of the
+`powershell` tool. For a sandboxed run, it tests each call of the `bash` tool as
 [The check of the shell commands](#the-check-of-the-shell-commands) says.
+
+The guard keeps a skill root under a protected path, because the two skill folders of pi lie under `$HOME` and the agent
+folder. So it can keep a skill root under `sessions` or `extensions` of the agent folder. The read deny list still
+blocks such a root if the list names it.
 
 The guard has one limit. A later extension can change a call's input after the guard passes it. Pi loads extensions
 named with `-e` first. The limit applies to each extension that pi loads after the guard.
@@ -1215,10 +1286,10 @@ The known limits. The guard extension reads only the text of the call:
 
 ### The sandbox
 
-These helpers define the sandbox for a later pi execute start. The pi provider still refuses execute runs, so it does
-not start this sandbox yet. When a run has sandbox limits, its `bash` tool runs in bubblewrap (`bwrap`). Bubblewrap
-makes the file system read-only, then adds write access only to the worktree, approved write paths and the temp folder
-of the start. It hides selected login files and host sockets. The tool runs only on Linux.
+The Bash tool of the execute role runs in this sandbox. When a run has sandbox limits, its `bash` tool runs in
+bubblewrap (`bwrap`). Bubblewrap makes the file system read-only, then adds write access only to the worktree, approved
+write paths and the temp folder of the start. It hides selected login files and host sockets. The tool runs only on
+Linux.
 
 The guard extension registers pi's Bash tool definition only when the limits file has sandbox settings. It uses tasker's
 process operations and sets `executionMode: "sequential"`. Pi runs every `tool_call` handler in a message before it runs
