@@ -842,7 +842,9 @@ real path of a folder, the refusal says `tasker cannot find the real path of <fo
 
 The check of trusted extensions uses the keys that [the precheck of extensions](#the-precheck-of-extensions) lists. A
 `folder` key is its own path. A key of `extensions` in `settings.json` and a local package source are absolute paths or
-paths from the agent folder. Another package source uses the agent folder. A built-in key needs no path.
+paths from the agent folder. A key that is `~` or starts with `~/` is a path under `HOME` instead. If `HOME` is not set
+or is blank, the refusal says `tasker cannot find the real path of <key>: EINVAL`. Another package source uses the agent
+folder. A built-in key needs no path.
 
 The check refuses a trusted extension that is equal to, under or above the worktree, an allowed write path or the temp
 folder. A trusted extension that one start can change can bring new code into a later start. The reason masks the user
