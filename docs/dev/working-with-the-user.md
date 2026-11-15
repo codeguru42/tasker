@@ -181,9 +181,13 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   This bullet covers the session that acts on an answer of the user, also after the operator relays the answer. It does
   not cover an answer of the operator. For an answer of the user to an item, the rules of the operator still win for the
   operator. These rules are in [The answer](operator-items.md#the-answer) and in
-  [The operator handles a decision](question-pane.md#the-operator-handles-a-decision). A rule of a narrower case also
-  keeps its own steps, for example [The word of the user](operator-conversations.md#the-word-of-the-user). Other
-  examples are the bullets that start "When the user names a rule" and "The list numbers from 1 in each reply".
+  [The operator handles a decision](question-pane.md#the-operator-handles-a-decision).
+
+  A rule of a narrower case also keeps its own steps. Examples are
+  [The word of the user](operator-conversations.md#the-word-of-the-user) and the bullet that starts "When the user names
+  a rule". The bullet that starts "The list numbers from 1 in each reply" says only which list a short answer refers to.
+  The rule of this bullet still covers the meaning of the other words of such an answer, for example "post it" in "1
+  post it".
 
   A short reply of the user can refer to more than one open question. Then it is an unclear answer, and the session asks
   in one line which question the reply answers. On 2026-10-24, orchestrator-m21 had two open questions: gap A of #395
