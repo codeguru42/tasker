@@ -378,10 +378,10 @@ with the question, don't move it above".
   The reply gives the owned tasks in one table, and it holds no other table. If the orchestrator owns no task, the reply
   says so. This rule covers only a reply about the status of an orchestrator.
 
-  On 2026-10-30, the operator showed all eight tasks of `tasker status` and guessed the owner of each task. The user
-  said: "when I ask about a status check from an orchestrator, you must only return the tasks that orchestrator owns",
-  "don't care 'who likely runs it'. Don't speculate", "'no task yet' means the orchestrator doesn't own it yet" and "the
-  only table I want is the ones currently owned by the orchestrator".
+  On 2026-10-30, the operator showed all eight tasks of `tasker status` and guessed each owner. The user said: "when I
+  ask about a status check from an orchestrator, you must only return the tasks that orchestrator owns", "don't care
+  'who likely runs it'. Don't speculate", "'no task yet' means the orchestrator doesn't own it yet" and "the only table
+  I want is the ones currently owned by the orchestrator".
 
 ## A note for later
 
@@ -401,8 +401,7 @@ a landing order and each other message that the intro of [docs/orchestrator.md](
   no action on the message.
 
 On 2026-10-31, planner-m26 wrote to orchestrator-m22: "When you reach #635, ask the user through your operator." The
-user meant a note for later. orchestrator-m22 read it as "now", and it sent an item on a question that was not needed
-yet.
+user meant a note for later. orchestrator-m22 read it as "now" and sent an item on a question that was not needed yet.
 
 ## A milestone hold
 
@@ -430,7 +429,7 @@ The rules of a milestone hold:
    `On hold since <YYYY-MM-DD>.` and one space, before the old description. `<YYYY-MM-DD>` is the date of the word of
    the user. Each session can read the record, for example with
    `gh api repos/codeguru42/tasker/milestones/<number> --jq .description`. The purpose of this place: the hold is a
-   state of the milestone. Each session can read the description of the milestone with one command.
+   state of the milestone, and each session reads the description with one command.
 3. The session that gets the word of the user writes the hold record at once. The word of the user is the approval of
    this write. At the end of a milestone hold, the session that gets the word of the user removes the hold record. The
    rest of the description stays as it was. Each other change of the description of a held milestone keeps the hold
@@ -469,12 +468,11 @@ The rules of a milestone hold:
      doc change that it missed. It then sends a task subagent notice to its task subagents in flight.
      [The task subagent notice](doc-reads.md#the-task-subagent-notice) gives its form for the end of a milestone hold.
      Then the orchestrator reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
-   - A held operator does [The doc-read rule](doc-reads.md#the-doc-read-rule). Then it reads each of its start docs
-     again.
+   - A held operator does [The doc-read rule](doc-reads.md#the-doc-read-rule). Then it reads its start docs again.
    - A held planner does nothing more.
 
    So no session keeps a list of the skipped doc notices. The doc changes stay in the history of `main`, which each
-   machine can read. A list in the context of a session is lost at a compaction, a handoff or a move to another machine.
+   machine can read. A list in a session is lost at a compaction, a handoff or a move to another machine.
 
 10. If the read of item 7 of this section fails, [the failure rule](limits.md#the-failure-rule) applies. The sender then
     handles each message of that send as the third bullet of item 6 of this section says, in one item.
@@ -493,21 +491,20 @@ page of the issue in its tracker. The link text is the issue key, in this form:
   `[owner/repo#12](https://github.com/owner/repo/issues/12)`.
 
 The rule covers each text that the user reads in a session. This includes each reply to the user and each item that the
-operator shows to the user. The text on GitHub keeps the plain key, because GitHub links it. The text of a draft also
-keeps the plain key, because it goes to GitHub. A message between two sessions keeps the plain key, because a session
-reads it as text. An item from a planner or an orchestrator to the operator is such a message. The operator writes the
-links when it shows the item, as [The open items](operator-items.md#the-open-items) says. A key inside a code span or a
-code block stays as it is, for example a command line with an issue key.
+operator shows to the user. The text on GitHub, and the text of a draft that goes there, keeps the plain key, because
+GitHub links it. A message between two sessions keeps the plain key, because a session reads it as text. An item from a
+planner or an orchestrator to the operator is such a message. The operator writes the links when it shows the item, as
+[The open items](operator-items.md#the-open-items) says. A key inside a code span or a code block stays as it is, for
+example a command line with an issue key.
 
-The reason: the user opens the issue by hand. On GitHub, `#159` is a link, but in the terminal it is plain text. In one
-case (2026-10-18), the planner of the Docs milestone wrote plain keys such as `#303` in each reply, and the user had no
-link to open an issue from a reply.
+The reason: the user opens the issue by hand, and in the terminal `#159` is plain text. In one case (2026-10-18), the
+planner of the Docs milestone wrote plain keys such as `#303` in each reply. The user had no link to open an issue.
 
 The first mention of an issue in a text that the user reads also gives the content of the issue next to its link. The
-content is a few words that say what the issue is about, for example a few words of its title. The link text stays the
-issue key. A later mention of the same issue in the same text gives only the link. The session that writes the text
-chooses the words of the content, and this choice is open on purpose. A key inside a code span or a code block needs no
-content, as it needs no link.
+content is a few words that say what the issue is about, for example of its title. The link text stays the issue key. A
+later mention of the same issue in the same text gives only the link. The session that writes the text chooses the words
+of the content, and this choice is open on purpose. A key inside a code span or a code block needs no content, as it
+needs no link.
 
 An item also gives the content of each issue next to its plain key, at the first mention of the issue in the item.
 [The open items](operator-items.md#the-open-items) says how the operator shows that content.
