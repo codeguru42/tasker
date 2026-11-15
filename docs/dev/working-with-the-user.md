@@ -306,9 +306,9 @@ user, then gave open questions 1 to 6. It also gave a code block with proposed s
 On 2026-11-07, operator-m16 used unordered lists in many replies. The user said: "remember to list questions in a
 numbered list. And give details for the first one".
 
-On 2026-11-07, operator-m16 gave the full details of question 1 as a nested list with letters: "a. What happened", "b.
-The problem" and "c. The choices". The choices stood as 1 and 2 under "c. The choices". The user said: "details in the
-first item should not be lettered, it makes them look like they are the answers".
+On 2026-11-07, operator-m16 gave the details of question 1 as a nested list with letters: "a. What happened", "b. The
+problem" and "c. The choices", with the choices as 1 and 2 under "c. The choices". The user said: "details in the first
+item should not be lettered, it makes them look like they are the answers".
 
 On the same day, planner-m16 asked the user, through operator-m16, where the proposed steps of a question go. The user
 said: "proposed steps can be numbered with roman numerals i, ii, iii, etc." The user also said: "and keep the details
@@ -320,21 +320,21 @@ with the question, don't move it above".
   for.
 - This rule covers a question of the user. When the user must decide something, the session still gives a
   recommendation, as [A decision of the user](#a-decision-of-the-user) says.
-- In one case (2026-10-17), the user asked the Docs orchestrator questions about its handoff. The orchestrator answered
-  and also offered next steps. After one message of the user, the orchestrator left the handoff and started a ticket
-  without the word of the user. The user wrote: "When I ask questions, just answer. Do not anticipate what I want."
-- A process question is a question of the user about how the sessions must do their work from now on. An example is the
-  question "Do we need another session review iteration in planner?". The answer to a process question gives the
-  recommendation and its reason first, and then the facts. The answer marks each guess as a guess, as
+- In one case (2026-10-17), the user asked the Docs orchestrator questions about its handoff. The orchestrator answered,
+  offered next steps, and after one message of the user started a ticket without the word of the user. The user wrote:
+  "When I ask questions, just answer. Do not anticipate what I want."
+- A process question is a question of the user about how the sessions must do their work from now on, for example "Do we
+  need another session review iteration in planner?". The answer gives the recommendation and its reason first, and then
+  the facts. The answer marks each guess as a guess, as
   [A side conversation](operator-conversations.md#a-side-conversation) says for a reading of the operator. If the user
   must choose, the answer ends with a numbered list of questions, as [The form of a reply](#the-form-of-a-reply) says.
   Otherwise it asks no question.
 
   The recommendation is a part of the answer, so the first bullet of this section does not ban it. A question about what
-  the code or the docs say today is not a process question. Whether a question is a process question is a judgment. The
-  judgment is open on purpose, and the session makes it. A guess is fine for a process question, but not for a fact that
-  a read or a command can settle. The bullet of [A decision of the user](#a-decision-of-the-user) that starts "Before a
-  decision of the user or a recommendation" gives the rule for such a fact.
+  the code or the docs say today is not a process question. Whether a question is a process question is a judgment of
+  the session, open on purpose. A guess is fine for a process question, but not for a fact that a read or a command can
+  settle. The bullet of [A decision of the user](#a-decision-of-the-user) that starts "Before a decision of the user or
+  a recommendation" gives the rule for such a fact.
 
   On 2026-10-31, operator-m26 answered the question of the example with the rules of the docs, and it said that the
   answer was a guess. The user said: "guesses are good here...better yet, recommendations. We are developing what this
@@ -343,35 +343,33 @@ with the question, don't move it above".
 - Before the session answers a question about the code or the docs of the repo, it runs `git fetch origin` in its local
   clone. Then it reads each file on `origin/main` that the answer depends on, with `git show origin/main:<path>` in a
   Bash call. This read is an exception to the Read-tool bullet of [The tools of a session](#the-tools-of-a-session). The
-  session does not answer from the files as it read them earlier in the session. The fetch and the read are part of the
-  answer, not an extra action. The reason: tickets land while the session runs, so an answer from an earlier read can be
-  false. In one case (2026-10-18), the planner of M13 said that `tasker update-branch` did not exist in the rebuild. The
-  session answered after all the M13 tickets landed. It answered from the code as it read it at its start, one day
-  earlier. The user corrected it.
+  session does not answer from files that it read earlier. The fetch and the read are part of the answer, not an extra
+  action. The reason: tickets land while the session runs, so an answer from an earlier read can be false. In one case
+  (2026-10-18), the planner of M13 said that `tasker update-branch` did not exist in the rebuild. It answered after all
+  the M13 tickets landed, from its read of the code at its start, one day earlier. The user corrected it.
 - When the session looks for a change of Claude Code or of the subscription of the user, it does not search the program
-  file of Claude Code. The program file is the executable file that runs Claude Code. An example of such a search is a
-  `grep` over the program file. The session searches the web for recent public news of the change instead, for example
-  the release notes of Claude Code. If the user names a tool for this search, the session runs that tool.
+  file of Claude Code. The program file is the executable file that runs Claude Code. The session searches the web for
+  recent public news of the change instead, for example the release notes of Claude Code. If the user names a tool for
+  this search, the session runs that tool.
 
   If a value is missing from the data that Claude Code reports, the session first saves a copy of that data in a scratch
-  folder. After the save, it searches for a change of the subscription or of Claude Code. For the cause of a change of
-  Claude Code, this bullet wins over the bullet of [A decision of the user](#a-decision-of-the-user) that starts "Before
-  a decision of the user or a recommendation". A fact test of the behavior of Claude Code still applies. This bullet
-  covers each such search, also a search that is not for an answer to a question of the user.
+  folder. Then it searches for a change of the subscription or of Claude Code. For the cause of a change of Claude Code,
+  this bullet wins over the bullet of [A decision of the user](#a-decision-of-the-user) that starts "Before a decision
+  of the user or a recommendation". A fact test of the behavior of Claude Code still applies. This bullet covers each
+  such search, also one that is not for an answer to a question of the user.
 
   On 2026-10-30, a session ran a slow `grep` over the program file of Claude Code to explain a missing value of the
   status line. The user said "wait...what are you searching?" and "no, don't do that".
 
 - When the user names a rule, the session first runs `git fetch origin` in its local clone, as the bullet about
   `git show origin/main:<path>` of this section says. Then it searches the headings of the docs on `origin/main` for the
-  exact words of the name. An example search is `git grep -n -i "^#.*<name>" origin/main -- docs AGENTS.md`. The `-i`
-  flag also finds a heading that starts with a capital letter, for example "The issue-link rule" for "the issue-link
-  rule". Then the session reads the section of that heading before it acts. It reads the section as the bullet about
-  `git show origin/main:<path>` of this section says. If no heading matches, the session asks the user which rule the
-  user means. It asks in one line and names each candidate rule. This bullet covers each request that names a rule, also
-  when the request is not a question. On 2026-10-18, the user asked to make "the issue-link rule" general, but the
-  planning session read "link" as a blocked-by link and drafted a wrong issue. The user said "no, you misunderstood. By
-  'links' here I mean the URL for an issue.", and the rule was the heading [The issue-link rule](#the-issue-link-rule).
+  exact words of the name, for example with `git grep -n -i "^#.*<name>" origin/main -- docs AGENTS.md`. The `-i` flag
+  also finds a heading that starts with a capital letter. Then it reads the section of that heading before it acts, as
+  the bullet about `git show origin/main:<path>` of this section says. If no heading matches, it asks the user which
+  rule the user means. It asks in one line and names each candidate rule. This bullet covers each request that names a
+  rule, also a request that is not a question. On 2026-10-18, the user asked to make "the issue-link rule" general, but
+  the planning session read "link" as a blocked-by link and drafted a wrong issue. The user said "no, you misunderstood.
+  By 'links' here I mean the URL for an issue.", and meant the heading [The issue-link rule](#the-issue-link-rule).
 - When the user asks for the status of an orchestrator, the session gives only the tasks that the orchestrator owns. An
   issue with no task in `tasker status` has no owner. If no fact says that the orchestrator owns a task, the session
   does not name the task. The facts are the milestone of the issue and a decision of the user. A decision of the user
