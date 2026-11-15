@@ -20,7 +20,7 @@ import { piFolderRefusal } from "./pi-folders.js";
 import { trustedExtensionRefusal } from "./trusted-extension-paths.js";
 import { runSandboxPrecheck } from "./sandbox-precheck.js";
 import { builtInTool, guardLimits, writeGuardLimits, type PiSandboxLimits } from "./guard-limits.js";
-import { PI_READ_TOOL_NAMES } from "./args.js";
+import { PI_EXECUTE_TOOL_NAMES, PI_READ_TOOL_NAMES } from "./args.js";
 import { PI_ANSWER_TOOL_NAME } from "./answer-tool.js";
 import { piNotInstalled, piProgram } from "./program.js";
 import { piMessages } from "./stream.js";
@@ -220,7 +220,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
         if (extensionReason !== undefined) return failed(input, extensionReason);
         try {
           const tools = [
-            ...["read", "edit", "write", "grep", "find", "ls"].map(builtInTool),
+            ...PI_EXECUTE_TOOL_NAMES.filter((name) => name !== "bash").map(builtInTool),
             { name: "bash", path: files.guardFile, source: "cli" },
             ...(schemaPath === undefined ? [] : [{ name: PI_ANSWER_TOOL_NAME, path: files.answerFile, source: "cli" }]),
           ];
@@ -242,15 +242,19 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
       let priorOutcome: RunOutcome | undefined;
       let childEnvironment = initialCheck.childEnvironment;
 
-      const combined = (chosen: RunOutcome): RunOutcome => ({
-        ...chosen,
-        sessionId: input.sessionId,
-        events: allEvents,
-        permissionDenials,
-        usage: "unavailable",
-        ...(path !== undefined && isFile(path) ? { transcriptPath: path } : {}),
+      const cleanupOutcome = (outcome: RunOutcome): RunOutcome => ({
+        ...outcome,
         ...(cleanupErrors.length > 0 ? { sandboxCleanup: { error: cleanupErrors.join("\n") } } : {}),
       });
+      const combined = (chosen: RunOutcome): RunOutcome =>
+        cleanupOutcome({
+          ...chosen,
+          sessionId: input.sessionId,
+          events: allEvents,
+          permissionDenials,
+          usage: "unavailable",
+          ...(path !== undefined && isFile(path) ? { transcriptPath: path } : {}),
+        });
 
       while (true) {
         const processInput = corrections === 0 ? input : { ...input, resume: true };
@@ -301,14 +305,12 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
           startCleanup = wrapped.sandboxCleanup;
         }
         if (startCleanup !== undefined && "error" in startCleanup) cleanupErrors.push(startCleanup.error);
-        const withCleanup = (outcome: RunOutcome): RunOutcome =>
-          startCleanup === undefined ? outcome : { ...outcome, sandboxCleanup: startCleanup };
 
         if ("error" in launched) {
-          const failedProcess = withCleanup(failed(input, errorMessage(launched.error)));
+          const failedProcess = cleanupOutcome(failed(input, errorMessage(launched.error)));
           return priorOutcome === undefined
             ? failedProcess
-            : withCleanup({ ...priorOutcome, events: [...allEvents, ...processEvents], permissionDenials });
+            : cleanupOutcome({ ...priorOutcome, events: [...allEvents, ...processEvents], permissionDenials });
         }
         const run = launched.run;
 
@@ -317,8 +319,8 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
         if (!run.started) {
           const failedProcess = failed(input, run.notFound ? piNotInstalled(program) : run.error);
           return priorOutcome === undefined
-            ? withCleanup({ ...failedProcess, events: allEvents, permissionDenials })
-            : withCleanup({ ...priorOutcome, events: allEvents, permissionDenials });
+            ? cleanupOutcome({ ...failedProcess, events: allEvents, permissionDenials })
+            : cleanupOutcome({ ...priorOutcome, events: allEvents, permissionDenials });
         }
 
         const processResult = outcomeOfRun(input, run, processEvents, path, startSize);

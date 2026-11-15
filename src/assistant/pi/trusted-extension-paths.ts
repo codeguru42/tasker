@@ -16,6 +16,11 @@ function extensionPath(agentDir: string, extension: PiExtension): string {
   return isLocalPiSource(extension.key) ? fromAgent(extension.key) : agentDir;
 }
 
+// True when one path is equal to, under or above the other.
+function overlaps(extension: string, folder: string): boolean {
+  return isInside(extension, folder) || isInside(folder, extension);
+}
+
 // Refuses a trusted extension that the worktree, an allowed write path or the temp folder can change.
 export function trustedExtensionRefusal(
   agentDir: string,
@@ -36,9 +41,9 @@ export function trustedExtensionRefusal(
       return realPathFailureReason(masked, error);
     }
     const kinds: string[] = [];
-    if (isInside(real, sandbox.worktree)) kinds.push("in the worktree");
-    if (sandbox.writePaths.some((path) => isInside(real, path))) kinds.push("in a path of sandbox.allowWrite");
-    if (isInside(real, sandbox.tempFolder)) kinds.push("in the temp folder of the start");
+    if (overlaps(real, sandbox.worktree)) kinds.push("in the worktree");
+    if (sandbox.writePaths.some((path) => overlaps(real, path))) kinds.push("in a path of sandbox.allowWrite");
+    if (overlaps(real, sandbox.tempFolder)) kinds.push("in the temp folder of the start");
     if (kinds.length > 0) details.push(`${masked} (${kinds.join(", ")})`);
   }
   if (details.length === 0) return undefined;
