@@ -1,20 +1,31 @@
 import * as os from "node:os";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { delimiter, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { assistantSchemaPath } from "../../../src/store/layout.js";
 import { guardLimitsPath } from "../../../src/store/layout.js";
 import { PI_READ_TOOL_NAMES, piArgs } from "../../../src/assistant/pi/args.js";
 import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
+import { builtInTool, type GuardLimits } from "../../../src/assistant/pi/guard-limits.js";
 import type { PiFiles } from "../../../src/assistant/pi/args.js";
 import { createPiProvider as fromCreatePiProvider } from "../../../src/assistant/pi/provider.js";
 import type { RunInput, RunOutcome } from "../../../src/assistant/provider.js";
 import { checkPlanAnswer, planAnswerJsonSchema } from "../../../src/plan/answer.js";
 import { reviewAnswerJsonSchema } from "../../../src/review/answer.js";
-import { failureOutcomeOf, runInput, TEST_SESSION_ID } from "../../helpers/fake-claude.js";
+import { failureOutcomeOf, runInput, sandboxLimits, TEST_SESSION_ID } from "../../helpers/fake-claude.js";
 import { type FakePiAnswer, useFakePi } from "../../helpers/fake-pi.js";
 import { validPlanAnswer } from "../../helpers/plan.js";
 import { piQuotaStream } from "../../helpers/pi-quota-streams.js";
+import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 vi.mock("node:os", async (importOriginal) => {
@@ -357,17 +368,6 @@ describe("createPiProvider pre-spawn refusals", () => {
     vi.mocked(os.platform).mockReturnValue("linux");
   });
 
-  it("refuses execute access before checking the child environment", async () => {
-    const onSpawn = vi.fn();
-    const outcome = await callPi(
-      validInput({ access: "workspace-write", env: { HOME: "relative" }, onSpawn }),
-      makeFiles(),
-    );
-
-    expect(refusalOf(outcome).reason).toBe("the pi assistant cannot run the execute role in this version");
-    expect(onSpawn).not.toHaveBeenCalled();
-  });
-
   it.each([
     [
       "relative TASKER_PI_CODING_AGENT_DIR",
@@ -430,6 +430,297 @@ describe("createPiProvider pre-spawn refusals", () => {
     const outcome = await callPi(validInput(), files);
 
     expect(refusalOf(outcome).reason).toContain(files[key]);
+  });
+});
+
+interface ExecuteSetup {
+  input: RunInput;
+  files: PiFiles;
+  fake: ReturnType<typeof useFakePi>;
+  root: string;
+  agentDir: string;
+  tempRoot: string;
+}
+
+function executeSetup(overrides: Partial<RunInput> = {}, scripts: FakePiAnswer[] = []): ExecuteSetup {
+  const root = realpathSync(useTempDir("tasker-pi-execute-"));
+  const home = join(root, "home");
+  const agentDir = join(root, "agent");
+  const worktree = join(root, "worktree");
+  const tempRoot = join(root, "tmp");
+  for (const folder of [home, agentDir, worktree, tempRoot]) mkdirSync(folder);
+  const files = makeFiles();
+  const fake = useFakePi(scripts);
+  const input = validInput({
+    access: "workspace-write",
+    cwd: worktree,
+    sandbox: sandboxLimits(),
+    ...overrides,
+    env: {
+      HOME: home,
+      TASKER_PI_CODING_AGENT_DIR: agentDir,
+      TMPDIR: tempRoot,
+      ...fake.env,
+      PATH: `${useFakeSandboxBin()}${delimiter}${fake.env.PATH ?? ""}`,
+      ...overrides.env,
+    },
+  });
+  return { input, files, fake, root, agentDir, tempRoot };
+}
+
+function executeArgs(input: RunInput, files: PiFiles, withSchema: boolean, resume = false): string[] {
+  return [
+    "-p",
+    "--mode",
+    "json",
+    "--no-approve",
+    "--provider",
+    "openrouter",
+    "--model",
+    "openrouter/openrouter/openrouter/auto",
+    "--thinking",
+    "low",
+    resume ? "--session" : "--session-id",
+    input.sessionId,
+    "--session-dir",
+    input.sessionDir,
+    "--tools",
+    withSchema ? "read,bash,edit,write,grep,find,ls,submit_answer" : "read,bash,edit,write,grep,find,ls",
+    "--no-mcp",
+    "-e",
+    files.guardFile,
+    "--tasker-guard-limits",
+    guardLimitsPath(input.sessionDir, input.sessionId),
+    ...(withSchema
+      ? ["-e", files.answerFile, "--tasker-answer-schema", assistantSchemaPath(input.sessionDir, input.sessionId)]
+      : []),
+  ];
+}
+
+function readLimits(input: RunInput): GuardLimits {
+  return JSON.parse(readFileSync(guardLimitsPath(input.sessionDir, input.sessionId), "utf8")) as GuardLimits;
+}
+
+// A refusal must stop before pi starts, before the limits file, and must leave no temp folder.
+function expectNothingStarted(setup: ExecuteSetup, onSpawn: ReturnType<typeof vi.fn>): void {
+  expect(setup.fake.calls()).toEqual([]);
+  expect(onSpawn).not.toHaveBeenCalled();
+  expect(existsSync(guardLimitsPath(setup.input.sessionDir, setup.input.sessionId))).toBe(false);
+  expect(existsSync(assistantSchemaPath(setup.input.sessionDir, setup.input.sessionId))).toBe(false);
+  expect(readdirSync(setup.tempRoot)).toEqual([]);
+}
+
+function overlapReason(folder: string): string {
+  return `a write path of the run overlaps a folder of pi: ${folder} (a path of sandbox.allowWrite). Keep each write path of the run out of the folders of pi.`;
+}
+
+describe("createPiProvider execute runs", () => {
+  it.each([true, false])("starts pi with the execute tools and writes limits (schema: %s)", async (withSchema) => {
+    const fixture = withSchema ? measures.valid : measures.text;
+    const setup = executeSetup(withSchema ? { jsonSchema: reviewAnswerJsonSchema() } : {}, [
+      { args: [], stream: fixture.stdout, session: fixture.session },
+    ]);
+    const { input, files, fake } = setup;
+    const onSpawn = vi.fn();
+    input.onSpawn = onSpawn;
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.kind).toBe("success");
+    const calls = fake.calls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].args).toEqual(executeArgs(input, files, withSchema));
+    expect(calls[0].args[calls[0].args.indexOf("--tools") + 1]).toBe(
+      withSchema ? "read,bash,edit,write,grep,find,ls,submit_answer" : "read,bash,edit,write,grep,find,ls",
+    );
+    expect(onSpawn).toHaveBeenCalledTimes(1);
+    const limits = readLimits(input);
+    expect(limits.tools).toEqual([
+      builtInTool("read"),
+      builtInTool("edit"),
+      builtInTool("write"),
+      builtInTool("grep"),
+      builtInTool("find"),
+      builtInTool("ls"),
+      { name: "bash", path: files.guardFile, source: "cli" },
+      ...(withSchema ? [{ name: PI_ANSWER_TOOL_NAME, path: files.answerFile, source: "cli" }] : []),
+    ]);
+    expect(limits.tools.find((tool) => tool.name === "bash")?.path).toBe(
+      calls[0].args[calls[0].args.indexOf("-e") + 1],
+    );
+    expect(existsSync(assistantSchemaPath(input.sessionDir, input.sessionId))).toBe(withSchema);
+    expect(readdirSync(setup.tempRoot)).toEqual([]);
+  });
+
+  it("gives the limits file the execute roots and the sandbox of the same start", async () => {
+    const fixture = measures.text;
+    const setup = executeSetup({ env: { PI_CODING_AGENT_DIR: "/ignored/agent" } }, [
+      { args: [], stream: fixture.stdout, session: fixture.session },
+    ]);
+    const { input, files, agentDir, root } = setup;
+
+    await callPi(input, files);
+
+    const limits = readLimits(input);
+    expect(limits.readRoots).toEqual([input.cwd]);
+    expect(limits.writeRoots).toEqual([input.cwd]);
+    expect(limits.skillRoots).toEqual([join(agentDir, "skills"), join(root, "home", ".agents", "skills")]);
+    expect(limits.protectedPaths[0]).toBe(join(root, "home"));
+    expect(limits.protectedPaths).toContain(agentDir);
+    expect(limits.sandbox).toMatchObject({
+      worktree: input.cwd,
+      writePaths: [],
+      tempFolder: expect.stringContaining(join(root, "tmp", "tasker-pi-")),
+    });
+  });
+
+  it("runs with no RunInput.sandbox", async () => {
+    const fixture = measures.text;
+    const setup = executeSetup({ sandbox: undefined }, [
+      { args: [], stream: fixture.stdout, session: fixture.session },
+    ]);
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(outcome.kind).toBe("success");
+    expect(readLimits(setup.input).sandbox).toMatchObject({ writePaths: [] });
+  });
+
+  it("makes a new temp folder for each start", async () => {
+    const fixture = measures.text;
+    const first = executeSetup({}, [{ args: [], stream: fixture.stdout, session: fixture.session }]);
+    const second = executeSetup({}, [{ args: [], stream: fixture.stdout, session: fixture.session }]);
+
+    await callPi(first.input, first.files);
+    await callPi(second.input, second.files);
+
+    const one = readLimits(first.input).sandbox?.tempFolder;
+    const two = readLimits(second.input).sandbox?.tempFolder;
+    expect(one).toBeDefined();
+    expect(two).toBeDefined();
+    expect(one).not.toBe(two);
+    expect(readdirSync(first.tempRoot)).toEqual([]);
+    expect(readdirSync(second.tempRoot)).toEqual([]);
+  });
+
+  it("refuses at step 1 with no temp folder, before the sandbox check", async () => {
+    const onSpawn = vi.fn();
+    const setup = executeSetup({ onSpawn, env: { HOME: "rel/h", TASKER_PI_CODING_AGENT_DIR: "" } });
+    setup.input.env.PATH = setup.fake.env.PATH; // no bwrap: step 1 must refuse first
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(refusalOf(outcome).reason).toBe("HOME must be an absolute path, got rel/h");
+    expectNothingStarted(setup, onSpawn);
+  });
+
+  it("refuses an untrusted extension at step 1, before the sandbox check", async () => {
+    const onSpawn = vi.fn();
+    const setup = executeSetup({ onSpawn });
+    mkdirSync(join(setup.agentDir, "extensions"));
+    const extension = join(setup.agentDir, "extensions", "untrusted.js");
+    writeFileSync(extension, "");
+    setup.input.env.PATH = setup.fake.env.PATH;
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(refusalOf(outcome).reason).toBe(
+      `pi can load extensions that assistant.trustedExtensions does not list: ${extension} (the extensions folder of the agent folder). Add each key to assistant.trustedExtensions of the repo.`,
+    );
+    expectNothingStarted(setup, onSpawn);
+  });
+
+  it("refuses a missing bwrap at step 2 and leaves no temp folder", async () => {
+    const onSpawn = vi.fn();
+    const setup = executeSetup({ onSpawn, sandbox: sandboxLimits({ allowWrite: [] }) });
+    setup.input.env.PATH = setup.fake.env.PATH;
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(refusalOf(outcome).reason).toBe("sandbox precheck failed: bwrap is not on PATH");
+    expectNothingStarted(setup, onSpawn);
+  });
+
+  it("refuses a write path in a folder of pi at step 3, before the extension check", async () => {
+    const onSpawn = vi.fn();
+    const setup = executeSetup({ onSpawn, deniedCommands: ["gh api"] });
+    const extensionFolder = join(setup.root, "ext-source");
+    mkdirSync(extensionFolder);
+    const extension = join(extensionFolder, "ext.js");
+    writeFileSync(extension, "");
+    writeFileSync(join(setup.agentDir, "settings.json"), JSON.stringify({ extensions: [extension] }));
+    setup.input.trustedExtensions = [...TRUSTED, extension];
+    setup.input.sandbox = sandboxLimits({ allowWrite: [setup.agentDir, extensionFolder] });
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(refusalOf(outcome).reason).toBe(overlapReason(setup.agentDir));
+    expectNothingStarted(setup, onSpawn);
+  });
+
+  it("refuses a trusted extension in a write path at step 3, before the limits", async () => {
+    const onSpawn = vi.fn();
+    const setup = executeSetup({ onSpawn, deniedCommands: ["gh api"] });
+    const extensionFolder = join(setup.root, "ext-source");
+    mkdirSync(extensionFolder);
+    const extension = join(extensionFolder, "ext.js");
+    writeFileSync(extension, "");
+    writeFileSync(join(setup.agentDir, "settings.json"), JSON.stringify({ extensions: [extension] }));
+    setup.input.trustedExtensions = [...TRUSTED, extension];
+    setup.input.sandbox = sandboxLimits({ allowWrite: [extensionFolder] });
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(refusalOf(outcome).reason).toBe(
+      `a trusted extension of pi is in a path that the run can write: ${extension} (a path of sandbox.allowWrite). Keep each trusted extension out of the write paths of the run.`,
+    );
+    expectNothingStarted(setup, onSpawn);
+  });
+
+  it("refuses bad denied commands at step 4, before the schema file and pi", async () => {
+    const onSpawn = vi.fn();
+    const setup = executeSetup({ onSpawn, deniedCommands: ["gh api"], jsonSchema: reviewAnswerJsonSchema() });
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    expect(refusalOf(outcome).reason).toContain("invalid pi denied command entries: gh api");
+    expectNothingStarted(setup, onSpawn);
+  });
+
+  it("returns the prior outcome with the cleanup error when a corrective start is refused before pi starts", async () => {
+    const holder: { setup?: ExecuteSetup } = {};
+    const setup = executeSetup(
+      {
+        sessionId: CORRECTIVE_ID,
+        jsonSchema: CORRECTIVE_SCHEMA,
+        correctiveTurns: 1,
+        checkAnswer: () => {
+          const current = holder.setup!;
+          const [temp] = readdirSync(current.tempRoot);
+          const stuck = join(current.tempRoot, temp, "stuck");
+          mkdirSync(stuck);
+          writeFileSync(join(stuck, "file"), "");
+          chmodSync(stuck, 0o500);
+          mkdirSync(join(current.agentDir, "extensions"), { recursive: true });
+          writeFileSync(join(current.agentDir, "extensions", "untrusted.js"), "");
+          return { ok: false, problems: [] };
+        },
+      },
+      [{ args: [], stream: firstCallStream(correctiveInput()), session: firstSession(correctiveInput()) }],
+    );
+    holder.setup = setup;
+    setup.input.sessionId = CORRECTIVE_ID;
+
+    const outcome = await callPi(setup.input, setup.files);
+
+    for (const entry of readdirSync(setup.tempRoot)) {
+      chmodSync(join(setup.tempRoot, entry, "stuck"), 0o700);
+    }
+    expect(setup.fake.calls()).toHaveLength(1);
+    expect(refusalOf(outcome).reason).toBe(
+      "the assistant gave no structured answer:\n  - no accepted call of submit_answer and no JSON object in the final text",
+    );
+    expect(outcome.sandboxCleanup).toEqual({ error: "sandbox temp folder cleanup failed: EACCES" });
   });
 });
 
