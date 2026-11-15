@@ -40,7 +40,6 @@ function sandbox(l: Layout, overrides: Partial<PiSandboxLimits> = {}): PiSandbox
 }
 
 function callRefusal(l: Layout, trusted: string[], part: PiSandboxLimits): string | undefined {
-   
   return trustedExtensionRefusal(l.agentDir, trusted, part);
 }
 

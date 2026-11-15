@@ -41,7 +41,6 @@ function sandbox(root: string, overrides: Partial<PiSandboxLimits> = {}): PiSand
 }
 
 function callRefusal(agentDir: string, home: string | undefined, part: PiSandboxLimits): string | undefined {
-   
   return piFolderRefusal(agentDir, home, part);
 }
 

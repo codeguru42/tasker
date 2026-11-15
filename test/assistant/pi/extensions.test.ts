@@ -357,14 +357,12 @@ describe("realPathFailureReason", () => {
   it("names the folder and the error code", () => {
     const error = Object.assign(new Error("gone"), { code: "ENOENT" });
 
-     
     expect(realPathFailureReason("/some/folder", error)).toBe(
       "tasker cannot find the real path of /some/folder: ENOENT",
     );
   });
 
   it("uses unknown when the error has no code", () => {
-     
     expect(realPathFailureReason("/some/folder", new Error("x"))).toBe(
       "tasker cannot find the real path of /some/folder: unknown",
     );
@@ -373,14 +371,12 @@ describe("realPathFailureReason", () => {
 
 describe("isLocalPiSource", () => {
   it.each(["file:../superpowers", "./pkg", "../pkg", "/abs/pkg", "pkg"])("treats %s as local", (source) => {
-     
     expect(isLocalPiSource(source)).toBe(true);
   });
 
   it.each(["npm:pkg", "git:github.com/u/r", "github:u/r", "http://h/p", "https://h/p", "ssh://h/p", "builtin:mcp"])(
     "treats %s as not local",
     (source) => {
-       
       expect(isLocalPiSource(source)).toBe(false);
     },
   );
