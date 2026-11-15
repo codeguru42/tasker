@@ -47,9 +47,34 @@ The task subagent of the ticket runs steps 1 to 11. Each step gives the state of
    `awaiting_work_review`, and you go to step 9.
 
    Before each `tasker dismiss-review`, test each statement of the reason about the code, the docs or the history of the
-   repo. Read the task worktree for the work of the ticket, and `origin/<base branch>` for the state before the ticket.
-   A judgment is not such a statement, for example that the finding is an edge case outside the issue. If a statement is
-   false or a file read fails, change the reason, or take the finding as real.
+   repo. A judgment is not such a statement, for example that the finding is an edge case outside the issue. Read the
+   task worktree for the work of the ticket. Read the base commit of the task for the state before the ticket, not
+   `origin/<base branch>`. The reason: `origin/<base branch>` can hold commits that are not under the task branch. These
+   are the tickets that landed after `tasker start` or after the last `tasker update-branch`.
+
+   The base commit of the task is the base commit of step 4 of [the commit check](verify-failures.md#the-commit-check).
+   Read the `base:` line of `tasker show <issue>`. If the line has the form `refs/heads/<parent branch>`, the task is
+   stacked, as [the same-patch rule](review-findings.md#review-findings) says. Otherwise the task has a plain base. For
+   a plain base, find the base commit with the fetch and the `git merge-base` command of
+   [the issue check](plan-review.md#the-issue-check). For a stacked task, the base commit is the start base of the last
+   read.
+
+   The same-patch rule defines the start base. Run no `git merge-base` for a stacked task. For the reads at the base
+   commit, the start base wins over steps 2 to 4 of [the base rule](#the-base-rule). After each `tasker update-branch`,
+   find the base commit again before the next read of this step.
+
+   Before the first read at each new base commit, run `git cat-file -e <base commit>^{commit}` in the local clone. Exit
+   code 0 means that the local clone holds that commit. The reason: `git show` at a hash that is not in the clone exits
+   with 128. A missing path gives the same exit code. A start base that is not in the clone then reads as an answer.
+
+   Then read files at the base commit with the `git show`, `git ls-tree` and `git grep` commands of the issue check. The
+   issue check gives the answer case of a missing path and of no match. This answer holds only after the `git cat-file`
+   read. A failed file read also covers a failed read of the `base:` line, the fetch, `git merge-base` or
+   `git cat-file`. A read at the base commit that fails is also a failed file read, except such an answer. For a stacked
+   task with no start base, the file read also fails.
+
+   The issue check asks for a list of the files that the task subagent read from the base commit. The reads of this step
+   need no such list. If a statement is false or a file read fails, change the reason, or take the finding as real.
 
    On #857 (2026-11-11), a reason said wrongly that the gap of a test fixture came before the ticket. It said this for
    each state that `tasker reopen` accepts. #857 itself added the state `in_peer_review` to `tasker reopen`, with the
@@ -257,11 +282,15 @@ A task subagent of a stacked task meets a landed parent at `tasker refine`, `tas
 These steps use the base: the comeback rule, the diff read, [the issue check](plan-review.md#the-issue-check),
 [the broken-commit steps](verify-failures.md#the-broken-commit-steps),
 [the commit check](verify-failures.md#the-commit-check), [the same-patch rule](review-findings.md#review-findings), and
-steps 3 to 5 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) when those rules do them. For a stacked task, the
-diff of the diff read and the first patch id of the same-patch rule, with its text id, use the start base in place of
-`tasker/<parent branch>`. The base commit of step 4 of [the commit check](verify-failures.md#the-commit-check) also uses
-the start base. The base commit of the refine of step 4 in
-[the broken-commit steps](verify-failures.md#the-broken-commit-steps) also uses the start base.
+steps 3 to 5 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) when those rules do them. Step 7 of
+[Run one ticket](#run-one-ticket) also uses the base.
+
+For a stacked task, the diff of the diff read and the first patch id of the same-patch rule, with its text id, use the
+start base in place of `tasker/<parent branch>`. The base commit of step 4 of
+[the commit check](verify-failures.md#the-commit-check) also uses the start base. The base commit of the refine of step
+4 in [the broken-commit steps](verify-failures.md#the-broken-commit-steps) also uses the start base. The base commit of
+step 7 of [Run one ticket](#run-one-ticket) also uses the start base. The reason: after a rewrite of the parent,
+`tasker/<parent branch>` holds commits that are not under the task branch.
 
 Step 4 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) does not stop for a stacked task when the diff read, the
 comeback rule or the commit check does the steps of that page. [The manual fix](verify-failures.md#the-manual-fix) and
