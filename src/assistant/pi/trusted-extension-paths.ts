@@ -36,11 +36,11 @@ export function trustedExtensionRefusal(
       return realPathFailureReason(masked, error);
     }
     const kinds: string[] = [];
-    if (isInside(real, sandbox.worktree)) kinds.push("the worktree");
-    if (sandbox.writePaths.some((path) => isInside(real, path))) kinds.push("a path of sandbox.allowWrite");
-    if (isInside(real, sandbox.tempFolder)) kinds.push("the temp folder of the start");
+    if (isInside(real, sandbox.worktree)) kinds.push("in the worktree");
+    if (sandbox.writePaths.some((path) => isInside(real, path))) kinds.push("in a path of sandbox.allowWrite");
+    if (isInside(real, sandbox.tempFolder)) kinds.push("in the temp folder of the start");
     if (kinds.length > 0) details.push(`${masked} (${kinds.join(", ")})`);
   }
   if (details.length === 0) return undefined;
-  return `a trusted extension of pi is in a path that the run can write: ${details.join(", ")}. Keep each trusted extension out of the write paths of the run.`;
+  return `pi can load trusted extensions that the run can change: ${details.join(", ")}. Move each extension out of the write paths of the run.`;
 }

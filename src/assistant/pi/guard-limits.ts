@@ -47,7 +47,7 @@ export function realDeniedWriteEntry(entry: string): string {
   return glob ? `${realBase.replace(/\/$/u, "")}/**` : realBase;
 }
 
-export function guardLimits(input: RunInput, tools: GuardTool[], agentDir: string | undefined): GuardLimits {
+export function guardLimits(input: RunInput, tools: GuardTool[], agentDir: string): GuardLimits {
   const execute = input.access === "workspace-write";
   if (tools.some((tool) => tool.name === "bash")) {
     const invalid = invalidDeniedCommandEntries(input.deniedCommands);
@@ -81,15 +81,11 @@ export function guardLimits(input: RunInput, tools: GuardTool[], agentDir: strin
     skillRoots: [agentFolder, homeFolder].filter((folder): folder is string => folder !== undefined),
     protectedPaths: [
       ...(isSet(home) ? [home] : []),
-      ...(agentDir === undefined
-        ? []
-        : [
-            agentDir,
-            join(agentDir, "auth.json"),
-            join(agentDir, "settings.json"),
-            join(agentDir, "sessions"),
-            join(agentDir, "extensions"),
-          ]),
+      agentDir,
+      join(agentDir, "auth.json"),
+      join(agentDir, "settings.json"),
+      join(agentDir, "sessions"),
+      join(agentDir, "extensions"),
     ],
     denyRead,
     writeRoots: [input.cwd],

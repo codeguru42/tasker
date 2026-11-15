@@ -17,7 +17,7 @@ export function piFolderRefusal(
   const candidates = [resolve(agentDir)];
   if (home !== undefined && isAbsolute(home)) candidates.push(join(home, ".pi"));
 
-  const folders: string[] = [];
+  const folders: { given: string; real: string }[] = [];
   for (const candidate of candidates) {
     let real: string;
     try {
@@ -25,16 +25,16 @@ export function piFolderRefusal(
     } catch (error) {
       return realPathFailureReason(candidate, error);
     }
-    if (!folders.includes(real)) folders.push(real);
+    if (!folders.some((folder) => folder.real === real)) folders.push({ given: candidate, real });
   }
 
   const details: string[] = [];
-  for (const folder of folders) {
+  for (const { given, real: folder } of folders) {
     const kinds: string[] = [];
     if (isInside(sandbox.worktree, folder)) kinds.push(WORKTREE);
     if (sandbox.writePaths.some((path) => isInside(path, folder) || isInside(folder, path))) kinds.push(WRITE_PATH);
     if (isInside(sandbox.tempFolder, folder) || isInside(folder, sandbox.tempFolder)) kinds.push(TEMP);
-    if (kinds.length > 0) details.push(`${folder} (${kinds.join(", ")})`);
+    if (kinds.length > 0) details.push(`${given} (${kinds.join(", ")})`);
   }
   if (details.length === 0) return undefined;
   return `a write path of the run overlaps a folder of pi: ${details.join(", ")}. Keep each write path of the run out of the folders of pi.`;

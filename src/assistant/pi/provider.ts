@@ -124,13 +124,15 @@ function outcomeOfRun(
   return { outcome: { ...base, kind: "success" } };
 }
 
+type PiChildEnv = NodeJS.ProcessEnv & { PI_CODING_AGENT_DIR: string };
+
 export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvider {
   return {
     id: "pi",
     async run(input) {
       const checkBeforeSpawn = (
         processInput: RunInput,
-      ): { failure: Failure } | { childEnvironment: NodeJS.ProcessEnv; previousSession?: string } => {
+      ): { failure: Failure } | { childEnvironment: PiChildEnv; previousSession?: string } => {
         if (os.platform() !== "linux") {
           return { failure: failed(input, `the pi assistant runs only on Linux; this host is ${os.platform()}`) };
         }
@@ -285,7 +287,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
         } else {
           let started: typeof launched | undefined;
           const wrapped = await runSandboxPrecheck(processInput, async (sandbox, markSpawned) => {
-            const refusal = prepareExecuteStart(processInput, sandbox, childEnvironment.PI_CODING_AGENT_DIR!);
+            const refusal = prepareExecuteStart(processInput, sandbox, childEnvironment.PI_CODING_AGENT_DIR);
             if (refusal !== undefined) return refusal;
             markSpawned();
             started = await launch();
