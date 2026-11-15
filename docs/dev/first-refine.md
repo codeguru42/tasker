@@ -768,6 +768,22 @@ orchestrator.
 - If the Out of scope section of an issue limits a new rule, ask the plan to state that limit in the doc text. A reader
   of the doc does not see the issue, so a review can find the rule too wide. On #500, review 2 found that no doc gave
   such a limit, and the fix cost one loop.
+
+  An Out of scope item can also say that a narrower rule settles only a part of a case of the new rule. The item can
+  name the part with no word "only", for example with "that part". Then ask the plan for doc text that names that part.
+  That text makes the narrower rule no exception to the whole case, and the new rule still covers the rest of the case.
+  If the doc text makes the narrower rule an exception to the whole case, a reader takes the whole case out of the new
+  rule. The new rule then covers less than the issue asks for.
+
+  A lead-in of the Out of scope section can say that each rule of its list keeps its own steps. For the rule of an item,
+  the item still wins over the lead-in: the rule settles only the part that the item names.
+
+  The new rule of #928 covers an unclear answer of the user, for example "1 post it" to a numbered list. An Out of scope
+  item of #928 said that the bullet that starts "The list numbers from 1 in each reply" settles which list such an
+  answer refers to. Plan v3 named that bullet as a rule of a narrower case with its own steps, and it did not name that
+  part. A reader can then take the whole answer "1 post it" out of the new rule. Review 1 found it, and the fix cost one
+  review loop. No one measured whether the cost repeats on other tickets.
+
 - A link must support the exact sentence that holds it. Ask the plan to compare each link sentence with its target, for
   example "X says that Y". The target must say Y. On #159, a link sentence claimed more than its target doc says.
   [The diff read](run-one-ticket.md#the-diff-read) found it after execute. On #212, the compare found a real gap before
