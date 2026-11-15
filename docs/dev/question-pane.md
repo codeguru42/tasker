@@ -405,9 +405,7 @@ of that measure.
 
 The operator sends a settled answer at once under [The answer](operator-items.md#the-answer). Its message starts
 `From the user:`. The next line identifies question pane `<name>`. It gives the item id, question number, the user's
-words, and requested draft changes.
-
-The sender treats that message as any other `From the user:` message.
+words, and requested draft changes. The sender treats that message as any other `From the user:` message.
 
 A settled message can give [write actions](#terms), as [Send a decision](#send-a-decision) says. The approval of the
 user in the message covers one run of the command of each write action, word for word. Words of the user that let the
@@ -416,9 +414,9 @@ sender decide approve no write action. A message that does not settle the questi
 The answer of the operator to the sender names each write action and says that the operator tells the user the result.
 After the answer, also after a failed send of it, the operator starts one [write subagent](#terms) for the write actions
 of the message. The operator runs one write subagent at a time, and a later one starts after the earlier one ends. The
-write subagent first writes each input file of the message at its path. Then it does the write actions in their order,
-and it writes the full new text of each file write. It reports the exit code and the output of each command, and the
-operator then tells the user the result in one line.
+write subagent first writes each input file at its path. Then it does the write actions in order and writes the full new
+text of each file write. It reports the exit code and the output of each command, and the operator then tells the user
+the result in one line.
 
 The write subagent keeps each rule of the docs for that kind of write. Examples are
 [Before a post](issues.md#before-a-post) and [The reads before the write](issues.md#the-reads-before-the-write), with
@@ -460,7 +458,7 @@ user, as [The operator](working-with-the-user.md#the-operator) says. So the oper
 itself.
 
 If the words do not settle the question, the operator sends only the question session one message saying what remains
-open; the pane conversation continues. The operator sends nothing to the sender.
+open. The pane conversation continues. The operator sends nothing to the sender.
 
 This rule takes precedence over the two named bullets of [The answer](operator-items.md#the-answer). If the return
 message fails, the failure rule applies and the run stops until the user speaks.
