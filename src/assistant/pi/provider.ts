@@ -10,11 +10,12 @@ import { isObject } from "../../object.js";
 import { appendEventLine } from "../event-line.js";
 import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
 import { assistantModelCheck } from "../model-check.js";
+import { upstreamOf } from "../models.js";
 import { piAnswer } from "./answer.js";
 import { correctivePrompt } from "./corrective-prompt.js";
 import { type PiFiles, piArgs } from "./args.js";
 import { piChildEnv } from "./child-env.js";
-import { piDoctorChecks } from "./doctor.js";
+import { piAuthCheck, piDoctorChecks } from "./doctor.js";
 import { piExtensionRefusal } from "./extensions.js";
 import { piFolderRefusal } from "./pi-folders.js";
 import { trustedExtensionRefusal } from "./trusted-extension-paths.js";
@@ -354,7 +355,10 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
     doctorChecks: (repos) => piDoctorChecks(repos, os.platform()),
     modelChecks: (model) => [assistantModelCheck("pi", `pi model: ${model}`, model)],
     continuedModel: (session) => session.reportedModel ?? session.model,
-    reportedModelChecks: () => [],
+    reportedModelChecks: (recordedModel, model) => {
+      const upstream = upstreamOf(model);
+      return upstream === undefined || upstream === upstreamOf(recordedModel) ? [] : [piAuthCheck(upstream)];
+    },
     detectQuotaApprovalWarning: () => undefined,
     isQuotaEvent: () => false,
     shouldSuppressQuotaApprovalPause: () => false,

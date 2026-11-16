@@ -11,6 +11,7 @@ import type { TaskStore } from "../store/store.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { prepareTaskPlanModeRun } from "./assistant-run.js";
 import { runPlanRevision, type PlanResult } from "./plan-run.js";
+import { assertSessionModel } from "./session-model.js";
 import { requireBranch, taskInState } from "./task-state.js";
 import { startTipGuard } from "./tip-guard.js";
 
@@ -31,6 +32,8 @@ export async function planTask(store: TaskStore, request: PlanRequest): Promise<
 async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanResult> {
   const { config, ref, env, io } = request;
   const task = taskInState(store, request.taskId, "plan");
+  const stored = store.planSession(task.id);
+  if (stored) await assertSessionModel(stored, env, `the plan session of ${task.issueKey}`);
   const issue = await issueProviderFor(config, ref.repoKey).fetchIssue(ref, env);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   const tipGuard = await startTipGuard(vcs, ctx, requireBranch(task));
@@ -40,7 +43,6 @@ async function planLocked(store: TaskStore, request: PlanRequest): Promise<PlanR
   });
   const archived = archivePrompt(config.dataRoot, PLAN_PROMPT_NAME, PLAN_PROMPT);
   const version = store.nextPlanVersion(task.id);
-  const stored = store.planSession(task.id);
   const prepared = await prepareTaskPlanModeRun({
     config,
     store,
