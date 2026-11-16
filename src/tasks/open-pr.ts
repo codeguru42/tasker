@@ -87,6 +87,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
             base: baseBranch,
             title: `${summary} (${task.issueKey})`,
             body: `Task: ${task.issueKey}\n\n${summary}`,
+            draft: request.config.repos[task.repoKey].forge?.draftPr === true,
           },
           request.env,
         );
