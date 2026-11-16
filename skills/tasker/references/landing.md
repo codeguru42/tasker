@@ -79,14 +79,13 @@ After publication, push can move the task straight to `in_peer_review`. This ste
 `forge` in the configuration of the repo. It also needs the base rule of `tasker open-pr`: the stored base of the task
 must not have moved because its parent landed. Push asks the forge for the recorded PR. The PR must be open, come from
 the same repository, have the task branch as its head and have the stored base of the task as its base. If all of these
-hold, push records the PR as adopted and prints the push line, then this form:
+hold, push records the PR as adopted. Push then makes the same review write as `tasker open-pr`. The tracker lines of
+this write come first on stdout, before the push line. After them come the push line and this form:
 
 ```text
 PR #<number> is open: <url>
 state: in_peer_review
 ```
-
-Push then makes the same review write as `tasker open-pr`. Its tracker lines come before the form above.
 
 If one condition fails, the task stays in `pushed`. Push prints the push line, then one reason line, then
 `state: pushed` on stdout. The reason ends with `so the task stays in pushed`. It names the closed or merged PR, the
@@ -95,7 +94,9 @@ other repository, the other head, the other base, or the error of the base rule.
 If the forge read or the record fails, push prints `warning: <reason>` on stderr, then the push line and `state: pushed`
 on stdout. If no PR number or no forge configuration exists, push makes no forge call and prints the forms above.
 
-Each of these results exits with code 0. After a stay or a warning, run `tasker open-pr` to adopt the PR.
+Each of these results exits with code 0. After a stay or a warning, you can run `tasker open-pr`. It adopts an open PR
+of the task branch on the stored base, or it opens a new PR when the branch has no open PR. It refuses in the cases of
+[its section](#tasker-open-pr), for example an open PR on another base or a landed parent.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. Before the move to `pushing`, the task
 keeps its state and no event or run marker is written. The shared errors of no task, of
