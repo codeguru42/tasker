@@ -4,6 +4,7 @@ import { accept } from "../../src/commands/accept.js";
 import { markLanded } from "../../src/commands/mark-landed.js";
 import { execute } from "../../src/commands/execute.js";
 import { merge } from "../../src/commands/merge.js";
+import { openPr } from "../../src/commands/open-pr.js";
 import { refine } from "../../src/commands/refine.js";
 import { resume } from "../../src/commands/resume.js";
 import { retry } from "../../src/commands/retry.js";
@@ -11,6 +12,7 @@ import { review } from "../../src/commands/review.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { verify } from "../../src/commands/verify.js";
 import { runCommand } from "../helpers/cli.js";
+import { installForgeGh, OPEN_PR_FORGE_ACCOUNT } from "../helpers/forge-gh.js";
 import { gitOutput } from "../helpers/git.js";
 import { answerStream, turnResultStream, validPlanAnswer } from "../helpers/plan.js";
 import { validReviewAnswer } from "../helpers/review.js";
@@ -76,6 +78,26 @@ describe("tasker merge for a stacked task", () => {
     });
 
     await expectRefused(fixture, CANCELLED);
+  });
+});
+
+describe("tasker open-pr for a stacked task", () => {
+  it("refuses a task whose parent landed", async () => {
+    const gh = installForgeGh([], "tasker-stacked-open-pr-gh-");
+    const fixture = await useStackedTasks({
+      repo: { forge: { provider: "github", account: OPEN_PR_FORGE_ACCOUNT } },
+    });
+    withDataRootStore(fixture.dataRoot, (store) => placeTask(store, fixture.stacked.task.id, "pushed"));
+    await landParent(fixture, ["accepted", "landed"]);
+
+    await expectCommandRefused(
+      { dataRoot: fixture.dataRoot, key: STACKED },
+      () => runCommand(openPr, "open-pr", STACKED, "--repo", REPO),
+      LANDED,
+    );
+
+    expect(gh.calls()).toEqual([]);
+    expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("pushed");
   });
 });
 
