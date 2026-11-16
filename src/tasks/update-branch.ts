@@ -65,15 +65,17 @@ export function prBaseChangedLine(change: PrBaseChange): string {
 }
 
 // Asks the forge to change the base of the recorded PR to the target branch of the stored base. A failure writes a note
-// and gives undefined. The step never throws, so it changes no exit code and no state.
+// and gives undefined. A task with no recorded PR gives undefined and makes no forge call. The step never throws, so it
+// changes no exit code and no state.
 async function changeRecordedPrBase(
   request: UpdateBranchRequest,
   task: Task,
   path: string,
   storedBase: string,
 ): Promise<PrBaseChange | undefined> {
+  if (task.prNumber === null) return undefined;
+  const number = task.prNumber;
   const target = branchOfBase(storedBase);
-  const number = task.prNumber!;
   try {
     const forge = request.forge ?? forgeForRepo(request.config, task.repoKey);
     await forge.changePrBase(number, target, path, request.env);
@@ -290,7 +292,8 @@ function divergedTake(
 // demotion table. A task that is ready to land, or that failed in the land, with a head that is not the accepted
 // revision also goes to the target, because it needs a new review. Otherwise it goes back to its origin state. With
 // undo, the command instead puts the head and the synced base tip back to the values that the last run which moved the
-// head stored. The undo counts as a move.
+// head stored. The undo counts as a move. After the parent landed, the forge step runs after the last write, which
+// stores the new base and parent.
 export async function updateBranchTask(store: TaskStore, request: UpdateBranchRequest): Promise<UpdateBranchResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => updateBranchLocked(store, request));
 }
@@ -373,7 +376,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         },
         () => ({ type: "base", data: { base: resolved.base, revision: resolved.revision, source: "explicit" } }),
       );
-      if (task.prNumber !== null) run.prBaseChanged = await changeRecordedPrBase(request, task, path, resolved.base);
+      run.prBaseChanged = await changeRecordedPrBase(request, task, path, resolved.base);
     }
     // What the sync step did, and the head after it. The catch reads both to undo a sync move.
     let synced: SyncOutcome = { sync: "none" };
@@ -472,6 +475,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         },
         writes,
       );
+      if (walk !== undefined) run.prBaseChanged = await changeRecordedPrBase(request, task, path, walk.base);
       if ((resolved === undefined ? parent : explicitParent) !== undefined && resynced.how === "merge") {
         io.stderr(mergeMoveNote(target.base, task.issueKey));
       }
