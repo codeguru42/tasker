@@ -279,8 +279,7 @@ function divergedTake(
 }
 
 // Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base.
-// The task lock covers all the steps and does not wait. The repo lock covers the fetch and the move of the branch. The
-// sync step comes first. It fast-forwards the task branch when the local tip is an ancestor of the copy on origin. For tips that have diverged, it compares
+// The task lock covers all the steps and does not wait. The repo lock covers the fetch and the move of the branch. After a resolved --base, the forge step changes the base of a recorded PR. Then the sync step runs. It fast-forwards the task branch when the local tip is an ancestor of the copy on origin. For tips that have diverged, it compares
 // the patches of the two sides. It moves the task branch and the worktree to the copy on origin when origin has a commit
 // only on origin and no local work is at risk, or with takeRemote. It fails and lists the commits at risk only when local work is at risk, origin has
 // a commit only on origin, and takeRemote is off. With local work at risk and no commit only on origin, nothing moves and
