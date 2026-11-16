@@ -28,6 +28,9 @@ A merge request includes the expected head revision. The forge refuses the reque
 the forge accepts a merge request, that acceptance does not mean that the pull request has merged. The caller reads the
 pull request state separately to establish completion.
 
+`changePrBase` changes the base of an existing pull request. The operation changes only the base of a PR. The reason:
+the PR base must follow the stored base of the task, and no other PR field depends on it.
+
 ## Provider selection
 
 `forgeForRepo()` selects a provider from `repos.<key>.forge`. The forge account is separate from the issue tracker

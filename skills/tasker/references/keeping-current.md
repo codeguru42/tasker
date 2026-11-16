@@ -16,8 +16,29 @@ The strategy is the value of `--strategy`. If the option is absent, the strategy
 which is `rebase` by default. The option overrides `updateBranchStrategy` for one run.
 
 With `--base`, the command resolves only that branch before it enters `updating_branch`. A failed resolve writes no task
-state, base, parent or event. The command then fetches `origin`, runs the sync step and runs the base step on the new
-local tip.
+state, base, parent or event. After a successful resolve, the command stores the new base and runs
+[the forge step](#the-forge-step). The command then fetches `origin`, runs the sync step and runs the base step on the
+new local tip.
+
+### The forge step
+
+The forge step runs when you use `--base`, the resolve succeeds, and the task records a PR number. It runs right after
+tasker stores the new base and before the sync step. It asks the forge of the repo to change the base of the recorded PR
+to the target branch. The target branch is the new stored base, as a branch name on `origin`. A stored base `<x>` gives
+`<x>`, and a stored base `refs/heads/<x>` gives `<x>`. The step does not create, close, reopen or merge a PR.
+
+If the forge changes the base, the command prints `changed the base of PR #<number> to <target branch>` on stdout. If a
+later step fails, the command prints this line on stderr, before its error.
+
+If the forge step cannot change the base, the command prints this note on stderr:
+
+```text
+note: tasker could not change the base of PR #<number> to <target branch>: <reason>; the operator must change it on the forge
+```
+
+`<reason>` is the error text of the failure. The choice of the forge provider fails when the repo has no forge
+configuration. The forge call can fail, for example when the new base has no branch on `origin`. The note changes no
+exit code and no task state.
 
 ### The sync step
 
@@ -99,8 +120,10 @@ not move.
 
 On success, the command prints these lines on stdout:
 
-- `synced <task branch> from origin/<task branch> at <remote tip> by <sync>` first, only when the sync step moved the
-  head. The value of `<sync>` is `fast-forward` or `take-remote`.
+- `changed the base of PR #<number> to <target branch>` first, only when [the forge step](#the-forge-step) changed the
+  base of the PR.
+- `synced <task branch> from origin/<task branch> at <remote tip> by <sync>` only when the sync step moved the head. The
+  value of `<sync>` is `fast-forward` or `take-remote`.
 - `<issue key> is current with <base> at <base tip>; nothing moved` when the base step did not move the head. The line
   describes only the base step.
 - `moved <issue key> onto <base> at <base tip> by <how>: <head before> to <head after>` when the base step moved the

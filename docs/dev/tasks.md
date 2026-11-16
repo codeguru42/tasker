@@ -913,6 +913,9 @@ These reasons explain its rules:
   event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local
   tip.
+- The forge step runs after tasker stores the new base and before the sync step. The reason: the stored base and the PR
+  base change in one run. If a later step fails, they still change in one run. A failed forge step does not fail the
+  command. The reason: the stored base is already new, and the user can fix the PR by hand.
 - The compare by patch for diverged tips: the command compares the patches of the two sides, because a rebase rewrites
   each commit. As a result, a branch that someone pushed and then rebased does not count as local work at risk.
 - A merge commit on the remote side always counts as a commit only on origin: it has no one patch, and it can carry a
