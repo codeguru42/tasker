@@ -66,5 +66,6 @@ handoff file:
 
 ## The start of the new planner
 
-The new planner is `planner-<slug>`. [The stop and the start](handoff.md#the-stop-and-the-start) applies. The new
-planner does [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).
+The new planner is `planner-<slug>`. Under `pi`, the name comes from `-n` and the session reads it before its role work,
+so the prompt holds no name step. [The stop and the start](handoff.md#the-stop-and-the-start) applies. The new planner
+does [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder).

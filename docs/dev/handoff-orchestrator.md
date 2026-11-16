@@ -164,7 +164,8 @@ handoff file:
 
 ## The start of the new orchestrator
 
-The new orchestrator is `orchestrator-<slug>`. [The stop and the start](handoff.md#the-stop-and-the-start) applies. The
+The new orchestrator is `orchestrator-<slug>`. Under `pi`, the name comes from `-n` and the session reads it before its
+role work, so the prompt holds no name step. [The stop and the start](handoff.md#the-stop-and-the-start) applies. The
 new orchestrator then starts with the re-read rule. Right after the first doc read of the re-read rule, the new
 orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). After that
 check, it reads the tasks in flight with `tasker status`, also [the parked tasks](pick-the-tickets.md#the-defer-rule).

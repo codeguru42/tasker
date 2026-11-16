@@ -91,6 +91,8 @@ history of the session, the closed items or the measured facts. The rule is the 
   - The prompt names the section of the role page for its start, for example
     [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator). It does not copy the
     steps of that section.
+  - Under `pi`, the name comes from `-n` and the session reads it before its role work, so the prompt holds no name
+    step.
   - The prompt holds only the facts of this handoff, for example the path of the file, the session name and the first
     free item id. The first message of the new session always names the path of the handoff file.
   - If the old session is not the operator, the prompt also names the operator of the old session by its name only.
@@ -233,7 +235,8 @@ The file goes in the folder of [The handoff file](#the-handoff-file), with the n
 is the role of the new session with the topic as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session
 does [The check of the handoff folder](#the-check-of-the-handoff-folder).
 
-The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name.
+The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. Under
+`pi`, the new session gets this name from `-n`, as [Start a session](operator-start.md#start-a-session) says.
 [docs/sessions.md](../sessions.md) gives the form of the own name of a session. The old session puts this name in the
 item and in the prompt of the handoff file. The prompt also names [the operator of the old session](../operator.md) as
 the operator that the new session works with.

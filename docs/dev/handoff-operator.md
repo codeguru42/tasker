@@ -176,12 +176,18 @@ The new operator starts in these steps:
    herdr agent start operator-<slug>-<time> --kind <kind> --pane <pane id> -- -n operator-<slug> <model flags> "<prompt>"
    ```
 
-   The error text of that step names the herdr agent name.
+   The error text of that step names the herdr agent name. Under `pi`, the `<model flags>` are the pi cells of
+   [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind).
 
 3. The old operator makes sure that the new operator runs. It runs `herdr pane read <pane id>` with the pane id that
    step 2 of "Start a session" kept. It does not look in `ListAgents` by the name, because two sessions have the name.
    In a handoff of the operator, this step wins over the sentence of step 3 of "Start a session" that starts "After one
    of these errors, the operator first looks for the new session in `ListAgents`".
+
+   If the kind is `pi`, the new operator goes through
+   [The start gate of a pi session](operator-start.md#the-start-gate-of-a-pi-session). The old and the new operator hold
+   the same own name, and pi allows this. So the name alone is never Done. Only the tie to the new pane id gives Done.
+
 4. If the new operator runs, the old operator runs `herdr tab get "$HERDR_TAB_ID"` in its shell. If
    `.result.tab.pane_count` is 1, it runs `herdr tab close "$HERDR_TAB_ID"`. If the count is more than 1, it closes only
    its own pane with `herdr pane close "$HERDR_PANE_ID"`. This close is its last action.
