@@ -279,15 +279,18 @@ function divergedTake(
 }
 
 // Brings the task branch current with its copy on origin and brings the worktree of the task up to date with its base.
-// The task lock covers all the steps and does not wait. The repo lock covers the fetch and the move of the branch. After a resolved --base, the forge step changes the base of a recorded PR. Then the sync step runs. It fast-forwards the task branch when the local tip is an ancestor of the copy on origin. For tips that have diverged, it compares
-// the patches of the two sides. It moves the task branch and the worktree to the copy on origin when origin has a commit
-// only on origin and no local work is at risk, or with takeRemote. It fails and lists the commits at risk only when local work is at risk, origin has
-// a commit only on origin, and takeRemote is off. With local work at risk and no commit only on origin, nothing moves and
-// a note goes to stderr. Then the base step runs on the new local tip. A failed base step also undoes the sync move. When
-// the head moved in either step, the task goes to the target of the demotion table. A task that is ready to land, or that
-// failed in the land, with a head that is not the accepted revision also goes to the target, because it needs a new
-// review. Otherwise it goes back to its origin state. With undo, the command instead puts the head and the synced base tip
-// back to the values that the last run which moved the head stored. The undo counts as a move.
+// The task lock covers all the steps and does not wait. The repo lock covers the fetch and the move of the branch.
+// After a resolved --base, the forge step changes the base of a recorded PR. Then the sync step runs. It fast-forwards
+// the task branch when the local tip is an ancestor of the copy on origin. For tips that have diverged, it compares the
+// patches of the two sides. It moves the task branch and the worktree to the copy on origin when origin has a commit
+// only on origin and no local work is at risk, or with takeRemote. It fails and lists the commits at risk only when
+// local work is at risk, origin has a commit only on origin, and takeRemote is off. With local work at risk and no
+// commit only on origin, nothing moves and a note goes to stderr. Then the base step runs on the new local tip. A
+// failed base step also undoes the sync move. When the head moved in either step, the task goes to the target of the
+// demotion table. A task that is ready to land, or that failed in the land, with a head that is not the accepted
+// revision also goes to the target, because it needs a new review. Otherwise it goes back to its origin state. With
+// undo, the command instead puts the head and the synced base tip back to the values that the last run which moved the
+// head stored. The undo counts as a move.
 export async function updateBranchTask(store: TaskStore, request: UpdateBranchRequest): Promise<UpdateBranchResult> {
   return withTaskLock(store, request.ref.repoKey, request.ref.key, () => updateBranchLocked(store, request));
 }
