@@ -17,6 +17,7 @@ import { piSkillFolders } from "./skill-folders.js";
 import { piNotInstalled, piProgram } from "./program.js";
 
 const PI_INSTALL_FIX = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
+const PI_SESSION_DIR_FIX = "Set TASKER_PI_CODING_AGENT_SESSION_DIR to an absolute path, or unset it.";
 const PI_AGENT_DIR_FIX = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or unset it.";
 const HOME_FIX = "Set HOME.";
 const RELATIVE_HOME_FIX = "Set HOME to an absolute path, or set TASKER_PI_CODING_AGENT_DIR to an absolute path.";
@@ -39,6 +40,13 @@ function environmentRefusal(
   const relativeReason = relativePathReason("TASKER_PI_CODING_AGENT_DIR", env.TASKER_PI_CODING_AGENT_DIR);
   if (relativeReason !== undefined) {
     return { result: { status: "error", detail: relativeReason, remediation: PI_AGENT_DIR_FIX } };
+  }
+  const sessionReason = relativePathReason(
+    "TASKER_PI_CODING_AGENT_SESSION_DIR",
+    env.TASKER_PI_CODING_AGENT_SESSION_DIR,
+  );
+  if (sessionReason !== undefined) {
+    return { result: { status: "error", detail: sessionReason, remediation: PI_SESSION_DIR_FIX } };
   }
   const homeReason = relativeHomeReason(env);
   if (homeReason !== undefined) {
@@ -207,7 +215,7 @@ export function superpowersCheck(timeoutMs = 5000): Check {
 
 export function simpleEnglishCheck(timeoutMs = 1000): Check {
   return timedCheck({ name: "simple-english:pi", required: true, timeoutMs }, async (env) => {
-    const piEnv = piChildEnv(env);
+    const piEnv = piChildEnv({ ...env, TASKER_PI_CODING_AGENT_SESSION_DIR: undefined });
     const { agentFolder, homeFolder } = piSkillFolders(
       "env" in piEnv ? piEnv.env.PI_CODING_AGENT_DIR : undefined,
       env.HOME,
