@@ -31,6 +31,10 @@ pull request state separately to establish completion.
 `changePrBase` changes the base of an existing pull request. The operation changes only the base of a PR. The reason:
 the PR base must follow the stored base of the task, and no other PR field depends on it.
 
+`isPrDraft` reads whether a pull request is a draft. `markPrReady` takes a draft pull request out of draft. The reason:
+the forge refuses to merge a draft, and the caller decides when to take a PR out of draft. The provider never does it by
+itself.
+
 ## Provider selection
 
 `forgeForRepo()` selects a provider from `repos.<key>.forge`. The forge account is separate from the issue tracker

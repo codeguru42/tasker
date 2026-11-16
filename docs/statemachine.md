@@ -200,10 +200,10 @@ flowchart LR
   matching one before it creates a PR. If tasker creates a PR but cannot store its record, retry or resume runs
   `open-pr` again. The lookup then adopts that PR before tasker can create another one.
 - `merge` from `in_peer_review` merges the recorded PR through the configured forge with `forge.mergeMethod`, only at
-  the revision that `push` published. It first asks whether the PR is merged. If not, it asks the forge to merge only if
-  the PR still has that revision as its head, then asks again. It lands the task only after the forge confirms the
-  merge. If the first query finds a completed PR, it records that result without sending another request. It does not
-  wait for CI or a forge queue.
+  the revision that `push` published. It first asks whether the PR is merged. If not, it takes a draft PR out of draft,
+  then asks the forge to merge only if the PR still has that revision as its head, then asks again. It lands the task
+  only after the forge confirms the merge. If the first query finds a completed PR, it records that result without
+  sending another request. It does not wait for CI or a forge queue.
 
   See [the landing reference](../skills/tasker/references/landing.md#tasker-merge) for guards, errors and output.
 

@@ -278,6 +278,10 @@ landed parent that still requires a base move, the accepted-work landed-parent e
 After both locks are held, tasker stores the origin and enters `merging`. It asks the configured forge whether the
 recorded PR is merged. If the PR is already merged, tasker sends no merge request.
 
+If the PR is not merged, tasker asks the forge whether the PR is a draft. If it is a draft, tasker marks the PR ready
+for review. Then it prints `took PR #<number> out of draft` on stdout. The `tasker merge` command is the decision to
+take the PR out of draft, so tasker asks no other question. An already merged PR gets no draft query.
+
 Otherwise, tasker requests `forge.mergeMethod` at the stored published SHA, then asks whether the PR merged. The forge
 refuses a different head atomically. A failed query fails the operation. tasker lands only after a merged result. It
 does not wait for CI or a forge queue. Forge authentication uses `forge.account` independently of the issue tracker
@@ -290,12 +294,17 @@ only when this invocation sent a merge request. tasker keeps the PR number and p
 
 If the PR remains unmerged, including after queue acceptance, the operation fails with
 `merging failed: PR #<number> is not merged. Retry after the merge completes. CAUTION: tasker abort deletes the PR head branch`.
-A query or merge-request failure preserves its reason after `merging failed: `. If the forge confirms a merge but tasker
-cannot record it, the error is `merging failed: PR #<number> is merged, but tasker cannot record the result: <error>`.
-The task fails from `merging` with its origin preserved. Run `tasker retry <issue key>` after a failure. Its first query
-detects a completed PR and prevents another merge request.
+A query or merge-request failure preserves its reason after `merging failed: `. A failed draft query or a failed ready
+step fails the operation before any merge request. The error of the ready step is
+`merging failed: could not take pull request <number> out of draft: <cause>`. If tasker took the PR out of draft before
+a later failure, it keeps the printed line, and `tasker retry` prints no second line. If the forge confirms a merge but
+tasker cannot record it, the error is
+`merging failed: PR #<number> is merged, but tasker cannot record the result: <error>`. The task fails from `merging`
+with its origin preserved. Run `tasker retry <issue key>` after a failure. Its first query detects a completed PR and
+prevents another merge request.
 
-PR success prints these lines for a new request and for an already completed merge:
+PR success prints these lines for a new request and for an already completed merge. A PR that was a draft first prints
+`took PR #<number> out of draft`:
 
 ```text
 merged <issue key>
