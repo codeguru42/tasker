@@ -7,11 +7,10 @@ import type { IssueRef } from "../issue-key/ref.js";
 import { transitionTask, transitionWithPrOpened } from "../state/machine.js";
 import type { TaskStore } from "../store/store.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
-import { branchOfBase } from "../vcs/local-branch.js";
 import { vcsForRepo } from "../vcs/provider.js";
-import { assertBaseMoved } from "./parent.js";
+import { matchesTaskBase, prBaseOf } from "./pr-base.js";
 import { failRun } from "./run-outcome.js";
-import { requireBase, requireBranch, requireWorktree, taskInState } from "./task-state.js";
+import { taskInState } from "./task-state.js";
 import { runReviewWrites } from "./tracker-write.js";
 
 export interface OpenPrRequest {
@@ -41,11 +40,7 @@ export async function openPrTask(
 
 async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<OpenPrResult | { exitCode: number }> {
   const task = taskInState(store, request.taskId, "open-pr");
-  assertBaseMoved(store, task);
-  const branch = requireBranch(task);
-  const worktree = requireWorktree(task);
-  const base = requireBase(task);
-  const baseBranch = branchOfBase(base);
+  const { branch, worktree, base, baseBranch } = prBaseOf(store, task);
   const { vcs, ctx } = vcsForRepo(request.config, task.repoKey, request.env);
 
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
@@ -71,7 +66,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
     let adopted: boolean;
     try {
       const openPrs = await forge.listOpenPrs({ cwd: worktree, head: branch }, request.env);
-      const matching = openPrs.find((pr) => pr.base === baseBranch);
+      const matching = openPrs.find((pr) => matchesTaskBase(pr, baseBranch));
       if (matching !== undefined) {
         pullRequest = matching;
         adopted = true;
