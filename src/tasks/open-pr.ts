@@ -11,6 +11,7 @@ import type { TaskStore } from "../store/store.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import { branchOfBase } from "../vcs/local-branch.js";
 import { vcsForRepo } from "../vcs/provider.js";
+import { assertBaseMoved } from "./parent.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBranch, requireWorktree, taskInState } from "./task-state.js";
 import { clearMarkerWrite, runTrackerWrite, trackerTargets, type TrackerWrite } from "./tracker-write.js";
@@ -42,6 +43,7 @@ export async function openPrTask(
 
 async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<OpenPrResult | { exitCode: number }> {
   const task = taskInState(store, request.taskId, "open-pr");
+  assertBaseMoved(store, task);
   const branch = requireBranch(task);
   const worktree = requireWorktree(task);
   const base = requireBase(task);
