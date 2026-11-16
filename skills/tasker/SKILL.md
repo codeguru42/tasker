@@ -281,8 +281,8 @@ Publishes the task branch of a task in `accepted` to `origin`. See [the referenc
 
 ### `tasker open-pr`
 
-Opens or adopts a pull request against the stored base of a task in `pushed`. See
-[the reference](references/landing.md#tasker-open-pr).
+Opens or adopts a pull request against the stored base of a task in `pushed`. With `--draft` or the key `forge.draftPr`,
+it creates a new PR as a draft. See [the reference](references/landing.md#tasker-open-pr).
 
 ### `tasker mark-landed`
 

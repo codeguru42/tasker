@@ -761,6 +761,10 @@ the check of the state, because the branch of a landed parent is no base for a P
 
 Lookup precedes creation so recovery adopts a PR that tasker created before its record failed.
 
+`tasker open-pr` creates a draft PR when the run has `--draft` or when `forge.draftPr` is true. An adopted PR keeps its
+own draft state, and tasker changes no draft flag on it. `tasker merge` takes a draft PR out of draft before it merges,
+as [the landing reference](../../skills/tasker/references/landing.md#recorded-pr) says.
+
 The PR number and state share one transaction so `in_peer_review` always has its PR record. See
 [the tasks table](data-root.md#tasks-table) for storage rules.
 

@@ -125,8 +125,8 @@ concurrent changes.
 
 ## `tasker open-pr`
 
-Opens or adopts a pull request (PR) for a task in `pushed`: `tasker open-pr <issue> [--repo <key>]`. A PR asks for
-external review. The repo must have a configured forge. The task must have a branch, worktree and stored base.
+Opens or adopts a pull request (PR) for a task in `pushed`: `tasker open-pr <issue> [--repo <key>] [--draft]`. A PR asks
+for external review. The repo must have a configured forge. The task must have a branch, worktree and stored base.
 
 `tasker open-pr` refuses a stacked task whose parent landed. It does this before it reads `origin`, with
 `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
@@ -146,6 +146,11 @@ URL and actual base. Correct that PR base and run `tasker retry`.
 An empty successful lookup means that no open origin PR exists, so tasker creates one with title
 `<summary> (<issue key>)` and body `Task: <issue key>`, a blank line, then the summary. The summary is the stored task
 title, or the issue key when the title is missing. A lookup error is a failure, not an empty result.
+
+If you give `--draft`, tasker creates the PR as a draft. Without the option, the key `forge.draftPr` decides, and its
+default is `false`. A `tasker retry` or `tasker resume` runs this command without `--draft`, so the key decides. An
+adopted PR keeps its own draft state, and tasker changes no draft flag on it. The output lines do not change.
+`tasker merge` takes a draft PR out of draft before it merges, as [Recorded PR](#recorded-pr) says.
 
 On success, tasker prints one of these forms on stdout:
 

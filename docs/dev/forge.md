@@ -38,6 +38,8 @@ itself.
 `viewPr` reads the state, head and base of one pull request. The caller needs these facts for a recorded PR. They tell
 the caller why the PR does not fit the task.
 
+`createPr` creates the pull request as a draft when the caller asks for a draft. The caller decides it.
+
 ## Provider selection
 
 `forgeForRepo()` selects a provider from `repos.<key>.forge`. The forge account is separate from the issue tracker

@@ -378,11 +378,12 @@ A new kind needs its own row and its own ticket, because each kind has its own f
 
 ## `forge`
 
-| Key           | Type                                | Default   | Notes                        |
-| ------------- | ----------------------------------- | --------- | ---------------------------- |
-| `provider`    | `"github"`                          | required  | The kind of forge.           |
-| `account`     | non-empty string                    | required  | The account to use.          |
-| `mergeMethod` | `"merge"`, `"squash"` or `"rebase"` | `"merge"` | How to merge a pull request. |
+| Key           | Type                                | Default   | Notes                                             |
+| ------------- | ----------------------------------- | --------- | ------------------------------------------------- |
+| `provider`    | `"github"`                          | required  | The kind of forge.                                |
+| `account`     | non-empty string                    | required  | The account to use.                               |
+| `mergeMethod` | `"merge"`, `"squash"` or `"rebase"` | `"merge"` | How to merge a pull request.                      |
+| `draftPr`     | boolean                             | `false`   | Whether tasker creates a pull request as a draft. |
 
 The forge account and the issue tracker account serve different services. They can use different accounts. Each repo
 needs `repos.<key>.forge` before tasker can run a forge operation. If it is missing, tasker reports the repo key and
