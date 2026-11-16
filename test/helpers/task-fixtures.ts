@@ -806,6 +806,15 @@ export async function useAcceptedTask(options?: Parameters<typeof useWorkReviewT
   return { ...work, task: latestTaskOf(work.dataRoot, work.key), revision };
 }
 
+// Runs useAcceptedTask(options), publishes the task branch to origin, and gives the task in pushed. Call it inside a
+// test.
+export async function usePushedTask(options?: Parameters<typeof useWorkReviewTask>[0]): Promise<AcceptedTask> {
+  const accepted = await useAcceptedTask(options);
+  await publishTaskBranch({ ...accepted, branch: accepted.task.branch! });
+  withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { state: "pushed" }));
+  return { ...accepted, task: latestTaskOf(accepted.dataRoot, accepted.key) };
+}
+
 export interface PeerReviewTask extends WorkReviewTask {
   prNumber: number;
   publishedRevision: string;

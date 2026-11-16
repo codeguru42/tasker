@@ -71,6 +71,7 @@ import {
   useVerifyFixture,
   useMovedBaseTask,
   useWorkReviewTask,
+  usePushedTask,
   type StartFixture,
   fixtureTrackerAnswer,
   fixtureTrackerCall,
@@ -714,6 +715,17 @@ describe("useAcceptedTask", () => {
       }),
     ).toEqual(["work.txt"]);
     expect(await accepted.origin.branchHead("main")).not.toBe(accepted.revision);
+  });
+});
+
+describe("usePushedTask", () => {
+  it("gives a task in pushed with the accepted revision on origin", async () => {
+    const pushed = await usePushedTask();
+
+    expect(pushed.task.state).toBe("pushed");
+    expect(latestTaskOf(pushed.dataRoot, pushed.key).state).toBe("pushed");
+    expect(pushed.task.publishedRevision).toBe(pushed.revision);
+    expect(await pushed.origin.branchHead(String(pushed.task.branch))).toBe(pushed.revision);
   });
 });
 

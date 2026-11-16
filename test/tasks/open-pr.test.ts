@@ -6,7 +6,6 @@ import { LockBusyError, repoLockName, taskLockName } from "../../src/store/locks
 import type { TaskStore } from "../../src/store/store.js";
 import { captureIo } from "../helpers/cli.js";
 import { failureOf } from "../helpers/errors.js";
-import { copyCloneBranchToOrigin } from "../helpers/git.js";
 import { forgeStub } from "../helpers/forge.js";
 import { startLockHolder } from "../helpers/processes.js";
 import { runGit } from "../../src/vcs/git/run.js";
@@ -18,7 +17,7 @@ import {
   rejectPrOpenedEvent,
   withDataRootStore,
 } from "../helpers/store.js";
-import { taskRefOf, useAcceptedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
+import { taskRefOf, useAcceptedTask, usePushedTask, type AcceptedTask } from "../helpers/task-fixtures.js";
 import { fakeGh, ghTokenAnswer, githubWriteAnswer } from "../helpers/fake-gh.js";
 import { useTempDir } from "../helpers/temp.js";
 import {
@@ -33,17 +32,7 @@ import {
 const KEY = "codeguru42/tasker#5";
 
 async function pushedTask(): Promise<AcceptedTask> {
-  const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
-  await copyCloneBranchToOrigin({
-    origin: accepted.origin.path,
-    clone: accepted.clone,
-    branch: accepted.task.branch!,
-    env: accepted.env,
-  });
-  withDataRootStore(accepted.dataRoot, (store) =>
-    store.updateTask(accepted.task.id, { state: "pushed", publishedRevision: accepted.revision }),
-  );
-  return { ...accepted, task: latestTaskOf(accepted.dataRoot, KEY) };
+  return usePushedTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
 }
 
 async function callOpenPr(
@@ -368,6 +357,7 @@ describe("openPrTask", () => {
         base: "main",
         title: `${fixture.task.title ?? KEY} (${KEY})`,
         body: `Task: ${KEY}\n\n${fixture.task.title ?? KEY}`,
+        draft: false,
       },
     ]);
     expect(fake.calls.listed).toEqual([{ cwd: fixture.task.worktreePath!, head: fixture.task.branch! }]);
@@ -392,6 +382,32 @@ describe("openPrTask", () => {
       },
     ]);
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
+  });
+
+  it.each([
+    [true, true],
+    [false, false],
+  ])("creates a PR with draft %s from forge.draftPr", async (draftPr, draft) => {
+    const fixture = await pushedTask();
+    fixture.config.repos[fixture.repoKey].forge!.draftPr = draftPr;
+    const fake = forgeStub();
+
+    const { result } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
+
+    expect(fake.calls.created[0].draft).toBe(draft);
+    expect(result).toEqual({ pullRequest: { number: 42, url: "https://example.test/pull/42" }, adopted: false });
+    expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("in_peer_review");
+  });
+
+  it("adopts an open PR with forge.draftPr true and creates no PR", async () => {
+    const fixture = await pushedTask();
+    fixture.config.repos[fixture.repoKey].forge!.draftPr = true;
+    const fake = forgeStub({ openPrs: [{ number: 19, url: "https://example.test/pull/19", base: "main" }] });
+
+    const { result } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
+
+    expect(fake.calls.created).toEqual([]);
+    expect(result).toMatchObject({ adopted: true });
   });
 
   it("adopts an open PR on the resolved base without creating another PR", async () => {
