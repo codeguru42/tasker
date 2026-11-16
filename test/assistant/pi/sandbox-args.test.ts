@@ -91,6 +91,8 @@ describe("sandboxArgs", () => {
       "--unshare-pid",
       "--new-session",
       "--die-with-parent",
+      "--seccomp",
+      "3",
       "--setenv",
       "TMPDIR",
       temp,
@@ -100,6 +102,22 @@ describe("sandboxArgs", () => {
       existsSync("/bin/bash") ? "/bin/bash" : "bash",
       "-c",
       command,
+    ]);
+  });
+
+  it("puts --seccomp 3 right after --die-with-parent", async () => {
+    const { worktree, sandbox } = setup();
+
+    const args = await argsFor({ sandbox, cwd: worktree, command: "true" });
+    const start = args.indexOf("--unshare-pid");
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(args.slice(start, start + 5)).toEqual([
+      "--unshare-pid",
+      "--new-session",
+      "--die-with-parent",
+      "--seccomp",
+      "3",
     ]);
   });
 

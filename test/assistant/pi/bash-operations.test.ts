@@ -1,8 +1,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { failureOf } from "../../helpers/errors.js";
 import type { PiSandboxLimits } from "../../../src/assistant/pi/guard-limits.js";
-import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
+import { fakeBwrapSeccompPath, useFakeSandboxBin } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 interface ExecOptions {
@@ -16,12 +17,24 @@ interface BashOperations {
   exec(command: string, cwd: string, options: ExecOptions): Promise<{ exitCode: number }>;
 }
 
-async function operations(sandbox: PiSandboxLimits, deniedCommands: string[] = []): Promise<BashOperations> {
+async function seccompModule() {
+  const path = resolve(process.cwd(), "src/assistant/seccomp.js");
+  return (await import(path)) as {
+    unixSocketFilter(arch: string): Buffer | undefined;
+    seccompArchRefusal(arch: string): string;
+  };
+}
+
+async function operations(
+  sandbox: PiSandboxLimits,
+  deniedCommands: string[] = [],
+  arch?: string,
+): Promise<BashOperations> {
   const path = resolve(process.cwd(), "src/assistant/pi/bash-operations.js");
   const module = (await import(path)) as {
-    createBashOperations(sandbox: PiSandboxLimits, deniedCommands: string[]): BashOperations;
+    createBashOperations(sandbox: PiSandboxLimits, deniedCommands: string[], arch?: string): BashOperations;
   };
-  return module.createBashOperations(sandbox, deniedCommands);
+  return module.createBashOperations(sandbox, deniedCommands, arch);
 }
 
 function setup() {
@@ -67,6 +80,28 @@ describe("createBashOperations", () => {
     expect(Buffer.concat(chunks).toString()).toContain("passed");
     expect(Buffer.concat(chunks).toString()).toContain(worktree);
     expect(readFileSync(argsLog, "utf8")).toContain(worktree);
+  });
+
+  it("passes the seccomp filter to bwrap on fd 3", async () => {
+    const { worktree, sandbox, env } = setup();
+    const seccomp = await seccompModule();
+    const ops = await operations(sandbox);
+
+    await ops.exec("true", worktree, { onData: () => undefined, env });
+
+    const seccompFile = fakeBwrapSeccompPath(dirname(sandbox.bwrap));
+    expect(readFileSync(seccompFile).equals(seccomp.unixSocketFilter("x64")!)).toBe(true);
+  });
+
+  it("refuses a call for an architecture with no seccomp filter and spawns nothing", async () => {
+    const { worktree, sandbox, env, argsLog } = setup();
+    const seccomp = await seccompModule();
+    const ops = await operations(sandbox, [], "arm64");
+
+    const error = await failureOf(ops.exec("true", worktree, { onData: () => undefined, env }), Error);
+
+    expect(error.message).toBe(seccomp.seccompArchRefusal("arm64"));
+    expect(() => readFileSync(argsLog)).toThrow();
   });
 
   it("rechecks final command text and spawns nothing for a denied command", async () => {

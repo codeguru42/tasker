@@ -3,7 +3,7 @@ import { delimiter, join, resolve } from "node:path";
 import type { RunInput, RunOutcome } from "../../../src/assistant/provider.js";
 import type { PiSandboxLimits } from "../../../src/assistant/pi/guard-limits.js";
 import { runInput, sandboxLimits } from "../../helpers/fake-claude.js";
-import { useFakeSandboxBin, writeFakeCommand } from "../../helpers/fake-commands.js";
+import { fakeBwrapSeccompPath, useFakeSandboxBin, writeFakeCommand } from "../../helpers/fake-commands.js";
 import { useTempDir } from "../../helpers/temp.js";
 import { describe, expect, it } from "vitest";
 
@@ -11,13 +11,21 @@ interface PrecheckModule {
   runSandboxPrecheck(
     input: RunInput,
     start: (sandbox: PiSandboxLimits) => Promise<RunOutcome>,
-    options?: { probeTimeoutMs?: number },
+    options?: { probeTimeoutMs?: number; arch?: string },
   ): Promise<RunOutcome>;
 }
 
 async function precheckModule(): Promise<PrecheckModule> {
   const path = resolve(process.cwd(), "src/assistant/pi/sandbox-precheck.js");
   return (await import(path)) as PrecheckModule;
+}
+
+async function seccompModule() {
+  const path = resolve(process.cwd(), "src/assistant/seccomp.js");
+  return (await import(path)) as {
+    unixSocketFilter(arch: string): Buffer | undefined;
+    seccompArchRefusal(arch: string): string;
+  };
 }
 
 function failure(input: RunInput, reason: string): Extract<RunOutcome, { kind: "failure" }> {
@@ -273,5 +281,28 @@ describe("runSandboxPrecheck", () => {
     expect(args.slice(-3)).toEqual([existsSync("/bin/bash") ? "/bin/bash" : "bash", "-c", "true"]);
     expect(args).not.toContain(hidden);
     expect(args).not.toContain("--tmpfs");
+  });
+
+  it("gives the seccomp filter to the probe on fd 3", async () => {
+    const { input, bin } = setup();
+    const seccomp = await seccompModule();
+
+    const result = await run(input, async () => failure(input, "passed"));
+
+    expect(reasonOf(result)).toBe("passed");
+    expect(readFileSync(fakeBwrapSeccompPath(bin)).equals(seccomp.unixSocketFilter("x64")!)).toBe(true);
+  });
+
+  it("refuses an architecture with no seccomp filter before the bwrap check", async () => {
+    const { input, bin } = setup();
+    input.env.PATH = useFakeSandboxBin(["bwrap"]);
+    const seccomp = await seccompModule();
+
+    const result = await (await precheckModule()).runSandboxPrecheck(input, noStart(), { arch: "arm64" });
+
+    expect(result.kind).toBe("failure");
+    expect(reasonOf(result)).toBe(seccomp.seccompArchRefusal("arm64"));
+    expect(existsSync(input.env.TASKER_FAKE_BWRAP_ARGS!)).toBe(false);
+    expect(existsSync(fakeBwrapSeccompPath(bin))).toBe(false);
   });
 });
