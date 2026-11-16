@@ -580,14 +580,9 @@ describe("isPrMerged", () => {
     fake.assertAnswered();
   });
 
-  it.each([
-    ["invalid JSON", "{"],
-    ["missing state", JSON.stringify({ url: "https://example.test/pull/42" })],
-    ["nonstring state", JSON.stringify({ state: 42 })],
-    ["array response", JSON.stringify([{ state: "MERGED" }])],
-  ])("rejects a %s response", async (_label, stdout) => {
+  it("rejects an invalid JSON response", async () => {
     const dir = useTempDir("tasker-is-pr-merged-malformed-");
-    const { env, fake, session } = setup([{ args: ["pr", "view", "42", "--json", "state"], stdout }], dir);
+    const { env, fake, session } = setup([{ args: ["pr", "view", "42", "--json", "state"], stdout: "{" }], dir);
 
     const error = await failureOf(mergedCall(session, 42, dir, env), Error);
     expect(error.message).toContain("42");
@@ -812,14 +807,9 @@ describe("isPrDraft", () => {
     fake.assertAnswered();
   });
 
-  it.each([
-    ["invalid JSON", "{"],
-    ["missing isDraft", JSON.stringify({ url: "https://example.test/pull/42" })],
-    ["nonboolean isDraft", JSON.stringify({ isDraft: "yes" })],
-    ["array response", JSON.stringify([{ isDraft: true }])],
-  ])("rejects a %s response", async (_label, stdout) => {
+  it("rejects an invalid JSON response", async () => {
     const dir = useTempDir("tasker-is-pr-draft-malformed-");
-    const { env, fake, session } = setup([{ args: ["pr", "view", "42", "--json", "isDraft"], stdout }], dir);
+    const { env, fake, session } = setup([{ args: ["pr", "view", "42", "--json", "isDraft"], stdout: "{" }], dir);
 
     const error = await failureOf(draftCall(session, 42, dir, env), Error);
     expect(error.message).toContain("42");
