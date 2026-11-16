@@ -1,3 +1,4 @@
+import { asciiFold } from "../ascii-fold.js";
 import type { Io } from "../cli.js";
 import type { Config, RepoConfig } from "../config/schema.js";
 import { errorMessage } from "../error-message.js";
@@ -118,4 +119,41 @@ export function clearMarkerWrite(
     success: `cleared the in-progress marker of ${ref.key} on the tracker`,
     run: () => issueProviderFor(config, ref.repoKey).clearInProgress(ref, marker, env),
   };
+}
+
+// Writes the review target on the tracker after a task reaches in_peer_review. When a GitHub review label write
+// passes, it also clears the in-progress marker that the task added. A failed write warns and never throws.
+export async function runReviewWrites(
+  store: TaskStore,
+  config: Config,
+  ref: IssueRef,
+  task: Task,
+  env: NodeJS.ProcessEnv,
+  io: Io,
+): Promise<void> {
+  const { issueTracker } = config.repos[task.repoKey];
+  const reviewTarget = trackerTargets(issueTracker).review;
+  if (reviewTarget !== undefined) {
+    const github = issueTracker.provider === "github";
+    const text = github
+      ? `add the label ${JSON.stringify(reviewTarget)} to ${task.issueKey}`
+      : `move ${task.issueKey} to the status ${JSON.stringify(reviewTarget)}`;
+    const success = github
+      ? `added the label ${JSON.stringify(reviewTarget)} to ${task.issueKey} on the tracker`
+      : `moved ${task.issueKey} to the status ${JSON.stringify(reviewTarget)} on the tracker`;
+    const reviewWrite: TrackerWrite = {
+      action: "review",
+      text,
+      success,
+      run: () => issueProviderFor(config, task.repoKey).markReview(ref, reviewTarget, env),
+    };
+    const reviewPassed = await runTrackerWrite(store, task.id, reviewWrite, io);
+    if (reviewPassed && github) {
+      const marker = trackerTargets(issueTracker).inProgress;
+      if (marker !== undefined && asciiFold(marker) !== asciiFold(reviewTarget)) {
+        const clearWrite = clearMarkerWrite(config, ref, task, env);
+        if (clearWrite !== undefined) await runTrackerWrite(store, task.id, clearWrite, io);
+      }
+    }
+  }
 }
