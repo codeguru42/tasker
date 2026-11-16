@@ -69,7 +69,19 @@ export async function createPr(
   let response: string;
   try {
     response = await session.run(
-      ["pr", "create", "--head", target.head, "--base", target.base, "--title", target.title, "--body", target.body],
+      [
+        "pr",
+        "create",
+        "--head",
+        target.head,
+        "--base",
+        target.base,
+        "--title",
+        target.title,
+        "--body",
+        target.body,
+        ...(target.draft === true ? ["--draft"] : []),
+      ],
       { cwd: target.cwd, env },
     );
   } catch (error) {

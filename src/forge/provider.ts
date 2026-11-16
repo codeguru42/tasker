@@ -28,6 +28,8 @@ export interface PrTarget {
 export interface CreatePrInput extends PrTarget {
   title: string;
   body: string;
+  /** Whether the forge creates the pull request as a draft. */
+  draft?: boolean;
 }
 
 /**
