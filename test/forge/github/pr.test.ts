@@ -940,15 +940,21 @@ describe("viewPr", () => {
     await expect(viewPr(session, 12, dir, env)).resolves.toMatchObject({ crossRepository: true });
   });
 
-  it.each([
-    ["bad JSON", "not json"],
-    ["an unknown state", row("DRAFT")],
-  ])("rejects %s", async (_name, stdout) => {
+  it.each([["an unknown state", row("DRAFT")]])("rejects %s", async (_name, stdout) => {
     const dir = useTempDir("tasker-view-pr-invalid-");
     const { env, session } = setup([{ args: viewArgs, stdout }], dir);
 
     const error = await failureOf(viewPr(session, 12, dir, env), Error);
     expect(error.message).toBe("could not read pull request 12: GitHub returned an invalid pull request");
+  });
+
+  it("wraps a parser failure of bad JSON with the number", async () => {
+    const dir = useTempDir("tasker-view-pr-bad-json-");
+    const { env, session } = setup([{ args: viewArgs, stdout: "not json" }], dir);
+
+    const error = await failureOf(viewPr(session, 12, dir, env), Error);
+    expect(error.message.startsWith("could not read pull request 12: ")).toBe(true);
+    expect(error.message).not.toBe("could not read pull request 12: GitHub returned an invalid pull request");
   });
 
   it("wraps a gh failure with the number", async () => {

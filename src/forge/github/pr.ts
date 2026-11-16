@@ -104,18 +104,32 @@ const DRAFT_STATE: PrFieldRead<boolean> = {
   isValid: (value): value is boolean => typeof value === "boolean",
 };
 
-async function viewPrField<T>(
+interface PrViewRead<T> {
+  // The value of --json.
+  fields: string;
+  // The words after "could not", for example "read merged state".
+  operation: string;
+  // The words before the PR number, for example "of pull request".
+  subject: string;
+  // The message for an answer of the wrong shape.
+  invalid: string;
+  // Reads the parsed object. undefined means the wrong shape.
+  parse: (record: Record<string, unknown>) => T | undefined;
+}
+
+async function viewPrJson<T>(
   session: GhSession,
   prNumber: number,
   cwd: string,
   env: NodeJS.ProcessEnv,
-  read: PrFieldRead<T>,
+  read: PrViewRead<T>,
 ): Promise<T> {
+  const subject = `${read.subject} ${prNumber}`;
   let response: string;
   try {
-    response = await session.run(["pr", "view", String(prNumber), "--json", read.field], { cwd, env });
+    response = await session.run(["pr", "view", String(prNumber), "--json", read.fields], { cwd, env });
   } catch (error) {
-    throw operationError(read.operation, error, `of pull request ${prNumber}`);
+    throw operationError(read.operation, error, subject);
   }
 
   try {
@@ -123,14 +137,33 @@ async function viewPrField<T>(
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
       throw new Error(read.invalid);
     }
-    const fieldValue = (value as Record<string, unknown>)[read.field];
-    if (!read.isValid(fieldValue)) {
+    const result = read.parse(value as Record<string, unknown>);
+    if (result === undefined) {
       throw new Error(read.invalid);
     }
-    return fieldValue;
+    return result;
   } catch (error) {
-    throw operationError(read.operation, error, `of pull request ${prNumber}`);
+    throw operationError(read.operation, error, subject);
   }
+}
+
+async function viewPrField<T>(
+  session: GhSession,
+  prNumber: number,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+  read: PrFieldRead<T>,
+): Promise<T> {
+  return viewPrJson(session, prNumber, cwd, env, {
+    fields: read.field,
+    operation: read.operation,
+    subject: "of pull request",
+    invalid: read.invalid,
+    parse: (record) => {
+      const value = record[read.field];
+      return read.isValid(value) ? value : undefined;
+    },
+  });
 }
 
 export async function isPrMerged(
@@ -199,35 +232,18 @@ export async function viewPr(
   cwd: string,
   env: NodeJS.ProcessEnv,
 ): Promise<PullRequestView> {
-  let response: string;
-  try {
-    response = await session.run(
-      ["pr", "view", String(prNumber), "--json", "number,url,state,headRefName,baseRefName,isCrossRepository"],
-      { cwd, env },
-    );
-  } catch (error) {
-    throw operationError("read", error, `pull request ${prNumber}`);
-  }
-
-  try {
-    return parsePullRequestView(response);
-  } catch (error) {
-    throw operationError("read", error, `pull request ${prNumber}`);
-  }
+  return viewPrJson(session, prNumber, cwd, env, {
+    fields: "number,url,state,headRefName,baseRefName,isCrossRepository",
+    operation: "read",
+    subject: "pull request",
+    invalid: "GitHub returned an invalid pull request",
+    parse: pullRequestViewOf,
+  });
 }
 
 const PR_STATES: Record<string, PrState> = { OPEN: "open", CLOSED: "closed", MERGED: "merged" };
 
-function parsePullRequestView(response: string): PullRequestView {
-  const invalid = new Error("GitHub returned an invalid pull request");
-  let value: unknown;
-  try {
-    value = JSON.parse(response);
-  } catch {
-    throw invalid;
-  }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) throw invalid;
-  const view = value as Record<string, unknown>;
+function pullRequestViewOf(view: Record<string, unknown>): PullRequestView | undefined {
   const { number, url, state, headRefName, baseRefName, isCrossRepository } = view;
   if (
     typeof number !== "number" ||
@@ -240,7 +256,7 @@ function parsePullRequestView(response: string): PullRequestView {
     typeof baseRefName !== "string" ||
     typeof isCrossRepository !== "boolean"
   ) {
-    throw invalid;
+    return undefined;
   }
   return {
     number,
