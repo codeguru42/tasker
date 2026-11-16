@@ -95,8 +95,8 @@ If the forge read or the record fails, push prints `warning: <reason>` on stderr
 on stdout. If no PR number or no forge configuration exists, push makes no forge call and prints the forms above.
 
 Each of these results exits with code 0. After a stay or a warning, you can run `tasker open-pr`. It adopts an open PR
-of the task branch on the stored base, or it opens a new PR when the branch has no open PR. It refuses in the cases of
-[its section](#tasker-open-pr), for example an open PR on another base or a landed parent.
+of the task branch on the stored base, or it opens a new PR when the branch has no open PR.
+[Its section](#tasker-open-pr) gives the other results.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. Before the move to `pushing`, the task
 keeps its state and no event or run marker is written. The shared errors of no task, of
