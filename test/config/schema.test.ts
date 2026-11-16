@@ -774,7 +774,7 @@ describe("parseConfig sessions", () => {
     it.each(sessionRoles)("accepts a pi model in %s under the kind pi", (role) => {
       const raw = validConfig();
       raw.repos.tasker.sessions = { kind: "pi", models: { [role]: { model: PI_MODEL, effort: "high" } } };
-      expect(issuesOf(raw)).toEqual([]);
+      expect(parsedRepo(raw).sessions.models).toEqual({ [role]: { model: PI_MODEL, effort: "high" } });
     });
 
     it.each(sessionRoles)("rejects a pi model with no slash in %s", (role) => {
@@ -804,7 +804,7 @@ describe("parseConfig sessions", () => {
     it.each(["low", "medium", "high", "xhigh", "max"])("accepts the effort %s under the kind pi", (effort) => {
       const raw = validConfig();
       raw.repos.tasker.sessions = { kind: "pi", models: { planner: { model: PI_MODEL, effort } } };
-      expect(issuesOf(raw)).toEqual([]);
+      expect(parsedRepo(raw).sessions.models).toEqual({ planner: { model: PI_MODEL, effort } });
     });
 
     it("adds no pi model issue when the kind is bad", () => {

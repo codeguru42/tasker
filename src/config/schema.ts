@@ -283,7 +283,7 @@ function checkModels(repo: unknown, ctx: z.RefinementCtx): void {
 }
 
 // The kind is the name that herdr gives in herdr agent start --kind.
-const SessionKindSchema = z.literal("claude").default("claude");
+const SessionKindSchema = z.enum(["claude", "pi"]).default("claude");
 
 const SessionRoleSchema = z.strictObject({
   model: nonEmpty.describe("The model to use for this session role. It must be a model of the agent kind's provider."),
@@ -307,6 +307,7 @@ export const SESSION_EFFORTS = SessionRoleSchema.shape.effort.options;
 // The provider whose model forms an agent kind uses.
 const SESSION_KIND_PROVIDERS: Record<z.output<typeof SessionKindSchema>, AssistantProviderId> = {
   claude: "claude-code",
+  pi: "pi",
 };
 
 // Same rule as checkModels: this check runs with when, so sessions is raw input.
