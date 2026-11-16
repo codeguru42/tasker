@@ -627,6 +627,33 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   the same slug, the same folder or the same task branch. Do not raise such a collision, and do not file an issue for
   it. When a task subagent reports one, dismiss it with this reason.
 
+## Fix the root cause
+
+- A fault is a bug or a wrong result that a session finds, for example from a failed test. The root cause is the cause
+  whose fix stops the fault from coming back. The judgment of the root cause is open on purpose. The session that finds
+  the fault makes it.
+- If a session finds a fault, it finds the root cause of the fault and fixes that cause.
+- A workaround is a change or an action that makes the fault no longer show but leaves the root cause. Examples are a
+  retry, a longer timeout and a skip of a failed test. The session adds no workaround that hides the fault. A workaround
+  hides the fault: the fault stays, but no session sees it any more.
+- A root cause can be in an outside tool, for example Claude Code, `gh` or GitHub. Then the repo cannot fix that cause.
+  The session records the measured fact of the fault in a doc or an issue. A workaround for that fault names the fact.
+- The rule covers each session that the intro of this page covers. It also covers each task subagent, because
+  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) names this page. It does not cover
+  the sessions that tasker starts for plan, execute and review.
+- The rule says how a session fixes a fault, not when. [Core features first](#core-features-first) still decides when. A
+  fault of an edge case still waits until later. Its issue asks for a fix of the root cause, not for a workaround.
+- Some sessions do not fix a fault themselves, for example an orchestrator or a planner. Such a session files an issue
+  or a finding. The issue or the finding asks for a fix of the root cause.
+- The single `tasker retry` of [the verify-failure rule](verify-failures.md#the-verify-failure-rule) stays as it is. It
+  covers a failure that does not come from the code, and the verify-failure rule wins over this rule. The reason: such a
+  failure has no cause in the repo to fix.
+- The `gh run rerun` of step 9 of [the CI wait](ci-wait.md#the-ci-wait) stays as it is. The reason: step 1 of
+  [A failed CI run](ci-wait.md#a-failed-ci-run) then files an issue for each failed run, also for a flaky one. So the
+  rerun hides no fault.
+- The reason for this rule: the user said "We need to find the root cause and solve it rather than slap a bandaid on it
+  that covers it up."
+
 ## Simplify over special rules
 
 - When a review keeps finding edge cases in a rule, and each fix opens the next case, stop the patches. After two loops
