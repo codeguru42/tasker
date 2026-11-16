@@ -5,6 +5,8 @@ import { commitInWorktree, copyCloneBranchToOrigin } from "../helpers/git.js";
 import { databasePathOf, eventsOf, latestTaskOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { useAcceptedTask, useAcceptedTaskWithNoRevision, useWorkReviewTask } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { fakeGh, ghTokenAnswer, githubWriteAnswer } from "../helpers/fake-gh.js";
+import { useProcessEnv, useTempDir } from "../helpers/temp.js";
 import { installForgeGh, openPrTokenAnswer, openPrViewArgs, OPEN_PR_FORGE_ACCOUNT } from "../helpers/forge-gh.js";
 
 const KEY = "codeguru42/tasker#5";
@@ -138,10 +140,12 @@ describe("tasker push", () => {
         isCrossRepository: false,
       });
 
-    async function recordedPrTask() {
-      const accepted = await useAcceptedTask({
+    async function recordedPrTask(
+      options: Parameters<typeof useAcceptedTask>[0] = {
         repo: { forge: { provider: "github", account: OPEN_PR_FORGE_ACCOUNT } },
-      });
+      },
+    ) {
+      const accepted = await useAcceptedTask(options);
       withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { prNumber: 12 }));
       return accepted;
     }
@@ -162,6 +166,70 @@ describe("tasker push", () => {
         err: "",
       });
       expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 12 });
+    });
+
+    it("prints the tracker lines before the push line when it moves the task to in_peer_review", async () => {
+      const accepted = await recordedPrTask({
+        repo: {
+          forge: { provider: "github", account: OPEN_PR_FORGE_ACCOUNT },
+          issueTracker: {
+            provider: "github",
+            account: "codeguru42",
+            updateOnStart: true,
+            inProgressLabel: "in progress",
+            reviewLabel: "peer-review",
+          },
+        },
+        ghAnswers: [
+          githubWriteAnswer({
+            project: "codeguru42/tasker",
+            number: 5,
+            verb: "edit",
+            rest: ["--add-assignee", "@me"],
+          }),
+          githubWriteAnswer({
+            project: "codeguru42/tasker",
+            number: 5,
+            verb: "edit",
+            rest: ["--add-label", "in progress"],
+          }),
+        ],
+      });
+      const branch = accepted.task.branch!;
+      const fake = fakeGh(useTempDir("tasker-push-review-output-"), process.env, [
+        openPrTokenAnswer(),
+        { args: openPrViewArgs(12), stdout: view(branch, "OPEN") },
+        ghTokenAnswer("codeguru42", "gho_test"),
+        githubWriteAnswer({
+          project: "codeguru42/tasker",
+          number: 5,
+          verb: "edit",
+          rest: ["--add-label", "peer-review"],
+        }),
+        githubWriteAnswer({
+          project: "codeguru42/tasker",
+          number: 5,
+          verb: "edit",
+          rest: ["--remove-label", "in progress"],
+        }),
+      ]);
+      useProcessEnv({
+        TASKER_GH_BIN: fake.env.TASKER_GH_BIN,
+        PATH: `${fake.env.PATH ?? ""}:${process.env.PATH ?? ""}`,
+      });
+
+      const result = await runPush();
+
+      expect(result).toEqual({
+        code: 0,
+        out:
+          `added the label "peer-review" to ${KEY} on the tracker\n` +
+          `cleared the in-progress marker of ${KEY} on the tracker\n` +
+          `pushed ${branch} at ${accepted.revision}\n` +
+          `PR #12 is open: ${url}\n` +
+          "state: in_peer_review\n",
+        err: "",
+      });
     });
 
     it("keeps the task in pushed and says why when the PR is closed", async () => {
