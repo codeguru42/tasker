@@ -727,6 +727,9 @@ add their items to this list:
 - The folders where `pi` installs npm and git packages, and the folder of the npm cache.
 - The skill paths of project files under `--no-approve`, including the links `.agents/skills`, `.pi/skills`, `.agents`
   and `.pi`, and one skill folder inside each project skill folder.
+- The order of `--session-dir`, `PI_CODING_AGENT_SESSION_DIR` and the `sessionDir` setting, and the forms of
+  `PI_CODING_AGENT_SESSION_DIR` that `pi` keeps, expands or converts.
+- The commands of `pi` that end before `pi` reads `PI_CODING_AGENT_SESSION_DIR`.
 
 ### The agent folder
 
@@ -746,6 +749,9 @@ holds the saved API keys and OAuth credentials of `pi`. `mcp-auth.json` holds th
 `models.json` can hold an API key of an endpoint as plain text. The shell and the read tools of a run need none of the
 three files.
 
+Of the files of `claude`, `codex` and `pi`, the deny list holds only their credential files, not their session folders.
+So it holds no entry of the session folder of `pi`.
+
 The list holds the three files in up to three folders: the folder of `TASKER_PI_CODING_AGENT_DIR`, the folder of
 `PI_CODING_AGENT_DIR` and `.pi/agent` under `HOME`. `piAgentDirs()` gives these folders, with the rules of
 `piAgentDir()` for each value. The first folder is the agent folder of the `pi` of tasker. The other two are agent
@@ -754,9 +760,9 @@ agent folder of the `pi` of tasker. Tasker passes no `PI_CODING_AGENT_DIR` of it
 
 `TASKER_PI_CODING_AGENT_DIR` and `TASKER_PI_CODING_AGENT_SESSION_DIR` are the two inputs of tasker for the agent folder
 and the session folder of `pi`. The filter of the phases drops each name that starts with `TASKER_`, so no child gets
-them. This follows `TASKER_GH_CONFIG_DIR`, which the forge child gets as `GH_CONFIG_DIR`. The pi provider must pass the
-two values to its child as `PI_CODING_AGENT_DIR` and `PI_CODING_AGENT_SESSION_DIR`, in the form that `pi` expects.
-Without `PI_CODING_AGENT_DIR`, the child uses `$HOME/.pi/agent`, not the folder that the user set.
+them. This follows `TASKER_GH_CONFIG_DIR`, which the forge child gets as `GH_CONFIG_DIR`. `piChildEnv()` passes the
+agent folder as `PI_CODING_AGENT_DIR` and a set `TASKER_PI_CODING_AGENT_SESSION_DIR` as `PI_CODING_AGENT_SESSION_DIR` to
+each `pi` child. Without `PI_CODING_AGENT_DIR`, the child uses `$HOME/.pi/agent`, not the folder that the user set.
 `PI_CODING_AGENT_SESSION_DIR` locates the sessions of a `pi` command that names no `--session-dir`.
 
 A run of the pi provider and each doctor check that starts `pi` refuse a `TASKER_PI_CODING_AGENT_DIR` that is set and
@@ -780,10 +786,21 @@ The variable `TASKER_PI_BIN` names the `pi` program. For the rule of the resolve
 
 ### The environment of a pi child
 
-Each `pi` child gets the agent folder as `PI_CODING_AGENT_DIR`. `piChildEnv()` gives a reason in three cases, in this
-order. First, `TASKER_PI_CODING_AGENT_DIR` is set and not absolute. Second, it is not set, and `HOME` is set and not
-absolute. Third, `piAgentDir()` gives no folder. [The agent folder](#the-agent-folder) gives the reason for the first
-and second cases. On a reason, a run refuses before the spawn, and each doctor check that starts `pi` fails.
+Each `pi` child gets the agent folder as `PI_CODING_AGENT_DIR`. `piChildEnv()` gives a reason in four cases, in this
+order. First, `TASKER_PI_CODING_AGENT_DIR` is set and not absolute. Second, `TASKER_PI_CODING_AGENT_SESSION_DIR` is set
+and not absolute. Third, `TASKER_PI_CODING_AGENT_DIR` is not set, and `HOME` is set and not absolute. Fourth,
+`piAgentDir()` gives no folder.
+
+[The agent folder](#the-agent-folder) gives the reason for the first and third cases. On a reason, a run refuses before
+the spawn, and each doctor check that starts `pi` fails.
+
+A set `TASKER_PI_CODING_AGENT_SESSION_DIR` passes to each `pi` child as `PI_CODING_AGENT_SESSION_DIR`, as it stands. An
+unset or blank value passes no such name. A set value that is not absolute gives the second reason. For the reason of
+the refusal, see the paragraph of [the agent folder](#the-agent-folder) that starts "A run of the pi provider and each
+doctor check". Its sentence about the cwd of the `pi` process also holds for the session folder.
+
+`pi --version`, `pi auth check` and `pi list` end before `pi` reads `PI_CODING_AGENT_SESSION_DIR`. This fact comes from
+a read of the package code of `pi` 1.1.0 on 2026-11-07. No one ran `pi` for it.
 
 ### The model forms
 
