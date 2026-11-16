@@ -80,6 +80,7 @@ describe("tasker open-pr", () => {
     expect(code).toBe(0);
     expect(help).toContain("<issue>");
     expect(help).toContain("--repo <key>");
+    expect(help).toContain("against the stored base");
   });
 
   it("publishes through push, then adopts the matching PR without creating another", async () => {
@@ -416,6 +417,28 @@ describe("tasker open-pr", () => {
 
     expect(result.code).toBe(1);
     expect(result.err).toContain(`repo "${REPO}" has no forge configuration`);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("pushed");
+  });
+
+  it("exits with code 1 and names a base branch that is not on origin", async () => {
+    const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: ACCOUNT } } });
+    await copyCloneBranchToOrigin({
+      origin: accepted.origin.path,
+      clone: accepted.clone,
+      branch: accepted.task.branch!,
+      env: accepted.env,
+    });
+    withDataRootStore(accepted.dataRoot, (store) =>
+      store.updateTask(accepted.task.id, {
+        state: "pushed",
+        publishedRevision: accepted.revision,
+        base: "refs/heads/topic",
+      }),
+    );
+    const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("the branch topic is not on origin");
     expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("pushed");
   });
 });
