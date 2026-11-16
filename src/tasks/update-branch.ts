@@ -9,6 +9,7 @@ import {
   transitionTask,
   transitionWithBranchUpdate,
 } from "../state/machine.js";
+import type { ForgeProvider } from "../forge/provider.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { BranchUpdateWrites, Task, TaskStore } from "../store/store.js";
 import {
@@ -42,12 +43,20 @@ export interface UpdateBranchRequest {
   undo: boolean;
   env: NodeJS.ProcessEnv;
   io: Io;
+  // A provider override for task tests. Commands use the provider in config.
+  forge?: ForgeProvider;
   // How long the command waits for the lock of the clone.
   repoLockWaitMs: number;
 }
 
 // What the sync step did. A fast-forward and a take have a remote tip: the tip of the copy on origin that the step moved to.
 export type SyncOutcome = { sync: "fast-forward" | "take-remote"; remoteTip: string } | { sync: "absent" | "none" };
+
+// The base change of the recorded PR on the forge.
+interface PrBaseChange {
+  number: number;
+  base: string;
+}
 
 interface UpdateFacts {
   issueKey: string;
@@ -68,6 +77,8 @@ interface UpdateFacts {
   unstackedFrom?: string;
   // The key of the parent that the task is now stacked on, set when the walk ended on a parent that has not landed.
   stackedOn?: string;
+  // The change of the recorded PR base, set when the forge step changed it.
+  prBaseChanged?: PrBaseChange;
   // The state of the task before the command.
   origin: TaskState;
   // The state of the task after the command.

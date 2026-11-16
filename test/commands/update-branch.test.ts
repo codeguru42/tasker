@@ -7,6 +7,7 @@ import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
 import { absentRemoteNote, undoHint } from "../helpers/command-output.js";
 import { amendWorktreeMessage, commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
+import { installForgeGh, openPrTokenAnswer } from "../helpers/forge-gh.js";
 import { runApprove, seedPinnedPlanRevision, seedPlanRevision } from "../helpers/plan.js";
 import { expectedShowLines, wrongStateError } from "../helpers/state-commands.js";
 import {
@@ -27,6 +28,7 @@ import {
   useAcceptedTask,
   useAcceptedTaskWithNoRevision,
   useMovedBaseTask,
+  usePeerReviewTask,
   useWorkReviewTask,
   type WorkReviewTask,
 } from "../helpers/task-fixtures.js";
@@ -366,6 +368,71 @@ describe("tasker update-branch", () => {
         `demoted ${KEY} from awaiting_work_review to executed\n${undoHint(KEY, head)}state: executed\n${expectedShowLines("executed", KEY)}`,
       ),
     ).toBe(true);
+  });
+
+  describe("the forge step", () => {
+    const FORGE = { repo: { forge: { provider: "github", account: "forge-team" } } } as const;
+    const EDIT_ARGS = ["pr", "edit", "42", "--base", "alternate"];
+    const CHANGED = "changed the base of PR #42 to alternate";
+    const PREFIX = "tasker-update-branch-forge-";
+
+    it("changes the base of the recorded PR and prints the line first", async () => {
+      const work = await usePeerReviewTask(FORGE);
+      await work.origin.createBranch("alternate");
+      const forge = installForgeGh([openPrTokenAnswer(), { args: EDIT_ARGS }], PREFIX);
+
+      const result = await runUpdateBranch("--base", "alternate");
+
+      expect(result.code).toBe(0);
+      const lines = result.out.split("\n");
+      expect(lines[0]).toBe(CHANGED);
+      expect(lines.indexOf(CHANGED)).toBeLessThan(lines.findIndex((line) => line.startsWith("state:")));
+      forge.assertAnswered();
+    });
+
+    it("writes a note and keeps the exit code when the repo has no forge", async () => {
+      const work = await usePeerReviewTask();
+      await work.origin.createBranch("alternate");
+
+      const result = await runUpdateBranch("--base", "alternate");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toContain(
+        `note: tasker could not change the base of PR #42 to alternate: repo "${REPO}" has no forge configuration at repos.${REPO}.forge; the operator must change it on the forge`,
+      );
+      expect(latestTaskOf(work.dataRoot, KEY).base).toBe("alternate");
+    });
+
+    it("writes a note and keeps the exit code when gh refuses the change", async () => {
+      const work = await usePeerReviewTask(FORGE);
+      await work.origin.createBranch("alternate");
+      installForgeGh([openPrTokenAnswer(), { args: EDIT_ARGS, exitCode: 1, stderr: "base branch not found" }], PREFIX);
+
+      const result = await runUpdateBranch("--base", "alternate");
+
+      expect(result.code).toBe(0);
+      expect(result.err).toContain("could not change the base of pull request 42");
+      expect(result.out).not.toContain(CHANGED);
+      expect(latestTaskOf(work.dataRoot, KEY).base).toBe("alternate");
+    });
+
+    it("prints the line on stderr before the error when the sync step fails", async () => {
+      const work = await usePeerReviewTask(FORGE);
+      await work.origin.createBranch("alternate");
+      const branch = work.task.branch!;
+      await copyCloneBranchToOrigin({ origin: work.origin.path, clone: work.clone, branch, env: work.env });
+      await work.origin.addCommit(branch, { file: "remote.txt" });
+      await commitInWorktree(work.task.worktreePath!, work.env, { file: "local.txt", message: "local work" });
+      const forge = installForgeGh([openPrTokenAnswer(), { args: EDIT_ARGS }], PREFIX);
+
+      const result = await runUpdateBranch("--base", "alternate");
+
+      expect(result.code).toBe(1);
+      expect(forge.calls().some(({ args }) => args[0] === "pr" && args[1] === "edit")).toBe(true);
+      expect(result.err).toContain(CHANGED);
+      expect(result.err.indexOf(CHANGED)).toBeLessThan(result.err.indexOf("have diverged"));
+      expect(latestTaskOf(work.dataRoot, KEY).base).toBe("alternate");
+    });
   });
 
   describe("the sync step", () => {
