@@ -60,6 +60,7 @@ const ForgeSchema = z.strictObject({
   provider: z.literal("github").describe("The kind of forge."),
   account: nonEmpty.describe("The account to use."),
   mergeMethod: z.enum(["merge", "squash", "rebase"]).default("merge").describe("How to merge a pull request."),
+  draftPr: z.boolean().default(false).describe("Whether tasker creates a pull request as a draft."),
 });
 
 const BoardSchema = z.strictObject({
