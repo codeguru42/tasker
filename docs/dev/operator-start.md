@@ -191,11 +191,12 @@ runs with the expected own name before the operator goes on. The facts are in [d
 - Failed: any case of the list "The gate gives Failed at once", or the end of the limit while the state is Pending. The
   list "The operator reads again" does not give Failed.
 
-The read has two steps:
+The read has three steps:
 
 1. The operator runs `herdr agent list`. It takes the row whose `pane_id` is the pane id that step 2 of "Start a
    session" kept. It does not look up the row by the herdr agent name, because the field `name` can be missing.
-2. The operator runs `grep -m1 session_info <agent_session.value>` and takes the value of `"name"`.
+2. The operator runs `test -e <agent_session.value>`. If the file does not exist yet, the command exits with 1.
+3. If the file exists, the operator runs `grep -m1 session_info <agent_session.value>` and takes the value of `"name"`.
 
 The operator reads every 15 seconds, up to 300 seconds after the start returns. 300000 ms is the maximum `--timeout` of
 `herdr agent start`.
@@ -204,12 +205,13 @@ The operator reads again after 15 seconds in each of these cases. The state stay
 
 - No row of `herdr agent list` has the new pane id yet.
 - The row has no `agent_session` path yet.
+- The file at the `agent_session` path does not exist yet. `test -e` exits with 1.
 - The file holds no `session_info` line yet. `grep` exits with 1.
 
 The gate gives Failed at once in each of these cases:
 
-- A command of the read fails with an error. For example, `herdr agent list` exits with an error, or `grep` exits
-  with 2.
+- A command of the read fails with an error. For example, `herdr agent list` exits with an error, or the file exists and
+  `grep` exits with 2.
 - The file holds a name that is not the expected own name.
 - The limit of 300 seconds ends while the state is still Pending.
 

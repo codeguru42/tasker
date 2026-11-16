@@ -184,21 +184,24 @@ The new operator starts in these steps:
    In a handoff of the operator, this step wins over the sentence of step 3 of "Start a session" that starts "After one
    of these errors, the operator first looks for the new session in `ListAgents`".
 
-   If the kind is `pi`, the new operator goes through
-   [The start gate of a pi session](operator-start.md#the-start-gate-of-a-pi-session). The old and the new operator hold
-   the same own name, and pi allows this. So the name alone is never Done. Only the tie to the new pane id gives Done.
+   If the kind is `pi`, the old operator runs the reads of
+   [The start gate of a pi session](operator-start.md#the-start-gate-of-a-pi-session) after the `herdr pane read`,
+   because it holds the pane id. While the state is Pending, the old operator closes nothing. The old and the new
+   operator hold the same own name, and pi allows this. So the name alone is never Done. Only the tie to the new pane id
+   gives Done.
 
 4. If the new operator runs, the old operator runs `herdr tab get "$HERDR_TAB_ID"` in its shell. If
    `.result.tab.pane_count` is 1, it runs `herdr tab close "$HERDR_TAB_ID"`. If the count is more than 1, it closes only
-   its own pane with `herdr pane close "$HERDR_PANE_ID"`. This close is its last action.
+   its own pane with `herdr pane close "$HERDR_PANE_ID"`. This close is its last action. If the kind is `pi`, step 4
+   starts only after the state Done.
 5. The old operator closes nothing and tells the user in each of these cases:
 
    - (a) `HERDR_TAB_ID` is not set.
    - (b) `HERDR_PANE_ID` is not set, so the old operator cannot get the id of its own pane.
    - (c) `herdr tab get`, `herdr tab close` or `herdr pane close` fails.
 
-6. If the new operator does not run, or a step of "Start a session" fails, the old operator closes nothing. It tells the
-   user, as the failure case of "Start a session" says.
+6. If the new operator does not run, a step of "Start a session" fails, or the state of the gate is Failed, the old
+   operator closes nothing. It tells the user, as the failure case of "Start a session" says.
 7. The new operator does [the check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). That section
    holds its cases and its failure case.
 8. The new operator reads one time whether the pane of the old operator still exists. It runs `herdr pane get <pane id>`
