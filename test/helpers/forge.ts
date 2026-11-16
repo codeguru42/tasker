@@ -3,6 +3,7 @@ import type {
   OpenPullRequest,
   CreatePrInput,
   PullRequest,
+  PullRequestView,
   MergeMethod,
 } from "../../src/forge/provider.js";
 
@@ -12,6 +13,7 @@ export interface ForgeCalls {
   ci: { sha: string; cwd: string }[];
   merged: { number: number; method: MergeMethod; headSha: string; cwd: string }[];
   baseChanged: { number: number; base: string; cwd: string }[];
+  viewed: { number: number; cwd: string }[];
   queried: { number: number; cwd: string }[];
   draftQueried: { number: number; cwd: string }[];
   readied: { number: number; cwd: string }[];
@@ -28,6 +30,7 @@ export interface ForgeStub {
   failBaseChange(error: Error): void;
   failDraftQuery(error: Error): void;
   failReady(error: Error): void;
+  failView(error: Error): void;
 }
 
 export function forgeStub(
@@ -38,6 +41,7 @@ export function forgeStub(
     createdPr?: PullRequest;
     mergedStatuses?: (boolean | Error)[];
     draft?: boolean;
+    viewedPr?: PullRequestView;
   } = {},
 ): ForgeStub {
   const calls: ForgeCalls = {
@@ -49,6 +53,7 @@ export function forgeStub(
     queried: [],
     draftQueried: [],
     readied: [],
+    viewed: [],
     order: [],
   };
   let listError: Error | undefined;
@@ -58,6 +63,7 @@ export function forgeStub(
   let baseChangeError: Error | undefined;
   let draftQueryError: Error | undefined;
   let readyError: Error | undefined;
+  let viewError: Error | undefined;
   const statuses = [...(options.mergedStatuses ?? [])];
   const provider: ForgeProvider = {
     id: options.id ?? "test-forge",
@@ -104,6 +110,21 @@ export function forgeStub(
       calls.readied.push({ number, cwd });
       if (readyError !== undefined) throw readyError;
     },
+    // @ts-expect-error viewPr is not on ForgeProvider yet
+    async viewPr(number, cwd) {
+      calls.viewed.push({ number, cwd });
+      if (viewError !== undefined) throw viewError;
+      return (
+        options.viewedPr ?? {
+          number: 42,
+          url: "https://example.test/pull/42",
+          base: "main",
+          head: "branch",
+          state: "open",
+          crossRepository: false,
+        }
+      );
+    },
   };
   return {
     provider,
@@ -128,6 +149,9 @@ export function forgeStub(
     },
     failReady(error) {
       readyError = error;
+    },
+    failView(error) {
+      viewError = error;
     },
   };
 }

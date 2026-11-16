@@ -344,6 +344,7 @@ describe("openPrTask", () => {
       baseChanged: [],
       draftQueried: [],
       readied: [],
+      viewed: [],
       queried: [],
       order: [],
     });
@@ -496,6 +497,7 @@ describe("openPrTask", () => {
       baseChanged: [],
       draftQueried: [],
       readied: [],
+      viewed: [],
       queried: [],
       order: [],
     });
@@ -540,6 +542,7 @@ describe("openPrTask", () => {
         baseChanged: [],
         draftQueried: [],
         readied: [],
+        viewed: [],
         queried: [],
         order: [],
       });
@@ -572,6 +575,7 @@ describe("openPrTask", () => {
       baseChanged: [],
       draftQueried: [],
       readied: [],
+      viewed: [],
       queried: [],
       order: [],
     });
@@ -667,6 +671,7 @@ describe("openPrTask", () => {
       baseChanged: [],
       draftQueried: [],
       readied: [],
+      viewed: [],
       queried: [],
       order: [],
     });
@@ -688,6 +693,7 @@ describe("openPrTask", () => {
       baseChanged: [],
       draftQueried: [],
       readied: [],
+      viewed: [],
       queried: [],
       order: [],
     });

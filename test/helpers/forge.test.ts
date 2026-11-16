@@ -20,6 +20,7 @@ describe("forgeStub", () => {
       ci: [],
       merged: [],
       baseChanged: [],
+      viewed: [],
       queried: [],
       draftQueried: [],
       readied: [],
@@ -65,6 +66,27 @@ describe("forgeStub", () => {
     await expect(fake.provider.isPrDraft(42, "/work", {})).rejects.toThrow("draft refused");
     fake.failReady(new Error("ready refused"));
     await expect(fake.provider.markPrReady(42, "/work", {})).rejects.toThrow("ready refused");
+  });
+
+  it("records one-PR reads, returns the configured view and can reject them", async () => {
+    const view = {
+      number: 7,
+      url: "https://example.test/pull/7",
+      base: "release",
+      head: "topic",
+      state: "merged",
+      crossRepository: true,
+    } as const;
+    const fake = forgeStub({ viewedPr: view });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await expect(fake.provider.viewPr(7, "/work", {})).resolves.toEqual(view);
+    fake.failView(new Error("view refused"));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await expect(fake.provider.viewPr(7, "/other", {})).rejects.toThrow("view refused");
+    expect(fake.calls.viewed).toEqual([
+      { number: 7, cwd: "/work" },
+      { number: 7, cwd: "/other" },
+    ]);
   });
 
   it("records CI status and merge calls", async () => {

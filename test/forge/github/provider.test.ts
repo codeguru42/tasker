@@ -28,6 +28,15 @@ const openArgs = [
   "--limit",
   "100",
 ];
+const viewArgs = ["pr", "view", "42", "--json", "number,url,state,headRefName,baseRefName,isCrossRepository"];
+const viewRow = {
+  number: prNumber,
+  url: prUrl,
+  state: "OPEN",
+  headRefName: "feature",
+  baseRefName: "main",
+  isCrossRepository: false,
+};
 const createArgs = ["pr", "create", "--head", "feature", "--base", "main", "--title", "Title", "--body", "Body"];
 
 function makeProvider(id = account): ForgeProvider {
@@ -89,6 +98,7 @@ describe("createGitHubForge", () => {
         "markPrReady",
         "mergePr",
         "changePrBase",
+        "viewPr",
       ].sort(),
     );
     expect(fake.calls()).toEqual([]);
@@ -115,6 +125,7 @@ describe("createGitHubForge", () => {
       { args: ["pr", "edit", "42", "--base", "main"], stdout: "" },
       { args: ["pr", "view", "42", "--json", "isDraft"], stdout: '{"isDraft":true}' },
       { args: ["pr", "ready", "42"], stdout: "" },
+      { args: viewArgs, stdout: JSON.stringify(viewRow) },
     ]);
     const provider = makeProvider();
     await provider.ciStatus(sha, worktree, env);
@@ -125,9 +136,11 @@ describe("createGitHubForge", () => {
     await provider.changePrBase(prNumber, "main", worktree, env);
     await provider.isPrDraft(prNumber, worktree, env);
     await provider.markPrReady(prNumber, worktree, env);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await provider.viewPr(prNumber, worktree, env);
 
     const calls = fake.calls().map(({ args, cwd }) => ({ args, cwd }));
-    expect(calls).toHaveLength(11);
+    expect(calls).toHaveLength(12);
     expect(calls[0]).toEqual({ args: ["auth", "token", "--user", account], cwd: process.cwd() });
     expect(calls.slice(1, 4)).toEqual(
       expect.arrayContaining([
@@ -153,6 +166,7 @@ describe("createGitHubForge", () => {
       { args: ["pr", "edit", "42", "--base", "main"], cwd: worktree },
       { args: ["pr", "view", "42", "--json", "isDraft"], cwd: worktree },
       { args: ["pr", "ready", "42"], cwd: worktree },
+      { args: viewArgs, cwd: worktree },
     ]);
     expect(fake.calls().flatMap(({ args }) => args)).not.toContain("--repo");
     expect(

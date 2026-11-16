@@ -7,6 +7,7 @@ import { mergePr as untypedMergePr } from "../../../src/forge/github/pr.js";
 import { changePrBase as untypedChangePrBase } from "../../../src/forge/github/pr.js";
 import { isPrDraft as untypedIsPrDraft } from "../../../src/forge/github/pr.js";
 import { markPrReady as untypedMarkPrReady } from "../../../src/forge/github/pr.js";
+import { viewPr as untypedViewPr } from "../../../src/forge/github/pr.js";
 import type { CreatePrInput, MergeMethod, OpenPullRequest, PullRequest } from "../../../src/forge/provider.js";
 import { diagnosticStrings, failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
@@ -20,6 +21,7 @@ const mergePr = untypedMergePr;
 const changePr = untypedChangePrBase;
 const isPrDraft = untypedIsPrDraft;
 const markPrReady = untypedMarkPrReady;
+const viewPr = untypedViewPr;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
@@ -887,5 +889,78 @@ describe("markPrReady", () => {
     expect(error.message).toContain(stderr);
     expect(diagnosticStrings(error).join("\n")).not.toContain(token);
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+  });
+});
+
+describe("viewPr", () => {
+  const viewArgs = ["pr", "view", "12", "--json", "number,url,state,headRefName,baseRefName,isCrossRepository"];
+  const row = (state: string, isCrossRepository = false) =>
+    JSON.stringify({
+      number: 12,
+      url: "https://github.com/acme/project/pull/12",
+      state,
+      headRefName: "feature/topic",
+      baseRefName: "main",
+      isCrossRepository,
+    });
+
+  it("reads one pull request with the exact command in the worktree", async () => {
+    const dir = useTempDir("tasker-view-pr-");
+    const { env, fake, session } = setup([{ args: viewArgs, stdout: row("OPEN") }], dir);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await expect(viewPr(session, 12, dir, env)).resolves.toEqual({
+      number: 12,
+      url: "https://github.com/acme/project/pull/12",
+      state: "open",
+      head: "feature/topic",
+      base: "main",
+      crossRepository: false,
+    });
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toEqual([
+      expect.objectContaining({ args: viewArgs, tokenMatches: true, cwd: dir }),
+    ]);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["CLOSED", "closed"],
+    ["MERGED", "merged"],
+  ])("maps the state %s to %s", async (state, expected) => {
+    const dir = useTempDir("tasker-view-pr-state-");
+    const { env, session } = setup([{ args: viewArgs, stdout: row(state) }], dir);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await expect(viewPr(session, 12, dir, env)).resolves.toMatchObject({ state: expected });
+  });
+
+  it("reports a pull request from a fork", async () => {
+    const dir = useTempDir("tasker-view-pr-fork-");
+    const { env, session } = setup([{ args: viewArgs, stdout: row("OPEN", true) }], dir);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await expect(viewPr(session, 12, dir, env)).resolves.toMatchObject({ crossRepository: true });
+  });
+
+  it.each([
+    ["bad JSON", "not json"],
+    ["an unknown state", row("DRAFT")],
+  ])("rejects %s", async (_name, stdout) => {
+    const dir = useTempDir("tasker-view-pr-invalid-");
+    const { env, session } = setup([{ args: viewArgs, stdout }], dir);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const error = await failureOf(viewPr(session, 12, dir, env), Error);
+    expect(error.message).toBe("could not read pull request 12: GitHub returned an invalid pull request");
+  });
+
+  it("wraps a gh failure with the number", async () => {
+    const dir = useTempDir("tasker-view-pr-failed-");
+    const { env, session } = setup([{ args: viewArgs, exitCode: 1, stderr: "no such pull request" }], dir);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const error = await failureOf(viewPr(session, 12, dir, env), Error);
+    expect(error.message).toMatch(/^could not read pull request 12:/);
   });
 });

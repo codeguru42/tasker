@@ -5,8 +5,10 @@ import type {
   ForgeProvider,
   MergeMethod,
   OpenPullRequest,
+  PrState,
   PrTarget,
   PullRequest,
+  PullRequestView,
 } from "../../src/forge/provider.js";
 
 type Equal<Actual, Expected> = [Actual] extends [Expected] ? ([Expected] extends [Actual] ? true : false) : false;
@@ -16,6 +18,13 @@ type CiStatusIsExact = Assert<Equal<CiStatus, "pending" | "passed" | "failed">>;
 type MergeMethodIsExact = Assert<Equal<MergeMethod, "merge" | "squash" | "rebase">>;
 type PullRequestIsExact = Assert<Equal<PullRequest, { number: number; url: string }>>;
 type OpenPullRequestIsExact = Assert<Equal<OpenPullRequest, { number: number; url: string; base: string }>>;
+type PrStateIsExact = Assert<Equal<PrState, "open" | "closed" | "merged">>;
+type PullRequestViewIsExact = Assert<
+  Equal<
+    PullRequestView,
+    { number: number; url: string; base: string; state: PrState; head: string; crossRepository: boolean }
+  >
+>;
 type PrTargetIsExact = Assert<Equal<PrTarget, { cwd: string; head: string; base: string }>>;
 type CreatePrInputIsExact = Assert<
   Equal<CreatePrInput, { cwd: string; head: string; base: string; title: string; body: string }>
@@ -25,7 +34,15 @@ type ProviderMethodsAreExact = Assert<
   Equal<
     Pick<
       ForgeProvider,
-      "ciStatus" | "isPrMerged" | "listOpenPrs" | "createPr" | "mergePr" | "changePrBase" | "isPrDraft" | "markPrReady"
+      | "ciStatus"
+      | "isPrMerged"
+      | "listOpenPrs"
+      | "createPr"
+      | "mergePr"
+      | "changePrBase"
+      | "isPrDraft"
+      | "markPrReady"
+      | "viewPr"
     >,
     {
       ciStatus: (sha: string, cwd: string, env: NodeJS.ProcessEnv) => Promise<CiStatus>;
@@ -42,6 +59,7 @@ type ProviderMethodsAreExact = Assert<
       changePrBase: (prNumber: number, base: string, cwd: string, env: NodeJS.ProcessEnv) => Promise<void>;
       isPrDraft: (prNumber: number, cwd: string, env: NodeJS.ProcessEnv) => Promise<boolean>;
       markPrReady: (prNumber: number, cwd: string, env: NodeJS.ProcessEnv) => Promise<void>;
+      viewPr: (prNumber: number, cwd: string, env: NodeJS.ProcessEnv) => Promise<PullRequestView>;
     }
   >
 >;
@@ -63,6 +81,7 @@ type ChangePrBaseArgs = Assert<
 >;
 type IsPrDraftArgs = Assert<Equal<Parameters<ForgeProvider["isPrDraft"]>, [number, string, NodeJS.ProcessEnv]>>;
 type MarkPrReadyArgs = Assert<Equal<Parameters<ForgeProvider["markPrReady"]>, [number, string, NodeJS.ProcessEnv]>>;
+type ViewPrArgs = Assert<Equal<Parameters<ForgeProvider["viewPr"]>, [number, string, NodeJS.ProcessEnv]>>;
 type CiStatusResult = Assert<Equal<ReturnType<ForgeProvider["ciStatus"]>, Promise<CiStatus>>>;
 type IsPrMergedResult = Assert<Equal<ReturnType<ForgeProvider["isPrMerged"]>, Promise<boolean>>>;
 type ListOpenPrsResult = Assert<Equal<ReturnType<ForgeProvider["listOpenPrs"]>, Promise<OpenPullRequest[]>>>;
@@ -72,12 +91,15 @@ type MergePrResult = Assert<Equal<ReturnType<ForgeProvider["mergePr"]>, Promise<
 type ChangePrBaseResult = Assert<Equal<ReturnType<ForgeProvider["changePrBase"]>, Promise<void>>>;
 type IsPrDraftResult = Assert<Equal<ReturnType<ForgeProvider["isPrDraft"]>, Promise<boolean>>>;
 type MarkPrReadyResult = Assert<Equal<ReturnType<ForgeProvider["markPrReady"]>, Promise<void>>>;
+type ViewPrResult = Assert<Equal<ReturnType<ForgeProvider["viewPr"]>, Promise<PullRequestView>>>;
 
 type ContractAssertions = [
   CiStatusIsExact,
   MergeMethodIsExact,
   PullRequestIsExact,
   OpenPullRequestIsExact,
+  PrStateIsExact,
+  PullRequestViewIsExact,
   PrTargetIsExact,
   CreatePrInputIsExact,
   ProviderMethodsAreExact,
@@ -90,6 +112,7 @@ type ContractAssertions = [
   ChangePrBaseArgs,
   IsPrDraftArgs,
   MarkPrReadyArgs,
+  ViewPrArgs,
   CiStatusResult,
   IsPrMergedResult,
   ListOpenPrsResult,
@@ -98,6 +121,7 @@ type ContractAssertions = [
   ChangePrBaseResult,
   IsPrDraftResult,
   MarkPrReadyResult,
+  ViewPrResult,
 ];
 
 describe("ForgeProvider type contract", () => {
@@ -127,8 +151,12 @@ describe("ForgeProvider type contract", () => {
       true,
       true,
       true,
+      true,
+      true,
+      true,
+      true,
     ];
-    expect(assertions).toEqual(Array.from({ length: 24 }, () => true));
+    expect(assertions).toEqual(Array.from({ length: 28 }, () => true));
   });
 });
 
