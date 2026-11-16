@@ -8,9 +8,10 @@ A ticket is an issue on the project board. A task subagent, as [sessions.md](ses
 sessions, as [sessions.md](sessions.md) says. The operator starts the orchestrator, as
 [Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not type in the
 session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
-[A blocked session](dev/operator-start.md#a-blocked-session) says. The orchestrator reads its own name and its slug from
-the first line of the output of `ListAgents`, as [sessions.md](sessions.md) says. A task is the record that tasker keeps
-for one ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
+[A blocked session](dev/operator-start.md#a-blocked-session) says. The orchestrator of the kind `claude` reads its own
+name and its slug from the first line of the output of `ListAgents`, as [sessions.md](sessions.md) says. A pi
+orchestrator uses the read of [sessions.md](sessions.md) that names `PI_SESSION_FILE`. A task is the record that tasker
+keeps for one ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
 
 Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo.
 

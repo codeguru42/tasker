@@ -867,7 +867,8 @@ likely edit the same file", which name the planner.
 - If the planner shows the list of milestones, it uses one table with the columns `#`, `Milestone` and `Description`,
   one row for each milestone, and "Future" last. The description in each row is the description of the milestone on
   GitHub. Notes go below the table.
-- The operator names each planner `planner-<slug>` with the flag `-n` of `claude`, for example `planner-m7`.
+- The operator names each planner `planner-<slug>` with the flag `-n` of `claude`, for example `planner-m7`. This is the
+  form of `claude`. A pi planner gets its name as [Start a session](operator-start.md#start-a-session) says.
   [sessions.md](../sessions.md) defines the slug. The name of a session is a noun for its role, not a verb. Examples are
   `orchestrator-<slug>` and `planner-<slug>`. The name tells the user which session is the planner and which session is
   an orchestrator. For example, on 2026-10-15, the user confused a planner with the orchestrator.
