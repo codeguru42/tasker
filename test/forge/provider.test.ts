@@ -27,7 +27,7 @@ type PullRequestViewIsExact = Assert<
 >;
 type PrTargetIsExact = Assert<Equal<PrTarget, { cwd: string; head: string; base: string }>>;
 type CreatePrInputIsExact = Assert<
-  Equal<CreatePrInput, { cwd: string; head: string; base: string; title: string; body: string }>
+  Equal<CreatePrInput, { cwd: string; head: string; base: string; title: string; body: string; draft?: boolean }>
 >;
 
 type ProviderMethodsAreExact = Assert<

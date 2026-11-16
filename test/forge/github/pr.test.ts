@@ -120,6 +120,7 @@ const createArgs = (target: CreatePrInput) => [
   target.title,
   "--body",
   target.body,
+  ...(target.draft === true ? ["--draft"] : []),
 ];
 
 describe("listOpenPrs", () => {
@@ -402,6 +403,26 @@ describe("createPr", () => {
     expect({ GH_HOST: process.env.GH_HOST, GH_REPO: process.env.GH_REPO, GH_TOKEN: process.env.GH_TOKEN }).toEqual(
       parentEnvBefore,
     );
+    fake.assertAnswered();
+  });
+
+  it.each([
+    [true, true],
+    [false, false],
+    [undefined, false],
+  ])("sends --draft only for a draft request (draft %s)", async (draft, sendsDraft) => {
+    const dir = useTempDir("tasker-create-pr-draft-");
+    const target = { ...createTarget, cwd: dir, draft };
+    const { env, fake, session } = setup(
+      [{ args: createArgs(target), stdout: "https://github.com/acme/project/pull/42" }],
+      dir,
+    );
+
+    await expect(createCall(session, target, env)).resolves.toEqual({
+      number: 42,
+      url: "https://github.com/acme/project/pull/42",
+    });
+    expect(fake.calls().at(-1)?.args.includes("--draft")).toBe(sendsDraft);
     fake.assertAnswered();
   });
 
