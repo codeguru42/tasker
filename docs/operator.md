@@ -57,9 +57,9 @@ milestone" or a denied removal of the label "on hold", the operator follows
 
 The operator pages are `docs/operator.md` and the pages of this list, "The pages":
 
-- [docs/dev/operator-start.md](dev/operator-start.md): "The order of a milestone", "Start a session", "The start
-  prompts", "Stop a session", "The close of a milestone", "A handoff", "A denied command of the operator" and "A blocked
-  session".
+- [docs/dev/operator-start.md](dev/operator-start.md): "The order of a milestone", "Start a session", "The start gate of
+  a pi session", "The start prompts", "Stop a session", "The close of a milestone", "A handoff", "A denied command of
+  the operator" and "A blocked session".
 - [docs/dev/operator-items.md](dev/operator-items.md): "The form of an item", "The open items", "The answer" and "The
   states of an item".
 - [docs/dev/operator-conversations.md](dev/operator-conversations.md): "A side conversation" and "The word of the user".

@@ -12,6 +12,12 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    of `sessions.models.operator` with the flags of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind),
    for example `claude -n operator-m9 --model opus --effort high`. If `sessions.models.operator` has no entry, the user
    passes neither flag.
+
+   If `sessions.kind` is `pi`, the user opens the operator with
+   `pi -n operator-<slug> --provider <upstream> --model <model> --thinking <effort>`. If `sessions.models.operator` has
+   no entry, the user passes only `-n operator-<slug>`. The user does the naming step with `-n`. The session reads its
+   name before its role work, as [docs/sessions.md](../sessions.md) says. The first operator has no herdr agent name.
+
 3. The operator finds the milestone of its slug, the milestone whose title gives the slug, as
    [docs/sessions.md](../sessions.md) defines the slug. To read the milestones, the operator runs
    `gh api --paginate 'repos/codeguru42/tasker/milestones?state=all&per_page=100'`. If the read fails,
@@ -119,7 +125,9 @@ this text also when a notice arrives in the middle of it, and the notice applies
 
    `<kind>` is `sessions.kind`. `<model flags>` is the model flag and the effort flag of the kind in
    [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), with the model and the effort of the entry of
-   the role. If `sessions.models` has no entry for the role, the operator leaves out `<model flags>`.
+   the role. If `sessions.models` has no entry for the role, the operator leaves out `<model flags>`. Under `pi`, the
+   `<model flags>` are the pi cells of the seam. A planner and an orchestrator have the same text for the herdr agent
+   name and the own name.
 
    `herdr agent start` can fail while the new session still starts. The known errors are "timed out waiting for agent
    startup", and "named agent `<name>` no longer owns the target terminal" with the code `agent_name_not_found`.
@@ -131,6 +139,11 @@ this text also when a notice arrives in the middle of it, and the notice applies
    failure case that follows applies. In a handoff of the operator, step 3 of "The start of the new operator" wins over
    the first sentence of this paragraph.
 
+   For a pi session, the operator does not use `ListAgents` after one of these errors. It runs
+   `herdr pane read <pane id>` in its shell. If the pane shows a running session, the gate of
+   [The start gate of a pi session](#the-start-gate-of-a-pi-session) applies. Otherwise the failure case that follows
+   applies.
+
    operator-docs saw the timeout on 2026-10-24, in the handoff of planner-docs, and the session ran. operator-docs saw
    the error "named agent orchestrator-docs no longer owns the target terminal" (`agent_name_not_found`) on 2026-10-24,
    at the start of the new orchestrator-docs, and the session ran.
@@ -139,7 +152,11 @@ this text also when a notice arrives in the middle of it, and the notice applies
    error. The new tab stays open, and its entry stays in the tab list. The operator does not close the tab without the
    user. If the user closes that tab, or tells the operator to close it, the entry leaves the tab list.
 
-The facts that follow were measured on 2026-10-24 with herdr 0.9.3 and Claude Code 2.1.310:
+   If the kind is `pi` and the start returned, the operator goes on to
+   [The start gate of a pi session](#the-start-gate-of-a-pi-session).
+
+The facts that follow are facts of the kind `claude`. They were measured on 2026-10-24 with herdr 0.9.3 and Claude Code
+2.1.310. [docs/dev/pi-sessions.md](pi-sessions.md) records the facts of the kind `pi`.
 
 - Herdr sets `HERDR_WORKSPACE_ID` in each pane that it manages. As a result, the new tab opens in the workspace of the
   operator.
@@ -161,10 +178,46 @@ The facts that follow were measured on 2026-10-24 with herdr 0.9.3 and Claude Co
 - The model flag and the effort flag of [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind) reach the
   new session. The new session runs with the model and the effort of these flags.
 
+## The start gate of a pi session
+
+The gate applies to a pi session that the operator starts with `herdr agent start`. It makes sure that the new session
+runs with the expected own name before the operator goes on. The facts are in [docs/dev/pi-sessions.md](pi-sessions.md).
+
+- Pending: the time from `herdr agent start` until the read gives a result, or until the limit ends. The flag `-n` makes
+  the name exist right after the start. So the operator starts to read as soon as `herdr agent start` returns.
+- Done: the row has the new pane id, and the name in the session file equals the expected own name. Then the operator
+  goes on as after a `claude` start that worked.
+- Failed: any case of the list below.
+
+The read has two steps:
+
+1. The operator runs `herdr agent list`. It takes the row whose `pane_id` is the pane id that step 2 of "Start a
+   session" kept. It does not look up the row by the herdr agent name, because the field `name` can be missing.
+2. The operator runs `grep -m1 session_info <agent_session.value>` and takes the value of `"name"`.
+
+The operator reads every 15 seconds, up to 300 seconds after the start returns. 300000 ms is the maximum `--timeout` of
+`herdr agent start`.
+
+The gate gives Failed in each of these cases:
+
+- The read fails.
+- No row has the new pane id.
+- The row has no `agent_session` path.
+- The file holds another name.
+- The limit ends with no match.
+
+After Failed, the operator tells the user the command and the error. The tab and its entry in the tab list stay. The
+operator starts no second session and renames no other session. The user closes the tab. If the name shows up after
+Failed, the state stays Failed.
+
+In a handoff of the operator, the old and the new operator hold the same own name, and pi allows this. Only the tie to
+the new pane id gives Done. The name alone is never Done.
+
 ## The start prompts
 
 The operator puts the milestone title in place of `<milestone>`. Each prompt is the last argument of
-`herdr agent start`.
+`herdr agent start`. Under `pi`, the name comes from `-n` at the start, and the session reads it, as
+[docs/sessions.md](../sessions.md) says, before its role work. So no prompt holds a name step.
 
 The initial planner:
 
