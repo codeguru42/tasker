@@ -10,6 +10,7 @@ import {
   transitionWithBranchUpdate,
 } from "../state/machine.js";
 import type { ForgeProvider } from "../forge/provider.js";
+import { forgeForRepo } from "../forge/registry.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
 import type { BranchUpdateWrites, Task, TaskStore } from "../store/store.js";
 import {
@@ -22,7 +23,7 @@ import {
   uncommittedChangeText,
   vcsForRepo,
 } from "../vcs/provider.js";
-import { LOCAL_PREFIX } from "../vcs/local-branch.js";
+import { branchOfBase, LOCAL_PREFIX } from "../vcs/local-branch.js";
 import { newParentId, parentOf, walkLandedParents } from "./parent.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBranch, requireWorktree, taskInState } from "./task-state.js";
@@ -56,6 +57,33 @@ export type SyncOutcome = { sync: "fast-forward" | "take-remote"; remoteTip: str
 interface PrBaseChange {
   number: number;
   base: string;
+}
+
+// The line that tells the user about the changed base of the recorded PR.
+export function prBaseChangedLine(change: PrBaseChange): string {
+  return `changed the base of PR #${String(change.number)} to ${change.base}\n`;
+}
+
+// Asks the forge to change the base of the recorded PR to the target branch of the stored base. A failure writes a note
+// and gives undefined. The step never throws, so it changes no exit code and no state.
+async function changeRecordedPrBase(
+  request: UpdateBranchRequest,
+  task: Task,
+  path: string,
+  storedBase: string,
+): Promise<PrBaseChange | undefined> {
+  const target = branchOfBase(storedBase);
+  const number = task.prNumber!;
+  try {
+    const forge = request.forge ?? forgeForRepo(request.config, task.repoKey);
+    await forge.changePrBase(number, target, path, request.env);
+    return { number, base: target };
+  } catch (error) {
+    request.io.stderr(
+      `note: tasker could not change the base of PR #${String(number)} to ${target}: ${errorMessage(error)}; the operator must change it on the forge\n`,
+    );
+    return undefined;
+  }
 }
 
 interface UpdateFacts {
@@ -343,6 +371,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         },
         () => ({ type: "base", data: { base: resolved.base, revision: resolved.revision, source: "explicit" } }),
       );
+      if (task.prNumber !== null) run.prBaseChanged = await changeRecordedPrBase(request, task, path, resolved.base);
     }
     // What the sync step did, and the head after it. The catch reads both to undo a sync move.
     let synced: SyncOutcome = { sync: "none" };
@@ -460,6 +489,7 @@ async function updateBranchLocked(store: TaskStore, request: UpdateBranchRequest
         moved,
         undoRecorded: moved || resolved !== undefined,
         undoWithBase: resolved !== undefined,
+        ...(run.prBaseChanged === undefined ? {} : { prBaseChanged: run.prBaseChanged }),
         origin,
         state,
       };
@@ -481,6 +511,8 @@ interface UpdateRun {
   before: BranchSnapshot;
   origin: TaskState;
   failureAfter?: BranchSnapshot;
+  // The change of the recorded PR base, set when the forge step changed it.
+  prBaseChanged?: PrBaseChange;
 }
 
 // The failure path of a run in updating_branch. movedHead is the head that a step left. When it differs from the head
@@ -494,6 +526,7 @@ async function failedUpdate(
 ): Promise<UpdateBranchResult> {
   const { store, task, vcs, ctx, io, path, branch, before, origin } = run;
   const after = run.failureAfter ?? before;
+  if (run.prBaseChanged !== undefined) io.stderr(prBaseChangedLine(run.prBaseChanged));
   if (movedHead !== before.head) {
     // Move back. A failed move back shows in backAtStart, so its error is dropped.
     await vcs.moveWorkspace(ctx, { path, revision: before.head }).catch(() => undefined);

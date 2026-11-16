@@ -2,7 +2,7 @@ import { CommanderError } from "commander";
 import type { Io, RegisterCommand } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import { showLines } from "../state/commands.js";
-import { updateBranchTask } from "../tasks/update-branch.js";
+import { prBaseChangedLine, updateBranchTask } from "../tasks/update-branch.js";
 import {
   ISSUE_ARGUMENT_DESCRIPTION,
   fail,
@@ -79,6 +79,7 @@ async function updateBranchIssue(io: Io, config: Config, issue: string, options:
   if ("exitCode" in result) {
     throw new CommanderError(result.exitCode, "tasker.update-branch", "the update did not succeed");
   }
+  if (result.prBaseChanged !== undefined) io.stdout(prBaseChangedLine(result.prBaseChanged));
   if ("remoteTip" in result) {
     io.stdout(`synced ${result.branch} from origin/${result.branch} at ${result.remoteTip} by ${result.sync}\n`);
   }

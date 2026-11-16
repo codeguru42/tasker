@@ -174,7 +174,8 @@ describe("updateBranchTask, the forge step", () => {
     expect(result).toEqual({ exitCode: 1 });
     expect(forge.calls.baseChanged).toHaveLength(1);
     const err = io.err.join("");
-    expect(err.startsWith(CHANGED)).toBe(true);
-    expect(err.length).toBeGreaterThan(CHANGED.length);
+    expect(err).toContain("stopped on conflicts");
+    expect(err.indexOf(CHANGED)).toBeGreaterThanOrEqual(0);
+    expect(err.indexOf(CHANGED)).toBeLessThan(err.indexOf("stopped on conflicts"));
   });
 });
