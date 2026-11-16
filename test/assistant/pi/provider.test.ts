@@ -2276,7 +2276,13 @@ describe("pi reported model", () => {
   it("gives no reportedModel key when the run has no assistant message", async () => {
     const input = validInput({ jsonSchema: undefined });
     const files = makeFiles();
-    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    const stream = [
+      { ...CORRECTIVE_SESSION_EVENT },
+      { type: "agent_start" },
+      { type: "agent_end", messages: [], willRetry: false },
+      { type: "agent_settled", aborted: false },
+    ];
+    const fake = processScripts(input, files, [{ stream, session: firstSession(input) }]);
     input.env = { ...input.env, ...fake.env };
 
     const outcome = await callPi(input, files);

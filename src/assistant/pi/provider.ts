@@ -24,6 +24,7 @@ import { PI_EXECUTE_TOOL_NAMES, PI_READ_TOOL_NAMES } from "./args.js";
 import { PI_ANSWER_TOOL_NAME } from "./answer-tool.js";
 import { piNotInstalled, piProgram } from "./program.js";
 import { piMessages } from "./stream.js";
+import { piReportedModel } from "./reported-model.js";
 import { guardExtensionPath } from "./guard-start.js";
 import { quotaStopOf } from "./quota.js";
 import { failed, type Failure } from "./failure.js";
@@ -77,11 +78,13 @@ function outcomeOfRun(
   const lastAssistant = messages
     .filter((message): message is Record<string, unknown> => isObject(message) && message.role === "assistant")
     .at(-1);
+  const reportedModel = piReportedModel(messages);
   const base = {
     sessionId: input.sessionId,
     events,
     permissionDenials: [],
     usage: "unavailable" as const,
+    ...(reportedModel === undefined ? {} : { reportedModel }),
     ...(sessionPath !== undefined && isFile(sessionPath) ? { transcriptPath: sessionPath } : {}),
   };
   const fail = (reason: string): Failure => ({
@@ -246,6 +249,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
       let prompt = input.prompt;
       let priorOutcome: RunOutcome | undefined;
       let childEnvironment = initialCheck.childEnvironment;
+      let reportedModel: string | undefined;
 
       const cleanupOutcome = (outcome: RunOutcome): RunOutcome => ({
         ...outcome,
@@ -258,6 +262,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
           events: allEvents,
           permissionDenials,
           usage: "unavailable",
+          ...(reportedModel === undefined ? {} : { reportedModel }),
           ...(path !== undefined && isFile(path) ? { transcriptPath: path } : {}),
         });
 
@@ -330,6 +335,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
 
         const processResult = outcomeOfRun(input, run, processEvents, path, startSize);
         const current = processResult.outcome;
+        reportedModel ??= current.reportedModel;
         permissionDenials.push(...current.permissionDenials);
 
         if (processResult.noAnswerProblems === undefined) {
