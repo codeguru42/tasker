@@ -43,3 +43,13 @@ export function absentRemoteNote(branch: string): string {
 export function undoHint(key: string, head: string): string {
   return `previous HEAD was ${head}; run tasker update-branch ${key} --undo to restore it\n`;
 }
+
+// The note on stderr of tasker update-branch when the forge step cannot change the base of the recorded PR.
+export function prBaseNote(prNumber: number, target: string, reason: string): string {
+  return `note: tasker could not change the base of PR #${String(prNumber)} to ${target}: ${reason}; the operator must change it on the forge\n`;
+}
+
+// The error of a repo with no forge configuration. It has the text of src/forge/registry.ts.
+export function noForgeError(repoKey: string): string {
+  return `repo "${repoKey}" has no forge configuration at repos.${repoKey}.forge`;
+}

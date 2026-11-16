@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { removeTaskWorktree, deleteTaskBranch } from "../../src/vcs/git/worktree.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { runCommand } from "../helpers/cli.js";
-import { absentRemoteNote, undoHint } from "../helpers/command-output.js";
+import { absentRemoteNote, noForgeError, prBaseNote, undoHint } from "../helpers/command-output.js";
 import { expectedShowLines } from "../helpers/state-commands.js";
 import { commitInWorktree, copyCloneBranchToOrigin, gitOutput, gitProvider } from "../helpers/git.js";
+import { installForgeGh, openPrTokenAnswer } from "../helpers/forge-gh.js";
 import { requireBaseRevision } from "../../src/tasks/task-state.js";
 import {
   databasePathOf,
@@ -19,6 +20,7 @@ import {
   expectCommandRefused,
   landParent,
   moveTaskThrough,
+  recordPr,
   useChainedTasks,
   useMovedBaseTask,
   useStackedTasks,
@@ -809,6 +811,38 @@ describe("tasker update-branch for a stacked task", () => {
         });
 
         await expectNothingWritten(fixture, fixture.parent.key);
+      });
+    });
+
+    describe("the forge step", () => {
+      const PREFIX = "tasker-update-branch-stacked-forge-";
+
+      it("prints the changed line before the state line", async () => {
+        const fixture = await useStackedTasks({ repo: { forge: { provider: "github", account: "forge-team" } } });
+        recordPr(fixture.dataRoot, fixture.stacked.task.id);
+        await landParent(fixture, ["accepted", "landed"]);
+        await fixture.origin.addCommit("main");
+        const forge = installForgeGh([openPrTokenAnswer(), { args: ["pr", "edit", "42", "--base", "main"] }], PREFIX);
+
+        const result = await update(fixture);
+
+        expect(result.code).toBe(0);
+        const lines = result.out.split("\n");
+        expect(lines[0]).toBe("changed the base of PR #42 to main");
+        expect(lines.findIndex((line) => line.startsWith("state:"))).toBeGreaterThan(0);
+        forge.assertAnswered();
+      });
+
+      it("writes the note and keeps the exit code when the repo has no forge", async () => {
+        const fixture = await useStackedTasks();
+        recordPr(fixture.dataRoot, fixture.stacked.task.id);
+        await landParent(fixture, ["accepted", "landed"]);
+
+        const result = await update(fixture);
+
+        expect(result.code).toBe(0);
+        expect(result.err).toContain(prBaseNote(42, "main", noForgeError(REPO)));
+        expect(latestTaskOf(fixture.dataRoot, fixture.stacked.key).base).toBe("main");
       });
     });
   });

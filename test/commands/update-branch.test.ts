@@ -5,7 +5,7 @@ import { updateBranch } from "../../src/commands/update-branch.js";
 import type { TaskState } from "../../src/state/machine.js";
 import { runGit } from "../../src/vcs/git/run.js";
 import { runCommand } from "../helpers/cli.js";
-import { absentRemoteNote, undoHint } from "../helpers/command-output.js";
+import { absentRemoteNote, noForgeError, prBaseNote, undoHint } from "../helpers/command-output.js";
 import { amendWorktreeMessage, commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
 import { installForgeGh, openPrTokenAnswer } from "../helpers/forge-gh.js";
 import { runApprove, seedPinnedPlanRevision, seedPlanRevision } from "../helpers/plan.js";
@@ -397,9 +397,7 @@ describe("tasker update-branch", () => {
       const result = await runUpdateBranch("--base", "alternate");
 
       expect(result.code).toBe(0);
-      expect(result.err).toContain(
-        `note: tasker could not change the base of PR #42 to alternate: repo "${REPO}" has no forge configuration at repos.${REPO}.forge; the operator must change it on the forge`,
-      );
+      expect(result.err).toContain(prBaseNote(42, "alternate", noForgeError(REPO)));
       expect(latestTaskOf(work.dataRoot, KEY).base).toBe("alternate");
     });
 

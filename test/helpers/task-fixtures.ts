@@ -747,6 +747,11 @@ export async function landParent(fixture: StackedTasks, states: readonly TaskSta
   withDataRootStore(fixture.dataRoot, (store) => moveTaskThrough(store, fixture.parent.task.id, states));
 }
 
+// Records the PR number of the task, 42 by default, as tasker open-pr does. The state of the task stays as it is.
+export function recordPr(dataRoot: string, taskId: number, prNumber = 42): Task {
+  return withDataRootStore(dataRoot, (store) => store.updateTask(taskId, { prNumber }));
+}
+
 // Lands the parent on main, finishes its task, then removes its worktree and its branch.
 export async function landAndDropParent(fixture: StackedTasks): Promise<void> {
   await landParent(fixture, ["accepted", "landed", "finishing", "finished"]);
