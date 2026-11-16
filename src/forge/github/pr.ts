@@ -123,8 +123,11 @@ export async function changePrBase(
   cwd: string,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
-  // not done yet
-  await Promise.resolve([session, prNumber, base, cwd, env]);
+  try {
+    await session.run(["pr", "edit", String(prNumber), "--base", base], { cwd, env });
+  } catch (error) {
+    throw operationError("change the base", error, `of pull request ${prNumber}`);
+  }
 }
 
 function parseOpenPullRequests(response: string): GhOpenPullRequest[] {
