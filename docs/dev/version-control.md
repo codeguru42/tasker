@@ -17,12 +17,6 @@ maps names only and adds no behavior.
 - The interface owns the types of its operations. The git modules import them from the interface. No module re-exports
   them.
 - The doctor check type stays in `src/doctor/`, because it is not a version control type.
-- `defaultBase` serves `tasker open-pr`, while `resolveBase` chooses a task base. `defaultBase` fetches `origin` into
-  the clone and reads the remote `HEAD` with `git ls-remote --symref`. It returns the branch named by
-  `refs/heads/<branch>`. A failed fetch, failed HEAD query, or empty or unresolved symbolic `HEAD` is an error, with no
-  fallback to a fetched branch such as `origin/main`. It does not use `defaultBaseBranch`, the learned base or the
-  task's stored base. `resolveBase` can use configured and learned bases, while `tasker open-pr` compares the stored
-  task base with the remote default and refuses a mismatch.
 - Reconcile does not fetch. [The fetch](workspaces.md#the-fetch) gives the rule.
 - Push guard rule: a provider that cannot guard a push refuses to provision, and it never runs with a weaker guard. The
   git provider guards a push with the pre-push hook that provision writes (see [Push guard](#push-guard)).
@@ -97,8 +91,7 @@ configuration and fetches. A change to `vcs.config` or to `remote` takes effect 
   names the same repo in `ls-remote` and in the fetch.
 - Provision uses `init --bare` and `remote add`, and not `git clone --bare`. `clone --bare` copies each remote branch to
   `refs/heads/*`, and these copies do not move on fetch, so they become old. In the clone of tasker, `refs/heads/*`
-  holds only task branches. `HEAD` of the clone names a branch that does not exist, and no tasker code reads it. The
-  default branch comes from the symbolic HEAD of the remote.
+  holds only task branches. `HEAD` of the clone names a branch that does not exist, and no tasker code reads it.
 - `--object-format=sha1` overrides `init.defaultObjectFormat` and `GIT_DEFAULT_HASH`, because a sha256 clone cannot
   fetch from a sha1 remote. tasker reads only 40-hex revisions, so a sha256 remote is out of scope.
 - [The fetch](workspaces.md#the-fetch) gives the prune of the fetch. The fetch brings the tags that point into the

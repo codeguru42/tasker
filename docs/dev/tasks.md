@@ -10,10 +10,9 @@ The commands abort, plan, refine, approve, unapprove, execute, accept, reopen, o
 push, mark-landed, update-branch and finish share a preflight rule. Each checks its task guards before its first task-
 state write, so a preflight refusal leaves the task and events unchanged.
 
-[Accept](#accept) and [Open PR](#open-pr) can update or prune clone refs before refusal. Accept fetches origin before it
-checks whether the task branch contains the stored base. The reason for Accept: its guard compares with the fetched base
-tip. Open PR fetches origin before it compares the stored task base with the current default. The reason for Open PR:
-its guard needs that remote default. A failure after reopen or open-pr starts follows its failed-run path.
+[Accept](#accept) can update or prune clone refs before refusal. Accept fetches origin before it checks whether the task
+branch contains the stored base. The reason for Accept: its guard compares with the fetched base tip. A failure after
+reopen or open-pr starts follows its failed-run path.
 
 A refused approve or unapprove also leaves the plan revisions as they were. Each command that changes a task follows the
 no-wait rule of the task lock in [The locks](#the-locks).
@@ -754,8 +753,8 @@ See [Retry](#retry) for recovery after a failed reopen.
 
 ## Open PR
 
-`tasker open-pr` connects a published task to external review. Its base guard keeps the PR tied to origin's default
-branch rather than a configured or learned task-base choice.
+`tasker open-pr` connects a published task to external review. Its base rule opens the PR against the stored task base,
+because a stacked task and a task on an epic branch need a PR on their own base.
 
 Lookup precedes creation so recovery adopts a PR that tasker created before its record failed.
 

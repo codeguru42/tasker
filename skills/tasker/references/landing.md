@@ -104,15 +104,15 @@ concurrent changes.
 Opens or adopts a pull request (PR) for a task in `pushed`: `tasker open-pr <issue> [--repo <key>]`. A PR asks for
 external review. The repo must have a configured forge. The task must have a branch, worktree and stored base.
 
-tasker fetches `origin` and resolves its symbolic default branch before it enters `opening_pr`. If the default cannot be
-resolved, or it differs from the stored task base, the command exits with code 1 and leaves the task state and events
-unchanged. The fetch can update or prune clone refs before this refusal. A local or stacked task base also fails this
-check.
+tasker maps the stored task base to a branch on `origin`. A base of the form `refs/heads/<branch>` gives `<branch>`. Any
+other base is already the name of a branch on `origin`. tasker reads that branch on `origin` before it enters
+`opening_pr`. If the branch is not on `origin`, or the read fails, the command exits with code 1 and the error names the
+branch. The task stays in `pushed`, the events stay as they were, and no clone ref changes.
 
-After the task enters `opening_pr`, tasker lists open origin PRs for the exact task branch. A PR on the resolved default
-base takes precedence, even when another open PR uses a different base. tasker adopts the matching PR and does not edit
-its title or body. If no PR matches and an open PR exists on another base, tasker exits with code 1 and names its
-number, URL and actual base. Correct that PR base and run `tasker retry`.
+After the task enters `opening_pr`, tasker lists open origin PRs for the exact task branch. A PR on that base branch
+takes precedence, even when another open PR uses a different base. tasker adopts the matching PR and does not edit its
+title or body. If no PR matches and an open PR exists on another base, tasker exits with code 1 and names its number,
+URL and actual base. Correct that PR base and run `tasker retry`.
 
 An empty successful lookup means that no open origin PR exists, so tasker creates one with title
 `<summary> (<issue key>)` and body `Task: <issue key>`, a blank line, then the summary. The summary is the stored task
