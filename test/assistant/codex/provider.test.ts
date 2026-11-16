@@ -43,6 +43,13 @@ describe("createCodexProvider", () => {
     expect(codexProvider().id).toBe("codex");
   });
 
+  it("keeps the recorded model of a continued session and adds no check for a reported model", () => {
+    const provider = codexProvider();
+
+    expect(provider.continuedModel({ model: "gpt-5", reportedModel: "o3" })).toBe("gpt-5");
+    expect(provider.reportedModelChecks("gpt-5", "o3")).toEqual([]);
+  });
+
   it("gives no doctor check for no repo", () => {
     expect(codexProvider().doctorChecks([])).toEqual([]);
   });

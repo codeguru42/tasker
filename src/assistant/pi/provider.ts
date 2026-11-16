@@ -353,6 +353,8 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
     },
     doctorChecks: (repos) => piDoctorChecks(repos, os.platform()),
     modelChecks: (model) => [assistantModelCheck("pi", `pi model: ${model}`, model)],
+    continuedModel: (session) => session.model,
+    reportedModelChecks: () => [],
     detectQuotaApprovalWarning: () => undefined,
     isQuotaEvent: () => false,
     shouldSuppressQuotaApprovalPause: () => false,

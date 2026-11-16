@@ -8,6 +8,7 @@ import {
   type AssistantRole,
   createAssistantProvider,
   createSessionProvider,
+  type ContinuedSession,
   type RecordedSession,
   type RunInput,
   type RunOutcome,
@@ -20,7 +21,7 @@ import type { Task, TaskStore } from "../store/store.js";
 import { type AssistantSurface, vcsForRepo } from "../vcs/provider.js";
 
 export type AssistantSessionRequest =
-  { resume: false } | { resume: true; sessionId: string; recorded: RecordedSession };
+  { resume: false } | { resume: true; sessionId: string; recorded: ContinuedSession };
 
 // The input that both entry points take.
 export interface TaskRunRequest {

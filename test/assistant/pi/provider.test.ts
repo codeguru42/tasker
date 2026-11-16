@@ -26,7 +26,7 @@ import { type FakePiAnswer, useFakePi } from "../../helpers/fake-pi.js";
 import { validPlanAnswer } from "../../helpers/plan.js";
 import { piQuotaStream } from "../../helpers/pi-quota-streams.js";
 import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
-import { piAssistantMessage, REPORTED_PI_MODEL, ROUTER_PI_MODEL } from "../../helpers/pi-provider.js";
+import { createPiProvider, piAssistantMessage, REPORTED_PI_MODEL, ROUTER_PI_MODEL } from "../../helpers/pi-provider.js";
 import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
 import { useTempDir } from "../../helpers/temp.js";
 
@@ -2336,5 +2336,17 @@ describe("pi reported model", () => {
 
     const models = fake.calls().map((call) => call.args[call.args.indexOf("--model") + 1]);
     expect(models).toEqual(["openrouter/openrouter/openrouter/auto", "openrouter/openrouter/openrouter/auto"]);
+  });
+});
+
+describe("pi continued model", () => {
+  it("runs a continued session on the reported model", () => {
+    expect(createPiProvider().continuedModel({ model: ROUTER_PI_MODEL, reportedModel: REPORTED_PI_MODEL })).toBe(
+      REPORTED_PI_MODEL,
+    );
+  });
+
+  it("runs a continued session on the recorded model when pi reported none", () => {
+    expect(createPiProvider().continuedModel({ model: ROUTER_PI_MODEL })).toBe(ROUTER_PI_MODEL);
   });
 });

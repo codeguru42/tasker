@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { permissionHookSettings } from "../../src/assistant/claude-code/permission-hook.js";
 import type { Config } from "../../src/config/schema.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
-import type { RecordedSession, RunOutcome } from "../../src/assistant/provider.js";
+import type { ContinuedSession, RecordedSession, RunOutcome } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
@@ -38,6 +38,7 @@ import {
 } from "../helpers/fake-codex.js";
 import { seedPlanSession, turnResultStream } from "../helpers/plan.js";
 import { withTrustedExtensions } from "../helpers/config.js";
+import { REPORTED_PI_MODEL, ROUTER_PI_MODEL } from "../helpers/pi-provider.js";
 import {
   databasePathOf,
   NO_SESSION_VALUES,
@@ -1175,6 +1176,54 @@ describe("the values of a session in an execute run", () => {
     );
 
     expect(sessionValuesOf(databasePathOf(started.dataRoot), prepared.sessionId)).toEqual(NO_SESSION_VALUES);
+  });
+});
+
+describe("the model of a continued session", () => {
+  const continuedRun = async (provider: "pi" | "claude-code", model: string) => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("resume") } });
+    const piConfig = structuredClone(fixture.config);
+    if (provider === "pi") piConfig.repos[fixture.started.repoKey].assistant.provider = "pi";
+    const recorded: ContinuedSession = {
+      repoKey: fixture.started.repoKey,
+      provider,
+      model,
+      effort: "low",
+      trustedExtensions: [],
+      reportedModel: REPORTED_PI_MODEL,
+    };
+    let captured: RunInput | undefined;
+    const { prepared } = await runPlanMode(fixture, {
+      runConfig: piConfig,
+      session: { resume: true, sessionId: TEST_SESSION_ID, recorded },
+      beforeStart: (prepared) => {
+        prepared.provider.run = async (input) => {
+          captured = input;
+          return {
+            kind: "success",
+            sessionId: input.sessionId,
+            events: [],
+            permissionDenials: [],
+            usage: "unavailable",
+          };
+        };
+      },
+    });
+    return { captured, prepared };
+  };
+
+  it("runs a continued pi session on the reported model and keeps the recorded model in the session", async () => {
+    const { captured, prepared } = await continuedRun("pi", ROUTER_PI_MODEL);
+
+    expect(captured?.model).toBe(REPORTED_PI_MODEL);
+    expect(prepared.session.model).toBe(ROUTER_PI_MODEL);
+  });
+
+  it("runs a continued claude-code session on the recorded model", async () => {
+    const { captured, prepared } = await continuedRun("claude-code", "haiku");
+
+    expect(captured?.model).toBe("haiku");
+    expect(prepared.session.model).toBe("haiku");
   });
 });
 

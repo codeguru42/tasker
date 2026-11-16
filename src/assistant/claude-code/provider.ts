@@ -178,6 +178,8 @@ export function createClaudeCodeProvider(
               : []),
           ],
     modelChecks: (model) => [claudeModelCheck(model)],
+    continuedModel: (session) => session.model,
+    reportedModelChecks: () => [],
     detectQuotaApprovalWarning,
     isQuotaEvent,
     shouldSuppressQuotaApprovalPause,

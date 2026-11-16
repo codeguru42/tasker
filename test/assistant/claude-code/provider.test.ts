@@ -54,6 +54,15 @@ describe("createClaudeCodeProvider isQuotaEvent", () => {
   });
 });
 
+describe("createClaudeCodeProvider continued session", () => {
+  it("keeps the recorded model and adds no check for a reported model", () => {
+    const provider = createClaudeCodeProvider();
+
+    expect(provider.continuedModel({ model: "opus", reportedModel: "claude-opus-x" })).toBe("opus");
+    expect(provider.reportedModelChecks("opus", "sonnet")).toEqual([]);
+  });
+});
+
 describe("createClaudeCodeProvider run", () => {
   it("runs claude with the argv and the prompt on stdin, and gives the events and the facts", async () => {
     const events: AssistantEvent[] = [];

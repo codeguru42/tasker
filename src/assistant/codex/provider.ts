@@ -168,6 +168,8 @@ export function createCodexProvider(options: { hookScript?: string } = {}): Assi
     },
     doctorChecks: (repos) => (repos.length === 0 ? [] : [codexVersionCheck(), codexLoginCheck()]),
     modelChecks: () => [],
+    continuedModel: (session) => session.model,
+    reportedModelChecks: () => [],
     detectQuotaApprovalWarning: () => undefined,
     isQuotaEvent: () => false,
     shouldSuppressQuotaApprovalPause: () => false,

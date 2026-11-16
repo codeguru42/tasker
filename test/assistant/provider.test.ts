@@ -4,6 +4,7 @@ import { parseConfig } from "../../src/config/schema.js";
 import { checkSummaries } from "../helpers/doctor.js";
 import { validConfig } from "../helpers/config.js";
 import { configIssuesOf } from "../helpers/errors.js";
+import { REPORTED_PI_MODEL, ROUTER_PI_MODEL } from "../helpers/pi-provider.js";
 
 const unavailableIds = ["copilot"] as const;
 type Id = "claude-code" | "codex" | "pi" | (typeof unavailableIds)[number];
@@ -102,6 +103,32 @@ it("gives the pi provider for a recorded session", () => {
 
   expect(selected.provider.id).toBe("pi");
   expect({ model: selected.model, effort: selected.effort }).toEqual({ model: "openrouter/auto", effort: "low" });
+});
+
+describe("createSessionProvider with a reported model", () => {
+  const recorded = (provider: "claude-code" | "codex" | "pi", model: string, reportedModel?: string) => ({
+    repoKey: "tasker",
+    provider,
+    model,
+    effort: "low" as const,
+    trustedExtensions: [],
+    ...(reportedModel === undefined ? {} : { reportedModel }),
+  });
+
+  it("gives pi the reported model", () => {
+    expect(createSessionProvider(recorded("pi", ROUTER_PI_MODEL, REPORTED_PI_MODEL)).model).toBe(REPORTED_PI_MODEL);
+  });
+
+  it("gives pi the recorded model when pi reported none", () => {
+    expect(createSessionProvider(recorded("pi", ROUTER_PI_MODEL)).model).toBe(ROUTER_PI_MODEL);
+  });
+
+  it.each([
+    ["claude-code", "opus"],
+    ["codex", "gpt-5"],
+  ] as const)("gives %s the recorded model", (provider, model) => {
+    expect(createSessionProvider(recorded(provider, model, "other-model")).model).toBe(model);
+  });
 });
 
 function configWith(providers: Record<string, Id>) {

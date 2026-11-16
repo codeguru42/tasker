@@ -165,6 +165,10 @@ export interface AssistantProvider {
   doctorChecks(repos: readonly AssistantDoctorRepo[]): Check[];
   // Checks for a continued session that runs on a recorded model, not on the configured model.
   modelChecks(model: string): Check[];
+  // The model that a continued session runs on. A provider that does not run a continued session on a reported model gives session.model.
+  continuedModel(session: { model: string; reportedModel?: string }): string;
+  // The checks beyond modelChecks() for a continued session that runs on a model other than its recorded model. [] is permitted.
+  reportedModelChecks(recordedModel: string, model: string): Check[];
   // Whether the run passed quotaApprovalThreshold. Only the provider can read its own stream.
   detectQuotaApprovalWarning(outcome: RunOutcome, threshold: number): QuotaApprovalWarning | undefined;
   // Whether the event is a quota event that tasker records for the repo. Only the provider can read its own stream.
@@ -202,7 +206,7 @@ export function createAssistantProvider(
 
 // Picks the provider of a continued session from what the session recorded when it started.
 // A continued session must keep its provider, model and effort, also after the configuration changed.
-export function createSessionProvider(recorded: RecordedSession): SelectedAssistant {
+export function createSessionProvider(recorded: ContinuedSession): SelectedAssistant {
   const { repoKey, provider, model, effort } = recorded;
   return { provider: providerFor(repoKey, provider), model, effort };
 }
