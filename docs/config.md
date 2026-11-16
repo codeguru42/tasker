@@ -270,10 +270,10 @@ A session role is one of `operator`, `planner`, `orchestrator` and `question`. T
 [docs/sessions.md](sessions.md), so `question` names only a key of `models`. The agent kind is the program of a session,
 in the form that herdr names it in `herdr agent start --kind`.
 
-| Key      | Type       | Default    | Notes                                                                       |
-| -------- | ---------- | ---------- | --------------------------------------------------------------------------- |
-| `kind`   | `"claude"` | `"claude"` | The agent kind of each session role.                                        |
-| `models` | object     | `{}`       | Has the optional keys `operator`, `planner`, `orchestrator` and `question`. |
+| Key      | Type                 | Default    | Notes                                                                       |
+| -------- | -------------------- | ---------- | --------------------------------------------------------------------------- |
+| `kind`   | `"claude"` or `"pi"` | `"claude"` | The agent kind of each session role.                                        |
+| `models` | object               | `{}`       | Has the optional keys `operator`, `planner`, `orchestrator` and `question`. |
 
 Each entry of `models` is an object with the required keys `model` (non-empty string) and `effort` (`"low"`, `"medium"`,
 `"high"`, `"xhigh"` or `"max"`).
@@ -288,14 +288,46 @@ For the kind `claude`, `model` must have one of the forms that [`assistant`](#as
 provider. Any other model gives the error
 `repos.<key>.sessions.models.<role>.model: is not a claude-code model: <value>`.
 
+For the kind `pi`, `model` must have the form `<provider>/<model-id>`, for example
+`openrouter/deepseek/deepseek-v4.1-flash`. It must not end in a pi thinking level, because the effort gives the level.
+Two errors are possible, both at `repos.<key>.sessions.models.<role>.model`:
+
+- `is not a pi model in the form <provider>/<model-id>: <value>`
+- `ends in the pi thinking level <level>: <value>`
+
+A model with both faults gets only the first error. One kind covers each session role. So under `pi`, the role
+`question` must also hold a pi model, although no question session starts under `pi`.
+
+The loader accepts each of the five efforts under `pi`. The efforts `xhigh` and `max` are measured. For the measured
+model, pi used the level max after `--thinking xhigh`, and no one measured the cause. The efforts `low`, `medium` and
+`high` are not measured. [docs/dev/pi-sessions.md](dev/pi-sessions.md) records the measures and their limits.
+
+Under `pi`, a role with no entry gets no model flag and no effort flag. The defaults of pi then choose the model and the
+upstream.
+
 ### The seam of an agent kind
 
 The table has one row for each agent kind. Name gives the flags of the session name. Messages names the tools that send
 and list messages between sessions.
 
-| Kind     | Name        | Model             | Effort              | First prompt      | Messages                       |
-| -------- | ----------- | ----------------- | ------------------- | ----------------- | ------------------------------ |
-| `claude` | `-n <name>` | `--model <model>` | `--effort <effort>` | The last argument | `SendMessage` and `ListAgents` |
+| Kind     | Name        | Model                                   | Effort                | First prompt      | Messages                       |
+| -------- | ----------- | --------------------------------------- | --------------------- | ----------------- | ------------------------------ |
+| `claude` | `-n <name>` | `--model <model>`                       | `--effort <effort>`   | The last argument | `SendMessage` and `ListAgents` |
+| `pi`     | `-n <name>` | `--provider <upstream> --model <model>` | `--thinking <effort>` | The last argument | None                           |
+
+For `pi`, `<upstream>` is the part of the model before the first `/`. The flag `--provider` makes sure that the default
+provider of pi does not choose the service that bills the session. The Messages cell is "None", because the measured pi
+session had no tool that sends or lists messages.
+
+A pi session has these limits:
+
+- The shell tool of pi runs with the rights of the user. No guard extension and no sandbox of tasker applies.
+- The start gives no permission flag, because no one measured a permission mode.
+- The measured sessions showed no question before a tool call. They started with `--no-approve`, so no one tested a
+  start without it.
+- The default tool set of pi is not measured. The measured sessions had only the tool `bash`.
+- A valid kind does not show that each procedure after the start supports the kind. For example, the messages, the
+  session list and the closure of a session are not shown for `pi`.
 
 A new kind needs its own row and its own ticket, because each kind has its own flags and its own message tools.
 
