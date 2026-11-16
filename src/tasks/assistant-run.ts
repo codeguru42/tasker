@@ -108,7 +108,8 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
   const { config, store, task, env, session: request } = req;
   const worktree = task.worktreePath;
   if (worktree === null) throw new Error(`task ${task.id} has no worktree`);
-  // A continued session keeps the provider, model and effort that it recorded, also after the configuration changed.
+  // A continued session keeps the provider and effort that it recorded, also after the configuration changed.
+  // Its provider picks the model of the run. The session keeps the recorded model.
   const resume = request.resume;
   const selected = request.resume
     ? createSessionProvider(request.recorded)
@@ -126,7 +127,7 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
     session: {
       repoKey: task.repoKey,
       provider: selected.provider.id,
-      model: selected.model,
+      model: request.resume ? request.recorded.model : selected.model,
       effort: selected.effort,
       trustedExtensions: sessionTrustedExtensions,
     },

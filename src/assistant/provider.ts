@@ -205,10 +205,11 @@ export function createAssistantProvider(
 }
 
 // Picks the provider of a continued session from what the session recorded when it started.
-// A continued session must keep its provider, model and effort, also after the configuration changed.
+// A continued session keeps its provider and effort, also after the configuration changed. Its provider picks its model.
 export function createSessionProvider(recorded: ContinuedSession): SelectedAssistant {
-  const { repoKey, provider, model, effort } = recorded;
-  return { provider: providerFor(repoKey, provider), model, effort };
+  const { repoKey, provider, effort } = recorded;
+  const selected = providerFor(repoKey, provider);
+  return { provider: selected, model: selected.continuedModel(recorded), effort };
 }
 
 // The doctor checks of the assistant providers that the configuration uses. It groups the repos by
