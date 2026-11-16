@@ -38,7 +38,7 @@ note: tasker could not change the base of PR #<number> to <target branch>: <reas
 
 `<reason>` is the error text of the failure. The choice of the forge provider fails when the repo has no forge
 configuration. The forge call can fail, for example when the new base has no branch on `origin`. The note changes no
-exit code and no task state.
+exit code and no task state. In the note, `operator` means the user who runs the tasker commands.
 
 ### The sync step
 
