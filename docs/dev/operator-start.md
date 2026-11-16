@@ -753,6 +753,28 @@ an extension of pi refuses the command of the operator check, the refusal is a f
 The operator and the planner of one close can be of two kinds. Then each session follows the rules of its own kind. The
 name rule stays the check of a `claude` session. The pi row check is the check of a pi operator and a pi planner.
 
+#### The facts that no one tested
+
+The first close of a milestone with a pi operator or a pi planner is the first measure of these facts. A failed check
+there has the outcome of the table of [the pi row check](#the-pi-row-check). A failed command there has the outcome of
+[The own-session closure](#the-own-session-closure). In both cases, the session closes nothing, and the user closes its
+pane. These facts are open:
+
+- The values of `HERDR_TAB_ID` and `HERDR_PANE_ID` in the shell of a pi role session, for a session that herdr started
+  and for a first operator that the user started in a herdr pane. No one tested this.
+- The read of the start gate that a pi session runs for its own pane. The start gate covers only a read by the operator.
+  No one tested this.
+- A row of `herdr agent list` for the pane of a pi session that the user started with no `herdr agent start`. No one
+  tested this.
+- A question of pi before a tool call of the closure or of the operator check. No one tested this.
+- A refusal of a command of the closure or of the operator check by pi or by an extension of pi. No one tested this.
+- The operator check of a planner of one kind after the closure of an operator of another kind. No one tested this.
+- The field `name` in the row of a pi role session at the close, a long time after its start. The records come from
+  reads soon after a `herdr agent start`. The pi row check does not use this field. No one tested this.
+
+The row "The observer read" of [the pi records](pi-sessions.md#own-session-closure) is `not measured`. Its reads saw
+only a living session. No one measured the operator check of a pi planner after the closure of a pi operator.
+
 ### The table of the close
 
 Each actor keeps its own report of the rounds and its own state in the close. The operator also keeps the name of the
