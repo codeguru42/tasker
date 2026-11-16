@@ -101,6 +101,8 @@ describe("tasker open-pr", () => {
     expect(help).toContain("<issue>");
     expect(help).toContain("--repo <key>");
     expect(help).toContain("against the stored base");
+    expect(help).toContain("--draft");
+    expect(help).toContain("repos.<key>.forge.draftPr");
   });
 
   it("publishes through push with no recorded PR, then adopts the matching PR without creating another", async () => {
@@ -376,6 +378,7 @@ describe("tasker open-pr", () => {
   it.each([
     [{ draftPr: true }, [], true],
     [{ draftPr: false }, [], false],
+    [{ draftPr: false }, ["--draft"], true],
   ])("creates a PR (%j, args %j) with draft %s", async (forge, args, draft) => {
     const accepted = await pushedTaskWith(forge);
     const listArgs = openPrListArgs(accepted.task.branch!);
@@ -398,34 +401,34 @@ describe("tasker open-pr", () => {
     });
   });
 
-  it.each([[{ draftPr: true }, []]])(
-    "adopts an open PR (%j, args %j) and sends no create call",
-    async (forge, args) => {
-      const accepted = await pushedTaskWith(forge);
-      const listArgs = openPrListArgs(accepted.task.branch!);
-      const url = "https://github.com/codeguru42/tasker/pull/42";
-      const fake = installForgeGh(
-        [
-          tokenAnswer,
-          {
-            args: listArgs,
-            stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]),
-          },
-        ],
-        "tasker-open-pr-forge-gh-",
-      );
+  it.each([
+    [{ draftPr: true }, []],
+    [{ draftPr: false }, ["--draft"]],
+  ])("adopts an open PR (%j, args %j) and sends no create call", async (forge, args) => {
+    const accepted = await pushedTaskWith(forge);
+    const listArgs = openPrListArgs(accepted.task.branch!);
+    const url = "https://github.com/codeguru42/tasker/pull/42";
+    const fake = installForgeGh(
+      [
+        tokenAnswer,
+        {
+          args: listArgs,
+          stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]),
+        },
+      ],
+      "tasker-open-pr-forge-gh-",
+    );
 
-      const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO, ...args);
+    const result = await runCommand(openPr, "open-pr", KEY, "--repo", REPO, ...args);
 
-      expect(result).toEqual({ code: 0, out: `adopted PR #42: ${url}\nstate: in_peer_review\n`, err: "" });
-      expect(fake.calls().map(({ args: callArgs }) => callArgs)).toEqual([tokenAnswer.args, listArgs]);
-      expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("in_peer_review");
-      expect(eventsOf(accepted.dataRoot, KEY).find((e) => e.type === "pr_opened")?.data).toMatchObject({
-        number: 42,
-        adopted: true,
-      });
-    },
-  );
+    expect(result).toEqual({ code: 0, out: `adopted PR #42: ${url}\nstate: in_peer_review\n`, err: "" });
+    expect(fake.calls().map(({ args: callArgs }) => callArgs)).toEqual([tokenAnswer.args, listArgs]);
+    expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("in_peer_review");
+    expect(eventsOf(accepted.dataRoot, KEY).find((e) => e.type === "pr_opened")?.data).toMatchObject({
+      number: 42,
+      adopted: true,
+    });
+  });
 
   it("does not expose the forge token when lookup fails", async () => {
     const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: ACCOUNT } } });
