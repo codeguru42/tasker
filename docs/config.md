@@ -258,6 +258,51 @@ end at the end of the file. It does not write the defaults. The command has two 
 - Integer-like keys move to the front of their object, in number order.
 - If a key appears twice in one object, the command keeps only the last copy.
 
+### The agent folder of pi
+
+The agent folder of `pi` holds its credentials, its `settings.json` and its extensions. Tasker passes the agent folder
+to each `pi` child as `PI_CODING_AGENT_DIR`. This holds for each task run under `pi` and for the checks `pi version`,
+`pi-auth:<upstream>` and `superpowers:pi` of `tasker doctor`. The agent folder is the value of
+`TASKER_PI_CODING_AGENT_DIR`, as it stands. If `TASKER_PI_CODING_AGENT_DIR` is not set, the agent folder is
+`$HOME/.pi/agent`.
+
+Tasker ignores a `PI_CODING_AGENT_DIR` of its own environment for `pi`. Only the read deny list of a task run still
+reads it. A user whose own `pi` uses a `PI_CODING_AGENT_DIR` sets `TASKER_PI_CODING_AGENT_DIR` to the absolute path of
+that folder.
+
+The value of `TASKER_PI_CODING_AGENT_DIR` must be an absolute path. A value that starts with `~` or `file://` is not an
+absolute path. With a value that is not an absolute path, each task run under `pi` fails before `pi` starts. The checks
+`pi version`, `pi-auth:<upstream>` and `superpowers:pi` of `tasker doctor` then report the error.
+
+If `TASKER_PI_CODING_AGENT_DIR` is not set, `HOME` must be set and must be an absolute path. If `HOME` is not set or not
+absolute, each task run under `pi` fails before `pi` starts. The checks `pi version`, `pi-auth:<upstream>` and
+`superpowers:pi` of `tasker doctor` then report the error. A value of `TASKER_PI_CODING_AGENT_DIR` or `HOME` that is
+empty or has only spaces counts as not set.
+
+[The agent folder](dev/assistants.md#the-agent-folder) of `docs/dev/assistants.md` gives the reasons of the refusals of
+a `TASKER_PI_CODING_AGENT_DIR` and of a `HOME` that are not absolute.
+
+### The session folder of pi
+
+`pi` stores its session files in its session folder. Tasker passes the value of `TASKER_PI_CODING_AGENT_SESSION_DIR` to
+each `pi` child as `PI_CODING_AGENT_SESSION_DIR`, as it stands. This holds for each task run under `pi` and for the
+checks `pi version`, `pi-auth:<upstream>` and `superpowers:pi` of `tasker doctor`. If
+`TASKER_PI_CODING_AGENT_SESSION_DIR` is not set, `pi` gets no `PI_CODING_AGENT_SESSION_DIR`. A value that is empty or
+has only spaces counts as not set.
+
+Each task run under `pi` gives `pi` a folder under `dataRoot` with `--session-dir`. `--session-dir` wins over
+`PI_CODING_AGENT_SESSION_DIR`. So the value does not change where a task run stores its session files.
+
+Tasker ignores a `PI_CODING_AGENT_SESSION_DIR` of its own environment for `pi`. A user whose own `pi` uses a
+`PI_CODING_AGENT_SESSION_DIR` sets `TASKER_PI_CODING_AGENT_SESSION_DIR` to the absolute path of that folder.
+
+The value of `TASKER_PI_CODING_AGENT_SESSION_DIR` must be an absolute path. A value that starts with `~` or `file://` is
+not an absolute path. With a value that is not an absolute path, each task run under `pi` fails before `pi` starts. The
+checks `pi version`, `pi-auth:<upstream>` and `superpowers:pi` of `tasker doctor` then report the error.
+
+See [The environment of a pi child](dev/assistants.md#the-environment-of-a-pi-child) of `docs/dev/assistants.md` for
+more about this refusal.
+
 ## `sessions`
 
 The user starts the first operator of a slug. In a handoff of the operator, the old operator starts the new operator.
