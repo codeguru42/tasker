@@ -75,29 +75,71 @@ export async function createPr(
   }
 }
 
+async function viewPrField(
+  session: GhSession,
+  prNumber: number,
+  field: string,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+  operation: string,
+  invalid: string,
+): Promise<unknown> {
+  let response: string;
+  try {
+    response = await session.run(["pr", "view", String(prNumber), "--json", field], { cwd, env });
+  } catch (error) {
+    throw operationError(operation, error, `of pull request ${prNumber}`);
+  }
+
+  try {
+    const value: unknown = JSON.parse(response);
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      throw new Error(invalid);
+    }
+    return (value as Record<string, unknown>)[field];
+  } catch (error) {
+    throw operationError(operation, error, `of pull request ${prNumber}`);
+  }
+}
+
 export async function isPrMerged(
   session: GhSession,
   prNumber: number,
   cwd: string,
   env: NodeJS.ProcessEnv,
 ): Promise<boolean> {
-  let response: string;
-  try {
-    response = await session.run(["pr", "view", String(prNumber), "--json", "state"], { cwd, env });
-  } catch (error) {
-    throw operationError("read merged state", error, `of pull request ${prNumber}`);
+  const invalid = "GitHub returned an invalid pull request state";
+  const state = await viewPrField(session, prNumber, "state", cwd, env, "read merged state", invalid);
+  if (typeof state !== "string") {
+    throw operationError("read merged state", new Error(invalid), `of pull request ${prNumber}`);
   }
+  return state === "MERGED";
+}
 
+export async function isPrDraft(
+  session: GhSession,
+  prNumber: number,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+): Promise<boolean> {
+  const invalid = "GitHub returned an invalid draft state";
+  const draft = await viewPrField(session, prNumber, "isDraft", cwd, env, "read draft state", invalid);
+  if (typeof draft !== "boolean") {
+    throw operationError("read draft state", new Error(invalid), `of pull request ${prNumber}`);
+  }
+  return draft;
+}
+
+export async function markPrReady(
+  session: GhSession,
+  prNumber: number,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+): Promise<void> {
   try {
-    const value: unknown = JSON.parse(response);
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      throw new Error("GitHub returned an invalid pull request state");
-    }
-    const state = (value as Record<string, unknown>).state;
-    if (typeof state !== "string") throw new Error("GitHub returned an invalid pull request state");
-    return state === "MERGED";
+    await session.run(["pr", "ready", String(prNumber)], { cwd, env });
   } catch (error) {
-    throw operationError("read merged state", error, `of pull request ${prNumber}`);
+    throw operationError("take", error, `pull request ${prNumber} out of draft`);
   }
 }
 
