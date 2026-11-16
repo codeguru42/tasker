@@ -588,11 +588,13 @@ The operator and planner use this procedure after their close reports.
 - With no answer, the session closes nothing and stays open.
 - A session that the user resumed, restarted, or opened in a pane cannot close itself. It also cannot close if it cannot
   establish its own pane, tab, and one-pane tab. Whether the session knows that the user resumed, restarted or opened it
-  is open on purpose. The session judges it. No one tested those bindings.
+  is open on purpose. The session judges it. No one tested those bindings. For a pi session, the match of its own pane
+  and tab is a passed pi row check.
 - Read `HERDR_TAB_ID` and `HERDR_PANE_ID`. If either is unset, close nothing.
 - Run `herdr agent list`. Exactly one row in `.result.agents` must have `terminal_title_stripped` equal to the session's
   own name. Its `tab_id` and `pane_id` must match the two environment variables. Otherwise, close nothing. The measured
-  binding covered only a new pane started by herdr, not an older stale inherited id.
+  binding covered only a new pane started by herdr, not an older stale inherited id. For a pi session,
+  [the pi row check](#the-pi-row-check) takes the place of this check.
 - Run `herdr tab get <tab id>`. If `.result.tab.pane_count` is not 1, close nothing. The closure measure covered only a
   one-pane tab; no one tested own closure in a tab with more panes. The own-tab close of an operator handoff keeps its
   own procedure under [Stop a session](#stop-a-session).
@@ -633,6 +635,80 @@ The own-session closure has these states.
 | Running                  | Does the checks above, then runs `herdr tab close` as its last call                                                                                                                          | None                                                  |
 | Ended: the tab is closed | No session runs                                                                                                                                                                              | None. The close report came before closure.           |
 | Ended: no closure        | Stays open when the session cannot close itself, or when a check or a command fails.                                                                                                         | The session tells the user. The user closes its pane. |
+
+### The own-session closure of a pi session
+
+This subsection covers only a pi operator and a pi planner. A pi session is a role session of the agent kind `pi`. Each
+rule of [The own-session closure](#the-own-session-closure) holds for a pi operator and a pi planner, with the changes
+of this subsection. Examples are the close report before the closure, the read of `HERDR_TAB_ID` and `HERDR_PANE_ID`,
+the count of the panes, the close of the tab as the last tool call, a failed command, a permission prompt and the state
+table.
+
+For an accept, a change, a rejection, a drop or no answer of the user, the bullets of
+[The own-session closure](#the-own-session-closure) on these answers apply. This subsection copies none of them.
+
+The closure rests on an assumption of the user: a pi session can close its own herdr tab. The row "The own-session
+closure" of [docs/dev/pi-sessions.md](pi-sessions.md#own-session-closure) gives `not measured` for the tab and for the
+process. No one tested the closure of a pi session.
+
+#### The pi row check
+
+The binding method is the read of [The start gate of a pi session](#the-start-gate-of-a-pi-session). The session runs it
+for the pane `HERDR_PANE_ID`. It runs the read at the close, not at its start. The record
+[K3c](pi-sessions.md#k3c-the-read-by-another-session) and the row "The binding of a session to its pane" of
+[the pi records](pi-sessions.md#own-session-closure) measured this read for a test session that herdr started. K3c has
+no result label.
+
+The pi row check passes only if each of these checks passes:
+
+- (a) The session runs `herdr agent list`. Exactly one row of `.result.agents` must have `pane_id` equal to
+  `HERDR_PANE_ID`.
+- (b) The `tab_id` of that row must equal `HERDR_TAB_ID`.
+- (c) The session runs `test -e <agent_session.value>` on the path of that row.
+- (d) The session runs `grep -m1 session_info <agent_session.value>`. The value of `"name"` must equal the own name of
+  the session.
+
+The own name is the name that [docs/sessions.md](../sessions.md) gives. The session read it at its start from `-n`, and
+it lives for the whole session. For a pi operator it is `operator-<slug>`, and for a pi planner it is `planner-<slug>`.
+
+`HERDR_PANE_ID` and `HERDR_TAB_ID` come from the shell of the session. At the close, they can be stale ids that the
+session inherited. The pi row check guards against this case. Its purpose is the purpose of the name rule: a stale
+inherited pane id or tab id must not close the tab of another session.
+
+The check does not wait. A wait case of the start gate is a failed check. The field `name` of a row is not evidence of
+the binding, because the start gate says that the field can be missing. A terminal title, a tab label, the focus of a
+pane and the output of `herdr pane current --current` are not evidence either.
+
+| Case                                                                                         | Outcome                                                                 |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| The pi session has no own name                                                               | The check fails.                                                        |
+| No binding method exists, because no doc gives the read of the start gate                    | The check fails.                                                        |
+| `herdr agent list` exits with an error                                                       | The check fails. The session gives the user the command and its output. |
+| No row, or more than one row, has `pane_id` equal to `HERDR_PANE_ID`                         | The check fails.                                                        |
+| The `tab_id` of the row differs from `HERDR_TAB_ID`                                          | The check fails.                                                        |
+| The row has no `agent_session` path                                                          | The check fails.                                                        |
+| `test -e` exits with 1. The file is missing. This is an answer, not an error.                | The check fails.                                                        |
+| `test -e` exits with another code                                                            | The check fails. The session gives the user the command and its output. |
+| `grep` exits with 1. The file holds no `session_info` line. This is an answer, not an error. | The check fails.                                                        |
+| `grep` exits with 2 or another error                                                         | The check fails. The session gives the user the command and its output. |
+| The name differs from the own name                                                           | The check fails.                                                        |
+| Each part matches                                                                            | The check passes.                                                       |
+
+After each failure, the pi session closes nothing and stays open. Then it tells the user that it cannot close itself,
+and the user closes its pane in herdr, as [The own-session closure](#the-own-session-closure) says. If no binding method
+exists, each pi row check fails. Then a pi operator gives no pane id, no pi session closes itself, and the user closes
+the pane of each pi session.
+
+The binding method has these limits:
+
+- The binding row covers only a session that herdr started in a new pane. It does not cover the stale inherited ids of
+  an older session or a first operator that the user started.
+- The `agent_session` value is a path to the session file, not the native id. The read uses the file form of pi 1.1.0,
+  as [K3a](pi-sessions.md#k3a-the-name-at-the-start) and [K3b](pi-sessions.md#k3b-the-own-read) record.
+- Two pi sessions can hold the same own name at the same time, as [K3d](pi-sessions.md#k3d-two-sessions-with-one-name)
+  records. So a stale `HERDR_PANE_ID` can name the pane of another session with the same own name. For example, while
+  the old operator of a handoff still runs, two panes hold the own name `operator-<slug>`. Then the check can pass for
+  the wrong pane.
 
 ### The table of the close
 
