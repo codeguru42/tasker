@@ -293,7 +293,8 @@ failure origin. See [the reference](references/landing.md#tasker-mark-landed).
 ### `tasker update-branch`
 
 Brings the worktree of a task up to date with its base branch, and can change the base with `--base`. If the task
-records a PR, `--base` also changes the base of that PR on the forge. See
+records a PR, `--base` also changes the base of that PR on the forge. After the parent of a stacked task landed, the
+move onto the new base also changes the base of a recorded PR. See
 [the reference](references/keeping-current.md#tasker-update-branch).
 
 ### `tasker finish`

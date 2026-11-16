@@ -22,13 +22,18 @@ new local tip.
 
 ### The forge step
 
-The forge step runs when you use `--base`, the resolve succeeds, and the task records a PR number. It runs right after
-tasker stores the new base and before the sync step. It asks the forge of the repo to change the base of the recorded PR
-to the target branch. The target branch is the new stored base, as a branch name on `origin`. A stored base `<x>` gives
-`<x>`, and a stored base `refs/heads/<x>` gives `<x>`. The step does not create, close, reopen or merge a PR.
+The forge step runs only when the task records a PR number. It asks the forge of the repo to change the base of the
+recorded PR to the target branch. The target branch is the new stored base, as a branch name on `origin`. A stored base
+`<x>` gives `<x>`, and a stored base `refs/heads/<x>` gives `<x>`. The step does not create, close, reopen or merge a
+PR.
+
+With `--base`, the step runs when the resolve succeeds. It runs right after tasker stores the new base and before the
+sync step. With no `--base`, the step runs after the parent landed, when the command makes
+[the walk](#the-base-step-of-a-stacked-task). It runs right after the write that stores the new base and the new parent,
+also when the head does not move. If the sync step, the base step or that write fails, the run makes no forge call.
 
 If the forge changes the base, the command prints `changed the base of PR #<number> to <target branch>` on stdout. If a
-later step fails, the command prints this line on stderr, before its error.
+later step of a run with `--base` fails, the command prints this line on stderr, before its error.
 
 If the forge step cannot change the base, the command prints this note on stderr:
 
@@ -38,7 +43,8 @@ note: tasker could not change the base of PR #<number> to <target branch>: <reas
 
 `<reason>` is the error text of the failure. The choice of the forge provider fails when the repo has no forge
 configuration. The forge call can fail, for example when the new base has no branch on `origin`. The note changes no
-exit code and no task state. In the note, `operator` means the user who runs the tasker commands.
+exit code and no task state. In the note, `operator` means the user who runs the tasker commands. After a walk, a later
+run makes no walk and no forge call, so the operator must change a refused base on the forge.
 
 ### The sync step
 
@@ -212,6 +218,8 @@ After the parent landed, the command prints `<issue key> is no longer stacked on
 parent after the walk. The line names the direct parent. When the task stays stacked, the command prints
 `<issue key> is now stacked on <new parent key>` in its place. The line comes after the current line or the moved line
 and before the demoted line.
+
+If the task records a PR, the command then runs [the forge step](#the-forge-step) with the base that the walk ends on.
 
 A later run of a task with no parent uses the plain base step with the new base. A task that stays stacked uses the base
 step of a stacked task. The stale-plan rule applies only when the head moved. The demotion applies when the head moved

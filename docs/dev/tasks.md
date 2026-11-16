@@ -915,13 +915,21 @@ These reasons explain its rules:
   because `tasker finish` can delete that branch. The same store write sets the column `parent_task_id` to the parent of
   the end task, or to NULL when the end task has no parent. The command changes the column in no other case (see
   [Stacked task](workspaces.md#stacked-task)).
+
+  If the task records a PR, the forge step then changes the base of the PR to the new base. The walk stores the base in
+  the same write as the move. The PR base changes only after that write, so a failed run changes no PR.
+
 - The `branch_updated` event takes the place of the `transition` event for the move out of `updating_branch`. The `base`
   event, the `branch_updated` event, the move and the writes of the demotion table share one transaction.
 - The order of the sync step and the base step: the sync step comes first, so that the base step runs on the new local
   tip.
-- The forge step runs after tasker stores the new base and before the sync step. The reason: the stored base and the PR
-  base change in one run. If a later step fails, they still change in one run. A failed forge step does not fail the
-  command. The reason: the stored base is already new, and the user can fix the PR by hand.
+- With `--base`, the forge step runs after tasker stores the new base and before the sync step. The reason: the stored
+  base and the PR base change in one run. If a later step fails, they still change in one run. A failed forge step does
+  not fail the command. The reason: the stored base is already new, and the user can fix the PR by hand.
+
+  The walk runs the forge step after the move. The two orders differ because a run with `--base` stores the base before
+  the sync step, and the walk stores it in the same write as the move.
+
 - The compare by patch for diverged tips: the command compares the patches of the two sides, because a rebase rewrites
   each commit. As a result, a branch that someone pushed and then rebased does not count as local work at risk.
 - A merge commit on the remote side always counts as a commit only on origin: it has no one patch, and it can carry a
