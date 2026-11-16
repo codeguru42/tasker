@@ -14,7 +14,7 @@ import {
 export const openPr: RegisterCommand = (program, io) => {
   program
     .command("open-pr")
-    .description("Open or adopt a pull request for a published task")
+    .description("Open or adopt a pull request against the stored base of a published task")
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .action(async (issue: string, options: { repo?: string }) => {

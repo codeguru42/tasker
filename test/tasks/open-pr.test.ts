@@ -441,7 +441,10 @@ describe("openPrTask", () => {
     const { result } = await withDataRootStore(fixture.dataRoot, (store) => callOpenPr(fixture, store, fake));
 
     expect(fake.calls.created).toEqual([]);
-    expect(result).toEqual({ pullRequest: { number: 19, url: "https://example.test/pull/19" }, adopted: true });
+    expect(result).toEqual({
+      pullRequest: { number: 19, url: "https://example.test/pull/19", base: "epic" },
+      adopted: true,
+    });
     expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 19 });
     expect(eventsOf(fixture.dataRoot, KEY).find((event) => event.type === "pr_opened")).toMatchObject({
       data: { number: 19, base: "epic", adopted: true },

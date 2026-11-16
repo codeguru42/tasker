@@ -9,6 +9,7 @@ import { issueProviderFor } from "../issues/provider.js";
 import { transitionTask, transitionWithPrOpened } from "../state/machine.js";
 import type { TaskStore } from "../store/store.js";
 import { withRepoLock, withTaskLock } from "../store/locks.js";
+import { branchOfBase } from "../vcs/local-branch.js";
 import { vcsForRepo } from "../vcs/provider.js";
 import { failRun } from "./run-outcome.js";
 import { requireBase, requireBranch, requireWorktree, taskInState } from "./task-state.js";
@@ -44,21 +45,22 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
   const branch = requireBranch(task);
   const worktree = requireWorktree(task);
   const base = requireBase(task);
+  const baseBranch = branchOfBase(base);
   const { vcs, ctx } = vcsForRepo(request.config, task.repoKey, request.env);
 
   return withRepoLock(store, task.repoKey, request.repoLockWaitMs, async () => {
-    let resolvedBase: string;
+    let tip: Awaited<ReturnType<typeof vcs.remoteTaskRefTip>>;
     try {
-      resolvedBase = await vcs.defaultBase(ctx);
+      tip = await vcs.remoteTaskRefTip(ctx, { taskRef: baseBranch });
     } catch (error) {
       throw new Error(
-        `the task of ${task.issueKey} has base ${base}, but origin's default base could not be resolved: ${errorMessage(error)}; correct the base before trying again`,
+        `the task of ${task.issueKey} has base ${base}, but tasker cannot read the branch ${baseBranch} on origin: ${errorMessage(error)}; correct the base before trying again`,
         { cause: error },
       );
     }
-    if (base !== resolvedBase) {
+    if (tip.state === "absent") {
       throw new Error(
-        `the task of ${task.issueKey} has base ${base}, but origin's default base is ${resolvedBase}; correct the base before trying again`,
+        `the task of ${task.issueKey} has base ${base}, but the branch ${baseBranch} is not on origin; push that branch or correct the base before trying again`,
       );
     }
 
@@ -69,7 +71,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
     let adopted: boolean;
     try {
       const openPrs = await forge.listOpenPrs({ cwd: worktree, head: branch }, request.env);
-      const matching = openPrs.find((pr) => pr.base === resolvedBase);
+      const matching = openPrs.find((pr) => pr.base === baseBranch);
       if (matching !== undefined) {
         pullRequest = matching;
         adopted = true;
@@ -87,7 +89,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
           {
             cwd: worktree,
             head: branch,
-            base: resolvedBase,
+            base: baseBranch,
             title: `${summary} (${task.issueKey})`,
             body: `Task: ${task.issueKey}\n\n${summary}`,
           },
@@ -104,7 +106,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
         number: pullRequest.number,
         url: pullRequest.url,
         head: branch,
-        base: resolvedBase,
+        base: baseBranch,
         adopted,
       });
     } catch (error) {

@@ -3,5 +3,5 @@ export const LOCAL_PREFIX = "refs/heads/";
 
 // Gives the name of the branch on origin for a stored base.
 export function branchOfBase(base: string): string {
-  return base;
+  return base.startsWith(LOCAL_PREFIX) ? base.slice(LOCAL_PREFIX.length) : base;
 }
