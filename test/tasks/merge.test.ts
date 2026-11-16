@@ -74,7 +74,8 @@ describe("mergeTask", () => {
     expect(fake.calls.merged).toEqual([
       { number: fixture.prNumber, method: "merge", headSha: fixture.publishedRevision, cwd: fixture.clone },
     ]);
-    expect(fake.calls.order).toEqual(["query", "merge", "query"]);
+    expect(fake.calls.order).toEqual(["query", "draft", "merge", "query"]);
+    expect(fake.calls.readied).toEqual([]);
     expect(fake.calls.ci).toEqual([]);
     expect(latestTaskOf(fixture.dataRoot, fixture.key)).toMatchObject({ state: "landed", mergeOrigin: null });
     expect(eventsOf(fixture.dataRoot, fixture.key).slice(events.length)).toEqual([
@@ -94,6 +95,27 @@ describe("mergeTask", () => {
     ]);
     expect(await fixture.origin.branchHead("main")).toBe(originMain);
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
+  });
+
+  it("takes a draft PR out of draft before it requests the merge", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const fake = forgeStub({ draft: true, mergedStatuses: [false, true] });
+    const events = eventsOf(fixture.dataRoot, fixture.key);
+
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) =>
+      callMerge(fixture, store, 300, fixture.env, fake),
+    );
+
+    expect(result).not.toEqual({ exitCode: 1 });
+    expect(fake.calls.order).toEqual(["query", "draft", "ready", "merge", "query"]);
+    expect(fake.calls.readied).toEqual([{ number: fixture.prNumber, cwd: fixture.clone }]);
+    expect(io.out).toEqual([`took PR #${fixture.prNumber} out of draft\n`]);
+    expect(io.err).toEqual([]);
+    expect(latestTaskOf(fixture.dataRoot, fixture.key)).toMatchObject({ state: "landed", mergeOrigin: null });
+    expect(eventsOf(fixture.dataRoot, fixture.key).slice(events.length).at(-1)).toMatchObject({
+      type: "merged",
+      data: { requested: true, from: "merging", to: "landed" },
+    });
   });
 
   it("uses the configured squash method for a PR", async () => {
@@ -180,6 +202,43 @@ describe("mergeTask", () => {
       mergeOrigin: "in_peer_review",
     });
     withDataRootStore(fixture.dataRoot, (store) => expect(failedFrom(store, fixture.task.id)).toBe("merging"));
+  });
+
+  it.each([
+    {
+      name: "the draft query",
+      draft: false,
+      setup: (fake: ReturnType<typeof forgeStub>) => fake.failDraftQuery(new Error("draft state denied")),
+      readies: 0,
+      message: "draft state denied",
+    },
+    {
+      name: "the ready step",
+      draft: true,
+      setup: (fake: ReturnType<typeof forgeStub>) => fake.failReady(new Error("ready denied")),
+      readies: 1,
+      message: "ready denied",
+    },
+  ])("fails from merging without a merge request when $name fails", async ({ draft, setup, readies, message }) => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const fake = forgeStub({ draft, mergedStatuses: [false, true] });
+    setup(fake);
+
+    const { result, io } = await withDataRootStore(fixture.dataRoot, (store) =>
+      callMerge(fixture, store, 300, fixture.env, fake),
+    );
+
+    expect(result).toEqual({ exitCode: 1 });
+    expect(io.err.join("")).toBe(`merging failed: ${message}\n`);
+    expect(io.out).toEqual([]);
+    expect(fake.calls.readied).toHaveLength(readies);
+    expect(fake.calls.merged).toEqual([]);
+    expect(latestTaskOf(fixture.dataRoot, fixture.key)).toMatchObject({
+      state: "failed",
+      mergeOrigin: "in_peer_review",
+    });
+    withDataRootStore(fixture.dataRoot, (store) => expect(failedFrom(store, fixture.task.id)).toBe("merging"));
+    expect(eventsOf(fixture.dataRoot, fixture.key).some((event) => event.type === "merged")).toBe(false);
   });
 
   it("does not wait when the forge accepts a merge request but the PR remains open", async () => {

@@ -79,6 +79,7 @@ describe("tasker merge", () => {
     const forge = installForgeGh(
       [
         openPrTokenAnswer(),
+        { args: ["pr", "view", "42", "--json", "isDraft"], stdout: '{"isDraft":false}' },
         { args: ["pr", "merge", "42", "--merge", "--match-head-commit", fixture.publishedRevision] },
       ],
       "tasker-merge-requested-",
@@ -93,9 +94,69 @@ describe("tasker merge", () => {
     });
   });
 
+  it("takes a draft PR out of draft and lands it", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const forge = installForgeGh(
+      [
+        openPrTokenAnswer(),
+        { args: ["pr", "view", "42", "--json", "isDraft"], stdout: '{"isDraft":true}' },
+        { args: ["pr", "ready", "42"], stdout: "" },
+        { args: ["pr", "merge", "42", "--merge", "--match-head-commit", fixture.publishedRevision] },
+      ],
+      "tasker-merge-draft-",
+    );
+    forge.setMergeStates(["OPEN", "MERGED"]);
+
+    const result = await runMerge();
+
+    expect(result).toEqual({
+      code: 0,
+      out: `took PR #42 out of draft\nmerged ${KEY}\nlanded PR #42 through github\nstate: landed\n`,
+      err: "",
+    });
+    expect(
+      forge
+        .calls()
+        .map(({ args }) => args)
+        .filter((args) => args[0] === "pr"),
+    ).toEqual([
+      ["pr", "view", "42", "--json", "state"],
+      ["pr", "view", "42", "--json", "isDraft"],
+      ["pr", "ready", "42"],
+      ["pr", "merge", "42", "--merge", "--match-head-commit", fixture.publishedRevision],
+      ["pr", "view", "42", "--json", "state"],
+    ]);
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "landed", mergeOrigin: null });
+  });
+
+  it("fails without a merge request when the PR cannot leave draft", async () => {
+    const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
+    const forge = installForgeGh(
+      [
+        openPrTokenAnswer(),
+        { args: ["pr", "view", "42", "--json", "isDraft"], stdout: '{"isDraft":true}' },
+        { args: ["pr", "ready", "42"], exitCode: 1, stderr: "GraphQL: Could not mark pull request ready" },
+      ],
+      "tasker-merge-draft-refused-",
+    );
+    forge.setMergeState("OPEN");
+
+    const result = await runMerge();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("merging failed: could not take pull request 42 out of draft");
+    expect(result.out).toBe("");
+    expect(forge.calls().filter(({ args }) => args[1] === "merge")).toHaveLength(0);
+    expect(latestTaskOf(fixture.dataRoot, KEY)).toMatchObject({ state: "failed", mergeOrigin: "in_peer_review" });
+    expect(eventsOf(fixture.dataRoot, KEY).some(({ type }) => type === "merged")).toBe(false);
+  });
+
   it("refuses an atomic expected-head mismatch without landing", async () => {
     const fixture = await usePeerReviewTask({ repo: { forge: { provider: "github", account: "forge-team" } } });
-    const forge = installForgeGh([openPrTokenAnswer()], "tasker-merge-head-");
+    const forge = installForgeGh(
+      [openPrTokenAnswer(), { args: ["pr", "view", "42", "--json", "isDraft"], stdout: '{"isDraft":false}' }],
+      "tasker-merge-head-",
+    );
     forge.setMergeState("OPEN");
     forge.setRemoteHead("changed-remote-head");
     const result = await runMerge();
@@ -125,6 +186,7 @@ describe("tasker merge", () => {
     const forge = installForgeGh(
       [
         openPrTokenAnswer(),
+        { args: ["pr", "view", "42", "--json", "isDraft"], stdout: '{"isDraft":false}' },
         { args: ["pr", "merge", "42", "--merge", "--match-head-commit", fixture.publishedRevision] },
       ],
       "tasker-merge-record-retry-",
