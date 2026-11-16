@@ -35,6 +35,9 @@ the PR base must follow the stored base of the task, and no other PR field depen
 the forge refuses to merge a draft, and the caller decides when to take a PR out of draft. The provider never does it by
 itself.
 
+`viewPr` reads the state, head and base of one pull request. The caller needs these facts for a recorded PR. They tell
+the caller why the PR does not fit the task.
+
 ## Provider selection
 
 `forgeForRepo()` selects a provider from `repos.<key>.forge`. The forge account is separate from the issue tracker

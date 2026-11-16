@@ -764,14 +764,15 @@ The PR number and state share one transaction so `in_peer_review` always has its
 [the tasks table](data-root.md#tasks-table) for storage rules.
 
 After that transaction, `tasker open-pr` makes the optional review write from `issueTracker.reviewLabel` (`github`) or
-`issueTracker.reviewStatus` (`jira`). After a successful GitHub review-label add, tasker removes the in-progress marker
-when `updateOnStart` is true, `inProgressLabel` is set and the task has `tracker_marked` set. The clear uses the same
-rule as the abort: a task removes only the marker that it added. It skips the clear when the label names match,
-including a case-only difference, because GitHub treats those names as equal. The add must pass first because the marker
-protects the issue against a second start. A passed clear sets `tracker_marked` to 0, so a later abort leaves the label
-alone. A failed clear keeps `tracker_marked` at 1. Jira makes no clear call. A failed review write or marker removal
-warns. It does not undo the PR record or the move to `in_peer_review`. A failed add keeps the marker, while a failed
-clear can leave both labels. `tasker open-pr` still exits with code 0 after either tracker write fails.
+`issueTracker.reviewStatus` (`jira`). A push that moves the task to `in_peer_review` makes the same write. After a
+successful GitHub review-label add, tasker removes the in-progress marker when `updateOnStart` is true,
+`inProgressLabel` is set and the task has `tracker_marked` set. The clear uses the same rule as the abort: a task
+removes only the marker that it added. It skips the clear when the label names match, including a case-only difference,
+because GitHub treats those names as equal. The add must pass first because the marker protects the issue against a
+second start. A passed clear sets `tracker_marked` to 0, so a later abort leaves the label alone. A failed clear keeps
+`tracker_marked` at 1. Jira makes no clear call. A failed review write or marker removal warns. It does not undo the PR
+record or the move to `in_peer_review`. A failed add keeps the marker, while a failed clear can leave both labels.
+`tasker open-pr` still exits with code 0 after either tracker write fails.
 
 The [landing reference](../../skills/tasker/references/landing.md#tasker-open-pr) gives the state path, output, failures
 and publication cycle.
@@ -831,10 +832,14 @@ after the forge confirms completion. It does not wait for the queue. See the
 ## Push
 
 Publication and landing are separate decisions after acceptance. `tasker push` publishes the accepted task branch to
-`origin`. The task goes through `pushing` to `pushed`. It does not land the work on the base branch.
+`origin`. The task goes through `pushing` to `pushed`. It does not land the work on the base branch. If the task has a
+recorded PR and the forge reports it as open on the task branch and base, push then moves the task to `in_peer_review`.
 
 Before it writes, the command compares the exact local task branch tip with the revision that `tasker accept` stored.
-Then it publishes only the task branch. It does not need the base branch, an assistant or a forge.
+Then it publishes only the task branch. Publication does not need the base branch, an assistant or a forge.
+
+The push already updates the open PR, so an extra `tasker open-pr` step adds nothing. The PR step of push uses the base
+rule and the review write of `tasker open-pr`. A failed check or a forge error leaves the task in `pushed`.
 
 The review and the accept cover one tree. The push covers the same tree.
 

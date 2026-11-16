@@ -109,9 +109,10 @@ NULL, the resync was recorded, so recovery keeps the current worktree state.
 
 The nullable integer column `pr_number` holds the number of the pull request tasker recorded for the task, or NULL when
 there is no record. Schema version 21 adds it. Existing task rows get NULL. `tasker open-pr` writes the number, the
-`pr_opened` event, the move from `opening_pr` to `in_peer_review` and the run-marker removal in one transaction. This
-keeps the PR number, event, state and marker in sync. Later code reads `pr_number`, not the event, because events are an
-audit log and not data.
+`pr_opened` event, the move from `opening_pr` to `in_peer_review` and the run-marker removal in one transaction.
+`tasker push` writes the same data in one transaction when it moves the task from `pushed`. This keeps the PR number,
+event, state and marker in sync. Later code reads `pr_number`, not the event, because events are an audit log and not
+data.
 
 The nullable text column `merge_origin` holds the state that a merge started from: `accepted` for a trunk merge, or
 `in_peer_review` for a PR merge. Schema version 22 adds it. The migration backfills only tasks still in `merging`, and

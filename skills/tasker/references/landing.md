@@ -33,8 +33,9 @@ The revision does not approve or publish the changed work. Approve it, execute i
 before another push or publication. Reopen keeps the accepted revision, published revision and PR number.
 
 If the task had an open PR, `tasker push` updates the same task branch after acceptance. It uses the saved published
-revision as the lease for that update. Then `tasker open-pr` finds and adopts the still-open PR for the branch. The PR
-number stays the same, and tasker returns the task to `in_peer_review`.
+revision as the lease for that update. Then push asks the forge about the recorded PR. If the PR is still open on the
+task branch and base, push returns the task to `in_peer_review` and the PR number stays the same. You run
+`tasker open-pr` only when push leaves the task in `pushed`.
 
 Before the task enters `refining`, a refusal exits with code 1 and writes no task or worktree changes. The error names
 the failed guard. It can report blank feedback, a missing branch, worktree, base, plan revision or plan session, a dirty
@@ -51,8 +52,8 @@ for recovery after a failed reopen.
 ## `tasker push`
 
 Publishes the work of a task in `accepted` to its branch on `origin`: `tasker push <issue>`. Publication and landing are
-separate choices. The task goes through `pushing` to `pushed`. The command does not need a base branch, an assistant or
-a forge.
+separate choices. The task goes through `pushing` to `pushed`. Publication does not need a base branch, an assistant or
+a forge. The PR step after publication uses the forge.
 
 Before it writes anything, the command reads the exact local task branch tip and compares it with the accepted revision.
 It publishes only that task branch. It uses the last published revision as the lease for an update. If tasker has not
@@ -73,6 +74,28 @@ On success, the command prints one of these forms on stdout:
   <branch> is already on origin at <revision>
   state: pushed
   ```
+
+After publication, push can move the task straight to `in_peer_review`. This step needs a recorded PR number and a
+`forge` in the configuration of the repo. It also needs the base rule of `tasker open-pr`: the stored base of the task
+must not have moved because its parent landed. Push asks the forge for the recorded PR. The PR must be open, come from
+the same repository, have the task branch as its head and have the stored base of the task as its base. If all of these
+hold, push records the PR as adopted and prints the push line, then this form:
+
+```text
+PR #<number> is open: <url>
+state: in_peer_review
+```
+
+Push then makes the same review write as `tasker open-pr`. Its tracker lines come before the form above.
+
+If one condition fails, the task stays in `pushed`. Push prints the push line, then one reason line, then
+`state: pushed` on stdout. The reason ends with `so the task stays in pushed`. It names the closed or merged PR, the
+other repository, the other head, the other base, or the error of the base rule.
+
+If the forge read or the record fails, push prints `warning: <reason>` on stderr, then the push line and `state: pushed`
+on stdout. If no PR number or no forge configuration exists, push makes no forge call and prints the forms above.
+
+Each of these results exits with code 0. After a stay or a warning, run `tasker open-pr` to adopt the PR.
 
 The command stops with exit code 1 and prints the error on stderr in these cases. Before the move to `pushing`, the task
 keeps its state and no event or run marker is written. The shared errors of no task, of
@@ -170,10 +193,11 @@ step. A failed marker removal also warns. Both labels can remain on the issue. T
 marker step.
 
 The PR number, `pr_opened` event and move to `in_peer_review` share one database transaction. The task stores the PR
-number for later use. A later push keeps that number and moves the task to `pushed`. Each time tasker records a PR, it
-writes the configured review target. This includes a new PR, an adopted PR, and an adopted PR after a later push. It
-also includes an open-pr run after retry or resume from an `opening_pr` failure. tasker does not change the title or
-body of an adopted PR.
+number for later use. A later push keeps that number. Push then moves the task to `in_peer_review` when the forge
+reports that PR as open on the task branch and base. Otherwise it moves the task to `pushed`. Each time tasker records a
+PR, it writes the configured review target. This includes a new PR, an adopted PR, and an adopted PR after a later push,
+whether `tasker open-pr` or `tasker push` adopts it. It also includes an open-pr run after retry or resume from an
+`opening_pr` failure. tasker does not change the title or body of an adopted PR.
 
 A lookup, create, other-base conflict or record failure after `opening_pr` moves the task to `failed`, clears its run
 marker and exits with code 1. The error starts with the exact text `opening_pr failed: <reason>`. If tasker created a PR

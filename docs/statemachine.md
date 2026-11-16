@@ -182,6 +182,7 @@ flowchart LR
   AC[accepted] -->|push| PG[pushing]
   PG -->|done| PU[pushed]
   PU -->|open-pr| OP[opening_pr]
+  PU -->|push, open PR| PR
   OP -->|done| PR[in_peer_review]
   PR -->|merge| MG[back to merging]
   PR -->|reopen FEEDBACK| RF[refining]
@@ -199,6 +200,9 @@ flowchart LR
 - `open-pr` does not push. It needs `forge`. It checks for an open pull request from the task branch and adopts a
   matching one before it creates a PR. If tasker creates a PR but cannot store its record, retry or resume runs
   `open-pr` again. The lookup then adopts that PR before tasker can create another one.
+- `push` can also move the task straight to `in_peer_review`. This needs a recorded PR number and `forge`. The forge
+  must report that PR as open, from the same repository, with the task branch as head and the stored base of the task as
+  base. The base rule of `open-pr` must pass too. If one condition fails, the task stays in `pushed`.
 - `merge` from `in_peer_review` merges the recorded PR through the configured forge with `forge.mergeMethod`, only at
   the revision that `push` published. It first asks whether the PR is merged. If not, it takes a draft PR out of draft,
   then asks the forge to merge only if the PR still has that revision as its head, then asks again. It lands the task
@@ -212,7 +216,7 @@ flowchart LR
   worktree onto the stored base tip first. The new plan revision must be approved and then go through execution,
   verification and acceptance before another publication. Reopen keeps the published revision.
 - To update an open PR, run `update-branch` from `in_peer_review`. It demotes the task to `executed`. Then run `verify`,
-  `accept` and `push`. `open-pr` adopts the open PR and returns the task to `in_peer_review`.
+  `accept` and `push`. While the PR stays open, `push` returns the task to `in_peer_review`.
 
 ## Pauses
 
