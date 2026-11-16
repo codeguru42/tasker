@@ -1,11 +1,12 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { useTempDir } from "./temp.js";
 import {
   answerChecks,
   fakeAnswerScript,
+  fakeBwrapSeccompPath,
   logEnvItems,
   pathWithFirst,
   readFakeCalls,
@@ -71,6 +72,44 @@ describe("useFakeSandboxBin", () => {
       "-c",
       "printf ran",
     ]);
+  });
+});
+
+describe("the fake bwrap and fd 3", () => {
+  it("copies fd 3 to the seccomp file when --seccomp is an argument", () => {
+    const bin = useFakeSandboxBin();
+    const bytes = Buffer.from([0, 1, 2, 255, 10, 0, 7]);
+    const input = join(useTempDir("tasker-seccomp-"), "input");
+    writeFileSync(input, bytes);
+
+    // The shell opens the file as fd 3, like the pipe that tasker gives to the real bwrap.
+    const result = spawnSync("/bin/sh", ["-c", 'bwrap --seccomp 3 -- /bin/true 3< "$INPUT"'], {
+      env: { PATH: bin, INPUT: input },
+    });
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(fakeBwrapSeccompPath(bin)).equals(bytes)).toBe(true);
+  });
+
+  it("writes no seccomp file without --seccomp", () => {
+    const bin = useFakeSandboxBin();
+
+    const result = spawnSync("bwrap", ["--", "/bin/true"], { env: { PATH: bin }, input: "data" });
+
+    expect(result.status).toBe(0);
+    expect(existsSync(fakeBwrapSeccompPath(bin))).toBe(false);
+  });
+
+  it("exits 1 with the bwrap message when fd 3 is closed", () => {
+    const bin = useFakeSandboxBin();
+
+    const result = spawnSync("bwrap", ["--seccomp", "3", "--", "/bin/true"], {
+      env: { PATH: bin },
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("bwrap: Can't read seccomp data: Bad file descriptor");
   });
 });
 

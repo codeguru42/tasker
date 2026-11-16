@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { expect, onTestFinished } from "vitest";
-import { isRunnableFile } from "../../src/process/resolve-program.js";
+import { findOnPath, isRunnableFile } from "../../src/process/resolve-program.js";
 import { shellQuote } from "../../src/shell-quote.js";
 import { useTempDir } from "./temp.js";
 
@@ -173,15 +173,35 @@ export function usePathWithout(program: string, path: string): string {
     .join(delimiter);
 }
 
+// The file where the fake bwrap copies fd 3 when it gets --seccomp.
+export function fakeBwrapSeccompPath(binDir: string): string {
+  return join(binDir, "bwrap-seccomp");
+}
+
 // Writes a fake bwrap and a fake socat into binDir, except the names in except. The fake bwrap records optional
-// arguments and runs the command after --.
+// arguments. When an argument before -- is --seccomp, it copies fd 3 to fakeBwrapSeccompPath(binDir), or prints
+// the message of bwrap and exits 1 if fd 3 cannot be read. Then it closes fd 3 and runs the command after --.
 export function writeFakeSandboxPrograms(binDir: string, except: readonly string[] = []): void {
   if (!except.includes("bwrap")) {
+    // The absolute cat is found now, because a test PATH can have no cat and the child env drops TASKER_* names.
+    const cat = findOnPath("cat", process.env);
+    if (cat === undefined) throw new Error("the fake bwrap needs cat on the PATH");
     writeFakeCommand(
       binDir,
       "bwrap",
       [
         'if [ -n "${TASKER_FAKE_BWRAP_ARGS-}" ]; then printf \'%s\\0\' "$@" > "$TASKER_FAKE_BWRAP_ARGS"; fi',
+        'for arg in "$@"; do',
+        '  if [ "$arg" = "--" ]; then break; fi',
+        '  if [ "$arg" = "--seccomp" ]; then',
+        `    if ! { ${shellQuote(cat)} <&3 > ${shellQuote(fakeBwrapSeccompPath(binDir))}; } 2>/dev/null; then`,
+        '      echo "bwrap: Can\'t read seccomp data: Bad file descriptor" >&2',
+        "      exit 1",
+        "    fi",
+        "    exec 3<&-",
+        "    break",
+        "  fi",
+        "done",
         'while [ "$#" -gt 0 ]; do',
         '  if [ "$1" = "--" ]; then shift; "$@"; exit $?; fi',
         "  shift",
