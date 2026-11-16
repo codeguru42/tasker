@@ -78,7 +78,18 @@ describe("createGitHubForge", () => {
     expect(provider.id).toBe("github");
     expect(provider.account).toBe(account);
     expect(Object.keys(provider).sort()).toEqual(
-      ["account", "ciStatus", "createPr", "id", "isPrMerged", "listOpenPrs", "mergePr", "changePrBase"].sort(),
+      [
+        "account",
+        "ciStatus",
+        "createPr",
+        "id",
+        "isPrDraft",
+        "isPrMerged",
+        "listOpenPrs",
+        "markPrReady",
+        "mergePr",
+        "changePrBase",
+      ].sort(),
     );
     expect(fake.calls()).toEqual([]);
   });
@@ -102,6 +113,8 @@ describe("createGitHubForge", () => {
       { args: ["pr", "view", "42", "--json", "state"], stdout: '{"state":"OPEN"}' },
       { args: ["pr", "merge", "42", "--squash", "--match-head-commit", sha], stdout: "accepted" },
       { args: ["pr", "edit", "42", "--base", "main"], stdout: "" },
+      { args: ["pr", "view", "42", "--json", "isDraft"], stdout: '{"isDraft":true}' },
+      { args: ["pr", "ready", "42"], stdout: "" },
     ]);
     const provider = makeProvider();
     await provider.ciStatus(sha, worktree, env);
@@ -110,9 +123,11 @@ describe("createGitHubForge", () => {
     await provider.isPrMerged(prNumber, worktree, env);
     await provider.mergePr(prNumber, "squash", sha, worktree, env);
     await provider.changePrBase(prNumber, "main", worktree, env);
+    await provider.isPrDraft(prNumber, worktree, env);
+    await provider.markPrReady(prNumber, worktree, env);
 
     const calls = fake.calls().map(({ args, cwd }) => ({ args, cwd }));
-    expect(calls).toHaveLength(9);
+    expect(calls).toHaveLength(11);
     expect(calls[0]).toEqual({ args: ["auth", "token", "--user", account], cwd: process.cwd() });
     expect(calls.slice(1, 4)).toEqual(
       expect.arrayContaining([
@@ -136,6 +151,8 @@ describe("createGitHubForge", () => {
       { args: ["pr", "view", "42", "--json", "state"], cwd: worktree },
       { args: ["pr", "merge", "42", "--squash", "--match-head-commit", sha], cwd: worktree },
       { args: ["pr", "edit", "42", "--base", "main"], cwd: worktree },
+      { args: ["pr", "view", "42", "--json", "isDraft"], cwd: worktree },
+      { args: ["pr", "ready", "42"], cwd: worktree },
     ]);
     expect(fake.calls().flatMap(({ args }) => args)).not.toContain("--repo");
     expect(

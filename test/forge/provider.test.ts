@@ -23,7 +23,10 @@ type CreatePrInputIsExact = Assert<
 
 type ProviderMethodsAreExact = Assert<
   Equal<
-    Pick<ForgeProvider, "ciStatus" | "isPrMerged" | "listOpenPrs" | "createPr" | "mergePr" | "changePrBase">,
+    Pick<
+      ForgeProvider,
+      "ciStatus" | "isPrMerged" | "listOpenPrs" | "createPr" | "mergePr" | "changePrBase" | "isPrDraft" | "markPrReady"
+    >,
     {
       ciStatus: (sha: string, cwd: string, env: NodeJS.ProcessEnv) => Promise<CiStatus>;
       isPrMerged: (prNumber: number, cwd: string, env: NodeJS.ProcessEnv) => Promise<boolean>;
@@ -37,6 +40,8 @@ type ProviderMethodsAreExact = Assert<
         env: NodeJS.ProcessEnv,
       ) => Promise<void>;
       changePrBase: (prNumber: number, base: string, cwd: string, env: NodeJS.ProcessEnv) => Promise<void>;
+      isPrDraft: (prNumber: number, cwd: string, env: NodeJS.ProcessEnv) => Promise<boolean>;
+      markPrReady: (prNumber: number, cwd: string, env: NodeJS.ProcessEnv) => Promise<void>;
     }
   >
 >;
@@ -56,6 +61,8 @@ type MergePrArgs = Assert<
 type ChangePrBaseArgs = Assert<
   Equal<Parameters<ForgeProvider["changePrBase"]>, [number, string, string, NodeJS.ProcessEnv]>
 >;
+type IsPrDraftArgs = Assert<Equal<Parameters<ForgeProvider["isPrDraft"]>, [number, string, NodeJS.ProcessEnv]>>;
+type MarkPrReadyArgs = Assert<Equal<Parameters<ForgeProvider["markPrReady"]>, [number, string, NodeJS.ProcessEnv]>>;
 type CiStatusResult = Assert<Equal<ReturnType<ForgeProvider["ciStatus"]>, Promise<CiStatus>>>;
 type IsPrMergedResult = Assert<Equal<ReturnType<ForgeProvider["isPrMerged"]>, Promise<boolean>>>;
 type ListOpenPrsResult = Assert<Equal<ReturnType<ForgeProvider["listOpenPrs"]>, Promise<OpenPullRequest[]>>>;
@@ -63,6 +70,8 @@ type CreatePrResult = Assert<Equal<ReturnType<ForgeProvider["createPr"]>, Promis
 type MergePrResult = Assert<Equal<ReturnType<ForgeProvider["mergePr"]>, Promise<void>>>;
 
 type ChangePrBaseResult = Assert<Equal<ReturnType<ForgeProvider["changePrBase"]>, Promise<void>>>;
+type IsPrDraftResult = Assert<Equal<ReturnType<ForgeProvider["isPrDraft"]>, Promise<boolean>>>;
+type MarkPrReadyResult = Assert<Equal<ReturnType<ForgeProvider["markPrReady"]>, Promise<void>>>;
 
 type ContractAssertions = [
   CiStatusIsExact,
@@ -79,12 +88,16 @@ type ContractAssertions = [
   CreatePrArgs,
   MergePrArgs,
   ChangePrBaseArgs,
+  IsPrDraftArgs,
+  MarkPrReadyArgs,
   CiStatusResult,
   IsPrMergedResult,
   ListOpenPrsResult,
   CreatePrResult,
   MergePrResult,
   ChangePrBaseResult,
+  IsPrDraftResult,
+  MarkPrReadyResult,
 ];
 
 describe("ForgeProvider type contract", () => {
@@ -110,8 +123,12 @@ describe("ForgeProvider type contract", () => {
       true,
       true,
       true,
+      true,
+      true,
+      true,
+      true,
     ];
-    expect(assertions).toEqual(Array.from({ length: 20 }, () => true));
+    expect(assertions).toEqual(Array.from({ length: 24 }, () => true));
   });
 });
 

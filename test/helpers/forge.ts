@@ -13,7 +13,9 @@ export interface ForgeCalls {
   merged: { number: number; method: MergeMethod; headSha: string; cwd: string }[];
   baseChanged: { number: number; base: string; cwd: string }[];
   queried: { number: number; cwd: string }[];
-  order: ("query" | "merge")[];
+  draftQueried: { number: number; cwd: string }[];
+  readied: { number: number; cwd: string }[];
+  order: ("query" | "draft" | "ready" | "merge")[];
 }
 
 export interface ForgeStub {
@@ -24,6 +26,8 @@ export interface ForgeStub {
   failQuery(error: Error): void;
   failMerge(error: Error): void;
   failBaseChange(error: Error): void;
+  failDraftQuery(error: Error): void;
+  failReady(error: Error): void;
 }
 
 export function forgeStub(
@@ -33,14 +37,27 @@ export function forgeStub(
     openPrs?: OpenPullRequest[];
     createdPr?: PullRequest;
     mergedStatuses?: (boolean | Error)[];
+    draft?: boolean;
   } = {},
 ): ForgeStub {
-  const calls: ForgeCalls = { listed: [], created: [], ci: [], merged: [], baseChanged: [], queried: [], order: [] };
+  const calls: ForgeCalls = {
+    listed: [],
+    created: [],
+    ci: [],
+    merged: [],
+    baseChanged: [],
+    queried: [],
+    draftQueried: [],
+    readied: [],
+    order: [],
+  };
   let listError: Error | undefined;
   let createError: Error | undefined;
   let queryError: Error | undefined;
   let mergeError: Error | undefined;
   let baseChangeError: Error | undefined;
+  let draftQueryError: Error | undefined;
+  let readyError: Error | undefined;
   const statuses = [...(options.mergedStatuses ?? [])];
   const provider: ForgeProvider = {
     id: options.id ?? "test-forge",
@@ -76,6 +93,17 @@ export function forgeStub(
       calls.baseChanged.push({ number, base, cwd });
       if (baseChangeError !== undefined) throw baseChangeError;
     },
+    async isPrDraft(number, cwd) {
+      calls.order.push("draft");
+      calls.draftQueried.push({ number, cwd });
+      if (draftQueryError !== undefined) throw draftQueryError;
+      return options.draft ?? false;
+    },
+    async markPrReady(number, cwd) {
+      calls.order.push("ready");
+      calls.readied.push({ number, cwd });
+      if (readyError !== undefined) throw readyError;
+    },
   };
   return {
     provider,
@@ -94,6 +122,12 @@ export function forgeStub(
     },
     failBaseChange(error) {
       baseChangeError = error;
+    },
+    failDraftQuery(error) {
+      draftQueryError = error;
+    },
+    failReady(error) {
+      readyError = error;
     },
   };
 }

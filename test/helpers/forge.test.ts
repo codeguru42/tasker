@@ -21,6 +21,8 @@ describe("forgeStub", () => {
       merged: [],
       baseChanged: [],
       queried: [],
+      draftQueried: [],
+      readied: [],
       order: [],
     });
   });
@@ -47,6 +49,22 @@ describe("forgeStub", () => {
       { number: 42, base: "release", cwd: "/work" },
       { number: 42, base: "other", cwd: "/work" },
     ]);
+  });
+
+  it("reports a draft only when asked, records draft calls and can reject them", async () => {
+    await expect(forgeStub().provider.isPrDraft(42, "/work", {})).resolves.toBe(false);
+
+    const fake = forgeStub({ draft: true });
+    await expect(fake.provider.isPrDraft(42, "/work", {})).resolves.toBe(true);
+    await expect(fake.provider.markPrReady(42, "/work", {})).resolves.toBeUndefined();
+    expect(fake.calls.draftQueried).toEqual([{ number: 42, cwd: "/work" }]);
+    expect(fake.calls.readied).toEqual([{ number: 42, cwd: "/work" }]);
+    expect(fake.calls.order).toEqual(["draft", "ready"]);
+
+    fake.failDraftQuery(new Error("draft refused"));
+    await expect(fake.provider.isPrDraft(42, "/work", {})).rejects.toThrow("draft refused");
+    fake.failReady(new Error("ready refused"));
+    await expect(fake.provider.markPrReady(42, "/work", {})).rejects.toThrow("ready refused");
   });
 
   it("records CI status and merge calls", async () => {
