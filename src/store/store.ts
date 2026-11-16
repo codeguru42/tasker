@@ -3,7 +3,7 @@ import type {
   AssistantEvent,
   AssistantProviderId,
   Effort,
-  RecordedSession,
+  ContinuedSession,
   TokenUsage,
 } from "../assistant/provider.js";
 import type { PlanAnswer } from "../plan/answer.js";
@@ -216,12 +216,12 @@ export interface Review extends Omit<NewReview, "findings"> {
 }
 
 // A session that the store holds: what it recorded when it started, and its id.
-export interface StoredSession extends RecordedSession {
+export interface StoredSession extends ContinuedSession {
   sessionId: string;
 }
 
 // The repo comes from the task, so the caller does not give it.
-export type NewSession = Omit<StoredSession, "repoKey">;
+export type NewSession = Omit<StoredSession, "repoKey" | "reportedModel">;
 
 // A todo with no row is not started, so the table stores only the two other states.
 export type ExecuteTodoState = "in_progress" | "done";
@@ -451,6 +451,8 @@ export interface TaskStore extends LockStore {
   // Stores the id that a provider gave to a session, only when the column is NULL. Else, and for a
   // session with no row, it changes nothing.
   setProviderSessionId(taskId: number, sessionId: string, id: string): void;
+  // Stores the reported model of a session, only when the column is NULL. Else, and for a session with no row, it changes nothing.
+  setSessionReportedModel(taskId: number, sessionId: string, model: string): void;
   // The last usage total of a session, or undefined when none is stored or the session has no row.
   sessionUsageTotal(taskId: number, sessionId: string): TokenUsage | undefined;
   // Replaces the last usage total of a session in one statement. A session with no row changes nothing.
@@ -1641,6 +1643,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       immediateTransaction(db, () => {
         statements.updateProviderSessionId.run(id, taskId, sessionId);
       });
+    },
+
+    setSessionReportedModel() {
+      // Not stored yet.
     },
 
     sessionUsageTotal(taskId, sessionId) {

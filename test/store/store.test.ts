@@ -54,6 +54,7 @@ import {
   rejectEvent,
   withStoreFile,
   writeRunMarker,
+  reportedModelOf,
   trustedExtensionsJsonOf,
   writeTrustedExtensionsJson,
 } from "../helpers/store.js";
@@ -730,6 +731,62 @@ describe("task store", () => {
       store.setProviderSessionId(id, "other", "thread-1");
       expect(sessionValuesOf(dbPath, "s-1")).toEqual(NO_SESSION_VALUES);
       expect(sessionValuesOf(dbPath, "other")).toBeUndefined();
+    });
+  });
+
+  describe("reported model of a session", () => {
+    const record = () => {
+      const task = store.createTask(newTask);
+      seedPlanSession(store, task.id, { sessionId: "s-1" });
+      return task.id;
+    };
+
+    it("has the column and the current schema version", () => {
+      withRawDatabase(dbPath, (db) => {
+        const columns = db.prepare("PRAGMA table_info(sessions)").all() as { name: string }[];
+        expect(columns.map((column) => column.name)).toContain("reported_model");
+        expect(schemaVersion(db)).toBe(migrations.length);
+      });
+    });
+
+    it("gives a new session no reportedModel key", () => {
+      const id = record();
+      expect(store.planSession(id)).not.toHaveProperty("reportedModel");
+      expect(reportedModelOf(dbPath, "s-1")).toBeNull();
+    });
+
+    it("sets the value, and a second write leaves the first model", () => {
+      const id = record();
+      store.setSessionReportedModel(id, "s-1", "openrouter/a");
+      expect(store.planSession(id)).toMatchObject({ reportedModel: "openrouter/a" });
+      store.setSessionReportedModel(id, "s-1", "openrouter/b");
+      expect(store.planSession(id)).toMatchObject({ reportedModel: "openrouter/a" });
+      expect(reportedModelOf(dbPath, "s-1")).toBe("openrouter/a");
+    });
+
+    it("changes no row for an unknown session id", () => {
+      const id = record();
+      store.setSessionReportedModel(id, "other", "openrouter/a");
+      expect(reportedModelOf(dbPath, "s-1")).toBeNull();
+      expect(reportedModelOf(dbPath, "other")).toBeUndefined();
+    });
+
+    it("keeps the column NULL for an old session row after an upgrade", () => {
+      const oldPath = join(dir, "old-reported.db");
+      makeOldDatabase(oldPath, migrations.length - 1);
+      withRawDatabase(oldPath, (raw) => {
+        insertRawTask(raw, "tasker", "new");
+        raw
+          .prepare(
+            "INSERT INTO sessions (task_id, role, session_id, provider, model, effort, created_at) VALUES (1, 'plan', 's-old', 'pi', 'm', 'low', '2026-01-01T00:00:00.000Z')",
+          )
+          .run();
+      });
+
+      withStoreFile(oldPath, (upgraded) => {
+        expect(upgraded.planSession(1)).not.toHaveProperty("reportedModel");
+      });
+      expect(reportedModelOf(oldPath, "s-old")).toBeNull();
     });
   });
 

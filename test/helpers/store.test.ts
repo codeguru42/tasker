@@ -42,6 +42,7 @@ import {
   readRunMarker,
   NO_SESSION_VALUES,
   sessionValuesOf,
+  reportedModelOf,
   trustedExtensionsJsonOf,
   writeTrustedExtensionsJson,
   refuseBranchUpdated,
@@ -732,6 +733,33 @@ describe("trustedExtensionsJsonOf", () => {
     expect(trustedExtensionsJsonOf(path, "s-1")).toBe("[]");
     writeTrustedExtensionsJson(path, "s-1", '["pkg","builtin:codemode"]');
     expect(trustedExtensionsJsonOf(path, "s-1")).toBe('["pkg","builtin:codemode"]');
+  });
+});
+
+describe("reportedModelOf", () => {
+  const seeded = () => {
+    const path = join(useTempDir("tasker-store-"), "tasker.db");
+    withStoreFile(path, (store) => {
+      const task = store.createTask({ issueKey: "codeguru42/tasker#6", repoKey: "tasker", state: "approved" });
+      seedPlanSession(store, task.id, { sessionId: "s-1" });
+    });
+    return path;
+  };
+
+  it("gives null for a new session", () => {
+    expect(reportedModelOf(seeded(), "s-1")).toBeNull();
+  });
+
+  it("gives the value of the column", () => {
+    const path = seeded();
+    withRawDatabase(path, (db) =>
+      db.exec("UPDATE sessions SET reported_model = 'openrouter/x' WHERE session_id = 's-1'"),
+    );
+    expect(reportedModelOf(path, "s-1")).toBe("openrouter/x");
+  });
+
+  it("gives undefined for a session id with no row", () => {
+    expect(reportedModelOf(seeded(), "missing")).toBeUndefined();
   });
 });
 

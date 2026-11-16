@@ -141,6 +141,11 @@ export interface RecordedSession extends ModelChoice {
   trustedExtensions: string[];
 }
 
+// A session that a command continues: what it recorded when it started, and the first model that its provider reported.
+export interface ContinuedSession extends RecordedSession {
+  reportedModel?: string;
+}
+
 /**
  * An assistant: the coding-agent program that tasker starts in the worktree of a task, to plan,
  * to execute and to review. A command gets a provider from createAssistantProvider() or

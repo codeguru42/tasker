@@ -219,6 +219,15 @@ export function trustedExtensionsJsonOf(dbPath: string, sessionId: string): stri
   });
 }
 
+// The raw reported_model column of a session. It gives undefined when the session has no row.
+export function reportedModelOf(dbPath: string, sessionId: string): string | null | undefined {
+  return withRawDatabase(dbPath, (db) => {
+    const row = db.prepare("SELECT reported_model FROM sessions WHERE session_id = ?").get(sessionId) as
+      { reported_model: string | null } | undefined;
+    return row?.reported_model;
+  });
+}
+
 // Writes a raw trusted extension JSON value for a session.
 export function writeTrustedExtensionsJson(dbPath: string, sessionId: string, value: string | null): void {
   withRawDatabase(dbPath, (db) => {

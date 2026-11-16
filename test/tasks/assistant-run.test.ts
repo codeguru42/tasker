@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { permissionHookSettings } from "../../src/assistant/claude-code/permission-hook.js";
 import type { Config } from "../../src/config/schema.js";
 import type { AssistantEvent } from "../../src/assistant/provider.js";
-import type { RecordedSession } from "../../src/assistant/provider.js";
+import type { RecordedSession, RunOutcome } from "../../src/assistant/provider.js";
 import { dataRootLayout, taskSessionsDir } from "../../src/store/layout.js";
 import { readTurnResult, turnResultJsonSchema } from "../../src/plan/turn-result.js";
 import type { Task, TaskStore } from "../../src/store/store.js";
@@ -43,6 +43,8 @@ import {
   NO_SESSION_VALUES,
   quotaEventsOf,
   readRunMarker,
+  reportedModelOf,
+  withRawDatabase,
   sessionValuesOf,
   trustedExtensionsJsonOf,
   writeTrustedExtensionsJson,
@@ -1173,5 +1175,50 @@ describe("the values of a session in an execute run", () => {
     );
 
     expect(sessionValuesOf(databasePathOf(started.dataRoot), prepared.sessionId)).toEqual(NO_SESSION_VALUES);
+  });
+});
+
+describe("the reported model of a run", () => {
+  const reportingRun =
+    (reportedModel: string, outcomeOf: { current?: RunOutcome } = {}) =>
+    (prepared: Awaited<ReturnType<typeof prepareTaskPlanModeRun>>) => {
+      prepared.provider.run = async (input) => {
+        outcomeOf.current = {
+          kind: "success",
+          sessionId: input.sessionId,
+          events: [],
+          permissionDenials: [],
+          usage: "unavailable",
+          reportedModel,
+        };
+        return outcomeOf.current;
+      };
+    };
+
+  it("stores the reported model of the outcome in the plan session row", async () => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+    const { prepared, outcome } = await runPlanMode(fixture, { beforeStart: reportingRun("claude-opus-x") });
+
+    expect(outcome).toMatchObject({ kind: "success", reportedModel: "claude-opus-x" });
+    expect(reportedModelOf(databasePathOf(fixture.started.dataRoot), prepared.sessionId)).toBe("claude-opus-x");
+  });
+
+  it("gives the same outcome when the write of the reported model fails", async () => {
+    const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
+    const given: { current?: RunOutcome } = {};
+    const dbPath = databasePathOf(fixture.started.dataRoot);
+    const { prepared, outcome } = await runPlanMode(fixture, {
+      beforeStart: (prepared) => {
+        reportingRun("claude-opus-x", given)(prepared);
+        withRawDatabase(dbPath, (db) =>
+          db.exec(
+            "CREATE TRIGGER refuse_reported_model BEFORE UPDATE OF reported_model ON sessions BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",
+          ),
+        );
+      },
+    });
+
+    expect(outcome).toBe(given.current);
+    expect(reportedModelOf(dbPath, prepared.sessionId)).toBeNull();
   });
 });
