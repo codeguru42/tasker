@@ -200,6 +200,8 @@ tasker writes the record before the run. [assistants.md](assistants.md#the-sessi
 session reads its provider, model, effort and trust list (the trusted extensions of pi) from the record.
 [assistants.md](assistants.md#new-and-continued-sessions) gives the reason.
 
+A continued `pi` session also reads its reported model, and it runs on that model if the column holds one.
+
 These rules hold:
 
 - The record is written once. A second record with the same id writes nothing, also when the model, the effort or the
@@ -215,6 +217,10 @@ These rules hold:
 - The `trusted_extensions` column holds the trust list that the session recorded at its start. NULL reads as an empty
   list. Schema version 23 adds the column. The column stores each key as written, with no mask;
   [The precheck of extensions](assistants.md#the-precheck-of-extensions) gives this known limit.
+- The `reported_model` column holds the reported model of a session. It is NULL until the first reported model of a run
+  sets it, and a later run does not change it. A failed write does not stop the run. Each provider that gives
+  `reportedModel` fills it, because the code that stores the column has no case for one provider. Today these are
+  `claude-code` and `pi`. The migration that adds the column fills no row.
 - A task has one plan session at most.
 - A task has one execute session at most for each version of its plan. The execute runs of the pinned revision work in
   that session.

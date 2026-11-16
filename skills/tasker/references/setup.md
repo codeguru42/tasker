@@ -118,7 +118,7 @@ key. A session role with no entry needs both `<model>` and `--effort`. The comma
 is valid, with the model check of the provider, before it writes. If the new configuration is not valid, the command
 prints the errors and changes nothing. Then the command writes the new file in one step: a temporary file and a rename.
 It prints the new line of the role on stdout. It prints this note on stderr:
-`note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.`
+`note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with. A continued pi session runs on the model that pi reported, if pi reported one.`
 
 The command prints an error and exits with code 1 in these cases:
 

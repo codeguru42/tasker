@@ -138,7 +138,9 @@ git function with no operation adds the operation in the same change.
 5. Follow the rule "refuse, never drop" in the doc comment of the interface.
 6. Turn each neutral limit of `RunInput` into a rule of the assistant, or refuse the run.
 7. Give the doctor checks of the provider from `doctorChecks()`.
-8. Write the tests first (see "Tests").
+8. Give the model of a continued session from `continuedModel()`, and the extra checks of a reported model from
+   `reportedModelChecks()`.
+9. Write the tests first (see "Tests").
 
 ## Imports
 

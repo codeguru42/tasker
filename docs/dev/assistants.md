@@ -7,7 +7,8 @@ one assistant.
 tasker stores a value that an assistant gives for a session in one form for each provider. The code that stores and
 passes the value has no case for one provider. Each provider turns the report of its program into that form, and a
 provider with no such value leaves it NULL. An example is the `usage` event, which holds the four counters of
-`TokenUsage` for one run or `"unavailable"`, for each provider. A name of a column names no provider.
+`TokenUsage` for one run or `"unavailable"`, for each provider. Another example is the column `reported_model`, which
+holds the first model that a provider reported for a session. A name of a column names no provider.
 
 ## Refuse, never drop
 
@@ -43,6 +44,14 @@ session also trusts the extensions that it recorded at its start, and the extens
 session and its context belong to that assistant and that model. A change of the provider, the model or the effort
 applies to new sessions only. Other values of the configuration, for example `assistant.correctiveTurns`, apply to each
 run.
+
+A continued `pi` session is the one exception for the model. It runs on the model that `pi` reported, if the session
+stored one. Else it runs on the model that it recorded at its start. A router such as `openrouter/openrouter/auto` can
+answer with another model on each request. A change of the configuration must not switch a session that is under way.
+
+For now, tasker assumes that the user configures a model and not a router such as `openrouter/auto`. The turns of one
+`tasker execute` keep the model that the session recorded from the configuration when the execute started. A turn does
+not read a reported model, and the model check does not run again between turns.
 
 ## The limits of a run
 
@@ -821,6 +830,13 @@ The checks run in this order: `pi version`, on Linux `sandbox: bwrap`, one `pi-a
 sure that the superpowers package is installed and is version 6.4.1 or later. `simple-english:pi` makes sure that the
 skill `simple-english` is in a skill folder of the user.
 
+A command that continues a `pi` session on a reported model first runs `assertSessionModel` on that model.
+`assertSessionModel` runs the model checks of the provider. If the upstream of the reported model differs from the
+upstream of the recorded model, it also runs `pi-auth:<upstream>` for that upstream.
+
+`tasker doctor` tests only the upstreams of the configuration. `modelChecks` of `pi` does not give this check. If a
+check fails, the command refuses the run with `<name> runs on <model>, and pi refuses it: <detail>`.
+
 A task subagent measured these facts on 2026-11-07 with `pi` 1.1.0 on Linux. No measure called a model.
 
 - `pi --version` printed `1.1.0`.
@@ -983,8 +999,9 @@ the arguments of the last accepted call, then the text object. The first candida
 
 A clean end with no usable answer can start a corrective turn, while the limit and the time of the run allow it.
 [The outcome of pi](#the-outcome-of-pi) defines a clean end. A corrective turn is a pi process that continues the
-session of the run with a corrective prompt on stdin. The prompt names the problems and gives the schema again. The
-provider starts at most `assistant.correctiveTurns` corrective turns in one run.
+session of the run with a corrective prompt on stdin. Each corrective turn uses the model of the first process of the
+run. The prompt names the problems and gives the schema again. The provider starts at most `assistant.correctiveTurns`
+corrective turns in one run.
 
 Each caller that sets `jsonSchema` also sets `checkAnswer`, as this table says:
 
@@ -1049,7 +1066,18 @@ After it starts pi, the first matching result sets the outcome:
 pi exits with 0 when a turn fails in JSON mode, so the row of `stopReason` comes before the row of the exit code.
 
 The last assistant message controls the result after retries. A stream can have more than one `agent_end` event. Usage
-is `unavailable`, permission denials are `[]`, and tasker reports no model. `overageStop` has no effect.
+is `unavailable`, and permission denials are `[]`. `overageStop` has no effect.
+
+Each outcome of a run with an assistant message gives `reportedModel`. An assistant message is a `message_end` event
+whose `message.role` is `"assistant"`. The provider takes the first assistant message of the run whose `stopReason` is
+not `"error"` or `"aborted"`. A failed request can have no `responseModel`, and its model is the router. The value is
+`<provider>/<id>`. `<provider>` is `message.provider`, and `<id>` is `message.responseModel`, or `message.model` if the
+message has no `responseModel`.
+
+If stdout lacks the assistant messages, the provider reads them from the part of the session file that the run added. A
+run with corrective turns starts several `pi` processes.
+
+The provider takes the first such message of the first process that has one.
 
 ### The quota stop
 

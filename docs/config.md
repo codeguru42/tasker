@@ -204,7 +204,7 @@ Each entry of `models` is an object with two required keys: `model` (non-empty s
 or `"high"`).
 
 The model and the effort of a role apply to new sessions only. A continued session keeps the provider, the model and the
-effort that it started with.
+effort that it started with. A continued `pi` session runs on the model that pi reported, if pi reported one.
 
 `trustedExtensions` lists the keys of extensions that a pi session can trust. An extension is a code file that pi loads
 into its own process. A key matches only an equal string. A continued session keeps its recorded list and adds keys from

@@ -36,6 +36,8 @@ These errors leave the task in its state. The command writes nothing. The shared
 - The issue cannot be read. Fix the cause (for example the gh login), then run the command again. A Jira issue with more
   comments than `acli` gives has no fix. The error is `acli gave <n> of <total> comments for <key>`.
 - The task has no branch. The error is `the task of <issue key> has no branch`.
+- The provider refuses the model of the continued plan session. The error is
+  `the plan session of <issue key> runs on <model>, and <provider> refuses it: <detail>`.
 - The remote cannot be read before the run. The error is `cannot read the remote before the run: <error>`.
 
 These errors move the task to the state `failed`. The shared quota stop, the shared signal stop and the shared quota
@@ -104,9 +106,9 @@ Each revision is a complete plan. When the new revision leaves out a question of
 counts as answered by the feedback. `tasker show-questions` shows the answer. A promotion from `reviewed` with no
 feedback gives that question no answer text. `tasker show-questions` then prints `answered in v<N>`.
 
-The session keeps the provider, model and effort that it started with, also after the configuration changed. tasker
-reads the plan file of the newest revision from disk and the commits of the task branch, and gives both to the assistant
-in the prompt.
+The session keeps the provider, model and effort that it started with, also after the configuration changed. A `pi`
+session runs on the model that pi reported, if pi reported one. tasker reads the plan file of the newest revision from
+disk and the commits of the task branch, and gives both to the assistant in the prompt.
 
 On success, the command prints the same lines as `tasker plan`, but the first line is
 `refined <issue> as revision v<N>`. Then it prints [the overlap warning](#the-overlap-warning) after its lines, with the

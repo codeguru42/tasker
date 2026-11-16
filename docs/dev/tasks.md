@@ -272,6 +272,8 @@ The steps run in this order.
    [the push guard](version-control.md#push-guard).
 2. The command records the session of the plan before it starts the assistant.
    [The session id](assistants.md#the-session-id) gives the reason. A task that already has a plan session continues it.
+   Before its first read, the command makes sure that the provider accepts the model of that session, with
+   `assertSessionModel`. For a `pi` session with a reported model, this is the reported model.
 3. The command moves the task to `planning` and runs the assistant. It appends each event of the run to the transcript
    of the revision. If the outcome of the run holds a sandbox cleanup, the command then writes one `sandbox_cleanup`
    event with it, before it acts on the outcome.
@@ -327,17 +329,19 @@ revision has the source `refine`.
 
 The steps run in this order.
 
-1. The command checks the state, the moved-base guard, the feedback, the plan revision, the plan session and the
-   recorded model before it reads a file. In `reviewed`, it also checks that the latest review has an open finding. In
-   `failed`, the error for a missing plan revision names the origin and `tasker retry`. A refused refine changes
-   nothing, as the intro says, so the user can fix the cause and run the same command again. The branch of a landed
-   parent is no base for a new plan (see [Stacked task](workspaces.md#stacked-task)).
+1. The command checks the state, the moved-base guard, the feedback, the plan revision, the plan session and the model
+   of the session before it reads a file. For a `pi` session, this is the reported model, if the session stored one. In
+   `reviewed`, it also checks that the latest review has an open finding. In `failed`, the error for a missing plan
+   revision names the origin and `tasker retry`. A refused refine changes nothing, as the intro says, so the user can
+   fix the cause and run the same command again. The branch of a landed parent is no base for a new plan (see
+   [Stacked task](workspaces.md#stacked-task)).
 2. The command reads the plan file of the newest revision from disk, so an edit by hand counts. It reads the base
    revision and the commits of the task branch. It then reads the tip of the task branch on the remote, which is layer 3
    of [the push guard](version-control.md#push-guard).
 3. The command fills the prompt, with the open findings in the context block for a promotion, archives the template and
    continues the plan session. [New and continued sessions](assistants.md#new-and-continued-sessions) gives the rule for
-   the recorded model. The session is already recorded, so refine records no session.
+   the recorded model and for the reported model of a `pi` session. The session is already recorded, so refine records
+   no session.
 4. The command moves the task to `refining` and runs the assistant. The move records the feedback in its `transition`
    event, as `{ feedback, from, to }`, so that `tasker resume` can run the same refine again (see [Resume](#resume)). A
    promotion with no feedback records no `feedback` key. The run step is the one that `tasker plan` uses, with the
@@ -406,7 +410,8 @@ The moved-base guard runs right after the check of the state. The branch of a la
 The steps run in this order.
 
 1. The checks cover the state, the pinned revision, the plan file, the order of the todos, the base revision, the
-   branch, the remote tip and the recorded model. The read of the remote tip gives the tip before the run.
+   branch, the remote tip and the recorded model, or the reported model of a `pi` session. The read of the remote tip
+   gives the tip before the run.
 2. The command fills the prompts and archives only the prompts that the run sends. It records a new session only when
    the run has a turn.
 3. The command moves the task to `executing` and opens the transcript of the revision for append.
