@@ -4,6 +4,7 @@ import { accept } from "../../src/commands/accept.js";
 import { markLanded } from "../../src/commands/mark-landed.js";
 import { execute } from "../../src/commands/execute.js";
 import { merge } from "../../src/commands/merge.js";
+import { push } from "../../src/commands/push.js";
 import { openPr } from "../../src/commands/open-pr.js";
 import { refine } from "../../src/commands/refine.js";
 import { resume } from "../../src/commands/resume.js";
@@ -12,7 +13,7 @@ import { review } from "../../src/commands/review.js";
 import { updateBranch } from "../../src/commands/update-branch.js";
 import { verify } from "../../src/commands/verify.js";
 import { runCommand } from "../helpers/cli.js";
-import { installForgeGh, OPEN_PR_FORGE_ACCOUNT } from "../helpers/forge-gh.js";
+import { installForgeGh, openPrTokenAnswer, OPEN_PR_FORGE_ACCOUNT } from "../helpers/forge-gh.js";
 import { gitOutput } from "../helpers/git.js";
 import { answerStream, turnResultStream, validPlanAnswer } from "../helpers/plan.js";
 import { validReviewAnswer } from "../helpers/review.js";
@@ -98,6 +99,28 @@ describe("tasker open-pr for a stacked task", () => {
 
     expect(gh.calls()).toEqual([]);
     expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("pushed");
+  });
+});
+
+describe("tasker push for a stacked task whose parent landed", () => {
+  it("publishes the task but keeps it in pushed", async () => {
+    const gh = installForgeGh([openPrTokenAnswer()], "tasker-stacked-push-gh-");
+    const fixture = await useStackedTasks({
+      repo: { forge: { provider: "github", account: OPEN_PR_FORGE_ACCOUNT } },
+    });
+    const revision = await gitOutput({ cwd: fixture.stacked.worktree }, fixture.env, "rev-parse", "HEAD");
+    withDataRootStore(fixture.dataRoot, (store) => {
+      placeTask(store, fixture.stacked.task.id, "accepted");
+      store.updateTask(fixture.stacked.task.id, { acceptedRevision: revision, prNumber: 12 });
+    });
+    await landParent(fixture, ["accepted", "landed"]);
+
+    const result = await run(push, "push")();
+
+    expect(result.code, result.err).toBe(0);
+    expect(result.out).toContain(`${LANDED.trimEnd()}, so the task stays in pushed`);
+    expect(latestTaskOf(fixture.dataRoot, STACKED).state).toBe("pushed");
+    expect(gh.calls()).toEqual([]);
   });
 });
 

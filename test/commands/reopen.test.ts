@@ -7,7 +7,6 @@ import { execute } from "../../src/commands/execute.js";
 import { verify } from "../../src/commands/verify.js";
 import { accept } from "../../src/commands/accept.js";
 import { push } from "../../src/commands/push.js";
-import { openPr } from "../../src/commands/open-pr.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
 import { REFINE_PROMPT, REFINE_PROMPT_NAME } from "../../src/prompts/refine.js";
 import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js";
@@ -15,7 +14,7 @@ import { runCommand, runHelp } from "../helpers/cli.js";
 import { TEST_SESSION_ID } from "../helpers/fake-claude.js";
 import { commitInWorktree, copyCloneBranchToOrigin, gitOutput } from "../helpers/git.js";
 import { answerStream, planRevisionOf, turnResultStream, validPlanAnswer } from "../helpers/plan.js";
-import { installForgeGh, openPrListArgs, openPrTokenAnswer, OPEN_PR_FORGE_ACCOUNT } from "../helpers/forge-gh.js";
+import { installForgeGh, openPrTokenAnswer, openPrViewArgs, OPEN_PR_FORGE_ACCOUNT } from "../helpers/forge-gh.js";
 import {
   databasePathOf,
   eventsOf,
@@ -86,7 +85,7 @@ describe("reopen", () => {
     },
   );
 
-  it("reopens peer review work, publishes the new revision, and adopts its open pull request", async () => {
+  it("reopens peer review work and returns it to peer review when push finds the open pull request", async () => {
     const fixture = await useReopenFixture(
       {
         turns: [{ stream: answerStream(V2) }, { stream: turnResultStream("done") }],
@@ -120,8 +119,15 @@ describe("reopen", () => {
       [
         openPrTokenAnswer(),
         {
-          args: openPrListArgs(fixture.task.branch!),
-          stdout: JSON.stringify([{ number: 42, url, baseRefName: "main", isCrossRepository: false }]),
+          args: openPrViewArgs(42),
+          stdout: JSON.stringify({
+            number: 42,
+            url,
+            state: "OPEN",
+            headRefName: fixture.task.branch!,
+            baseRefName: "main",
+            isCrossRepository: false,
+          }),
         },
       ],
       "tasker-reopen-cycle-forge-",
@@ -134,19 +140,15 @@ describe("reopen", () => {
     await commitInWorktree(fixture.task.worktreePath!, fixture.started.env, { file: "accepted-reopen-change.txt" });
     expect((await runCommand(verify, "verify", KEY, "--repo", REPO)).code).toBe(0);
     expect((await runCommand(accept, "accept", KEY, "--repo", REPO)).code).toBe(0);
-    expect((await runCommand(push, "push", KEY, "--repo", REPO)).code).toBe(0);
+    const pushed = await runCommand(push, "push", KEY, "--repo", REPO);
+    expect(pushed.code).toBe(0);
+    expect(pushed.out).toContain(`PR #42 is open: ${url}`);
+    expect(pushed.out).toContain("state: in_peer_review");
     const pushedRevision = await fixture.started.origin.branchHead(fixture.task.branch!);
     expect(pushedRevision).not.toBe(priorRevision);
 
-    const opened = await runCommand(openPr, "open-pr", KEY, "--repo", REPO);
-
-    expect(opened.code).toBe(0);
-    expect(opened.out).toContain(`adopted PR #42: ${url}`);
     expect(latestTaskOf(fixture.started.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 42 });
-    expect(forge.calls().map(({ args }) => args)).toEqual([
-      openPrTokenAnswer().args,
-      openPrListArgs(fixture.task.branch!),
-    ]);
+    expect(forge.calls().map(({ args }) => args)).toEqual([openPrTokenAnswer().args, openPrViewArgs(42)]);
     expect(forge.calls().some(({ args }) => args[1] === "close" || args[1] === "comment")).toBe(false);
   });
 

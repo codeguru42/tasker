@@ -184,7 +184,7 @@ const SPECIFIC: Record<string, string[]> = {
   reviewed: ["refining", "awaiting_work_review", "updating_branch"],
   accepted: ["landed", "merging", "pushing", "refining", "updating_branch"],
   pushing: ["pushed", "interrupted"],
-  pushed: ["landed", "opening_pr", "refining", "updating_branch"],
+  pushed: ["landed", "opening_pr", "in_peer_review", "refining", "updating_branch"],
   opening_pr: ["in_peer_review", "interrupted"],
   in_peer_review: ["landed", "merging", "refining", "updating_branch"],
   merging: ["landed", "interrupted"],
@@ -288,8 +288,8 @@ const NO_ASSISTANT = ["verifying", "pushing", "opening_pr", "merging", "finishin
 const ASSISTANT = ["planning", "refining", "executing", "reviewing"] as TaskState[];
 
 describe("table edges", () => {
-  it("has 114 specific edges", () => {
-    expect(TABLE_EDGES).toHaveLength(114);
+  it("has 115 specific edges", () => {
+    expect(TABLE_EDGES).toHaveLength(115);
   });
 
   it.each(TABLE_EDGES)("allows %s -> %s", (from, to) => {

@@ -54,6 +54,10 @@ export function openPrListArgs(head: string): string[] {
   ];
 }
 
+export function openPrViewArgs(prNumber: number): string[] {
+  return ["pr", "view", String(prNumber), "--json", "number,url,state,headRefName,baseRefName,isCrossRepository"];
+}
+
 export function installForgeGh(answers: readonly FakeAnswer[], prefix: string): ForgeGh {
   const fake = forgeGh(useTempDir(prefix), OPEN_PR_FORGE_TOKEN, answers);
   useProcessEnv({

@@ -27,9 +27,18 @@ import {
   withDataRootStore,
 } from "../helpers/store.js";
 import { useTempDir } from "../helpers/temp.js";
+import { forgeStub, type ForgeStub } from "../helpers/forge.js";
+import { fakeGh, ghTokenAnswer, githubWriteAnswer } from "../helpers/fake-gh.js";
+import type { PullRequestView } from "../../src/forge/provider.js";
 
 // Calls pushTask for the accepted fixture with a store, and gives the result and its output.
-const callPush = async (fixture: AcceptedTask, store: TaskStore, env = fixture.env, waitMs = 300) => {
+const callPush = async (
+  fixture: AcceptedTask,
+  store: TaskStore,
+  env = fixture.env,
+  waitMs = 300,
+  forge?: ForgeStub,
+) => {
   const io = captureIo();
   const result = await pushTask(store, {
     config: fixture.config,
@@ -38,6 +47,7 @@ const callPush = async (fixture: AcceptedTask, store: TaskStore, env = fixture.e
     env,
     io,
     repoLockWaitMs: waitMs,
+    forge: forge?.provider,
   });
   return { result, io };
 };
@@ -265,5 +275,172 @@ describe("pushTask", () => {
     expect(await accepted.origin.branchHead(accepted.task.branch!)).toBe(accepted.revision);
     expect(recordedPushCalls(recorder.log)).toHaveLength(0);
     expect(accepted.gh.calls()).toEqual(ghCalls);
+  });
+});
+
+describe("pushTask with a recorded PR", () => {
+  const FORGE = { forge: { provider: "github", account: "forge-team" } } as const;
+  const URL = "https://example.test/pull/12";
+
+  async function recordedPrTask(repo: Parameters<typeof useAcceptedTask>[0] = { repo: FORGE }) {
+    const accepted = await useAcceptedTask(repo);
+    withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { prNumber: 12 }));
+    return accepted;
+  }
+
+  const viewOf = (accepted: AcceptedTask, changes: Partial<PullRequestView> = {}): PullRequestView => ({
+    number: 12,
+    url: URL,
+    base: "main",
+    head: accepted.task.branch!,
+    state: "open",
+    crossRepository: false,
+    ...changes,
+  });
+
+  it("moves the task to in_peer_review when the forge reports the PR as open on the task branch and base", async () => {
+    const accepted = await recordedPrTask();
+    const forge = forgeStub({ viewedPr: viewOf(accepted) });
+
+    const { result, io } = await withDataRootStore(accepted.dataRoot, (store) =>
+      callPush(accepted, store, accepted.env, 300, forge),
+    );
+
+    expect(result).toMatchObject({ review: { kind: "in_peer_review", pullRequest: { number: 12, url: URL } } });
+    expect(io.err.join("")).toBe("");
+    expect(latestTaskOf(accepted.dataRoot, accepted.key)).toMatchObject({ state: "in_peer_review", prNumber: 12 });
+    expect(eventsOf(accepted.dataRoot, accepted.key).at(-1)).toEqual({
+      type: "pr_opened",
+      data: {
+        number: 12,
+        url: URL,
+        head: accepted.task.branch,
+        base: "main",
+        adopted: true,
+        from: "pushed",
+        to: "in_peer_review",
+      },
+    });
+    expect(forge.calls.viewed).toEqual([{ number: 12, cwd: accepted.task.worktreePath }]);
+    expect(forge.calls.listed).toEqual([]);
+    expect(forge.calls.created).toEqual([]);
+    expect(readRunMarker(databasePathOf(accepted.dataRoot), accepted.task.id)).toBeUndefined();
+  });
+
+  it.each(["closed", "merged"] as const)("keeps the task in pushed when the PR is %s", async (state) => {
+    const accepted = await recordedPrTask();
+    const forge = forgeStub({ viewedPr: viewOf(accepted, { state }) });
+
+    const { result } = await withDataRootStore(accepted.dataRoot, (store) =>
+      callPush(accepted, store, accepted.env, 300, forge),
+    );
+
+    expect(result).toMatchObject({
+      review: { kind: "stays", reason: `PR #12 is ${state}, so the task stays in pushed` },
+    });
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("pushed");
+    expect(eventsOf(accepted.dataRoot, accepted.key).at(-1)).toMatchObject({ type: "published" });
+  });
+
+  it.each([
+    {
+      name: "comes from another repository",
+      changes: { crossRepository: true },
+      reason: () => "PR #12 comes from another repository, so the task stays in pushed",
+    },
+    {
+      name: "has another head",
+      changes: { head: "other-branch" },
+      reason: (branch: string) => `PR #12 has the head other-branch, not ${branch}, so the task stays in pushed`,
+    },
+    {
+      name: "has another base",
+      changes: { base: "release" },
+      reason: () => "PR #12 has the base release, not main, so the task stays in pushed",
+    },
+  ])("keeps the task in pushed when the PR $name", async ({ changes, reason }) => {
+    const accepted = await recordedPrTask();
+    const forge = forgeStub({ viewedPr: viewOf(accepted, changes) });
+
+    const { result } = await withDataRootStore(accepted.dataRoot, (store) =>
+      callPush(accepted, store, accepted.env, 300, forge),
+    );
+
+    expect(result).toMatchObject({ review: { kind: "stays", reason: reason(accepted.task.branch!) } });
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("pushed");
+  });
+
+  it("makes no forge call for a task with no recorded PR", async () => {
+    const accepted = await useAcceptedTask({ repo: FORGE });
+    const forge = forgeStub({ viewedPr: viewOf(accepted) });
+
+    const { result } = await withDataRootStore(accepted.dataRoot, (store) =>
+      callPush(accepted, store, accepted.env, 300, forge),
+    );
+
+    expect(result).toMatchObject({ review: { kind: "none" } });
+    expect(forge.calls.viewed).toEqual([]);
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("pushed");
+  });
+
+  it("makes no forge call for a repo with no forge configuration", async () => {
+    const accepted = await useAcceptedTask();
+    withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { prNumber: 12 }));
+    const forge = forgeStub({ viewedPr: viewOf(accepted) });
+
+    const { result } = await withDataRootStore(accepted.dataRoot, (store) =>
+      callPush(accepted, store, accepted.env, 300, forge),
+    );
+
+    expect(result).toMatchObject({ review: { kind: "none" } });
+    expect(forge.calls.viewed).toEqual([]);
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("pushed");
+  });
+
+  it("warns and keeps the task in pushed when the forge read fails", async () => {
+    const accepted = await recordedPrTask();
+    const forge = forgeStub({ viewedPr: viewOf(accepted) });
+    forge.failView(new Error("forge down"));
+
+    const { result } = await withDataRootStore(accepted.dataRoot, (store) =>
+      callPush(accepted, store, accepted.env, 300, forge),
+    );
+
+    expect(result).toMatchObject({
+      review: {
+        kind: "warning",
+        reason: "warning: cannot read PR #12 on the forge, so the task stays in pushed: forge down",
+      },
+    });
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("pushed");
+    expect(eventsOf(accepted.dataRoot, accepted.key).at(-1)).toMatchObject({ type: "published" });
+    expect(await accepted.origin.branchHead(accepted.task.branch!)).toBe(accepted.revision);
+  });
+
+  it("writes the review label after the move", async () => {
+    const accepted = await recordedPrTask();
+    Object.assign(accepted.config.repos[accepted.repoKey].issueTracker, { reviewLabel: "peer-review" });
+    const gh = fakeGh(useTempDir("tasker-push-review-gh-"), accepted.env, [
+      ghTokenAnswer("codeguru42", "gho_test"),
+      githubWriteAnswer({
+        project: "codeguru42/tasker",
+        number: 5,
+        verb: "edit",
+        rest: ["--add-label", "peer-review"],
+      }),
+    ]);
+    const forge = forgeStub({ viewedPr: viewOf(accepted) });
+
+    const { io } = await withDataRootStore(accepted.dataRoot, (store) =>
+      callPush(accepted, store, { ...accepted.env, ...gh.env, PATH: accepted.env.PATH }, 300, forge),
+    );
+
+    expect(io.out.join("")).toContain("peer-review");
+    expect(gh.calls().map((call) => call.args)).toHaveLength(1);
+    expect(eventsOf(accepted.dataRoot, accepted.key).at(-1)).toMatchObject({
+      type: "tracker_update",
+      data: { action: "review", result: "ok" },
+    });
+    expect(latestTaskOf(accepted.dataRoot, accepted.key).state).toBe("in_peer_review");
   });
 });

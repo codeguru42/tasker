@@ -5,6 +5,7 @@ import { commitInWorktree, copyCloneBranchToOrigin } from "../helpers/git.js";
 import { databasePathOf, eventsOf, latestTaskOf, readRunMarker, withDataRootStore } from "../helpers/store.js";
 import { useAcceptedTask, useAcceptedTaskWithNoRevision, useWorkReviewTask } from "../helpers/task-fixtures.js";
 import { wrongStateError } from "../helpers/state-commands.js";
+import { installForgeGh, openPrTokenAnswer, openPrViewArgs, OPEN_PR_FORGE_ACCOUNT } from "../helpers/forge-gh.js";
 
 const KEY = "codeguru42/tasker#5";
 const REPO = "codeguru42/tasker";
@@ -122,6 +123,86 @@ describe("tasker push", () => {
         from: "pushing",
         to: "pushed",
       },
+    });
+  });
+
+  describe("with a recorded PR", () => {
+    const url = "https://github.com/codeguru42/tasker/pull/12";
+    const view = (branch: string, state: string) =>
+      JSON.stringify({
+        number: 12,
+        url,
+        state,
+        headRefName: branch,
+        baseRefName: "main",
+        isCrossRepository: false,
+      });
+
+    async function recordedPrTask() {
+      const accepted = await useAcceptedTask({
+        repo: { forge: { provider: "github", account: OPEN_PR_FORGE_ACCOUNT } },
+      });
+      withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { prNumber: 12 }));
+      return accepted;
+    }
+
+    it("moves the task to in_peer_review when the PR is open", async () => {
+      const accepted = await recordedPrTask();
+      const branch = accepted.task.branch!;
+      installForgeGh(
+        [openPrTokenAnswer(), { args: openPrViewArgs(12), stdout: view(branch, "OPEN") }],
+        "tasker-push-open-gh-",
+      );
+
+      const result = await runPush();
+
+      expect(result).toEqual({
+        code: 0,
+        out: `pushed ${branch} at ${accepted.revision}\nPR #12 is open: ${url}\nstate: in_peer_review\n`,
+        err: "",
+      });
+      expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "in_peer_review", prNumber: 12 });
+    });
+
+    it("keeps the task in pushed and says why when the PR is closed", async () => {
+      const accepted = await recordedPrTask();
+      const branch = accepted.task.branch!;
+      installForgeGh(
+        [openPrTokenAnswer(), { args: openPrViewArgs(12), stdout: view(branch, "CLOSED") }],
+        "tasker-push-closed-gh-",
+      );
+
+      const result = await runPush();
+
+      expect(result).toEqual({
+        code: 0,
+        out: `pushed ${branch} at ${accepted.revision}\nPR #12 is closed, so the task stays in pushed\nstate: pushed\n`,
+        err: "",
+      });
+      expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("pushed");
+    });
+
+    it("warns on stderr and keeps the task in pushed when gh fails", async () => {
+      const accepted = await recordedPrTask();
+      const branch = accepted.task.branch!;
+      installForgeGh(
+        [
+          openPrTokenAnswer(),
+          {
+            args: openPrViewArgs(12),
+            exitCode: 1,
+            stderr: "GraphQL: Could not resolve to a PullRequest with the number of 12. (repository.pullRequest)",
+          },
+        ],
+        "tasker-push-failed-gh-",
+      );
+
+      const result = await runPush();
+
+      expect(result.code).toBe(0);
+      expect(result.out).toBe(`pushed ${branch} at ${accepted.revision}\nstate: pushed\n`);
+      expect(result.err).toMatch(/^warning: cannot read PR #12 on the forge, so the task stays in pushed: /);
+      expect(latestTaskOf(accepted.dataRoot, KEY).state).toBe("pushed");
     });
   });
 });

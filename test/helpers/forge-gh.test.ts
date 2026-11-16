@@ -8,6 +8,7 @@ import {
   installForgeGh,
   openPrListArgs,
   openPrTokenAnswer,
+  openPrViewArgs,
   OPEN_PR_FORGE_ACCOUNT,
   OPEN_PR_FORGE_TOKEN,
 } from "./forge-gh.js";
@@ -58,6 +59,16 @@ describe("the forge gh helper", () => {
     ]);
     expect(runFakeGh({ ...fake.env, GH_TOKEN: OPEN_PR_FORGE_TOKEN }, args)).toMatchObject({ status: 0, stdout: "[]" });
     fake.assertAnswered();
+  });
+
+  it("shares the pr view arguments of the one-PR read", () => {
+    expect(openPrViewArgs(12)).toEqual([
+      "pr",
+      "view",
+      "12",
+      "--json",
+      "number,url,state,headRefName,baseRefName,isCrossRepository",
+    ]);
   });
 
   it("records environment values and whether the token matches without saving the token", () => {

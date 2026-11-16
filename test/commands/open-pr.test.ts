@@ -83,10 +83,10 @@ describe("tasker open-pr", () => {
     expect(help).toContain("against the stored base");
   });
 
-  it("publishes through push, then adopts the matching PR without creating another", async () => {
+  it("publishes through push with no recorded PR, then adopts the matching PR without creating another", async () => {
     const accepted = await useAcceptedTask({ repo: { forge: { provider: "github", account: ACCOUNT } } });
     const url = "https://github.com/codeguru42/tasker/pull/42";
-    withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { prNumber: 42 }));
+    withDataRootStore(accepted.dataRoot, (store) => store.updateTask(accepted.task.id, { prNumber: null }));
     const listArgs = openPrListArgs(accepted.task.branch!);
     const fake = installForgeGh(
       [
@@ -102,7 +102,7 @@ describe("tasker open-pr", () => {
     const published = await run(["push", KEY, "--repo", REPO], { io: publishIo });
     expect(published).toBe(0);
     expect(publishIo.out.join("")).toBe(`pushed ${accepted.task.branch!} at ${accepted.revision}\nstate: pushed\n`);
-    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "pushed", prNumber: 42 });
+    expect(latestTaskOf(accepted.dataRoot, KEY)).toMatchObject({ state: "pushed", prNumber: null });
     expect(fake.calls()).toEqual([]);
     const output = captureIo();
     const opened = await run(["open-pr", KEY, "--repo", REPO], { io: output });
