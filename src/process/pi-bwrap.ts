@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { statSync } from "node:fs";
 import type { ChildProcess } from "node:child_process";
+import type { Writable } from "node:stream";
 import { constants } from "node:os";
 import { errnoCode } from "../errno.js";
 
@@ -10,6 +11,9 @@ export interface PiBwrapOptions {
   onData(data: Buffer): void;
   signal?: AbortSignal;
   timeout?: number;
+  // Bytes for fd 3 of the child, for example the seccomp filter of bwrap. They go through a pipe that closes right
+  // after the write. Without it, fd 3 stays closed.
+  fd3?: Buffer;
 }
 
 export function childExitCode(code: number | null, signal: string | null): number {
@@ -36,11 +40,19 @@ export function spawnPiBwrap(program: string, args: readonly string[], options: 
         cwd: options.cwd,
         env: options.env,
         detached: true,
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: options.fd3 === undefined ? ["ignore", "pipe", "pipe"] : ["ignore", "pipe", "pipe", "pipe"],
       });
     } catch (error) {
       reject(error);
       return;
+    }
+
+    if (options.fd3 !== undefined) {
+      // The result comes from the exit of the child, as for stdin in runAssistant(). A child that never reads
+      // fd 3 can give EPIPE here, so the error listener does nothing.
+      const pipe = child.stdio[3] as Writable | null | undefined;
+      pipe?.on("error", () => undefined);
+      pipe?.end(options.fd3);
     }
 
     let stoppedBy: "abort" | "timeout" | undefined;
