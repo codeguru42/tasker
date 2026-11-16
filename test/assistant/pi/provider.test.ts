@@ -26,6 +26,7 @@ import { type FakePiAnswer, useFakePi } from "../../helpers/fake-pi.js";
 import { validPlanAnswer } from "../../helpers/plan.js";
 import { piQuotaStream } from "../../helpers/pi-quota-streams.js";
 import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
+import { piAssistantMessage, REPORTED_PI_MODEL, ROUTER_PI_MODEL } from "../../helpers/pi-provider.js";
 import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
 import { useTempDir } from "../../helpers/temp.js";
 
@@ -2202,5 +2203,132 @@ describe("pi corrective turns", () => {
     expect(outcome.events).toEqual([...first, ...second]);
     expect(outcome.permissionDenials).toEqual([]);
     expectProcessSequence(fake, input, files, [input.prompt, expect.any(String)]);
+  });
+});
+
+function reportedStream(message: Record<string, unknown>, options: { agentEnd?: boolean } = {}): unknown[] {
+  return [
+    { ...CORRECTIVE_SESSION_EVENT },
+    { type: "agent_start" },
+    { type: "message_end", message },
+    ...(options.agentEnd === false ? [] : [{ type: "agent_end", messages: [message], willRetry: false }]),
+    { type: "agent_settled", aborted: false },
+  ];
+}
+
+describe("pi reported model", () => {
+  it("reads the reported model from stdout with agent_end", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const message = piAssistantMessage();
+    const fake = processScripts(input, files, [
+      { stream: reportedStream(message), session: firstSession(input, [message]) },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "success", reportedModel: REPORTED_PI_MODEL });
+  });
+
+  it("reads the reported model from the lines that the run added to the session file", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const message = piAssistantMessage();
+    const fake = processScripts(input, files, [
+      { stream: reportedStream(message, { agentEnd: false }), session: firstSession(input, [message]) },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ reportedModel: REPORTED_PI_MODEL });
+  });
+
+  it("gives the reported model on a failure outcome", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const message = piAssistantMessage();
+    const fake = processScripts(input, files, [
+      { stream: reportedStream(message), session: firstSession(input, [message]), exitCode: 1 },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "failure", reportedModel: REPORTED_PI_MODEL });
+  });
+
+  it("gives the reported model on a quota outcome", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const fixture = piQuotaStream("quotaDelay");
+    const stream: unknown[] = [...fixture.stdout];
+    stream.splice(1, 0, { type: "message_end", message: piAssistantMessage() });
+    const fake = processScripts(input, files, [{ stream, session: fixture.session, sessionFile: fixture.sessionFile }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "quota", reportedModel: REPORTED_PI_MODEL });
+  });
+
+  it("gives no reportedModel key when the run has no assistant message", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).not.toHaveProperty("reportedModel");
+  });
+
+  it("keeps the first reported model of the corrective turns", async () => {
+    const input = correctiveInput();
+    const files = makeFiles();
+    const first = piAssistantMessage({ responseModel: "a", content: [{ type: "text", text: "no answer" }] });
+    const second = piAssistantMessage({ responseModel: "b" });
+    const fake = processScripts(input, files, [
+      { stream: reportedStream(first), session: firstSession(input, [first]) },
+      { stream: continuationCallStream({ findings: [] }), session: continuationSession([second]) },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "success", reportedModel: "openrouter/a" });
+  });
+
+  it("takes the reported model of a later process when the first has no provider", async () => {
+    const input = correctiveInput();
+    const files = makeFiles();
+    const first = piAssistantMessage({ provider: undefined, content: [{ type: "text", text: "x" }] });
+    const second = piAssistantMessage({ responseModel: "b", stopReason: "stop" });
+    const secondStream = reportedStream(second, { agentEnd: false });
+    const fake = processScripts(input, files, [
+      { stream: reportedStream(first), session: firstSession(input, [first]) },
+      { stream: secondStream, session: continuationSession([second]) },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ reportedModel: "openrouter/b" });
+  });
+
+  it("passes the model of the first process to each corrective turn", async () => {
+    const input = correctiveInput({ model: ROUTER_PI_MODEL });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstTextStream(input), session: firstSession(input) },
+      { stream: continuationCallStream({ findings: [] }), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    await callPi(input, files);
+
+    const models = fake.calls().map((call) => call.args[call.args.indexOf("--model") + 1]);
+    expect(models).toEqual(["openrouter/openrouter/openrouter/auto", "openrouter/openrouter/openrouter/auto"]);
   });
 });
