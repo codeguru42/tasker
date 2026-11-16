@@ -12,7 +12,7 @@ import type { AssistantDoctorRepo } from "../../../src/assistant/provider.js";
 import type { Check } from "../../../src/doctor/check.js";
 import { checkSummaries } from "../../helpers/doctor.js";
 import { createPiProvider } from "../../helpers/pi-provider.js";
-import { useFakePi } from "../../helpers/fake-pi.js";
+import { piAuthArgs, useFakePi } from "../../helpers/fake-pi.js";
 import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
 import { validConfig } from "../../helpers/config.js";
 import { parseConfig } from "../../../src/config/schema.js";
@@ -23,7 +23,6 @@ import { sandboxProgramCheck } from "../../../src/assistant/program-check.js";
 const VERSION = "1.1.0";
 const VERSION_ARGS = ["--version"];
 const LIST_ARGS = ["list", "--no-approve"];
-const authArgs = (upstream: string) => ["auth", "check", "--provider", upstream, "--json"];
 const relativeFolderReason = "TASKER_PI_CODING_AGENT_DIR must be an absolute path, got rel/x";
 const relativeHomeReason = "HOME must be an absolute path, got rel/h";
 const missingHomeReason = "tasker cannot find the agent folder of pi, because HOME is not set";
@@ -244,7 +243,7 @@ describe("piVersionCheck", () => {
 describe("pi child refusals in doctor checks", () => {
   const programChecks = [
     ["pi version", () => piVersionCheck(), VERSION_ARGS],
-    ["pi-auth:openrouter", () => piAuthCheck("openrouter"), authArgs("openrouter")],
+    ["pi-auth:openrouter", () => piAuthCheck("openrouter"), piAuthArgs("openrouter")],
     ["superpowers:pi", () => superpowersCheck(), LIST_ARGS],
   ] as const;
 
@@ -399,7 +398,7 @@ describe("pi child refusals in doctor checks", () => {
 
   it("passes only the pi child environment values to pi", async () => {
     const fake = useFakePi(
-      [{ args: authArgs("openrouter"), stdout: JSON.stringify({ status: "ready", provider: "openrouter" }) }],
+      [{ args: piAuthArgs("openrouter"), stdout: JSON.stringify({ status: "ready", provider: "openrouter" }) }],
       ["PI_CODING_AGENT_DIR", "SECRET", "TASKER_PI_BIN"],
     );
 
@@ -424,7 +423,7 @@ describe("piAuthCheck", () => {
     const upstream = "openrouter";
     const fake = useFakePi([
       {
-        args: authArgs(upstream),
+        args: piAuthArgs(upstream),
         stdout: JSON.stringify({ status: "ready", provider: upstream, authType: "oauth" }),
       },
     ]);
@@ -433,14 +432,14 @@ describe("piAuthCheck", () => {
       status: "ok",
       detail: "pi has credentials for openrouter (oauth)",
     });
-    expect(fake.calls().map((call) => call.args)).toEqual([authArgs(upstream)]);
+    expect(fake.calls().map((call) => call.args)).toEqual([piAuthArgs(upstream)]);
   });
 
   it("reports an unknown upstream", async () => {
     const upstream = "nosuchprov";
     const fake = useFakePi([
       {
-        args: authArgs(upstream),
+        args: piAuthArgs(upstream),
         exitCode: 1,
         stdout: JSON.stringify({ status: "not_ready", provider: upstream, reason: "provider_not_found" }),
       },
@@ -457,7 +456,7 @@ describe("piAuthCheck", () => {
     const upstream = "openrouter";
     const fake = useFakePi([
       {
-        args: authArgs(upstream),
+        args: piAuthArgs(upstream),
         exitCode: 1,
         stdout: JSON.stringify({ status: "not_ready", provider: upstream, reason: "credentials_not_configured" }),
       },
@@ -471,7 +470,7 @@ describe("piAuthCheck", () => {
   });
 
   it.each(["null", "[]", "false", "malformed"])("uses exit detail for JSON %s", async (stdout) => {
-    const fake = useFakePi([{ args: authArgs("openrouter"), exitCode: 2, stdout }]);
+    const fake = useFakePi([{ args: piAuthArgs("openrouter"), exitCode: 2, stdout }]);
 
     expect(await piAuthCheck("openrouter").run({ ...fake.env, HOME: "/home/user" })).toEqual({
       status: "error",
@@ -512,13 +511,13 @@ describe("piAuthCheck", () => {
     ],
     [{ status: "expired" }, 0, { status: "error", detail: "pi cannot use the credentials for openrouter: expired" }],
   ] as const)("handles auth reply %j", async (reply, exitCode, expected) => {
-    const fake = useFakePi([{ args: authArgs("openrouter"), exitCode, stdout: JSON.stringify(reply) }]);
+    const fake = useFakePi([{ args: piAuthArgs("openrouter"), exitCode, stdout: JSON.stringify(reply) }]);
 
     expect(await piAuthCheck("openrouter").run({ ...fake.env, HOME: "/home/user" })).toEqual(expected);
   });
 
   it("uses exit detail for a ready reply with a nonzero exit", async () => {
-    const fake = useFakePi([{ args: authArgs("openrouter"), exitCode: 1, stdout: '{"status":"ready"}' }]);
+    const fake = useFakePi([{ args: piAuthArgs("openrouter"), exitCode: 1, stdout: '{"status":"ready"}' }]);
 
     expect(await piAuthCheck("openrouter").run({ ...fake.env, HOME: "/home/user" })).toEqual({
       status: "error",

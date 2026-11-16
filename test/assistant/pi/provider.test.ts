@@ -28,6 +28,7 @@ import { piQuotaStream } from "../../helpers/pi-quota-streams.js";
 import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
 import { createPiProvider, piAssistantMessage, REPORTED_PI_MODEL, ROUTER_PI_MODEL } from "../../helpers/pi-provider.js";
 import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
+import { checkSummaries } from "../../helpers/doctor.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 vi.mock("node:os", async (importOriginal) => {
@@ -2348,5 +2349,24 @@ describe("pi continued model", () => {
 
   it("runs a continued session on the recorded model when pi reported none", () => {
     expect(createPiProvider().continuedModel({ model: ROUTER_PI_MODEL })).toBe(ROUTER_PI_MODEL);
+  });
+});
+
+describe("pi checks of a reported model", () => {
+  it("gives the auth check of a new upstream", () => {
+    expect(checkSummaries(createPiProvider().reportedModelChecks(ROUTER_PI_MODEL, "anthropic/claude-fable-5"))).toEqual(
+      [{ name: "pi-auth:anthropic", required: true, timeoutMs: 10000 }],
+    );
+  });
+
+  it("gives no check for the same upstream", () => {
+    expect(createPiProvider().reportedModelChecks(ROUTER_PI_MODEL, REPORTED_PI_MODEL)).toEqual([]);
+  });
+
+  it("gives no auth check in modelChecks", () => {
+    const names = createPiProvider()
+      .modelChecks("anthropic/x")
+      .map((check) => check.name);
+    expect(names.filter((name) => name.startsWith("pi-auth:"))).toEqual([]);
   });
 });

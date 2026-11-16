@@ -57,3 +57,8 @@ export function useFakePi(answers: readonly FakePiAnswer[], logEnv: readonly str
     unanswered: checks.unanswered,
   };
 }
+
+// The arguments of the pi command that checks the credentials of one upstream.
+export function piAuthArgs(upstream: string): string[] {
+  return ["auth", "check", "--provider", upstream, "--json"];
+}

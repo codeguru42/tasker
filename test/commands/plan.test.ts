@@ -204,6 +204,22 @@ describe("plan", () => {
     expect(rows?.sessionId).toBe(TEST_SESSION_ID);
   });
 
+  it("refuses a recorded plan session whose model the provider refuses, before it writes anything", async () => {
+    const fixture = await usePlanFixture({ stream: answerStream(validPlanAnswer()) });
+    withDataRootStore(fixture.started.dataRoot, (store) =>
+      seedPlanSession(store, latestTaskOf(fixture.started.dataRoot, KEY).id, { model: "gpt-5" }),
+    );
+
+    const result = await runPlan();
+
+    expect(result.code).toBe(1);
+    expect(result.err).toContain(
+      `the plan session of ${KEY} runs on gpt-5, and claude-code refuses it: is not a claude-code model: gpt-5`,
+    );
+    expect(latestTaskOf(fixture.started.dataRoot, KEY).state).toBe("workspace_ready");
+    expect(fixture.claude.calls()).toEqual([]);
+  });
+
   it("writes one JSON line of the transcript for each line of the stream", async () => {
     const stream = answerStream(validPlanAnswer());
     const fixture = await usePlanFixture({ stream });

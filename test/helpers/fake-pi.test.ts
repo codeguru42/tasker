@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { useFakePi } from "./fake-pi.js";
+import { piAuthArgs, useFakePi } from "./fake-pi.js";
 import { useTempDir } from "./temp.js";
 
 function runPi(env: NodeJS.ProcessEnv, args: readonly string[], input = "", cwd?: string) {
@@ -270,5 +270,11 @@ describe("useFakePi", () => {
     expect(result.stderr).toBe("fake pi: no answer for: unknown\n");
     expect(fake.unanswered()).toEqual([["unknown"]]);
     rmSync(`${fake.logPath}.unanswered`);
+  });
+});
+
+describe("piAuthArgs", () => {
+  it("gives the arguments of the credential check of an upstream", () => {
+    expect(piAuthArgs("openrouter")).toEqual(["auth", "check", "--provider", "openrouter", "--json"]);
   });
 });
