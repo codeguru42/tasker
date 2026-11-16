@@ -609,7 +609,8 @@ The operator and planner use this procedure after their close reports.
 - Own-session closure is not [Stop a session](#stop-a-session). Do not run that section's stop steps for own closure.
 - Before step 8, the operator runs the environment and agent-list checks above. If both pass, its delegation gives the
   `pane_id` of its own row. Otherwise, the delegation states that it gives no pane id. A session that the user opened in
-  a pane still gives its pane id, although it cannot close itself.
+  a pane still gives its pane id, although it cannot close itself. A pi operator runs the pi row check in place of the
+  agent-list check.
 - At step 13, run `herdr pane get <pane id>` with the id from the delegation. Exit code 1 with JSON stderr `.error.code`
   equal to `pane_not_found` proves the operator pane closed. Exit code 0 means that the pane is still open. The planner
   tells the user its pane id and closes nothing. After the next word of the user, the planner runs the operator check
@@ -709,6 +710,48 @@ The binding method has these limits:
   records. So a stale `HERDR_PANE_ID` can name the pane of another session with the same own name. For example, while
   the old operator of a handoff still runs, two panes hold the own name `operator-<slug>`. Then the check can pass for
   the wrong pane.
+
+#### The pane id and the operator check of a pi session
+
+A pi operator follows the pane id rule of [The own-session closure](#the-own-session-closure), with the pi row check in
+place of the agent-list check. If each check passes, its [terminal delegation](#the-terminal-delegation) gives its own
+pane id. Otherwise, the terminal delegation says that it gives none. The pane id in the terminal delegation lives until
+the planner closes or stops. The planner uses it at each operator check, also at a read again after the next word of the
+user.
+
+| Start of the pi operator or the pi planner                               | Outcome                                                                                                                                                                                   |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A pi planner                                                             | The pi row check looks for the own name `planner-<slug>`.                                                                                                                                 |
+| A new pi operator in a handoff                                           | The pi row check looks for the own name `operator-<slug>`, not the herdr agent name `operator-<slug>-<time>`.                                                                             |
+| The first pi operator, which the user starts with no `herdr agent start` | The pi row check looks for the own name. After a passed check, the pi operator gives its pane id. It cannot close itself, because the user opened it in a pane. The user closes its pane. |
+
+For each start, a failed pi row check of the pi operator gives no pane id. Then the planner cannot close itself, and the
+user closes the panes of the planner and the operator. An example is a first pi operator with no row of
+`herdr agent list` for its pane.
+
+A pi planner runs the operator check in step 13 of [The steps that end each role](#the-steps-that-end-each-role), before
+its close report in step 14 of that list. It uses the same command and the same outcomes as a `claude` planner. So the
+pi planner makes sure that the session of the operator closed before it closes its own session. This also holds after
+the user closed the pane of the operator.
+
+After a failed operator check, or with no pane id, a pi planner cannot close itself, as
+[The own-session closure](#the-own-session-closure) says. The operator check reads a pane id, not a name. So a planner
+of each kind runs it with the pane id of a pi operator, as with a `claude` operator. A pi planner runs it in the same
+way for an operator of each kind.
+
+#### A question or a refusal of pi
+
+If pi asks a question before a tool call of the closure or of the operator check, the question is a permission prompt.
+The pi operator or the pi planner that pi asked is then `blocked`, as [A blocked session](#a-blocked-session) says. Only
+the user answers the question.
+
+If pi or an extension of pi refuses a command of the closure, the refusal is a failed command of the closure. If pi or
+an extension of pi refuses the command of the operator check, the refusal is a failed operator check.
+
+#### Two kinds in one close
+
+The operator and the planner of one close can be of two kinds. Then each session follows the rules of its own kind. The
+name rule stays the check of a `claude` session. The pi row check is the check of a pi operator and a pi planner.
 
 ### The table of the close
 
