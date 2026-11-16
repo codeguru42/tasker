@@ -110,7 +110,6 @@ export function forgeStub(
       calls.readied.push({ number, cwd });
       if (readyError !== undefined) throw readyError;
     },
-    // @ts-expect-error viewPr is not on ForgeProvider yet
     async viewPr(number, cwd) {
       calls.viewed.push({ number, cwd });
       if (viewError !== undefined) throw viewError;

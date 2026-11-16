@@ -11,6 +11,14 @@ export interface OpenPullRequest extends PullRequest {
   base: string;
 }
 
+export type PrState = "open" | "closed" | "merged";
+
+export interface PullRequestView extends OpenPullRequest {
+  state: PrState;
+  head: string;
+  crossRepository: boolean;
+}
+
 export interface PrTarget {
   cwd: string;
   head: string;
@@ -51,4 +59,6 @@ export interface ForgeProvider {
   isPrDraft(prNumber: number, cwd: string, env: NodeJS.ProcessEnv): Promise<boolean>;
   /** Takes a draft pull request out of draft. The caller decides when. */
   markPrReady(prNumber: number, cwd: string, env: NodeJS.ProcessEnv): Promise<void>;
+  /** Reads the state, head and base of one pull request. */
+  viewPr(prNumber: number, cwd: string, env: NodeJS.ProcessEnv): Promise<PullRequestView>;
 }

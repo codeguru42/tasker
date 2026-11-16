@@ -1,4 +1,12 @@
-import type { CreatePrInput, MergeMethod, OpenPullRequest, PrTarget, PullRequest } from "../provider.js";
+import type {
+  CreatePrInput,
+  MergeMethod,
+  OpenPullRequest,
+  PrState,
+  PrTarget,
+  PullRequest,
+  PullRequestView,
+} from "../provider.js";
 import type { GhSession } from "../../github/forge-session.js";
 
 interface GhOpenPullRequest {
@@ -183,6 +191,65 @@ export async function changePrBase(
   } catch (error) {
     throw operationError("change the base", error, `of pull request ${prNumber}`);
   }
+}
+
+export async function viewPr(
+  session: GhSession,
+  prNumber: number,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+): Promise<PullRequestView> {
+  let response: string;
+  try {
+    response = await session.run(
+      ["pr", "view", String(prNumber), "--json", "number,url,state,headRefName,baseRefName,isCrossRepository"],
+      { cwd, env },
+    );
+  } catch (error) {
+    throw operationError("read", error, `pull request ${prNumber}`);
+  }
+
+  try {
+    return parsePullRequestView(response);
+  } catch (error) {
+    throw operationError("read", error, `pull request ${prNumber}`);
+  }
+}
+
+const PR_STATES: Record<string, PrState> = { OPEN: "open", CLOSED: "closed", MERGED: "merged" };
+
+function parsePullRequestView(response: string): PullRequestView {
+  const invalid = new Error("GitHub returned an invalid pull request");
+  let value: unknown;
+  try {
+    value = JSON.parse(response);
+  } catch {
+    throw invalid;
+  }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw invalid;
+  const view = value as Record<string, unknown>;
+  const { number, url, state, headRefName, baseRefName, isCrossRepository } = view;
+  if (
+    typeof number !== "number" ||
+    !Number.isInteger(number) ||
+    number <= 0 ||
+    typeof url !== "string" ||
+    typeof state !== "string" ||
+    !Object.hasOwn(PR_STATES, state) ||
+    typeof headRefName !== "string" ||
+    typeof baseRefName !== "string" ||
+    typeof isCrossRepository !== "boolean"
+  ) {
+    throw invalid;
+  }
+  return {
+    number,
+    url,
+    state: PR_STATES[state],
+    head: headRefName,
+    base: baseRefName,
+    crossRepository: isCrossRepository,
+  };
 }
 
 function parseOpenPullRequests(response: string): GhOpenPullRequest[] {

@@ -78,10 +78,8 @@ describe("forgeStub", () => {
       crossRepository: true,
     } as const;
     const fake = forgeStub({ viewedPr: view });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await expect(fake.provider.viewPr(7, "/work", {})).resolves.toEqual(view);
     fake.failView(new Error("view refused"));
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await expect(fake.provider.viewPr(7, "/other", {})).rejects.toThrow("view refused");
     expect(fake.calls.viewed).toEqual([
       { number: 7, cwd: "/work" },

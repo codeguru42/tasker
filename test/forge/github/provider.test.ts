@@ -136,7 +136,6 @@ describe("createGitHubForge", () => {
     await provider.changePrBase(prNumber, "main", worktree, env);
     await provider.isPrDraft(prNumber, worktree, env);
     await provider.markPrReady(prNumber, worktree, env);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await provider.viewPr(prNumber, worktree, env);
 
     const calls = fake.calls().map(({ args, cwd }) => ({ args, cwd }));

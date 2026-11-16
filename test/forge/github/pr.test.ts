@@ -908,7 +908,6 @@ describe("viewPr", () => {
     const dir = useTempDir("tasker-view-pr-");
     const { env, fake, session } = setup([{ args: viewArgs, stdout: row("OPEN") }], dir);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await expect(viewPr(session, 12, dir, env)).resolves.toEqual({
       number: 12,
       url: "https://github.com/acme/project/pull/12",
@@ -931,7 +930,6 @@ describe("viewPr", () => {
     const dir = useTempDir("tasker-view-pr-state-");
     const { env, session } = setup([{ args: viewArgs, stdout: row(state) }], dir);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await expect(viewPr(session, 12, dir, env)).resolves.toMatchObject({ state: expected });
   });
 
@@ -939,7 +937,6 @@ describe("viewPr", () => {
     const dir = useTempDir("tasker-view-pr-fork-");
     const { env, session } = setup([{ args: viewArgs, stdout: row("OPEN", true) }], dir);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await expect(viewPr(session, 12, dir, env)).resolves.toMatchObject({ crossRepository: true });
   });
 
@@ -950,7 +947,6 @@ describe("viewPr", () => {
     const dir = useTempDir("tasker-view-pr-invalid-");
     const { env, session } = setup([{ args: viewArgs, stdout }], dir);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const error = await failureOf(viewPr(session, 12, dir, env), Error);
     expect(error.message).toBe("could not read pull request 12: GitHub returned an invalid pull request");
   });
@@ -959,7 +955,6 @@ describe("viewPr", () => {
     const dir = useTempDir("tasker-view-pr-failed-");
     const { env, session } = setup([{ args: viewArgs, exitCode: 1, stderr: "no such pull request" }], dir);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const error = await failureOf(viewPr(session, 12, dir, env), Error);
     expect(error.message).toMatch(/^could not read pull request 12:/);
   });

@@ -1,6 +1,6 @@
 import { createGhSession } from "../../github/forge-session.js";
 import { ciStatus } from "./ci.js";
-import { changePrBase, createPr, isPrDraft, isPrMerged, listOpenPrs, markPrReady, mergePr } from "./pr.js";
+import { changePrBase, createPr, isPrDraft, isPrMerged, listOpenPrs, markPrReady, mergePr, viewPr } from "./pr.js";
 import type { ForgeProvider } from "../provider.js";
 
 export function createGitHubForge(account: string): ForgeProvider {
@@ -16,5 +16,6 @@ export function createGitHubForge(account: string): ForgeProvider {
     changePrBase: (prNumber, base, cwd, env) => changePrBase(session, prNumber, base, cwd, env),
     isPrDraft: (prNumber, cwd, env) => isPrDraft(session, prNumber, cwd, env),
     markPrReady: (prNumber, cwd, env) => markPrReady(session, prNumber, cwd, env),
+    viewPr: (prNumber, cwd, env) => viewPr(session, prNumber, cwd, env),
   };
 }
