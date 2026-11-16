@@ -184,10 +184,12 @@ The gate applies to a pi session that the operator starts with `herdr agent star
 runs with the expected own name before the operator goes on. The facts are in [docs/dev/pi-sessions.md](pi-sessions.md).
 
 - Pending: the time from `herdr agent start` until the read gives a result, or until the limit ends. The flag `-n` makes
-  the name exist right after the start. So the operator starts to read as soon as `herdr agent start` returns.
+  the name exist right after the start. So the operator starts to read as soon as `herdr agent start` returns. The state
+  stays Pending after each read that gives a wait case, until a read gives Done or Failed, or until the limit ends.
 - Done: the row has the new pane id, and the name in the session file equals the expected own name. Then the operator
   goes on as after a `claude` start that worked.
-- Failed: any case of the list below.
+- Failed: any case of the list "The gate gives Failed at once", or the end of the limit while the state is Pending. The
+  list "The operator reads again" does not give Failed.
 
 The read has two steps:
 
@@ -198,13 +200,20 @@ The read has two steps:
 The operator reads every 15 seconds, up to 300 seconds after the start returns. 300000 ms is the maximum `--timeout` of
 `herdr agent start`.
 
-The gate gives Failed in each of these cases:
+The operator reads again after 15 seconds in each of these cases. The state stays Pending:
 
-- The read fails.
-- No row has the new pane id.
-- The row has no `agent_session` path.
-- The file holds another name.
-- The limit ends with no match.
+- No row of `herdr agent list` has the new pane id yet.
+- The row has no `agent_session` path yet.
+- The file holds no `session_info` line yet. `grep` exits with 1.
+
+The gate gives Failed at once in each of these cases:
+
+- A command of the read fails with an error. For example, `herdr agent list` exits with an error, or `grep` exits
+  with 2.
+- The file holds a name that is not the expected own name.
+- The limit of 300 seconds ends while the state is still Pending.
+
+Such a name does not change, so another read does not help.
 
 After Failed, the operator tells the user the command and the error. The tab and its entry in the tab list stay. The
 operator starts no second session and renames no other session. The user closes the tab. If the name shows up after
