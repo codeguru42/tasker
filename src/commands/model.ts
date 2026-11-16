@@ -27,7 +27,7 @@ interface ModelOptions {
 }
 
 const NEW_SESSIONS_NOTE =
-  "note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.\n";
+  "note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with. A continued pi session runs on the model that pi reported, if pi reported one.\n";
 
 // The report line of a role.
 function roleLine(role: string, choice: { model: string; effort: string }): string {
