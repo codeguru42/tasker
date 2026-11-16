@@ -121,6 +121,10 @@ async function mergePullRequest(store: TaskStore, task: ReturnType<typeof taskIn
     try {
       const alreadyMerged = await forge.isPrMerged(prNumber, cwd, env);
       if (!alreadyMerged) {
+        if (await forge.isPrDraft(prNumber, cwd, env)) {
+          await forge.markPrReady(prNumber, cwd, env);
+          io.stdout(`took PR #${prNumber} out of draft\n`);
+        }
         requested = true;
         await forge.mergePr(prNumber, method, headSha, cwd, env);
         const completed = await forge.isPrMerged(prNumber, cwd, env);
