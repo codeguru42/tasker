@@ -21,6 +21,8 @@ export interface OpenPrRequest {
   env: NodeJS.ProcessEnv;
   io: Io;
   repoLockWaitMs: number;
+  // The --draft option of tasker open-pr. Without it, forge.draftPr decides.
+  draft?: boolean;
   // A provider override for task tests. Commands use the provider in config.
   forge?: ForgeProvider;
 }
@@ -87,7 +89,7 @@ async function openPrLocked(store: TaskStore, request: OpenPrRequest): Promise<O
             base: baseBranch,
             title: `${summary} (${task.issueKey})`,
             body: `Task: ${task.issueKey}\n\n${summary}`,
-            draft: request.config.repos[task.repoKey].forge?.draftPr === true,
+            draft: request.draft === true || request.config.repos[task.repoKey].forge?.draftPr === true,
           },
           request.env,
         );

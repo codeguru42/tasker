@@ -17,14 +17,23 @@ export const openPr: RegisterCommand = (program, io) => {
     .description("Open or adopt a pull request against the stored base of a published task")
     .argument("<issue>", ISSUE_ARGUMENT_DESCRIPTION)
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
-    .action(async (issue: string, options: { repo?: string }) => {
+    .option(
+      "--draft",
+      "Create the pull request as a draft. Without this option, the key repos.<key>.forge.draftPr decides.",
+    )
+    .action(async (issue: string, options: { repo?: string; draft?: boolean }) => {
       const config = loadConfigOrFail(io);
-      await openPrIssue(io, config, issue, { repo: options.repo });
+      await openPrIssue(io, config, issue, { repo: options.repo, draft: options.draft });
     });
 };
 
 // The steps and output of tasker open-pr. Recovery calls this same runner after its lock is free.
-export async function openPrIssue(io: Io, config: Config, issue: string, options: { repo?: string }): Promise<void> {
+export async function openPrIssue(
+  io: Io,
+  config: Config,
+  issue: string,
+  options: { repo?: string; draft?: boolean },
+): Promise<void> {
   const result = await orFailAsync(io, () =>
     withIssueTaskAsync(io, config, issue, { repo: options.repo }, (store, found, ref) =>
       openPrTask(store, {
@@ -34,6 +43,7 @@ export async function openPrIssue(io: Io, config: Config, issue: string, options
         env: process.env,
         io,
         repoLockWaitMs: REPO_LOCK_WAIT_MS,
+        draft: options.draft,
       }),
     ),
   );
