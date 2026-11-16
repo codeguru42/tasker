@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { detailSuffix } from "../../detail-suffix.js";
 import { ReconcileConflictError } from "../errors.js";
-import { LOCAL_PREFIX } from "../local-branch.js";
+import { branchOfBase } from "../local-branch.js";
 import type { ReconcileStrategy, ReplayStart, ResyncResult, UncommittedChange } from "../provider.js";
 import {
   isAncestor,
@@ -77,7 +77,7 @@ async function stateAt(target: string, env: NodeJS.ProcessEnv): Promise<Worktree
   let branch: string | undefined;
   try {
     const ref = (await runGit(["symbolic-ref", "-q", "HEAD"], { cwd: target, env })).trim();
-    branch = ref.startsWith(LOCAL_PREFIX) ? ref.slice(LOCAL_PREFIX.length) : ref;
+    branch = branchOfBase(ref);
   } catch (error) {
     if (!isGitExit(error, 1)) throw error;
   }
