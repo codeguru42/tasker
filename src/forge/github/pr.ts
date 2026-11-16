@@ -116,6 +116,17 @@ export async function mergePr(
   }
 }
 
+export async function changePrBase(
+  session: GhSession,
+  prNumber: number,
+  base: string,
+  cwd: string,
+  env: NodeJS.ProcessEnv,
+): Promise<void> {
+  // not done yet
+  await Promise.resolve([session, prNumber, base, cwd, env]);
+}
+
 function parseOpenPullRequests(response: string): GhOpenPullRequest[] {
   let value: unknown;
   try {

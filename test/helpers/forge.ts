@@ -11,6 +11,7 @@ export interface ForgeCalls {
   created: CreatePrInput[];
   ci: { sha: string; cwd: string }[];
   merged: { number: number; method: MergeMethod; headSha: string; cwd: string }[];
+  baseChanged: { number: number; base: string; cwd: string }[];
   queried: { number: number; cwd: string }[];
   order: ("query" | "merge")[];
 }
@@ -22,6 +23,7 @@ export interface ForgeStub {
   failCreate(error: Error): void;
   failQuery(error: Error): void;
   failMerge(error: Error): void;
+  failBaseChange(error: Error): void;
 }
 
 export function forgeStub(
@@ -33,11 +35,12 @@ export function forgeStub(
     mergedStatuses?: (boolean | Error)[];
   } = {},
 ): ForgeStub {
-  const calls: ForgeCalls = { listed: [], created: [], ci: [], merged: [], queried: [], order: [] };
+  const calls: ForgeCalls = { listed: [], created: [], ci: [], merged: [], baseChanged: [], queried: [], order: [] };
   let listError: Error | undefined;
   let createError: Error | undefined;
   let queryError: Error | undefined;
   let mergeError: Error | undefined;
+  let baseChangeError: Error | undefined;
   const statuses = [...(options.mergedStatuses ?? [])];
   const provider: ForgeProvider = {
     id: options.id ?? "test-forge",
@@ -69,6 +72,10 @@ export function forgeStub(
       calls.merged.push({ number, method, headSha, cwd });
       if (mergeError !== undefined) throw mergeError;
     },
+    async changePrBase(number, base, cwd) {
+      calls.baseChanged.push({ number, base, cwd });
+      if (baseChangeError !== undefined) throw baseChangeError;
+    },
   };
   return {
     provider,
@@ -84,6 +91,9 @@ export function forgeStub(
     },
     failMerge(error) {
       mergeError = error;
+    },
+    failBaseChange(error) {
+      baseChangeError = error;
     },
   };
 }

@@ -4,6 +4,7 @@ import { createPr as untypedCreatePr } from "../../../src/forge/github/pr.js";
 import { isPrMerged as untypedIsPrMerged } from "../../../src/forge/github/pr.js";
 import { listOpenPrs as untypedListOpenPrs } from "../../../src/forge/github/pr.js";
 import { mergePr as untypedMergePr } from "../../../src/forge/github/pr.js";
+import { changePrBase as untypedChangePrBase } from "../../../src/forge/github/pr.js";
 import type { CreatePrInput, MergeMethod, OpenPullRequest, PullRequest } from "../../../src/forge/provider.js";
 import { diagnosticStrings, failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
@@ -14,6 +15,7 @@ const listOpenPrs = untypedListOpenPrs;
 const createPr = untypedCreatePr;
 const isPrMerged = untypedIsPrMerged;
 const mergePr = untypedMergePr;
+const changePr = untypedChangePrBase;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
@@ -713,5 +715,45 @@ describe("mergePr", () => {
       ["pr", "view", "42", "--json", "state"],
     ]);
     fake.assertAnswered();
+  });
+});
+
+describe("changePrBase", () => {
+  it("changes the base with the exact command and isolated environment", async () => {
+    const dir = useTempDir("tasker-change-pr-base-");
+    const args = ["pr", "edit", "42", "--base", "release"];
+    const { env, fake, session } = setup([{ args, stdout: "https://github.com/acme/project/pull/42" }], dir);
+
+    await expect(changePr(session, 42, "release", dir, env)).resolves.toBeUndefined();
+    expect(fake.calls().filter(({ args: callArgs }) => callArgs[0] === "pr")).toEqual([
+      expect.objectContaining({
+        args,
+        tokenMatches: true,
+        cwd: dir,
+        env: {
+          HOME: "/tasker/home",
+          GH_CONFIG_DIR: "/tasker/gh-config",
+          GH_PROMPT_DISABLED: "1",
+          GH_NO_UPDATE_NOTIFIER: "1",
+          NO_COLOR: "1",
+        },
+      }),
+    ]);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+    fake.assertAnswered();
+  });
+
+  it("wraps a failed change with the number and the gh stderr, with one attempt", async () => {
+    const dir = useTempDir("tasker-change-pr-base-failed-");
+    const { env, fake, session } = setup(
+      [{ args: ["pr", "edit", "42", "--base", "release"], exitCode: 1, stderr: "base branch not found" }],
+      dir,
+    );
+
+    const error = await failureOf(changePr(session, 42, "release", dir, env), Error);
+    expect(error.message).toContain("could not change the base of pull request 42");
+    expect(diagnosticStrings(error).join("\n")).toContain("base branch not found");
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
   });
 });

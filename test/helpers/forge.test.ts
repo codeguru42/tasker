@@ -19,6 +19,7 @@ describe("forgeStub", () => {
       created: [{ cwd: "/work", head: "task-branch", base: "main", title: "Title", body: "Body" }],
       ci: [],
       merged: [],
+      baseChanged: [],
       queried: [],
       order: [],
     });
@@ -35,6 +36,17 @@ describe("forgeStub", () => {
     await expect(
       fake.provider.createPr({ cwd: "/work", head: "task-branch", base: "main", title: "Title", body: "Body" }, {}),
     ).rejects.toThrow("create refused");
+  });
+
+  it("records base changes and can reject them", async () => {
+    const fake = forgeStub();
+    await expect(fake.provider.changePrBase(42, "release", "/work", {})).resolves.toBeUndefined();
+    fake.failBaseChange(new Error("base refused"));
+    await expect(fake.provider.changePrBase(42, "other", "/work", {})).rejects.toThrow("base refused");
+    expect(fake.calls.baseChanged).toEqual([
+      { number: 42, base: "release", cwd: "/work" },
+      { number: 42, base: "other", cwd: "/work" },
+    ]);
   });
 
   it("records CI status and merge calls", async () => {

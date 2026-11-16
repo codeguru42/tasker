@@ -23,7 +23,7 @@ type CreatePrInputIsExact = Assert<
 
 type ProviderMethodsAreExact = Assert<
   Equal<
-    Pick<ForgeProvider, "ciStatus" | "isPrMerged" | "listOpenPrs" | "createPr" | "mergePr">,
+    Pick<ForgeProvider, "ciStatus" | "isPrMerged" | "listOpenPrs" | "createPr" | "mergePr" | "changePrBase">,
     {
       ciStatus: (sha: string, cwd: string, env: NodeJS.ProcessEnv) => Promise<CiStatus>;
       isPrMerged: (prNumber: number, cwd: string, env: NodeJS.ProcessEnv) => Promise<boolean>;
@@ -36,6 +36,7 @@ type ProviderMethodsAreExact = Assert<
         cwd: string,
         env: NodeJS.ProcessEnv,
       ) => Promise<void>;
+      changePrBase: (prNumber: number, base: string, cwd: string, env: NodeJS.ProcessEnv) => Promise<void>;
     }
   >
 >;
@@ -52,11 +53,16 @@ type CreatePrArgs = Assert<Equal<Parameters<ForgeProvider["createPr"]>, [CreateP
 type MergePrArgs = Assert<
   Equal<Parameters<ForgeProvider["mergePr"]>, [number, MergeMethod, string, string, NodeJS.ProcessEnv]>
 >;
+type ChangePrBaseArgs = Assert<
+  Equal<Parameters<ForgeProvider["changePrBase"]>, [number, string, string, NodeJS.ProcessEnv]>
+>;
 type CiStatusResult = Assert<Equal<ReturnType<ForgeProvider["ciStatus"]>, Promise<CiStatus>>>;
 type IsPrMergedResult = Assert<Equal<ReturnType<ForgeProvider["isPrMerged"]>, Promise<boolean>>>;
 type ListOpenPrsResult = Assert<Equal<ReturnType<ForgeProvider["listOpenPrs"]>, Promise<OpenPullRequest[]>>>;
 type CreatePrResult = Assert<Equal<ReturnType<ForgeProvider["createPr"]>, Promise<PullRequest>>>;
 type MergePrResult = Assert<Equal<ReturnType<ForgeProvider["mergePr"]>, Promise<void>>>;
+
+type ChangePrBaseResult = Assert<Equal<ReturnType<ForgeProvider["changePrBase"]>, Promise<void>>>;
 
 type ContractAssertions = [
   CiStatusIsExact,
@@ -72,11 +78,13 @@ type ContractAssertions = [
   ListOpenPrsArgs,
   CreatePrArgs,
   MergePrArgs,
+  ChangePrBaseArgs,
   CiStatusResult,
   IsPrMergedResult,
   ListOpenPrsResult,
   CreatePrResult,
   MergePrResult,
+  ChangePrBaseResult,
 ];
 
 describe("ForgeProvider type contract", () => {
@@ -100,8 +108,10 @@ describe("ForgeProvider type contract", () => {
       true,
       true,
       true,
+      true,
+      true,
     ];
-    expect(assertions).toEqual(Array.from({ length: 18 }, () => true));
+    expect(assertions).toEqual(Array.from({ length: 20 }, () => true));
   });
 });
 

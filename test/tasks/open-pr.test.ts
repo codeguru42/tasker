@@ -336,7 +336,15 @@ describe("openPrTask", () => {
     );
 
     expect(failure.message).toContain("is in accepted; tasker open-pr needs pushed");
-    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [], queried: [], order: [] });
+    expect(fake.calls).toEqual({
+      listed: [],
+      created: [],
+      ci: [],
+      merged: [],
+      baseChanged: [],
+      queried: [],
+      order: [],
+    });
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("accepted");
     expect(eventsOf(fixture.dataRoot, KEY)).toEqual(before);
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
@@ -478,7 +486,15 @@ describe("openPrTask", () => {
     );
 
     expect(failure.message).toContain("the branch topic is not on origin");
-    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [], queried: [], order: [] });
+    expect(fake.calls).toEqual({
+      listed: [],
+      created: [],
+      ci: [],
+      merged: [],
+      baseChanged: [],
+      queried: [],
+      order: [],
+    });
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
     expect(eventsOf(fixture.dataRoot, KEY)).toEqual(before);
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
@@ -512,7 +528,15 @@ describe("openPrTask", () => {
       );
 
       expect(failure.message).toContain(message);
-      expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [], queried: [], order: [] });
+      expect(fake.calls).toEqual({
+        listed: [],
+        created: [],
+        ci: [],
+        merged: [],
+        baseChanged: [],
+        queried: [],
+        order: [],
+      });
       expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
     }
   });
@@ -534,7 +558,15 @@ describe("openPrTask", () => {
     }
 
     expect(failure?.message).toBeTruthy();
-    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [], queried: [], order: [] });
+    expect(fake.calls).toEqual({
+      listed: [],
+      created: [],
+      ci: [],
+      merged: [],
+      baseChanged: [],
+      queried: [],
+      order: [],
+    });
     expect(latestTaskOf(fixture.dataRoot, KEY).state).toBe("pushed");
     expect(readRunMarker(databasePathOf(fixture.dataRoot), fixture.task.id)).toBeUndefined();
   });
@@ -619,7 +651,15 @@ describe("openPrTask", () => {
       LockBusyError,
     );
     expect(taskFailure).toBeInstanceOf(LockBusyError);
-    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [], queried: [], order: [] });
+    expect(fake.calls).toEqual({
+      listed: [],
+      created: [],
+      ci: [],
+      merged: [],
+      baseChanged: [],
+      queried: [],
+      order: [],
+    });
 
     process.kill(taskHolder.pid, "SIGKILL");
     await taskHolder.exited;
@@ -630,7 +670,15 @@ describe("openPrTask", () => {
       LockBusyError,
     );
     expect(repoFailure).toBeInstanceOf(LockBusyError);
-    expect(fake.calls).toEqual({ listed: [], created: [], ci: [], merged: [], queried: [], order: [] });
+    expect(fake.calls).toEqual({
+      listed: [],
+      created: [],
+      ci: [],
+      merged: [],
+      baseChanged: [],
+      queried: [],
+      order: [],
+    });
     process.kill(repoHolder.pid, "SIGKILL");
     await repoHolder.exited;
   });

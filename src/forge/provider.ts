@@ -45,4 +45,6 @@ export interface ForgeProvider {
   listOpenPrs(target: Pick<PrTarget, "cwd" | "head">, env: NodeJS.ProcessEnv): Promise<OpenPullRequest[]>;
   createPr(target: CreatePrInput, env: NodeJS.ProcessEnv): Promise<PullRequest>;
   mergePr(prNumber: number, method: MergeMethod, headSha: string, cwd: string, env: NodeJS.ProcessEnv): Promise<void>;
+  /** Changes only the base of an existing pull request. */
+  changePrBase(prNumber: number, base: string, cwd: string, env: NodeJS.ProcessEnv): Promise<void>;
 }
