@@ -434,7 +434,7 @@ export interface TaskStore extends LockStore {
   acceptTask(id: number, revision: string, check?: (current: Task) => NewEvent | undefined): Task;
   // Stores the published revision, appends its event, moves pushing to pushed, and removes its run marker in one transaction.
   recordPublication(id: number, revision: string, check: (current: Task) => NewEvent | undefined): Task;
-  // Stores the PR number, appends its event, moves opening_pr to in_peer_review, and removes its run marker in one transaction.
+  // Stores the PR number, appends its event, moves opening_pr or pushed to in_peer_review, and removes its run marker in one transaction.
   recordPullRequest(id: number, pullRequest: PullRequestRecord, check: (current: Task) => NewEvent | undefined): Task;
   // The questions of a revision with their state. The newest revision has only open questions.
   // A resolved question names the next version, and its answer is the feedback of that version.

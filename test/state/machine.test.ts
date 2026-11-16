@@ -304,7 +304,7 @@ describe("table edges", () => {
       }
     }
     expect(found).toEqual(LEGAL_EDGES);
-    expect(found.size).toBe(164);
+    expect(found.size).toBe(165);
   });
 
   it("allows stopped reopen runs to return to peer review", () => {

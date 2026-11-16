@@ -40,9 +40,16 @@ export async function pushIssue(io: Io, config: Config, issue: string, options: 
   if ("exitCode" in result) {
     throw new CommanderError(result.exitCode, "tasker.push", "the push did not succeed");
   }
-  io.stdout(
-    result.pushed
-      ? `pushed ${result.branch} at ${result.revision}\nstate: pushed\n`
-      : `${result.branch} is already on origin at ${result.revision}\nstate: pushed\n`,
-  );
+  const line = result.pushed
+    ? `pushed ${result.branch} at ${result.revision}\n`
+    : `${result.branch} is already on origin at ${result.revision}\n`;
+  const { review } = result;
+  if (review.kind === "in_peer_review") {
+    io.stdout(`${line}PR #${review.pullRequest.number} is open: ${review.pullRequest.url}\nstate: in_peer_review\n`);
+  } else if (review.kind === "stays") {
+    io.stdout(`${line}${review.reason}\nstate: pushed\n`);
+  } else {
+    if (review.kind === "warning") io.stderr(`${review.reason}\n`);
+    io.stdout(`${line}state: pushed\n`);
+  }
 }

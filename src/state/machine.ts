@@ -97,7 +97,7 @@ const EDGES: Record<TaskState, readonly TaskState[]> = {
   // Landing.
   accepted: ["landed", "merging", "pushing", "refining", "updating_branch"],
   pushing: ["pushed", "interrupted"],
-  pushed: ["landed", "opening_pr", "refining", "updating_branch"],
+  pushed: ["landed", "opening_pr", "in_peer_review", "refining", "updating_branch"],
   opening_pr: ["in_peer_review", "interrupted"],
   in_peer_review: ["landed", "merging", "refining", "updating_branch"],
   merging: ["landed", "interrupted"],
@@ -434,7 +434,7 @@ export function transitionWithPublication(
   return store.recordPublication(id, revision, transitionCheck("published", "pushed", { ...publication, revision }));
 }
 
-// Appends the pr_opened event and moves opening_pr to in_peer_review in one transaction.
+// Appends the pr_opened event and moves opening_pr or pushed to in_peer_review in one transaction.
 export function transitionWithPrOpened(store: TaskStore, id: number, pullRequest: PullRequestRecord): Task {
   return store.recordPullRequest(id, pullRequest, transitionCheck("pr_opened", "in_peer_review", { ...pullRequest }));
 }
