@@ -886,7 +886,7 @@ describe("task store", () => {
     );
 
     withRawDatabase(oldPath, (raw) => {
-      expect(schemaVersion(raw)).toBe(25);
+      expect(schemaVersion(raw)).toBe(26);
       const columns = raw.prepare("PRAGMA table_info(tasks)").all() as { name: string }[];
       expect(columns.map((column) => column.name)).toEqual(
         expect.arrayContaining([
@@ -1493,7 +1493,7 @@ describe("task store", () => {
       );
       withRawDatabase(oldPath, (check) => {
         expect(schemaVersion(check)).toBe(migrations.length);
-        expect(migrations.length).toBe(25);
+        expect(migrations.length).toBe(26);
       });
     });
 
@@ -2688,6 +2688,7 @@ describe("task store", () => {
           plan_version: null,
           review_number: null,
           trusted_extensions: "[]",
+          reported_model: null,
           ...NO_SESSION_VALUES,
         },
       ]);
@@ -2817,6 +2818,7 @@ describe("task store", () => {
           plan_version: 1,
           review_number: null,
           trusted_extensions: "[]",
+          reported_model: null,
           ...NO_SESSION_VALUES,
         },
       ]);
@@ -2918,6 +2920,7 @@ describe("task store", () => {
           plan_version: null,
           review_number: 1,
           trusted_extensions: "[]",
+          reported_model: null,
           ...NO_SESSION_VALUES,
         },
       ]);

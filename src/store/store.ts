@@ -708,6 +708,7 @@ interface PlanSessionRow {
   effort: string;
   repo_key: string;
   trusted_extensions: string | null;
+  reported_model: string | null;
 }
 
 // The stored session of a row, or undefined when the query found no row.
@@ -731,6 +732,7 @@ function toStoredSession(row: PlanSessionRow | undefined): StoredSession | undef
         model: row.model,
         effort: row.effort as Effort,
         trustedExtensions,
+        ...(row.reported_model === null ? {} : { reportedModel: row.reported_model }),
       };
 }
 
@@ -840,7 +842,8 @@ function setUp(db: DatabaseSync) {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ),
     selectSession: db.prepare(
-      `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key, sessions.trusted_extensions
+      `SELECT sessions.session_id, sessions.provider, sessions.model, sessions.effort, tasks.repo_key, sessions.trusted_extensions,
+              sessions.reported_model
        FROM sessions JOIN tasks ON tasks.id = sessions.task_id
        WHERE sessions.task_id = ? AND sessions.role = ? AND sessions.plan_version IS ?
          AND sessions.review_number IS ?`,
@@ -851,6 +854,10 @@ function setUp(db: DatabaseSync) {
     updateProviderSessionId: db.prepare(
       `UPDATE sessions SET provider_session_id = ?
        WHERE task_id = ? AND session_id = ? AND provider_session_id IS NULL`,
+    ),
+    updateSessionReportedModel: db.prepare(
+      `UPDATE sessions SET reported_model = ?
+       WHERE task_id = ? AND session_id = ? AND reported_model IS NULL`,
     ),
     selectSessionUsageTotal: db.prepare(
       `SELECT usage_total_input_tokens, usage_total_output_tokens, usage_total_cache_creation_input_tokens,
@@ -1645,8 +1652,10 @@ export function openStore(path: string, options: StoreOptions = {}): TaskStore {
       });
     },
 
-    setSessionReportedModel() {
-      // Not stored yet.
+    setSessionReportedModel(taskId, sessionId, model) {
+      immediateTransaction(db, () => {
+        statements.updateSessionReportedModel.run(model, taskId, sessionId);
+      });
     },
 
     sessionUsageTotal(taskId, sessionId) {

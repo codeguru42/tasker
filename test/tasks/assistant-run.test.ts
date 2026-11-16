@@ -1180,8 +1180,11 @@ describe("the values of a session in an execute run", () => {
 
 describe("the reported model of a run", () => {
   const reportingRun =
-    (reportedModel: string, outcomeOf: { current?: RunOutcome } = {}) =>
+    (fixture: AssistantRunFixture, reportedModel: string, outcomeOf: { current?: RunOutcome } = {}) =>
     (prepared: Awaited<ReturnType<typeof prepareTaskPlanModeRun>>) => {
+      withDataRootStore(fixture.started.dataRoot, (store) =>
+        seedPlanSession(store, fixture.task.id, { sessionId: prepared.sessionId }),
+      );
       prepared.provider.run = async (input) => {
         outcomeOf.current = {
           kind: "success",
@@ -1197,7 +1200,7 @@ describe("the reported model of a run", () => {
 
   it("stores the reported model of the outcome in the plan session row", async () => {
     const fixture = await useAssistantRunFixture({ claude: { stream: claudeSample("json-schema") } });
-    const { prepared, outcome } = await runPlanMode(fixture, { beforeStart: reportingRun("claude-opus-x") });
+    const { prepared, outcome } = await runPlanMode(fixture, { beforeStart: reportingRun(fixture, "claude-opus-x") });
 
     expect(outcome).toMatchObject({ kind: "success", reportedModel: "claude-opus-x" });
     expect(reportedModelOf(databasePathOf(fixture.started.dataRoot), prepared.sessionId)).toBe("claude-opus-x");
@@ -1209,7 +1212,7 @@ describe("the reported model of a run", () => {
     const dbPath = databasePathOf(fixture.started.dataRoot);
     const { prepared, outcome } = await runPlanMode(fixture, {
       beforeStart: (prepared) => {
-        reportingRun("claude-opus-x", given)(prepared);
+        reportingRun(fixture, "claude-opus-x", given)(prepared);
         withRawDatabase(dbPath, (db) =>
           db.exec(
             "CREATE TRIGGER refuse_reported_model BEFORE UPDATE OF reported_model ON sessions BEGIN SELECT RAISE(ABORT, 'refused by the test'); END",

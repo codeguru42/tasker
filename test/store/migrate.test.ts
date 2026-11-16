@@ -20,7 +20,7 @@ describe("migrate", () => {
   });
 
   it("has a migration for the card mark column", () => {
-    expect(migrations).toHaveLength(25);
+    expect(migrations).toHaveLength(26);
     migrate(db, migrations);
     const columns = db.prepare("PRAGMA table_info(tasks)").all() as { name: string; dflt_value: string | null }[];
     expect(columns.find((column) => column.name === "card_marked")?.dflt_value).toBe("0");

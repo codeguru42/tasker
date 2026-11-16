@@ -191,4 +191,5 @@ ALTER TABLE tasks ADD COLUMN undo_before_parent_task_id INTEGER;
 ALTER TABLE tasks ADD COLUMN undo_after_base TEXT;
 ALTER TABLE tasks ADD COLUMN undo_after_parent_task_id INTEGER;`,
   `ALTER TABLE tasks ADD COLUMN card_marked INTEGER NOT NULL DEFAULT 0;`,
+  `ALTER TABLE sessions ADD COLUMN reported_model TEXT;`,
 ];

@@ -132,10 +132,10 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
     resume,
     provider: selected.provider,
     approvedResetsAt: req.approvedResetsAt,
-    run(limits, input, resume) {
+    async run(limits, input, resume) {
       const sessionDir = taskSessionsDir(config.dataRoot, task);
       mkdirSync(sessionDir, { recursive: true });
-      return selected.provider.run({
+      const outcome = await selected.provider.run({
         ...limits,
         cwd: worktree,
         // The child-env filter of the provider is the one home of the env rule. Nothing is removed here.
@@ -169,6 +169,14 @@ function prepareCommonRun(req: TaskRunRequest, role: AssistantRole): CommonRun {
           }
         },
       });
+      if (outcome.reportedModel !== undefined) {
+        try {
+          store.setSessionReportedModel(task.id, sessionId, outcome.reportedModel);
+        } catch {
+          // A failed write does not stop the run.
+        }
+      }
+      return outcome;
     },
   };
 }
