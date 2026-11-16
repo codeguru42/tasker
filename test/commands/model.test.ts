@@ -191,7 +191,7 @@ describe("model", () => {
 
   describe("set", () => {
     const NOTE =
-      "note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with.\n";
+      "note: the new model and effort apply only to new sessions. A continued session keeps the model and the effort that it started with. A continued pi session runs on the model that pi reported, if pi reported one.\n";
 
     it("sets the model and the effort of the role and prints the new line and the note", async () => {
       const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
