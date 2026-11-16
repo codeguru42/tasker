@@ -17,7 +17,7 @@ function configFor(
   tracker: Record<string, unknown> = { provider: "jira", project: "TEST", site: "one.atlassian.net" },
 ): Config {
   const config = configWithTrackers({ repo: tracker });
-  config.repos.repo.forge = { provider: "github", account: "forge-owner", mergeMethod: "merge" };
+  config.repos.repo.forge = { provider: "github", account: "forge-owner", mergeMethod: "merge", draftPr: false };
   return config;
 }
 

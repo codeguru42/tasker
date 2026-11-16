@@ -182,11 +182,18 @@ describe("parseConfig repos", () => {
     expect(repo.updateBranchStrategy).toBe("rebase");
   });
 
-  it("defaults the forge merge method", () => {
+  it("defaults the forge merge method and draft flag", () => {
     const raw = validConfig();
     raw.repos.tasker.forge = { provider: "github", account: "me" };
     const repo = parseConfig(raw, {}, home).repos.tasker as { forge: unknown };
-    expect(repo.forge).toEqual({ provider: "github", account: "me", mergeMethod: "merge" });
+    expect(repo.forge).toEqual({ provider: "github", account: "me", mergeMethod: "merge", draftPr: false });
+  });
+
+  it("accepts a true draftPr", () => {
+    const raw = validConfig();
+    raw.repos.tasker.forge = { provider: "github", account: "me", draftPr: true };
+    const repo = parseConfig(raw, {}, home).repos.tasker as { forge: { draftPr: boolean } };
+    expect(repo.forge.draftPr).toBe(true);
   });
 
   it("allows a repo to omit forge", () => {
@@ -291,6 +298,7 @@ describe("parseConfig repos", () => {
     ["forge", { provider: "github" }, "repos.tasker.forge.account"],
     ["forge", { provider: "github", account: "" }, "repos.tasker.forge.account"],
     ["forge", { provider: "github", account: "me", mergeMethod: "fast-forward" }, "repos.tasker.forge.mergeMethod"],
+    ["forge", { provider: "github", account: "me", draftPr: "yes" }, "repos.tasker.forge.draftPr"],
   ])("rejects a bad %s (%j)", (key, value, path) => {
     const raw = validConfig();
     raw.repos.tasker[key] = value;

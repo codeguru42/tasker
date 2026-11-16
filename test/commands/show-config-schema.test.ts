@@ -91,6 +91,7 @@ describe("show-config-schema", () => {
       "repos.<key>.forge.provider",
       "repos.<key>.forge.account",
       "repos.<key>.forge.mergeMethod",
+      "repos.<key>.forge.draftPr",
     ]);
   });
 
@@ -106,6 +107,7 @@ describe("show-config-schema", () => {
       acceptedValues: ["merge", "squash", "rebase"],
       default: "merge",
     });
+    expect(byPath.get("repos.<key>.forge.draftPr")).toMatchObject({ default: false });
     expect(byPath.get("repos.<key>.verify.commands")).toMatchObject({ constraints: { minItems: 1 } });
     expect(byPath.get("repos.<key>.verify.commands")).toMatchObject({
       constraints: { items: { minLength: 1 } },
