@@ -5,6 +5,8 @@ import { isPrMerged as untypedIsPrMerged } from "../../../src/forge/github/pr.js
 import { listOpenPrs as untypedListOpenPrs } from "../../../src/forge/github/pr.js";
 import { mergePr as untypedMergePr } from "../../../src/forge/github/pr.js";
 import { changePrBase as untypedChangePrBase } from "../../../src/forge/github/pr.js";
+import { isPrDraft as untypedIsPrDraft } from "../../../src/forge/github/pr.js";
+import { markPrReady as untypedMarkPrReady } from "../../../src/forge/github/pr.js";
 import type { CreatePrInput, MergeMethod, OpenPullRequest, PullRequest } from "../../../src/forge/provider.js";
 import { diagnosticStrings, failureOf } from "../../helpers/errors.js";
 import { forgeGh } from "../../helpers/forge-gh.js";
@@ -16,6 +18,8 @@ const createPr = untypedCreatePr;
 const isPrMerged = untypedIsPrMerged;
 const mergePr = untypedMergePr;
 const changePr = untypedChangePrBase;
+const isPrDraft = untypedIsPrDraft;
+const markPrReady = untypedMarkPrReady;
 
 const token = "discovery-token-secret";
 const head = "feature/discover";
@@ -44,6 +48,14 @@ function createCall(session: ReturnType<typeof createGhSession>, target: CreateP
 
 function mergedCall(session: ReturnType<typeof createGhSession>, number: number, cwd: string, env: NodeJS.ProcessEnv) {
   return isPrMerged(session, number, cwd, env);
+}
+
+function draftCall(session: ReturnType<typeof createGhSession>, number: number, cwd: string, env: NodeJS.ProcessEnv) {
+  return isPrDraft(session, number, cwd, env);
+}
+
+function readyCall(session: ReturnType<typeof createGhSession>, number: number, cwd: string, env: NodeJS.ProcessEnv) {
+  return markPrReady(session, number, cwd, env);
 }
 
 function mergeCall(
@@ -755,5 +767,103 @@ describe("changePrBase", () => {
     expect(diagnosticStrings(error).join("\n")).toContain("base branch not found");
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
     expect(JSON.stringify(fake.calls())).not.toContain(token);
+  });
+});
+
+describe("isPrDraft", () => {
+  it.each([[true], [false]])("returns isDraft %s and ignores extra fields and whitespace", async (value) => {
+    const dir = useTempDir("tasker-is-pr-draft-");
+    const { env, fake, session } = setup(
+      [
+        {
+          args: ["pr", "view", "42", "--json", "isDraft"],
+          stdout: ` \n { "isDraft": ${String(value)}, "url": "https://example.test/pull/42" } \n`,
+        },
+      ],
+      dir,
+    );
+
+    await expect(draftCall(session, 42, dir, env)).resolves.toBe(value);
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toEqual([
+      expect.objectContaining({
+        args: ["pr", "view", "42", "--json", "isDraft"],
+        tokenMatches: true,
+        cwd: dir,
+      }),
+    ]);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["invalid JSON", "{"],
+    ["missing isDraft", JSON.stringify({ url: "https://example.test/pull/42" })],
+    ["nonboolean isDraft", JSON.stringify({ isDraft: "yes" })],
+    ["array response", JSON.stringify([{ isDraft: true }])],
+  ])("rejects a %s response", async (_label, stdout) => {
+    const dir = useTempDir("tasker-is-pr-draft-malformed-");
+    const { env, fake, session } = setup([{ args: ["pr", "view", "42", "--json", "isDraft"], stdout }], dir);
+
+    const error = await failureOf(draftCall(session, 42, dir, env), Error);
+    expect(error.message).toContain("42");
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+
+  it("wraps a failed draft read with its number and safe cause", async () => {
+    const dir = useTempDir("tasker-is-pr-draft-failure-");
+    const stderr = "GraphQL: Could not resolve to a PullRequest with the number of 42. (repository.pullRequest)";
+    const { env, fake, session } = setup(
+      [{ args: ["pr", "view", "42", "--json", "isDraft"], stdout: '{"isDraft":true}', stderr, exitCode: 1 }],
+      dir,
+    );
+
+    const error = await failureOf(draftCall(session, 42, dir, env), Error);
+    expect(error.message).toContain("read draft state");
+    expect(error.message).toContain("42");
+    expect(error.message).toContain(stderr);
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(diagnosticStrings(error).join("\n")).not.toContain(token);
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+});
+
+describe("markPrReady", () => {
+  it("takes the pull request out of draft with the exact command and isolated environment", async () => {
+    const dir = useTempDir("tasker-mark-pr-ready-");
+    const args = ["pr", "ready", "42"];
+    const { env, fake, session } = setup([{ args, stdout: "Pull request #42 is marked as ready for review" }], dir);
+
+    await expect(readyCall(session, 42, dir, env)).resolves.toBeUndefined();
+    expect(fake.calls().filter(({ args: callArgs }) => callArgs[0] === "pr")).toEqual([
+      expect.objectContaining({
+        args,
+        tokenMatches: true,
+        cwd: dir,
+        env: {
+          HOME: "/tasker/home",
+          GH_CONFIG_DIR: "/tasker/gh-config",
+          GH_PROMPT_DISABLED: "1",
+          GH_NO_UPDATE_NOTIFIER: "1",
+          NO_COLOR: "1",
+        },
+      }),
+    ]);
+    expect(fake.calls().some(({ args: callArgs }) => callArgs[0] === "pr" && callArgs[1] === "view")).toBe(false);
+    expect(JSON.stringify(fake.calls())).not.toContain(token);
+    fake.assertAnswered();
+  });
+
+  it("wraps a failed ready step with the number and the gh stderr, with one attempt", async () => {
+    const dir = useTempDir("tasker-mark-pr-ready-failed-");
+    const stderr = "GraphQL: Could not mark pull request ready";
+    const { env, fake, session } = setup([{ args: ["pr", "ready", "42"], exitCode: 1, stderr }], dir);
+
+    const error = await failureOf(readyCall(session, 42, dir, env), Error);
+    expect(error.message).toContain("could not take pull request 42 out of draft");
+    expect(error.message).toContain(stderr);
+    expect(diagnosticStrings(error).join("\n")).not.toContain(token);
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
   });
 });
