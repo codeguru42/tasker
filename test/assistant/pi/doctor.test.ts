@@ -13,6 +13,7 @@ import type { Check } from "../../../src/doctor/check.js";
 import { checkSummaries } from "../../helpers/doctor.js";
 import { createPiProvider } from "../../helpers/pi-provider.js";
 import { useFakePi } from "../../helpers/fake-pi.js";
+import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
 import { validConfig } from "../../helpers/config.js";
 import { parseConfig } from "../../../src/config/schema.js";
 import { useTempDir, writeFileWithParents } from "../../helpers/temp.js";
@@ -27,6 +28,7 @@ const relativeFolderReason = "TASKER_PI_CODING_AGENT_DIR must be an absolute pat
 const relativeHomeReason = "HOME must be an absolute path, got rel/h";
 const missingHomeReason = "tasker cannot find the agent folder of pi, because HOME is not set";
 const agentFolderFix = "Set TASKER_PI_CODING_AGENT_DIR to an absolute path, or unset it.";
+const sessionFolderFix = "Set TASKER_PI_CODING_AGENT_SESSION_DIR to an absolute path, or unset it.";
 const homeFix = "Set HOME.";
 const relativeHomeFix = "Set HOME to an absolute path, or set TASKER_PI_CODING_AGENT_DIR to an absolute path.";
 const piInstallFix = "Install pi and put pi on PATH, or set TASKER_PI_BIN.";
@@ -309,6 +311,63 @@ describe("pi child refusals in doctor checks", () => {
 
       expect(fake.calls().map((call) => call.args)).toEqual([args]);
       expect(fake.calls()[0].env.PI_CODING_AGENT_DIR).toBe("/p");
+    },
+  );
+
+  it.each(programChecks)("reports a relative session folder before spawn for %s", async (_name, makeCheck) => {
+    const fake = useFakePi([{ args: VERSION_ARGS, stdout: VERSION }]);
+
+    expect(
+      await makeCheck().run({
+        ...fake.env,
+        HOME: "/home/user",
+        TASKER_PI_BIN: "/missing/pi",
+        TASKER_PI_CODING_AGENT_SESSION_DIR: "rel/s",
+      }),
+    ).toEqual({
+      status: "error",
+      detail: relativeSessionFolderReason("rel/s"),
+      remediation: sessionFolderFix,
+    });
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it.each(programChecks)("reports a relative session folder before a missing HOME for %s", async (_name, makeCheck) => {
+    const fake = useFakePi([{ args: VERSION_ARGS, stdout: VERSION }]);
+
+    expect(
+      await makeCheck().run({
+        ...fake.env,
+        HOME: undefined,
+        TASKER_PI_BIN: "/missing/pi",
+        TASKER_PI_CODING_AGENT_SESSION_DIR: "rel/s",
+      }),
+    ).toEqual({
+      status: "error",
+      detail: relativeSessionFolderReason("rel/s"),
+      remediation: sessionFolderFix,
+    });
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it.each(programChecks)(
+    "reports a relative session folder before a relative HOME for %s",
+    async (_name, makeCheck) => {
+      const fake = useFakePi([{ args: VERSION_ARGS, stdout: VERSION }]);
+
+      expect(
+        await makeCheck().run({
+          ...fake.env,
+          HOME: "rel/h",
+          TASKER_PI_BIN: "/missing/pi",
+          TASKER_PI_CODING_AGENT_SESSION_DIR: "rel/s",
+        }),
+      ).toEqual({
+        status: "error",
+        detail: relativeSessionFolderReason("rel/s"),
+        remediation: sessionFolderFix,
+      });
+      expect(fake.calls()).toEqual([]);
     },
   );
 
@@ -657,6 +716,23 @@ describe("superpowersCheck", () => {
 });
 
 describe("simpleEnglishCheck", () => {
+  it("keeps the agent folder with a relative session folder", async () => {
+    const home = useTempDir("tasker-simple-english-home-");
+    const agentDir = useTempDir("tasker-pi-doctor-agent-");
+    addSkill(join(agentDir, "skills"));
+
+    expect(
+      await simpleEnglishCheck().run({
+        HOME: home,
+        TASKER_PI_CODING_AGENT_DIR: agentDir,
+        TASKER_PI_CODING_AGENT_SESSION_DIR: "rel/s",
+      }),
+    ).toEqual({
+      status: "ok",
+      detail: `simple-english at ${join(agentDir, "skills", "simple-english", "SKILL.md")}`,
+    });
+  });
+
   it.each(["agent folder", "$HOME/.agents/skills"])("finds simple-english in the %s", async (location) => {
     const home = useTempDir("tasker-simple-english-home-");
     const agentDir = join(home, ".pi", "agent");
