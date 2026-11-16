@@ -207,6 +207,66 @@ the shell of the assistant has no GitHub token and no ssh agent of the user. The
 - For the execute role, the caller must not start a second turn after a refused first start, because the start of a
   later turn continues the session.
 
+### The seccomp filter
+
+A plain `bwrap` keeps the network namespace of the host. So no hide mount can cover an abstract socket or a socket at a
+path that tasker does not know. The pi sandbox loads one seccomp filter instead. A seccomp filter is a small program
+that the kernel runs at each system call. This filter blocks each new `AF_UNIX` socket and the three `io_uring` calls.
+It allows each other call. `src/assistant/seccomp.ts` builds the filter. `unixSocketFilter(arch)` gives the bytes for
+`x64` and `undefined` for each other architecture. `seccompArchRefusal(arch)` gives the reason text.
+
+The program has 15 instructions of 8 bytes each. The numbers are little-endian.
+
+| Row | Meaning                                                                    |
+| --- | -------------------------------------------------------------------------- |
+| 0   | Load the architecture of the call.                                         |
+| 1   | If the architecture is x86-64, skip row 2.                                 |
+| 2   | Kill the process for another architecture.                                 |
+| 3   | Load the call number.                                                      |
+| 4   | If the x32 bit `0x40000000` is set, go to row 5. Else skip row 5.          |
+| 5   | Kill the process for an x32 call.                                          |
+| 6   | If the call is `socket` (41), go to row 11.                                |
+| 7   | If the call is `io_uring_setup` (425), go to row 10.                       |
+| 8   | If the call is `io_uring_enter` (426), go to row 10.                       |
+| 9   | If the call is `io_uring_register` (427), go to row 10. Else go to row 14. |
+| 10  | Fail the call with `EPERM`.                                                |
+| 11  | Load the low 32 bits of the first argument of `socket`, the domain.        |
+| 12  | If the domain is `AF_UNIX` (1), go to row 13. Else go to row 14.           |
+| 13  | Fail the call with `EPERM`.                                                |
+| 14  | Allow the call.                                                            |
+
+The filter leaves `socketpair` open, because a socket pair cannot reach another program. It blocks the `io_uring` calls,
+because an `io_uring` operation can make a socket that the filter does not see.
+
+The caller writes the filter bytes to a pipe at fd 3 of `bwrap` and closes the pipe right after the spawn. The argument
+`--seccomp 3` tells `bwrap` to read the filter from fd 3. The bytes never come from a file, so no file can change the
+filter.
+
+tasker measured these facts on 2026-11-04 and again on 2026-11-15 on Debian with Linux 6.12 on x86-64 with `bubblewrap`
+0.12.0.
+
+- `bwrap --help` lists `--seccomp FD`.
+- With no filter, a connect to a socket at a path and a connect to an abstract socket work.
+- With the filter, each such connect fails with `EPERM`. This holds also in a child of a child.
+- With the filter, `socket(AF_UNIX)` fails. `socketpair()`, `AF_INET`, `AF_INET6` and `AF_NETLINK` work.
+- `io_uring_setup` fails with `EPERM` with the filter. Without the filter, it works.
+- With the filter and `--unshare-pid --new-session --die-with-parent`, `git --version`, `sort`, a background job of
+  `bash` and `getent hosts github.com` work.
+- A `node` script that spawned `bwrap` with a fourth stdio pipe, wrote the program and ended the pipe, held the filter.
+- A message of 7 bytes, an empty fd 3 and a closed fd 3 each make `bwrap` exit with 1.
+- The call numbers and the offsets come from `asm/unistd_64.h`, `linux/audit.h` and `linux/seccomp.h`.
+
+Nobody measured a real pi run with the filter, a socket that `io_uring` makes, a 32-bit or x32 program, or a host with
+`nss-resolve`.
+
+The limits of the filter:
+
+- The filter runs only on Linux on x86-64. On another architecture, the precheck of pi refuses the run.
+- The network stays open.
+- A 32-bit program dies at its first system call.
+- A program that needs a Unix socket fails in pi. Examples are `gpg-agent` for the signature of a commit,
+  `git credential-cache`, the keyring and Docker.
+
 ## The claude-code provider
 
 The provider runs Claude Code in print mode. It sends the prompt on stdin and reads one event from each line of stdout.
@@ -1321,8 +1381,9 @@ arguments are in this order:
 6. `--ro-bind <worktree>/.git <worktree>/.git` keeps the worktree's git link read-only.
 7. Hide mounts cover each existing hide path. A folder gets `--tmpfs`; a file, socket or pipe gets a read-only bind of
    `/dev/null`. They come after write mounts, so a parent write mount cannot uncover a hidden path.
-8. `--unshare-pid --new-session --die-with-parent` ends background jobs with the call, disconnects the terminal and ends
-   the command if its parent ends.
+8. `--unshare-pid --new-session --die-with-parent --seccomp 3` ends background jobs with the call, disconnects the
+   terminal and ends the command if its parent ends. The filter on fd 3 blocks each new Unix socket. See
+   [the seccomp filter](#the-seccomp-filter).
 9. `--setenv TMPDIR <temp folder of the start> --chdir <call cwd>` sets the temp folder and the call's working folder.
 10. `-- <shell> -c <command>` starts `/bin/bash`, or `bash` from the child's `PATH` if `/bin/bash` is absent.
 
@@ -1335,20 +1396,23 @@ symbolic link. A hide path equal to or above the worktree, a write path or the t
 under a write path is allowed and stays hidden. The hide paths come from
 [the execute-role read deny list](#the-execute-role); that list includes the Jira login folder of `acli`.
 
-Before pi starts, tasker checks that `bwrap` is on the child's `PATH`, that every D-Bus entry uses the Unix transport
-and has a `path` key, and that the worktree and write paths resolve. It rejects other transports because bubblewrap
-shares the host network and cannot hide abstract or network sockets. It creates the temp folder of the start, checks
-that hide paths do not cover write paths, then runs a ten-second `bwrap` probe with `true` and no hide mounts. A failed
-check refuses the start. Check errors name an error code or problem kind, not a path. Every start gets a new folder
-named with the prefix `tasker-pi-` under the child's `TMPDIR`, or `/tmp` when unset. The folder is removed after pi's
-process group ends, including on a failure after creation but before spawn. A removal failure after spawn leaves the
-outcome kind unchanged and adds `sandbox_cleanup` with the error. For pi, that event holds only an error from removal of
-the temp folder of the start.
+Before pi starts, tasker checks that the architecture of the host has a seccomp filter. If it has none, the run fails
+with the reason `the seccomp filter of the sandbox does not support the architecture <arch>`. A `bash` call on such an
+architecture is blocked with the same reason, and nothing starts. Then tasker checks that `bwrap` is on the child's
+`PATH`, that every D-Bus entry uses the Unix transport and has a `path` key, and that the worktree and write paths
+resolve. It rejects other transports because bubblewrap shares the host network and cannot hide abstract or network
+sockets. It creates the temp folder of the start, checks that hide paths do not cover write paths, then runs a
+ten-second `bwrap` probe with `true` and no hide mounts. A failed check refuses the start. Check errors name an error
+code or problem kind, not a path. Every start gets a new folder named with the prefix `tasker-pi-` under the child's
+`TMPDIR`, or `/tmp` when unset. The folder is removed after pi's process group ends, including on a failure after
+creation but before spawn. A removal failure after spawn leaves the outcome kind unchanged and adds `sandbox_cleanup`
+with the error. For pi, that event holds only an error from removal of the temp folder of the start.
 
-The sandbox does not limit network access. A command can read paths and connect to Unix sockets that the hide list does
-not name. Abstract sockets stay open. Only the `bash` tool runs inside bubblewrap; pi, its other tools and its
-extensions do not. The command can see hide-path names in `/proc/1/cmdline`, `/proc/self/mountinfo` and host
-`ps -o args`, but it cannot read the hidden contents. The command can still read the list of hide paths.
+The sandbox does not limit network access. The seccomp filter blocks each new Unix socket, also an abstract socket. See
+[the seccomp filter](#the-seccomp-filter). A command can still read paths that the hide list does not name. Only the
+`bash` tool runs inside bubblewrap; pi, its other tools and its extensions do not. The command can see hide-path names
+in `/proc/1/cmdline`, `/proc/self/mountinfo` and host `ps -o args`, but it cannot read the hidden contents. The command
+can still read the list of hide paths.
 
 Measures ran on 2026-11-09 on Debian Linux 6.12 with bubblewrap 0.12.0, pi 1.1.0 and git 2.47.3. They made no real model
 call. Before the deny rule was added, a sandbox read a fake `acli` login file (`acli-exit=0`), while a fake SSH file was
@@ -1368,7 +1432,8 @@ and no cleanup step.
 The following bubblewrap facts were measured on 2026-11-03 on Debian Linux 6.12 with bubblewrap 0.12.0 and git 2.47.3.
 Each probe used `--ro-bind / / --dev /dev --proc /proc` and the named flags in a scratch folder.
 
-- A Unix socket in a read-only bind still accepts a connection. An abstract socket also accepts a connection.
+- A Unix socket in a read-only bind still accepts a connection. An abstract socket also accepts a connection. These
+  facts were measured without the seccomp filter.
 - `--tmpfs <folder>` hides a folder, and a connection to a socket in it fails with `FileNotFoundError`.
 - `--ro-bind /dev/null <socket>` makes a connection fail with `ConnectionRefusedError`. Over a file, a read fails with
   `Permission denied`.
