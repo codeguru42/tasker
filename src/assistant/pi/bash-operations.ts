@@ -2,6 +2,7 @@ import { checkBashCommand } from "./bash-command-check.js";
 import { sandboxArgs } from "./sandbox-args.js";
 import type { PiSandboxLimits } from "./guard-limits.js";
 import { spawnPiBwrap } from "../../process/pi-bwrap.js";
+import { seccompArchRefusal, unixSocketFilter } from "../seccomp.js";
 
 export interface BashExecOptions {
   onData(data: Buffer): void;
@@ -14,7 +15,11 @@ export interface BashOperations {
   exec(command: string, cwd: string, options: BashExecOptions): Promise<{ exitCode: number }>;
 }
 
-export function createBashOperations(sandbox: PiSandboxLimits, deniedCommands: readonly string[]): BashOperations {
+export function createBashOperations(
+  sandbox: PiSandboxLimits,
+  deniedCommands: readonly string[],
+  arch: string = process.arch,
+): BashOperations {
   return {
     async exec(command, cwd, options) {
       if (options.signal?.aborted) throw new Error("aborted");
@@ -22,6 +27,8 @@ export function createBashOperations(sandbox: PiSandboxLimits, deniedCommands: r
       if (options.timeout !== undefined && (!Number.isFinite(options.timeout) || options.timeout <= 0)) {
         throw new Error("Invalid timeout: must be a finite number of seconds");
       }
+      const filter = unixSocketFilter(arch);
+      if (filter === undefined) throw new Error(seccompArchRefusal(arch));
       const env = options.env ?? process.env;
       const built = sandboxArgs({ sandbox, cwd, command });
       if ("reason" in built) throw new Error(built.reason);
@@ -31,6 +38,7 @@ export function createBashOperations(sandbox: PiSandboxLimits, deniedCommands: r
         const exitCode = await spawnPiBwrap(sandbox.bwrap, built.args, {
           cwd,
           env,
+          fd3: filter,
           onData: (data) => options.onData(data),
           signal: options.signal,
           timeout: options.timeout === undefined ? undefined : options.timeout * 1000,

@@ -9,11 +9,14 @@ import { sandboxPart } from "./sandbox-part.js";
 import { spawnPiBwrap } from "../../process/pi-bwrap.js";
 import { parseDbusAddress } from "./dbus-address.js";
 import { failed } from "./failure.js";
+import { seccompArchRefusal, unixSocketFilter } from "../seccomp.js";
 
 const PROBE_TIMEOUT_MS = 10_000;
 
 export interface SandboxPrecheckOptions {
   probeTimeoutMs?: number;
+  // The architecture for the seccomp filter. The default is process.arch. Tests set it.
+  arch?: string;
 }
 
 export async function runSandboxPrecheck(
@@ -21,6 +24,10 @@ export async function runSandboxPrecheck(
   start: (sandbox: PiSandboxLimits, markSpawned: () => void) => Promise<RunOutcome>,
   options: SandboxPrecheckOptions = {},
 ): Promise<RunOutcome> {
+  const arch = options.arch ?? process.arch;
+  const filter = unixSocketFilter(arch);
+  if (filter === undefined) return failed(input, seccompArchRefusal(arch));
+
   const bwrap = findOnPath("bwrap", input.env);
   if (bwrap === undefined) return failed(input, "sandbox precheck failed: bwrap is not on PATH");
 
@@ -62,6 +69,7 @@ export async function runSandboxPrecheck(
         exitCode = await spawnPiBwrap(bwrap, probe.args, {
           cwd: worktree,
           env: input.env,
+          fd3: filter,
           onData: (chunk) => {
             stderr += chunk.toString();
           },

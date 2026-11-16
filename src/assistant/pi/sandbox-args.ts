@@ -47,6 +47,9 @@ export function sandboxArgs(input: SandboxArgsInput): SandboxArgsResult {
       "--unshare-pid",
       "--new-session",
       "--die-with-parent",
+      // The caller writes the seccomp filter to fd 3 (see unixSocketFilter()).
+      "--seccomp",
+      "3",
       "--setenv",
       "TMPDIR",
       tempFolder,
