@@ -128,7 +128,7 @@ A stacked task is a task with a stored parent. `tasker start` stores the parent 
 `finished`.
 
 A stacked task whose parent landed must move first. `tasker merge`, `tasker refine`, `tasker execute`, `tasker verify`,
-`tasker review` and `tasker accept` refuse it with
+`tasker review`, `tasker accept` and `tasker open-pr` refuse it with
 `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
 These commands print the loop error or the local-base error of [Errors](#errors) when the walk fails. A cancelled parent
 stops `tasker merge`. For trunk merge, its error is

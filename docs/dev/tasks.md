@@ -754,7 +754,9 @@ See [Retry](#retry) for recovery after a failed reopen.
 ## Open PR
 
 `tasker open-pr` connects a published task to external review. Its base rule opens the PR against the stored task base,
-because a stacked task and a task on an epic branch need a PR on their own base.
+because a stacked task and a task on an epic branch need a PR on their own base. The moved-base guard runs right after
+the check of the state, because the branch of a landed parent is no base for a PR (see
+[Stacked task](workspaces.md#stacked-task)).
 
 Lookup precedes creation so recovery adopts a PR that tasker created before its record failed.
 

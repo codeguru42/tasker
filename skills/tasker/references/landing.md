@@ -104,6 +104,11 @@ concurrent changes.
 Opens or adopts a pull request (PR) for a task in `pushed`: `tasker open-pr <issue> [--repo <key>]`. A PR asks for
 external review. The repo must have a configured forge. The task must have a branch, worktree and stored base.
 
+`tasker open-pr` refuses a stacked task whose parent landed. It does this before it reads `origin`, with
+`the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.
+The task keeps its state and its events. For the loop error and the local-base error, see
+[The base step of a stacked task](keeping-current.md#the-base-step-of-a-stacked-task).
+
 tasker maps the stored task base to a branch on `origin`. A base of the form `refs/heads/<branch>` gives `<branch>`. Any
 other base is already the name of a branch on `origin`. tasker reads that branch on `origin` before it enters
 `opening_pr`. If the branch is not on `origin`, or the read fails, the command exits with code 1 and the error names the

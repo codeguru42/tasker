@@ -56,7 +56,7 @@ A cancelled task never lands. A finished task is done, and its branch is gone or
 on that branch has a plain local base. A parent in `landed`, `finishing` or `cleanup_failed` gets the link on purpose.
 The landing guard applies to `tasker merge`. It refuses the merge until each parent in the chain landed and
 `tasker update-branch` moved the task. The moved-base guard refuses `tasker refine`, `tasker execute`, `tasker verify`,
-`tasker review` and `tasker accept` while the parent has landed and the task did not move.
+`tasker review`, `tasker accept` and `tasker open-pr` while the parent has landed and the task did not move.
 
 For `tasker merge`, each task in a chain lands on the base of the first task, after its parent. The guard refuses a task
 whose parent is in flight, with the error `has not landed`. It refuses a task whose parent is cancelled, so the user
