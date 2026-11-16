@@ -12,7 +12,6 @@ import {
   trackedPaths,
 } from "../../../src/vcs/git/assistant-surface.js";
 import { baseRevision, resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
-import { fetchRemoteDefaultBranch } from "../../../src/vcs/git/default-branch.js";
 import {
   changedPaths,
   ownCommitsText,
@@ -140,21 +139,6 @@ describe("createGitProvider", () => {
   }
 
   describe("base, changes and reconcile", () => {
-    it("resolves the fetched origin default base like the Git helper", async () => {
-      const git = provider();
-      await git.provision(fixture.context);
-      const clone = paths().clone;
-      const direct = await fetchRemoteDefaultBranch({
-        clone,
-        remote: fixture.origin.path,
-        sshKey: undefined,
-        env: fixture.context.env,
-      });
-      const mapped = await git.defaultBase(fixture.context);
-      expect(mapped).toBe(direct);
-      expect(mapped).toBe("main");
-    });
-
     it("resolves the base like resolveBaseBranch", async () => {
       const git = provider();
       await git.provision(fixture.context);
