@@ -342,6 +342,8 @@ describe("openPrTask", () => {
       ci: [],
       merged: [],
       baseChanged: [],
+      draftQueried: [],
+      readied: [],
       queried: [],
       order: [],
     });
@@ -492,6 +494,8 @@ describe("openPrTask", () => {
       ci: [],
       merged: [],
       baseChanged: [],
+      draftQueried: [],
+      readied: [],
       queried: [],
       order: [],
     });
@@ -534,6 +538,8 @@ describe("openPrTask", () => {
         ci: [],
         merged: [],
         baseChanged: [],
+        draftQueried: [],
+        readied: [],
         queried: [],
         order: [],
       });
@@ -564,6 +570,8 @@ describe("openPrTask", () => {
       ci: [],
       merged: [],
       baseChanged: [],
+      draftQueried: [],
+      readied: [],
       queried: [],
       order: [],
     });
@@ -657,6 +665,8 @@ describe("openPrTask", () => {
       ci: [],
       merged: [],
       baseChanged: [],
+      draftQueried: [],
+      readied: [],
       queried: [],
       order: [],
     });
@@ -676,6 +686,8 @@ describe("openPrTask", () => {
       ci: [],
       merged: [],
       baseChanged: [],
+      draftQueried: [],
+      readied: [],
       queried: [],
       order: [],
     });

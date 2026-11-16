@@ -47,4 +47,8 @@ export interface ForgeProvider {
   mergePr(prNumber: number, method: MergeMethod, headSha: string, cwd: string, env: NodeJS.ProcessEnv): Promise<void>;
   /** Changes only the base of an existing pull request. */
   changePrBase(prNumber: number, base: string, cwd: string, env: NodeJS.ProcessEnv): Promise<void>;
+  /** Tells whether a pull request is a draft. */
+  isPrDraft(prNumber: number, cwd: string, env: NodeJS.ProcessEnv): Promise<boolean>;
+  /** Takes a draft pull request out of draft. The caller decides when. */
+  markPrReady(prNumber: number, cwd: string, env: NodeJS.ProcessEnv): Promise<void>;
 }
