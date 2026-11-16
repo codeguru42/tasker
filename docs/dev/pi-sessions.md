@@ -78,6 +78,79 @@ reach it.
 | The receipt                          | `measured match`                               | `herdr agent prompt wR:pF "DELEGATION 80b739e214449b56 from measure-a-pi id a-80b739e214449b56 pane wR:pG tab wR:t9 pid 532508"` from the sender. Then the RECEIPT message of the recipient.           | The send result was `agent_prompted` with exit 0. The record of the recipient holds the received message as a user line at 18:24:03.032Z. The reply `herdr agent prompt wR:pG "RECEIPT 80b739e214449b56"` failed two times with `agent_not_ready` and exit 1, at 18:24:04.863Z and 18:24:07.452Z.                                                                                                                                 | pi 1.1.0, herdr 0.9.3, 2026-11-15 | The match covers only the DELEGATION message. The reply did not reach the sender, so the round trip did not match. The sender still worked at the time of each failure. No one measured how pi acts on input during a turn.                                    |
 | The replacement check                | `not measured`                                 | None.                                                                                                                                                                                                  | The replacement did not start, because the sender did not close.                                                                                                                                                                                                                                                                                                                                                                  | pi 1.1.0, herdr 0.9.3, 2026-11-15 | No test session with the name `measure-a-pi` started after a closure. The name rule of `herdr agent start` and the target of a PING message are not known.                                                                                                     |
 
+## The start flags and the own name
+
+The user approved these runs. A task subagent ran them in two rounds, all on 2026-11-15 with pi 1.1.0 and herdr 0.9.3.
+The model was `openrouter/deepseek/deepseek-v4.1-flash`. The test sessions ran in a herdr pane with the flags
+`--tools bash --no-mcp`. The two rounds cost about $0.001 on openrouter. Each fact below has its command, its output and
+its limit. `<S>` is the session folder of the test run.
+
+### K1: the start of a pi session
+
+- Command: `herdr agent start m1-a --kind pi --pane wR:pK --timeout 120000 -- <pi flags>`.
+- Output: `agent_started`, with `interactive_ready` true, the status `done` and exit 0.
+- Limit: this covers one start in a new pane.
+
+### K2: the model flags, the first prompt and the effort
+
+- Model flags and first prompt, command: `--provider openrouter --model openrouter/deepseek/deepseek-v4.1-flash`. The
+  prompt was the last argument. The upstream is the part of the model before the first `/`. Output: pi started with that
+  model and read the prompt. Limit: one model of one upstream.
+- Effort `xhigh`, command: `--thinking xhigh`. Output: pi accepted the flag at the start and at the first model call.
+  Line 4 of the session file held `"thinkingLevel":"max"`. The footer showed `deepseek/deepseek-v4.1-flash • max`. The
+  environment held `PI_REASONING_LEVEL=max`. So pi used the level max for this model. Limit: no one measured the cause.
+- Effort `max`, command: `--thinking max`. Output: pi accepted the flag at the start and at the first model call. Line 4
+  held `"thinkingLevel":"max"`, and the footer showed `• max`. Limit: one model.
+- No effort flag, command: a start with no `--thinking`. Output: line 4 held `"thinkingLevel":"high"`, and the footer
+  showed `• high`. So the default level of this model is high. Limit: one model.
+
+### K3a: the name at the start
+
+- Command: `-n m1-a` in the pi flags of the start.
+- Output: line 2 of the session file was
+  `{"type":"session_info","id":"8f8f9bd0","parentId":null,"timestamp":"2026-11-15T20:11:38.046Z","name":"m1-a"}`. The
+  header on line 1 was at 20:11:38.045Z, and the model change was at 38.129Z. So the name exists 1 ms after the header
+  and before the first prompt. The terminal title was `π - m1-a - m1`.
+- Limit: this covers pi 1.1.0 only.
+
+### K3b: the own read
+
+- Command: the test session ran `env | grep -i '^PI_'` and then `head -c 2000 "$PI_SESSION_FILE"`.
+- Output: pi sets `PI_SESSION_FILE` to the path of the session file. The line with `"type":"session_info"` holds
+  `"name"`. The environment also holds `PI_SESSION_ID`, `PI_MODEL`, `PI_PROVIDER` and `PI_REASONING_LEVEL`. No variable
+  holds the name. The session found no pi command and no pi tool for the name.
+- Limit: this is one way to read the name. The model of the test session chose it. A later pi version can change the
+  file form.
+
+### K3c: the read by another session
+
+- Command: `herdr agent list`, then `grep -m1 session_info <path>` on the `agent_session` path of the row.
+- Output: the row of the new session held `"name":"m1-a"`, `"pane_id":"wR:pK"` and `"tab_id":"wR:tA"`. It also held
+  `"agent_session":{"kind":"path","value":"<S>/sessions/2026-11-15T20-11-38-045Z_a-8b240a159c34b5fe.jsonl"}`. The `grep`
+  gave the line with the native name `m1-a`.
+- Limit: the row field `name` is the herdr agent name, not the pi name. In this run both had the same text. Only 6 of 27
+  rows had a `name` field. A match of the herdr agent name alone is not proof of the session.
+
+### K3d: two sessions with one name
+
+- Herdr part, command: a second
+  `herdr agent start m1-a --kind pi --pane wR:pN ... -n m1-a ... --session-id b-8b240a159c34b5fe` while the first
+  session ran. Output: it failed at once with exit 1 and
+  `{"error":{"code":"agent_name_taken","message":"agent name m1-a is already used; candidates: ..."}}`. pi did not
+  start, and no session file was made.
+- pi part, command: `herdr agent start m2-a ... -n m2-name --session-id c-1957ad06d958233a` on `wR:pP`. While it ran,
+  `herdr agent start m2-b ... -n m2-name --session-id d-1957ad06d958233a` on `wR:pQ`. Output: both gave `agent_started`
+  and exit 0. Line 2 of each session file held `"name":"m2-name"`. `herdr agent list` gave `m2-a` on `wR:pP` and `m2-b`
+  on `wR:pQ`, each with its own `agent_session` path. So two pi sessions can hold the same native name at the same time.
+- Limit: the two sessions had different session ids and different herdr agent names. A start with the same session id
+  did not run.
+
+### K4: a tool for messages
+
+- Command: a question to a bash-only session (`--tools bash --no-mcp`).
+- Output: the session said that its only tool is `bash`. It has no tool that sends a message or lists the sessions.
+- Limit: this covers only a bash-only session. The default tool set of pi did not run.
+
 ## Not measured and unresolved
 
 - The tab part of the own-session closure is `not measured`. The sender did not run `herdr tab close`.
@@ -94,3 +167,8 @@ reach it.
 - A send to a session that waits at a prompt of pi did not run. A tab with two panes did not run. pi showed no prompt of
   trust and no question before a tool call in this run.
 - The model of the trace was one model of one upstream. The files that pi wrote in its agent folder were not read.
+- The efforts `--thinking low`, `--thinking medium` and `--thinking high` did not run.
+- The cause of the level max after `--thinking xhigh` is not known.
+- A start with the same session id as a running session did not run.
+- The default tool set of pi is not known. The measured sessions had only `bash`.
+- What pi wrote in `~/.pi/agent` in the later runs was not read.
