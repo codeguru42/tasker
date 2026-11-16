@@ -11,6 +11,8 @@ import { dayAt, seedTasks } from "../helpers/store.js";
 
 const KEY = "codeguru42/tasker#5";
 
+const PI_MODEL = "openrouter/deepseek/deepseek-v4.1-flash";
+
 // The report lines of the session roles in a file with no entry for them.
 const NONE_SESSIONS = "operator: none\nplanner: none\norchestrator: none\nquestion: none\n";
 
@@ -256,6 +258,21 @@ describe("model", () => {
       expectNothingChanged(file, printedJson(expected));
     });
 
+    it("sets a pi model of a session role under the kind pi", async () => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { kind: "pi" };
+        return printedJson(raw);
+      });
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = { kind: "pi", models: { planner: { model: PI_MODEL, effort: "xhigh" } } };
+
+      const result = await runCommand(model, "model", KEY, "--role", "planner", PI_MODEL, "--effort", "xhigh");
+
+      expect(result).toEqual({ code: 0, out: `planner: ${PI_MODEL} (effort xhigh)\n`, err: NOTE });
+      expectNothingChanged(file, printedJson(expected));
+    });
+
     it("keeps the model of a session role with an entry when only the effort is given", async () => {
       const file = useConfigFile((dataRoot) => {
         const raw = rawFile(dataRoot);
@@ -310,6 +327,25 @@ describe("model", () => {
 
       expect(result).toEqual({ code: 1, out: "", err: `${message}\n` });
       expect(result.err).toContain("repos.tasker.assistant.models.plan.model: is not a claude-code model: gpt-5");
+      expectNothingChanged(file, before);
+    });
+
+    it.each([
+      ["opus", "is not a pi model in the form <provider>/<model-id>: opus"],
+      ["openrouter/auto:max", "ends in the pi thinking level :max: openrouter/auto:max"],
+    ])("prints the loader error and changes nothing for the pi model %s", async (badModel, error) => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { kind: "pi", models: { planner: { model: PI_MODEL, effort: "high" } } };
+        return printedJson(raw);
+      });
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "--role", "planner", badModel);
+
+      expect(result.code).toBe(1);
+      expect(result.out).toBe("");
+      expect(result.err).toContain(`repos.tasker.sessions.models.planner.model: ${error}`);
       expectNothingChanged(file, before);
     });
 

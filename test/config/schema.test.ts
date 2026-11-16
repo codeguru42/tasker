@@ -675,7 +675,7 @@ describe("parseConfig sessions", () => {
     expect(Object.keys(parsedRepo(raw).sessions.models)).toEqual(["planner"]);
   });
 
-  it("rejects a kind other than claude", () => {
+  it("rejects an unknown kind", () => {
     const raw = validConfig();
     raw.repos.tasker.sessions = { kind: "codex" };
     expectIssueAt(issuesOf(raw), "repos.tasker.sessions.kind");
@@ -760,6 +760,73 @@ describe("parseConfig sessions", () => {
     const issues = issuesOf(raw);
     expect(issues).toHaveLength(1);
     expectIssueAt(issues, "repos.tasker.sessions.kind");
+  });
+
+  describe("kind pi", () => {
+    const PI_MODEL = "openrouter/deepseek/deepseek-v4.1-flash";
+
+    it("accepts the kind pi with no models", () => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi" };
+      expect(parsedRepo(raw).sessions).toEqual({ kind: "pi", models: {} });
+    });
+
+    it.each(sessionRoles)("accepts a pi model in %s under the kind pi", (role) => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi", models: { [role]: { model: PI_MODEL, effort: "high" } } };
+      expect(issuesOf(raw)).toEqual([]);
+    });
+
+    it.each(sessionRoles)("rejects a pi model with no slash in %s", (role) => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi", models: { [role]: { model: "opus", effort: "high" } } };
+      expect(issuesOf(raw)).toEqual([
+        `repos.tasker.sessions.models.${role}.model: is not a pi model in the form <provider>/<model-id>: opus`,
+      ]);
+    });
+
+    it.each(sessionRoles)("rejects a pi model that ends in a thinking level in %s", (role) => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi", models: { [role]: { model: "openrouter/auto:high", effort: "high" } } };
+      expect(issuesOf(raw)).toEqual([
+        `repos.tasker.sessions.models.${role}.model: ends in the pi thinking level :high: openrouter/auto:high`,
+      ]);
+    });
+
+    it("gives only the first pi error for a model with both faults", () => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi", models: { planner: { model: "opus:high", effort: "high" } } };
+      expect(issuesOf(raw)).toEqual([
+        "repos.tasker.sessions.models.planner.model: is not a pi model in the form <provider>/<model-id>: opus:high",
+      ]);
+    });
+
+    it.each(["low", "medium", "high", "xhigh", "max"])("accepts the effort %s under the kind pi", (effort) => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi", models: { planner: { model: PI_MODEL, effort } } };
+      expect(issuesOf(raw)).toEqual([]);
+    });
+
+    it("adds no pi model issue when the kind is bad", () => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "codex", models: { planner: { model: "opus", effort: "high" } } };
+      const issues = issuesOf(raw);
+      expect(issues).toHaveLength(1);
+      expectIssueAt(issues, "repos.tasker.sessions.kind");
+    });
+
+    it("reports a bad pi session model together with the other errors of the file", () => {
+      const raw = validConfig();
+      delete raw.repos.tasker.verify;
+      raw.repos.tasker.sessions = { kind: "pi", models: { question: { model: "opus", effort: "high" } } };
+      raw.bogus = 1;
+      const issues = issuesOf(raw);
+      expectIssueAt(issues, "repos.tasker.verify");
+      expect(issues).toContain("bogus: unrecognized key");
+      expect(issues).toContain(
+        "repos.tasker.sessions.models.question.model: is not a pi model in the form <provider>/<model-id>: opus",
+      );
+    });
   });
 
   it("reports a bad session model together with the other errors of the file", () => {
