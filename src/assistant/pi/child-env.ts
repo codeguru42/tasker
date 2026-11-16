@@ -12,6 +12,12 @@ export function piChildEnv(
   const relativeReason = relativePathReason("TASKER_PI_CODING_AGENT_DIR", env.TASKER_PI_CODING_AGENT_DIR);
   if (relativeReason !== undefined) return { reason: relativeReason };
 
+  const relativeSessionReason = relativePathReason(
+    "TASKER_PI_CODING_AGENT_SESSION_DIR",
+    env.TASKER_PI_CODING_AGENT_SESSION_DIR,
+  );
+  if (relativeSessionReason !== undefined) return { reason: relativeSessionReason };
+
   const relativeHome = relativeHomeReason(env);
   if (relativeHome !== undefined) return { reason: relativeHome };
 
@@ -20,5 +26,12 @@ export function piChildEnv(
     return { reason: "tasker cannot find the agent folder of pi, because HOME is not set" };
   }
 
-  return { env: { ...childEnv(env, []), PI_CODING_AGENT_DIR: agentDir } };
+  const sessionDir = env.TASKER_PI_CODING_AGENT_SESSION_DIR;
+  return {
+    env: {
+      ...childEnv(env, []),
+      PI_CODING_AGENT_DIR: agentDir,
+      ...(isSet(sessionDir) ? { PI_CODING_AGENT_SESSION_DIR: sessionDir } : {}),
+    },
+  };
 }

@@ -527,7 +527,11 @@ function overlapReason(folder: string): string {
 describe("createPiProvider session folder of pi", () => {
   const logEnv = ["PI_CODING_AGENT_SESSION_DIR"];
   const scripts = [{ args: [], stream: measures.valid.stdout, session: measures.valid.session }];
-  interface Setup { input: RunInput; files: PiFiles; fake: ReturnType<typeof useFakePi> }
+  interface Setup {
+    input: RunInput;
+    files: PiFiles;
+    fake: ReturnType<typeof useFakePi>;
+  }
   function readOnly(overrides: Partial<RunInput>): Setup {
     const fake = useFakePi(scripts, logEnv);
     const input = validInput(overrides);
