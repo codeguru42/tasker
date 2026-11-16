@@ -595,6 +595,23 @@ describe("isPrMerged", () => {
     fake.assertAnswered();
   });
 
+  it.each([
+    ["missing state", JSON.stringify({ url: "https://example.test/pull/42" })],
+    ["nonstring state", JSON.stringify({ state: 42 })],
+    ["array response", JSON.stringify([{ state: "MERGED" }])],
+  ])("names the invalid state for a %s response", async (_label, stdout) => {
+    const dir = useTempDir("tasker-is-pr-merged-invalid-");
+    const { env, fake, session } = setup([{ args: ["pr", "view", "42", "--json", "state"], stdout }], dir);
+
+    const error = await failureOf(mergedCall(session, 42, dir, env), Error);
+    expect(error.message).toBe(
+      "could not read merged state of pull request 42: GitHub returned an invalid pull request state",
+    );
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+
   it("wraps a missing-request state read with its number and safe cause", async () => {
     const dir = useTempDir("tasker-is-pr-merged-failure-");
     const stderr = "GraphQL: Could not resolve to a PullRequest with the number of 42. (repository.pullRequest)";
@@ -806,6 +823,21 @@ describe("isPrDraft", () => {
 
     const error = await failureOf(draftCall(session, 42, dir, env), Error);
     expect(error.message).toContain("42");
+    expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
+    fake.assertAnswered();
+  });
+
+  it.each([
+    ["missing isDraft", JSON.stringify({ url: "https://example.test/pull/42" })],
+    ["nonboolean isDraft", JSON.stringify({ isDraft: "yes" })],
+    ["array response", JSON.stringify([{ isDraft: true }])],
+  ])("names the invalid draft state for a %s response", async (_label, stdout) => {
+    const dir = useTempDir("tasker-is-pr-draft-invalid-");
+    const { env, fake, session } = setup([{ args: ["pr", "view", "42", "--json", "isDraft"], stdout }], dir);
+
+    const error = await failureOf(draftCall(session, 42, dir, env), Error);
+    expect(error.message).toBe("could not read draft state of pull request 42: GitHub returned an invalid draft state");
+    expect(error.cause).toBeInstanceOf(Error);
     expect(fake.calls().filter(({ args }) => args[0] === "pr")).toHaveLength(1);
     fake.assertAnswered();
   });
