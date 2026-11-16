@@ -312,6 +312,17 @@ describe("pi child refusals in doctor checks", () => {
     },
   );
 
+  it.each(programChecks)("passes an absolute session folder to pi for %s", async (_name, makeCheck, args) => {
+    const fake = useFakePi(
+      [{ args, stdout: args === LIST_ARGS ? "No packages installed.\n" : VERSION }],
+      ["PI_CODING_AGENT_SESSION_DIR"],
+    );
+
+    await makeCheck().run({ ...fake.env, HOME: "/home/user", TASKER_PI_CODING_AGENT_SESSION_DIR: "/s" });
+
+    expect(fake.calls()[0].env.PI_CODING_AGENT_SESSION_DIR).toBe("/s");
+  });
+
   it.each([
     ["pi version", () => piVersionCheck()],
     ["pi auth", () => piAuthCheck("openrouter")],

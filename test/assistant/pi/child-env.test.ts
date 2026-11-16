@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { piChildEnv as fromPiChildEnv } from "../../../src/assistant/pi/child-env.js";
+import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
 
 function piChildEnv(env: NodeJS.ProcessEnv) {
   return fromPiChildEnv(env);
@@ -77,5 +78,51 @@ describe("piChildEnv", () => {
       TASKER_OTHER: "secret",
     });
     expect(result).toEqual({ env: { HOME: "/home/user", PI_CODING_AGENT_DIR: "/custom/pi" } });
+  });
+
+  it("passes an absolute session folder as it stands", () => {
+    expect(piChildEnv({ HOME: "/h", TASKER_PI_CODING_AGENT_SESSION_DIR: "/s" })).toEqual({
+      env: { HOME: "/h", PI_CODING_AGENT_DIR: "/h/.pi/agent", PI_CODING_AGENT_SESSION_DIR: "/s" },
+    });
+  });
+
+  it.each([undefined, "", " "])("passes no session folder for %j", (value) => {
+    expect(piChildEnv({ HOME: "/h", TASKER_PI_CODING_AGENT_SESSION_DIR: value })).toEqual({
+      env: { HOME: "/h", PI_CODING_AGENT_DIR: "/h/.pi/agent" },
+    });
+  });
+
+  it.each(["rel/x", "~/x", "~", "file:///x"])("refuses a non-absolute session folder %s", (value) => {
+    expect(piChildEnv({ HOME: "/h", TASKER_PI_CODING_AGENT_SESSION_DIR: value })).toEqual({
+      reason: relativeSessionFolderReason(value),
+    });
+  });
+
+  it("drops a PI_CODING_AGENT_SESSION_DIR of tasker", () => {
+    expect(piChildEnv({ HOME: "/h", PI_CODING_AGENT_SESSION_DIR: "/u" })).toEqual({
+      env: { HOME: "/h", PI_CODING_AGENT_DIR: "/h/.pi/agent" },
+    });
+  });
+
+  it("refuses a relative agent folder before a relative session folder", () => {
+    expect(
+      piChildEnv({
+        HOME: "/h",
+        TASKER_PI_CODING_AGENT_DIR: "rel/p",
+        TASKER_PI_CODING_AGENT_SESSION_DIR: "rel/s",
+      }),
+    ).toEqual({ reason: "TASKER_PI_CODING_AGENT_DIR must be an absolute path, got rel/p" });
+  });
+
+  it("refuses a relative session folder before a missing HOME", () => {
+    expect(piChildEnv({ TASKER_PI_CODING_AGENT_SESSION_DIR: "rel/s" })).toEqual({
+      reason: relativeSessionFolderReason("rel/s"),
+    });
+  });
+
+  it("refuses a relative session folder before a relative HOME", () => {
+    expect(piChildEnv({ HOME: "rel/h", TASKER_PI_CODING_AGENT_SESSION_DIR: "rel/s" })).toEqual({
+      reason: relativeSessionFolderReason("rel/s"),
+    });
   });
 });

@@ -26,6 +26,7 @@ import { type FakePiAnswer, useFakePi } from "../../helpers/fake-pi.js";
 import { validPlanAnswer } from "../../helpers/plan.js";
 import { piQuotaStream } from "../../helpers/pi-quota-streams.js";
 import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
+import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
 import { useTempDir } from "../../helpers/temp.js";
 
 vi.mock("node:os", async (importOriginal) => {
@@ -442,7 +443,11 @@ interface ExecuteSetup {
   tempRoot: string;
 }
 
-function executeSetup(overrides: Partial<RunInput> = {}, scripts: FakePiAnswer[] = []): ExecuteSetup {
+function executeSetup(
+  overrides: Partial<RunInput> = {},
+  scripts: FakePiAnswer[] = [],
+  logEnv: readonly string[] = [],
+): ExecuteSetup {
   const root = realpathSync(useTempDir("tasker-pi-execute-"));
   const home = join(root, "home");
   const agentDir = join(root, "agent");
@@ -450,7 +455,7 @@ function executeSetup(overrides: Partial<RunInput> = {}, scripts: FakePiAnswer[]
   const tempRoot = join(root, "tmp");
   for (const folder of [home, agentDir, join(worktree, ".git"), tempRoot]) mkdirSync(folder, { recursive: true });
   const files = makeFiles();
-  const fake = useFakePi(scripts);
+  const fake = useFakePi(scripts, logEnv);
   const input = validInput({
     access: "workspace-write",
     cwd: worktree,
@@ -518,6 +523,47 @@ function startTempFolders(tempRoot: string): string[] {
 function overlapReason(folder: string): string {
   return `a write path of the run overlaps a folder of pi: ${folder} (a path of sandbox.allowWrite). Keep each write path of the run out of the folders of pi.`;
 }
+
+describe("createPiProvider session folder of pi", () => {
+  const logEnv = ["PI_CODING_AGENT_SESSION_DIR"];
+  const scripts = [{ args: [], stream: measures.valid.stdout, session: measures.valid.session }];
+  interface Setup { input: RunInput; files: PiFiles; fake: ReturnType<typeof useFakePi> }
+  function readOnly(overrides: Partial<RunInput>): Setup {
+    const fake = useFakePi(scripts, logEnv);
+    const input = validInput(overrides);
+    input.env = { ...input.env, ...fake.env };
+    return { input, files: makeFiles(), fake };
+  }
+  const roles: [string, () => Setup][] = [
+    ["plan", () => readOnly({ jsonSchema: planAnswerJsonSchema(), checkAnswer: checkPlanAnswer })],
+    ["review", () => readOnly({ jsonSchema: reviewAnswerJsonSchema() })],
+    ["execute", () => executeSetup({ jsonSchema: reviewAnswerJsonSchema() }, scripts, logEnv)],
+  ];
+
+  it.each(roles)("refuses a relative TASKER_PI_CODING_AGENT_SESSION_DIR for %s", async (_role, build) => {
+    const { input, files, fake } = build();
+    input.env = { ...input.env, TASKER_PI_CODING_AGENT_SESSION_DIR: "rel/s" };
+
+    const outcome = await callPi(input, files);
+
+    expect(refusalOf(outcome).reason).toBe(relativeSessionFolderReason("rel/s"));
+    expect(fake.calls()).toEqual([]);
+  });
+
+  it.each(roles)("passes an absolute session folder to pi for %s", async (_role, build) => {
+    const { input, files, fake } = build();
+    const folder = useTempDir("tasker-pi-session-env-");
+    input.env = { ...input.env, TASKER_PI_CODING_AGENT_SESSION_DIR: folder };
+
+    await callPi(input, files);
+
+    const calls = fake.calls();
+    expect(calls).toHaveLength(1);
+    const args = calls[0].args;
+    expect(args[args.indexOf("--session-dir") + 1]).toBe(input.sessionDir);
+    expect(calls[0].env.PI_CODING_AGENT_SESSION_DIR).toBe(folder);
+  });
+});
 
 describe("createPiProvider execute runs", () => {
   it.each([true, false])("starts pi with the execute tools and writes limits (schema: %s)", async (withSchema) => {

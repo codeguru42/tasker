@@ -118,6 +118,14 @@ describe("useFakePi", () => {
     expect([result.status, result.signal]).toEqual([null, "SIGTERM"]);
   });
 
+  it("logs PI_CODING_AGENT_SESSION_DIR", () => {
+    const fake = useFakePi([{ args: ["list"] }], ["PI_CODING_AGENT_SESSION_DIR"]);
+
+    runPi({ ...fake.env, PI_CODING_AGENT_SESSION_DIR: "/s" }, ["list"]);
+
+    expect(fake.calls()[0].env).toEqual({ PI_CODING_AGENT_SESSION_DIR: "/s" });
+  });
+
   it("logs the arguments and PI_CODING_AGENT_DIR", () => {
     const fake = useFakePi([{ args: ["auth", "check"] }], ["PI_CODING_AGENT_DIR"]);
 
