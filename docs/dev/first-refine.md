@@ -906,8 +906,12 @@ orchestrator.
 - If an issue asks for work on an existing tasker command, ask the plan to find that command in the current command
   index. If the command is missing, the claim of the issue is false. Apply
   [the issue check](plan-review.md#the-issue-check).
+- A ticket can add or change a `tasker` command. Then ask the plan to compare the command with
+  [the stacked-task guards](workspaces.md#stacked-task) of `src/tasks/parent.ts`.
 - If an issue gives a case table, ask the plan whether two rows can match one case. If they can, ask it to name the
   winning row or the missing requirement.
+- If a plan adds a test of an exact message, ask the plan to keep one row for each message. Also ask it to remove the
+  other rows that test the same message.
 
 - If an issue gives a file-member table, ask the plan to read current members. Ask it to put each unlisted member in the
   row of its kind. If no row fits, ask a plan question.
@@ -931,6 +935,8 @@ orchestrator.
   its limit, use the hint that starts "An issue can add or change a sentence of a doc" in this section.
 - If exact issue text names a doc part, ask the plan whether those words stay true in the finished doc. Ask it to
   replace temporary names such as "the new bullet".
+- The feedback can give an exact text with a word that can have more than one meaning. Then give the meaning of that
+  word next to the text.
 
 ## A ticket that only adds a layer, for example a schema
 

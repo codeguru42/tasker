@@ -326,6 +326,7 @@ plain-form rule and do not change it.
   subagent runs the same wait again. After the report, the task subagent reads the state with `tasker show <issue>`.
   When the orchestrator starts the task subagent again, the task subagent follows
   ["What the task subagent does"](quota.md#what-the-task-subagent-does) in ["Quota"](quota.md#quota).
+- Do not wait for a process with `pgrep -f`.
 - Start a `tasker` command that reads a feedback file only after the result of the last write of that file. A feedback
   file holds the feedback text of a `tasker` command in the form `"$(cat <absolute path of the file>)"` of
   [the plain-form rule](#the-plain-form-rule). Never send the write of the file and the command as parallel calls of one
@@ -342,6 +343,8 @@ plain-form rule and do not change it.
   a failed `tasker` command stops the chain. To keep only some lines, use `sed -n`, for example `sed -n '1,20p'`, not
   `head`. With `pipefail`, `head` can make the pipe exit with 141 when tasker succeeded, because `head` stops reading
   early.
+- The output of `tasker start` can say that it moved the card of the issue. If it does not say so, do not expect that
+  move.
 
 ## The facts of the installed tasker
 
