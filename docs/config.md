@@ -238,9 +238,9 @@ upstream is the model service that `pi` calls and that bills the task. For examp
 upstream `openrouter` and the model id `openrouter/auto`.
 
 Configure a model id that the catalog of `pi` holds. The catalog is the list of models that `pi` knows. For another id,
-`pi` runs a model other than the configured one. On 2026-11-18 with `pi` 1.1.0, `openrouter/anthropic/claude-new-x` ran
-the custom id `openrouter/anthropic/claude-new-x`, and `openrouter/auto-be` ran `openrouter/auto-beta`. To test an id,
-follow these steps:
+`pi` picks a model other than the configured one. On 2026-11-18 with `pi` 1.1.0, the resolver of `pi` picked the custom
+id `openrouter/anthropic/claude-new-x` for `openrouter/anthropic/claude-new-x`, and `openrouter/auto-beta` for
+`openrouter/auto-be`. No measure called a model. To test an id, follow these steps:
 
 1. Run `pi --offline --list-models <upstream>`.
 2. Keep only the rows whose `provider` column is `<upstream>`.
