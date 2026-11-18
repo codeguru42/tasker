@@ -89,6 +89,25 @@ that all of these hold:
 - The kind of the operator is `claude`.
 - An open question can get an automatic start.
 
+The condition "No handoff of the operator is due or running" holds through each of
+[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). Each open question stays an open
+item, and the handoff file holds it, as
+[The handoff file of the operator](handoff-operator.md#the-handoff-file-of-the-operator) says. The new operator can make
+an automatic start after step 10 of [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator).
+If the close of the old operator fails, this also holds. If the user ends this handoff, the old operator is the operator
+again, with no handoff, as [The end of a handoff](handoff.md#the-end-of-a-handoff) says. Then the conditions of this
+section apply to it as usual.
+
+The reason for this condition: a pane that opens during the handoff can stay open after the close of the old operator.
+The new operator accepts a decision message only from the question session of its own open pane, as
+[The operator handles a decision](#the-operator-handles-a-decision) says. So no operator then accepts the decision of
+that pane.
+
+On 2026-11-15, operator-m16 reported this case. It came from a handoff of operator-m16. The old operator opened and
+reused question panes for about ten questions during the wait of step 1 of
+[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). The handoff took a long time. The
+user asked: "did you do the handoff I requested a while ago?"
+
 An example of an automatic start comes at the arrival of an item with an open question. Before that start, the operator
 sends each answer of the operator for that item. A word of the user that names an open question starts a pane. A word of
 the user that asks to discuss the open questions starts a run. The operator does not first ask the user to choose a pane
