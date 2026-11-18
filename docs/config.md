@@ -239,8 +239,9 @@ upstream `openrouter` and the model id `openrouter/auto`.
 
 Configure a model id that the catalog of `pi` holds. The catalog is the list of models that `pi` knows. For another id,
 `pi` picks a model other than the configured one. On 2026-11-18 with `pi` 1.1.0, the resolver of `pi` picked the custom
-id `openrouter/anthropic/claude-new-x` for `openrouter/anthropic/claude-new-x`, and `openrouter/auto-beta` for
-`openrouter/auto-be`. No measure called a model. To test an id, follow these steps:
+id `openrouter/anthropic/claude-new-x` for the model id `anthropic/claude-new-x`. It picked the catalog id
+`openrouter/auto-beta` for the model id `auto-be`. Both configured models had the upstream `openrouter`. No measure
+called a model. To test an id, follow these steps:
 
 1. Run `pi --offline --list-models <upstream>`.
 2. Keep only the rows whose `provider` column is `<upstream>`.
