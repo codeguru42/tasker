@@ -840,18 +840,18 @@ A task subagent measured the results below on 2026-11-18 with `pi` 1.1.0. No mea
 resolver of `pi` over the `openrouter` models of its package, with the real `name` of each model. Each resolved model
 has the provider `openrouter`.
 
-| Case | Configured model                      | Form    | `--model`                                        | Resolved id                                   | Real name                 | Warning                                                                                                 |
-| ---- | ------------------------------------- | ------- | ------------------------------------------------ | --------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 1    | `openrouter/openrouter/auto`          | task    | `openrouter/openrouter/openrouter/auto`          | `openrouter/auto`                             | Auto Router               | None                                                                                                    |
-| 2    | `openrouter/anthropic/claude-fable-5` | task    | `openrouter/openrouter/anthropic/claude-fable-5` | `anthropic/claude-fable-5`                    | Anthropic: Claude Fable 5 | None                                                                                                    |
-| 3    | `openrouter/anthropic/claude-new-x`   | task    | `openrouter/openrouter/anthropic/claude-new-x`   | custom id `openrouter/anthropic/claude-new-x` | Same as the id            | `Model "openrouter/anthropic/claude-new-x" not found for provider "openrouter". Using custom model id.` |
-| 4    | `openrouter/auto-be`                  | task    | `openrouter/openrouter/auto-be`                  | `openrouter/auto-beta`                        | Auto Router (Beta)        | None                                                                                                    |
-| 5    | `openrouter/auto`                     | task    | `openrouter/openrouter/auto`                     | `auto`                                        | Auto                      | None                                                                                                    |
-| 1    | `openrouter/openrouter/auto`          | session | `openrouter/openrouter/auto`                     | `auto`                                        | Auto                      | None                                                                                                    |
+| Case            | Configured model                      | Form    | `--model`                                        | Resolved id                                   | Real name                 | Warning                                                                                                 |
+| --------------- | ------------------------------------- | ------- | ------------------------------------------------ | --------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1               | `openrouter/openrouter/auto`          | task    | `openrouter/openrouter/openrouter/auto`          | `openrouter/auto`                             | Auto Router               | None                                                                                                    |
+| 2               | `openrouter/anthropic/claude-fable-5` | task    | `openrouter/openrouter/anthropic/claude-fable-5` | `anthropic/claude-fable-5`                    | Anthropic: Claude Fable 5 | None                                                                                                    |
+| 3               | `openrouter/anthropic/claude-new-x`   | task    | `openrouter/openrouter/anthropic/claude-new-x`   | custom id `openrouter/anthropic/claude-new-x` | Same as the id            | `Model "openrouter/anthropic/claude-new-x" not found for provider "openrouter". Using custom model id.` |
+| 4               | `openrouter/auto-be`                  | task    | `openrouter/openrouter/auto-be`                  | `openrouter/auto-beta`                        | Auto Router (Beta)        | None                                                                                                    |
+| 5               | `openrouter/auto`                     | task    | `openrouter/openrouter/auto`                     | `auto`                                        | Auto                      | None                                                                                                    |
+| 1, session form | `openrouter/openrouter/auto`          | session | `openrouter/openrouter/auto`                     | `auto`                                        | Auto                      | None                                                                                                    |
 
-A catalog id resolves to itself (cases 1, 2 and 5). An id that the catalog does not hold resolves to a model other than
-the configured one. That model is the custom id `<upstream>/<id>` (case 3), or a catalog model whose id or name holds
-`<upstream>/<id>` as a part (case 4).
+In the rows of the task form, a catalog id resolves to itself (cases 1, 2 and 5). An id that the catalog does not hold
+resolves to a model other than the configured one. That model is the custom id `<upstream>/<id>` (case 3), or a catalog
+model whose id or name holds `<upstream>/<id>` as a part (case 4).
 
 The form `--model <model>` is a trap. On 2026-11-16, a run of `pi` 1.1.0 with
 `--provider openrouter --model openrouter/openrouter/auto` made one model call. The assistant message had the provider
