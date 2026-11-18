@@ -62,6 +62,25 @@ function messageValue(message: unknown): MessageValue | undefined {
   return { key, value, assistant: message.role === "assistant", timestamp: message.timestamp };
 }
 
+function keyedValue(key: string, value: TokenUsage | undefined): MessageValue | undefined {
+  return value === undefined ? undefined : { key, value, assistant: false, timestamp: undefined };
+}
+
+function compactionValue(usage: unknown): MessageValue | undefined {
+  const value = usageValueOf(usage);
+  if (value === undefined) return undefined;
+  return keyedValue(
+    JSON.stringify([
+      "compaction",
+      value.inputTokens,
+      value.outputTokens,
+      value.cacheCreationInputTokens,
+      value.cacheReadInputTokens,
+    ]),
+    value,
+  );
+}
+
 // The usage that one pi process added: its stdout events and the session-file entries that it added.
 // A value that both sources hold counts once. Equal values inside one source count as often as they show.
 // An assistant message with no message_end counts with its last message_update, unless a final assistant
@@ -93,12 +112,18 @@ export function piProcessUsage(events: readonly AssistantEvent[], sessionEntries
     } else if (event.type === "message_end") {
       if (role === "assistant") open = undefined;
       count("stdout", messageValue(event.message));
+    } else if (event.type === "compaction_end" && isObject(event.result)) {
+      count("stdout", compactionValue(event.result.usage));
     }
   }
   closeOpen();
-  for (const entry of sessionEntries) {
-    if (isObject(entry) && entry.type === "message") count("session", messageValue(entry.message));
-  }
+  sessionEntries.forEach((entry, index) => {
+    if (!isObject(entry)) return;
+    if (entry.type === "message") count("session", messageValue(entry.message));
+    else if (entry.type === "compaction") count("session", compactionValue(entry.usage));
+    else if (entry.type === "usage")
+      count("session", keyedValue(JSON.stringify(["usage", index]), usageValueOf(entry.usage)));
+  });
 
   let total: Usage = "unavailable";
   for (const partial of partials) {
