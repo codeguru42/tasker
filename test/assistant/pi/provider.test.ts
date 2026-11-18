@@ -26,7 +26,17 @@ import { type FakePiAnswer, useFakePi } from "../../helpers/fake-pi.js";
 import { validPlanAnswer } from "../../helpers/plan.js";
 import { piQuotaStream } from "../../helpers/pi-quota-streams.js";
 import { useFakeSandboxBin } from "../../helpers/fake-commands.js";
-import { createPiProvider, piAssistantMessage, REPORTED_PI_MODEL, ROUTER_PI_MODEL } from "../../helpers/pi-provider.js";
+import {
+  createPiProvider,
+  PI_MEASURED_TOKENS_1,
+  PI_MEASURED_TOKENS_2,
+  PI_MEASURED_USAGE_1,
+  PI_MEASURED_USAGE_2,
+  piAssistantMessage,
+  piStreamedAssistant,
+  REPORTED_PI_MODEL,
+  ROUTER_PI_MODEL,
+} from "../../helpers/pi-provider.js";
 import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
 import { checkSummaries } from "../../helpers/doctor.js";
 import { useTempDir } from "../../helpers/temp.js";
@@ -37,6 +47,18 @@ vi.mock("node:os", async (importOriginal) => {
 });
 
 const TRUSTED = ["builtin:llama.cpp", "builtin:codemode", "builtin:tool-search"];
+const VALID_TOKENS = {
+  inputTokens: 1447,
+  outputTokens: 8,
+  cacheCreationInputTokens: 1447,
+  cacheReadInputTokens: 0,
+};
+const TEXT_TOKENS = {
+  inputTokens: 1234,
+  outputTokens: 3,
+  cacheCreationInputTokens: 1234,
+  cacheReadInputTokens: 0,
+};
 const measures = JSON.parse(
   readFileSync(new URL("../../fixtures/pi-streams/measures.json", import.meta.url), "utf8"),
 ) as Record<string, { sessionFile: string; stdout: Record<string, unknown>[]; session: unknown[] }>;
@@ -1020,7 +1042,7 @@ describe("createPiProvider runs", () => {
     const outcome = await callPi(input, files);
 
     expect(outcome.kind).toBe("success");
-    expect(outcome).toMatchObject({ structuredOutput: { findings: [] }, usage: "unavailable", permissionDenials: [] });
+    expect(outcome).toMatchObject({ structuredOutput: { findings: [] }, usage: VALID_TOKENS, permissionDenials: [] });
     expect(outcome.transcriptPath).toBe(join(sessionDir, matchingSessionFile));
     expect(existsSync(outcome.transcriptPath!)).toBe(true);
     expect(JSON.parse(readFileSync(schemaPath, "utf8"))).toEqual(reviewAnswerJsonSchema());
@@ -2368,5 +2390,230 @@ describe("pi checks of a reported model", () => {
       .modelChecks("anthropic/x")
       .map((check) => check.name);
     expect(names.filter((name) => name.startsWith("pi-auth:"))).toEqual([]);
+  });
+});
+
+describe("pi usage", () => {
+  const M1_PLUS_M2 = {
+    inputTokens: PI_MEASURED_TOKENS_1.inputTokens + PI_MEASURED_TOKENS_2.inputTokens,
+    outputTokens: PI_MEASURED_TOKENS_1.outputTokens + PI_MEASURED_TOKENS_2.outputTokens,
+    cacheCreationInputTokens:
+      PI_MEASURED_TOKENS_1.cacheCreationInputTokens + PI_MEASURED_TOKENS_2.cacheCreationInputTokens,
+    cacheReadInputTokens: PI_MEASURED_TOKENS_1.cacheReadInputTokens + PI_MEASURED_TOKENS_2.cacheReadInputTokens,
+  };
+
+  it("gives the usage of a success", async () => {
+    const input = validInput();
+    const files = makeFiles();
+    const fake = processScripts(input, files, [{ stream: firstCallStream(input), session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "success", usage: VALID_TOKENS });
+  });
+
+  it("counts each assistant message of stdout once with its session copy", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const one = piStreamedAssistant(PI_MEASURED_USAGE_1, 1001);
+    const two = piStreamedAssistant(PI_MEASURED_USAGE_2, 1002);
+    const stream = [
+      { ...CORRECTIVE_SESSION_EVENT },
+      ...one.events,
+      ...two.events,
+      { type: "agent_end", messages: [one.message, two.message], willRetry: false },
+    ];
+    const fake = processScripts(input, files, [{ stream, session: firstSession(input, [one.message, two.message]) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual(M1_PLUS_M2);
+  });
+
+  it("reads a message from the session part when stdout has no message_end", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const one = piStreamedAssistant(PI_MEASURED_USAGE_1, 1001, { ended: false });
+    const fake = processScripts(input, files, [
+      { stream: [{ ...CORRECTIVE_SESSION_EVENT }, ...one.events], session: firstSession(input, [one.message]) },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual(PI_MEASURED_TOKENS_1);
+  });
+
+  it("counts two equal messages two times", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const one = piStreamedAssistant(PI_MEASURED_USAGE_1, 1001);
+    const stream = [
+      { ...CORRECTIVE_SESSION_EVENT },
+      ...one.events,
+      ...one.events,
+      { type: "agent_end", messages: [one.message, one.message], willRetry: false },
+    ];
+    const fake = processScripts(input, files, [{ stream, session: firstSession(input, [one.message, one.message]) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual({
+      inputTokens: 6,
+      outputTokens: 126,
+      cacheCreationInputTokens: 17152,
+      cacheReadInputTokens: 0,
+    });
+  });
+
+  it("counts the usage of a tool result message", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const one = piStreamedAssistant(PI_MEASURED_USAGE_1, 1001);
+    const result = measures.valid.stdout.find(
+      (event) => event.type === "message_end" && (event.message as { role?: string }).role === "toolResult",
+    )!;
+    const toolResult = { ...(result.message as Record<string, unknown>), usage: PI_MEASURED_USAGE_2 };
+    const stream = [
+      { ...CORRECTIVE_SESSION_EVENT },
+      ...one.events,
+      { type: "message_end", message: toolResult },
+      { type: "agent_end", messages: [one.message, toolResult], willRetry: false },
+    ];
+    const fake = processScripts(input, files, [{ stream, session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual(M1_PLUS_M2);
+  });
+
+  it("skips invalid and zero usage values", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const noCacheRead: Record<string, unknown> = { ...PI_MEASURED_USAGE_1 };
+    delete noCacheRead.cacheRead;
+    const zero = { ...PI_MEASURED_USAGE_1, input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+    const stream = [
+      { ...CORRECTIVE_SESSION_EVENT },
+      ...piStreamedAssistant(PI_MEASURED_USAGE_1, 1001).events,
+      ...piStreamedAssistant({ ...PI_MEASURED_USAGE_1, input: -1 }, 1003).events,
+      ...piStreamedAssistant({ ...PI_MEASURED_USAGE_1, input: "3" }, 1004).events,
+      ...piStreamedAssistant(noCacheRead, 1005).events,
+      ...piStreamedAssistant(zero, 1006).events,
+    ];
+    const fake = processScripts(input, files, [{ stream, session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual(PI_MEASURED_TOKENS_1);
+  });
+
+  it("gives the usage of a failure", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const fixture = measures.failedRetry;
+    const fake = processScripts(input, files, [
+      { stream: fixture.stdout, session: fixture.session, sessionFile: fixture.sessionFile },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({
+      kind: "failure",
+      usage: { inputTokens: 0, outputTokens: 2, cacheCreationInputTokens: 0, cacheReadInputTokens: 1448 },
+    });
+  });
+
+  it("gives the usage of a quota stop", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const fixture = piQuotaStream("quotaDelay");
+    const stream: unknown[] = [...fixture.stdout];
+    stream.splice(1, 0, ...piStreamedAssistant(PI_MEASURED_USAGE_1, 1001).events);
+    const fake = processScripts(input, files, [{ stream, session: fixture.session, sessionFile: fixture.sessionFile }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "quota", usage: PI_MEASURED_TOKENS_1 });
+  });
+
+  it("gives the usage of an interrupted run", async () => {
+    const files = makeFiles();
+    const input = validInput({
+      jsonSchema: undefined,
+      onEvent: (event) => {
+        const message = (event as { message?: { role?: string } }).message;
+        if (event.type === "message_end" && message?.role === "assistant") process.kill(process.pid, "SIGTERM");
+      },
+    });
+    const fake = processScripts(input, files, [
+      { stream: firstTextStream(input), session: firstSession(input), delaySeconds: 0.2 },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "interrupted", usage: TEXT_TOKENS });
+  });
+
+  it("sums the usage of each corrective turn", async () => {
+    const input = correctiveInput();
+    const files = makeFiles();
+    const second: unknown[] = [...continuationCallStream({ findings: [] })];
+    second.splice(1, 0, ...piStreamedAssistant(PI_MEASURED_USAGE_2, 1002).events);
+    const fake = processScripts(input, files, [
+      { stream: firstTextStream(input), session: firstSession(input) },
+      { stream: second, session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({
+      kind: "success",
+      usage: { inputTokens: 1237, outputTokens: 34, cacheCreationInputTokens: 1253, cacheReadInputTokens: 8576 },
+    });
+  });
+
+  it("keeps the usage of a failed corrective turn", async () => {
+    const input = correctiveInput();
+    const files = makeFiles();
+    const second = [{ ...CORRECTIVE_SESSION_EVENT }, ...piStreamedAssistant(PI_MEASURED_USAGE_2, 1002).events];
+    const fake = processScripts(input, files, [
+      { stream: firstTextStream(input), session: firstSession(input) },
+      { stream: second, session: continuationSession(), exitCode: 1 },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({
+      kind: "failure",
+      usage: { inputTokens: 1237, outputTokens: 34, cacheCreationInputTokens: 1253, cacheReadInputTokens: 8576 },
+    });
+  });
+
+  it("ignores usageTotal and never calls onUsageTotal", async () => {
+    const onUsageTotal = vi.fn();
+    const input = validInput({
+      jsonSchema: undefined,
+      usageTotal: { inputTokens: 100, outputTokens: 100, cacheCreationInputTokens: 100, cacheReadInputTokens: 100 },
+      onUsageTotal,
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual(TEXT_TOKENS);
+    expect(onUsageTotal).not.toHaveBeenCalled();
   });
 });
