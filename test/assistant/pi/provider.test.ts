@@ -2449,6 +2449,65 @@ describe("pi usage", () => {
     expect(outcome.usage).toEqual(M1_PLUS_M2);
   });
 
+  it("counts each compaction_end with a result", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const one = piStreamedAssistant(PI_MEASURED_USAGE_1, 1001);
+    const stream = [
+      { ...CORRECTIVE_SESSION_EVENT },
+      ...one.events,
+      { type: "compaction_end", result: { usage: PI_MEASURED_USAGE_2 } },
+      { type: "compaction_end" },
+    ];
+    const fake = processScripts(input, files, [{ stream, session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual(M1_PLUS_M2);
+  });
+
+  it("counts a compaction once when the session file holds it", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const one = piStreamedAssistant(PI_MEASURED_USAGE_1, 1001);
+    const stream = [
+      { ...CORRECTIVE_SESSION_EVENT },
+      ...one.events,
+      { type: "compaction_end", result: { usage: PI_MEASURED_USAGE_2 } },
+    ];
+    const session = [...firstSession(input, [one.message]), { type: "compaction", usage: PI_MEASURED_USAGE_2 }];
+    const fake = processScripts(input, files, [{ stream, session }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual(M1_PLUS_M2);
+  });
+
+  it("counts only the usage entries that the run added", async () => {
+    const sessionDir = useTempDir("tasker-pi-usage-entries-");
+    const input = validInput({ sessionDir, resume: true, jsonSchema: undefined });
+    const files = makeFiles();
+    const warm = { type: "usage", kind: "cache_warm", usage: PI_MEASURED_USAGE_1 };
+    writeFileSync(
+      join(sessionDir, `prior_${input.sessionId}.jsonl`),
+      `${JSON.stringify(CORRECTIVE_SESSION_EVENT)}\n${JSON.stringify(warm)}\n`,
+    );
+    const stream = [{ ...CORRECTIVE_SESSION_EVENT }, { type: "agent_end", messages: [], willRetry: false }];
+    const session = [
+      { ...CORRECTIVE_SESSION_EVENT },
+      warm,
+      { type: "usage", kind: "cache_warm", usage: PI_MEASURED_USAGE_2 },
+    ];
+    const fake = useFakePi([{ args: expectedArgs(input, files), stream, session }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "failure", usage: M1_PLUS_M2 });
+  });
+
   it("gives the usage of a success", async () => {
     const input = validInput();
     const files = makeFiles();
