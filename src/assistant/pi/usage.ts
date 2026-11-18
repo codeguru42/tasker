@@ -39,7 +39,14 @@ interface Counted {
   session: number;
 }
 
-function messageValue(message: unknown): { key: string; value: TokenUsage } | undefined {
+interface MessageValue {
+  key: string;
+  value: TokenUsage;
+  assistant: boolean;
+  timestamp: unknown;
+}
+
+function messageValue(message: unknown): MessageValue | undefined {
   if (!isObject(message) || (message.role !== "assistant" && message.role !== "toolResult")) return undefined;
   const value = usageValueOf(message.usage);
   if (value === undefined) return undefined;
@@ -52,28 +59,51 @@ function messageValue(message: unknown): { key: string; value: TokenUsage } | un
     value.cacheCreationInputTokens,
     value.cacheReadInputTokens,
   ]);
-  return { key, value };
+  return { key, value, assistant: message.role === "assistant", timestamp: message.timestamp };
 }
 
 // The usage that one pi process added: its stdout events and the session-file entries that it added.
 // A value that both sources hold counts once. Equal values inside one source count as often as they show.
+// An assistant message with no message_end counts with its last message_update, unless a final assistant
+// value of either source has the same timestamp.
 export function piProcessUsage(events: readonly AssistantEvent[], sessionEntries: readonly unknown[]): Usage {
   const counted = new Map<string, Counted>();
-  const count = (source: "stdout" | "session", found: { key: string; value: TokenUsage } | undefined): void => {
+  const finalTimestamps = new Set<unknown>();
+  const partials: { timestamp: unknown; value: TokenUsage }[] = [];
+  let open: { timestamp: unknown; last: TokenUsage | undefined } | undefined;
+  const closeOpen = (): void => {
+    if (open?.last !== undefined) partials.push({ timestamp: open.timestamp, value: open.last });
+    open = undefined;
+  };
+  const count = (source: "stdout" | "session", found: MessageValue | undefined): void => {
     if (found === undefined) return;
+    if (found.assistant) finalTimestamps.add(found.timestamp);
     const entry = counted.get(found.key) ?? { value: found.value, stdout: 0, session: 0 };
     entry[source] += 1;
     counted.set(found.key, entry);
   };
 
   for (const event of events) {
-    if (event.type === "message_end") count("stdout", messageValue(event.message));
+    const role = isObject(event.message) ? event.message.role : undefined;
+    if (event.type === "message_start" && role === "assistant") {
+      closeOpen();
+      open = { timestamp: (event.message as Record<string, unknown>).timestamp, last: undefined };
+    } else if (event.type === "message_update" && open !== undefined) {
+      open.last = usageValueOf(event.usage) ?? open.last;
+    } else if (event.type === "message_end") {
+      if (role === "assistant") open = undefined;
+      count("stdout", messageValue(event.message));
+    }
   }
+  closeOpen();
   for (const entry of sessionEntries) {
     if (isObject(entry) && entry.type === "message") count("session", messageValue(entry.message));
   }
 
   let total: Usage = "unavailable";
+  for (const partial of partials) {
+    if (!finalTimestamps.has(partial.timestamp)) total = addUsage(total, partial.value);
+  }
   for (const entry of counted.values()) {
     const times = Math.max(entry.stdout, entry.session);
     for (let index = 0; index < times; index += 1) total = addUsage(total, entry.value);
