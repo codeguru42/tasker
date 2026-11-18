@@ -200,6 +200,12 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   with the fact that stays untested.
 - Each task worktree or local task branch that stays, with its path.
   [The own-worktree rule](limits.md#the-own-worktree-rule) says when one stays.
+- Each `tasker retry <issue>` that the task subagent ran under
+  [the verify-failure rule](verify-failures.md#the-verify-failure-rule). For each such retry, the bullet gives the place
+  that ran the failed `tasker verify`, for example step 5 of [Run one ticket](#run-one-ticket). It also gives the cause
+  of the failure that the task subagent found, as the verify-failure rule says. If nobody measured the cause, the report
+  marks it as not measured, as for a lesson. The bullet covers no other `tasker retry`, for example the retry after a
+  timeout of `tasker execute`.
 - The lessons. For each fact of a lesson, the report names the command or the read that measured it. The report marks
   each cause or claim that nobody measured as not measured.
 
