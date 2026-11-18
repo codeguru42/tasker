@@ -2402,6 +2402,53 @@ describe("pi usage", () => {
     cacheReadInputTokens: PI_MEASURED_TOKENS_1.cacheReadInputTokens + PI_MEASURED_TOKENS_2.cacheReadInputTokens,
   };
 
+  it("gives the usage of a timeout from the last message_update", { timeout: 15_000 }, async () => {
+    const input = validInput({ jsonSchema: undefined, timeoutMs: 3_000 });
+    const files = makeFiles();
+    const open = piStreamedAssistant(PI_MEASURED_USAGE_1, 1001, {
+      ended: false,
+      updates: [PI_MEASURED_USAGE_2, PI_MEASURED_USAGE_1],
+    });
+    const fake = processScripts(input, files, [
+      { stream: [{ ...CORRECTIVE_SESSION_EVENT }, ...open.events], holdSeconds: 60 },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "timeout", usage: PI_MEASURED_TOKENS_1 });
+  });
+
+  it("counts a lone partial with no session copy", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const open = piStreamedAssistant(PI_MEASURED_USAGE_2, 1002, { ended: false });
+    const fake = processScripts(input, files, [{ stream: [{ ...CORRECTIVE_SESSION_EVENT }, ...open.events] }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome).toMatchObject({ kind: "failure", usage: PI_MEASURED_TOKENS_2 });
+  });
+
+  it("counts a message with no end once when the session file holds it", async () => {
+    const input = validInput({ jsonSchema: undefined });
+    const files = makeFiles();
+    const one = piStreamedAssistant(PI_MEASURED_USAGE_1, 1001, { ended: false });
+    const two = piStreamedAssistant(PI_MEASURED_USAGE_2, 1002, { ended: false });
+    const fake = processScripts(input, files, [
+      {
+        stream: [{ ...CORRECTIVE_SESSION_EVENT }, ...one.events, ...two.events],
+        session: firstSession(input, [one.message]),
+      },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files);
+
+    expect(outcome.usage).toEqual(M1_PLUS_M2);
+  });
+
   it("gives the usage of a success", async () => {
     const input = validInput();
     const files = makeFiles();

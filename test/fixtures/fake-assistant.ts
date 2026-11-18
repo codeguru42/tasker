@@ -44,6 +44,7 @@ const piControl = control as FakeClaudeControl & {
     stderr?: string;
     exitCode?: number;
     delaySeconds?: number;
+    holdSeconds?: number;
     killWith?: string;
     stream?: unknown[];
     session?: unknown[];
@@ -111,6 +112,7 @@ if (piControl.answers) {
     const entries = existing ? answer.session.slice(1) : answer.session;
     appendFileSync(path, entries.map((entry) => `${JSON.stringify(entry)}\n`).join(""));
   }
+  if (answer.holdSeconds) await sleep(answer.holdSeconds * 1000);
   if (answer.killWith) {
     process.kill(process.pid, `SIG${answer.killWith}` as NodeJS.Signals);
     await new Promise(() => setInterval(() => {}, 60_000));

@@ -12,6 +12,8 @@ export interface FakePiAnswer extends FakeAnswer {
   stream?: unknown[];
   session?: unknown[];
   sessionFile?: string;
+  // Seconds to wait after the stream and session writes, before killWith and the exit.
+  holdSeconds?: number;
 }
 
 export interface FakePi {

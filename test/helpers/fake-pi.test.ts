@@ -110,6 +110,16 @@ describe("useFakePi", () => {
     expect(Date.now() - startedAt).toBeGreaterThanOrEqual(75);
   });
 
+  it("waits holdSeconds after it writes the stream", () => {
+    const fake = useFakePi([{ args: ["hold"], stream: [{ type: "agent_end" }], holdSeconds: 0.3 }]);
+    const startedAt = Date.now();
+
+    const result = runPi(fake.env, ["hold"]);
+
+    expect(result.stdout).toBe(`${JSON.stringify({ type: "agent_end" })}\n`);
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(300);
+  });
+
   it("stops with the configured signal", () => {
     const fake = useFakePi([{ args: ["stop"], killWith: "TERM" }]);
 
