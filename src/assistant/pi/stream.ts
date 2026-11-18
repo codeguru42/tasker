@@ -13,6 +13,13 @@ export function piMessages(
     );
   }
 
+  return appendedSessionEntries(sessionPath, startSize).flatMap((entry) =>
+    isObject(entry) && entry.type === "message" && entry.message !== undefined ? [entry.message] : [],
+  );
+}
+
+// Each parsed JSON line that the session file got after startSize, of each type, in file order.
+export function appendedSessionEntries(sessionPath: string | undefined, startSize: number): unknown[] {
   if (sessionPath === undefined) return [];
 
   let appended: Buffer;
@@ -40,8 +47,7 @@ export function piMessages(
     .flatMap((line) => {
       if (line === "") return [];
       try {
-        const entry: unknown = JSON.parse(line);
-        return isObject(entry) && entry.type === "message" && entry.message !== undefined ? [entry.message] : [];
+        return [JSON.parse(line) as unknown];
       } catch {
         return [];
       }

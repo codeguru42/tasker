@@ -8,7 +8,7 @@ import { type AssistantResult, runAssistant } from "../../process/run-assistant.
 import { assistantSchemaPath, guardLimitsPath } from "../../store/layout.js";
 import { isObject } from "../../object.js";
 import { appendEventLine } from "../event-line.js";
-import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome } from "../provider.js";
+import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome, Usage } from "../provider.js";
 import { assistantModelCheck } from "../model-check.js";
 import { upstreamOf } from "../models.js";
 import { piAnswer } from "./answer.js";
@@ -24,7 +24,8 @@ import { builtInTool, guardLimits, writeGuardLimits, type PiSandboxLimits } from
 import { PI_EXECUTE_TOOL_NAMES, PI_READ_TOOL_NAMES } from "./args.js";
 import { PI_ANSWER_TOOL_NAME } from "./answer-tool.js";
 import { piNotInstalled, piProgram } from "./program.js";
-import { piMessages } from "./stream.js";
+import { appendedSessionEntries, piMessages } from "./stream.js";
+import { addUsage, piProcessUsage } from "./usage.js";
 import { piReportedModel } from "./reported-model.js";
 import { guardExtensionPath } from "./guard-start.js";
 import { quotaStopOf } from "./quota.js";
@@ -84,7 +85,7 @@ function outcomeOfRun(
     sessionId: input.sessionId,
     events,
     permissionDenials: [],
-    usage: "unavailable" as const,
+    usage: piProcessUsage(events, appendedSessionEntries(sessionPath, startSize)),
     ...(reportedModel === undefined ? {} : { reportedModel }),
     ...(sessionPath !== undefined && isFile(sessionPath) ? { transcriptPath: sessionPath } : {}),
   };
@@ -251,6 +252,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
       let priorOutcome: RunOutcome | undefined;
       let childEnvironment = initialCheck.childEnvironment;
       let reportedModel: string | undefined;
+      let runUsage: Usage = "unavailable";
 
       const cleanupOutcome = (outcome: RunOutcome): RunOutcome => ({
         ...outcome,
@@ -262,7 +264,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
           sessionId: input.sessionId,
           events: allEvents,
           permissionDenials,
-          usage: "unavailable",
+          usage: runUsage,
           ...(reportedModel === undefined ? {} : { reportedModel }),
           ...(path !== undefined && isFile(path) ? { transcriptPath: path } : {}),
         });
@@ -337,6 +339,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
         const processResult = outcomeOfRun(input, run, processEvents, path, startSize);
         const current = processResult.outcome;
         reportedModel ??= current.reportedModel;
+        runUsage = addUsage(runUsage, current.usage);
         permissionDenials.push(...current.permissionDenials);
 
         if (processResult.noAnswerProblems === undefined) {
