@@ -237,6 +237,19 @@ Both parts must not be empty, and the model must hold no white space. The part b
 upstream is the model service that `pi` calls and that bills the task. For example, `openrouter/openrouter/auto` has the
 upstream `openrouter` and the model id `openrouter/auto`.
 
+Configure a model id that the catalog of `pi` holds. The catalog is the list of models that `pi` knows. For another id,
+`pi` runs a model other than the configured one. On 2026-11-18 with `pi` 1.1.0, `openrouter/anthropic/claude-new-x` ran
+the custom id `openrouter/anthropic/claude-new-x`, and `openrouter/auto-be` ran `openrouter/auto-beta`. To test an id,
+follow these steps:
+
+1. Run `pi --offline --list-models <upstream>`.
+2. Keep only the rows whose `provider` column is `<upstream>`.
+3. If the `model` column of such a row equals the id, the catalog holds the id.
+
+The list of this test can differ from the catalog of a task run. No one tested whether the catalog changes without an
+upgrade of `pi`, for example from the remote catalog of `pi`. [The model forms](dev/assistants.md#the-model-forms) gives
+the measured results.
+
 A `pi` model must not end in a thinking level of `pi`. The levels are `:off`, `:minimal`, `:low`, `:medium`, `:high`,
 `:xhigh` and `:max`. Another `:` suffix passes, for example `:free`. The reasons:
 
