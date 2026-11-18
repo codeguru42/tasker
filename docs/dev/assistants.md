@@ -727,7 +727,8 @@ add their items to this list:
 - The skill folders of the user that `pi` reads.
 - The forms of a package source, and the rule that `pi update` does not move a configured ref.
 - The rule of the agent folder of `pi`, which `piAgentDir()` and `piAgentDirs()` copy.
-- The model form `provider/id` and the thinking levels of `--model` and `--thinking`.
+- The model form `provider/id`, the thinking levels of `--model` and `--thinking`, and the model that `pi` resolves for
+  a model id that the catalog does not hold.
 - The built-in extension keys, tool sources, `-builtin:<name>` entries and `--no-mcp` behavior.
 - The sources of the extensions of the agent folder and the form of the key of each source.
 - The source and path of tools loaded with `-e`, including tool replacement.
@@ -816,11 +817,66 @@ a read of the package code of `pi` 1.1.0 on 2026-11-07. No one ran `pi` for it.
 tasker splits a `pi` model at its first `/`. The part before it is the upstream. The upstream is the model service that
 `pi` calls and that bills the task. The part after it is the model id.
 
-tasker gives pi the arguments `--provider <upstream> --model <upstream>/<model>`. With `--provider <upstream>`, pi
-removes one prefix `<upstream>/` from `--model`. Then pi first matches a model by its provider and its id together, and
-only after that by its id alone. So `--model <model>` runs the wrong model when the model id starts with `<upstream>/`:
-the pattern `<upstream>/<id>` matches the model `<id>` first. tasker gives `--model <upstream>/<model>`, so the pattern
-is `<model>`, which names one model.
+tasker gives pi the arguments `--provider <upstream> --model <upstream>/<model>`. Here `<model>` is the whole configured
+model, with its upstream. For example, the configured model `openrouter/openrouter/auto` gives
+`--model openrouter/openrouter/openrouter/auto`.
+
+pi picks one model of its catalog for the value of `--model`. The catalog is the list of models that pi knows. With
+`--provider <upstream>`, pi removes one prefix `<upstream>/` from `--model` and keeps only the models of that upstream.
+The rest is the pattern. pi matches the pattern in this order, with no regard to case:
+
+1. `<provider>/<id>` of a model as a whole.
+2. The part before the first `/` as the provider and the rest as the id.
+3. The id alone.
+4. Each model whose id or `name` holds the pattern as a part. Of several such models, pi prefers an id that does not end
+   in `-` and eight digits. Of these, it takes the id that sorts last.
+
+If nothing matches, pi makes a custom model with the pattern as its id. A custom id is an id that pi sends as it is,
+with no entry in its catalog. Then pi warns
+`Model "<pattern>" not found for provider "<provider>". Using custom model id.` The source is `resolveCliModel()` in
+`dist/core/model-resolver.js` of the package `@earendil-works/pi-coding-agent` 1.1.0.
+
+A task subagent measured the results below on 2026-11-18 with `pi` 1.1.0. No measure called a model. The measure ran the
+resolver of `pi` over the `openrouter` models of its package, with the real `name` of each model. Each resolved model
+has the provider `openrouter`.
+
+| Case | Configured model                      | Form    | `--model`                                        | Resolved id                                   | Real name                 | Warning                                                                                                 |
+| ---- | ------------------------------------- | ------- | ------------------------------------------------ | --------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1    | `openrouter/openrouter/auto`          | task    | `openrouter/openrouter/openrouter/auto`          | `openrouter/auto`                             | Auto Router               | None                                                                                                    |
+| 2    | `openrouter/anthropic/claude-fable-5` | task    | `openrouter/openrouter/anthropic/claude-fable-5` | `anthropic/claude-fable-5`                    | Anthropic: Claude Fable 5 | None                                                                                                    |
+| 3    | `openrouter/anthropic/claude-new-x`   | task    | `openrouter/openrouter/anthropic/claude-new-x`   | custom id `openrouter/anthropic/claude-new-x` | Same as the id            | `Model "openrouter/anthropic/claude-new-x" not found for provider "openrouter". Using custom model id.` |
+| 4    | `openrouter/auto-be`                  | task    | `openrouter/openrouter/auto-be`                  | `openrouter/auto-beta`                        | Auto Router (Beta)        | None                                                                                                    |
+| 5    | `openrouter/auto`                     | task    | `openrouter/openrouter/auto`                     | `auto`                                        | Auto                      | None                                                                                                    |
+| 1    | `openrouter/openrouter/auto`          | session | `openrouter/openrouter/auto`                     | `auto`                                        | Auto                      | None                                                                                                    |
+
+A catalog id resolves to itself (cases 1, 2 and 5). An id that the catalog does not hold resolves to a model other than
+the configured one. That model is the custom id `<upstream>/<id>` (case 3), or a catalog model whose id or name holds
+`<upstream>/<id>` as a part (case 4).
+
+The form `--model <model>` is a trap. On 2026-11-16, a run of `pi` 1.1.0 with
+`--provider openrouter --model openrouter/openrouter/auto` made one model call. The assistant message had the provider
+`openrouter` and the model `auto`, not `openrouter/auto`. For the configured model `openrouter/openrouter/auto`, that
+value is the form `--model <model>`, the form of a pi role session. The last row of the table gives the same result with
+no model call. The same value is the task form of the configured model `openrouter/auto` (case 5). For that model,
+`auto` is the right model.
+
+To test that the catalog holds a model id, follow these steps:
+
+1. Run `pi --offline --list-models <upstream>`.
+2. Keep only the rows whose `provider` column equals `<upstream>`.
+3. If the `model` column of such a row equals the id as a whole value, the catalog holds the id.
+
+The test has these limits:
+
+- The command prints a table with the columns `provider`, `model`, `context`, `max-out`, `thinking` and `images`. Each
+  line also holds the provider and the other columns. So `grep -x -F <id>` over the whole output never matches.
+- The argument of `--list-models` is a fuzzy search over the text `<provider> <id>` of each model. It is not a filter by
+  provider. A fuzzy search matches a text that holds the letters of the search word in the same order. So the output can
+  hold rows of other providers. For example, on 2026-11-17 with `pi` 1.1.0, `pi --offline --list-models anthropic`
+  printed 35 rows of the provider `openrouter`.
+- The output holds only the models of a provider that has a login. The resolve of a task run reads all models. So the
+  list can differ from the catalog of a task run. No one tested whether the list equals the catalog of a task run, or
+  whether a task run without `--offline` changes the catalog from the remote catalog of pi.
 
 ### The doctor checks of pi
 
