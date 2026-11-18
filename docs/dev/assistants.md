@@ -1034,8 +1034,9 @@ missing, tasker refuses with `the pi session <sessionId> has no session file, so
 
 Tasker records the file size before the run starts. If the stream has an `agent_end` event, tasker reads its ordered
 `message_end` events. If the stream has no `agent_end`, tasker reads only the session-file bytes added after the
-recorded size. This keeps earlier messages out of the answer. When the file exists after the run starts, tasker returns
-its path as `transcriptPath`.
+recorded size. This keeps earlier messages out of the answer. For the usage, tasker reads the session-file bytes added
+after the recorded size in each run, also when the stream has an `agent_end` event. When the file exists after the run
+starts, tasker returns its path as `transcriptPath`.
 
 ### The outcome of pi
 
@@ -1065,8 +1066,51 @@ After it starts pi, the first matching result sets the outcome:
 
 pi exits with 0 when a turn fails in JSON mode, so the row of `stopReason` comes before the row of the exit code.
 
-The last assistant message controls the result after retries. A stream can have more than one `agent_end` event. Usage
-is `unavailable`, and permission denials are `[]`. `overageStop` has no effect.
+The last assistant message controls the result after retries. A stream can have more than one `agent_end` event.
+Permission denials are `[]`, and `overageStop` has no effect.
+
+The usage of a `pi` run is the sum of the usage values that the run added. These are the usage values:
+
+- For each assistant message of the run, the `usage` of its `message_end` event. An assistant message has `message.role`
+  `"assistant"`.
+- For an assistant message with no `message_end` event, the `usage` of its last `message_update` event. If a run stops
+  in the middle of a message, for example at a timeout, that message has no `message_end` event. A `message_update`
+  event belongs to the last `message_start` event of an assistant message before it.
+- The `usage` of the `message_end` event of each tool result message of the run that has one (`message.role`
+  `"toolResult"`). It holds model work that a tool did. The provider does not read the copies of these messages in
+  `turn_end` and `agent_end`.
+- The `result.usage` of each `compaction_end` event of the run.
+- The `usage` of each usage entry (`"type": "usage"`, for example the kind `cache_warm`) that this run added to the
+  session file. The provider reads the part of the session file that this run added in each run for these entries.
+
+These rules hold:
+
+- A usage value is valid when each of its four fields is a number of 0 or more. The provider skips a usage value that is
+  not valid.
+- The provider also skips a usage value whose four counters are all 0. pi sets the counters of a message to 0 at its
+  start, and it does not always change them. Zero counts look like a real measure.
+- If the run gives no usage value that the provider reads, `usage` is `"unavailable"`, never zero counts.
+- Each usage value counts once. The provider reads messages and compactions from stdout and from the part of the session
+  file that this run added. A value that it reads from both counts once.
+- The key of a message is its `message.role`, its `message.timestamp` and its four counters. The key of a compaction is
+  its four counters. If a key shows more than once in one source, it counts as often as it shows in the source that
+  holds it most often.
+
+The four counters come from these fields of a pi usage value:
+
+| `TokenUsage`               | pi usage field |
+| -------------------------- | -------------- |
+| `inputTokens`              | `input`        |
+| `outputTokens`             | `output`       |
+| `cacheCreationInputTokens` | `cacheWrite`   |
+| `cacheReadInputTokens`     | `cacheRead`    |
+
+The provider reads no other field, because `output` already holds `reasoning` and `cacheWrite` already holds
+`cacheWrite1h`.
+
+The usage of each corrective turn of the run (`assistant.correctiveTurns`) counts in the usage of the run. The `pi`
+provider stores no usage total for a session, because a usage value of pi belongs to one message, not to the whole
+session. It ignores `RunInput.usageTotal` and never calls `onUsageTotal`.
 
 Each outcome of a run with an assistant message gives `reportedModel`. An assistant message is a `message_end` event
 whose `message.role` is `"assistant"`. The provider takes the first assistant message of the run whose `stopReason` is

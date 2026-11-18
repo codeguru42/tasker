@@ -213,8 +213,8 @@ These rules hold:
   once, after the record. The rule of the record covers the columns of the record. Schema version 18 adds it, and the
   migration fills no row.
 - The `usage_total_` columns hold the last usage total of a session, in the four counters of `TokenUsage`. They are NULL
-  until a provider gives a total. tasker stores no total for `claude-code`, so they stay NULL in each of its rows. Each
-  new total replaces them. Schema version 18 adds them, and the migration fills no row.
+  until a provider gives a total. tasker stores no total for `claude-code` and `pi`, so they stay NULL in each of their
+  rows. Each new total replaces them. Schema version 18 adds them, and the migration fills no row.
 - The `trusted_extensions` column holds the trust list that the session recorded at its start. NULL reads as an empty
   list. Schema version 23 adds the column. The column stores each key as written, with no mask;
   [The precheck of extensions](assistants.md#the-precheck-of-extensions) gives this known limit.
