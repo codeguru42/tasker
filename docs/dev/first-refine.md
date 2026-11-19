@@ -696,6 +696,29 @@ orchestrator.
   list of the terms and the list under "The start and the authority". [The diff read](run-one-ticket.md#the-diff-read)
   found the wrong list. No one measured whether the cost repeats.
 
+- A first-words name is a text that names a part of a doc by its first words, for example "the paragraph that starts
+  ..." or "the bullet that starts ...". A part is a paragraph, a bullet, a step, a hint or a sentence. The scope of a
+  first-words name is the place where a reader looks for its target, for example the doc of the name. The scope can also
+  be the doc and the section that the name gives, as in "the hint of "All tickets" that starts ...". A ticket can add a
+  part to a doc, or change the first words of a part. Then ask the plan to search the docs for each first-words name
+  that matches the new text.
+
+  A first-words name matches the new text in this case: its scope holds the new text, and its quoted words start the new
+  text. The search follows [the doc-search rule](rules.md#docs), because the quoted words can span two lines. Ask the
+  plan to name each hit and to keep one target for each such first-words name. The reason: two parts in the scope of a
+  first-words name can start with its quoted words. Then a reader can follow the name to the wrong part.
+
+  The plan starts the new text with other words. The plan can also change the first-words name in place of the new
+  words. Then that change follows [the scope form](#a-ticket-that-adds-a-doc-of-rules-or-hints) of the hint that starts
+  "If a ticket adds or changes a search hint". The issue can give the exact words of the new text, and the scope form
+  can forbid the change of the first-words name. Then the task subagent applies
+  [the issue check](plan-review.md#the-issue-check).
+
+  On #948, plan v3 started a new paragraph of `docs/dev/tasker-commands.md` with "The classifier of auto mode can deny".
+  A bullet of that doc already named another paragraph by these words. Review 1 found that the name then matched two
+  paragraphs, and the fix started the new paragraph with other words. The fix cost one review loop. No one measured
+  whether the cost repeats.
+
 - If a refine puts a new sentence in the middle of a paragraph, ask the plan to read the sentences around it again. On
   #238, the task subagent learned this. A new sentence in the middle of a short section can also change what an "it" in
   the next sentence points to. On #244, review 1 found this in "Milestones" of `docs/dev/issues.md`: after the new
