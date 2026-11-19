@@ -436,8 +436,9 @@ these usual run times. The times come from the tickets of this repo.
   #833, a run of 2 to 4 todos took about 1 to 2 minutes. A run of 20 to 30 todos took about 8 to 15 minutes. On #848
   (landed on 2026-11-11), a run of 20 todos ended with a timeout after 11 todos.
 - `tasker verify` (`npm run check`): more than 2 minutes on a local run. On #508 (2026-11-01), a local run passed
-  [the default limit of one Bash call](ci-wait.md#the-ci-wait). In the `Check` workflow, the same command takes about 3
-  to 4 minutes.
+  [the default limit of one Bash call](ci-wait.md#the-ci-wait). On #938 (2026-11-16), the step `Run npm run check` of
+  the `Check` workflow took about 8 to 11 minutes. The measure of #938 read the 30 newest `Check` runs on `main` that
+  passed in their first attempt.
 - `tasker review`: about 25 seconds to 2 minutes.
 - A docs ticket: about 1 to 2 minutes for each of plan and refine. Since #833, an execute run of 1 todo took about 2
   minutes on #844 and about 7 minutes on #845 (both landed on 2026-11-09). On #851 (landed on 2026-11-11), an execute

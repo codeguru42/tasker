@@ -39,11 +39,11 @@ The task subagent does these steps:
    refreshes its output every 3 seconds, so a long wait gives a long output. This step reads only the exit code, so
    `tail` keeps only the end of the output. `set -o pipefail` keeps the exit code of `timeout` and `gh run watch`, not
    the exit code of `tail`. `2>&1` keeps an error of `gh` in the end of the output. `tail` reads its whole input, so the
-   pipe gives no exit code 141. A `Check` run takes about 3 to 5 minutes, but it can take longer than one tool call of
-   the task subagent. The task subagent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means
-   that the run passed. Exit code 124 means that the run is still in progress. In that case, run the same command again.
-   The 30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a
-   run is not complete when the 30 minutes end, follow the paragraphs at the end of this step. Any other exit code means
+   pipe gives no exit code 141. On 2026-11-16, a whole `Check` run took about 8 to 12 minutes, longer than one call of
+   this command. The task subagent cannot run a foreground `sleep`, so it waits with `timeout`. Exit code 0 means that
+   the run passed. Exit code 124 means that the run is still in progress. In that case, run the same command again. The
+   30-minute limit counts from the first `gh run watch` of the CI wait, for all the runs of the list together. If a run
+   is not complete when the 30 minutes end, follow the paragraphs at the end of this step. Any other exit code means
    that the run failed, or that `gh` failed. In that case, go to step 6 of the CI wait.
 
    When the 30 minutes end, read each run of the list of step 4 that is not complete. The read is
