@@ -178,11 +178,9 @@ priority. [The project board](issues.md#the-project-board) gives the commands of
 2. If the verdict is broken, the new issue blocks all further work. Send the broken-test notice to each other
    orchestrator, as the broken-test rule says. Add no blocked-by link to the other issues. Tell the user at once. If a
    handoff starts while the issue is open, name the issue in the handoff file, as
-   [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The
-   reason: the classifier of auto mode denied the batch of links two times (see
-   [the tool-block rule](tasker-commands.md#the-tool-block-rule)). On 2026-10-17, the user decided this for #287, the
-   broken-test issue of #273, with the words "we don't need blocked-by links as long as all other orchestrators know to
-   wait".
+   [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The reason
+   for no blocked-by link is a decision of the user. On 2026-10-17, the user decided this for #287, the broken-test
+   issue of #273, with the words "we don't need blocked-by links as long as all other orchestrators know to wait".
 3. If the verdict is flaky, the new issue blocks nothing.
 4. Send the task subagent the number of the new issue. The bullet of ["Land the work"](land-the-work.md#land-the-work)
    that reads the state with `tasker show <issue>` first applies to this message.

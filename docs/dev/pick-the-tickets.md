@@ -823,7 +823,7 @@ slot and landing rules still apply.
   The prompt also says: after a denial, the report gives the exact command and the exact text of the denial, in full.
   [The tool-block rule](tasker-commands.md#the-tool-block-rule) gives this report and the other steps after a denial.
 
-  The reason: the classifier of auto mode denied three merge calls of task subagents, as
+  The reason: the classifier of auto mode can deny a call that is not in the plain form, as
   [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. On 2026-11-03, the report of the task subagent of
   #563 called the denied call "plain form `tasker merge codeguru42/tasker#563`". The denied call had `2>&1 | tail -6`
   after the command. The same report gave the text of the denial with "..." in place of its end.
