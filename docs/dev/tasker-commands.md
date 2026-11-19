@@ -19,19 +19,8 @@ result, the warning above covers only the text on the command line.
 
 The reason: the repo file `.claude/settings.json` allows `Bash(tasker *)`. A Bash call matches this permission rule only
 when the call is one `tasker` command. Claude Code sends a call that does not match to the classifier of its auto mode
-(the check that allows or denies a tool call). The classifier can deny the call. For example, the classifier denied
-`tasker accept 'codeguru42/tasker#81' 2>&1 | tail -5`, but it allowed `tasker accept codeguru42/tasker#81`. On
-2026-10-17, the task subagent of #229 ran `tasker refine` with feedback text from a file in the allowed form, in auto
-mode, and the call ran.
-
-A form that ran before can still get a denial. From 2026-11-01 to 2026-11-04, task subagents sent 18 merge calls in the
-form `cd <clone> && tasker merge <issue> 2>&1 | tail -<n>`, or in that form with no `cd`. Each of these calls went to
-the classifier. The classifier allowed 15 of them and denied 3. Each denial gave the reason "[Merge Without Review]".
-
-The classifier denied the merge call of #563 on 2026-11-02 and on 2026-11-03, and the merge call of #719 on 2026-11-04,
-each in that form. No one measured why the classifier denied these 3 calls and allowed the other 15. On 2026-11-04, on
-the word of the user, the orchestrator ran `tasker merge codeguru42/tasker#719` in the plain form. The permission rules
-allowed the call, and the merge ran.
+(the check that allows or denies a tool call). The classifier can deny the call. A form that ran before can still get a
+denial.
 
 If the classifier denies a `tasker` command in the plain form, the task subagent does not try another form. The task
 subagent follows [the tool-block rule](#the-tool-block-rule). The command did not run.
@@ -46,24 +35,14 @@ The plain-form rule does not cover these:
 ## The tool-block rule
 
 A tool block is a denial of a tool call. The permission rules, the classifier of auto mode or the user can deny a call.
-The user denies a call when the user declines it at a permission prompt. In past sessions, the classifier of auto mode
-denied `gh auth token` and a `claude -p` run. The classifier also denied a Bash call with a loop of
-`gh issue edit <number> --add-blocked-by <issue>` over the open issues two times. Both denials gave the reason "External
-System Writes". The second call had an explicit list of 46 numbers.
+The user denies a call when the user declines it at a permission prompt.
 
 A task subagent runs a git command in the local clone of the orchestrator with `git -C <clone>`, not with
-`cd <clone> && git ...` in a chain. On #274, the classifier of auto mode denied
-`cd <clone> && git fetch -q origin && git diff ...` with the reason "[Modify Shared Resources]". A plain
-`git -C <clone> fetch --multiple tasker origin` ran with no denial.
+`cd <clone> && git ...` in a chain.
 
-On 2026-11-11, the classifier of auto mode denied the delete with a lease of a task branch on `origin`, with Claude Code
-2.1.322. The task subagent of #847 ran
-`git -C $HOME/src/mine/tasker push --force-with-lease=refs/heads/issue-847-tasker-open-pr-move-the-issue-to-a-configured-review-status:764b9be2ab5156ff4c575a2f7af08be5cf637dd9 origin --delete issue-847-tasker-open-pr-move-the-issue-to-a-configured-review-status`,
-and the reason of the denial was "[Git Destructive]". Thirty-one measure runs of `claude -p --permission-mode auto`
-deleted a scratch branch with a lease, and each run passed with no denial. Thirty runs used a local bare `origin` with
-Claude Code 2.1.322, and one run used the real `origin` with Claude Code 2.1.323. The measures did not find the cause.
-If the classifier denies this delete, the task subagent reports the exact text and the exact call, as the paragraph that
-starts "After a tool block" says.
+The classifier of auto mode can deny the delete with a lease of a task branch on `origin`. If the classifier denies this
+delete, the task subagent reports the exact text and the exact call, as the paragraph that starts "After a tool block"
+says.
 
 A denial covers the whole action of the call, not only its form. After a tool block, the task subagent runs the denied
 action in no other form, and no part of it, until the orchestrator sends the answer. Other forms include a script file
@@ -102,7 +81,7 @@ subagent, the same decision order and the same rules apply as in the parent sess
 
 A background subagent is a subagent of the Agent tool that runs in the background of a top-level session. The user types
 no message in the conversation of a background subagent. A word of the user reaches it only in the prompt or in a
-message of the parent session. No one measured how the classifier weighs such a word.
+message of the parent session.
 
 On the same day, the section "How the classifier evaluates actions" of https://code.claude.com/docs/en/permission-modes
 said:
@@ -125,58 +104,7 @@ The section "How auto mode handles subagents" of the same page said:
 > While the subagent runs, each of its actions goes through the same decision order as in the parent session, with the
 > same block and allow rules.
 
-No part of a denied call runs. This includes a redirect or a command before the denied part. The reason is evidence a
-below. At 2026-11-12T00:36:59Z, the classifier denied call a. The report of the subagent said that the call ran up to
-the `gh` call and wrote `title.txt` and `body.md`. At 2026-11-12T00:40:41Z, the top-level session ran this call:
-
-```sh
-cd <scratchpad> && gh issue create -R codeguru42/tasker --title "$(head -1 draft-execute-skips-todos.md)" --body-file body.md --milestone "M19 — Polish"
-```
-
-It failed with exit code 1 and this output:
-
-```text
-open body.md: no such file or directory
-```
-
-The calls of the evidence below ran in background subagents of one top-level session, with Claude Code 2.1.322 in auto
-mode. In these calls, `<scratchpad>` replaces the path of the scratch folder of the session. That folder is under
-`/tmp`. The user file `$HOME/.claude/settings.json` holds the allow rules `Bash(gh issue create *)` and
-`Bash(gh issue edit *)`.
-
-Calls a, b and c are compound calls. At least one part of each matches no allow rule, so each went to the classifier.
-The classifier denied each with the reason "[External System Writes]". Call a, denied at 2026-11-12T00:36:59Z:
-
-```sh
-cd <scratchpad>; head -1 draft-execute-skips-todos.md > title.txt; tail -n +3 draft-execute-skips-todos.md > body.md; gh issue create -R codeguru42/tasker --title "$(cat title.txt)" --body-file body.md --milestone "M19 — Polish"
-```
-
-Call b, denied at 2026-11-12T00:37:03Z:
-
-```sh
-cd <scratchpad> && tail -n +3 lease-delete-denial-issue.md > lease-delete-denial-body.md && gh issue create -R codeguru42/tasker --title "$(head -1 lease-delete-denial-issue.md)" --body-file lease-delete-denial-body.md --milestone "Docs"
-```
-
-Call c, denied at 2026-11-12T00:41:19Z. It held `$(...)`, `if` and `printf`:
-
-```sh
-s=$(tasker status) || { echo "tasker status failed; skip"; exit 1; }; st=$(gh issue view 863 -R codeguru42/tasker --json state -q .state) || { echo "state read failed; skip"; exit 1; }; if printf '%s\n' "$s" | grep -q 'codeguru42/tasker#863 '; then echo "IN FLIGHT: skip"; elif [ "$st" != OPEN ]; then echo "state $st: skip"; else gh issue edit 863 -R codeguru42/tasker --add-blocked-by 756 && echo "link added"; fi
-```
-
-Calls d and e are plain calls. Each matches one allow rule of the user file. At 2026-11-13T02:45:02Z, a background
-subagent ran call d with no denial, and it posted #881:
-
-```sh
-gh issue create -R codeguru42/tasker --title 'Issues: run each `gh` write alone in a plain call, after the reads' --body-file <scratchpad>/read-write-split-body.md --milestone 'Docs'
-```
-
-At 2026-11-13T02:45:34Z, the same subagent ran call e with no denial:
-
-```sh
-gh issue edit 881 -R codeguru42/tasker --add-blocked-by 878
-```
-
-No one measured whether the classifier saw calls d and e.
+No part of a denied call runs. This includes a redirect or a command before the denied part.
 
 After a tool block, the task subagent [stops](limits.md#the-answer-wait-rule). It reports the exact text of the denial,
 the exact command, the step of the work that the command belongs to, and the purpose of the command. The orchestrator
@@ -242,10 +170,7 @@ On 2026-10-25, in the session of #428, each Bash call that no permission rule al
 > the action again once, as-is. Repeated attempts are slowed by a growing delay, and after 10 responses in a row without
 > a verdict the turn stops.
 
-The user saw "auto mode check unavailable" and "bash denied by auto mode". The calls included read-only commands, for
-example `git show origin/main:<path>` and `gh issue list`. At the same time, https://status.claude.com/ showed the
-incident "Elevated errors for Claude Sonnet 5.5" from 06:14 UTC, and Claude Code in "Partial Outage". No incident named
-auto mode. The user then ran `gh issue create` with the `!` prefix, and the posts of #482 and #483 worked.
+The user then ran `gh issue create` with the `!` prefix, and the posts of #482 and #483 worked.
 
 ### The denial records
 
@@ -260,10 +185,10 @@ form stays in the record. A form can also replace text that is no token.
 
 The script makes a record only for a session that started in the local clone of this repo.
 
-The script reads the transcripts in the form of Claude Code 2.1.318, which a planner measured on 2026-11-07. It keeps
-the fields `serverClassifierContext` and `serverClassifierRequest` out of each record, because they can hold the text
-that Claude Code sends to the classifier. The script also says whether an allow rule matches each part of a denied call.
-That match is a guess of the script, not the match of Claude Code.
+The script reads the transcripts in the form of Claude Code 2.1.318. It keeps the fields `serverClassifierContext` and
+`serverClassifierRequest` out of each record, because they can hold the text that Claude Code sends to the classifier.
+The script also says whether an allow rule matches each part of a denied call. That match is a guess of the script, not
+the match of Claude Code.
 
 A planner makes the records on the word of the user, with these steps:
 
@@ -312,8 +237,7 @@ plain-form rule and do not change it.
   `no repo configured for 90`, for example in `tasker show 90`. `tasker status --issue 90` does not fail. It prints
   `no tasks match the given filters` and exits with 0, so a check with a bare number finds no task.
 - Never wrap a `tasker` command in `timeout`. At the end of the time, `timeout` sends SIGTERM, and tasker moves the task
-  to `interrupted`. On 2026-10-13, `timeout 595 tasker execute` stopped an execute run this way, and `tasker resume` had
-  to continue it.
+  to `interrupted`.
 - Run a long `tasker` command in the background. The long commands include `plan`, `refine`, `execute`, `verify`,
   `review` and `resume`. The task subagent sets the `run_in_background` option of its Bash tool. The call keeps the
   plain form.
@@ -335,9 +259,8 @@ plain-form rule and do not change it.
 
   The session gets the results of the calls of one message only after it sends all of them. A hook of Claude Code is a
   command that Claude Code runs at an event of a session. The setup of a user can have such a hook that checks the text
-  of each file that the Write tool writes. On #857 (2026-11-11), the task subagent started each `tasker refine` in the
-  same message as the write of its file. Each report of the hook reached the session only after the Bash call of the
-  refine read the file. No one tested these facts beyond that case.
+  of each file that the Write tool writes. As a result, a report of such a hook can reach the session after the `tasker`
+  command of the same message read the file.
 
 - When the output of a read-only `tasker` command goes into a pipe, start the call with `set -o pipefail`. As a result,
   a failed `tasker` command stops the chain. To keep only some lines, use `sed -n`, for example `sed -n '1,20p'`, not
@@ -374,8 +297,7 @@ no fact of the list. As a result, the rule that the task subagent first does the
 - When the login of the Claude account expires during `tasker execute`, the execute session ends. `tasker execute` then
   fails with `executing todo '<todo>' ... failed: claude exited 1`. The task goes to `failed`, and the task branch is
   unchanged. This failure does not come from the code. After the user logs in to Claude again, `tasker retry <issue>`
-  moves the task to `approved` and runs `tasker execute` again. On #273, on 2026-10-17, the retry ran the same plan with
-  no loss.
+  moves the task to `approved` and runs `tasker execute` again.
 - `tasker start` can wait about 10 minutes on `git ls-remote` over ssh and then fail with a git transport error. If
   `tasker doctor` then passes, the task subagent runs `tasker start` again.
 - `tasker update-branch` prints `origin/<branch> does not exist; nothing to sync from` for a task branch that was never
@@ -402,8 +324,7 @@ no fact of the list. As a result, the rule that the task subagent first does the
   base changes no fact of the plan.
 - A task can fail in `executing` while its base is `main` and its task branch holds no commit of the task. For such a
   task, `tasker update-branch` moves the task branch by fast-forward. The approved plan of such a task stays approved,
-  and the task stays in `failed`. After the update, `tasker show` prints `next: tasker retry`. On #413, on 2026-10-25,
-  the installed tasker 2026.10.25-60b6aa03 moved the task branch from 9d10f960 to 60b6aa03, and plan v2 stayed approved.
+  and the task stays in `failed`. After the update, `tasker show` prints `next: tasker retry`.
 - `tasker update-branch <issue> --take-remote` of a stacked task whose parent landed moves the base of the task to the
   base that the walk ends on, for example `base: main`, and the task to `executed`, in one run.
 - If a task is stacked on the same parent as another task, the shared-file warning of `tasker refine` and
@@ -411,43 +332,20 @@ no fact of the list. As a result, the rule that the task subagent first does the
   other task changes against the base, and that branch holds the commits of the parent.
 - `tasker update-branch` prints the command that undoes the update after each run that moved the head, also with
   `--strategy` or `--take-remote`. A run moved the head when its base step or its sync step moved it. The output gives
-  `previous HEAD was <hash>`, and the command is `tasker update-branch <issue> --undo`. On #252, each plain
-  `tasker update-branch` printed this hint.
+  `previous HEAD was <hash>`, and the command is `tasker update-branch <issue> --undo`.
 - When the rebase of `tasker update-branch` stops with a conflict, the output names each conflicting path.
 - After `tasker update-branch`, the bootstrap of the task does not run again. If the new base changes
   `package-lock.json`, `tasker verify` fails on the old `node_modules` of the worktree of tasker. The fix is a refine
-  that tells the execute session to run `npm ci`. On #119, on 2026-10-18, a parked task moved from b90d814 to 5e4be61,
-  and `tasker verify` failed with `ERR_MODULE_NOT_FOUND` for `eslint-config-prettier`. For
+  that tells the execute session to run `npm ci`. For
   [the verify-failure rule](verify-failures.md#the-verify-failure-rule), this failure comes from the code. The task
   subagent sends one refine whose feedback tells the execute session to run `npm ci`, and it runs no `tasker retry`. A
   commit check that finds no broken commit does not change this case.
 
 ## The run times
 
-A task subagent picks the wait for a long command (see the wait bullet of [the command rules](#the-command-rules)) from
-these usual run times. The times come from the tickets of this repo.
-
-- `tasker start`: a few seconds. For the wait of about 10 minutes on ssh, see
-  [the facts of the installed tasker](#the-facts-of-the-installed-tasker).
-- `tasker plan`: about 1 to 2 minutes for a small issue, and about 4 to 6 minutes for a large issue.
-- `tasker refine`: about 1 to 4 minutes.
-- `tasker execute`: since #833 (2026-11-08), each todo that makes a commit runs the commands of [Check](rules.md#check)
-  before the commit. In this repo, these commands are `npm run format`, `npm run lint:fix` and `npm run check`. Before
-  #833, a run of 2 to 4 todos took about 1 to 2 minutes. A run of 20 to 30 todos took about 8 to 15 minutes. On #848
-  (landed on 2026-11-11), a run of 20 todos ended with a timeout after 11 todos.
-- `tasker verify` (`npm run check`): more than 2 minutes on a local run. On #508 (2026-11-01), a local run passed
-  [the default limit of one Bash call](ci-wait.md#the-ci-wait). On #938 (2026-11-16), the step `Run npm run check` of
-  the `Check` workflow took about 8 to 11 minutes. The measure of #938 read the 30 newest `Check` runs on `main` that
-  passed in their first attempt.
-- `tasker review`: about 25 seconds to 2 minutes.
-- A docs ticket: about 1 to 2 minutes for each of plan and refine. Since #833, an execute run of 1 todo took about 2
-  minutes on #844 and about 7 minutes on #845 (both landed on 2026-11-09). On #851 (landed on 2026-11-11), an execute
-  run of 5 todos took about 21 to 23 minutes.
-
 Since #833, an execute run of a plan with many todos can reach the deadline of `limits.executeTimeoutMin` before all
 todos are done. This timeout is expected. The run fails with an error that ends with `timed out after <n> min`, and the
-task goes to `failed`. A done todo stays done, as [Execute](tasks.md#execute) of `docs/dev/tasks.md` says. On #848, one
-`tasker retry` ran the other todos.
+task goes to `failed`. A done todo stays done, as [Execute](tasks.md#execute) of `docs/dev/tasks.md` says.
 
 If `tasker execute` fails with a timeout, run `tasker retry <issue>` one time for that run. Run it in the background, as
 [the command rules](#the-command-rules) say for a long command. The retry runs `tasker execute` again with a new
