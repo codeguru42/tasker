@@ -233,9 +233,10 @@ name a list `form.kinds` or a write key. It names no write key of a record with 
 These rules apply to each `tasker` command that the task subagent runs, also to a read-only one. They add to the
 plain-form rule and do not change it.
 
-- Give the full issue key, for example `codeguru42/tasker#90`. A bare number such as `90` fails with
-  `no repo configured for 90`, for example in `tasker show 90`. `tasker status --issue 90` does not fail. It prints
-  `no tasks match the given filters` and exits with 0, so a check with a bare number finds no task.
+- Give the full issue key, for example `codeguru42/tasker#90`. A bare number such as `90` does not resolve to an issue.
+  As a result, each `tasker` command that takes an issue key fails, also `tasker status --issue`.
+  [Issue keys](../../skills/tasker/SKILL.md#issue-keys) gives the forms of a key, and
+  [Shared errors](../../skills/tasker/SKILL.md#shared-errors) gives the error and its exit code.
 - Never wrap a `tasker` command in `timeout`. At the end of the time, `timeout` sends SIGTERM, and tasker moves the task
   to `interrupted`.
 - Run a long `tasker` command in the background. The long commands include `plan`, `refine`, `execute`, `verify`,
