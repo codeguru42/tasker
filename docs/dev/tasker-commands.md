@@ -40,9 +40,9 @@ The user denies a call when the user declines it at a permission prompt.
 A task subagent runs a git command in the local clone of the orchestrator with `git -C <clone>`, not with
 `cd <clone> && git ...` in a chain.
 
-The classifier of auto mode can deny the delete with a lease of a task branch on `origin`. If the classifier denies this
-delete, the task subagent reports the exact text and the exact call, as the paragraph that starts "After a tool block"
-says.
+A delete with a lease of a task branch on `origin` can get a denial of the classifier of auto mode. If the classifier
+denies this delete, the task subagent reports the exact text and the exact call, as the paragraph that starts "After a
+tool block" says.
 
 A denial covers the whole action of the call, not only its form. After a tool block, the task subagent runs the denied
 action in no other form, and no part of it, until the orchestrator sends the answer. Other forms include a script file
