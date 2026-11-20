@@ -304,8 +304,10 @@ or when the user ends it.
 ### During the hold
 
 During the hold, a sender of the slug sends no message to `operator-<slug>`. This covers each item, also each report
-([The open items](operator-items.md#the-open-items)). The sender of the slug keeps each message as a held item, with its
-id. The sender of the slug continues its other work.
+([The open items](operator-items.md#the-open-items)). An orchestrator shows each progress report of
+[The operator](working-with-the-user.md#the-operator) in its own tab at once and holds no message for it, because a
+progress report sends no message to `operator-<slug>`. For `planner-<slug>`, the hold covers each item and each report.
+The sender of the slug keeps each message as a held item, with its id. The sender of the slug continues its other work.
 
 A held item can ask for a choice that only the user makes, while a task subagent waits for the answer. A sender of the
 slug also holds such an item. On 2026-10-25, during a handoff of operator-docs, the task subagent of #443 stopped for
