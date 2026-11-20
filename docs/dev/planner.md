@@ -156,11 +156,12 @@ The planner then does each step after the review loops. Examples are a question 
 report of the post. When it posts, the planner adds the links. Links between drafts that are not posted yet stay with
 the planner, from its table of the needs and the likely files.
 
-Before the planner sends a question of a report to the user, it applies the paragraph that starts "The report gives a
-question for the user". A question about an edge case that is not a security gap or a bug in the core path does not go
-to the user. The planner decides it as "later" and adds it to the list of the edge cases of the report. The planner
-gives that list in each place where it gives the findings that it dismissed. Examples are the report of a post and an
-item of the escape hatch.
+Before the planner sends a question of a report to the user, it applies the paragraph of
+[The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of issue-draft.md that starts "The
+report gives a question for the user". A question about an edge case that is not a security gap or a bug in the core
+path does not go to the user. The planner decides it as "later" and adds it to the list of the edge cases of the report.
+The planner gives that list in each place where it gives the findings that it dismissed. Examples are the report of a
+post and an item of the escape hatch.
 
 A change of the draft after a report starts a new ticket subagent. An example is a change from an answer of the user.
 Another example is the change of the draft into a change of an open issue after the duplicate search. A change that
@@ -493,8 +494,9 @@ The follow-up planner can also drop a lesson or a proposed issue with no approva
 
 After each post or drop, each planner tells the user in a short report. The report gives the link or the drop, the
 source, and each finding that the planner dismissed, with its reason. It gives each blocked-by link with its reason and
-the list of edge cases of [The ticket subagent](#the-ticket-subagent). It also gives the command and result of each test
-of a fact about an outside tool, as [The body of an issue](issue-subagents.md#the-body-of-an-issue) says.
+the list of edge cases of [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of
+issue-draft.md. It also gives the command and result of each test of a fact about an outside tool, as
+[The body of an issue](issue-subagents.md#the-body-of-an-issue) says.
 
 The follow-up planner sends this report as an item to its operator. The initial planner and the ad hoc planner give it
 in their chat. The follow-up planner also tells the session that sent the lesson or the proposed issue, if that session
@@ -552,7 +554,7 @@ When a draft needs one of these decisions, each planner asks the user before the
 - A finding of one of these kinds that the ticket subagent does not resolve in its loops.
 
 An edge case that a ticket subagent decided as "later" needs none of these decisions, as
-[The ticket subagent](#the-ticket-subagent) says.
+[The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of issue-draft.md says.
 
 For a draft that waits for such a decision, each planner posts nothing. The follow-up planner sends the draft as an
 item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed. The
