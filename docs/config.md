@@ -391,9 +391,9 @@ Two errors are possible, both at `repos.<key>.sessions.models.<role>.model`:
 - `ends in the pi thinking level <level>: <value>`
 
 A model with both faults gets only the first error. One kind covers each session role and each subagent role. So under
-`pi`, the role `question` must also hold a pi model, although no question session starts under `pi`. For the same
-reason, the subagent roles `issue-draft`, `issue-review`, `issue-post` and `write` must hold a pi model under `pi`. No
-measure shows that a pi session can start a subagent.
+`pi`, the role `question` must also hold a pi model, because a question session starts under the kind of the pane owner.
+For the same reason, the subagent roles `issue-draft`, `issue-review`, `issue-post` and `write` must hold a pi model
+under `pi`. No measure shows that a pi session can start a subagent.
 
 The loader accepts each of the five efforts under `pi`. The efforts `xhigh` and `max` are measured. For the measured
 model, pi used the level max after `--thinking xhigh`, and no one measured the cause. The efforts `low`, `medium` and
@@ -416,6 +416,10 @@ For `pi`, `<upstream>` is the part of the model before the first `/`. The flag `
 provider of pi does not choose the service that bills the session. The Messages cell is "None", because the measured pi
 session had no tool that sends or lists messages.
 
+A question pane sends its messages with `herdr pane send-text` and `herdr pane send-keys` for each kind, as
+[question-pane.md](dev/question-pane.md) says. The Messages cell stays "None" for `pi`, because it names the tools of
+the kind. No one measured a send into a pi pane.
+
 A pi session has these limits:
 
 - The shell tool of pi runs with the rights of the user. No guard extension and no sandbox of tasker applies.
@@ -423,8 +427,8 @@ A pi session has these limits:
 - The measured sessions showed no question before a tool call. They started with `--no-approve`, so no one tested a
   start without it.
 - The default tool set of pi is not measured. The measured sessions had only the tool `bash`.
-- A valid kind does not show that each procedure after the start supports the kind. For example, the messages, the
-  session list and the closure of a session are not shown for `pi`.
+- A valid kind does not show that each procedure after the start supports the kind. For example, the messages outside a
+  question pane, the session list and the closure of a session are not shown for `pi`.
 
 A new kind needs its own row and its own ticket, because each kind has its own flags and its own message tools.
 
