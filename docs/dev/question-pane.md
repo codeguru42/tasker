@@ -1,17 +1,30 @@
 # Question panes
 
-This page gives the rules of a question pane. The readers of this page are the operator and each question session. The
-operator reads it as a start doc, as [docs/operator.md](../operator.md) says. A question session reads it before its
-first reply, as [The question session](#the-question-session) says. The reason for this page: on 2026-11-13, the user
-said "pull out the rules for the question pane from the rules for the operator into its own doc".
+This page gives the rules of a question pane. The readers of this page are each pane owner and each question session.
+The orchestrator reads it as a start doc, as [docs/orchestrator.md](../orchestrator.md) says. A question session reads
+it before its first reply, as [The question session](#the-question-session) says. The reason for this page: on
+2026-11-13, the user said "pull out the rules for the question pane from the rules for the operator into its own doc".
+
+The orchestrator is the only top-level role of this page. No session sends an open question to an operator, and no
+session gives an answer of an operator.
 
 ## A question pane
 
 ### Terms
 
-A [question pane](#a-question-pane) is a herdr pane that an opener subagent opens next to the pane of the operator. It
+A [question pane](#a-question-pane) is a herdr pane that an opener subagent opens next to the pane of its pane owner. It
 holds one [open question](operator-items.md#the-open-items) at a time, even when questions belong to one item or concern
 one action. After a reuse, it holds the next open question.
+
+The pane owner (short form: owner) is the session that starts a question pane. An orchestrator of each kind is a pane
+owner. Each pane owner has at most one open pane.
+
+An open question of the orchestrator is a question for the user that the orchestrator or one of its sessions asks. The
+sessions are, for example, a task subagent and the follow-up planner. The orchestrator asks it in its own question pane.
+
+The question id is the name of one open question. The orchestrator gives each question the next free item id of its own
+counter, in the form `orchestrator-<slug>-<n>`. The handoff file of the orchestrator carries that counter, so the id
+stays unique through a handoff.
 
 [The glossary](GLOSSARY.md) defines a question session.
 
@@ -20,43 +33,64 @@ question gets a new question pane or a reuse of the pane before.
 
 An automatic start is the start of a question pane with no word of the user, as [Start](#start) says.
 
+The herdr path is the way that a pane owner and its question session send messages to each other. It works for each kind
+of session. The sender writes the message as one line. It writes the word `LINE-BREAK` with one space on each side in
+place of each newline. It puts the line in a shell variable with a quoted here-document. Then it runs
+`herdr pane send-text <receiver pane id> "$MSG"` and `herdr pane send-keys <receiver pane id> enter`. No one measured a
+newline inside `send-text`, so the one-line form stays.
+
+A message of the question session starts with the header `QUESTION-PANE <own pane id> <question id>:`. The own pane id
+is `$HERDR_PANE_ID` in the shell of the question session. A message of the pane owner starts with
+`PANE-OWNER <owner name> <question id>:`. A typed header does not prove its sender, because any pane can type it. The
+user did not settle the form of the header. The form of this page is the choice of this page.
+
+An ack is a short reply that says that a message arrived. For each message of the question session that it accepts, the
+pane owner sends `PANE-OWNER <owner name> <question id>: ACK. The report arrived.` with the herdr path. It sends no ack
+for a message that it refuses. After each send, the question session waits at its prompt for the ack. The wait has no
+time limit. If no ack comes, the user can ask the question session to send again. No one measured this wait.
+
+A report is a message that needs no answer from the user. The orchestrator shows each of its reports as text in its own
+tab. A report of the follow-up planner goes to `orchestrator-<slug>`, which shows it the same way. No pane starts for a
+report.
+
 A stop of a run is a case of [A question pane](#a-question-pane) that stops a run or makes it wait for the user. Two of
-these stops are the end of a run in the operator chat and a request for the chat. These two stops hold until a new open
-question arrives. A new open question is an open question of an item that arrives after the stop. A word of the user
-that starts a pane or a run also ends these two stops.
+these stops are the end of a run and a request for the chat of the orchestrator. These two stops hold until a new open
+question arrives. A new open question is an open question that arrives after the stop. A word of the user that starts a
+pane or a run also ends these two stops.
 
-Each other stop holds until the next word of the user in the operator chat. An automatic start can follow the word of
-the user that ends a stop. This also holds for a word that starts no pane. A run that ends with no open question left
-has no stop.
+Each other stop holds until the next word of the user to the pane owner. An automatic start can follow the word of the
+user that ends a stop. This also holds for a word that starts no pane. A run that ends with no open question left has no
+stop.
 
-A [decision message](#a-question-pane) is a message with `SendMessage` from the question session to the operator. It
+A [decision message](#a-question-pane) is a message of the question session to the pane owner with the herdr path. It
 gives the decision of the user.
 
-A [close request](#the-rounds-before-the-close) is a message with `SendMessage` from the operator to the question
-session. It asks for the rounds of `/session-review` before the close of the pane.
+A [close request](#the-rounds-before-the-close) is a message of the pane owner to the question session with the herdr
+path. It asks for the rounds of `/session-review` before the close of the pane.
 
-An [opener subagent](#the-prompts) is a subagent of the operator that opens one question pane and starts its question
+An [opener subagent](#the-prompts) is a subagent of the pane owner that opens one question pane and starts its question
 session.
 
-A [write action](#the-question-session) is an action that the question session sends back to the operator. Each of these
-is a write action:
+A [write action](#the-question-session) is an action that the question session sends back to the pane owner. Each of
+these is a write action:
 
 - A write to GitHub, for example to an issue, a comment, a label, a milestone, the project board or a pull request
 - A write or an edit of a file
 - A git write, for example a commit, a branch or a push, apart from `git fetch origin`
 - A change of tasker state
-- A `herdr` command
+- A `herdr` command, apart from the send of the question session to its owner pane
 - A change of the configuration of Claude Code
-- A message to a session other than the operator
+- A message to a session other than the pane owner
 
-A message to the operator is not a write action. A step that the item of the sender proposes and the user approves is
-also not a write action. Examples are the post of a draft, a comment and a measure. The sender does that step.
+A message to the pane owner is not a write action. This also holds for a `herdr` command that sends it. A step that the
+question of the sender proposes and the user approves is also not a write action. Examples are the post of a draft, a
+comment and a measure. The sender does that step.
 
-A request for a new issue is words of the user in a question pane that ask for one or more new issues. The item of the
-sender did not propose these issues. Such a request is about the question of the pane or its item. A request about
-another topic stays a request outside the question. A request for a new issue is not a write action.
+A request for a new issue is words of the user in a question pane that ask for one or more new issues. The question did
+not propose these issues. Such a request is about the question of the pane. A request about another topic stays a
+request outside the question. A request for a new issue is not a write action.
 
-A [write subagent](#the-operator-handles-a-decision) is a subagent of the operator that does the write actions of one
+A [write subagent](#the-operator-handles-a-decision) is a subagent of the pane owner that does the write actions of one
 settled decision message.
 
 A context clear is a step that removes the context of the question session. The context is each prompt, each reply and
@@ -67,95 +101,99 @@ A clean context is the context of a question session that holds nothing of an ea
 A [reuse](#close-and-continue) is the context clear of a question session and the send of the session prompt of the next
 question to that session.
 
-A [reuse subagent](#the-prompts) is a subagent of the operator that does one reuse. The reuse prompt of
+A [reuse subagent](#the-prompts) is a subagent of the pane owner that does one reuse. The reuse prompt of
 [The prompts](#the-prompts) gives its steps.
 
 The after-clear read is the read of the reuse prompt that shows that the context clear took effect.
 
 The current question of a pane is the question of the last session prompt that went to the pane.
 
-A question pane is open from its start until the operator closes it. The pane also stops being open if the user tells
-the operator that it is closed. A pane stays open through each reuse.
+A question pane is open from its start until the pane owner closes it. The pane also stops being open if the user tells
+the pane owner that it is closed. A pane stays open through each reuse.
 
 ### Start
 
-A pane is the default place of the conversation about an open question. The operator makes an automatic start each time
-that all of these hold:
+A pane is the default place of the conversation about an open question. Each orchestrator, of each kind, starts and owns
+its own panes. It starts a pane for each open question of the orchestrator and of its sessions, the follow-up planner
+included. The orchestrator makes an automatic start each time that all of these hold:
 
-- No pane is open.
+- No pane of this orchestrator is open.
 - No [stop of a run](#terms) holds.
-- No [handoff of the operator](handoff-operator.md#the-handoff-of-the-operator) is due or running.
-- No [close of the milestone](operator-start.md#the-close-of-a-milestone) is due.
-- The kind of the operator is `claude`.
+- No handoff of the orchestrator is due or running, as
+  [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator) says.
 - An open question can get an automatic start.
 
-The condition "No handoff of the operator is due or running" holds through each of
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). Each open question stays an open
-item, and the handoff file holds it, as
-[The handoff file of the operator](handoff-operator.md#the-handoff-file-of-the-operator) says. The new operator can make
-an automatic start after step 10 of [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator).
-If the close of the old operator fails, this also holds. If the user ends this handoff, the old operator is the operator
-again, with no handoff, as [The end of a handoff](handoff.md#the-end-of-a-handoff) says. Then the conditions of this
-section apply to it as usual.
+Each pane owner has at most one open pane. Two orchestrators can each have one open pane. The pane of one orchestrator
+never holds a question of another orchestrator. A pane holds one question at a time.
 
-The reason for this condition: a pane that opens during the handoff can stay open after the close of the old operator.
-The new operator accepts a decision message only from the question session of its own open pane, as
-[The operator handles a decision](#the-operator-handles-a-decision) says. So no operator then accepts the decision of
-that pane.
+The condition "No handoff of the orchestrator is due or running" holds through the whole handoff. Each open question
+stays open, and the handoff file holds it, as
+[The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. A new pane
+that opens during a handoff can stay open after the close of the old orchestrator. The new orchestrator accepts a
+decision message only from the question session of its own open pane, as
+[The operator handles a decision](#the-operator-handles-a-decision) says. So no orchestrator then accepts the decision
+of that pane.
 
 On 2026-11-15, operator-m16 reported this case. It came from a handoff of operator-m16. The old operator opened and
-reused question panes for about ten questions during the wait of step 1 of
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). The handoff took a long time. The
-user asked: "did you do the handoff I requested a while ago?"
+reused question panes for about ten questions during the wait of step 1 of its handoff. The handoff took a long time.
+The user asked: "did you do the handoff I requested a while ago?"
 
-An example of an automatic start comes at the arrival of an item with an open question. Before that start, the operator
-sends each answer of the operator for that item. A word of the user that names an open question starts a pane. A word of
-the user that asks to discuss the open questions starts a run. The operator does not first ask the user to choose a pane
-or the chat.
+An example of an automatic start comes at the arrival of an open question. A word of the user that names an open
+question starts a pane. A word of the user that asks to discuss the open questions starts a run. The orchestrator does
+not first ask the user to choose a pane or its own tab.
 
-The user can still choose the chat. A word of the user that answers a question in the chat starts no pane. A word of the
-user that asks for the chat starts no pane, and it stops the run. A request for the list of open items, for one item or
-for a draft also starts no pane. [The open items](operator-items.md#the-open-items) gives the reply to such a request.
-The operator judges which kind of word the user gave, and this judgment is open on purpose.
+The user can still type in the tab of the orchestrator. A word of the user that answers a question there starts no pane.
+A word of the user that asks for the tab starts no pane, and it stops the run. A request for the list of open questions
+also starts no pane. The orchestrator judges which kind of word the user gave, and this judgment is open on purpose.
 
 The reason: on 2026-11-12, in the session operator-m16, the user said: "always open a pane for each question from now
 on". On 2026-11-13, the user said to operator-docs: "always chain another pane for the next open question". On the same
 day, the user also said: "Always open the next question in a pane. Don't wait for me to ask for it."
 
-The operator opens at most one pane at a time. If one is open, the operator tells the user and starts nothing.
+The orchestrator opens at most one pane at a time. If one is open, the orchestrator tells the user in its tab and starts
+nothing.
 
-The next open question is the first open question in [the list order of the operator](operator-items.md#the-open-items)
-that can get an automatic start. A word of the user that names an open question starts the pane of that question first.
-An open question of an item that arrives later takes its place in the list order, so it can come before an older open
-question. This holds before, during and after a run. The arrival line and the notification of such a question stay the
-same.
+The next open question is the first open question in the list order that can get an automatic start. The list order has
+three keys, and a key breaks the tie of the key before it:
+
+1. The priority: `P0`, `P1`, none, then `P2`. The read of the priority is the read of
+   [The open items](operator-items.md#the-open-items). If the read fails, each question counts as a question with no
+   priority.
+2. The issue number: the lower number first. A question with no issue comes last within its priority.
+3. The arrival: the earlier first. In one message, the lower question number of the asking session comes first.
+
+A word of the user that names an open question starts the pane of that question first. An open question that arrives
+later takes its place in the list order, so it can come before an older open question. This holds before, during and
+after a run.
 
 A reuse for the next open question is an automatic start of the pane of that question. Each rule of this section for a
 pane start or an automatic start holds for it. The new pane, the opener subagent and the condition "No pane is open" do
 not apply to it.
 
 Before each pane start, each start of a reuse subagent, each [close request](#the-rounds-before-the-close) and each
-close, the operator reads this page again. [Start a session](operator-start.md#start-a-session) keeps its own reread
-rule.
+close, the orchestrator reads this page again.
 
-An operator whose kind is not `claude` starts no pane and tells the user. For each pane, the operator starts an opener
-subagent with the opener prompt of [The prompts](#the-prompts). The opener subagent opens the question pane next to the
-pane of the operator, in the local clone, a folder that Claude Code trusts. It starts the question session and ends with
-a report to the operator.
+At each pane start and each reuse, the orchestrator runs `herdr notification show` with `--sound request`. The text
+names the orchestrator and the question id. If the command fails, the orchestrator follows
+[the failure rule](limits.md#the-failure-rule) and leaves the pane open.
+
+For each pane, the orchestrator starts an opener subagent with the opener prompt of [The prompts](#the-prompts). The
+opener subagent opens the question pane next to the pane of the orchestrator, in the local clone, a folder that Claude
+Code trusts. It starts the question session and ends with a report to the orchestrator.
 
 While the opener subagent runs, the question pane counts as open. If the opener subagent ends with no report, the
-operator tells the user and stops the run until the user speaks. The question pane then counts as open until the user
-tells the operator that it is closed.
+orchestrator tells the user in its tab and stops the run until the user speaks. The question pane then counts as open
+until the user tells the orchestrator that it is closed.
 
 The pane name starts with `question-` and is unique. See the
 [`agent_name_taken` fact](operator-start.md#start-a-session).
 
-If the report of the opener subagent says that no pane opened, the operator tells the user the command and the error.
-The operator stops the run.
+If the report of the opener subagent says that no pane opened, the orchestrator tells the user the command and the error
+in its tab. The orchestrator stops the run.
 
 A pane that shows the first reply is a successful start, also after an error of herdr. The report of the opener subagent
-can say that the pane shows no first reply. Then the operator tells the user the command and the error. The operator
-leaves the pane open and stops the run until the user speaks.
+can say that the pane shows no first reply. Then the orchestrator tells the user the command and the error in its tab.
+The orchestrator leaves the pane open and stops the run until the user speaks.
 
 ### The question session
 
