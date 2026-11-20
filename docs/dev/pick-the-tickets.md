@@ -19,23 +19,26 @@ The orchestrator does all the steps of this section.
   - An issue joins a set only by a word of the user. A word of the user that adds an issue also starts a read of the
     board. No message of another session adds an issue to the set.
   - The reason of the set scope: the user can run a few chosen issues, and they need no milestone of their own.
-  - The base milestone of an issue of the set is the milestone that the issue had at the first read of the session.
-    After a decision of the user about a move, the base milestone is the milestone that the user decided on. A later
-    read of the board does not change the base milestone. A moved issue is an issue of the set whose milestone differs
-    from its base milestone. No milestone also counts as a milestone here. This page gives no order of the milestones in
-    a set, so each move counts. When an issue of the set becomes a moved issue, the orchestrator of the set tells the
-    user one time, and the user decides for that case. For a move to a milestone, it also tells the orchestrator of the
-    new milestone with a message, if the session list of the tools has `orchestrator-<slug>` with the slug of that
-    milestone. For a move to no milestone, no such orchestrator exists, so it sends no message. Until the user decides,
-    the orchestrator starts no task and no task subagent for a moved issue. This holds for a moved issue with a parked
-    task, with a task in progress and with no task. No issue leaves the set by itself, and the move adds no hold label.
+  - A held issue is an issue of the set whose milestone differs from its milestone at the read before. At the first read
+    of the session, the read before is the first read itself. No milestone also counts as a milestone here. This page
+    gives no order of the milestones in a set, so each change counts. When an issue becomes a held issue, and at each
+    further change of its milestone, the orchestrator of the set tells the user and asks the user what it must do. For a
+    move to a milestone, it also tells the orchestrator of the new milestone with a message, if the session list of the
+    tools has `orchestrator-<slug>` with the slug of that milestone. For a move to no milestone, no such orchestrator
+    exists, so it sends no message. A held issue starts no task and no task subagent, and its parked task does not come
+    back. This holds for a held issue with a parked task, with a task in progress and with no task. The hold lasts until
+    the answer of the user. A word of the user is the answer, and the orchestrator does what the user says. This page
+    names no fixed set of answers. The orchestrator keeps the list of held issues in the session. It removes an issue
+    from the list when the user answers for it. After the answer, the orchestrator does not treat the issue as held
+    again unless its milestone changes once more. No issue leaves the set by itself, and the move adds no hold label.
     How the orchestrator sees the move is open. The way that this page names is the compare of the milestone in the set
-    read of [the board-read bullet](#pick-the-tickets) with the base milestone. A new orchestrator session takes its
-    first read as the base, so it does not see a move from before that read. If the read, the session list or the
-    message fails, [the failure rule](limits.md#the-failure-rule) applies. Case: #B of the set moves from M32 to
-    "Future". At the next read of the board, the orchestrator of the set tells the user. If `orchestrator-future` runs,
-    it also tells that session. Case: #B of the set has no task, and its card is in Todo. The user moves #B from M32 to
-    M30. At the next read of the board, the orchestrator tells the user and does not start #B until the user decides.
+    read of [the board-read bullet](#pick-the-tickets) with the milestone of the read before. A new orchestrator session
+    does not see a move from before its first read. If the read, the session list or the message fails,
+    [the failure rule](limits.md#the-failure-rule) applies. Case: #B of the set moves from M32 to "Future". At the next
+    read of the board, the orchestrator of the set tells the user. If `orchestrator-future` runs, it also tells that
+    session. Before the user answers, a second move of #B gives a second notice, and the orchestrator of the new
+    milestone gets a message. Case: #B of the set has no task, and its card is in Todo. The user moves #B from M32 to
+    M30. At the next read of the board, the orchestrator tells the user and does not start #B until the user answers.
 - The earlier-blocker offer: for a milestone scope, a ticket of the milestone can wait on an open blocker of an earlier
   milestone that no orchestrator runs. An earlier milestone is a numbered milestone with a lower number, for example M19
   before M20. The number is the number in the title of the milestone, for example 19 in "M19 — Polish". A blocker of
@@ -100,12 +103,13 @@ The orchestrator does all the steps of this section.
   - The check is only for an orchestrator of a set scope. Before each start, it runs
     `tasker status --issue <issue key>`. The read shows which task of the issue is in flight. The orchestrator of a
     milestone scope does no such read.
-  - If no task of the issue is in flight, the ticket can start by the other rules of this section. A moved issue does
-    not start until the user decides, as [the move paragraph](#pick-the-tickets) of the first bullet says.
+  - If no task of the issue is in flight, the ticket can start by the other rules of this section. A held issue does not
+    start until the user answers, as [the move paragraph](#pick-the-tickets) of the first bullet says.
   - If a task of the issue is in flight, the orchestrator starts no second task. The card of the issue gives the case:
-    - The Todo case: the task is a parked task of the set. If the issue is not a moved issue, the orchestrator starts a
-      task subagent for it by the comeback of [the defer rule](#the-defer-rule). A parked task of a moved issue waits,
-      as the move paragraph says.
+    - The Todo case: the task is a parked task of the set. If the issue is not a held issue, and the user gave no answer
+      for it under [the move paragraph](#pick-the-tickets), the orchestrator starts a task subagent for it by the
+      comeback of [the defer rule](#the-defer-rule). For a held issue, and after an answer of the user, the orchestrator
+      follows the move paragraph.
     - The In progress case: if no task subagent of this orchestrator drives the task, the task is in flight under
       another session. The issue sits in two scopes, for example in the set and in a milestone that another orchestrator
       runs. The orchestrator tells the user and asks the user for a decision, as
@@ -122,13 +126,14 @@ The orchestrator does all the steps of this section.
   The orchestrator of the set reads `tasker status --issue` for #A, finds the task, does not start #A and asks the user
   for a decision.
 
-  Case 2: the same set. #B is not a moved issue. #B has a parked task, and its card is in Todo. The parked task is a
-  task of the set. The orchestrator of the set starts a task subagent for it by the comeback rule.
+  Case 2: the same set. #B is not a held issue. #B has a parked task, and its card is in Todo. The parked task is a task
+  of the set. The orchestrator of the set starts a task subagent for it by the comeback rule.
 
   Case 3: the same set. The user defers #B to "Future" while its task is in flight. The defer rule moves the card to
   Todo. At the next read of the board, the orchestrator of the set sees the move. It tells the user and starts no task
   subagent for #B until the user decides. The orchestrator tells the user one time. The next reads of the board do not
-  restart the task before the user decides, because the base milestone of #B stays M32.
+  restart the task before the user decides, because #B stays a held issue until the user answers, as
+  [the move paragraph](#pick-the-tickets) says.
 
 - A manual-steps issue is an issue whose body says that no assistant session runs it.
   [What goes in a ticket](planner.md#what-goes-in-a-ticket) gives its form. The orchestrator starts no task for it and
