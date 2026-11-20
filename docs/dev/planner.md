@@ -125,9 +125,10 @@ The planner handles a proposal that it gets in the close in this way:
 
 The planner gives the work on each draft to a ticket subagent, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it. A
 ticket subagent works one time and ends. It does the steps of [The review loop of a draft](#the-review-loop-of-a-draft)
-and ends with a report. It edits only its draft file, its report file and the files of a
-[scratch folder](plan-review.md#the-state-of-the-user), and it posts nothing. The reason: the text of the draft and of
-its reviews stays out of the context of the planner.
+and ends with a report. For the work on its draft, a ticket subagent follows each rule of
+[docs/dev/issue-draft.md](issue-draft.md), as an issue-draft subagent does. It edits only its draft file, its report
+file and the files of a [scratch folder](plan-review.md#the-state-of-the-user), and it posts nothing. The reason: the
+text of the draft and of its reviews stays out of the context of the planner.
 
 Before the follow-up planner starts the first ticket subagent for a lesson or a proposed issue, it decides on a drop, as
 [The post of the follow-up planner](#the-post-of-the-follow-up-planner) permits. First, it reads the docs for the rule
@@ -141,41 +142,15 @@ of about 120,000 tokens of context.
 The prompt of a ticket subagent gives the source of the draft word for word, the milestone and the path of the draft
 file. It says whether the planner is the initial planner, the follow-up planner, or an ad hoc planner. It gives each
 decision of the user on the draft. It tells the ticket subagent to read this page,
-[docs/dev/issue-subagents.md](issue-subagents.md), [Before a post](issues.md#before-a-post) and the simple-english
-skill. It bans each command that reads the login of the user, each write to GitHub and each change of
-[the state of the user](plan-review.md#the-state-of-the-user). It asks for the report through the tool
-`SubagentHandback`. The ticket subagent loads a doc that a link of these pages names only on demand, for a specific task
-that needs the doc, and not at its start.
+[docs/dev/issue-subagents.md](issue-subagents.md), [docs/dev/issue-draft.md](issue-draft.md),
+[Before a post](issues.md#before-a-post) and the simple-english skill. It bans each command that reads the login of the
+user, each write to GitHub and each change of [the state of the user](plan-review.md#the-state-of-the-user). It asks for
+the report through the tool `SubagentHandback`. The ticket subagent loads a doc that a link of these pages names only on
+demand, for a specific task that needs the doc, and not at its start.
 
-The ticket subagent also writes its report to the path of the draft file, with `-report.md` in place of `.md`. A rule of
-the planner pages that names a finding that the planner dismissed means a finding of this report. A rule of the planner
-pages that gives the planner a step before the post of a draft gives that step to the ticket subagent, except a step
-with the user.
-
-The report gives the path of the draft file, the title and a short summary of the draft. It also gives each finding that
-the ticket subagent dismissed, with its reason. It also gives each finding and each part of the draft of a kind of
-[the escape hatch](#the-escape-hatch). It also gives the blocked-by links with their reasons, and each command and
-result that a rule of the planner pages gives to the user. It also gives each open question of
-[the state of the user](plan-review.md#the-state-of-the-user), with its command.
-
-The ticket subagent applies [Core features first](working-with-the-user.md#core-features-first) to each finding of a
-review agent and to each question of its own work. It decides each edge case as "later" and keeps the draft in its
-scope. For an edge case, it dismisses the finding or drops the question, with the reason "an edge case, later". It can
-also name a proposed later issue for the edge case in its report, with its milestone. Whether a case is an edge case,
-and whether it gets a proposed later issue, is a judgment of the ticket subagent, open on purpose. The report lists each
-such edge case in its own list, with its proposed later issue.
-
-The paragraph before this one does not cover a security gap or a bug in the core path, as Core features first says. The
-core path of a draft is the main use that the draft describes, as [Review findings](review-findings.md#review-findings)
-says for an issue. The ticket subagent changes the draft for a bug in the core path. A security gap stays a question for
-the user. The report gives a security gap first, with the time that the gap starts, as Core features first says.
-
-The report gives a question for the user only for a decision of a kind of [the escape hatch](#the-escape-hatch). It also
-gives a question for each kind of choice that still goes to the user first. The bullet of
-[A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "The user can let the session
-decide" lists these kinds. An edge case that the ticket subagent decided as "later" is not a question of the report.
-This also holds for an edge case about a behavior that a user sees. The list of the edge cases is not part of the
-dismissed findings or of the findings of a kind of the escape hatch.
+A rule of the planner pages that names a finding that the planner dismissed means a finding of the report of the ticket
+subagent. A rule of the planner pages that gives the planner a step before the post of a draft gives that step to the
+ticket subagent, except a step with the user.
 
 The planner then does each step after the review loops. Examples are a question to the user, an item, the post and the
 report of the post. When it posts, the planner adds the links. Links between drafts that are not posted yet stay with
@@ -198,9 +173,8 @@ change, with the draft file. After the post of the change, the planner drops the
 [the reads before the write](issues.md#the-reads-before-the-write) skip the post because the hash changed, the planner
 also drops the start hash. After such a skip, it starts a new ticket subagent with the same change and no start hash.
 
-A ticket subagent of a change of an open issue with no start hash first reads the issue, as
-[Before a post](issues.md#before-a-post) says. It then writes its draft file from that read and the change. If the read
-fails, the ticket subagent ends, and its report says so. Then the planner tells the user.
+If the read of the issue fails, the report says so, as
+[A change of an open issue](issue-draft.md#a-change-of-an-open-issue) says. Then the planner tells the user.
 
 A ticket subagent waits for the report of each review agent, as [The wait for a report](#the-wait-for-a-report) says. It
 does not end while a review agent runs. If a review agent ends with no report, the ticket subagent starts one new review
