@@ -14,17 +14,26 @@ name the operator.
 **Issue-review subagent**: A subagent that reviews one draft of an issue. It follows
 [issue-subagents.md](issue-subagents.md). A review agent of a ticket subagent is not an issue-review subagent.
 
+**Orchestrator**: A top-level session that runs one scope. It picks tickets and starts task subagents.
+
 **Own name**: The name of a session. The role is the part of the own name before the first `-`, and the slug is the part
 after it.
 
 **Question session**: The Claude Code session in a [question pane](question-pane.md#a-question-pane). It has no role and
 no slug, although its name starts with `question-`.
 
+**Scope**: The issues that one orchestrator is responsible for, one milestone or a set of issues that the user names.
+[The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) gives the kinds of a scope. _Avoid_:
+Group, batch
+
 **Session ref**: The id in brackets after the name of a session in the output of `ListAgents`, for example `[bc2d80]`.
 After a handoff of the session, its session ref is stale.
 
-**Slug**: The first word of the milestone title in lowercase, as [the notice rule](doc-reads.md#the-notice-rule) says.
-For example, the slug of the milestone M9 is `m9`.
+**Slug**: The slug of an orchestrator is the slug of its scope, as
+[The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says. The slug of a milestone is the
+first word of the milestone title in lowercase. For example, the slug of the milestone M9 is `m9`. `operator-<slug>` and
+`planner-<slug>` use the slug of a milestone. The slug is not the path slug or the title slug of the code, for example
+in `src/issue-key/path-slug.ts` and `src/vcs/git/worktree.ts`.
 
 **Socket address**: The `uds:` value in the `from` field of a message from a session, for example
 `uds:/run/user/30033/cc-socks/2406691.sock`. After a handoff of the session, its socket address is stale.
