@@ -6,8 +6,8 @@ orchestrator.
 ## The long-running orchestrator
 
 A long-running orchestrator is the orchestrator of a milestone that stays open while other sessions add issues to it,
-for example "Docs" (see [docs/dev/planner.md](planner.md)). In a handoff, the old orchestrator gives its work to a new
-orchestrator in a new session.
+for example "Docs" (see [docs/dev/issue-subagents.md](issue-subagents.md)). In a handoff, the old orchestrator gives its
+work to a new orchestrator in a new session.
 
 The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone stops at the stop
 of the orchestrator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). The rules of this page do

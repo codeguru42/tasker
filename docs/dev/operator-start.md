@@ -579,7 +579,7 @@ The operator and planner use this procedure after their close reports.
 - An approval makes the session run its own-session closure.
 - If the planner receives an answer that opens a question or decision, or asks for work, it takes its role again. It
   returns to step 10 and gives a new close report after step 13. Put new work after a closed milestone in the milestone
-  from [The milestone of an issue](planner.md#the-milestone-of-an-issue). Do not reopen the closed milestone, as
+  from [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue). Do not reopen the closed milestone, as
   [Milestones](issues.md#milestones) says.
 - If the operator receives such an answer, it does no work of its role because its role ended. It tells the user that
   the planner is the contact. It closes nothing until an approval.

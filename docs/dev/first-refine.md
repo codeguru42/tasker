@@ -15,7 +15,7 @@ moved the target of "Without that", which broke the hint that starts "If a refin
 paragraph", and [the diff read](run-one-ticket.md#the-diff-read) found it. Each cost one loop.
 
 An issue gives exact hint words only when they are the requirement. The ticket plan chooses the target and words of a
-doc change, as [the body of an issue](planner.md#the-body-of-an-issue) says.
+doc change, as [the body of an issue](issue-subagents.md#the-body-of-an-issue) says.
 
 Before the task subagent gives a hint, it compares the hint with the Out of scope section of the issue. If the Out of
 scope section excludes what the hint asks for, the task subagent does not give the hint, also when the hint fits its
@@ -198,9 +198,9 @@ orchestrator.
   this cost refine 2. On #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
 
 - If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
-  [The body of an issue](planner.md#the-body-of-an-issue) asks the planner to make the same compare before posting. If
-  no doc supports the reason, ask the plan to drop it from the example. On #265, the Summary of the issue gave the
-  reason "an agent changes only its own task". The plan copied it into the example, and review 1 found it.
+  [The body of an issue](issue-subagents.md#the-body-of-an-issue) asks the planner to make the same compare before
+  posting. If no doc supports the reason, ask the plan to drop it from the example. On #265, the Summary of the issue
+  gave the reason "an agent changes only its own task". The plan copied it into the example, and review 1 found it.
 - A condition of the issue that now holds is not a difference, for example "After #199 lands" when #199 is closed. Say
   this in the first refine. On #204, plan v1 called such a condition a difference.
 - After [a change of scope](plan-review.md#the-stop-rule), compare the hints of the earlier refines with the new text

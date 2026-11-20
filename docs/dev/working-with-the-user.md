@@ -612,9 +612,9 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   files of `pi` starts after #726 lands. A read of `origin/main` for the draft of #814 showed the gap already live for
   the runs of `claude-code` and `codex`.
 - Each piece of work that waits becomes an issue in its later milestone, as
-  [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md says. [issues.md](issues.md) gives the
-  steps to file the issue. An edge case that a ticket subagent of a planner decided as "later" with no proposed later
-  issue gets no issue, as [The ticket subagent](planner.md#the-ticket-subagent) says.
+  [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) of issue-subagents.md says.
+  [issues.md](issues.md) gives the steps to file the issue. An edge case that a ticket subagent of a planner decided as
+  "later" with no proposed later issue gets no issue, as [The ticket subagent](planner.md#the-ticket-subagent) says.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is
   a process that has the same pid at each start, so that the lock row of a crashed run looks like the lock row of the
   process itself.

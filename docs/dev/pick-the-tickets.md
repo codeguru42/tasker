@@ -139,9 +139,9 @@ The orchestrator does all the steps of this section.
   applies.
 
   The user decided the case of different places on 2026-11-12. The reason is in the bullet of
-  [The blocked-by links](planner.md#the-blocked-by-links) that starts "Two issues that edit only different places". The
-  cost: a clash of meaning between two places shows late, in the review or the diff read of the ticket that lands
-  second. Two edits on lines next to each other can still give a conflict at `tasker update-branch`.
+  [The blocked-by links](issue-subagents.md#the-blocked-by-links) that starts "Two issues that edit only different
+  places". The cost: a clash of meaning between two places shows late, in the review or the diff read of the ticket that
+  lands second. Two edits on lines next to each other can still give a conflict at `tasker update-branch`.
   [docs/dev/rebase-conflicts.md](rebase-conflicts.md) gives the steps for such a conflict. Before that day, this bullet
   counted the whole file.
 
@@ -608,11 +608,11 @@ hold below. The task of a ticket on hold is a parked task.
 
 A same-file link is one kind of soft blocker of [The reads before the write](issues.md#the-reads-before-the-write). It
 is a blocked-by link that exists only because both issues edit one file, or one place of a doc. Each bullet of
-[The blocked-by links](planner.md#the-blocked-by-links) that links two issues only for a shared file gives such links.
-Three examples are the bullets that start "The planner also links two issues", "Inside a chain of issues" and "A line of
-tickets". A link for a real need of code or docs is not a same-file link. The links of three bullets are also not
-same-file links: "A ticket that changes the form or the layout", "A ticket that renames a doc ..." and "A manual-steps
-issue gets its links".
+[The blocked-by links](issue-subagents.md#the-blocked-by-links) that links two issues only for a shared file gives such
+links. Three examples are the bullets that start "The planner also links two issues", "Inside a chain of issues" and "A
+line of tickets". A link for a real need of code or docs is not a same-file link. The links of three bullets are also
+not same-file links: "A ticket that changes the form or the layout", "A ticket that renames a doc ..." and "A
+manual-steps issue gets its links".
 
 GitHub keeps no reason for a link. So the orchestrator judges each link from the Requirements and the Docs sections of
 both issues. If the blocked issue cannot start before the ticket on hold lands, the link is not a same-file link. If the

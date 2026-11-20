@@ -190,29 +190,30 @@ or a section that a later ticket moved or renamed. Or the issue asks for a behav
 measure of an outside tool, the task subagent measures again on the local machine, as the fact test does. The task
 subagent cannot always measure an output of the installed tasker that a claim of the issue records. If the task subagent
 cannot measure such an output, the ticket and the date that the issue names are the evidence, as
-[The body of an issue](planner.md#the-body-of-an-issue) of planner.md says. The task subagent says so in the feedback
-text of the refine of step 4 and in the comment of step 11. In both places, the task subagent names the issue as the
-source of the output. If the issue names no ticket and no date for the output, the task subagent has no evidence. The
-task subagent then reports the claim as a claim that it cannot test, in the feedback text of the refine of step 4 and in
-its final report. On #240, the task subagent had no task in `reviewed`, so the task subagent was unable to measure the
-output of `tasker dismiss-review`. The issue check does not cover the hints in the prompt of the task subagent, the plan
-or the review findings. The fact test and the quote check cover the plan. The issue check runs one time, with one
-exception. After each comment that starts with `## Change of scope`, the task subagent does the issue check again, as
-the section "The change-of-scope comment" says. A comment that starts with `## Design gap` does not start the issue
-check again, because the answer of a design gap is a requirement, not a claim. The issue check does not run again when
-the base branch moves after `tasker start`, for example before a `tasker update-branch`. If a false claim or a conflict
-does not change what the ticket must do, the task subagent does not stop. For a false claim, the task subagent puts the
-current fact in the feedback text of the refine of step 4. For a conflict, the task subagent says in that feedback text
-how it resolves the conflict. For example, the plan links to the existing rule instead of a copy, or it uses the new
-name of a file. If step 4 runs no refine, the task subagent does not run a refine only to send the current fact. If the
-plan does not resolve a conflict yet, the plan needs changes, and step 4 runs a refine. If a false claim or a conflict
-changes what the ticket must do, the fifth case of the stop rule applies. For a false claim, the task subagent puts the
-claim, the current fact and the command that shows it in its report of the stop case. For a conflict, the task subagent
-puts the requirement, the conflicting rule or decision, and the command or the doc that shows it in that report. In each
-case, the task subagent also lists each false claim and each conflict in its final report.
+[The body of an issue](issue-subagents.md#the-body-of-an-issue) of issue-subagents.md says. The task subagent says so in
+the feedback text of the refine of step 4 and in the comment of step 11. In both places, the task subagent names the
+issue as the source of the output. If the issue names no ticket and no date for the output, the task subagent has no
+evidence. The task subagent then reports the claim as a claim that it cannot test, in the feedback text of the refine of
+step 4 and in its final report. On #240, the task subagent had no task in `reviewed`, so the task subagent was unable to
+measure the output of `tasker dismiss-review`. The issue check does not cover the hints in the prompt of the task
+subagent, the plan or the review findings. The fact test and the quote check cover the plan. The issue check runs one
+time, with one exception. After each comment that starts with `## Change of scope`, the task subagent does the issue
+check again, as the section "The change-of-scope comment" says. A comment that starts with `## Design gap` does not
+start the issue check again, because the answer of a design gap is a requirement, not a claim. The issue check does not
+run again when the base branch moves after `tasker start`, for example before a `tasker update-branch`. If a false claim
+or a conflict does not change what the ticket must do, the task subagent does not stop. For a false claim, the task
+subagent puts the current fact in the feedback text of the refine of step 4. For a conflict, the task subagent says in
+that feedback text how it resolves the conflict. For example, the plan links to the existing rule instead of a copy, or
+it uses the new name of a file. If step 4 runs no refine, the task subagent does not run a refine only to send the
+current fact. If the plan does not resolve a conflict yet, the plan needs changes, and step 4 runs a refine. If a false
+claim or a conflict changes what the ticket must do, the fifth case of the stop rule applies. For a false claim, the
+task subagent puts the claim, the current fact and the command that shows it in its report of the stop case. For a
+conflict, the task subagent puts the requirement, the conflicting rule or decision, and the command or the doc that
+shows it in that report. In each case, the task subagent also lists each false claim and each conflict in its final
+report.
 
 In an issue, a measure of an outside tool is the one exception to "A requirement is not a claim". It is also a
-requirement, as [The body of an issue](planner.md#the-body-of-an-issue) says.
+requirement, as [The body of an issue](issue-subagents.md#the-body-of-an-issue) says.
 
 The current code standards of the repo win over an old requirement of the issue that conflicts with them. The current
 code standards are the rules of [docs/dev/rules.md](rules.md) and [docs/dev/code-conventions.md](code-conventions.md),
@@ -243,8 +244,8 @@ these cases:
   such a question. A choice of the place or words of a doc change is a choice of the implementation.
 - The plan makes a design choice that the issue does not make. A choice of the implementation is not such a choice. A
   choice of the place or words of a doc change is a choice of the implementation. The bullet of
-  [The body of an issue](planner.md#the-body-of-an-issue) that starts "An issue never dictates the implementation"
-  defines the implementation.
+  [The body of an issue](issue-subagents.md#the-body-of-an-issue) that starts "An issue never dictates the
+  implementation" defines the implementation.
 - The plan has a security gap.
 - The plan changes a file that the issue does not name, and another task in progress also changes that file. For
   example, `tasker refine` prints a warning for such a file (see ["Land the work"](land-the-work.md#land-the-work)). If

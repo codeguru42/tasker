@@ -5,8 +5,8 @@ This page gives the steps and the GitHub facts to file issues, blocked-by links 
 [A recurrence](#a-recurrence) covers each session. The rest of the page is for the planner, but
 [The blocked-by links](#the-blocked-by-links) also serves each session that decides links before a post.
 [planner.md](planner.md) defines the terms "planner" and "blocked-by link", and [docs/dev/GLOSSARY.md](GLOSSARY.md)
-defines the term "user". planner.md also holds the rules for what an issue says and where it goes. This page holds only
-how to do it on GitHub.
+defines the term "user". [issue-subagents.md](issue-subagents.md) holds the rules for what an issue says and where it
+goes. This page holds only how to do it on GitHub.
 
 ## Before a post
 
@@ -56,8 +56,8 @@ how to do it on GitHub.
   planner.md gives the steps.
 - Each session that posts an issue and is not a planner decides the blocked-by links of its draft. The session finds the
   open issues and tasks in flight that edit the same files as the draft. It also finds the issues that the draft needs.
-  It uses [The blocked-by links](planner.md#the-blocked-by-links). A session with no role is an ad hoc planner for a
-  draft of its ticket subagent.
+  It uses [The blocked-by links](issue-subagents.md#the-blocked-by-links). A session with no role is an ad hoc planner
+  for a draft of its ticket subagent.
 
   A session that is not a planner shows the result with the draft: each link and its reason, or "no links" and the
   reason. It names each file of the check. After the post, it adds each approved link under
@@ -74,8 +74,8 @@ how to do it on GitHub.
   sentence. It also searches the draft for the banned words and for an `if` or a `when` inside a sentence. The session
   fixes each hit before it shows the draft. For example, on 2026-10-15, a draft had four sentences over the limit, and
   one search and one word count over the draft file found them.
-- For the priority of an issue, see [The body of an issue](planner.md#the-body-of-an-issue) of planner.md and
-  [The project board](#the-project-board).
+- For the priority of an issue, see [The body of an issue](issue-subagents.md#the-body-of-an-issue) of
+  issue-subagents.md and [The project board](#the-project-board).
 - Right after each post of the body of an issue, the session compares the posted body with the body of its draft file.
   The body of a draft file is the file with its title line and the blank line after it taken out. An example of the
   compare is `diff <(gh issue view <number> --json body -q .body) <body of the draft>`. The compare ignores blank lines
@@ -179,17 +179,17 @@ on that open issue that gives the new case. This section covers each session, al
   approval.
 - With the draft, the planner gives the user one recommendation for the issue: no change, a priority, another milestone,
   or new blocked-by links. The user decides. After the approval, the planner makes the change in the same post round.
-- A change of the milestone follows [The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md. A
-  change of the links follows [The blocked-by links](planner.md#the-blocked-by-links) of planner.md, as for any issue.
-  That also covers the read of `tasker status` before a link.
+- A change of the milestone follows [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) of
+  issue-subagents.md. A change of the links follows [The blocked-by links](issue-subagents.md#the-blocked-by-links) of
+  issue-subagents.md, as for any issue. That also covers the read of `tasker status` before a link.
 
 On 2026-10-24, #406 showed the problem of #391 again during the work, not in a `/session-review`. The user said: "if we
 see a recurrence we can bump up its priority and adjust the milestone and blockers."
 
 ## The blocked-by links
 
-The rules for the links are in [The blocked-by links](planner.md#the-blocked-by-links) of planner.md. The commands below
-work with gh 2.101.0:
+The rules for the links are in [The blocked-by links](issue-subagents.md#the-blocked-by-links) of issue-subagents.md.
+The commands below work with gh 2.101.0:
 
 - To add a link: `gh issue edit <blocked number> --add-blocked-by <blocker number>`.
 - To remove a link: `gh issue edit <blocked number> --remove-blocked-by <blocker number>`.
@@ -230,9 +230,9 @@ work with gh 2.101.0:
 
 ## Milestones
 
-[The milestone of an issue](planner.md#the-milestone-of-an-issue) of planner.md gives the milestone of each issue. The
-start of [The close of a milestone](operator-start.md#the-close-of-a-milestone) is the authority for the GitHub
-milestone closure of a milestone with no work left. The planner needs no other word of the user for it.
+[The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) of issue-subagents.md gives the milestone of
+each issue. The start of [The close of a milestone](operator-start.md#the-close-of-a-milestone) is the authority for the
+GitHub milestone closure of a milestone with no work left. The planner needs no other word of the user for it.
 [Pick the tickets](pick-the-tickets.md#pick-the-tickets) of pick-the-tickets.md gives the report of an orchestrator when
 its milestone is done.
 
