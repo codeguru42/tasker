@@ -38,11 +38,11 @@ The orchestrator does all the steps of this section.
   runs no `tasker show` for it. Each ticket that it blocks waits until it closes. While it is open, its milestone is not
   done. The earlier-blocker offer does not cover such an issue.
 
-  For an open issue of this kind, the orchestrator of its milestone sends one item. If an open item or the handoff file
-  of the orchestrator already asks for these steps, the orchestrator sends no item. The item asks the user to do the
-  steps, to close the issue and then to answer the item. After the answer, the orchestrator reads the board. If the
-  issue is still open, the orchestrator tells the user that its tickets wait. If the read fails,
-  [the failure rule](limits.md#the-failure-rule) applies.
+  For an open issue of this kind, the orchestrator of its milestone asks the user in its question pane, as
+  [Start](question-pane.md#start) says. If an open question or the handoff file of the orchestrator already asks for
+  these steps, the orchestrator asks nothing. The question asks the user to do the steps, to close the issue and then to
+  answer the question. After the answer, the orchestrator reads the board. If the issue is still open, the orchestrator
+  tells the user that its tickets wait. If the read fails, [the failure rule](limits.md#the-failure-rule) applies.
 
 - The priority rule: among the tickets that can start, the orchestrator starts a ticket with the priority `P0` first.
   Then it starts a ticket with `P1`, then a ticket with no priority, then a ticket with `P2`. The priority of a ticket
@@ -661,18 +661,18 @@ offer. A ticket that a ticket on hold blocks waits while the link stays, and it 
 hold. A rule that names a parked task or a postponed ticket still applies, for example the bullet "If the user postpones
 the parent" of the stacked-ticket rule. The report of a done milestone names each ticket on hold.
 
-A waiting question of a ticket on hold is a question of an item of the orchestrator about that ticket. No answer to it
-reached the orchestrator. Before the report of a done milestone, the orchestrator moves each waiting question to a hold
-comment on its ticket. A hold comment starts with `## Open question of a ticket on hold`. It gives the question and its
-choices word for word, as the item gave them, and the id of the item. It says that the orchestrator asks the question
-again at the end of the hold.
+A waiting question of a ticket on hold is an open question of the orchestrator about that ticket, as
+[Start](question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a done milestone,
+the orchestrator moves each waiting question to a hold comment on its ticket. A hold comment starts with
+`## Open question of a ticket on hold`. It gives the question and its choices word for word, as the question gave them,
+and the question id. It says that the orchestrator asks the question again in its pane at the end of the hold.
 
 The orchestrator posts each hold comment at once, with no approval of the user, as it posts the open-question note of
 [the change-of-scope comment](plan-review.md#the-change-of-scope-comment). This rule wins over the approval of a comment
 in [Before a post](issues.md#before-a-post). The report of a done milestone names each question that the orchestrator
-moved. It gives the id of the item and the link of the hold comment of each such question. If the post of a hold comment
+moved. It gives the question id and the link of the hold comment of each such question. If the post of a hold comment
 fails, [the failure rule](limits.md#the-failure-rule) applies, and the report names that question as still open in its
-item.
+question.
 
 An answer can reach the orchestrator after the post of the hold comment. Then the orchestrator acts on the answer and
 posts an answer comment at once, with no approval of the user, as for a hold comment. An answer comment starts with
@@ -685,11 +685,11 @@ no task starts as any other ticket. The reason for the label: a card in Todo loo
 
 At the end of the hold, the orchestrator reads the comments of the ticket with `gh issue view <number> --json comments`.
 Only a comment of the account of the orchestrator counts, as [the open-question rule](#the-open-question-rule) says.
-Before it starts any ticket after the word of the user, it asks the user, in a new item, the question of each hold
-comment with no answer comment. This ask wins over the time of the ask in the open-question rule, and other tickets can
-start while the answer waits. The open-question rule stops the start of the ticket until the answer. If the read of the
-comments fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket until the
-read works.
+Before it starts any ticket after the word of the user, it asks the user, in its question pane, the question of each
+hold comment with no answer comment. This ask wins over the time of the ask in the open-question rule, and other tickets
+can start while the answer waits. The open-question rule stops the start of the ticket until the answer. If the read of
+the comments fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket until
+the read works.
 
 If the milestone is open and no orchestrator of its slug runs, the operator removes the label and starts one, as
 [The close of a milestone](operator-start.md#the-close-of-a-milestone) says. If the label is already gone at the word of
@@ -864,10 +864,9 @@ slot and landing rules still apply.
   the issue, as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator
   drafts and files no issue itself. The one exception is the issue of step 1 of
   [A failed CI run](ci-wait.md#a-failed-ci-run), which the orchestrator files itself. If `SendMessage` fails, for
-  example because no planner runs, the orchestrator sends the lesson to [its operator](../operator.md) as an item. A
-  refused message counts as a failed `SendMessage`. The orchestrator waits for no answer from the planner. A missing
-  answer is out of scope. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue
-  draft to the planner.
+  example because no planner runs, the orchestrator shows the lesson as a report in its own tab. A refused message
+  counts as a failed `SendMessage`. The orchestrator waits for no answer from the planner. A missing answer is out of
+  scope. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue draft to the planner.
 
   A request of [the user](GLOSSARY.md) to draft an issue, or to change the title or the body of an issue, is a proposed
   issue of this bullet. [The orchestrator](../orchestrator.md) sends it to `planner-<slug>` with no question to the

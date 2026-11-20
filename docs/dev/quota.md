@@ -457,12 +457,12 @@ a task of a timed stop before its reset. A task also leaves the pi wait in each 
 [Delete the job](#delete-the-job). After the last task leaves the pi wait, the pi wait ends. Then the orchestrator does
 the steps of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) again.
 
-At each stop of the pi wait, the orchestrator sends a new item, the item of the stop. The item names each waiting task.
-A full stop gives the item one question, for its own task. A timed stop gives the item no question, so the item is a
-report with the mark "Report:" of [The form of an item](operator-items.md#the-form-of-an-item). Each earlier item keeps
-its open questions.
+At each stop of the pi wait, the orchestrator shows a report as text in its own tab, the report of the stop. The report
+names each waiting task. A full stop also gives one question, for its own task. The orchestrator asks it in its question
+pane, as [Start](question-pane.md#start) says. A timed stop gives no question, so the report is all of it. Each earlier
+question stays open.
 
-For each waiting task, the item names the issue key and the `paused from:` and `resets at:` values. It also names the
+For each waiting task, the report names the issue key and the `paused from:` and `resets at:` values. It also names the
 upstreams of the repo of that task. The orchestrator reads the upstreams with this command:
 
 ```bash
@@ -470,12 +470,12 @@ tasker show-config --repo <repo> | jq -r '[.assistant.models[].model | split("/"
 ```
 
 The upstream of a model is the part of the model before the first `/`. If a read of the test or of the upstreams failed,
-the item also names the failed read.
+the report also names the failed read.
 
 For a full stop, the question gives the user two steps. In the first step, the user adds credits to the account of each
 upstream of the repo of the task. If the account has a limit that resets at a set time, the user can wait for that reset
 instead. In the second step, the user runs `tasker resume <key>` and answers after that run ends. The choices are (a)
-resume and (b) another step. For a timed stop, the item says that the task resumes at its reset with no answer.
+resume and (b) another step. For a timed stop, the report says that the task resumes at its reset with no answer.
 
 An answer of the user to the question of a task has one of these outcomes:
 
@@ -513,14 +513,15 @@ fails" paragraph, wait, or run `tasker retry <issue>`, as directed. Keep the slo
 #### The orchestrator's data root and questions
 
 1. Read the data root with `tasker show-config | jq -r '.dataRoot'`.
-2. Send the user one item with two questions. The first question asks whether the run stopped at a Codex usage limit.
-   The choices are (a) yes, (b) no and (c) not known.
+2. Ask the user two questions in the question pane, one after the other, as [Start](question-pane.md#start) says. The
+   first question asks whether the run stopped at a Codex usage limit. The choices are (a) yes, (b) no and (c) not
+   known.
 3. The second question asks for the permission to read the transcript of the failed run. It gives the path of the
    transcript folder of the attempt and the two commands of
-   [The permitted transcript read](#the-permitted-transcript-read). The choices are (a) yes and (b) no. The item gives
-   the lines and the outputs of the report.
-4. If the data-root read fails, name the failed read in the item and ask only the first question. Such a capture has no
-   transcript copy.
+   [The permitted transcript read](#the-permitted-transcript-read). The choices are (a) yes and (b) no. The question
+   gives the lines and the outputs of the report.
+4. If the data-root read fails, name the failed read in the report in the tab and ask only the first question. Such a
+   capture has no transcript copy.
 
 #### The permitted transcript read
 
@@ -554,9 +555,9 @@ is the only stop record. If either command fails or prints no line, tell the use
 | (a) yes or (c) not known | (b) no                                           | Keep only the report lines and outputs in the capture.                                                                                                |
 | (a) yes or (c) not known | No second question after a failed data-root read | Keep only the report lines and outputs, and name the failed read.                                                                                     |
 
-A "no" to the first question ends the item without a second answer. Every other row needs an answer to each question
-presented. Until then, read nothing and tell the task subagent nothing. An answer that picks no choice leaves its
-question open. The task stays in `failed`.
+A "no" to the first question ends the questions without a second answer. Every other row needs an answer to each
+question presented. Until then, read nothing and tell the task subagent nothing. An answer that picks no choice leaves
+its question open. The task stays in `failed`.
 
 #### The capture and the next step
 
@@ -564,14 +565,14 @@ Make the capture a proposed comment with the date, `codex --version` output, fir
 permitted copy in a code block. If an open issue adds the Codex quota outcome, propose the comment there; on 2026-11-11
 that issue was #662. Otherwise send the capture to `planner-<slug>` as a proposed issue.
 
-If the issue-state read fails, post nothing, tell the user, and keep the capture only in the item. Show the comment
-draft in a new item. Post only after user approval, using any changes the user requests. If the user rejects or drops
-it, post nothing and keep it only in the item.
+If the issue-state read fails, post nothing, tell the user, and keep the capture only in the report in the tab. Ask the
+approval of the comment draft in the pane. Post only after user approval, using any changes the user requests. If the
+user rejects or drops it, post nothing and keep it only in the report in the tab.
 
 Do not edit a document to claim the form of the stop; the later quota-outcome issue owns that work. An answer of (b) no
 is not a capture, so this paragraph does not apply to that answer. For a capture, keep this task in `failed`. The reset
 time is unknown. After the answers of a capture, tell the task subagent to wait. Tell it to run `tasker retry <issue>`
-only on the word of the user. Say this in the capture item.
+only on the word of the user. Say this in the report of the capture.
 
 ### Delete the job
 

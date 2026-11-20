@@ -130,14 +130,14 @@ that asks a session for a measure, for example the issue check.
 
 A task subagent [stops](limits.md#the-answer-wait-rule) at a measure that needs a change of the state of the user. Its
 report gives the question and the fact that the measure tests. The orchestrator does not answer the question, also not
-under [the design-gap rule](#the-design-gap-rule). It sends the question to [its operator](../operator.md) as an item,
-in the form of [The form of an item](operator-items.md#the-form-of-an-item). The question is a question for the user
-alone, so the operator sends no [answer of the operator](operator-items.md#the-answer). The orchestrator sends the
-answer of the user to the task subagent with `SendMessage`.
+under [the design-gap rule](#the-design-gap-rule). It asks the question in its own question pane, as
+[Start](question-pane.md#start) says. The question is a question for the user alone. The orchestrator sends the answer
+of the user to the task subagent with `SendMessage`.
 
-For a measure of its own that needs such a change, the orchestrator also sends the question to its operator as an item.
-A ticket subagent follows [The state of the user](planner.md#the-state-of-the-user) of planner.md for the outcomes of
-the answer. The answer of the user on a question of a task subagent or of the orchestrator has one of these outcomes:
+For a measure of its own that needs such a change, the orchestrator also asks the question in its question pane. It is a
+question for the user alone. A ticket subagent follows [The state of the user](planner.md#the-state-of-the-user) of
+planner.md for the outcomes of the answer. The answer of the user on a question of a task subagent or of the
+orchestrator has one of these outcomes:
 
 - The user approves the command. The message of the orchestrator to the task subagent gives the approved command and its
   undo step word for word. The covered session that asked runs them, as this subsection says. Then it goes on from the

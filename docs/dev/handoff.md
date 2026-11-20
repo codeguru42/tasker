@@ -11,12 +11,13 @@ example an initial planner or the orchestrator of a numbered milestone, also rea
 
 ## The suggestion of a handoff
 
-When the old session suggests a handoff, the handoff starts with no further word of the user. An orchestrator or a
-follow-up planner sends its suggestion to the operator as an item. For such a session, the handoff starts when the go of
-the operator arrives, as [A handoff](operator-start.md#a-handoff) says. The user can also ask the old session for a
-handoff at any time. A request of the user for a handoff needs no go. The start of a handoff is the go of the operator,
-the suggestion of the old operator or the request of the user. After the start, the old session does the steps of its
-role page: [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
+When the old session suggests a handoff, the handoff starts with no further word of the user. An orchestrator asks the
+user in its question pane, as [Start](question-pane.md#start) says. A follow-up planner sends its suggestion to
+`orchestrator-<slug>`, which asks it in its pane. For such a session, the handoff starts at the go of the user in the
+decision, as [A handoff](operator-start.md#a-handoff) says. The user can also ask the old session for a handoff at any
+time. A request of the user for a handoff needs no go. The start of a handoff is the go of the operator, the suggestion
+of the old operator or the request of the user. After the start, the old session does the steps of its role page:
+[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
 [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and
 [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its
 current tasks. Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
@@ -122,8 +123,9 @@ Before it writes the file, the old session sends each fact that it measured and 
 `SendMessage`. The slug comes from the own name of the old session. The planner sends a fact to a doc of the repo
 through a ticket, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) says. The old planner sends nothing,
 because [its role page](handoff-planner.md#the-handoff-file-of-the-planner) keeps these facts and lessons. If the send
-fails, also because no session has that name, the old session sends them to its operator as an item. The old operator
-has no operator, so [the failure rule](limits.md#the-failure-rule) applies to it.
+fails, also because no session has that name, an orchestrator shows them as a report in its own tab. A follow-up planner
+sends them to `orchestrator-<slug>`. The old operator has no operator, so [the failure rule](limits.md#the-failure-rule)
+applies to it.
 
 The handoff file names each session other than the new session by its name, also in the prompt. It gives no
 [session ref and no socket address](GLOSSARY.md) of such a session. The tab list of the file of the operator keeps the
@@ -302,9 +304,9 @@ A held item can ask for a choice that only the user makes, while a task subagent
 slug also holds such an item. On 2026-10-25, during a handoff of operator-docs, the task subagent of #443 stopped for
 such a choice, and orchestrator-docs asked the user in its own tab.
 
-As [The operator](working-with-the-user.md#the-operator) says, an orchestrator or a follow-up planner asks the user only
-through an item. So an orchestrator or a follow-up planner does not ask the user in its own tab. An initial planner
-still works with the user in its tab, as that section says.
+As [The operator](working-with-the-user.md#the-operator) says, an orchestrator asks the user in its question pane. A
+follow-up planner asks through `orchestrator-<slug>`. So a hold of the items holds no open question of either, and
+neither asks the user in its own tab. An initial planner still works with the user in its tab, as that section says.
 
 If the user answers before the write of the handoff file, the old operator sends that answer. The new operator sends
 each other answer.

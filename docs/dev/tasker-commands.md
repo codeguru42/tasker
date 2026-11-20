@@ -127,14 +127,14 @@ was
 On that short form, operator-m16 told the user that the denials of that day did not fit the guess that a chain caused
 them. Then operator-m16 withdrew that guess. The exact call later showed that the denied call was a chain.
 
-The classifier of auto mode can deny a `gh` write of a follow-up planner or an orchestrator. That session sends the
-operator an item with the exact command, the folder and the exact text of the denial. The operator gives the user the
-exact command and the folder, with the `!` prefix of Claude Code.
+The classifier of auto mode can deny a `gh` write of a follow-up planner or an orchestrator. An orchestrator asks in its
+[question pane](question-pane.md#start) with the exact command, the folder and the exact text of the denial. A follow-up
+planner sends them to `orchestrator-<slug>`, which asks in its pane. The user runs the command with the `!` prefix of
+Claude Code in the question pane, and the question session sends the output.
 
-The message of the operator to that session gives the output of the command, or says that the command did not run. The
-output goes with the words of the user, and this paragraph wins over [The answer](operator-items.md#the-answer). If the
-command ran, the session goes on with its work. If it did not run, the step stays open, and the session runs the action
-in no other form.
+The message to that session gives the output of the command, or says that the command did not run. The output goes with
+the words of the user. If the command ran, the session goes on with its work. If it did not run, the step stays open,
+and the session runs the action in no other form.
 
 An initial planner gives the user the command directly. A check failure keeps its own bullets. On 2026-10-30, the
 classifier denied `gh issue comment` and `gh issue edit` of planner-m26, and the user ran each command.
@@ -159,9 +159,9 @@ block, with these differences:
   the same form. If that try also fails with a check failure, the orchestrator tells the user the exact command and the
   link, so that the user can run the command with the `!` prefix.
 - A planner follows the same steps for a check failure of its own call. If the second try also fails with a check
-  failure, a follow-up planner sends the operator an item. The paragraph that starts "The classifier of auto mode can
-  deny" and the paragraph after it give the steps of the item. The item also gives the link, and the operator gives the
-  user the link. An initial planner gives the user the command and the link directly.
+  failure, a follow-up planner sends the question to `orchestrator-<slug>`, which gives the user the link in its pane.
+  The paragraph that starts "The classifier of auto mode can deny" and the paragraph after it give the steps of the
+  question. An initial planner gives the user the command and the link directly.
 
 On 2026-10-25, in the session of #428, each Bash call that no permission rule allowed failed with this text:
 
@@ -198,13 +198,13 @@ A planner makes the records on the word of the user, with these steps:
 2. If the scan exits with an error, tell the user the output and stop.
 3. If the scan lists no new record, tell the user so and stop.
 4. Show the user the lines of the new records and the path of `/tmp/tasker/<slug>/denials/records.jsonl`. Also show the
-   `store` command of step 5 with the id of each new record, and its undo step. A follow-up planner sends one item with
-   these parts.
+   `store` command of step 5 with the id of each new record, and its undo step. A follow-up planner sends the question
+   of step 4 to `orchestrator-<slug>` with these parts.
 5. On the word of the user, run
    `node scripts/denial-records.ts store --store $HOME/Documents/tasker/denials/store.jsonl --out /tmp/tasker/<slug>/denials <id>...`,
    with the id of each new record that the user keeps. If the user keeps no record, run no `store`.
 6. If `store` exits with an error, tell the user the output and stop.
-7. Tell the user the output `<new> stored`. A follow-up planner sends it as a report.
+7. Tell the user the output `<new> stored`. A follow-up planner sends it as a report to `orchestrator-<slug>`.
 
 Before step 4, the planner runs `stat -c %s $HOME/Documents/tasker/denials/store.jsonl`. It also runs `test -d` on
 `$HOME/Documents/tasker/denials`, `$HOME/Documents/tasker` and `$HOME/Documents`. It keeps the results. If the store
@@ -216,13 +216,13 @@ Before step 5, the user can change a line of `records.jsonl`. Then `store` keeps
 each known form again. `<slug>` is the slug of the planner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it.
 
 The store file is state of the user, as [The state of the user](plan-review.md#the-state-of-the-user) defines it. Only a
-planner runs `store` on this file, and only the user approves step 5. So the item of step 4 is a question for the user
-alone, as [The open items](operator-items.md#the-open-items) says. A task subagent, the orchestrator, a ticket subagent
-and a review agent run no `store` on this file.
+planner runs `store` on this file, and only the user approves step 5. So the question of step 4 is a question for the
+user alone, as [The open items](operator-items.md#the-open-items) says. A task subagent, the orchestrator, a ticket
+subagent and a review agent run no `store` on this file.
 
 If the classifier denies `scan` or `store`, the planner runs that step in no other form and in no part. It tells the
-user the exact command and the exact text of the denial, and a follow-up planner sends them as an item. The planner
-gives the user no command with the `!` prefix for these steps.
+user the exact command and the exact text of the denial, and a follow-up planner sends them to `orchestrator-<slug>`.
+The planner gives the user no command with the `!` prefix for these steps.
 
 An issue that uses the records says that its task subagent reads the store file. A record goes to no issue, no comment
 and no doc. An issue, a comment or a doc gives only counts and conclusions from the records. A count or a conclusion can
