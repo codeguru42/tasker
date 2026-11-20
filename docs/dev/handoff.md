@@ -47,7 +47,10 @@ recommendation. [The form of a reply](working-with-the-user.md#the-form-of-a-rep
 or "not yet", with its reason. The reason gives the count of the session and the count of a suggestion of the role page
 of the session. The count of the session is [the landing count](handoff-orchestrator.md#the-landing-count) of the
 orchestrator, [the post count](handoff-planner.md#the-post-count) of the planner or
-[the close count](handoff-operator.md#the-close-count) of the operator.
+[the close count](handoff-operator.md#the-close-count) of the operator. For an orchestrator, a list of open questions or
+open items that it shows in its own tab is a progress report of [The operator](working-with-the-user.md#the-operator),
+and it carries no handoff recommendation. The go question in its question pane carries the recommendation, as
+[the landing count](handoff-orchestrator.md#the-landing-count) says.
 
 When the count of the session reaches the count of a suggestion, the recommendation is "hand off now", also in an answer
 to [a question of the user](working-with-the-user.md#a-question-of-the-user). For an orchestrator, the recommendation

@@ -125,8 +125,8 @@ automatic compaction ran right after, and the session review and the handoff fil
 
 The old orchestrator shows each answer to [a question of the user](working-with-the-user.md#a-question-of-the-user) as a
 progress report in its own tab. This also covers a question that reaches it with `From the user:`. The answer carries no
-"hand off now", also at the count of 12. At that count, the go question of the paragraph that starts "At a count of 12"
-carries the suggestion. A landing report is not such an answer.
+"hand off now", also at the count of 12. At that count, the go question of the paragraph that starts "At the event that
+brings the count to 12" carries the suggestion. A landing report is not such an answer.
 
 ## The steps of the old orchestrator
 
