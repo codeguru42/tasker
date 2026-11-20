@@ -6,7 +6,7 @@ name the operator.
 ## Language
 
 **Issue-draft subagent**: A subagent that writes one draft of an issue. It follows
-[issue-subagents.md](issue-subagents.md).
+[issue-subagents.md](issue-subagents.md) and [issue-draft.md](issue-draft.md).
 
 **Issue-post subagent**: A subagent that posts one approved issue on GitHub. It follows
 [issue-subagents.md](issue-subagents.md).

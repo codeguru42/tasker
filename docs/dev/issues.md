@@ -71,10 +71,11 @@ goes. This page holds only how to do it on GitHub.
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md. Before a session shows a
   draft to the user, the session runs the self-check of the simple-english skill over the file of the draft. The ticket
   subagent of a planner runs the check over its draft file before the first loop of
-  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md. The check counts the words of each
-  sentence. It also searches the draft for the banned words and for an `if` or a `when` inside a sentence. The session
-  fixes each hit before it shows the draft. For example, on 2026-10-15, a draft had four sentences over the limit, and
-  one search and one word count over the draft file found them.
+  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md. An issue-draft subagent runs the
+  check over its draft file before its report, as [The self-check](issue-draft.md#the-self-check) of issue-draft.md
+  says. The check counts the words of each sentence. It also searches the draft for the banned words and for an `if` or
+  a `when` inside a sentence. The session fixes each hit before it shows the draft. For example, on 2026-10-15, a draft
+  had four sentences over the limit, and one search and one word count over the draft file found them.
 - For the priority of an issue, see [The body of an issue](issue-subagents.md#the-body-of-an-issue) of
   issue-subagents.md and [The project board](#the-project-board).
 - Right after each post of the body of an issue, the session compares the posted body with the body of its draft file.
