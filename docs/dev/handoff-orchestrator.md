@@ -13,6 +13,9 @@ The rules of this page cover only a long-running orchestrator. An orchestrator o
 of the orchestrator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). The rules of this page do
 not cover it. A long-running orchestrator stops there too, after its close starts on the word of the user.
 
+The rules of this page also cover an orchestrator of a set scope, with the same landing count.
+[The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) defines a set scope.
+
 A long-running orchestrator also reads the board with one recurring job, the board watch job. A new issue can arrive
 when no ticket of the milestone runs. Then no landing comes, and no read of the board follows. On 2026-10-25,
 orchestrator-docs read the board with a job at minute 7 and minute 37 of each hour.
@@ -137,13 +140,12 @@ After the start, the old orchestrator does these steps:
    nobody resumes it after a quota stop.
 3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17. Then
    write the handoff file, as [The handoff file](handoff.md#the-handoff-file) says.
-4. Send the path of the handoff file to [the operator of the session](../operator.md) as an item, as
-   [The form of an item](operator-items.md#the-form-of-an-item) of operator-items.md says.
+4. Start the new orchestrator, and then close your own tab, as
+   [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says.
 
-The handoff ends in the operator, as [The end of a handoff](handoff.md#the-end-of-a-handoff) and
-[The stop and the start](handoff.md#the-stop-and-the-start) of handoff.md say. Until the end, the old orchestrator
-starts no new ticket, also after step 4. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It
-then started a new ticket without the word of the user.
+The handoff ends after step 4. The operator has no part in it. Until the end, the old orchestrator starts no new ticket,
+also after step 4. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new
+ticket without the word of the user.
 
 ## The handoff file of the orchestrator
 
@@ -151,22 +153,76 @@ The handoff file of the orchestrator holds the parts of
 [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The old orchestrator also puts these parts in the
 handoff file:
 
-- The prompt names the milestone, the path of the file, the session name, the first free item id and
+- The prompt names the scope, the path of the file, the session name, the first free item id and
   [The start of the new orchestrator](#the-start-of-the-new-orchestrator). The first step of the prompt is the prompt
   read of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The prompt also names each extra doc.
   An extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
   [the re-read rule](doc-reads.md#the-re-read-rule) does not hold.
+- For a set scope, the prompt names each open issue of the set as it stands at the handoff. It uses the form of the
+  first prompt of [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator).
 - The number of each open broken-test issue that the old orchestrator knows of (see the broken-test rule in
   [A failed CI run](ci-wait.md#a-failed-ci-run)).
-- A table of the open issues of the milestone, with the columns issue, topic, blockers and files.
+- A table of the open issues of the scope, with the columns issue, topic, blockers and files.
 - Each open finding of the review rounds. A handled finding, as [Session-review rounds](session-review-rounds.md)
   defines it, leaves the file.
+- The name, the tab id and the pane id of the old orchestrator. The tab id is `$HERDR_TAB_ID`, and the pane id is
+  `$HERDR_PANE_ID`. The old orchestrator gets the two ids before it writes the file. If it cannot get the pane id, the
+  file says so. The close of step 6 of [The start of the new orchestrator](#the-start-of-the-new-orchestrator) uses the
+  same ids. The file gives no session ref of the old orchestrator.
 
 ## The start of the new orchestrator
 
+After step 3 of [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator), the old orchestrator does these
+steps:
+
+1. The old orchestrator reads the configuration, as steps 1 to 3 of
+   [The steps of the user](../orchestrator.md#the-steps-of-the-user) say.
+2. It opens a new herdr tab with `herdr tab create`, as step 2 of [Start a session](operator-start.md#start-a-session)
+   says. The label is `orchestrator-<slug>`.
+3. It keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. They are the tab id and the pane id of
+   the new orchestrator.
+4. It starts the new orchestrator in the new pane with `herdr agent start`, as step 3 of "Start a session" says.
+5. The old orchestrator makes sure that the new orchestrator runs. It runs `herdr pane read <pane id>` with the pane id
+   of step 3.
+
+   If the kind is `pi`, run the reads of
+   [The start gate of a pi session](operator-start.md#the-start-gate-of-a-pi-session) after the `herdr pane read`. While
+   the state is Pending, the old orchestrator closes nothing.
+
+6. If the new orchestrator runs, the old orchestrator runs `herdr tab get "$HERDR_TAB_ID"` in its shell. If
+   `.result.tab.pane_count` is 1, it runs `herdr tab close "$HERDR_TAB_ID"`. If the count is more than 1, it closes only
+   its own pane with `herdr pane close "$HERDR_PANE_ID"`. This close is its last action. If the kind is `pi`, step 6
+   starts only after the state Done.
+7. The old orchestrator closes nothing, keeps its tab open and tells the user in each of these cases:
+
+   - (a) `HERDR_TAB_ID` is not set.
+   - (b) `HERDR_PANE_ID` is not set, so the old orchestrator cannot get the id of its own pane.
+   - (c) `herdr tab get`, `herdr tab close` or `herdr pane close` fails.
+
+8. If the new orchestrator does not run, the old orchestrator closes nothing. The same holds if a step of the start
+   fails or the state of the gate is Failed. It tells the user in its own tab, with the command and the error.
+
+In step 4, the herdr agent name is `orchestrator-<slug>-<time>`, and `-n` takes `orchestrator-<slug>`. `<time>` is the
+time part of the name of the handoff file. Step 2 of
+[The start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives this form and its reason. The
+first prompt is the prompt of the handoff file, in one line. Step 5 uses `herdr pane read` and not `ListAgents`, because
+two sessions have the name.
+
+The old orchestrator keeps two tab ids: its own tab id, `$HERDR_TAB_ID`, and the tab id of the new orchestrator from
+step 3. It closes itself by its own tab id. It does not use
+[The own-session closure](operator-start.md#the-own-session-closure) or
+[the pi row check](operator-start.md#the-pi-row-check) for this close. During a handoff, two rows have the own name, so
+the row check of that section cannot pass.
+
+In a handoff of an orchestrator, this rule wins over the bullet of "The own-session closure" about a session that the
+user opened in a pane. That bullet says that such a session cannot close itself. So the old orchestrator that the user
+started also closes itself by its tab id.
+
 The new orchestrator is `orchestrator-<slug>`. Under `pi`, the name comes from `-n` and the session reads it before its
-role work, so the prompt holds no name step. [The stop and the start](handoff.md#the-stop-and-the-start) applies. The
-new orchestrator then starts with the re-read rule. Right after the first doc read of the re-read rule, the new
+role work, so the prompt holds no name step. The new orchestrator does
+[the start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff file.
+
+The new orchestrator then starts with the re-read rule. Right after the first doc read of the re-read rule, the new
 orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). After that
 check, it reads the tasks in flight with `tasker status`, also [the parked tasks](pick-the-tickets.md#the-defer-rule).
 It reads the other sessions with `ListAgents`. Then it makes its board watch job, as
