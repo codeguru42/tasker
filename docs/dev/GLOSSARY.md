@@ -9,7 +9,7 @@ name the operator.
 [issue-subagents.md](issue-subagents.md) and [issue-draft.md](issue-draft.md).
 
 **Issue-post subagent**: A subagent that posts one approved issue on GitHub. It follows
-[issue-subagents.md](issue-subagents.md).
+[issue-subagents.md](issue-subagents.md) and [issue-post.md](issue-post.md).
 
 **Issue-review subagent**: A subagent that reviews one draft of an issue. It follows
 [issue-subagents.md](issue-subagents.md) and [issue-review.md](issue-review.md). A review agent of a ticket subagent is

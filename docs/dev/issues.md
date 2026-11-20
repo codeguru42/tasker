@@ -3,10 +3,12 @@
 This page gives the steps and the GitHub facts to file issues, blocked-by links and milestones on GitHub.
 [Before a post](#before-a-post) covers each session that posts an issue, except where a sentence names the planner.
 [A recurrence](#a-recurrence) covers each session. The rest of the page is for the planner, but
-[The blocked-by links](#the-blocked-by-links) also serves each session that decides links before a post.
-[planner.md](planner.md) defines the terms "planner" and "blocked-by link", and [docs/dev/GLOSSARY.md](GLOSSARY.md)
-defines the term "user". [issue-subagents.md](issue-subagents.md) holds the rules for what an issue says and where it
-goes. This page holds only how to do it on GitHub.
+[The blocked-by links](#the-blocked-by-links) also serves each session that decides links before a post. An
+[issue-post subagent](GLOSSARY.md) also reads [The blocked-by links](#the-blocked-by-links) and
+[The project board](#the-project-board), as [issue-post.md](issue-post.md) says. [planner.md](planner.md) defines the
+terms "planner" and "blocked-by link", and [docs/dev/GLOSSARY.md](GLOSSARY.md) defines the term "user".
+[issue-subagents.md](issue-subagents.md) holds the rules for what an issue says and where it goes. This page holds only
+how to do it on GitHub.
 
 ## Before a post
 

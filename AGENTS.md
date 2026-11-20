@@ -44,6 +44,7 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
   planner follows.
 - [docs/dev/issue-draft.md](docs/dev/issue-draft.md): the rules of an issue-draft subagent.
 - [docs/dev/issue-review.md](docs/dev/issue-review.md): the rules of an issue-review subagent.
+- [docs/dev/issue-post.md](docs/dev/issue-post.md): the rules of an issue-post subagent and of each post of a planner.
 - [docs/dev/issues.md](docs/dev/issues.md): the steps to file issues on GitHub.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how a session works with the user.
 - [docs/dev/operator-start.md](docs/dev/operator-start.md): how the operator starts and stops sessions.

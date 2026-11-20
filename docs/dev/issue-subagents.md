@@ -24,8 +24,9 @@ the link to [Core features first](working-with-the-user.md#core-features-first).
 that decides an edge case.
 
 The document of the issue-draft subagent is [docs/dev/issue-draft.md](issue-draft.md). The document of the issue-review
-subagent is [docs/dev/issue-review.md](issue-review.md). Each later issue of a kind adds the path of the document of its
-kind to this rule.
+subagent is [docs/dev/issue-review.md](issue-review.md). The document of the issue-post subagent is
+[docs/dev/issue-post.md](issue-post.md). Each later issue of a kind adds the path of the document of its kind to this
+rule.
 
 ## The result of a subagent
 
