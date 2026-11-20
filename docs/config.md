@@ -265,9 +265,10 @@ only the first error shows.
 
 The providers `copilot` and `codex` have no model check.
 
-The command `tasker model` changes the model and the effort of one assistant role or one session role in the file that
-"Where the file is" names. It keeps the other keys and their order. It writes an indent of two spaces and keeps the line
-end at the end of the file. It does not write the defaults. The command has two limits:
+The command `tasker model` changes the model and the effort of one assistant role, one session role or one subagent
+role. It changes them in the file that "Where the file is" names. It keeps the other keys and their order. It writes an
+indent of two spaces and keeps the line end at the end of the file. It does not write the defaults. The command has two
+limits:
 
 - Integer-like keys move to the front of their object, in number order.
 - If a key appears twice in one object, the command keeps only the last copy.
@@ -329,23 +330,57 @@ A session role is one of `operator`, `planner`, `orchestrator` and `question`. T
 [docs/dev/GLOSSARY.md](dev/GLOSSARY.md), so `question` names only a key of `models`. The agent kind is the program of a
 session, in the form that herdr names it in `herdr agent start --kind`.
 
-| Key      | Type                 | Default    | Notes                                                                       |
-| -------- | -------------------- | ---------- | --------------------------------------------------------------------------- |
-| `kind`   | `"claude"` or `"pi"` | `"claude"` | The agent kind of each session role.                                        |
-| `models` | object               | `{}`       | Has the optional keys `operator`, `planner`, `orchestrator` and `question`. |
+A subagent is a helper that a Claude Code session starts with its `Agent` tool. A subagent runs inside the session that
+starts it. A subagent role is one of `issue-draft`, `issue-review`, `issue-post` and `write`. Each subagent role sets
+the model and the effort of a subagent, not of a session. The orchestrator starts one planner subagent for each planning
+request. The key `planner` sets the model and the effort of the planner subagent and of a planner session.
+
+The planner subagent starts the draft subagent, the review subagent and the post subagent. They draft an issue, review a
+draft and post an approved issue. The orchestrator starts the write subagent to run changes that the user approved, one
+change at a time.
+
+| Key      | Type                 | Default    | Notes                                                                                                                             |
+| -------- | -------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`   | `"claude"` or `"pi"` | `"claude"` | The agent kind of each session role and each subagent role.                                                                       |
+| `models` | object               | `{}`       | Has the optional keys `operator`, `planner`, `orchestrator`, `question`, `issue-draft`, `issue-review`, `issue-post` and `write`. |
 
 Each entry of `models` is an object with the required keys `model` (non-empty string) and `effort` (`"low"`, `"medium"`,
 `"high"`, `"xhigh"` or `"max"`).
+
+Each key of `models` sets the model and the effort of one role:
+
+| Key            | What it sets                                                               |
+| -------------- | -------------------------------------------------------------------------- |
+| `operator`     | The model and the effort of an operator session. No change.                |
+| `planner`      | The model and the effort of the planner subagent and of a planner session. |
+| `orchestrator` | The model and the effort of an orchestrator session. No change.            |
+| `question`     | The model and the effort of a question session. No change.                 |
+| `issue-draft`  | The model and the effort of a draft subagent. New.                         |
+| `issue-review` | The model and the effort of a review subagent. New.                        |
+| `issue-post`   | The model and the effort of a post subagent. New.                          |
+| `write`        | The model and the effort of a write subagent. New.                         |
 
 The command `tasker model` also changes `sessions.models.<role>` in the file, with the same rules as the paragraph in
 [`assistant`](#assistant). It adds the keys `sessions` and `models` when the file has none. A role with no entry needs
 both the model and the effort.
 
-A role with no entry in `models` gets no model and no effort. The session then uses the defaults of the agent.
+A session role with no entry in `models` gets no model and no effort. The session then uses the defaults of the agent.
+
+A subagent role with no entry gets no model and no effort from tasker. The `Agent` tool then uses its default model and
+its usual effort. This rule differs from a session role with no entry, which uses the defaults of the agent.
+
+On 2026-11-19, a read of the tool schema of the `Agent` tool in Claude Code 2.1.329 gave these facts. With no model, the
+subagent uses the model of its agent definition. Without one, it uses the default, which is the model of the parent
+session. A configured default subagent model wins over the model of the parent session. With no effort, the subagent
+runs at its usual effort.
 
 For the kind `claude`, `model` must have one of the forms that [`assistant`](#assistant) gives for the `claude-code`
 provider. Any other model gives the error
 `repos.<key>.sessions.models.<role>.model: is not a claude-code model: <value>`.
+
+This check is the same for each key of `models`. The `Agent` tool lists only the models `sonnet`, `opus`, `haiku` and
+`fable`. So the loader accepts a model that the `Agent` tool does not list, for example `claude-opus-5-5` or `opusplan`.
+Then the start of the subagent can fail, and the user sees the fault only at that start.
 
 For the kind `pi`, `model` must have the form `<provider>/<model-id>`, for example
 `openrouter/deepseek/deepseek-v4.1-flash`. It must not end in a pi thinking level, because the effort gives the level.
@@ -354,8 +389,10 @@ Two errors are possible, both at `repos.<key>.sessions.models.<role>.model`:
 - `is not a pi model in the form <provider>/<model-id>: <value>`
 - `ends in the pi thinking level <level>: <value>`
 
-A model with both faults gets only the first error. One kind covers each session role. So under `pi`, the role
-`question` must also hold a pi model, although no question session starts under `pi`.
+A model with both faults gets only the first error. One kind covers each session role and each subagent role. So under
+`pi`, the role `question` must also hold a pi model, although no question session starts under `pi`. For the same
+reason, the subagent roles `issue-draft`, `issue-review`, `issue-post` and `write` must hold a pi model under `pi`. No
+measure shows that a pi session can start a subagent.
 
 The loader accepts each of the five efforts under `pi`. The efforts `xhigh` and `max` are measured. For the measured
 model, pi used the level max after `--thinking xhigh`, and no one measured the cause. The efforts `low`, `medium` and
