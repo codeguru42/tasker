@@ -19,28 +19,60 @@ The orchestrator does all the steps of this section.
   - An issue joins a set only by a word of the user. A word of the user that adds an issue also starts a read of the
     board. No message of another session adds an issue to the set.
   - The reason of the set scope: the user can run a few chosen issues, and they need no milestone of their own.
-- The earlier-blocker offer: a ticket of the milestone can wait on an open blocker of an earlier milestone that no
-  orchestrator runs. An earlier milestone is a numbered milestone with a lower number, for example M19 before M20. The
-  number is the number in the title of the milestone, for example 19 in "M19 — Polish". A blocker of "Docs", of "Future"
-  or of no milestone is not of an earlier milestone. Then the orchestrator tells the user and offers to run those
-  blockers, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The orchestrator runs
-  them only on the word of the user. The blockers keep their milestone. For such a blocker, the word of the user wins
-  over the words "only from the milestone of the scope" of the first bullet of this section. The sentence "Do not start
-  a ticket from a later milestone" does not cover such a blocker, because the blocker is of an earlier milestone. Each
-  other bullet of this section still applies to the start of such a blocker, for example
+- The earlier-blocker offer: for a milestone scope, a ticket of the milestone can wait on an open blocker of an earlier
+  milestone that no orchestrator runs. An earlier milestone is a numbered milestone with a lower number, for example M19
+  before M20. The number is the number in the title of the milestone, for example 19 in "M19 — Polish". A blocker of
+  "Docs", of "Future" or of no milestone is not of an earlier milestone. Then the orchestrator tells the user and offers
+  to run those blockers, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The
+  orchestrator runs them only on the word of the user. The blockers keep their milestone. For such a blocker, the word
+  of the user wins over the words "only from the milestone of the scope" of the first bullet of this section. The
+  sentence "Do not start a ticket from a later milestone" does not cover such a blocker, because the blocker is of an
+  earlier milestone. Each other bullet of this section still applies to the start of such a blocker, for example
   [the stacking rule](#the-stacking-rule) and the limit of 3 task subagents. If the user says no, the orchestrator makes
   no new offer for that ticket and those blockers. The user can still ask the orchestrator to run them at any time. No
   orchestrator runs a blocker when two facts are true. First, the output of `tasker status` lists no task for the full
   issue key of the blocker. Second, the session list of the tools, for example `ListAgents`, has no session
-  `orchestrator-<milestone>` for the milestone of the blocker. [The notice rule](doc-reads.md#the-notice-rule) gives the
-  form of the name. `gh issue view <blocker> --json milestone -q '.milestone.title'` gives the milestone of the blocker.
-  A missing match is an answer and not a failure: no task for the key means "no task", and no such session means "no
-  session". If `tasker status` fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator makes
-  no offer at that moment. If the session list fails, the failure rule applies, and the orchestrator makes no offer at
-  that moment. If the read of the milestone fails, the failure rule applies, and the orchestrator makes no offer at that
-  moment. After a failure, the orchestrator does the check again at its next read of the board. On 2026-10-18, each
-  ticket of M20 waited on a ticket of M19 (#137, #61, #63, #47 and #236) that no orchestrator ran, and the user told
+  `orchestrator-<slug>`, with the slug of the milestone of the blocker as [The slug](../orchestrator.md#the-slug) gives
+  it. [The notice rule](doc-reads.md#the-notice-rule) gives the form of the name.
+  `gh issue view <blocker> --json milestone -q '.milestone.title'` gives the milestone of the blocker. A missing match
+  is an answer and not a failure: no task for the key means "no task", and no such session means "no session". If
+  `tasker status` fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator makes no offer at
+  that moment. If the session list fails, the failure rule applies, and the orchestrator makes no offer at that moment.
+  If the read of the milestone fails, the failure rule applies, and the orchestrator makes no offer at that moment.
+  After a failure, the orchestrator does the check again at its next read of the board. On 2026-10-18, each ticket of
+  M20 waited on a ticket of M19 (#137, #61, #63, #47 and #236) that no orchestrator ran, and the user told
   orchestrator-m20: "Go ahead and work on the issues from M19 that block M20 issues."
+- The outside-blocker offer: in a set scope, an issue of the set can wait for an open blocker outside the set that is
+  not ready to stack. The set read of the board-read bullet gives the open blockers. The orchestrator does these steps
+  for each such blocker:
+  1. Start a subagent. The subagent reads the Requirements section and the Docs section of both issues. It decides
+     whether the blocker is a logic blocker or a file-overlap blocker, and it reports the kind and the reason.
+  2. A logic blocker is a blocker that the issue needs for a reason of code or docs. A file-overlap blocker is a blocker
+     with a same-file link, as [A ticket on hold](#a-ticket-on-hold) defines it. If the subagent cannot tell the kind,
+     the blocker is a logic blocker, the same way as that section judges a link.
+  3. For a logic blocker, offer the user to run the blocker, as
+     [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. With a yes of the user, the blocker
+     joins the set.
+  4. For a file-overlap blocker, offer the user two choices: run the blocker, or remove the blocked-by link. With a yes
+     for the run, the blocker joins the set.
+  5. With a yes for the removal, do steps 3 to 5 of the link removal of a hold in [A ticket on hold](#a-ticket-on-hold)
+     for that one link. The issue of the set is the blocked issue of those steps. The yes of the user is the approval of
+     the write. No removal happens without that yes.
+
+  The orchestrator makes one offer for each blocker. If the user says no, it makes no new offer for that blocker. The
+  user can still ask at any time. If the subagent fails or gives no kind, [the failure rule](limits.md#the-failure-rule)
+  applies. The orchestrator makes no offer at that moment, and the issue waits. It starts the subagent again at its next
+  read of the board.
+
+  This page gives no test of "no orchestrator runs" for a blocker of a set scope. It also gives no order of the
+  milestones in a set. Both points are open.
+
+  Case 1: a set of #A and #B. #A waits for an open #E outside the set that is not ready to stack. #A needs a function
+  that #E adds. The subagent reports a logic blocker, and the orchestrator offers to run #E.
+
+  Case 2: the same set. #A and #E edit one place of one doc, and the link is a same-file link. The subagent reports a
+  file-overlap blocker, and the orchestrator offers to run #E or to remove the link.
+
 - Start a ticket only as [the stacking rule](#the-stacking-rule) says. No orchestrator that knows of an open broken-test
   issue starts a ticket, except that issue itself (see the broken-test rule in
   [A failed CI run](ci-wait.md#a-failed-ci-run)).
