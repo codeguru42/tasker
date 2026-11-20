@@ -30,8 +30,8 @@ Each later issue of a kind adds the path of the document of its kind to this rul
 - A subagent returns its result to the session that started it, with the tool `SubagentHandback`.
 - A subagent asks the user nothing and sends no item and no message to the user. If a step needs a decision of the user,
   the subagent ends, and its result gives the question.
-- A moved rule can say that the planner tells, asks or reports to the user, or gives a fact in the chat with the user.
-  For a subagent, the fact or the question goes in its result. An example is the bullet of
+- A rule of this page can say that the planner tells, asks or reports to the user, or gives a fact in the chat with the
+  user. For a subagent, the fact or the question goes in its result. An example is the bullet of
   [The blocked-by links](#the-blocked-by-links) that starts "The planner gives the reasons for the links in the chat
   with the user". For a planner, the rule keeps its meaning.
 - After a [refused `SubagentHandback` call](limits.md#the-answer-wait-rule), the subagent sends the same result with

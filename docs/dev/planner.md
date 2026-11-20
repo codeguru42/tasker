@@ -142,10 +142,10 @@ The prompt of a ticket subagent gives the source of the draft word for word, the
 file. It says whether the planner is the initial planner, the follow-up planner, or an ad hoc planner. It gives each
 decision of the user on the draft. It tells the ticket subagent to read this page,
 [docs/dev/issue-subagents.md](issue-subagents.md), [Before a post](issues.md#before-a-post) and the simple-english
-skill. The ticket subagent loads a doc that a link of these pages names only on demand, for a specific task that needs
-the doc, and not at its start. It bans each command that reads the login of the user, each write to GitHub and each
-change of [the state of the user](plan-review.md#the-state-of-the-user). It asks for the report through the tool
-`SubagentHandback`.
+skill. It bans each command that reads the login of the user, each write to GitHub and each change of
+[the state of the user](plan-review.md#the-state-of-the-user). It asks for the report through the tool
+`SubagentHandback`. The ticket subagent loads a doc that a link of these pages names only on demand, for a specific task
+that needs the doc, and not at its start.
 
 The ticket subagent also writes its report to the path of the draft file, with `-report.md` in place of `.md`. A rule of
 the planner pages that names a finding that the planner dismissed means a finding of this report. A rule of the planner
