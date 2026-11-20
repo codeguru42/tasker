@@ -143,11 +143,14 @@ turn of the new session.
 ## The last item id
 
 The handoff file and the prompt for the new session name the first free item id. The first free item id is the number
-after the last item id that the old session used. If the old session sends an item with the path of the handoff file,
-that item has the last item id. The old session knows that id when it writes the file, because the item gets the next
-number of its count. An example is "Your first item id is planner-docs-6." The new session counts its item ids from that
-id. When an answer names an id of the old session, the new session takes the item of that id from the handoff file. The
-reason: "Count your item ids on from planner-docs-5" can read as "start at planner-docs-5".
+after the last item id that the old session used. For an orchestrator, the count also covers each question of
+[Terms](question-pane.md#terms) and each progress report of [The operator](working-with-the-user.md#the-operator). So
+the first free item id is the number after the last id of an item, a question or a progress report. If the old session
+sends an item with the path of the handoff file, that item has the last item id. The old session knows that id when it
+writes the file, because the item gets the next number of its count. An example is "Your first item id is
+planner-docs-6." The new session counts its item ids from that id. When an answer names an id of the old session, the
+new session takes the item of that id from the handoff file. The reason: "Count your item ids on from planner-docs-5"
+can read as "start at planner-docs-5".
 
 ## The check of the handoff folder
 

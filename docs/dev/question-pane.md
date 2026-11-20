@@ -23,8 +23,9 @@ An open question of the orchestrator is a question for the user that the orchest
 sessions are, for example, a task subagent and the follow-up planner. The orchestrator asks it in its own question pane.
 
 The question id is the name of one open question. The orchestrator gives each question the next free item id of its own
-counter, in the form `orchestrator-<slug>-<n>`. The handoff file of the orchestrator carries that counter, so the id
-stays unique through a handoff.
+counter, in the form `orchestrator-<slug>-<n>`. Each progress report of
+[The operator](working-with-the-user.md#the-operator) also takes the next number of that counter. The handoff file of
+the orchestrator carries that counter, so the id stays unique through a handoff.
 
 [The glossary](GLOSSARY.md) defines a question session.
 

@@ -154,7 +154,8 @@ The handoff file of the orchestrator holds the parts of
 [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The old orchestrator also puts these parts in the
 handoff file:
 
-- The prompt names the scope, the path of the file, the session name, the first free item id and
+- The prompt names the scope, the path of the file, the session name, the first free item id (the number after the last
+  id of a question or a progress report, as [The last item id](handoff.md#the-last-item-id) says) and
   [The start of the new orchestrator](#the-start-of-the-new-orchestrator). The first step of the prompt is the prompt
   read of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The prompt also names each extra doc.
   An extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
