@@ -49,19 +49,18 @@ The operator starts the follow-up planner after the initial planning.
   For the initial planner, a finding of a round that the user wants posted is a draft of
   [The initial planner](#the-initial-planner).
 
-- The follow-up planner takes lessons, session review findings and proposed issues from `orchestrator-<slug>` and from
-  [its operator](../operator.md).
-- The follow-up planner sends each question, each report and each draft that waits for a decision of the user to
-  [its operator](../operator.md) as an item, in the form of
-  [The form of an item](operator-items.md#the-form-of-an-item).
-  [The review loop of a draft](#the-review-loop-of-a-draft) says which drafts wait.
+- The follow-up planner takes lessons, session review findings and proposed issues from `orchestrator-<slug>`.
+- The follow-up planner sends each question and each draft that waits for a decision of the user to
+  `orchestrator-<slug>`, which asks it in its [question pane](question-pane.md#a-question-pane). It sends each report to
+  `orchestrator-<slug>`, which shows it as text in its tab. [The review loop of a draft](#the-review-loop-of-a-draft)
+  says which drafts wait.
 - At the end of a milestone, the follow-up planner works in the order of
   [The close of a milestone](operator-start.md#the-close-of-a-milestone).
   [The close duties of the follow-up planner](#the-close-duties-of-the-follow-up-planner) give its work. After the end
   of the role of the operator, it talks to the user directly, as [The operator](working-with-the-user.md#the-operator)
   of working-with-the-user.md says.
 - The ticket subagent of each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner
-  puts the path in the item, not the draft.
+  puts the path in the question, not the draft.
 - For a draft that waits for a decision of the user, [The escape hatch](#the-escape-hatch) says what the answer of the
   item does.
 
@@ -153,16 +152,16 @@ A rule of the planner pages that names a finding that the planner dismissed mean
 subagent. A rule of the planner pages that gives the planner a step before the post of a draft gives that step to the
 ticket subagent, except a step with the user.
 
-The planner then does each step after the review loops. Examples are a question to the user, an item, the post and the
-report of the post. When it posts, the planner adds the links. Links between drafts that are not posted yet stay with
-the planner, from its table of the needs and the likely files.
+The planner then does each step after the review loops. Examples are a question to the user, the post and the report of
+the post. When it posts, the planner adds the links. Links between drafts that are not posted yet stay with the planner,
+from its table of the needs and the likely files.
 
 Before the planner sends a question of a report to the user, it applies the paragraph of
 [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of issue-draft.md that starts "The
 report gives a question for the user". A question about an edge case that is not a security gap or a bug in the core
 path does not go to the user. The planner decides it as "later" and adds it to the list of the edge cases of the report.
 The planner gives that list in each place where it gives the findings that it dismissed. Examples are the report of a
-post and an item of the escape hatch.
+post and a question of the escape hatch.
 
 A change of the draft after a report starts a new ticket subagent. An example is a change from an answer of the user.
 Another example is the change of the draft into a change of an open issue after the duplicate search. A change that
@@ -249,9 +248,9 @@ planner tests each outside-tool fact it writes" gives the words that no one test
 that bullet and over the bullet that starts "An issue can name a read of an outside tool".
 
 The initial planner and the ad hoc planner ask the user in their chat. The follow-up planner sends the question to
-[its operator](../operator.md) as an item. The draft waits for the answer, as a draft of
-[the escape hatch](#the-escape-hatch) does. Paragraphs 5 and 6 of the subsection of plan-review.md also hold for the
-planner when it handles the answer. The answer of the user has one of these outcomes:
+`orchestrator-<slug>`. The draft waits for the answer, as a draft of [the escape hatch](#the-escape-hatch) does.
+Paragraphs 5 and 6 of the subsection of plan-review.md also hold for the planner when it handles the answer. The answer
+of the user has one of these outcomes:
 
 - The user approves the command. Then the planner starts a new ticket subagent with the draft file, the approved command
   and its undo step, word for word. That ticket subagent first runs them, as
@@ -371,10 +370,10 @@ For a late report, the planner uses the first bullet of this list that matches:
 
 - If a ticket subagent of the draft runs, the late report waits for its report. Then the planner uses this list again
   for the late report.
-- If the draft waits for a decision of the user, the late report waits for that answer. This includes an item and a
-  question in the chat of the initial planner or the ad hoc planner. Then the planner uses this list again for the late
-  report. An answer that accepts the draft with no change makes the planner post the draft, so the bullet "If the
-  planner posted the draft" then applies.
+- If the draft waits for a decision of the user, the late report waits for that answer. This includes a question to
+  `orchestrator-<slug>` and a question in the chat of the initial planner or the ad hoc planner. Then the planner uses
+  this list again for the late report. An answer that accepts the draft with no change makes the planner post the draft,
+  so the bullet "If the planner posted the draft" then applies.
 - If the planner dropped the draft, the planner drops the late report too.
 - If the planner did not post the draft, the planner starts a new ticket subagent with the draft file and the report
   file. The new ticket subagent starts at step 5 of [The review loop of a draft](#the-review-loop-of-a-draft). The
@@ -449,7 +448,8 @@ If the match right before the post is a closed issue, each planner compares the 
 - If the draft asks for more than the closed issue landed, the planner posts a new follow-up issue that names the closed
   issue, with no approval of the user. The escape hatch still applies.
 - If the planner cannot tell which case applies, the draft waits for a decision of the user. The follow-up planner sends
-  an item; the initial planner and the ad hoc planner ask in their chat. The planner posts nothing for that draft.
+  the question to `orchestrator-<slug>`; the initial planner and the ad hoc planner ask in their chat. The planner posts
+  nothing for that draft.
 
 The follow-up planner can also drop a lesson or a proposed issue with no approval of the user. A drop needs no review.
 
@@ -459,9 +459,9 @@ the list of edge cases of [The findings and the edge cases](issue-draft.md#the-f
 issue-draft.md. It also gives the command and result of each test of a fact about an outside tool, as
 [The body of an issue](issue-subagents.md#the-body-of-an-issue) says.
 
-The follow-up planner sends this report as an item to its operator. The initial planner and the ad hoc planner give it
-in their chat. The follow-up planner also tells the session that sent the lesson or the proposed issue, if that session
-is not [the operator of the follow-up planner](../operator.md).
+The follow-up planner sends this report to `orchestrator-<slug>`. The initial planner and the ad hoc planner give it in
+their chat. The follow-up planner also tells the session that sent the lesson or the proposed issue, if that session is
+not `orchestrator-<slug>`.
 
 These posts also give a message to an orchestrator:
 
@@ -513,11 +513,10 @@ When a draft needs one of these decisions, each planner asks the user before the
 An edge case that a ticket subagent decided as "later" needs none of these decisions, as
 [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of issue-draft.md says.
 
-For a draft that waits for such a decision, each planner posts nothing. The follow-up planner sends the draft as an
-item, as [The form of an item](operator-items.md#the-form-of-an-item) says, with each finding that it dismissed. The
-answer of the item is the decision of the user or an [answer of the operator](operator-items.md#the-answer). The initial
-planner and the ad hoc planner ask in their chat, with each finding that they dismissed. A planner posts nothing for
-such a draft until each question has an answer.
+For a draft that waits for such a decision, each planner posts nothing. The follow-up planner sends the draft to
+`orchestrator-<slug>`, with each finding that it dismissed. The answer is the decision of the user. The initial planner
+and the ad hoc planner ask in their chat, with each finding that they dismissed. A planner posts nothing for such a
+draft until each question has an answer.
 
 - If the answer rejects the draft or says to drop it, the planner drops the draft and reports the drop, as
   [The post of the follow-up planner](#the-post-of-the-follow-up-planner) says. A
