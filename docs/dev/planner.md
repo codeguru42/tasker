@@ -174,7 +174,7 @@ change, with the draft file. After the post of the change, the planner drops the
 [the reads before the write](issues.md#the-reads-before-the-write) skip the post because the hash changed, the planner
 also drops the start hash. After such a skip, it starts a new ticket subagent with the same change and no start hash.
 
-If the read of the issue fails, the report says so, as
+If a ticket subagent of a change of an open issue with no start hash cannot read the issue, its report says so, as
 [A change of an open issue](issue-draft.md#a-change-of-an-open-issue) says. Then the planner tells the user.
 
 A ticket subagent waits for the report of each review agent, as [The wait for a report](#the-wait-for-a-report) says. It
