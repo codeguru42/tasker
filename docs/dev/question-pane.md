@@ -344,12 +344,14 @@ The question session follows the general user-facing, simple-English, [memory](r
 After the first reply, the question session can read drafts and reports, use read-only commands other than `herdr`
 commands, and run `git fetch origin`. If fetch fails, it tells the user and reads the last successful `origin/main`.
 
-The question session sends each [write action](#terms) back to the pane owner with the herdr path, as
-[Send a decision](#send-a-decision) says. The pane owner starts a [write subagent](#terms), as
-[The pane owner handles a decision](#the-pane-owner-handles-a-decision) says.
+The question session sends each [write action](#terms) and each request of [Terms](#terms) back to the pane owner with
+the herdr path, as [Send a decision](#send-a-decision) says. The pane owner hands each one to its actor, as
+[The actor of each write action](#the-actor-of-each-write-action) says.
 
 For a [request for a new issue](#terms), the question session does not draft the issue and asks for no approval of a
-draft. It gives no command, no undo step, no input file and no blocked-by links for it.
+draft. It gives no command, no undo step, no input file and no blocked-by links for it. A request for a change of a
+tracked file of the repo uses the same form, with no write action, no command and no undo step. An example is a new
+allow rule in `.claude/settings.json` of the repo.
 
 A change of the draft of the sender stays with the sender, as a requested draft change. A split of such a draft into two
 or more issues is also such a change. The question session judges whether the question proposed the issue. This judgment
@@ -425,7 +427,7 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 ```text question-session
 You are the question session <name>. You discuss one open question with the user for the pane owner <owner name>, in the pane <owner pane id>. The question id is <question id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. Only the next two sentences change that text. In your first reply, write a newline in place of each word LINE-BREAK. Also remove the one space on each side of it. Before that reply, do only the three steps that follow, in their order, and use no AskUserQuestion tool.
 First, show the start line with no other text. The start line is: I read my rules first, and then I show the question. The start line is not your first reply. Second, run git -C <local clone> fetch origin. If the fetch fails, use the last origin/main. Tell the user about the failure in your second reply. Third, read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md. Also read the section The doc-read rule of docs/dev/doc-reads.md. Read each file with git -C <local clone> show origin/main: and its path. The rules of these docs change no word of your first reply.
-These docs give the rules of your work. Send each message to <owner name> with the herdr path, as the section A question pane says. Write the message as one line, with the word LINE-BREAK and one space on each side in place of each newline. Put the line in the shell variable MSG with a quoted here-document. Then run herdr pane send-text <owner pane id> "$MSG". Then run herdr pane send-keys <owner pane id> enter. Start each message with QUESTION-PANE, the value of $HERDR_PANE_ID in your shell, <question id> and a colon. After each send, wait at your prompt for the ack of <owner name>. If no ack comes, tell the user. If the send fails, tell the user in the pane. Send your decision message in this way. If the user asks for a write action, send the action back to <owner name> in your decision message. Give the command and the undo step of the action, as the section A question pane says. A write action is a write to GitHub, a file, git, tasker state or the Claude Code configuration, or a herdr command. The fetch above and your own sends to <owner name> are not write actions. A message to a session other than <owner name> is also a write action. <owner name> starts a subagent that does the action, or relays the action to another session. A request of the user for a new issue that the question did not propose is not a write action. Start no subagent that plans, drafts, reviews or posts an issue, and ask no other session for such work. Send each request for a new issue in your decision message. Also send each word of the user that closes the pane, ends the run or adds an issue to a set. Give the words of the user word for word in your decision message, and mark each reading of your own as a guess. Do not draft the issue, and ask for no approval. Give no command, no undo step and no input file for it, and show no blocked-by links. FIRST-REPLY <first reply>
+These docs give the rules of your work. Send each message to <owner name> with the herdr path, as the section A question pane says. Write the message as one line, with the word LINE-BREAK and one space on each side in place of each newline. Put the line in the shell variable MSG with a quoted here-document. Then run herdr pane send-text <owner pane id> "$MSG". Then run herdr pane send-keys <owner pane id> enter. Start each message with QUESTION-PANE, the value of $HERDR_PANE_ID in your shell, <question id> and a colon. After each send, wait at your prompt for the ack of <owner name>. If no ack comes, tell the user. If the send fails, tell the user in the pane. Send your decision message in this way. If the user asks for a write action, send the action back to <owner name> in your decision message. Give the command and the undo step of the action, as the section A question pane says. A write action is a write to GitHub, git, tasker state or a user-level file, or a herdr command. The fetch above and your own sends to <owner name> are not write actions. A message to a session other than <owner name> is also a write action. <owner name> hands each write action and each request to its actor. A request of the user for a new issue that the question did not propose is not a write action. A change of the title or the body of an issue, a comment that the question did not propose, a change of a blocked-by link or of the field Priority, and a change of a tracked file of the repo are requests, not write actions. Send each one in your decision message, as the section Send a decision says. Start no subagent that plans, drafts, reviews or posts an issue, and ask no other session for such work. Send each request for a new issue in your decision message. Also send each word of the user that closes the pane, ends the run or adds an issue to a set. Give the words of the user word for word in your decision message, and mark each reading of your own as a guess. Do not draft the issue, and ask for no approval. Give no command, no undo step and no input file for it, and show no blocked-by links. FIRST-REPLY <first reply>
 ```
 
 The opener subagent and the reuse subagent read the session prompt from `origin/main` and fill it. The session prompt
@@ -467,15 +469,39 @@ gives the word of the user that approves them verbatim.
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
 `--body-file`, the command names a new path under `/tmp/tasker/<slug>/drafts/`. The slug is the slug of the pane owner.
-The message then gives the text of the file verbatim.
+The message then gives the text of the file verbatim. The write subagent writes each input file at that path, with the
+slug of the orchestrator.
 
-For a write or an edit of a file, the message gives the absolute path and the full new text, not a command. Its undo
-step gives the old text, or the delete of a new file. For a message to a session other than the pane owner, the message
-gives the name of the session and the text verbatim. Such a message has no command and no undo step.
+For a write of a [user-level file](#terms), the question session first runs `sha256sum <path>` in its own call. It keeps
+the output as the start hash. For a file that does not exist, the start hash is "no file". The question session reads
+the whole file. The message gives the absolute path, the full new text, the undo step and the start hash. The undo step
+gives the old text, or the delete of a new file.
 
-For a change of the title or the body of an issue, the question session reads both at the start of the draft.
-[Before a post](issues.md#before-a-post) gives this read. The message gives the start hash of that read. The question
-session runs the self-check of Before a post over the text that it shows, with no file.
+This form has a cost. Each secret value of the file goes into the transcript of the question session, the pane and the
+decision message. Examples are `apiToken` and `email` of the configuration file of tasker. `tasker show-config` hides
+both, but this read does not.
+
+For a path that ends with `.json`, the new text must be one JSON object. Before it shows the change, the question
+session runs `printf '%s' '<new text>' | jq -s -e 'length == 1 and (.[0] | type == "object")'`. If the exit code is not
+0, the change does not go to the user, and the question session tells the user the output.
+
+The measure: on 2026-11-19, with jq 1.7, the text `{"a":1}` gave 0. The texts `{"a":1} {"b":2}` and `[1] {"b":2}` each
+gave 1. An empty text gave 1, and `{"a":` gave 5. The form `jq -e 'type == "object"'` without `-s` gave 0 for both texts
+with two values, so it does not serve.
+
+A value that a `tasker` command sets goes through that command, not through a write of a file. An example is
+`sessions.models`, which `tasker model` sets.
+
+For a message to a session other than the pane owner, the message gives the name of the session and the text verbatim.
+Such a message has no command and no undo step.
+
+For a change of the title or the body of an issue that the item did not propose, the question session sends a request,
+in the form of a request for a new issue. It reads both at the start of the draft, as
+[Before a post](issues.md#before-a-post) says. The message gives the exact new text that the user approved and the start
+hash of that read. The question session runs the self-check of Before a post over the text that it shows, with no file.
+A comment on an issue uses the same form, with the exact text that the user approved. A change of a blocked-by link or
+of the field `Priority` uses the same form too. These rules cover only a change or a comment that the item did not
+propose. A requested change of the draft of the sender stays with the sender.
 
 The decision message also gives each [request for a new issue](#terms), with the words of the user word for word. The
 question session can add its own reading of the words, for example which issue or milestone a word names. It marks each
