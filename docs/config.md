@@ -351,14 +351,14 @@ Each key of `models` sets the model and the effort of one role:
 
 | Key            | What it sets                                                               |
 | -------------- | -------------------------------------------------------------------------- |
-| `operator`     | The model and the effort of an operator session. No change.                |
+| `operator`     | The model and the effort of an operator session.                           |
 | `planner`      | The model and the effort of the planner subagent and of a planner session. |
-| `orchestrator` | The model and the effort of an orchestrator session. No change.            |
-| `question`     | The model and the effort of a question session. No change.                 |
-| `issue-draft`  | The model and the effort of a draft subagent. New.                         |
-| `issue-review` | The model and the effort of a review subagent. New.                        |
-| `issue-post`   | The model and the effort of a post subagent. New.                          |
-| `write`        | The model and the effort of a write subagent. New.                         |
+| `orchestrator` | The model and the effort of an orchestrator session.                       |
+| `question`     | The model and the effort of a question session.                            |
+| `issue-draft`  | The model and the effort of a draft subagent.                              |
+| `issue-review` | The model and the effort of a review subagent.                             |
+| `issue-post`   | The model and the effort of a post subagent.                               |
+| `write`        | The model and the effort of a write subagent.                              |
 
 The command `tasker model` also changes `sessions.models.<role>` in the file, with the same rules as the paragraph in
 [`assistant`](#assistant). It adds the keys `sessions` and `models` when the file has none. A role with no entry needs
