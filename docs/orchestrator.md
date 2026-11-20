@@ -18,13 +18,14 @@ keeps for one ticket. tasker moves the task from state to state, for example fro
 Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo.
 
 The orchestrator asks the user each open question in its own question pane, as [question-pane.md](dev/question-pane.md)
-says. It shows each report as text in its own tab. It sends no item to an operator, and no answer of an operator ends a
-wait. [The operator](dev/working-with-the-user.md#the-operator) of working-with-the-user.md says how "tell the user" or
-"ask the user" reads. A report or a question to the user that a rule of the orchestration pages calls a reply follows
-the same split: a report shows in the tab, and a question goes to the pane. When a rule waits for the user, the answer
-of the question that the rule waits for ends the wait. The orchestrator sends each lesson, each finding of a session
-review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the planner bullet of
-[The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The messages between
+says. It shows each progress report as text in its own tab, as [The operator](dev/working-with-the-user.md#the-operator)
+says. It sends no item to an operator, and no answer of an operator ends a wait.
+[The operator](dev/working-with-the-user.md#the-operator) of working-with-the-user.md says how "tell the user" or "ask
+the user" reads. A report or a question to the user that a rule of the orchestration pages calls a reply follows the
+same split: a progress report shows in the tab, and a question goes to the pane. When a rule waits for the user, the
+answer of the question that the rule waits for ends the wait. The orchestrator sends each lesson, each finding of a
+session review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the planner bullet
+of [The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The messages between
 orchestrators that go straight are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the
 broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the messages of
 [the hold rule](dev/land-the-work.md#the-hold-rule), a landing order of

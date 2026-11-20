@@ -17,6 +17,18 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   tab. For a follow-up planner, "ask the user" means a question to `orchestrator-<slug>`, which asks it in its pane.
   "Tell the user" means a report to `orchestrator-<slug>`, which shows it in its tab. Each rule that sends a question, a
   report or a draft of a follow-up planner to the operator as an item sends it to `orchestrator-<slug>` instead.
+- The report of an orchestrator in its own tab is a progress report. A progress report gives the user a fact, needs no
+  decision of the user and starts no step of another session. The first line starts with `Report:` and names the topic.
+  Then the id follows, in the form `<own name>-<n>`, for example `orchestrator-m31-7`. The id takes the next number of
+  the same counter that gives the question ids of [Terms](question-pane.md#terms). A progress report follows
+  [The form of a reply](#the-form-of-a-reply) and [the issue-link rule](#the-issue-link-rule). The orchestrator writes
+  each link itself. It shows the progress report at the step that the rule of the report gives. A progress report starts
+  no wait. It gets no question pane and no `herdr notification show`. It sends no message to the operator. A text that
+  waits for a word of the user is not a progress report. It is an open question, and it goes to the question pane. This
+  rule holds for each kind of orchestrator, `claude` and `pi`. The reports of the close in
+  [The start and the authority](operator-start.md#the-start-and-the-authority) and
+  [The orchestrator ends](operator-start.md#the-orchestrator-ends), and the reports of
+  [the hold before an install](release.md#the-hold-before-an-install), keep their own rules.
 - After the terminal delegation of [The close of a milestone](operator-start.md#the-close-of-a-milestone), the follow-up
   planner talks to the user directly, in its own conversation. This covers each report, each question, each draft that
   waits for a decision and each request for a permission. It also covers each other rule that sends a report, a question
