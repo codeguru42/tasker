@@ -197,20 +197,22 @@ The orchestrator leaves the pane open and stops the run until the user speaks.
 
 ### The question session
 
-The operator gives each part of this paragraph through the opener prompt or the reuse prompt of
-[The prompts](#the-prompts). This also holds for the paragraphs that start "The operator gives all offered choices",
-"The operator gives relevant earlier decisions" and "The operator prepares first-reply text". Before the start, it gives
-the question session its own name and the operator's name and session ref. It also gives the item id, the sender's
-question number, and the full question.
+The pane owner gives each part of this paragraph through the opener prompt or the reuse prompt of
+[The prompts](#the-prompts). This also holds for the paragraphs that start "The pane owner gives all offered choices",
+"The pane owner gives relevant earlier decisions" and "The pane owner prepares first-reply text". Before the start, it
+gives the question session its own name, the name of the pane owner, the pane id of the pane owner and the question id.
+It also gives the full question. For a question of a task subagent or of the follow-up planner, the first reply names
+the ticket and the session that asks.
 
-The operator gives all offered choices and costs, the sender's recommendation, and each draft or report path named by
-the item.
+The pane owner gives all offered choices and costs, the recommendation of the sender, and each draft or report path
+named by the question.
 
-The operator gives relevant earlier decisions, each marked as a decision so far. The operator marks any added reading as
-a guess.
+The pane owner gives relevant earlier decisions, each marked as a decision so far. The pane owner marks any added
+reading as a guess.
 
-The operator prepares first-reply text that follows [The form of a reply](working-with-the-user.md#the-form-of-a-reply)
-and the [issue-link rule](working-with-the-user.md#the-issue-link-rule). It attributes item facts and measures to the
+The pane owner prepares first-reply text that follows
+[The form of a reply](working-with-the-user.md#the-form-of-a-reply) and the
+[issue-link rule](working-with-the-user.md#the-issue-link-rule). It attributes facts and measures of the question to the
 sender. The text holds the question, the choices and costs, the recommendation, the paths and the decisions so far. It
 also follows the bullet of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "Define
 each term".
@@ -226,20 +228,20 @@ numbered."
 The other details of the first-reply text have a limit: at most five sentences.
 [The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives examples of them, in its bullet that starts
 "Inside a question, only". The question, its proposed steps, its choices, the paths and the decisions so far do not
-count. If what a choice does, its cost or the recommendation stands in the item of the choice, it does not count. A code
-block counts as one sentence. Next to each fact that no one measured, the first-reply text still says that no one
+count. If what a choice does, its cost or the recommendation stands in the question of the choice, it does not count. A
+code block counts as one sentence. Next to each fact that no one measured, the first-reply text still says that no one
 measured it, in the sentence of the fact.
 
 A definition of a term in the sentence of the term, for example in parentheses, does not count in the limit. The
 first-reply text also gives the order of the steps that the question rests on, for example the steps of a test. These
-are steps of the item, not the proposed steps of the question. A definition that needs its own sentence and the order of
-these steps count in the limit. The operator judges which steps the question rests on, which definition needs its own
-sentence and which details fit in the limit. This judgment is open on purpose.
+are steps of the sender, not the proposed steps of the question. A definition that needs its own sentence and the order
+of these steps count in the limit. The pane owner judges which steps the question rests on, which definition needs its
+own sentence and which details fit in the limit. This judgment is open on purpose.
 
 If the limit has no room for each detail, the definitions and this order stay, and other details go out. If the
 definitions and this order alone need more than five sentences, the first-reply text gives them all. It then gives no
 other detail that counts in the limit. In each case, the first-reply text keeps each detail as short as possible, also
-the definitions and this order past five sentences. The operator judges how short each detail is, and this judgment is
+the definitions and this order past five sentences. The pane owner judges how short each detail is, and this judgment is
 open on purpose.
 
 For the first-reply text, this limit wins over each rule that asks for more details in a question. An example is the
@@ -248,10 +250,9 @@ Another example is the words "The session gives the command and the result" of
 [A decision of the user](working-with-the-user.md#a-decision-of-the-user). This limit does not win over the bullet of
 that section that starts "Define each term".
 
-If a detail of the item does not fit in this limit, the first-reply text names where the user can read it. A path of a
-draft or a report of the item comes first. The item in the operator chat is the place only for a detail with no such
-path. A sentence that names such a place does not count. [The open items](operator-items.md#the-open-items) gives the
-reply to a request for an item in the operator chat.
+If a detail of the question does not fit in this limit, the first-reply text names where the user can read it. A path of
+a draft or a report of the question comes first. The tab of the orchestrator is the place only for a detail with no such
+path. A sentence that names such a place does not count.
 
 For a measure that changes the state of the user, the first-reply text gives the command and its undo step word for
 word. It also gives each other part of such a question that
@@ -307,21 +308,25 @@ The question session follows the general user-facing, simple-English, [memory](r
 After the first reply, the question session can read drafts and reports, use read-only commands other than `herdr`
 commands, and run `git fetch origin`. If fetch fails, it tells the user and reads the last successful `origin/main`.
 
-The question session sends each [write action](#terms) back to the operator, as [Send a decision](#send-a-decision)
-says. The operator starts a [write subagent](#terms), as
+The question session sends each [write action](#terms) back to the pane owner with the herdr path, as
+[Send a decision](#send-a-decision) says. The pane owner starts a [write subagent](#terms), as
 [The operator handles a decision](#the-operator-handles-a-decision) says.
 
 For a [request for a new issue](#terms), the question session does not draft the issue and asks for no approval of a
 draft. It gives no command, no undo step, no input file and no blocked-by links for it.
 
 A change of the draft of the sender stays with the sender, as a requested draft change. A split of such a draft into two
-or more issues is also such a change. The question session judges whether the item proposed the issue. This judgment is
-open on purpose.
+or more issues is also such a change. The question session judges whether the question proposed the issue. This judgment
+is open on purpose.
 
 If the question session is not sure, it gives the words as a request for a new issue. It adds its guess that they can be
 a change of the draft of the sender. The planner then decides.
 
-For a request outside its question, the question session directs the user to the operator chat.
+A question session starts no subagent that plans, drafts, reviews or posts an issue. It asks no session other than the
+pane owner for such work.
+
+For a request outside its question, the question session sends the request to the pane owner with the herdr path. The
+user can also type it in the tab of the orchestrator.
 
 The first reply gives no fact of the question session's own. Some bullets of “A decision of the user” ask the session to
 measure or to read a rule first. These bullets hold from the second reply on.
@@ -332,37 +337,36 @@ This subsection holds the opener prompt, the reuse prompt and the session prompt
 is the prompt of the opener subagent. The reuse prompt is the prompt of the reuse subagent. The session prompt is the
 prompt of the question session.
 
-The operator puts a value in place of each placeholder of the lists that follow the opener prompt and the reuse prompt.
-It adds no other words. The operator does not write or fill the session prompt. No herdr output of a reuse goes into the
-context of the operator, apart from the report of the reuse subagent.
+The pane owner puts a value in place of each placeholder of the lists that follow the opener prompt and the reuse
+prompt. It adds no other words. The pane owner does not write or fill the session prompt. No herdr output of a reuse
+goes into the context of the pane owner, apart from the report of the reuse subagent.
 
 ````text question-opener
-You are the opener subagent of the question pane <name> of the operator <operator name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session.
+You are the opener subagent of the question pane <name> of the pane owner <owner name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session.
 1. Run git -C <local clone> fetch origin. If the fetch fails, go on with the last origin/main.
 2. Run git -C <local clone> show origin/main:docs/dev/question-pane.md. In its output, find the fenced block whose first line, at the start of a line, is ```text question-session. That block is the session prompt.
 3. In the session prompt, replace each placeholder with the value of the same name in the list of values. Replace <first reply> last. In its value, put one space, the word LINE-BREAK and one space in place of each newline. Change nothing else inside its value, apart from step 4.
 4. Join the lines of the session prompt into one line, with one space between two lines. Write each single quote of the result as '\''. Then put the result in single quotes.
-5. Run tasker show-config --repo <repo key>. Keep .sessions.kind and the entry .sessions.models.question of the output. If .sessions.kind is not claude, do no later step.
-6. Run herdr pane split <operator pane id> --direction right --cwd <local clone>. Keep the new pane id from .result.pane.pane_id of the output.
+5. Run tasker show-config --repo <repo key>. Keep .sessions.kind and the entry .sessions.models.question of the output.
+6. Run herdr pane split <owner pane id> --direction right --cwd <local clone>. Keep the new pane id from .result.pane.pane_id of the output.
 7. Run herdr agent start <name> --kind <kind> --pane <new pane id> -- -n <name> <model flags> <quoted prompt>. If it fails, still do step 8.
-In step 7, <kind> is the kind of step 5, and <new pane id> is the pane id of step 6. <model flags> are --model and --effort with the values of the entry of step 5. With no entry, leave them out. <quoted prompt> is the result of step 4.
+In step 7, <kind> is the kind of step 5, and <new pane id> is the pane id of step 6. <model flags> are the flags of the row of the kind in the seam table of docs/config.md, with the values of the entry of step 5. For the kind claude, they are --model <model> --effort <effort>. For the kind pi, they are --provider <upstream> --model <model> --thinking <effort>, and <upstream> is the part of the model before the first /. With no entry, leave them out. <quoted prompt> is the result of step 4.
 8. Run herdr pane read with the new pane id. If the pane shows no first reply, run timeout 20 bash -c 'sleep 10' and read it again. Read the pane at most 6 times. If the pane shows the first reply, the start worked. The typed prompt is not the first reply. The start line of the session prompt is also not the first reply.
 Your final report gives the new pane id and each command with its exit code and its error. It also says whether the pane shows the first reply. Keep the report short.
-The list of values: name <name>, operator name <operator name>, operator session ref <operator session ref>. The list goes on: item id <item id>, question number <question number>, local clone <local clone>.
+The list of values: name <name>, owner name <owner name>, owner pane id <owner pane id>. The list goes on: question id <question id>, local clone <local clone>.
 The value of first reply is all the text after the last word FIRST-REPLY of this prompt. FIRST-REPLY <first reply>
 ````
 
 - `<name>`: the own name of the question session. It starts with `question-` and is unique.
-- `<operator name>` and `<operator session ref>`: the own name and the session ref of the operator, as
-  [docs/dev/GLOSSARY.md](GLOSSARY.md) defines them.
-- `<operator pane id>`: the pane id of the operator, the value of `$HERDR_PANE_ID` in its shell.
+- `<owner name>`: the own name of the pane owner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines the own name.
+- `<owner pane id>`: the pane id of the pane owner, the value of `$HERDR_PANE_ID` in its shell.
 - `<local clone>`: the path of the local clone, as [the doc-read rule](doc-reads.md#the-doc-read-rule) uses it.
 - `<repo key>`: the repo key of the repo of the local clone, for example `codeguru42/tasker`.
-- `<item id>` and `<question number>`: the item id and the question number of the sender.
-- `<first reply>`: the first-reply text, with its lines as the operator wrote them.
+- `<question id>`: the question id of the question, as [Terms](#terms) defines it.
+- `<first reply>`: the first-reply text, with its lines as the pane owner wrote them.
 
 ````text question-reuse
-You are the reuse subagent of the question pane <pane id>. Its question session is <name>, for the operator <operator name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session. Send no input to the pane, apart from steps 4 and 7.
+You are the reuse subagent of the question pane <pane id>. Its question session is <name>, for the pane owner <owner name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session. Send no input to the pane, apart from steps 4 and 7.
 1. Run git -C <local clone> fetch origin. If the fetch fails, go on with the last origin/main.
 2. Run git -C <local clone> show origin/main:docs/dev/question-pane.md. In its output, find the fenced block whose first line, at the start of a line, is ```text question-session. That block is the session prompt.
 3. Run herdr agent wait <pane id> --timeout 600000. If it fails or reaches its time limit, do no later step. Read the state at .result.agent.agent_status. If the state is not idle and not done, do no later step.
@@ -372,20 +376,20 @@ You are the reuse subagent of the question pane <pane id>. Its question session 
 7. Join the lines of the session prompt into one line, with one space between two lines. Keep each single quote as it is. Put the result in the shell variable PROMPT with a quoted here-document, so that the shell expands nothing in it. Run herdr pane send-text <pane id> "$PROMPT". Then run herdr pane send-keys <pane id> enter.
 8. Run herdr pane read <pane id>. If the pane shows no first reply, run timeout 20 bash -c 'sleep 10' and read it again. Read the pane at most 6 times. If the pane shows the first reply, the reuse worked. The typed prompt is not the first reply. The start line of the session prompt is also not the first reply.
 Your final report gives the pane id and each command with its exit code and its error. It also gives the old and the new session value, and whether the after-clear read showed the context clear. It also says whether the pane shows the first reply. Keep the report short.
-The list of values: name <name>, operator name <operator name>, operator session ref <operator session ref>. The list goes on: item id <item id>, question number <question number>, local clone <local clone>.
+The list of values: name <name>, owner name <owner name>, owner pane id <owner pane id>. The list goes on: question id <question id>, local clone <local clone>.
 The value of first reply is all the text after the last word FIRST-REPLY of this prompt. FIRST-REPLY <first reply>
 ````
 
 - `<pane id>`: the pane id of the question pane, as the report of the opener subagent gave it.
 - `<name>`: the own name of the question session. The context clear keeps it.
-- `<operator name>`, `<operator session ref>` and `<local clone>`: as in the list of the opener prompt.
-- `<item id>` and `<question number>`: the item id and the question number of the sender for the next question.
-- `<first reply>`: the first-reply text of the next question, with its lines as the operator wrote them.
+- `<owner name>`, `<owner pane id>` and `<local clone>`: as in the list of the opener prompt.
+- `<question id>`: the question id of the next question.
+- `<first reply>`: the first-reply text of the next question, with its lines as the pane owner wrote them.
 
 ```text question-session
-You are the question session <name>. You discuss one open question with the user for the operator <operator name>, with the session ref <operator session ref>. The question is number <question number> of the item <item id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. Only the next two sentences change that text. In your first reply, write a newline in place of each word LINE-BREAK. Also remove the one space on each side of it. Before that reply, do only the three steps that follow, in their order, and use no AskUserQuestion tool.
+You are the question session <name>. You discuss one open question with the user for the pane owner <owner name>, in the pane <owner pane id>. The question id is <question id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. Only the next two sentences change that text. In your first reply, write a newline in place of each word LINE-BREAK. Also remove the one space on each side of it. Before that reply, do only the three steps that follow, in their order, and use no AskUserQuestion tool.
 First, show the start line with no other text. The start line is: I read my rules first, and then I show the question. The start line is not your first reply. Second, run git -C <local clone> fetch origin. If the fetch fails, use the last origin/main. Tell the user about the failure in your second reply. Third, read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md. Also read the section The doc-read rule of docs/dev/doc-reads.md. Read each file with git -C <local clone> show origin/main: and its path. The rules of these docs change no word of your first reply.
-These docs give the rules of your work. Send your decision message to <operator name> with SendMessage, as the section A question pane says. If the user asks for a write action, send the action back to <operator name> in your decision message. Give the command and the undo step of the action, as the section A question pane says. A write action is a write to GitHub, a file, git, tasker state or the Claude Code configuration, or a herdr command. The fetch above is not a write action. A message to a session other than <operator name> is also a write action. <operator name> starts a subagent that does the action, or relays the action to another session. A request of the user for a new issue that the item did not propose is not a write action. Give the words of the user word for word in your decision message, and mark each reading of your own as a guess. Do not draft the issue, and ask for no approval. Give no command, no undo step and no input file for it, and show no blocked-by links. FIRST-REPLY <first reply>
+These docs give the rules of your work. Send each message to <owner name> with the herdr path, as the section A question pane says. Write the message as one line, with the word LINE-BREAK and one space on each side in place of each newline. Put the line in the shell variable MSG with a quoted here-document. Then run herdr pane send-text <owner pane id> "$MSG". Then run herdr pane send-keys <owner pane id> enter. Start each message with QUESTION-PANE, the value of $HERDR_PANE_ID in your shell, <question id> and a colon. After each send, wait at your prompt for the ack of <owner name>. If no ack comes, tell the user. If the send fails, tell the user in the pane. Send your decision message in this way. If the user asks for a write action, send the action back to <owner name> in your decision message. Give the command and the undo step of the action, as the section A question pane says. A write action is a write to GitHub, a file, git, tasker state or the Claude Code configuration, or a herdr command. The fetch above and your own sends to <owner name> are not write actions. A message to a session other than <owner name> is also a write action. <owner name> starts a subagent that does the action, or relays the action to another session. A request of the user for a new issue that the question did not propose is not a write action. Start no subagent that plans, drafts, reviews or posts an issue, and ask no other session for such work. Send each request for a new issue in your decision message. Also send each word of the user that closes the pane, ends the run or adds an issue to a set. Give the words of the user word for word in your decision message, and mark each reading of your own as a guess. Do not draft the issue, and ask for no approval. Give no command, no undo step and no input file for it, and show no blocked-by links. FIRST-REPLY <first reply>
 ```
 
 The opener subagent and the reuse subagent read the session prompt from `origin/main` and fill it. The session prompt
@@ -414,8 +418,10 @@ a real use does not have.
 The question session sends a decision when the user picks a choice, fully settles the question, or lets the sender
 decide.
 
-The decision message first gives the item id and sender's question number. It then gives the decision and the user's
-settling words verbatim, each requested draft change, and each doc rule, fact, or preference the user stated.
+The decision message goes to the pane owner with the herdr path. It first gives the header
+`QUESTION-PANE <own pane id> <question id>:`. It then gives the decision and the user's settling words verbatim, each
+requested draft change, and each doc rule, fact, or preference the user stated. It can also give a word of the user
+about the pane or the run, also after the close request.
 
 For a measure that changes user state, the question session also gives the command and undo step verbatim. It gives the
 same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. Before
@@ -424,11 +430,11 @@ gives the word of the user that approves them verbatim.
 
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
-`--body-file`, the command names a new path under `/tmp/tasker/<slug>/drafts/`. The slug is the slug of the operator.
+`--body-file`, the command names a new path under `/tmp/tasker/<slug>/drafts/`. The slug is the slug of the pane owner.
 The message then gives the text of the file verbatim.
 
 For a write or an edit of a file, the message gives the absolute path and the full new text, not a command. Its undo
-step gives the old text, or the delete of a new file. For a message to a session other than the operator, the message
+step gives the old text, or the delete of a new file. For a message to a session other than the pane owner, the message
 gives the name of the session and the text verbatim. Such a message has no command and no undo step.
 
 For a change of the title or the body of an issue, the question session reads both at the start of the draft.
@@ -440,12 +446,12 @@ question session can add its own reading of the words, for example which issue o
 such reading as a guess. A later decision message of the same question gives only the requests that no earlier message
 gave.
 
-If the user ends without a decision, the question session sends **No decision**, the item id, and the question number.
-It also sends any stated doc rule, fact, or preference and each request for a new issue.
+If the user ends without a decision, the question session sends **No decision** and the question id. It also sends any
+stated doc rule, fact, or preference and each request for a new issue.
 
-After the send, the question session waits at its prompt for a message of the operator: what stays open, or a
-[close request](#the-rounds-before-the-close). If the send fails, the question session tells the user in the pane; the
-question stays open.
+After the send, the question session waits at its prompt for the ack of the pane owner. It then waits for a message of
+the pane owner: what stays open, or a [close request](#the-rounds-before-the-close). If the send fails, the question
+session tells the user in the pane. The question stays open.
 
 ### The operator handles a decision
 
