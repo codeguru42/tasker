@@ -504,10 +504,10 @@ each write that such a rule adds to the action. If such a rule gives a step with
 before that write and reports. The orchestrator then tells the user, and the action does not run.
 
 The write subagent runs no `tasker` command. The orchestrator runs such a command as the orchestration pages give it. A
-message to another session is a write action. The orchestrator sends it, not the write subagent. The message goes with
-the herdr path into the pane of that session, and it starts with `From the user:`. The orchestrator finds the pane id
-with `herdr agent list`, as the start checks of [docs/orchestrator.md](../orchestrator.md) read it. A failed send
-follows [the failure rule](limits.md#the-failure-rule).
+message to another session is a write action. The orchestrator sends it, not the write subagent. The message goes on the
+path that the orchestration pages give for that session, for example the message to its task subagent, and it starts
+with `From the user:`. The herdr path is only for the messages between a question pane and its pane owner, as
+[Terms](#terms) says. A failed send follows [the failure rule](limits.md#the-failure-rule).
 
 If a command fails, the write subagent runs nothing more, also no undo step, and it reports the state that stays. A
 failed command is a command that cannot start or that exits with an error. A write that "The reads before the write"
