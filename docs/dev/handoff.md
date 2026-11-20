@@ -28,7 +28,7 @@ The old session can suggest a handoff to the user. The old session counts the ev
 [the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count),
 [the post count of the planner](handoff-planner.md#the-post-count) and
 [the close count of the operator](handoff-operator.md#the-close-count). Each role page gives the count at which the old
-session suggests a handoff, the count of a suggestion. The role page says in which reply.
+session suggests a handoff, the count of a suggestion. The role page says in which reply or at which event.
 
 The reason: the old session does not see its own status line, and no rule tells it to read its context use. The count of
 the role page stands in for that read.
@@ -50,9 +50,11 @@ orchestrator, [the post count](handoff-planner.md#the-post-count) of the planner
 [the close count](handoff-operator.md#the-close-count) of the operator.
 
 When the count of the session reaches the count of a suggestion, the recommendation is "hand off now", also in an answer
-to [a question of the user](working-with-the-user.md#a-question-of-the-user). A recommendation "hand off now" is a
-suggestion of a handoff, and the handoff then starts as [The suggestion of a handoff](#the-suggestion-of-a-handoff)
-says.
+to [a question of the user](working-with-the-user.md#a-question-of-the-user). For an orchestrator, the recommendation
+"hand off now" is the go question in its question pane, at the event that brings the count to the count of a suggestion,
+as [the landing count](handoff-orchestrator.md#the-landing-count) says. No progress report of an orchestrator carries a
+handoff recommendation, also not an answer to a question of the user. A recommendation "hand off now" is a suggestion of
+a handoff, and the handoff then starts as [The suggestion of a handoff](#the-suggestion-of-a-handoff) says.
 
 On 2026-10-24, the user asked planner-docs to keep a handoff recommendation in each list of open questions.
 

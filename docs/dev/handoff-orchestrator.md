@@ -81,10 +81,12 @@ ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the
 landing starts no new ticket. For a decision of the user that takes several question rounds, the answer of the user that
 ends the decision brings the count up.
 
-At a count of 12, the old orchestrator suggests a handoff to the user in its report of that landing. The report of a
-landing (a landing report) is the reply in which the old orchestrator tells the user that a ticket landed. If a counted
-event that is not a landing brings the count to 12, the old orchestrator suggests a handoff in a later reply. That reply
-is its next reply to the user that does not answer a question of the user, for example the next landing report.
+At the event that brings the count to 12, the old orchestrator asks the go question of a handoff in its question pane,
+as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. For a landing, it also shows its landing
+report in its own tab. A landing report is the progress report in which the old orchestrator tells the user that a
+ticket landed. A landing report carries no suggestion and no "hand off now", and it starts no handoff. If a counted
+event that is not a landing brings the count to 12, for example a quota resume, the old orchestrator asks the go
+question at that event. No progress report carries the suggestion.
 
 From the count of 12, the old orchestrator starts no new ticket. A new ticket is a ticket with no task yet. The start of
 a stacked ticket is also the start of a new ticket. The tasks in flight continue. A quota resume and a retry of a task
@@ -94,8 +96,7 @@ Below the count of 12, the landing count bans no new ticket. While the rule of
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) that starts "If the user says that no more
 handoffs come" lasts, the landing count bans no new ticket, at any count. A handoff can start below the count of 12, for
 example at [a request of the user](handoff.md#the-suggestion-of-a-handoff). From the count of 12, the ban holds also
-before the suggestion of a handoff. The suggestion can come in a reply, as the paragraph that starts "At a count of 12"
-says. It can also come as a question in the question pane of the orchestrator, as
+before the suggestion of a handoff. The suggestion comes as a question in the question pane of the orchestrator, as
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. The go of the user then comes in a decision
 of that pane, and the handoff starts after the close of the pane.
 
@@ -122,9 +123,10 @@ doc reads at the start, and about 400k after 15 landings (about 15k for a quiet 
 resume, the filing of one issue and several question rounds brought it to about 507k (about 30k for a busy landing). An
 automatic compaction ran right after, and the session review and the handoff file then used about 30k to 50k tokens.
 
-In an answer to [a question of the user](working-with-the-user.md#a-question-of-the-user), the old orchestrator suggests
-a handoff only when the suggestion is relevant to that question. In a list of open questions or open items, the rule of
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) wins. A landing report is not such an answer.
+The old orchestrator shows each answer to [a question of the user](working-with-the-user.md#a-question-of-the-user) as a
+progress report in its own tab. This also covers a question that reaches it with `From the user:`. The answer carries no
+"hand off now", also at the count of 12. At that count, the go question of the paragraph that starts "At a count of 12"
+carries the suggestion. A landing report is not such an answer.
 
 ## The steps of the old orchestrator
 
