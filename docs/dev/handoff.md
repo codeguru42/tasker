@@ -11,12 +11,12 @@ example an initial planner or the orchestrator of a numbered milestone, also rea
 
 ## The suggestion of a handoff
 
-When the old session suggests a handoff, the handoff starts with no further word of the user. An orchestrator asks the
-user in its question pane, as [Start](question-pane.md#start) says. A follow-up planner sends its suggestion to
-`orchestrator-<slug>`, which asks it in its pane. For such a session, the handoff starts at the go of the user in the
-decision, as [A handoff](operator-start.md#a-handoff) says. The user can also ask the old session for a handoff at any
-time. A request of the user for a handoff needs no go. The start of a handoff is the go of the operator, the suggestion
-of the old operator or the request of the user. After the start, the old session does the steps of its role page:
+A suggestion of a handoff of an orchestrator or of a follow-up planner is a question in the pane of the orchestrator, as
+[Start](question-pane.md#start) says. An orchestrator asks it in its own pane. A follow-up planner sends its suggestion
+to `orchestrator-<slug>`, which asks it in its pane. The handoff starts at the go of the user in the decision. The user
+can also ask the old session for a handoff at any time. A request of the user for a handoff needs no go. The start of a
+handoff is the go of the user in the decision, the suggestion of the old operator or the request of the user. After the
+start, the old session does the steps of its role page:
 [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
 [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and
 [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its

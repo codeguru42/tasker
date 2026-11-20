@@ -134,6 +134,11 @@ decision message only from the question session of its own open pane, as
 [The pane owner handles a decision](#the-pane-owner-handles-a-decision) says. So no orchestrator then accepts the
 decision of that pane.
 
+The question that asks the user for the go of a suggested handoff of the orchestrator or of its follow-up planner can
+get an automatic start, although the handoff is due. It is the only such question. After the go, and during the handoff,
+the condition holds for each question. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says how
+the suggestion works.
+
 On 2026-11-15, operator-m16 reported this case. It came from a handoff of operator-m16. The old operator opened and
 reused question panes for about ten questions during the wait of step 1 of its handoff. The handoff took a long time.
 The user asked: "did you do the handoff I requested a while ago?"
