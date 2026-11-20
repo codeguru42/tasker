@@ -169,6 +169,26 @@ describe("show-config-schema", () => {
       expect(byPath.has(`repos.<key>.sessions.models.${role}.model`)).toBe(true);
       expect(byPath.has(`repos.<key>.sessions.models.${role}.effort`)).toBe(true);
     }
+    const subagentWords: Record<string, RegExp> = {
+      "issue-draft": /draft subagent/i,
+      "issue-review": /review subagent/i,
+      "issue-post": /post subagent/i,
+      write: /write subagent/i,
+    };
+    for (const [role, pattern] of Object.entries(subagentWords)) {
+      expect(byPath.get(`repos.<key>.sessions.models.${role}`)?.description).toMatch(pattern);
+    }
+    expect(byPath.get("repos.<key>.sessions.models.planner")?.description).toMatch(/planner subagent/i);
+    expect(byPath.get("repos.<key>.sessions.models.planner")?.description).toMatch(/planner session/i);
+    expect(byPath.get("repos.<key>.sessions")?.description).toMatch(/draft, review, post and write subagents/i);
+    for (const path of [
+      "repos.<key>.sessions.kind",
+      "repos.<key>.sessions.models",
+      "repos.<key>.sessions.models.operator.model",
+      "repos.<key>.sessions.models.operator.effort",
+    ]) {
+      expect(byPath.get(path)?.description).toMatch(/subagent role/i);
+    }
     expect(byPath.get("repos.<key>.assistant.trustedExtensions")?.description).toMatch(/only pi/i);
     expect(byPath.get("repos.<key>.assistant.models.plan.model")?.description).toMatch(/provider/i);
     expect(byPath.get("repos.<key>.sessions")?.description).toMatch(

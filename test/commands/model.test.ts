@@ -480,14 +480,15 @@ describe("model", () => {
       expectNothingChanged(file, before);
     });
 
-    it("names the session roles in the help of --role", async () => {
+    it("names the session roles and the subagent roles in the help", async () => {
       const { code, help } = await runHelp(model, "model");
 
       expect(code).toBe(0);
       expect(help).toContain(
-        "The role to print or to set: an assistant role (plan, execute, review) or a session role (operator, planner, orchestrator, question)",
+        "The role to print or to set: an assistant role (plan, execute, review), a session role (operator, planner, orchestrator, question) or a subagent role (issue-draft, issue-review, issue-post, write)",
       );
-      expect(help).toContain("xhigh and max are for a session role only");
+      expect(help).toContain("xhigh and max are for a session role or a subagent role only");
+      expect(help).toContain("each subagent role");
     });
   });
 });
