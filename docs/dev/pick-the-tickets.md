@@ -20,26 +20,26 @@ The orchestrator does all the steps of this section.
     board. No message of another session adds an issue to the set.
   - The reason of the set scope: the user can run a few chosen issues, and they need no milestone of their own.
   - A held issue is an issue of the set that the orchestrator keeps in its list of held issues in the session. An issue
-    joins the list at the read that sees a change of its milestone, compared with the read before or with the first read
-    of the session. The issue stays in the list until the user answers for it. The list is the test of a held issue. No
-    milestone also counts as a milestone here. This page gives no order of the milestones in a set, so each change
-    counts. When an issue becomes a held issue, and at each further change of its milestone, the orchestrator of the set
-    tells the user and asks the user what it must do. For a move to a milestone, it also tells the orchestrator of the
-    new milestone with a message, if the session list of the tools has `orchestrator-<slug>` with the slug of that
-    milestone. For a move to no milestone, no such orchestrator exists, so it sends no message. A held issue starts no
-    task and no task subagent, and its parked task does not come back. This holds for a held issue with a parked task,
-    with a task in progress and with no task. The hold lasts until the answer of the user. A word of the user is the
-    answer, and the orchestrator does what the user says. This page names no fixed set of answers. After the answer, the
-    orchestrator does not treat the issue as held again unless its milestone changes once more. No issue leaves the set
-    by itself, and the move adds no hold label. How the orchestrator sees the move is open. The way that this page names
-    is the compare of the milestone in the set read of [the board-read bullet](#pick-the-tickets) with the milestone of
-    the read before. A new orchestrator session does not see a move from before its first read. If the read, the session
-    list or the message fails, [the failure rule](limits.md#the-failure-rule) applies. Case: #B of the set moves from
-    M32 to "Future". At the next read of the board, the orchestrator of the set tells the user. If `orchestrator-future`
-    runs, it also tells that session. Before the user answers, a second move of #B gives a second notice, and the
-    orchestrator of the new milestone gets a message. Case: #B of the set has no task, and its card is in Todo. The user
-    moves #B from M32 to M30. At the next read of the board, the orchestrator tells the user and does not start #B until
-    the user answers.
+    joins the list at the read that sees a change of its milestone compared with the read before. The first read of the
+    session has no read before, so it puts no issue in the list. The issue stays in the list until the user answers for
+    it. The list is the test of a held issue. No milestone also counts as a milestone here. This page gives no order of
+    the milestones in a set, so each change counts. When an issue becomes a held issue, and at each further change of
+    its milestone, the orchestrator of the set tells the user and asks the user what it must do. For a move to a
+    milestone, it also tells the orchestrator of the new milestone with a message, if the session list of the tools has
+    `orchestrator-<slug>` with the slug of that milestone. For a move to no milestone, no such orchestrator exists, so
+    it sends no message. A held issue starts no task and no task subagent, and its parked task does not come back. This
+    holds for a held issue with a parked task, with a task in progress and with no task. The hold lasts until the answer
+    of the user. A word of the user is the answer, and the orchestrator does what the user says. This page names no
+    fixed set of answers. After the answer, the orchestrator does not treat the issue as held again unless its milestone
+    changes once more. No issue leaves the set by itself, and the move adds no hold label. How the orchestrator sees the
+    move is open. The way that this page names is the compare of the milestone in the set read of
+    [the board-read bullet](#pick-the-tickets) with the milestone of the read before. A new orchestrator session does
+    not see a move from before its first read. If the read, the session list or the message fails,
+    [the failure rule](limits.md#the-failure-rule) applies. Case: #B of the set moves from M32 to "Future". At the next
+    read of the board, the orchestrator of the set tells the user. If `orchestrator-future` runs, it also tells that
+    session. Before the user answers, a second move of #B gives a second notice, and the orchestrator of the new
+    milestone gets a message. Case: #B of the set has no task, and its card is in Todo. The user moves #B from M32 to
+    M30. At the next read of the board, the orchestrator tells the user and does not start #B until the user answers.
 - The earlier-blocker offer: for a milestone scope, a ticket of the milestone can wait on an open blocker of an earlier
   milestone that no orchestrator runs. An earlier milestone is a numbered milestone with a lower number, for example M19
   before M20. The number is the number in the title of the milestone, for example 19 in "M19 — Polish". A blocker of
