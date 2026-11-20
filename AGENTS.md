@@ -13,7 +13,8 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/orchestrator.md](docs/orchestrator.md): the role index of the orchestrator.
 - [docs/planner.md](docs/planner.md): the role index of the planner.
 - [docs/operator.md](docs/operator.md): the role index of the operator.
-- [docs/sessions.md](docs/sessions.md): the terms that each role uses.
+- [docs/sessions.md](docs/sessions.md): the terms that name the operator, and the read of the own name.
+- [docs/dev/GLOSSARY.md](docs/dev/GLOSSARY.md): the terms that the sessions use.
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo.
 - [CONTRIBUTING.md](CONTRIBUTING.md): how a contributor starts work.
 - [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the conventions of the code.

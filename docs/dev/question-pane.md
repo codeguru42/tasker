@@ -13,7 +13,7 @@ A [question pane](#a-question-pane) is a herdr pane that an opener subagent open
 holds one [open question](operator-items.md#the-open-items) at a time, even when questions belong to one item or concern
 one action. After a reuse, it holds the next open question.
 
-A [question session](../sessions.md) is the Claude Code session in a question pane.
+[The glossary](GLOSSARY.md) defines a question session.
 
 A [question run](#a-question-pane) is a series of open questions, one at a time, in the order of [Start](#start). Each
 question gets a new question pane or a reuse of the pane before.
