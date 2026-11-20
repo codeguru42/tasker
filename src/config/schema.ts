@@ -291,14 +291,31 @@ const SessionRoleSchema = z.strictObject({
   effort: z.enum(["low", "medium", "high", "xhigh", "max"]).describe("The effort level to use for this session role."),
 });
 
+// The subagent roles. A subagent is a helper that a Claude Code session starts with its Agent tool.
+const subagentRoleShape = {
+  "issue-draft": SessionRoleSchema.optional().describe(
+    "The model and effort for draft subagents, which a planner subagent starts to draft an issue.",
+  ),
+  "issue-review": SessionRoleSchema.optional().describe(
+    "The model and effort for review subagents, which a planner subagent starts to review a draft.",
+  ),
+  "issue-post": SessionRoleSchema.optional().describe(
+    "The model and effort for post subagents, which a planner subagent starts to post an approved issue.",
+  ),
+  write: SessionRoleSchema.optional().describe(
+    "The model and effort for write subagents, which an orchestrator starts to run approved changes.",
+  ),
+};
+
 const SessionModelsSchema = z.strictObject({
   operator: SessionRoleSchema.optional().describe("The model and effort for operator sessions."),
   planner: SessionRoleSchema.optional().describe("The model and effort for planner sessions."),
   orchestrator: SessionRoleSchema.optional().describe("The model and effort for orchestrator sessions."),
   question: SessionRoleSchema.optional().describe("The model and effort for question sessions."),
+  ...subagentRoleShape,
 });
 
-// The session roles, in the order of the report of tasker model.
+// The keys of sessions.models: the session roles, then the subagent roles, in the order of the report of tasker model.
 export const SESSION_ROLES = SessionModelsSchema.keyof().options;
 export type SessionRole = (typeof SESSION_ROLES)[number];
 
