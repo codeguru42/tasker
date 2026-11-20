@@ -325,9 +325,9 @@ sessions and the model and the effort of each role. It is separate from `assista
 runs that tasker starts.
 
 A session role is one of `operator`, `planner`, `orchestrator` and `question`. The session role `question` is for a
-[question session](dev/question-pane.md#a-question-pane). A question session has no role in the terms of
-[docs/sessions.md](sessions.md), so `question` names only a key of `models`. The agent kind is the program of a session,
-in the form that herdr names it in `herdr agent start --kind`.
+[question session](dev/GLOSSARY.md). A question session has no role in the terms of
+[docs/dev/GLOSSARY.md](dev/GLOSSARY.md), so `question` names only a key of `models`. The agent kind is the program of a
+session, in the form that herdr names it in `herdr agent start --kind`.
 
 | Key      | Type                 | Default    | Notes                                                                       |
 | -------- | -------------------- | ---------- | --------------------------------------------------------------------------- |

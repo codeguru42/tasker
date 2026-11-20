@@ -1,7 +1,7 @@
 # Start and stop the sessions of a milestone
 
 The operator runs each `herdr` command in its own shell, in a Bash call. See [Operator](../operator.md) and
-[Sessions](../sessions.md) for the terms.
+[Sessions](../sessions.md) and [the glossary](GLOSSARY.md) for the terms.
 
 ## The order of a milestone
 
@@ -19,7 +19,7 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    name before its role work, as [docs/sessions.md](../sessions.md) says. The first operator has no herdr agent name.
 
 3. The operator finds the milestone of its slug, the milestone whose title gives the slug, as
-   [docs/sessions.md](../sessions.md) defines the slug. To read the milestones, the operator runs
+   [docs/dev/GLOSSARY.md](GLOSSARY.md) defines the slug. To read the milestones, the operator runs
    `gh api --paginate 'repos/codeguru42/tasker/milestones?state=all&per_page=100'`. If the read fails,
    [the failure rule](limits.md#the-failure-rule) applies. Then the operator creates no milestone and starts no initial
    planner.
@@ -669,7 +669,7 @@ The pi row check passes only if each of these checks passes:
 - (d) The session runs `grep -m1 session_info <agent_session.value>`. The value of `"name"` must equal the own name of
   the session.
 
-The own name is the name that [docs/sessions.md](../sessions.md) gives. The session read it at its start from `-n`, and
+The own name is the name that [docs/dev/GLOSSARY.md](GLOSSARY.md) gives. The session read it at its start from `-n`, and
 it lives for the whole session. For a pi operator it is `operator-<slug>`, and for a pi planner it is `planner-<slug>`.
 
 `HERDR_PANE_ID` and `HERDR_TAB_ID` come from the shell of the session. At the close, they can be stale ids that the

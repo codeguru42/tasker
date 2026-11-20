@@ -3,8 +3,8 @@
 This page is the index of the planner. The rules of the planner are in [docs/dev/planner.md](dev/planner.md).
 
 The start docs of the planner are `docs/planner.md`, the pages of the list "The pages" below,
-[docs/dev/rules.md](dev/rules.md) and [docs/sessions.md](sessions.md). The planner reads them at its start, as
-[the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
+[docs/dev/rules.md](dev/rules.md), [docs/sessions.md](sessions.md) and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). The
+planner reads them at its start, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
 
 After a tool block, the planner follows [the tool-block rule](dev/tasker-commands.md#the-tool-block-rule). On the word
 of the user, the planner makes the denial records, as [The denial records](dev/tasker-commands.md#the-denial-records)

@@ -1,7 +1,7 @@
 # Planner
 
 This page gives the rules for a planner. A planner is the assistant session that plans a milestone and writes its issues
-on GitHub. The [user](../sessions.md) works with the planner. The readers of this page are the planner and its user. A
+on GitHub. The [user](GLOSSARY.md) works with the planner. The readers of this page are the planner and its user. A
 session that [Before a post](issues.md#before-a-post) of issues.md sends to
 [The blocked-by links](#the-blocked-by-links) also reads that section.
 
@@ -13,7 +13,7 @@ and [The escape hatch](#the-escape-hatch) apply to each planner.
 
 The page does not cover the work of the orchestrator and of the task subagents of the tickets.
 [The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines
-"orchestrator" and "ticket". [sessions.md](../sessions.md) defines the terms "task subagent" and "ticket subagent".
+"orchestrator" and "ticket". [GLOSSARY.md](GLOSSARY.md) defines the terms "task subagent" and "ticket subagent".
 
 [issues.md](issues.md) gives the steps and the GitHub facts to file issues, blocked-by links and milestones, and the
 facts of the project board.
@@ -123,7 +123,7 @@ The planner handles a proposal that it gets in the close in this way:
 
 ## The ticket subagent
 
-The planner gives the work on each draft to a ticket subagent, as [docs/sessions.md](../sessions.md) defines it. A
+The planner gives the work on each draft to a ticket subagent, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it. A
 ticket subagent works one time and ends. It does the steps of [The review loop of a draft](#the-review-loop-of-a-draft)
 and ends with a report. It edits only its draft file, its report file and the files of a
 [scratch folder](plan-review.md#the-state-of-the-user), and it posts nothing. The reason: the text of the draft and of
@@ -211,7 +211,7 @@ planner starts one new ticket subagent for the draft. With a draft file, it star
 step 1. If that one also ends with no report, the planner tells the user.
 
 The planner names each ticket subagent `<own name>-ticket-<file>-<count>`, with the `name` option of the Agent tool.
-`<own name>` is the own name of the planner, as [docs/sessions.md](../sessions.md) defines it. `<file>` is the name of
+`<own name>` is the own name of the planner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it. `<file>` is the name of
 the draft file without `.md`, as in the path of the draft file. `<count>` counts the ticket subagents of that draft in
 the session of the planner, from 1, so each name is new in that session. The ticket subagent names each review agent
 `<ticket subagent name>-review-<loop>`, where `<loop>` is the number of the review loop, from 1. An example is
@@ -243,7 +243,7 @@ The planner gives each draft file a name of at most 24 characters, of lowercase 
 ticket subagent gives the name of the ticket subagent. The Agent tool refuses a name of more than 64 characters, and
 other names, as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If the Agent
 tool refuses a name, the planner gives the draft file a shorter name. A subagent is not a session of a role, so its name
-gives no role and no slug in the sense of [docs/sessions.md](../sessions.md).
+gives no role and no slug in the sense of [docs/dev/GLOSSARY.md](GLOSSARY.md).
 
 An ad hoc planner uses an ad hoc name in two places. The ad hoc name takes the place of `<slug>` in the path of each
 draft file. It also takes the place of `<own name>` in the name of each ticket subagent. On 2026-11-11, `ListAgents`
@@ -869,7 +869,7 @@ likely edit the same file", which name the planner.
   GitHub. Notes go below the table.
 - The operator names each planner `planner-<slug>` with the flag `-n` of `claude`, for example `planner-m7`. This is the
   form of `claude`. A pi planner gets its name as [Start a session](operator-start.md#start-a-session) says.
-  [sessions.md](../sessions.md) defines the slug. The name of a session is a noun for its role, not a verb. Examples are
+  [GLOSSARY.md](GLOSSARY.md) defines the slug. The name of a session is a noun for its role, not a verb. Examples are
   `orchestrator-<slug>` and `planner-<slug>`. The name tells the user which session is the planner and which session is
   an orchestrator. For example, on 2026-10-15, the user confused a planner with the orchestrator.
   [The notice rule](doc-reads.md#the-notice-rule) says which sessions get a notice.

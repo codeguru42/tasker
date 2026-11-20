@@ -8,8 +8,8 @@ rule.
 
 The orchestrator works from the current docs of the orchestrator. The docs of the orchestrator are `AGENTS.md`,
 `docs/orchestrator.md`, the pages of the list "The pages" of [docs/orchestrator.md](../orchestrator.md),
-`docs/sessions.md`, `docs/dev/rules.md`, `docs/dev/working-with-the-user.md`, and the docs that the prompt of the
-orchestrator names. For example, a prompt can name `docs/dev/planner.md`, `docs/dev/issues.md`,
+`docs/sessions.md`, `docs/dev/GLOSSARY.md`, `docs/dev/rules.md`, `docs/dev/working-with-the-user.md`, and the docs that
+the prompt of the orchestrator names. For example, a prompt can name `docs/dev/planner.md`, `docs/dev/issues.md`,
 `docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `origin/main` from which
 the orchestrator last read the docs of the orchestrator.
 
@@ -84,8 +84,8 @@ orchestrator also sends a task subagent notice to its own task subagents in flig
 [the doc-read rule](#the-doc-read-rule) and then reads each changed start doc of the operator again.
 
 Each orchestrator has its own docs of the orchestrator, because each prompt names its own docs. `AGENTS.md`,
-`docs/orchestrator.md`, the pages of its list "The pages", `docs/sessions.md`, `docs/dev/rules.md` and
-`docs/dev/working-with-the-user.md` are docs of each orchestrator.
+`docs/orchestrator.md`, the pages of its list "The pages", `docs/sessions.md`, `docs/dev/GLOSSARY.md`,
+`docs/dev/rules.md` and `docs/dev/working-with-the-user.md` are docs of each orchestrator.
 
 The re-read rule and the notice rule do not cover the task subagents. Each new task subagent reads its docs when it
 starts. [The task subagent notice](#the-task-subagent-notice) gives the docs of a task subagent, and it covers a task

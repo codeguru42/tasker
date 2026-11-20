@@ -10,6 +10,7 @@ The start docs of the operator are:
 3. [docs/dev/working-with-the-user.md](dev/working-with-the-user.md)
 4. [docs/dev/rules.md](dev/rules.md)
 5. [docs/sessions.md](sessions.md)
+6. [docs/dev/GLOSSARY.md](dev/GLOSSARY.md)
 
 The operator reads them at its start, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
 [The form of a reply](dev/working-with-the-user.md#the-form-of-a-reply) gives the form of each reply to the user.
@@ -25,13 +26,13 @@ delegation. It uses [the question gate of the close](dev/operator-items.md#the-q
 planner. After the end of the role of the operator, the planner talks to the user directly, as
 [The operator](dev/working-with-the-user.md#the-operator) says.
 
-[docs/sessions.md](sessions.md) defines the user, the slug, the sessions of a slug, an item, the own name of a session,
-the session ref and the socket address. The operator is named `operator-<slug>`. The operator of a session is the
-operator that the first message of the session names. If the first message names no operator, the operator of the
-session is `operator-<slug>` of its own slug. The reason: the name of the session of a topic handoff gives a slug that
-no operator has, so the first message carries the operator. This definition covers only the operator. A sentence that
-names `planner-<slug>` or `orchestrator-<slug>` still takes the slug of the own name of the session.
-[The hold of the items](dev/handoff.md#the-hold-of-the-items) keeps its own terms.
+[docs/dev/GLOSSARY.md](dev/GLOSSARY.md) defines the user, the slug, the own name of a session, the session ref and the
+socket address. [docs/sessions.md](sessions.md) defines the sessions of a slug and an item. The operator is named
+`operator-<slug>`. The operator of a session is the operator that the first message of the session names. If the first
+message names no operator, the operator of the session is `operator-<slug>` of its own slug. The reason: the name of the
+session of a topic handoff gives a slug that no operator has, so the first message carries the operator. This definition
+covers only the operator. A sentence that names `planner-<slug>` or `orchestrator-<slug>` still takes the slug of the
+own name of the session. [The hold of the items](dev/handoff.md#the-hold-of-the-items) keeps its own terms.
 
 The tab list is the list of the tabs that an operator can close. Each entry gives the tab id and the session name of one
 tab. In a handoff of the operator, the old operator also closes its own tab, as

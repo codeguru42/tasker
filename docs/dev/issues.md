@@ -4,15 +4,15 @@ This page gives the steps and the GitHub facts to file issues, blocked-by links 
 [Before a post](#before-a-post) covers each session that posts an issue, except where a sentence names the planner.
 [A recurrence](#a-recurrence) covers each session. The rest of the page is for the planner, but
 [The blocked-by links](#the-blocked-by-links) also serves each session that decides links before a post.
-[planner.md](planner.md) defines the terms "planner" and "blocked-by link", and [docs/sessions.md](../sessions.md)
+[planner.md](planner.md) defines the terms "planner" and "blocked-by link", and [docs/dev/GLOSSARY.md](GLOSSARY.md)
 defines the term "user". planner.md also holds the rules for what an issue says and where it goes. This page holds only
 how to do it on GitHub.
 
 ## Before a post
 
 - Each session that posts an issue, or changes the title or the body of an open issue, drafts the text first. The
-  session shows the draft to the [user](../sessions.md) who works with that session. A request of the user such as "file
-  an issue" or "draft a ticket" gets a draft first. For a change to an open issue, the draft shows the changed text. The
+  session shows the draft to the [user](GLOSSARY.md) who works with that session. A request of the user such as "file an
+  issue" or "draft a ticket" gets a draft first. For a change to an open issue, the draft shows the changed text. The
   session posts only after the user approves that draft, for example with "file it" or "post it".
 
   Each planner posts a reviewed draft with no approval of the user, as

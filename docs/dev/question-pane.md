@@ -316,7 +316,7 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 
 - `<name>`: the own name of the question session. It starts with `question-` and is unique.
 - `<operator name>` and `<operator session ref>`: the own name and the session ref of the operator, as
-  [docs/sessions.md](../sessions.md) defines them.
+  [docs/dev/GLOSSARY.md](GLOSSARY.md) defines them.
 - `<operator pane id>`: the pane id of the operator, the value of `$HERDR_PANE_ID` in its shell.
 - `<local clone>`: the path of the local clone, as [the doc-read rule](doc-reads.md#the-doc-read-rule) uses it.
 - `<repo key>`: the repo key of the repo of the local clone, for example `codeguru42/tasker`.

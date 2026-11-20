@@ -126,10 +126,10 @@ fails, also because no session has that name, the old session sends them to its 
 has no operator, so [the failure rule](limits.md#the-failure-rule) applies to it.
 
 The handoff file names each session other than the new session by its name, also in the prompt. It gives no
-[session ref and no socket address](../sessions.md) of such a session. The tab list of the file of the operator keeps
-the tab id of each entry. In a handoff of the operator, the file names the old operator by its name, its tab id and its
-pane id, as [the role page](handoff-operator.md#the-handoff-file-of-the-operator) says. `ListAgents` gives the current
-name and session ref of each session. For example, the prompt of `2026-10-25-1713-m22-planner.md` named
+[session ref and no socket address](GLOSSARY.md) of such a session. The tab list of the file of the operator keeps the
+tab id of each entry. In a handoff of the operator, the file names the old operator by its name, its tab id and its pane
+id, as [the role page](handoff-operator.md#the-handoff-file-of-the-operator) says. `ListAgents` gives the current name
+and session ref of each session. For example, the prompt of `2026-10-25-1713-m22-planner.md` named
 `orchestrator-m22 [bc2d80]` and `operator-m22 [8e3ea5]`, each with its socket address, but both sessions handed off, so
 these values were stale.
 
@@ -238,7 +238,7 @@ does [The check of the handoff folder](#the-check-of-the-handoff-folder).
 
 The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. Under
 `pi`, the new session gets this name from `-n`, as [Start a session](operator-start.md#start-a-session) says.
-[docs/sessions.md](../sessions.md) gives the form of the own name of a session. The old session puts this name in the
+[docs/dev/GLOSSARY.md](GLOSSARY.md) gives the form of the own name of a session. The old session puts this name in the
 item and in the prompt of the handoff file. The prompt also names [the operator of the old session](../operator.md) as
 the operator that the new session works with.
 

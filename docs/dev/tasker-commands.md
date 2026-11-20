@@ -213,7 +213,7 @@ store file exists, the undo step is `rm $HOME/Documents/tasker/denials/store.jso
 each of the three folders that did not exist, the deepest folder first.
 
 Before step 5, the user can change a line of `records.jsonl`. Then `store` keeps the changed line, after it replaces
-each known form again. `<slug>` is the slug of the planner, as [docs/sessions.md](../sessions.md) defines it.
+each known form again. `<slug>` is the slug of the planner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it.
 
 The store file is state of the user, as [The state of the user](plan-review.md#the-state-of-the-user) defines it. Only a
 planner runs `store` on this file, and only the user approves step 5. So the item of step 4 is a question for the user

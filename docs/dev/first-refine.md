@@ -1,7 +1,7 @@
 # First refine
 
 This page lists the hints for the first refine of a ticket, sorted by the kind of ticket.
-[orchestrator.md](../orchestrator.md) defines the term "ticket". [sessions.md](../sessions.md) defines the term "task
+[orchestrator.md](../orchestrator.md) defines the term "ticket". [GLOSSARY.md](GLOSSARY.md) defines the term "task
 subagent". [Review findings](review-findings.md#review-findings) defines a loop. The first refine is the first
 `tasker refine` of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket).
 

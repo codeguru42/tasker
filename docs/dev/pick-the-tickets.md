@@ -836,6 +836,7 @@ slot and landing rules still apply.
     [the orchestration pages](../orchestrator.md). The base list leaves out `docs/dev/handoff.md` and
     `docs/dev/handoff-orchestrator.md`.
   - `docs/sessions.md`
+  - `docs/dev/GLOSSARY.md`
   - `docs/dev/rules.md`
   - `docs/dev/first-refine.md`
   - `docs/dev/rebase-conflicts.md`
@@ -858,22 +859,22 @@ slot and landing rules still apply.
 - The planner bullet: the orchestrator sends each lesson of a final report, each finding of a session review, each
   recurrence and each proposed issue only to `planner-<slug>` of its own slug, with `SendMessage`.
   [Working with the user](planner.md#working-with-the-user) of planner.md names that session, and
-  [sessions.md](../sessions.md) defines the slug. The message gives the lesson, the ticket, the date, and the doc and
-  the section that the lesson fits. For a recurrence, the message also names the open issue. The planner drafts and
-  posts the issue, as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The
-  orchestrator drafts and files no issue itself. The one exception is the issue of step 1 of
+  [GLOSSARY.md](GLOSSARY.md) defines the slug. The message gives the lesson, the ticket, the date, and the doc and the
+  section that the lesson fits. For a recurrence, the message also names the open issue. The planner drafts and posts
+  the issue, as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator
+  drafts and files no issue itself. The one exception is the issue of step 1 of
   [A failed CI run](ci-wait.md#a-failed-ci-run), which the orchestrator files itself. If `SendMessage` fails, for
   example because no planner runs, the orchestrator sends the lesson to [its operator](../operator.md) as an item. A
   refused message counts as a failed `SendMessage`. The orchestrator waits for no answer from the planner. A missing
   answer is out of scope. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue
   draft to the planner.
 
-  A request of [the user](../sessions.md) to draft an issue, or to change the title or the body of an issue, is a
-  proposed issue of this bullet. [The orchestrator](../orchestrator.md) sends it to `planner-<slug>` with no question to
-  the user, and [tells the user](working-with-the-user.md#the-operator) that it did. The message gives the words of the
-  user and the date, and [the ticket](../orchestrator.md) when one exists. On 2026-10-26, the user asked the
-  orchestrator of #391 to draft the issues of a new milestone. The orchestrator drafted and posted 8 issues and 4
-  changes itself, with no review loop. Review loop 1 later found from 9 to 14 findings in each draft.
+  A request of [the user](GLOSSARY.md) to draft an issue, or to change the title or the body of an issue, is a proposed
+  issue of this bullet. [The orchestrator](../orchestrator.md) sends it to `planner-<slug>` with no question to the
+  user, and [tells the user](working-with-the-user.md#the-operator) that it did. The message gives the words of the user
+  and the date, and [the ticket](../orchestrator.md) when one exists. On 2026-10-26, the user asked the orchestrator of
+  #391 to draft the issues of a new milestone. The orchestrator drafted and posted 8 issues and 4 changes itself, with
+  no review loop. Review loop 1 later found from 9 to 14 findings in each draft.
 
 - The source bullet: a message of the planner bullet names the source of each fact of the message. Examples of a source
   are the final report, a comment, a command and its output, a doc, or the words of the user. The message marks each

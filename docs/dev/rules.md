@@ -141,7 +141,7 @@ task.
   description of a pull request. It also includes the replies to the user, the reports and messages between sessions,
   and the feedback texts of `tasker refine` and `tasker review <issue> "<feedback>"`. This rule does not apply to the
   sessions that tasker starts for plan, execute and review, except for the docs that they write.
-- Each session writes "task subagent" for the session that [docs/sessions.md](../sessions.md) defines as a task
+- Each session writes "task subagent" for the session that [docs/dev/GLOSSARY.md](GLOSSARY.md) defines as a task
   subagent, also where the text of an issue says "agent".
 - The memory rule: no session writes memory. A session makes no new memory note and adds no text to a memory note. A
   step of the docs can still tell a session to delete a memory note or its lines. This rule wins over each memory

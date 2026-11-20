@@ -3,9 +3,9 @@
 [The orchestration pages](orchestrator.md) give the rules for an orchestrator. The orchestrator is the assistant session
 that picks tickets, starts one task subagent for each ticket. It moves the cards and sets the landing order.
 
-A ticket is an issue on the project board. A task subagent, as [sessions.md](sessions.md) defines it, runs the steps of
-["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the person who works with the
-sessions, as [sessions.md](sessions.md) says. The operator starts the orchestrator, as
+A ticket is an issue on the project board. A task subagent, as [GLOSSARY.md](dev/GLOSSARY.md) defines it, runs the steps
+of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the person who works with the
+sessions, as [GLOSSARY.md](dev/GLOSSARY.md) says. The operator starts the orchestrator, as
 [Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not type in the
 session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
 [A blocked session](dev/operator-start.md#a-blocked-session) says. The orchestrator of the kind `claude` reads its own
@@ -47,9 +47,9 @@ the PATH from a global install. The installed `tasker` is a build of this repo, 
 [the facts of the installed tasker](dev/tasker-commands.md#the-facts-of-the-installed-tasker).
 
 The start docs of the orchestrator are `docs/orchestrator.md`, the pages of the list "The pages" below,
-[docs/dev/rules.md](dev/rules.md), [docs/dev/working-with-the-user.md](dev/working-with-the-user.md) and
-[docs/sessions.md](sessions.md). The orchestrator reads them at its start, as
-[the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
+[docs/dev/rules.md](dev/rules.md), [docs/dev/working-with-the-user.md](dev/working-with-the-user.md),
+[docs/sessions.md](sessions.md) and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). The orchestrator reads them at its start,
+as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
 
 The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages":
 
