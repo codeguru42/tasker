@@ -19,6 +19,15 @@ The orchestrator does all the steps of this section.
   - An issue joins a set only by a word of the user. A word of the user that adds an issue also starts a read of the
     board. No message of another session adds an issue to the set.
   - The reason of the set scope: the user can run a few chosen issues, and they need no milestone of their own.
+  - If an issue of the set moves to a later milestone, the orchestrator of the set tells the user, and the user decides
+    for that case. The orchestrator also tells the orchestrator of the new milestone with a message, if the session list
+    of the tools has `orchestrator-<slug>` with the slug of that milestone. No issue leaves the set by itself, and the
+    move adds no hold. How the orchestrator sees the move is open. The way that this page names is the milestone compare
+    of the set read in [the board-read bullet](#pick-the-tickets). At each set read, the orchestrator compares the
+    milestone of each issue with the milestone of its last read. The first read of the session is the base. If the read,
+    the session list or the message fails, [the failure rule](limits.md#the-failure-rule) applies. Case: #B of the set
+    moves from M32 to "Future". At the next read of the board, the orchestrator of the set tells the user. If
+    `orchestrator-future` runs, it also tells that session.
 - The earlier-blocker offer: for a milestone scope, a ticket of the milestone can wait on an open blocker of an earlier
   milestone that no orchestrator runs. An earlier milestone is a numbered milestone with a lower number, for example M19
   before M20. The number is the number in the title of the milestone, for example 19 in "M19 — Polish". A blocker of
