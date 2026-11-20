@@ -113,9 +113,8 @@ Use only the flags for the change.
 A title change passes the new title as one argument in single quotes, as `--title '<literal title>'` of the command
 above shows. The undo step of the change is the same command with the exact old title in single quotes. The exact old
 title is the title of the start read of [Before a post](#before-a-post), with no change of one character. The rule
-covers the command that the session shows the user and the command that the write subagent runs. A title can hold a
-backtick, and the shell runs the text between two backticks as a command. The shell reads no character inside single
-quotes.
+covers the command that the session shows the user and the command that the session runs. A title can hold a backtick,
+and the shell runs the text between two backticks as a command. The shell reads no character inside single quotes.
 
 If a title holds a single quote, write each single quote of the title as `'\''`. For example, the title `It's ready`
 becomes `--title 'It'\''s ready'`. A test with `printf` kept each of these characters of a title: `'`, a backtick, `$`,

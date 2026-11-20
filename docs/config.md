@@ -337,8 +337,8 @@ the model and the effort of a subagent, not of a session. The orchestrator start
 request. The key `planner` sets the model and the effort of the planner subagent and of a planner session.
 
 The planner subagent starts the draft subagent, the review subagent and the post subagent. They draft an issue, review a
-draft and post an approved issue. The orchestrator starts the write subagent to run changes that the user approved, one
-change at a time.
+draft and post an approved issue. The orchestrator starts the write subagent to run an approved change of the metadata
+of an issue or of a user-level file, as [the actor table](dev/question-pane.md#the-actor-of-each-write-action) says.
 
 | Key      | Type                 | Default    | Notes                                                                                                                             |
 | -------- | -------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
