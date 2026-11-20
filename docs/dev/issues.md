@@ -45,10 +45,11 @@ goes. This page holds only how to do it on GitHub.
   path. The body file is the draft file with its title line and the blank line after it taken out. Then the session runs
   `gh issue create -R <repo> --title '<literal title>' --body-file <absolute path of the body file> --milestone '<milestone>'`
   alone in a [plain call](#the-reads-before-the-write). Add `--label '<label>'` in the same call when the issue needs a
-  label. The title is the title text, not a command that reads it. If the title has a single quote, use double quotes.
+  label. The title is the title text, not a command that reads it. Write each single quote of the title as `'\''`, as
+  [The reads before the write](#the-reads-before-the-write) says.
 
-  Such a title holds no `$`, backtick, `\` or `"`. On 2026-11-12, auto mode denied two compound `gh issue create` calls.
-  A compound call needs an allow rule for each part, and a redirect gets its own check.
+  On 2026-11-12, auto mode denied two compound `gh issue create` calls. A compound call needs an allow rule for each
+  part, and a redirect gets its own check.
 
 - If an issue already covers the change, the session that posts the issue offers the user an extension of that issue
   (its body or its links) instead of a new issue. That session tells the user what each draft has that the other one
