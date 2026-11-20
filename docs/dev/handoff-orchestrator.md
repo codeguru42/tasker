@@ -230,4 +230,5 @@ The new orchestrator then starts with the re-read rule. Right after the first do
 orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). After that
 check, it reads the tasks in flight with `tasker status`, also [the parked tasks](pick-the-tickets.md#the-defer-rule).
 It reads the other sessions with `ListAgents`. Then it makes its board watch job, as
-[the board watch rule](#the-long-running-orchestrator) says.
+[the board watch rule](#the-long-running-orchestrator) says. Then, before the pick of the first ticket, it runs
+[the outside-Todo find](pick-the-tickets.md#pick-the-tickets).
