@@ -40,6 +40,8 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/handoff-operator.md](docs/dev/handoff-operator.md): the handoff of the operator.
 - [docs/dev/limits.md](docs/dev/limits.md): the limits of the orchestrator and the task subagents.
 - [docs/dev/planner.md](docs/dev/planner.md): the rules of a planner.
+- [docs/dev/issue-subagents.md](docs/dev/issue-subagents.md): the rules that each draft, review and post subagent of a
+  planner follows.
 - [docs/dev/issues.md](docs/dev/issues.md): the steps to file issues on GitHub.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how a session works with the user.
 - [docs/dev/operator-start.md](docs/dev/operator-start.md): how the operator starts and stops sessions.

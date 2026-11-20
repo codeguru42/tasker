@@ -13,8 +13,11 @@ says.
 The planner pages are `docs/planner.md` and the pages of this list, "The pages":
 
 - [docs/dev/planner.md](dev/planner.md): the rules for milestone planning and ad hoc drafts: the initial planner and the
-  follow-up planner, the order of the work, the ticket subagent, the review loop of a draft, the body of an issue, the
-  blocked-by links, the milestone of an issue, what goes in a ticket and the work with the user.
+  follow-up planner, the order of the work, the ticket subagent, the review loop of a draft, what goes in a ticket and
+  the work with the user.
+- [docs/dev/issue-subagents.md](dev/issue-subagents.md): the rules of the issue-draft, issue-review and issue-post
+  subagents: the read rule, the result of a subagent, the bans of a subagent, text as data, the body of an issue, the
+  blocked-by links, the milestone of an issue and the scope of a ticket.
 - [docs/dev/issues.md](dev/issues.md): the rules of each session that posts an issue, "A recurrence", and the steps of
   the planner for the blocked-by links, the project board and the milestones.
 - [docs/dev/working-with-the-user.md](dev/working-with-the-user.md): how an assistant session works with the user: the

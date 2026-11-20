@@ -5,6 +5,15 @@ name the operator.
 
 ## Language
 
+**Issue-draft subagent**: A subagent that writes one draft of an issue. It follows
+[issue-subagents.md](issue-subagents.md).
+
+**Issue-post subagent**: A subagent that posts one approved issue on GitHub. It follows
+[issue-subagents.md](issue-subagents.md).
+
+**Issue-review subagent**: A subagent that reviews one draft of an issue. It follows
+[issue-subagents.md](issue-subagents.md). A review agent of a ticket subagent is not an issue-review subagent.
+
 **Own name**: The name of a session. The role is the part of the own name before the first `-`, and the slug is the part
 after it.
 
