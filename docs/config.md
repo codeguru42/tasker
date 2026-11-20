@@ -321,9 +321,10 @@ more about this refusal.
 ## `sessions`
 
 The user starts the first operator of a slug. In a handoff of the operator, the old operator starts the new operator.
-The operator starts the planner and the orchestrator of a milestone. The key `sessions` gives the agent kind of these
-sessions and the model and the effort of each role. It is separate from `assistant`, because `assistant` configures the
-runs that tasker starts.
+The operator starts the planner of a milestone. The user starts each orchestrator, as
+[The start of an orchestrator](orchestrator.md#the-start-of-an-orchestrator) says. In a handoff, the old orchestrator
+starts the new orchestrator. The key `sessions` gives the agent kind of these sessions and the model and the effort of
+each role. It is separate from `assistant`, because `assistant` configures the runs that tasker starts.
 
 A session role is one of `operator`, `planner`, `orchestrator` and `question`. The session role `question` is for a
 [question session](dev/GLOSSARY.md). A question session has no role in the terms of

@@ -3,7 +3,8 @@
 This page gives the terms that name the operator, and the steps with which a session reads its own name.
 [The glossary](dev/GLOSSARY.md) gives the other terms that the sessions use.
 
-The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator-<slug>`.
+The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator-<slug>`. The slug of a set scope names
+only `orchestrator-<slug>`, as [The start of an orchestrator](orchestrator.md#the-start-of-an-orchestrator) says.
 
 An item is a message from a planner or an orchestrator to the operator about something that needs the user.
 

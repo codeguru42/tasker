@@ -70,7 +70,8 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 6. The message of the initial planner is the one signal that ends the initial planning. The operator does this step only
    after this message. The word of the user to the initial planner in step 5 is the request of the user for this stop.
    Then the operator closes the tab of the initial planner, as "Stop a session" says.
-7. The operator starts the follow-up planner and the orchestrator, as "Start a session" says.
+7. The operator starts the follow-up planner, as "Start a session" says. Then it tells the user to start the
+   orchestrator, as [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says.
 8. At the end of the milestone, [The close of a milestone](#the-close-of-a-milestone) applies.
 
 If a stop or a start fails, the failure cases of "Stop a session" and "Start a session" apply.
@@ -242,11 +243,8 @@ The follow-up planner:
 You are the planner of <milestone>. This is not the initial planning. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/planner.md.
 ```
 
-The orchestrator:
-
-```text
-You are the orchestrator of <milestone>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/orchestrator.md. Then start.
-```
+The orchestrator: the user starts it with the first prompt of a milestone scope, as
+[The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says.
 
 ## Stop a session
 
