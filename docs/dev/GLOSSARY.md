@@ -12,7 +12,8 @@ name the operator.
 [issue-subagents.md](issue-subagents.md).
 
 **Issue-review subagent**: A subagent that reviews one draft of an issue. It follows
-[issue-subagents.md](issue-subagents.md). A review agent of a ticket subagent is not an issue-review subagent.
+[issue-subagents.md](issue-subagents.md) and [issue-review.md](issue-review.md). A review agent of a ticket subagent is
+not an issue-review subagent.
 
 **Orchestrator**: A top-level session that runs one scope. It picks tickets and starts task subagents.
 

@@ -23,8 +23,9 @@ the doc. Such a read of a link is a doc read, as [the doc-read rule](doc-reads.m
 the link to [Core features first](working-with-the-user.md#core-features-first). A subagent follows it only for a step
 that decides an edge case.
 
-The document of the issue-draft subagent is [docs/dev/issue-draft.md](issue-draft.md). Each later issue of a kind adds
-the path of the document of its kind to this rule.
+The document of the issue-draft subagent is [docs/dev/issue-draft.md](issue-draft.md). The document of the issue-review
+subagent is [docs/dev/issue-review.md](issue-review.md). Each later issue of a kind adds the path of the document of its
+kind to this rule.
 
 ## The result of a subagent
 
