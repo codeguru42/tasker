@@ -76,6 +76,37 @@ The orchestrator does all the steps of this section.
 - Start a ticket only as [the stacking rule](#the-stacking-rule) says. No orchestrator that knows of an open broken-test
   issue starts a ticket, except that issue itself (see the broken-test rule in
   [A failed CI run](ci-wait.md#a-failed-ci-run)).
+- The set-scope status read: an orchestrator of a milestone scope owns each task of an issue of its milestone. An
+  orchestrator of a set scope owns each task of an issue of its set. A parked task of an issue of the scope is a task of
+  the scope, so the orchestrator owns it. A task of an issue of the scope that another session started is also a task of
+  the scope, and the orchestrator owns it too.
+  - The check is only for an orchestrator of a set scope. Before each start, it runs
+    `tasker status --issue <issue key>`. The read shows which task of the issue is in flight. The orchestrator of a
+    milestone scope does no such read.
+  - If no task of the issue is in flight, the ticket can start by the other rules of this section.
+  - If a task of the issue is in flight, the orchestrator starts no second task. Two cases follow.
+  - If the card of the issue is in Todo, the task is a parked task of the set. The comeback of
+    [the defer rule](#the-defer-rule) covers it, as the last paragraph of that rule says. The orchestrator starts a task
+    subagent for it as that rule says.
+  - If the card of the issue is in In progress, and no task subagent of this orchestrator drives the task, the task is
+    in flight under another session. The issue sits in two scopes, for example in the set and in a milestone that
+    another orchestrator runs. The orchestrator tells the user and asks the user for a decision, as
+    [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The ticket does not start until the
+    user decides.
+
+  The ownership rule covers a task that sits in one scope. The check covers an issue that sits in two scopes.
+
+  The check has a limit. Two orchestrators that read at the same moment can both start. Then `tasker start` prints
+  `task already started` (`src/commands/start.ts`), and two task subagents drive one task. If `tasker status` fails,
+  [the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start at that moment.
+
+  Case 1: a set of #A and #B. #A is also in M31, and `orchestrator-m31` runs a task of #A with its card in In progress.
+  The orchestrator of the set reads `tasker status --issue` for #A, finds the task, does not start #A and asks the user
+  for a decision.
+
+  Case 2: the same set. #B has a parked task, and its card is in Todo. The parked task is a task of the set. The
+  orchestrator of the set starts a task subagent for it by the comeback rule.
+
 - A manual-steps issue is an issue whose body says that no assistant session runs it.
   [What goes in a ticket](planner.md#what-goes-in-a-ticket) gives its form. The orchestrator starts no task for it and
   runs no `tasker show` for it. Each ticket that it blocks waits until it closes. While it is open, its milestone is not
