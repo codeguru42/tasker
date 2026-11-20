@@ -78,16 +78,26 @@ The orchestrator does all the steps of this section.
   ticket with `P0` or `P1` that joined the milestone and can start takes the next free agent before the tickets with no
   priority.
 
-- Each time a ticket lands, read the board again: the open issues of the milestone and the issues that block them. A new
-  issue can join a milestone while a run is in progress. An open issue can also lose its last open blocker while no
-  ticket lands. In one milestone, a new issue stayed in Todo for hours, because the orchestrator read the board only at
-  the start. On 2026-10-25, #495 and three new issues had no open blocker, and two slots of orchestrator-m22 stayed free
-  for about an hour. The bullet "When the final report of the task subagent of a ticket says that the ticket landed" of
+- Each time a ticket lands, read the board again: the open issues of the scope and the issues that block them. For a
+  milestone scope, the read stays as it is. For a set scope, run one read for each issue of the set:
+  `gh issue view <number> -R <repo> --json state,projectItems,milestone,blockedBy`. Take the state from `.state`, the
+  column from `.projectItems[].status.name`, and the milestone from `.milestone.title`. Take the open blockers from the
+  nodes of `.blockedBy.nodes` with the state `OPEN`. The milestone is empty for an issue with no milestone. On
+  2026-11-20, with gh 2.102.1, `gh issue view 964 -R codeguru42/tasker --json state,projectItems,milestone,blockedBy`
+  gave `OPEN`, `Todo`, the milestone title and the open blocker 963. A new issue can join a milestone while a run is in
+  progress. An open issue can also lose its last open blocker while no ticket lands. In one milestone, a new issue
+  stayed in Todo for hours, because the orchestrator read the board only at the start. On 2026-10-25, #495 and three new
+  issues had no open blocker, and two slots of orchestrator-m22 stayed free for about an hour. The bullet "When the
+  final report of the task subagent of a ticket says that the ticket landed" of
   [Land the work](land-the-work.md#land-the-work) gives the place of this read among the landing steps. The orchestrator
-  also reads the board when a message of another session names one of these changes: a new issue in the milestone of the
-  orchestrator, an added or a removed blocked-by link of an open issue of that milestone, or a move of an issue into
-  that milestone. This covers a message of each session on purpose. Today the follow-up planner sends such messages, as
-  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running orchestrator
+  also reads the board when a message of another session names one of these changes. For a milestone scope, the changes
+  are a new issue in the milestone of the orchestrator, an added or a removed blocked-by link of an open issue of that
+  milestone, or a move of an issue into that milestone. For a set scope, the one change is an added or a removed
+  blocked-by link of an open issue of the set. A message about a new issue in the milestone of an issue of the set
+  starts no read. A message of another session never adds an issue to the set. If a read of the board fails,
+  [the failure rule](limits.md#the-failure-rule) applies. The orchestrator starts no ticket that the read covers until a
+  later read works. This covers a message of each session on purpose. Today the follow-up planner sends such messages,
+  as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running orchestrator
   also reads the board with its board watch job, as
   [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says. Each read of the board that does
   not come at a landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts
