@@ -832,9 +832,10 @@ issues that are only blocked due to the "same file" rule."
 
 Each rule of the orchestration pages leaves out a ticket on hold and its task, as if they are outside the milestone.
 This covers the start of a ticket, an empty Todo column, the shared-file bullet, the link offer and the earlier-blocker
-offer. A ticket that a ticket on hold blocks waits while the link stays, and it never stacks on the task of a ticket on
-hold. A rule that names a parked task or a postponed ticket still applies, for example the bullet "If the user postpones
-the parent" of the stacked-ticket rule. The report of a done milestone names each ticket on hold.
+offer. [The outside-Todo find](#pick-the-tickets) does not leave out a ticket on hold. It reads each ticket on hold of
+the scope and raises it. A ticket that a ticket on hold blocks waits while the link stays, and it never stacks on the
+task of a ticket on hold. A rule that names a parked task or a postponed ticket still applies, for example the bullet
+"If the user postpones the parent" of the stacked-ticket rule. The report of a done milestone names each ticket on hold.
 
 A waiting question of a ticket on hold is an open question of the orchestrator about that ticket, as
 [Start](question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a done milestone,
