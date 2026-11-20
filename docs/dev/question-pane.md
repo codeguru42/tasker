@@ -190,6 +190,11 @@ While the opener subagent runs, the question pane counts as open. If the opener 
 orchestrator tells the user in its tab and stops the run until the user speaks. The question pane then counts as open
 until the user tells the orchestrator that it is closed.
 
+No one measured that a pi orchestrator can start an opener subagent, a reuse subagent or a write subagent. See
+[`sessions`](../config.md#sessions). If a subagent cannot start, the orchestrator follows
+[the failure rule](limits.md#the-failure-rule). The pane stays unstarted, and the run stops until the user speaks. For a
+write subagent, the action does not run.
+
 The pane name starts with `question-` and is unique. See the
 [`agent_name_taken` fact](operator-start.md#start-a-session).
 
@@ -731,6 +736,7 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | No pane opens next to the pane owner                                                                  | Not started                          | No pane exists. A run stops                                                                                    |                      | The pane owner tells the user             |
 | The pane does not show the question                                                                   | Not started, reading, or at a prompt | The pane stays open. A run stops                                                                               |                      | The pane owner tells the user             |
 | The opener subagent ends with no report                                                               | Not started, reading, or at a prompt | The pane counts as open. A run stops                                                                           |                      | The pane owner tells the user             |
+| The pane owner cannot start an opener subagent, a reuse subagent or a write subagent                  | Not started, or waits at its prompt  | The failure rule applies. No pane starts, and a run stops. A write action does not run                         |                      | The pane owner tells the user             |
 | The notification of a pane start or a reuse fails                                                     | Any                                  | The failure rule applies. The pane stays open                                                                  |                      | The pane owner tells the user             |
 | The session starts                                                                                    | Running. Start line, reads, question | The question stays open                                                                                        |                      | The question session tells the user       |
 | A message arrives with the header of the open pane and the current question                           | Waits for the ack                    | Accepts it. Sends the ack                                                                                      |                      | The question session tells the pane owner |
@@ -879,4 +885,5 @@ For the 2026-10-25 trust-prompt fact of #519, see [#519](first-refine.md).
 The rules of this page no longer use `SendMessage`. The records above that name `SendMessage` and `ListAgents` stay as
 facts of the old path. No one measured a send with `herdr pane send-text` into a session that is in a turn. No one
 measured a send into a pi pane in either direction. No one measured a newline inside `send-text`, or the wait for the
-ack. No one measured a context clear in a pi session.
+ack. No one measured a context clear in a pi session. No one measured that a pi orchestrator can start an opener
+subagent, a reuse subagent or a write subagent.
