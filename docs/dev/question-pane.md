@@ -135,9 +135,9 @@ decision message only from the question session of its own open pane, as
 decision of that pane.
 
 The question that asks the user for the go of a suggested handoff of the orchestrator or of its follow-up planner can
-get an automatic start, although the handoff is due. It is the only such question. After the go, and during the handoff,
-the condition holds for each question. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says how
-the suggestion works.
+get an automatic start, although the handoff is due. It is the only such question. After the go, until the close of its
+pane and during the handoff, the condition holds for each question.
+[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says how the suggestion works.
 
 On 2026-11-15, operator-m16 reported this case. It came from a handoff of operator-m16. The old operator opened and
 reused question panes for about ten questions during the wait of step 1 of its handoff. The handoff took a long time.
@@ -710,8 +710,11 @@ reuse or a close.
 If the user reports closing the pane with no decision, the question stays open and the run waits for the user's next
 word. That question also gets no automatic start, as for a **No decision** message.
 
-While a pane is open or a [write subagent](#terms) runs, the orchestrator starts no handoff. It also does not start the
-rounds of the empty Todo column of [Pick the tickets](pick-the-tickets.md#pick-the-tickets). If either is due, the
+While a pane is open or a [write subagent](#terms) runs, the orchestrator starts no handoff. The go of a handoff that
+arrives in a decision message waits for the close of its pane. Then the handoff starts, as
+[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. The new session of a handoff starts its own
+pane only after the old pane is gone. So two panes of one slug never run at once. The orchestrator also does not start
+the rounds of the empty Todo column of [Pick the tickets](pick-the-tickets.md#pick-the-tickets). If either is due, the
 orchestrator tells the user in its tab. A write subagent can still run after the close of its pane. The close request,
 the close of the pane and the next pane start do not wait for a write subagent.
 
@@ -787,6 +790,7 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | The close fails in another way                                                                        | Running or waits at its prompt       | A run stops until the word of the user                                                                                                                      |                      | The pane owner tells the user             |
 | A handoff is due while a pane is open                                                                 | Running                              | Starts none. No automatic start. The go question of the handoff waits for the next start, by the rule of one open pane. A word of the user decides          |                      | The pane owner tells the user             |
 | A handoff is due, and no pane is open                                                                 | Not started                          | Makes no automatic start, apart from the question that asks the go of the suggested handoff. That question gets an automatic start, as [Start](#start) says |                      |                                           |
+| The decision message gives the go of a suggested handoff                                              | Waits for the close request          | Sends the ack. Sends the close request. Closes the pane after the rounds, with no reuse. Then starts the handoff                                            |                      | The question session tells the pane owner |
 | The user ends the run                                                                                 | A running session keeps running      | Starts no next pane. A [stop of a run](#terms) holds                                                                                                        |                      | The user tells the pane owner             |
 | No open question of the run is left                                                                   | Ended                                | The run ends. A new open question can get an automatic start                                                                                                |                      | The pane owner tells the user             |
 

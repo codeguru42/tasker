@@ -13,10 +13,12 @@ example an initial planner or the orchestrator of a numbered milestone, also rea
 
 A suggestion of a handoff of an orchestrator or of a follow-up planner is a question in the pane of the orchestrator, as
 [Start](question-pane.md#start) says. An orchestrator asks it in its own pane. A follow-up planner sends its suggestion
-to `orchestrator-<slug>`, which asks it in its pane. The handoff starts at the go of the user in the decision. The user
-can also ask the old session for a handoff at any time. A request of the user for a handoff needs no go. The start of a
-handoff is the go of the user in the decision, the suggestion of the old operator or the request of the user. After the
-start, the old session does the steps of its role page:
+to `orchestrator-<slug>`, which asks it in its pane. The handoff starts after the close of the pane that holds the go
+question. The orchestrator accepts the decision message with the go of the user and sends the ack. Then the rounds
+before the close run, and the pane closes, as [Close and continue](question-pane.md#close-and-continue) says. Then the
+handoff starts. The user can also ask the old session for a handoff at any time. A request of the user for a handoff
+needs no go, and no pane holds it. The start of a handoff is the close of the pane of the go question, the suggestion of
+the old operator or the request of the user. After the start, the old session does the steps of its role page:
 [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
 [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and
 [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its

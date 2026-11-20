@@ -96,7 +96,8 @@ handoffs come" lasts, the landing count bans no new ticket, at any count. A hand
 example at [a request of the user](handoff.md#the-suggestion-of-a-handoff). From the count of 12, the ban holds also
 before the suggestion of a handoff. The suggestion can come in a reply, as the paragraph that starts "At a count of 12"
 says. It can also come as a question in the question pane of the orchestrator, as
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
+[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. The go of the user then comes in a decision
+of that pane, and the handoff starts after the close of the pane.
 
 During the close of a milestone, the landing count bans no new ticket, at any count. The reason:
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) bans each handoff during the close, so the ban of
