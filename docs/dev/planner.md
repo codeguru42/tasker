@@ -430,13 +430,9 @@ Code session.
 
 ### The post of the follow-up planner
 
-After the loops, each planner posts the issue, or posts the change to the open issue, with no approval of the user.
-These rules still apply to the post:
-
-- The duplicate search right before the post of [Before a post](issues.md#before-a-post).
-- [The blocked-by links](issue-subagents.md#the-blocked-by-links), and the in-flight check of the bullet "A ticket that
-  changes the form or the layout of a file goes early in its chain".
-- [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue).
+After the loops, each planner posts the issue, or posts the change to the open issue, with no approval of the user. For
+each post, the planner follows [docs/dev/issue-post.md](issue-post.md). These rules still apply to the post:
+[The steps of a post](issue-post.md#the-steps-of-a-post) of issue-post.md.
 
 On 2026-11-12, the user gave this reason for the post with no approval of the user: "Have the planner run the review
 cycles defined in its rules. Then post the final result."
@@ -473,22 +469,18 @@ These posts also give a message to an orchestrator:
 - A post that changes the blocked-by links of an open issue.
 - A post that moves an issue into a milestone.
 
-The follow-up planner sends the message after the post is complete. A post is complete after these steps:
+The follow-up planner sends the message after the post is complete.
+[The last steps of a post](issue-post.md#the-last-steps-of-a-post) of issue-post.md make a post complete.
 
-- The follow-up planner runs each link command of the post, as [The blocked-by links](issues.md#the-blocked-by-links) of
-  issues.md says.
-- For a new issue or an issue moved into a milestone, the follow-up planner reads the column of the card with the
-  command of [the defer rule](pick-the-tickets.md#the-defer-rule). If the output is not `Todo`, it reads again after one
-  minute, because [the workflow of the board](issues.md#the-project-board) adds a new issue within a minute.
-
-If a link command fails, a read of the column fails, or the second read does not print `Todo`, the post is not complete.
-Then [the failure rule](limits.md#the-failure-rule) applies to the follow-up planner, and it sends no message. The
+If the post does not complete, as [The last steps of a post](issue-post.md#the-last-steps-of-a-post) of issue-post.md
+says, [the failure rule](limits.md#the-failure-rule) applies to the follow-up planner, and it sends no message. The
 orchestrator finds the change at its next read of the board.
 
-After a complete post, the follow-up planner tells `orchestrator-<milestone>` of the milestone of the issue after the
-post, with `SendMessage`. [The notice rule](doc-reads.md#the-notice-rule) gives the form of the name. The message names
-the issue and the change. A move from one milestone to another gives one message, only to the orchestrator of the target
-milestone. The orchestrator then reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
+After a complete post, as [The last steps of a post](issue-post.md#the-last-steps-of-a-post) of issue-post.md says, the
+follow-up planner tells `orchestrator-<milestone>` of the milestone of the issue after the post, with `SendMessage`.
+[The notice rule](doc-reads.md#the-notice-rule) gives the form of the name. The message names the issue and the change.
+A move from one milestone to another gives one message, only to the orchestrator of the target milestone. The
+orchestrator then reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
 
 Before the message, the follow-up planner makes sure that the session list of the tools, for example `ListAgents`, has
 `orchestrator-<milestone>`. If the list has no such session, the follow-up planner sends nothing. No such session is an
