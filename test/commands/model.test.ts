@@ -241,7 +241,7 @@ describe("model", () => {
       "issue-review",
       "issue-post",
       "write",
-    ] as const)("sets a new entry of the session role %s in a file with no sessions key", async (role) => {
+    ] as const)("sets a new entry of the role %s in a file with no sessions key", async (role) => {
       const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const expected = rawFile(file.dataRoot);
       expected.repos.tasker.sessions = { models: { [role]: { model: "claude-opus-5-5", effort: "high" } } };
