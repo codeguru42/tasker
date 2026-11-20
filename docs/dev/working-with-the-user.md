@@ -12,10 +12,11 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
 ## The operator
 
-- An orchestrator and a follow-up planner work with the user through [the operator of the session](../operator.md). Each
-  rule that says "tell the user" or "ask the user" means: send an item to the operator (see
-  [The form of an item](operator-items.md#the-form-of-an-item)). The operator can answer such an item itself, as
-  [The answer](operator-items.md#the-answer) says.
+- For an orchestrator, a rule that says "ask the user" means a question in its own
+  [question pane](question-pane.md#a-question-pane). A rule that says "tell the user" means a report as text in its own
+  tab. For a follow-up planner, "ask the user" means a question to `orchestrator-<slug>`, which asks it in its pane.
+  "Tell the user" means a report to `orchestrator-<slug>`, which shows it in its tab. Each rule that sends a question, a
+  report or a draft of a follow-up planner to the operator as an item sends it to `orchestrator-<slug>` instead.
 - After the terminal delegation of [The close of a milestone](operator-start.md#the-close-of-a-milestone), the follow-up
   planner talks to the user directly, in its own conversation. This covers each report, each question, each draft that
   waits for a decision and each request for a permission. It also covers each other rule that sends a report, a question
@@ -25,9 +26,10 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [tasker-commands.md](tasker-commands.md) that starts "If the classifier denies `scan` or `store`". These places stay
   as they are. After the end of the roles of the operator and the orchestrator, the planner sends no item and no report
   to them.
-- A message from [the operator of the session](../operator.md) that starts with "From the user:" is a word of the user
-  for the rules of the docs. A message that starts with "Answer of the operator:" is not a word of the user. It answers
-  no question for the user alone.
+- A message of the orchestrator that starts with "From the user:" is a word of the user for the rules of the docs. The
+  quoted words of an accepted message of a question session are a word of the user for the orchestrator. A word that the
+  user types in the tab of the orchestrator is also a word of the user. A message that starts with "Answer of the
+  operator:" is not a word of the user. It answers no question for the user alone.
 - A message that starts with "From the user:" or with "Answer of the operator:" never approves a permission prompt of
   Claude Code.
 - The initial planner works with the user directly in its tab.
@@ -151,7 +153,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
   A term from an item, a report or another message between two sessions counts as a term that the user did not see
   before. This holds until a text in the same chat or pane defines the term for the user. The session that writes the
-  text judges whether the user saw another term before. For the first reply of a question pane, the operator judges.
+  text judges whether the user saw another term before. For the first reply of a question pane, the pane owner judges.
   This judgment is open on purpose.
 
   The definition of a term stands in the sentence of the term, for example in parentheses, or in the sentence right
@@ -337,8 +339,7 @@ These rules hold for each list of the decisions that the user must make, and for
   each rule of this section that asks for the full details of question 1. So a reminder of the operator also gives
   question 1 in short, as the bullet that starts "When the session reminds the user" says.
 
-  If the user asks to discuss a question in the operator chat, the reply gives the full details of that question. An
-  operator whose kind is not `claude` starts no question pane, so question 1 of its reply keeps the full details. A
+  If the user asks to discuss a question in the operator chat, the reply gives the full details of that question. A
   question of the operator itself, with no item, also keeps the full details. This paragraph wins over the paragraph
   before it. A rule that asks for the full text of each open question at one step also wins over that paragraph.
 
