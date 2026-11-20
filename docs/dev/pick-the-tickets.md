@@ -6,16 +6,27 @@ The reader of this page is the orchestrator.
 
 The orchestrator does all the steps of this section.
 
-- Take tickets only from the Todo column of the project board, and only from the current milestone. Do not start a
-  ticket from a later milestone.
+- Take tickets only from the Todo column of the project board, and only from the scope of the orchestrator. The scope is
+  a milestone scope or a set scope, as [The scope](../orchestrator.md#the-scope) says. An issue of the scope is an issue
+  of the milestone of a milestone scope, or an issue of the set of a set scope.
+  - For a milestone scope, take tickets only from the milestone of the scope. Do not start a ticket from a later
+    milestone. A new issue can join the milestone during the run. The orchestrator picks it at its next read of the
+    board, and it asks the user nothing about it.
+  - For a set scope, start only an issue of the set whose card is in Todo. The milestone of the issue does not stop its
+    start. An issue with no milestone can also start. Start no issue outside the set, also an issue in the same
+    milestone as an issue of the set. The sentence "Do not start a ticket from a later milestone" does not cover a set
+    scope.
+  - An issue joins a set only by a word of the user. A word of the user that adds an issue also starts a read of the
+    board. No message of another session adds an issue to the set.
+  - The reason of the set scope: the user can run a few chosen issues, and they need no milestone of their own.
 - The earlier-blocker offer: a ticket of the milestone can wait on an open blocker of an earlier milestone that no
   orchestrator runs. An earlier milestone is a numbered milestone with a lower number, for example M19 before M20. The
   number is the number in the title of the milestone, for example 19 in "M19 — Polish". A blocker of "Docs", of "Future"
   or of no milestone is not of an earlier milestone. Then the orchestrator tells the user and offers to run those
   blockers, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The orchestrator runs
   them only on the word of the user. The blockers keep their milestone. For such a blocker, the word of the user wins
-  over the words "only from the current milestone" of the first bullet of this section. The sentence "Do not start a
-  ticket from a later milestone" does not cover such a blocker, because the blocker is of an earlier milestone. Each
+  over the words "only from the milestone of the scope" of the first bullet of this section. The sentence "Do not start
+  a ticket from a later milestone" does not cover such a blocker, because the blocker is of an earlier milestone. Each
   other bullet of this section still applies to the start of such a blocker, for example
   [the stacking rule](#the-stacking-rule) and the limit of 3 task subagents. If the user says no, the orchestrator makes
   no new offer for that ticket and those blockers. The user can still ask the orchestrator to run them at any time. No
