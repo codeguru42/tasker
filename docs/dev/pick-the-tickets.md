@@ -58,13 +58,14 @@ The orchestrator does all the steps of this section.
 - The priority rule: among the tickets that can start, the orchestrator starts a ticket with the priority `P0` first.
   Then it starts a ticket with `P1`, then a ticket with no priority, then a ticket with `P2`. The priority of a ticket
   is the value of the field `Priority` on its card, as [The project board](issues.md#the-project-board) says. Two
-  tickets of the same priority have no order. The rule covers the tickets of the milestone of the orchestrator.
+  tickets of the same priority have no order. The rule covers the tickets of the scope.
 
-  To read the priorities, run
+  For a milestone scope, read the priorities with
   `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .milestone.title == "<milestone>" and .priority != null) | "\(.content.number) \(.priority)"'`.
   Each line of the output gives the number of an issue and its priority, for example `587 P0`. A ticket with no line has
-  no priority. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts
-  no ticket until the read works.
+  no priority. For a set scope, read the priority of each issue of the set with the read of one issue in
+  [The project board](issues.md#the-project-board). If a read fails, [the failure rule](limits.md#the-failure-rule)
+  applies, and the orchestrator starts no ticket until the read works.
 
   The rule changes no other rule of this section. A ticket with a priority still waits as
   [the stacking rule](#the-stacking-rule) says. It also still waits for the shared-file rule and the move rule. A rule
@@ -73,9 +74,9 @@ The orchestrator does all the steps of this section.
   examples are step 1 of [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator)
   and a hold of the user.
 
-  The ticket of a parked task that comes back to Todo of the current milestone takes its place by its priority (see
+  The ticket of a parked task that comes back to Todo in the scope takes its place by its priority (see
   [the defer rule](#the-defer-rule)). Each time the orchestrator reads the board, it applies the rule again. Then a
-  ticket with `P0` or `P1` that joined the milestone and can start takes the next free agent before the tickets with no
+  ticket with `P0` or `P1` that joined the scope and can start takes the next free agent before the tickets with no
   priority.
 
 - Each time a ticket lands, read the board again: the open issues of the scope and the issues that block them. For a
@@ -119,7 +120,7 @@ The orchestrator does all the steps of this section.
   [security gap](review-findings.md#review-findings) that exists now on `origin/main` or on the machine. Whether a gap
   is live is a judgment. The judgment is open on purpose, and the session that orders the tickets makes it.
 
-  This order holds among the tickets of the milestone that can start. It wins over the priority rule and over
+  This order holds among the tickets of the scope that can start. It wins over the priority rule and over
   [the link offer](#the-link-offer). When the next bullet lets only one ticket run, this ticket takes the slot. No
   blocked-by link puts it behind a ticket that it does not need. If a task in flight already holds the shared file, the
   orchestrator asks the user what to do with that task.
@@ -138,10 +139,11 @@ The orchestrator does all the steps of this section.
   On 2026-10-25, #554 and #489 gave examples of a file that an issue names but does not change: #554 named
   `docs/dev/pick-the-tickets.md` only as context and as the target of a link, and #489 named three docs only as context,
   as the target of a link or in its Out of scope section and changed only `docs/dev/planner.md`. If a ticket can start
-  except for this bullet, because it shares a file with a task in flight of the same milestone,
-  [the link offer](#the-link-offer) applies. This bullet covers two tickets of the milestone of the orchestrator. For a
-  task in flight of another milestone, [the overlap rule](land-the-work.md#the-overlap-rule) applies instead. For a
-  stacked ticket and its parent, [the stacking rule](#the-stacking-rule) wins.
+  except for this bullet, because it shares a file with a task in flight of the same scope,
+  [the link offer](#the-link-offer) applies. This bullet covers two tickets of the scope of the orchestrator. For a task
+  in flight outside the scope, for example a task of another milestone,
+  [the overlap rule](land-the-work.md#the-overlap-rule) applies instead. For a stacked ticket and its parent,
+  [the stacking rule](#the-stacking-rule) wins.
 
   If two tickets edit only different places of each shared file, the second ticket can start. The first ticket can still
   be in flight then. The ticket that lands second runs `tasker update-branch`, as
@@ -292,10 +294,10 @@ scope (#164).
 
 After a report of a ready state, the orchestrator lists the open issues that the task blocks:
 `gh issue view <issue> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. If the output is
-empty, no ticket waits on the task, and the step is complete. For each issue of the list, the orchestrator reads the
-milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The orchestrator keeps the tickets of
-its own milestone. If such a ticket can start by this rule and by the other rules of
-[Pick the tickets](#pick-the-tickets), the orchestrator starts it. If a command fails,
+empty, no ticket waits on the task, and the step is complete. For a milestone scope, the orchestrator reads the
+milestone of each issue of the list: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. It keeps
+the tickets of its milestone. For a set scope, it keeps the issues of the set. If such a ticket can start by this rule
+and by the other rules of [Pick the tickets](#pick-the-tickets), the orchestrator starts it. If a command fails,
 [the failure rule](limits.md#the-failure-rule) applies. Then no ticket starts at that moment. The tickets wait until the
 next read of the board or the next start.
 
@@ -448,16 +450,16 @@ parent continues ["Run one ticket"](run-one-ticket.md#run-one-ticket) from the c
 
 ### The link offer
 
-This rule covers a ticket of the milestone of the orchestrator. The ticket can start, except for the shared-file bullet
-of [Pick the tickets](#pick-the-tickets). The ticket shares a file with a task in flight of the same milestone, and it
-has no blocked-by link to the issue of that task. The files of the ticket are the files that the shared-file bullet of
+This rule covers a ticket of the scope of the orchestrator. The ticket can start, except for the shared-file bullet of
+[Pick the tickets](#pick-the-tickets). The ticket shares a file with a task in flight of the same scope, and it has no
+blocked-by link to the issue of that task. The files of the ticket are the files that the shared-file bullet of
 [Pick the tickets](#pick-the-tickets) counts. A ticket that waits for another reason gets no offer until it can start
 except for the shared file. Examples are a blocker that is not ready to stack, and two or more open blockers. A link to
-a task of another milestone is out of scope. [The overlap rule](land-the-work.md#the-overlap-rule) covers that case.
+a task outside the scope is out of scope. [The overlap rule](land-the-work.md#the-overlap-rule) covers that case.
 
-If the user told the orchestrator that a planner of the milestone adds the blocked-by links, the orchestrator makes no
-link offer. The orchestrator also adds no blocked-by link itself. The user can still ask the orchestrator for a link, as
-the decline bullet below says. Then the orchestrator does the steps of the approve bullet, and the bullets for a failed
+If the user told the orchestrator that a planner of the scope adds the blocked-by links, the orchestrator makes no link
+offer. The orchestrator also adds no blocked-by link itself. The user can still ask the orchestrator for a link, as the
+decline bullet below says. Then the orchestrator does the steps of the approve bullet, and the bullets for a failed
 `gh issue edit` and for a skipped write also apply. For a ticket in flight,
 [The reads before the write](issues.md#the-reads-before-the-write) gives the override by a word of the user. If the
 ticket is open, is not in flight and has no link, the orchestrator follows the shared-file bullet of
