@@ -48,14 +48,15 @@ the ticket changes a doc of the orchestrator of the ticket (see [the re-read rul
 `docs/orchestrator.md`, or a start doc of the operator. [docs/operator.md](../operator.md) names the start docs of the
 operator. A notice is a message about such a landing from the orchestrator of the ticket. For a change of a doc of the
 orchestrator, the notice goes to the other orchestrators. For a change of a start doc of the operator, the notice goes
-to each session whose name starts with `operator-`. The operator gives the session of each orchestrator a name of the
-form `orchestrator-<milestone>`, as [Start a session](operator-start.md#start-a-session) says. For example,
-`orchestrator-m6`, `orchestrator-m7` and `orchestrator-docs` are such names. The part after `orchestrator-` is the first
-word of the milestone title in lowercase, for example `orchestrator-m9` for "M9 — Pauses and recovery" and
-`orchestrator-docs` for "Docs". The other orchestrators are all the sessions with such a name except the session of the
-orchestrator of the ticket. On 2026-10-25, before #561, #495 (M22 — Operator) changed `docs/dev/handoff-operator.md`,
-and operator-docs got no notice. Before #565, a change of `docs/dev/working-with-the-user.md`, a start doc of the
-operator, sent no notice to the operator.
+to each session whose name starts with `operator-`. Each orchestrator has a name of the form `orchestrator-<slug>`, with
+the slug of its scope, as [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says. For
+example, `orchestrator-m6`, `orchestrator-m7`, `orchestrator-docs` and `orchestrator-docs-fix` are such names. For a
+milestone scope, the part after `orchestrator-` is the first word of the milestone title in lowercase. Examples are
+`orchestrator-m9` for "M9 — Pauses and recovery" and `orchestrator-docs` for "Docs". For a set scope, the part after
+`orchestrator-` is the slug that the user gives. The other orchestrators are all the sessions with such a name except
+the session of the orchestrator of the ticket. On 2026-10-25, before #561, #495 (M22 — Operator) changed
+`docs/dev/handoff-operator.md`, and operator-docs got no notice. Before #565, a change of
+`docs/dev/working-with-the-user.md`, a start doc of the operator, sent no notice to the operator.
 
 The orchestrator of the ticket does these steps:
 
