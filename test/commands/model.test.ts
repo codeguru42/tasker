@@ -14,7 +14,9 @@ const KEY = "codeguru42/tasker#5";
 const PI_MODEL = "openrouter/deepseek/deepseek-v4.1-flash";
 
 // The report lines of the session roles in a file with no entry for them.
-const NONE_SESSIONS = "operator: none\nplanner: none\norchestrator: none\nquestion: none\n";
+const NONE_SESSIONS =
+  "operator: none\nplanner: none\norchestrator: none\nquestion: none\n" +
+  "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: none\n";
 
 // Makes sure that the file still holds before and that its folder holds no other file.
 function expectNothingChanged({ dir, path }: { dir: string; path: string }, before: string): void {
@@ -67,6 +69,7 @@ describe("model", () => {
             operator: { model: "opus", effort: "xhigh" },
             orchestrator: { model: "sonnet", effort: "max" },
             question: { model: "opus", effort: "max" },
+            write: { model: "opus", effort: "max" },
           },
         };
         return printedJson(raw);
@@ -79,7 +82,8 @@ describe("model", () => {
         out:
           "plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n" +
           "operator: opus (effort xhigh)\nplanner: none\norchestrator: sonnet (effort max)\n" +
-          "question: opus (effort max)\n",
+          "question: opus (effort max)\n" +
+          "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: opus (effort max)\n",
         err: "",
       });
     });
@@ -94,10 +98,12 @@ describe("model", () => {
       const none = await runCommand(model, "model", KEY, "--role", "planner");
       const entry = await runCommand(model, "model", KEY, "--role", "operator");
       const question = await runCommand(model, "model", KEY, "--role", "question");
+      const subagent = await runCommand(model, "model", KEY, "--role", "issue-post");
 
       expect(none).toEqual({ code: 0, out: "planner: none\n", err: "" });
       expect(entry).toEqual({ code: 0, out: "operator: opus (effort xhigh)\n", err: "" });
       expect(question).toEqual({ code: 0, out: "question: none\n", err: "" });
+      expect(subagent).toEqual({ code: 0, out: "issue-post: none\n", err: "" });
     });
 
     it("fails for an issue key of an unknown project", async () => {
@@ -226,19 +232,25 @@ describe("model", () => {
       expectNothingChanged(file, printedJson(expected).trimEnd());
     });
 
-    it.each(["operator", "planner", "orchestrator", "question"] as const)(
-      "sets a new entry of the session role %s in a file with no sessions key",
-      async (role) => {
-        const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
-        const expected = rawFile(file.dataRoot);
-        expected.repos.tasker.sessions = { models: { [role]: { model: "claude-opus-5-5", effort: "high" } } };
+    it.each([
+      "operator",
+      "planner",
+      "orchestrator",
+      "question",
+      "issue-draft",
+      "issue-review",
+      "issue-post",
+      "write",
+    ] as const)("sets a new entry of the session role %s in a file with no sessions key", async (role) => {
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = { models: { [role]: { model: "claude-opus-5-5", effort: "high" } } };
 
-        const result = await runCommand(model, "model", KEY, "--role", role, "claude-opus-5-5", "--effort", "high");
+      const result = await runCommand(model, "model", KEY, "--role", role, "claude-opus-5-5", "--effort", "high");
 
-        expect(result).toEqual({ code: 0, out: `${role}: claude-opus-5-5 (effort high)\n`, err: NOTE });
-        expectNothingChanged(file, printedJson(expected));
-      },
-    );
+      expect(result).toEqual({ code: 0, out: `${role}: claude-opus-5-5 (effort high)\n`, err: NOTE });
+      expectNothingChanged(file, printedJson(expected));
+    });
 
     it("adds the key models when sessions has no models key", async () => {
       const file = useConfigFile((dataRoot) => {
@@ -285,6 +297,21 @@ describe("model", () => {
       const result = await runCommand(model, "model", KEY, "--role", "operator", "--effort", "max");
 
       expect(result).toEqual({ code: 0, out: "operator: opus (effort max)\n", err: NOTE });
+      expectNothingChanged(file, printedJson(expected));
+    });
+
+    it("keeps the effort of a subagent role with an entry when only the model is given", async () => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { models: { "issue-review": { model: "opus", effort: "high" } } };
+        return printedJson(raw);
+      });
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = { models: { "issue-review": { model: "sonnet", effort: "high" } } };
+
+      const result = await runCommand(model, "model", KEY, "--role", "issue-review", "sonnet");
+
+      expect(result).toEqual({ code: 0, out: "issue-review: sonnet (effort high)\n", err: NOTE });
       expectNothingChanged(file, printedJson(expected));
     });
 
@@ -388,6 +415,38 @@ describe("model", () => {
         out: "",
         err: "the role question has no entry: give the model and --effort\n",
       });
+      expectNothingChanged(file, before);
+    });
+
+    it("requires a write model entry when only the effort is given", async () => {
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "--role", "write", "--effort", "high");
+
+      expect(result).toEqual({
+        code: 1,
+        out: "",
+        err: "the role write has no entry: give the model and --effort\n",
+      });
+      expectNothingChanged(file, before);
+    });
+
+    it("prints the loader errors for an issue-review model that the provider refuses", async () => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { models: { "issue-review": { model: "opus", effort: "high" } } };
+        return printedJson(raw);
+      });
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "--role", "issue-review", "gpt-5");
+
+      expect(result.code).toBe(1);
+      expect(result.out).toBe("");
+      expect(result.err).toContain(
+        "repos.tasker.sessions.models.issue-review.model: is not a claude-code model: gpt-5",
+      );
       expectNothingChanged(file, before);
     });
 

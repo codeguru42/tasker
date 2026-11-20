@@ -165,6 +165,10 @@ describe("show-config-schema", () => {
     expect(byPath.has("repos.<key>.sessions.models.question.model")).toBe(true);
     expect(byPath.has("repos.<key>.sessions.models.question.effort")).toBe(true);
     expect(byPath.get("repos.<key>.sessions.models.question")?.description).toMatch(/question sessions/i);
+    for (const role of ["issue-draft", "issue-review", "issue-post", "write"]) {
+      expect(byPath.has(`repos.<key>.sessions.models.${role}.model`)).toBe(true);
+      expect(byPath.has(`repos.<key>.sessions.models.${role}.effort`)).toBe(true);
+    }
     expect(byPath.get("repos.<key>.assistant.trustedExtensions")?.description).toMatch(/only pi/i);
     expect(byPath.get("repos.<key>.assistant.models.plan.model")?.description).toMatch(/provider/i);
     expect(byPath.get("repos.<key>.sessions")?.description).toMatch(

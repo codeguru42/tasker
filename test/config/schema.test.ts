@@ -677,6 +677,57 @@ describe("parseConfig sessions", () => {
     expect(parsedRepo(raw).sessions.models).toEqual(models);
   });
 
+  it("keeps the model and the effort of each subagent role", () => {
+    const raw = validConfig();
+    const models = {
+      "issue-draft": { model: "opus", effort: "max" },
+      "issue-review": { model: "opus", effort: "max" },
+      "issue-post": { model: "opus", effort: "max" },
+      write: { model: "opus", effort: "max" },
+    };
+    raw.repos.tasker.sessions = { models };
+    expect(parsedRepo(raw).sessions.models).toEqual(models);
+  });
+
+  it("rejects a gpt model in the subagent role issue-review", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { "issue-review": { model: "gpt-5", effort: "high" } } };
+    expect(issuesOf(raw)).toContain(
+      "repos.tasker.sessions.models.issue-review.model: is not a claude-code model: gpt-5",
+    );
+  });
+
+  it("reports write entry faults at their paths", () => {
+    const extra = validConfig();
+    extra.repos.tasker.sessions = { models: { write: { model: "opus", effort: "high", extra: 1 } } };
+    expect(issuesOf(extra)).toContain("repos.tasker.sessions.models.write.extra: unrecognized key");
+
+    const missing = validConfig();
+    missing.repos.tasker.sessions = { models: { write: {} } };
+    const missingIssues = issuesOf(missing);
+    expectIssueAt(missingIssues, "repos.tasker.sessions.models.write.model");
+    expectIssueAt(missingIssues, "repos.tasker.sessions.models.write.effort");
+
+    const effort = validConfig();
+    effort.repos.tasker.sessions = { models: { write: { model: "opus", effort: "extreme" } } };
+    expectIssueAt(issuesOf(effort), "repos.tasker.sessions.models.write.effort");
+  });
+
+  it("reports a bad subagent model together with the other errors of the file", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { "issue-draft": { model: "gpt-5", effort: "high" } } };
+    raw.bogus = 1;
+    const issues = issuesOf(raw);
+    expect(issues).toContain("repos.tasker.sessions.models.issue-draft.model: is not a claude-code model: gpt-5");
+    expect(issues).toContain("bogus: unrecognized key");
+  });
+
+  it("rejects the unknown key initial-planner", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { "initial-planner": { model: "opus", effort: "high" } } };
+    expect(issuesOf(raw)).toContain("repos.tasker.sessions.models.initial-planner: unrecognized key");
+  });
+
   it("gives no entry to a role that the file leaves out", () => {
     const raw = validConfig();
     raw.repos.tasker.sessions = { models: { planner: { model: "opus", effort: "high" } } };
@@ -821,6 +872,14 @@ describe("parseConfig sessions", () => {
       const issues = issuesOf(raw);
       expect(issues).toHaveLength(1);
       expectIssueAt(issues, "repos.tasker.sessions.kind");
+    });
+
+    it("rejects a claude model of the subagent role write under the kind pi", () => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi", models: { write: { model: "opus", effort: "high" } } };
+      expect(issuesOf(raw)).toContain(
+        "repos.tasker.sessions.models.write.model: is not a pi model in the form <provider>/<model-id>: opus",
+      );
     });
 
     it("reports a bad pi session model together with the other errors of the file", () => {
