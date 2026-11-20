@@ -19,18 +19,23 @@ The orchestrator does all the steps of this section.
   - An issue joins a set only by a word of the user. A word of the user that adds an issue also starts a read of the
     board. No message of another session adds an issue to the set.
   - The reason of the set scope: the user can run a few chosen issues, and they need no milestone of their own.
-  - If an issue of the set moves to another milestone, or to no milestone, the orchestrator of the set tells the user,
-    and the user decides for that case. This page gives no order of the milestones in a set, so each move counts. For a
-    move to a milestone, the orchestrator also tells the orchestrator of the new milestone with a message, if the
-    session list of the tools has `orchestrator-<slug>` with the slug of that milestone. For a move to no milestone, no
-    such orchestrator exists, so it sends no message. No issue leaves the set by itself, and the move adds no hold.
-    Until the user decides, the moved issue starts no task, as [the set-scope status read](#pick-the-tickets) says. How
-    the orchestrator sees the move is open. The way that this page names is the milestone compare of the set read in
-    [the board-read bullet](#pick-the-tickets). At each set read, the orchestrator compares the milestone of each issue
-    with the milestone of its last read. The first read of the session is the base. If the read, the session list or the
+  - The base milestone of an issue of the set is the milestone that the issue had at the first read of the session.
+    After a decision of the user about a move, the base milestone is the milestone that the user decided on. A later
+    read of the board does not change the base milestone. A moved issue is an issue of the set whose milestone differs
+    from its base milestone. No milestone also counts as a milestone here. This page gives no order of the milestones in
+    a set, so each move counts. When an issue of the set becomes a moved issue, the orchestrator of the set tells the
+    user one time, and the user decides for that case. For a move to a milestone, it also tells the orchestrator of the
+    new milestone with a message, if the session list of the tools has `orchestrator-<slug>` with the slug of that
+    milestone. For a move to no milestone, no such orchestrator exists, so it sends no message. Until the user decides,
+    the orchestrator starts no task and no task subagent for a moved issue. This holds for a moved issue with a parked
+    task, with a task in progress and with no task. No issue leaves the set by itself, and the move adds no hold label.
+    How the orchestrator sees the move is open. The way that this page names is the compare of the milestone in the set
+    read of [the board-read bullet](#pick-the-tickets) with the base milestone. A new orchestrator session takes its
+    first read as the base, so it does not see a move from before that read. If the read, the session list or the
     message fails, [the failure rule](limits.md#the-failure-rule) applies. Case: #B of the set moves from M32 to
     "Future". At the next read of the board, the orchestrator of the set tells the user. If `orchestrator-future` runs,
-    it also tells that session.
+    it also tells that session. Case: #B of the set has no task, and its card is in Todo. The user moves #B from M32 to
+    M30. At the next read of the board, the orchestrator tells the user and does not start #B until the user decides.
 - The earlier-blocker offer: for a milestone scope, a ticket of the milestone can wait on an open blocker of an earlier
   milestone that no orchestrator runs. An earlier milestone is a numbered milestone with a lower number, for example M19
   before M20. The number is the number in the title of the milestone, for example 19 in "M19 — Polish". A blocker of
@@ -95,19 +100,17 @@ The orchestrator does all the steps of this section.
   - The check is only for an orchestrator of a set scope. Before each start, it runs
     `tasker status --issue <issue key>`. The read shows which task of the issue is in flight. The orchestrator of a
     milestone scope does no such read.
-  - If no task of the issue is in flight, the ticket can start by the other rules of this section.
-  - If a task of the issue is in flight, the orchestrator starts no second task. Two cases follow.
-  - If the card of the issue is in Todo, the task is a parked task of the set. The orchestrator starts a task subagent
-    for it by the comeback of [the defer rule](#the-defer-rule) only in two cases. The first case: the issue is still in
-    the milestone that it had at the last read of the board. The second case: the user decided about the move, as the
-    move paragraph of the first bullet says.
-  - If the issue moved to another milestone or to no milestone, and the user has not decided yet, the orchestrator
-    starts no task subagent for the parked task.
-  - If the card of the issue is in In progress, and no task subagent of this orchestrator drives the task, the task is
-    in flight under another session. The issue sits in two scopes, for example in the set and in a milestone that
-    another orchestrator runs. The orchestrator tells the user and asks the user for a decision, as
-    [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The ticket does not start until the
-    user decides.
+  - If no task of the issue is in flight, the ticket can start by the other rules of this section. A moved issue does
+    not start until the user decides, as [the move paragraph](#pick-the-tickets) of the first bullet says.
+  - If a task of the issue is in flight, the orchestrator starts no second task. The card of the issue gives the case:
+    - The Todo case: the task is a parked task of the set. If the issue is not a moved issue, the orchestrator starts a
+      task subagent for it by the comeback of [the defer rule](#the-defer-rule). A parked task of a moved issue waits,
+      as the move paragraph says.
+    - The In progress case: if no task subagent of this orchestrator drives the task, the task is in flight under
+      another session. The issue sits in two scopes, for example in the set and in a milestone that another orchestrator
+      runs. The orchestrator tells the user and asks the user for a decision, as
+      [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The ticket does not start until
+      the user decides.
 
   The ownership rule covers a task that sits in one scope. The check covers an issue that sits in two scopes.
 
@@ -119,12 +122,13 @@ The orchestrator does all the steps of this section.
   The orchestrator of the set reads `tasker status --issue` for #A, finds the task, does not start #A and asks the user
   for a decision.
 
-  Case 2: the same set. #B is still in the milestone of the last read. #B has a parked task, and its card is in Todo.
-  The parked task is a task of the set. The orchestrator of the set starts a task subagent for it by the comeback rule.
+  Case 2: the same set. #B is not a moved issue. #B has a parked task, and its card is in Todo. The parked task is a
+  task of the set. The orchestrator of the set starts a task subagent for it by the comeback rule.
 
   Case 3: the same set. The user defers #B to "Future" while its task is in flight. The defer rule moves the card to
   Todo. At the next read of the board, the orchestrator of the set sees the move. It tells the user and starts no task
-  subagent for #B until the user decides.
+  subagent for #B until the user decides. The orchestrator tells the user one time. The next reads of the board do not
+  restart the task before the user decides, because the base milestone of #B stays M32.
 
 - A manual-steps issue is an issue whose body says that no assistant session runs it.
   [What goes in a ticket](planner.md#what-goes-in-a-ticket) gives its form. The orchestrator starts no task for it and
