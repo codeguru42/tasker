@@ -7,6 +7,7 @@ import {
   ASSISTANT_ROLES,
   SESSION_EFFORTS,
   SESSION_ROLES,
+  SUBAGENT_ROLES,
   type Config,
   type RepoConfig,
   type SessionRole,
@@ -17,8 +18,14 @@ import { fail, issueKeyOrFail, orFail, REPO_OPTION_DESCRIPTION, resolveIssueKeyO
 
 type Role = AssistantRole | SessionRole;
 
-// The roles in the order of the report: the assistant roles, then the session roles.
+// The roles in the order of the report: the assistant roles, then the keys of sessions.models.
 const ROLES: readonly Role[] = [...ASSISTANT_ROLES, ...SESSION_ROLES];
+
+// The session roles that are not subagent roles, for the help of --role.
+const SESSION_ONLY_ROLES = SESSION_ROLES.filter((role) => !(SUBAGENT_ROLES as readonly string[]).includes(role));
+const ROLE_HELP =
+  `The role to print or to set: an assistant role (${ASSISTANT_ROLES.join(", ")}), ` +
+  `a session role (${SESSION_ONLY_ROLES.join(", ")}) or a subagent role (${SUBAGENT_ROLES.join(", ")})`;
 
 interface ModelOptions {
   role?: Role;
@@ -34,11 +41,12 @@ function roleLine(role: string, choice: { model: string; effort: string }): stri
   return `${role}: ${choice.model} (effort ${choice.effort})\n`;
 }
 
+// A key of sessions.models: a session role or a subagent role.
 function isSessionRole(role: Role): role is SessionRole {
   return (SESSION_ROLES as readonly string[]).includes(role);
 }
 
-// The report line of a role of the repo. A session role with no entry prints none.
+// The report line of a role of the repo. A session role or a subagent role with no entry prints none.
 function lineOf(repo: RepoConfig, role: Role): string {
   if (!isSessionRole(role)) return roleLine(role, repo.assistant.models[role]);
   const entry = repo.sessions.models[role];
@@ -64,21 +72,17 @@ export const model: RegisterCommand = (program, io) => {
   program
     .command("model")
     .description(
-      "Print or set the model and the effort of each assistant role and each session role for the repo of an issue",
+      "Print or set the model and the effort of each assistant role, each session role and each subagent role for the repo of an issue",
     )
     .argument("<issue>", "The issue key: the command uses the repo of the issue")
     .argument("[model]", "The new model of the role. It must pass the model check of the provider")
-    .addOption(
-      new Option(
-        "--role <role>",
-        "The role to print or to set: an assistant role (plan, execute, review) or a session role (operator, planner, orchestrator, question)",
-      ).choices(ROLES),
-    )
+    .addOption(new Option("--role <role>", ROLE_HELP).choices(ROLES))
     .option("--repo <key>", REPO_OPTION_DESCRIPTION)
     .addOption(
-      new Option("--effort <effort>", "The new effort of the role. xhigh and max are for a session role only").choices(
-        SESSION_EFFORTS,
-      ),
+      new Option(
+        "--effort <effort>",
+        "The new effort of the role. xhigh and max are for a session role or a subagent role only",
+      ).choices(SESSION_EFFORTS),
     )
     .action((issue: string, newModel: string | undefined, options: ModelOptions) => {
       const { role, effort } = options;

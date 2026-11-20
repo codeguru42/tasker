@@ -287,8 +287,12 @@ function checkModels(repo: unknown, ctx: z.RefinementCtx): void {
 const SessionKindSchema = z.enum(["claude", "pi"]).default("claude");
 
 const SessionRoleSchema = z.strictObject({
-  model: nonEmpty.describe("The model to use for this session role. It must be a model of the agent kind's provider."),
-  effort: z.enum(["low", "medium", "high", "xhigh", "max"]).describe("The effort level to use for this session role."),
+  model: nonEmpty.describe(
+    "The model to use for this session role or subagent role. It must be a model of the agent kind's provider.",
+  ),
+  effort: z
+    .enum(["low", "medium", "high", "xhigh", "max"])
+    .describe("The effort level to use for this session role or subagent role."),
 });
 
 // The subagent roles. A subagent is a helper that a Claude Code session starts with its Agent tool.
@@ -309,7 +313,9 @@ const subagentRoleShape = {
 
 const SessionModelsSchema = z.strictObject({
   operator: SessionRoleSchema.optional().describe("The model and effort for operator sessions."),
-  planner: SessionRoleSchema.optional().describe("The model and effort for planner sessions."),
+  planner: SessionRoleSchema.optional().describe(
+    "The model and effort for the planner subagent and for planner sessions.",
+  ),
   orchestrator: SessionRoleSchema.optional().describe("The model and effort for orchestrator sessions."),
   question: SessionRoleSchema.optional().describe("The model and effort for question sessions."),
   ...subagentRoleShape,
@@ -319,7 +325,10 @@ const SessionModelsSchema = z.strictObject({
 export const SESSION_ROLES = SessionModelsSchema.keyof().options;
 export type SessionRole = (typeof SESSION_ROLES)[number];
 
-// The values of the effort of a session role. They hold each effort of an assistant role.
+// The subagent roles, a part of SESSION_ROLES.
+export const SUBAGENT_ROLES = z.strictObject(subagentRoleShape).keyof().options;
+
+// The values of the effort of a session role or a subagent role. They hold each effort of an assistant role.
 export const SESSION_EFFORTS = SessionRoleSchema.shape.effort.options;
 
 // The provider whose model forms an agent kind uses.
@@ -338,8 +347,10 @@ function checkSessionModels(sessions: unknown, ctx: z.RefinementCtx): void {
 
 const SessionsSchema = z
   .strictObject({
-    kind: SessionKindSchema.describe("The agent kind used for each session role."),
-    models: SessionModelsSchema.default({}).describe("The optional models and effort levels for session roles."),
+    kind: SessionKindSchema.describe("The agent kind used for each session role and each subagent role."),
+    models: SessionModelsSchema.default({}).describe(
+      "The optional models and effort levels for session roles and subagent roles.",
+    ),
   })
   .superRefine(checkSessionModels, { when: () => true });
 
@@ -349,7 +360,7 @@ const RepoSchema = z
     issueTracker: IssueTrackerSchema.describe("The issue tracker for this repo."),
     assistant: AssistantSchema.describe("The assistant and role models for this repo."),
     sessions: SessionsSchema.default({ kind: "claude", models: {} }).describe(
-      "The agent kind and models of operator, planner, and orchestrator sessions, and the models of question sessions.",
+      "The agent kind and models of operator, planner, and orchestrator sessions, the models of question sessions, and the models of the planner, draft, review, post and write subagents.",
     ),
     verify: VerifySchema.describe("The commands and environment for the verify phase."),
     bootstrap: BootstrapSchema.default({ commands: [], env: [] }).describe(
