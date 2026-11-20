@@ -75,24 +75,49 @@ session.
 A [write action](#the-question-session) is an action that the question session sends back to the pane owner. Each of
 these is a write action:
 
-- A write to GitHub, for example to an issue, a comment, a label, a milestone, the project board or a pull request
-- A write or an edit of a file
+- A write to GitHub, for example to a label, a milestone, the state of an issue, the project board or a pull request
+- A write of a file
 - A git write, for example a commit, a branch or a push, apart from `git fetch origin`
 - A change of tasker state
 - A `herdr` command, apart from the send of the question session to its owner pane
-- A change of the configuration of Claude Code
+- A change of the configuration of Claude Code. A user-level file holds such a change. `.claude/settings.json` of the
+  repo is a tracked file, so a change of it is a request, as the next paragraphs say
 - A message to a session other than the pane owner
 
 A message to the pane owner is not a write action. This also holds for a `herdr` command that sends it. A step that the
 question of the sender proposes and the user approves is also not a write action. Examples are the post of a draft, a
 comment and a measure. The sender does that step.
 
+These kinds are requests, not write actions: a change of the title or the body of an issue, a comment on an issue, a
+change of a blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. A change of the text
+of an issue and a comment count as requests only when the item of the sender did not propose them. A step that the item
+proposes stays a step of the sender. [The actor of each write action](#the-actor-of-each-write-action) gives the actor
+of each kind and of each request.
+
+The metadata of an issue is its milestone, its labels, its state (open or closed) and the column of its card on the
+project board. The blocked-by links and the field `Priority` are not metadata in these rules.
+
+A user-level file is one of three files: the configuration file of tasker at the path of
+[Where the file is](../config.md#where-the-file-is), `$HOME/.claude/settings.json` and `$HOME/.claude/CLAUDE.md`. Each
+such file is outside the local clone and outside each worktree. An untracked file of the local clone, for example
+`.claude/settings.local.json`, is not a user-level file. Another file needs a doc change first, for example a skill in
+`$HOME/.claude/skills/`. The user plans a separate repo for agent config. That repo can need a new write area, and this
+waits for a later decision.
+
+The planner of the orchestrator is `planner-<slug>`, with the slug of the orchestrator.
+
+An input file is a file under `/tmp/tasker/<slug>/drafts/`, with the slug of the pane owner.
+
+The start hash of a user-level file is the output of `sha256sum <path>`, or the words "no file" for a file that does not
+exist.
+
 A request for a new issue is words of the user in a question pane that ask for one or more new issues. The question did
 not propose these issues. Such a request is about the question of the pane. A request about another topic stays a
 request outside the question. A request for a new issue is not a write action.
 
-A [write subagent](#the-pane-owner-handles-a-decision) is a subagent of the pane owner that does the write actions of
-one settled decision message.
+A [write subagent](#the-pane-owner-handles-a-decision) is a subagent of the pane owner. It runs one run of
+write-subagent actions in a row of one settled decision message. A write subagent writes no file other than a user-level
+file and an input file. It writes no memory note, as [the memory rule](rules.md#docs) says.
 
 A context clear is a step that removes the context of the question session. The context is each prompt, each reply and
 each tool output that the session holds.
@@ -491,24 +516,75 @@ A settled message can give [write actions](#terms), as [Send a decision](#send-a
 user in the message covers one run of the command of each write action, word for word. Words of the user that let the
 sender decide approve no write action. A message that does not settle the question starts no write subagent.
 
-The answer to the sender names each write action and says that the orchestrator tells the user the result. After the
-answer, also after a failed send of it, the orchestrator starts one [write subagent](#terms) for the write actions of
-the message. The orchestrator runs one write subagent at a time, and a later one starts after the earlier one ends. The
-write subagent first writes each input file at its path. Then it does the write actions in order and writes the full new
-text of each file write. It reports the exit code and the output of each command, and the orchestrator then tells the
-user the result in one line.
+#### The actor of each write action
+
+Each kind of write or request of [Terms](#terms) has one actor.
+
+| Kind of write or request                                                    | Actor                                                                                |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| A new issue                                                                 | `planner-<slug>`, as a request                                                       |
+| A change of the title or the body of an issue that the item did not propose | `planner-<slug>`, as a request                                                       |
+| A comment on an issue that the item did not propose                         | `planner-<slug>`, as a request                                                       |
+| A change of a blocked-by link or of the field `Priority`                    | `planner-<slug>`, as a request                                                       |
+| A change of the metadata of an issue                                        | The write subagent                                                                   |
+| A write of a user-level file                                                | The write subagent                                                                   |
+| A change of a tracked file of the repo                                      | `planner-<slug>`, as a request for a new issue                                       |
+| A `tasker` command, also `tasker model`                                     | The orchestrator, as the orchestration pages give it. Issue #965 can change this row |
+| A message to another session                                                | The orchestrator                                                                     |
+| A `herdr` command                                                           | The orchestrator                                                                     |
+| A git write                                                                 | No actor                                                                             |
+| Each other write                                                            | No actor                                                                             |
+
+The write subagent runs no other kind of write: no write to the text of an issue, no comment, no link, no git write, no
+`herdr` command, no message to a session and no `tasker` command. A move of an issue into "Future" is a metadata change.
+The write subagent also removes each link of the issue to an open issue in the same step, as the "Future" bullet of
+[The blocked-by links](issue-subagents.md#the-blocked-by-links) says. The command steps are in
+[the defer rule](pick-the-tickets.md#the-defer-rule). The approval of the move covers that removal.
+
+The answer to the sender names each write action and says that the orchestrator tells the user the result. The actors
+start after the answer, also after a failed send of it. The actions of one settled message run in the order of the
+message, across all actors. The orchestrator starts one [write subagent](#terms) for each run of write-subagent actions
+in a row. It starts the next actor only after the report of the actor before it. A failure of any action stops each
+later action of each actor. The orchestrator tells the user each action that did not run.
+
+The write subagent first writes each input file at its path, with the slug of the orchestrator. Then it does its actions
+in order. It reports the exit code and the output of each command, and the orchestrator then tells the user the result
+in one line.
+
+Before each start of a write subagent, the orchestrator runs `tasker show-config --repo <repo key>` and reads
+`.sessions.models.write`. With an entry, the `Agent` call gives its model and its effort. With no entry, the call gives
+no model and no effort, as [Sessions](../config.md#sessions) says for a subagent role with no entry. A failed read
+follows [the failure rule](limits.md#the-failure-rule). The write subagent then starts with no model and no effort,
+because the user already approved the action. A failed start runs no write action. The orchestrator tells the user each
+action that did not run.
+
+Right before it writes a user-level file, the write subagent runs `sha256sum <path>` again in its own call. A hash that
+differs from the start hash is a failed command. A file that exists when the start hash is "no file" is also a failed
+command. The write subagent then writes nothing and reports the new hash. Otherwise, it writes the full new text.
+
+After the report of a write subagent that wrote the configuration file of tasker, the orchestrator runs
+`tasker show-config`. Exit code 1 gives an open question in the pane. It holds the undo step and the errors. Until the
+undo, each `tasker` command fails, also the commands of each running task subagent.
 
 The write subagent keeps each rule of the docs for that kind of write. Examples are
-[Before a post](issues.md#before-a-post) and [The reads before the write](issues.md#the-reads-before-the-write), with
-the start hash of the message. The approval of the user in the message is the approval of Before a post. It also covers
-each write that such a rule adds to the action. If such a rule gives a step with the user, the write subagent stops
-before that write and reports. The orchestrator then tells the user, and the action does not run.
+[The reads before the write](issues.md#the-reads-before-the-write) for the state of an issue and the "Future" bullet of
+[The blocked-by links](issue-subagents.md#the-blocked-by-links). The approval of the user in the message covers each
+write that such a rule adds to the action. If such a rule gives a step with the user, the write subagent stops before
+that write and reports. The orchestrator then tells the user, and the action does not run.
 
 The write subagent runs no `tasker` command. The orchestrator runs such a command as the orchestration pages give it. A
 message to another session is a write action. The orchestrator sends it, not the write subagent. The message goes on the
 path that the orchestration pages give for that session, for example the message to its task subagent, and it starts
 with `From the user:`. The herdr path is only for the messages between a question pane and its pane owner, as
 [Terms](#terms) says. A failed send follows [the failure rule](limits.md#the-failure-rule).
+
+The orchestrator runs each `herdr` command of a settled message itself, word for word, as a plain call of
+[The reads before the write](issues.md#the-reads-before-the-write), at its place in the order. A failed command follows
+[the failure rule](limits.md#the-failure-rule), and each later action does not run.
+
+If a settled message gives a write action with no actor, the orchestrator tells the user in one line that the action
+does not run. The line names the action. Examples are a commit in the local clone, a comment on a pull request and a
+change of `.claude/settings.local.json`. tasker makes the git writes of a task, through the task subagent of the task.
 
 If a command fails, the write subagent runs nothing more, also no undo step, and it reports the state that stays. A
 failed command is a command that cannot start or that exits with an error. A write that "The reads before the write"
@@ -535,6 +611,10 @@ list of write actions of [Terms](#terms). A message that starts with "From the u
 [The operator](working-with-the-user.md#the-operator) says. So the pane owner relays a message to another session
 itself.
 
+The reason of issue #967: the user chose a closed list of user-level files. The user said: "A for now. Eventually I will
+have a separate repo for agent config." The user also said: "The planner should run review loops and post without my
+approval." So the planner runs its review loops on a text that the user approved in a pane.
+
 If the words do not settle the question, the pane owner sends only the question session one message saying what remains
 open. The message goes with the herdr path and starts with `PANE-OWNER <owner name> <question id>:`. The pane
 conversation continues. The pane owner sends nothing to the sender. If the send fails, the failure rule applies and the
@@ -552,22 +632,29 @@ The pane owner relays stated doc rules, facts, and preferences to `planner-<slug
 pane owner combines that relay with the answer. A failed relay invokes the failure rule. The orchestrator sends each
 relay one time. The pane does not wait for it.
 
-The pane owner sends each [request for a new issue](#terms) of a decision message to `planner-<slug>`. It sends the
-request one time, also when the message does not settle the question. The pane does not wait for it. The message starts
-with `From the user:`. It names the question pane and the question id. It gives the words of the user word for word and
-each guess of the question session, still marked as a guess.
+The pane owner sends each [request for a new issue](#terms) of a decision message to `planner-<slug>`. It does the same
+for each other request of [Terms](#terms): a change of the title or the body of an issue, a comment, a change of a
+blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. It sends the request one time,
+also when the message does not settle the question. The pane does not wait for it. The message starts with
+`From the user:`. It names the question pane and the question id. It gives the words of the user word for word and each
+guess of the question session, still marked as a guess. For a text change, it gives the exact text and the start hash.
 
 If the planner is the sender and the message settles the question, the request goes in the answer to the planner. In
 each other case, the request goes in a message of its own. Such a message is a relay to `planner-<slug>`, not an answer
 to the sender. So the rule that the pane owner sends nothing to the sender for a message that does not settle the
 question does not stop it.
 
-The pane owner drafts no issue and starts no write subagent for a request for a new issue. After the send, the
-orchestrator tells the user in one line in its tab that `planner-<slug>` has the request. If the send fails,
+The pane owner drafts no issue and starts no write subagent for a request. After the send, the orchestrator tells the
+user in one line in its tab that `planner-<slug>` has the request. If the send fails,
 [the failure rule](limits.md#the-failure-rule) applies, as for the relay of a doc rule of the user. The planner handles
 the request as a proposed issue of the orchestrator, with its review loops and its post rules. The planner then reports
 the post or the drop to the orchestrator. For a draft that waits for a decision of the user, it sends the question to
 `orchestrator-<slug>`.
+
+The planner runs its review loops on a text that the user approved in a pane. If a loop changes the text, the planner
+posts the changed text with no new approval of the user. It still runs each other rule of
+[Before a post](issues.md#before-a-post). This sentence is a reading of the answer of the user, not the words of the
+user.
 
 The reason: the planner runs its review loops on each new issue that the user asks for, also from a question pane. On
 2026-11-13, operator-docs relayed a proposal of the question session question-914-codex. In that pane, the user said
