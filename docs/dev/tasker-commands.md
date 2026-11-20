@@ -129,8 +129,9 @@ them. Then operator-m16 withdrew that guess. The exact call later showed that th
 
 The classifier of auto mode can deny a `gh` write of a follow-up planner or an orchestrator. An orchestrator asks in its
 [question pane](question-pane.md#start) with the exact command, the folder and the exact text of the denial. A follow-up
-planner sends them to `orchestrator-<slug>`, which asks in its pane. The user runs the command with the `!` prefix of
-Claude Code in the question pane, and the question session sends the output.
+planner sends them to `orchestrator-<slug>`, which asks in its pane. The user runs the command and gives the exit code
+and the output to the question session in the pane. The question session sends them in its decision message, as
+[Send a decision](question-pane.md#send-a-decision) says.
 
 The message to that session gives the output of the command, or says that the command did not run. The output goes with
 the words of the user. If the command ran, the session goes on with its work. If it did not run, the step stays open,
