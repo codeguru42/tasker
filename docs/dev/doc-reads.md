@@ -203,6 +203,27 @@ come from `origin/main`, not from that checkout.
 This read is an exception to the Read-tool bullet of
 [The tools of a session](working-with-the-user.md#the-tools-of-a-session).
 
+Each reader of this rule makes a complete read of each doc that it reads. A complete read is a read of each part of the
+output of the doc read, in order. The readers are the orchestrator, the operator, a planner, a task subagent and a
+question session. The rule covers each reader, because one rule is simpler than one rule for each role.
+
+Claude Code cuts a long output. It saves the full output to a file and shows a preview. Then the session reads the rest
+of that file in parts, in order, before its next action. A read with a cut output is not a complete read. Before the
+read is complete, the session reports no start read as done.
+
+A failed fetch and a missing doc keep the outcomes that this rule gives. Each other failed read follows
+[the failure rule](limits.md#the-failure-rule). A failed read is never a complete read.
+
+These facts show the cut:
+
+- On 2026-11-19, with Claude Code 2.1.329, one Bash call ran `git show 04f8307f:docs/dev/pick-the-tickets.md`. Claude
+  Code printed "Output too large (72.7KB)". It saved the full output to a file and showed only the first 2KB as a
+  preview.
+- On 2026-11-19, with git 2.47.3, `git show 04f8307f:<path> | wc -c` ran over the 18 start docs of the orchestrator. The
+  docs hold 530,345 bytes in all. The largest is `docs/dev/pick-the-tickets.md`, with 74,471 bytes.
+- On 2026-11-16, planner-m16 reported a cut read with Claude Code 2.1.325. One call that printed only
+  `docs/dev/handoff.md` gave 33.1 KB, and Claude Code showed a preview. No one measured this case again.
+
 The start prompts and the handoff prompts give these commands with no `-C`, because the session starts in the local
 clone. The session has no other way to learn them before its first read. `CLAUDE.md` loads `AGENTS.md` from the
 checkout, so that index can also be old. On 2026-11-01, the new operator-m27 read a checkout 149 commits behind
