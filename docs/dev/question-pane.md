@@ -90,8 +90,8 @@ A request for a new issue is words of the user in a question pane that ask for o
 not propose these issues. Such a request is about the question of the pane. A request about another topic stays a
 request outside the question. A request for a new issue is not a write action.
 
-A [write subagent](#the-operator-handles-a-decision) is a subagent of the pane owner that does the write actions of one
-settled decision message.
+A [write subagent](#the-pane-owner-handles-a-decision) is a subagent of the pane owner that does the write actions of
+one settled decision message.
 
 A context clear is a step that removes the context of the question session. The context is each prompt, each reply and
 each tool output that the session holds.
@@ -131,8 +131,8 @@ stays open, and the handoff file holds it, as
 [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. A new pane
 that opens during a handoff can stay open after the close of the old orchestrator. The new orchestrator accepts a
 decision message only from the question session of its own open pane, as
-[The operator handles a decision](#the-operator-handles-a-decision) says. So no orchestrator then accepts the decision
-of that pane.
+[The pane owner handles a decision](#the-pane-owner-handles-a-decision) says. So no orchestrator then accepts the
+decision of that pane.
 
 On 2026-11-15, operator-m16 reported this case. It came from a handoff of operator-m16. The old operator opened and
 reused question panes for about ten questions during the wait of step 1 of its handoff. The handoff took a long time.
@@ -310,7 +310,7 @@ commands, and run `git fetch origin`. If fetch fails, it tells the user and read
 
 The question session sends each [write action](#terms) back to the pane owner with the herdr path, as
 [Send a decision](#send-a-decision) says. The pane owner starts a [write subagent](#terms), as
-[The operator handles a decision](#the-operator-handles-a-decision) says.
+[The pane owner handles a decision](#the-pane-owner-handles-a-decision) says.
 
 For a [request for a new issue](#terms), the question session does not draft the issue and asks for no approval of a
 draft. It gives no command, no undo step, no input file and no blocked-by links for it.
@@ -453,105 +453,110 @@ After the send, the question session waits at its prompt for the ack of the pane
 the pane owner: what stays open, or a [close request](#the-rounds-before-the-close). If the send fails, the question
 session tells the user in the pane. The question stays open.
 
-### The operator handles a decision
+### The pane owner handles a decision
 
-The operator accepts a decision message only from the question session of its open pane, and only for the current
-question of that pane. The message gives the item id and the question number. For every other decision message, the
-operator tells the user in one line, sends nothing, and keeps the state of each question.
+The pane owner accepts a decision message only with the header `QUESTION-PANE <pane id> <question id>:` of its open pane
+id and its current question id. It then sends the ack, as [Terms](#terms) says. For every other message, the pane owner
+tells the user in one line, sends nothing, and keeps the state of each question. The header does not prove the sender,
+because any pane can type it.
 
-The operator judges whether the quoted words fully settle that question, with or without choices. A settled message is
-the user's decision without a second word in the operator chat.
+The pane owner judges whether the quoted words fully settle that question, with or without choices. A settled message is
+the user's decision without a second word in the tab of the orchestrator. The quoted words of an accepted message are a
+word of the user for the orchestrator. They approve no permission prompt.
 
 This includes approval of a post or comment, an answer to a planner draft, and approval of a measure that changes user
 state. A measure approval carries its exact command and undo step. Words that let the sender decide count as a decline
 of that measure.
 
-The operator sends a settled answer at once under [The answer](operator-items.md#the-answer). Its message starts
-`From the user:`. The next line identifies question pane `<name>`. It gives the item id, question number, the user's
-words, and requested draft changes. The sender treats that message as any other `From the user:` message.
+The orchestrator sends the settled decision to the session that asked the question, at once. A question of a task
+subagent goes back to that task subagent with the message path that the orchestration pages give for a task subagent. A
+task subagent has no pane, so the herdr path does not reach it. A question of a session that tasker starts goes back
+through the task subagent of its task. A question of the follow-up planner goes back to `planner-<slug>`. Each such
+message starts `From the user:`. The next line identifies question pane `<name>`. It gives the question id, the user's
+words, and requested draft changes. The sender treats that message as any other `From the user:` message. A question of
+the orchestrator itself has no sender, and the orchestrator acts on the decision.
 
 A settled message can give [write actions](#terms), as [Send a decision](#send-a-decision) says. The approval of the
 user in the message covers one run of the command of each write action, word for word. Words of the user that let the
 sender decide approve no write action. A message that does not settle the question starts no write subagent.
 
-The answer of the operator to the sender names each write action and says that the operator tells the user the result.
-After the answer, also after a failed send of it, the operator starts one [write subagent](#terms) for the write actions
-of the message. The operator runs one write subagent at a time, and a later one starts after the earlier one ends. The
+The answer to the sender names each write action and says that the orchestrator tells the user the result. After the
+answer, also after a failed send of it, the orchestrator starts one [write subagent](#terms) for the write actions of
+the message. The orchestrator runs one write subagent at a time, and a later one starts after the earlier one ends. The
 write subagent first writes each input file at its path. Then it does the write actions in order and writes the full new
-text of each file write. It reports the exit code and the output of each command, and the operator then tells the user
-the result in one line.
+text of each file write. It reports the exit code and the output of each command, and the orchestrator then tells the
+user the result in one line.
 
 The write subagent keeps each rule of the docs for that kind of write. Examples are
 [Before a post](issues.md#before-a-post) and [The reads before the write](issues.md#the-reads-before-the-write), with
 the start hash of the message. The approval of the user in the message is the approval of Before a post. It also covers
 each write that such a rule adds to the action. If such a rule gives a step with the user, the write subagent stops
-before that write and reports. The operator then tells the user, and the action does not run.
+before that write and reports. The orchestrator then tells the user, and the action does not run.
 
-The operator relays two kinds of write action under
-[The word of the user](operator-conversations.md#the-word-of-the-user), also to a session of another slug. The first
-kind is a message to a session other than the operator. The second kind is a `tasker` command that
-[the operator page](../operator.md) does not permit. The write subagent runs only the `tasker` commands that the
-operator page permits. The operator relays such a `tasker` command to the orchestrator of the milestone of the issue of
-the command. If the command names no issue, or no such orchestrator runs, the operator tells the user, and the action
-does not run.
+The write subagent runs no `tasker` command. The orchestrator runs such a command as the orchestration pages give it. A
+message to another session is a write action. The orchestrator sends it, not the write subagent. The message goes with
+the herdr path into the pane of that session, and it starts with `From the user:`. The orchestrator finds the pane id
+with `herdr agent list`, as the start checks of [docs/orchestrator.md](../orchestrator.md) read it. A failed send
+follows [the failure rule](limits.md#the-failure-rule).
 
 If a command fails, the write subagent runs nothing more, also no undo step, and it reports the state that stays. A
 failed command is a command that cannot start or that exits with an error. A write that "The reads before the write"
-skips also counts as a failed command. The operator then tells the user the command and the error, as
-[the failure rule](limits.md#the-failure-rule) says. If the write subagent ends with no report, the operator tells the
-user that the results are not known.
+skips also counts as a failed command. The orchestrator then tells the user the command and the error, as
+[the failure rule](limits.md#the-failure-rule) says. If the write subagent ends with no report, the orchestrator tells
+the user that the results are not known.
 
 A call of the write subagent can get a [tool block](tasker-commands.md#the-tool-block-rule). After a check failure of
 that rule, the write subagent first runs the same call again one time, in the same form. After each other tool block,
 and after a second check failure, the write subagent stops. It reports the exact call, the exact text of the denial, the
-folder of the call and the purpose. The operator then follows
+folder of the call and the purpose. The orchestrator then follows
 [A denied command of the operator](operator-start.md#a-denied-command-of-the-operator) for that call.
 
 The commands after the denied call wait for the answer of the user. If the denied call ran in any choice of that
-section, the operator starts a new write subagent. It runs the commands after the denied call, under the same approval.
-If the user declines the call, or the result is "did not run", the operator tells the user each command that does not
-run.
+section, the orchestrator starts a new write subagent. It runs the commands after the denied call, under the same
+approval. If the user declines the call, or the result is "did not run", the orchestrator tells the user each command
+that does not run.
 
 The reason: on 2026-11-13, operator-docs reported that the question session question-move-522-822 ran two
 `gh issue edit` calls itself. The calls moved #522 and #822 into the milestone "M31 — Orchestrator". The user then said:
 "Write the rule in the positive voice: All write actions are sent back to the operator, including Github, (fill in
 anything else that is appropriate). The operator spawns a subagent to perform the action." The user also approved the
-list of write actions of [Terms](#terms). A message of the operator that starts with "From the user:" is a word of the
-user, as [The operator](working-with-the-user.md#the-operator) says. So the operator relays a message to another session
+list of write actions of [Terms](#terms). A message that starts with "From the user:" is a word of the user, as
+[The operator](working-with-the-user.md#the-operator) says. So the pane owner relays a message to another session
 itself.
 
-If the words do not settle the question, the operator sends only the question session one message saying what remains
-open. The pane conversation continues. The operator sends nothing to the sender.
-
-This rule takes precedence over the two named bullets of [The answer](operator-items.md#the-answer). If the return
-message fails, the failure rule applies and the run stops until the user speaks.
+If the words do not settle the question, the pane owner sends only the question session one message saying what remains
+open. The message goes with the herdr path and starts with `PANE-OWNER <owner name> <question id>:`. The pane
+conversation continues. The pane owner sends nothing to the sender. If the send fails, the failure rule applies and the
+run stops until the user speaks.
 
 A decision message covers only its question. It does not approve a Claude Code permission prompt or a `tasker` setting
 outside its write actions. A write action of a settled message is a request of the user for its `tasker` command.
-[The operator page](../operator.md) needs such a request before the operator sets a value with a `tasker` command.
+[The operator page](../operator.md) gives the rule of such a request for a `tasker` command.
 
-A **No decision** message leaves the question open. The operator closes the pane or gives it a reuse, as
+A **No decision** message leaves the question open. The pane owner closes the pane or gives it a reuse, as
 [Close and continue](#close-and-continue) says. That question gets no automatic start, and only a word of the user that
 names it starts its pane again.
 
-The operator relays stated doc rules, facts, and preferences to `planner-<slug>`. If the planner is the sender, the
-operator combines that relay with the answer. A failed relay invokes the failure rule.
+The pane owner relays stated doc rules, facts, and preferences to `planner-<slug>`. If the planner is the sender, the
+pane owner combines that relay with the answer. A failed relay invokes the failure rule. The orchestrator sends each
+relay one time. The pane does not wait for it.
 
-The operator sends each [request for a new issue](#terms) of a decision message to `planner-<slug>`. It sends the
-request one time, also when the message does not settle the question. The message starts with `From the user:`. It names
-the question pane, the item id and the question number. It gives the words of the user word for word and each guess of
-the question session, still marked as a guess.
+The pane owner sends each [request for a new issue](#terms) of a decision message to `planner-<slug>`. It sends the
+request one time, also when the message does not settle the question. The pane does not wait for it. The message starts
+with `From the user:`. It names the question pane and the question id. It gives the words of the user word for word and
+each guess of the question session, still marked as a guess.
 
 If the planner is the sender and the message settles the question, the request goes in the answer to the planner. In
 each other case, the request goes in a message of its own. Such a message is a relay to `planner-<slug>`, not an answer
-to the sender. So the rule that the operator sends nothing to the sender for a message that does not settle the question
-does not stop it.
+to the sender. So the rule that the pane owner sends nothing to the sender for a message that does not settle the
+question does not stop it.
 
-The operator drafts no issue and starts no write subagent for a request for a new issue. After the send, the operator
-tells the user in one line that `planner-<slug>` has the request. If the send fails,
+The pane owner drafts no issue and starts no write subagent for a request for a new issue. After the send, the
+orchestrator tells the user in one line in its tab that `planner-<slug>` has the request. If the send fails,
 [the failure rule](limits.md#the-failure-rule) applies, as for the relay of a doc rule of the user. The planner handles
-the request as a proposed issue of the operator, with its review loops and its post rules. The planner then reports the
-post or the drop to the operator. For a draft that waits for a decision of the user, it sends an item.
+the request as a proposed issue of the orchestrator, with its review loops and its post rules. The planner then reports
+the post or the drop to the orchestrator. For a draft that waits for a decision of the user, it sends the question to
+`orchestrator-<slug>`.
 
 The reason: the planner runs its review loops on each new issue that the user asks for, also from a question pane. On
 2026-11-13, operator-docs relayed a proposal of the question session question-914-codex. In that pane, the user said
@@ -560,77 +565,82 @@ sender as a requested draft change, with no command.
 
 ### The rounds before the close
 
-Before the operator closes or reuses a question pane, it sends the question session a close request. The rule covers a
-close and a reuse. It holds after a settled answer, a failed answer send, a **No decision** message and an answer in the
-operator chat.
+Before the pane owner closes or reuses a question pane, it sends the question session a close request. The rule covers a
+close and a reuse. It holds after a settled answer, a failed answer send, a **No decision** message and an answer typed
+in the tab of the orchestrator.
 
-The close request is this message with `SendMessage`:
-`Operator: close. Run the rounds of docs/dev/session-review-rounds.md, then report.` It is a word of the operator, not a
-word of the user, so it does not start with "From the user:". The operator sends at most one close request for each
-question of a pane. Each question of a pane gets its own rounds before its context clear or its close. The report is not
-a later pane message that an answer in the operator chat wins over.
+The close request is this message with the herdr path:
+`PANE-OWNER <owner name> <question id>: close. Run the rounds of docs/dev/session-review-rounds.md, then report.` It is
+a word of the pane owner, not a word of the user, so it does not start with "From the user:". The pane owner sends at
+most one close request for each question of a pane. Each question of a pane gets its own rounds before its context clear
+or its close. The report is not a later pane message that an answer in the tab of the orchestrator wins over.
 
 After the close request, the question session runs the rounds of [Session-review rounds](session-review-rounds.md) with
 the user in its pane. The rounds keep each rule of [The question session](#the-question-session). So the question
 session skips steps 2, 4 and 5 of `/session-review`, the steps of the memory notes. Steps 4 and 5 delete notes, and step
-2 serves only these steps. The question of the pane is not open work of the rounds, because the operator already holds
-its state. Each proposal of step 6 goes to the operator in the report.
+2 serves only these steps. The question of the pane is not open work of the rounds, because the pane owner already holds
+its state. Each proposal of step 6 goes to the pane owner in the report.
 
-Each waiting decision and each open question of steps 6, 7 and 8 goes to the user in the pane, not as an item. After its
-rounds end, the question session sends the report to the operator with `SendMessage`. The report gives the item id, the
-question number and the parts that [Session-review rounds](session-review-rounds.md) asks for. For each decision of the
-user in the rounds, it gives the words of the user word for word. It gives each waiting decision and each open question
-that has no answer as an open finding.
+Each waiting decision and each open question of steps 6, 7 and 8 goes to the user in the pane, not to the pane owner as
+a question. After its rounds end, the question session sends the report to the pane owner with the herdr path. The
+report gives the header with the question id and the parts that [Session-review rounds](session-review-rounds.md) asks
+for. For each decision of the user in the rounds, it gives the words of the user word for word. It gives each waiting
+decision and each open question that has no answer as an open finding.
 
 The report leaves out each doc rule, fact, preference or request for a new issue that a decision message already gave.
-After the close request, the question session sends no decision message. For a new word of the user on the question of
-the pane, it directs the user to the operator chat. Examples are a write action and a request for a new issue. If a
-round fails, the question session tells the user in the pane, its rounds end, and the report names the failure. If the
-send of the report fails, the question session tells the user in the pane.
+After the close request, the question session sends no decision message. A message can still give a word of the user
+about the pane or the run. For a new word of the user on the question of the pane, for example a write action or a
+request for a new issue, the question session tells the user to type it in the tab of the orchestrator. If a round
+fails, the question session tells the user in the pane, its rounds end, and the report names the failure. If the send of
+the report fails, the question session tells the user in the pane.
 
-The operator accepts a report only from the question session of its open pane, for its current question, after its close
-request. For each other report, the operator tells the user in one line, sends nothing and keeps the state of the
-question. After a report that it accepts, the operator sends each open finding to `planner-<slug>`, with the words of
-the user for that finding. The paragraph of [The operator handles a decision](#the-operator-handles-a-decision) that
-starts "The operator relays stated doc rules" gives this relay and its failure. Then the operator decides between a
-reuse and a close, also after a failed relay, as [Close and continue](#close-and-continue) says. The operator tells the
-user in one line how many findings it sent, and the question keeps its state.
+The pane owner accepts a report only with the header of its open pane id and its current question id, after its close
+request. It then sends the ack. For each other report, the pane owner tells the user in one line, sends nothing and
+keeps the state of the question. After a report that it accepts, the orchestrator sends each open finding to
+`planner-<slug>`, with the words of the user for that finding. The paragraph of
+[The pane owner handles a decision](#the-pane-owner-handles-a-decision) that starts "The pane owner relays stated doc
+rules" gives this relay and its failure. Then the pane owner decides between a reuse and a close, also after a failed
+relay, as [Close and continue](#close-and-continue) says. The orchestrator tells the user in one line how many findings
+it sent, and the question keeps its state.
 
-While the operator waits for the report, the pane is open, and the wait has no time limit. If the send of the close
+While the pane owner waits for the report, the pane is open, and the wait has no time limit. If the send of the close
 request fails, the failure rule applies, the pane stays open, and the run stops until the user speaks. Before a report
-arrives, the user can tell the operator to close the pane, or that the pane is closed. If the pane is still open, the
-operator then closes it with no report. In both cases, the question keeps its state, and the run waits for the next word
-of the user. This paragraph wins over the paragraph that starts "Before the operator closes or reuses a question pane".
+arrives, the user can tell the pane owner to close the pane, or that the pane is closed. If the pane is still open, the
+pane owner then closes it with no report. In both cases, the question keeps its state, and the run waits for the next
+word of the user. This paragraph wins over the paragraph that starts "Before the pane owner closes or reuses a question
+pane".
 
 The reason: on 2026-11-13, the user said to operator-docs: "file an issue to run `/session-review` in question panes
 before closing". No one measured the tokens of the rounds in a question pane.
 
 ### Close and continue
 
-After a settled answer or **No decision**, the operator gets the report of the rounds of
+After a settled answer or **No decision**, the pane owner gets the report of the rounds of
 [The rounds before the close](#the-rounds-before-the-close). Then it gives the pane a reuse or closes it, as the next
 paragraphs say.
 
-The operator makes a reuse only in one case, with each of these conditions:
+The pane owner makes a reuse only in one case, with each of these conditions:
 
+- The kind of the pane owner is `claude`. No one measured a context clear in a pi session.
 - The rounds ended with a round that found nothing new, and the report names no failed round.
 - The report gives no open finding.
 - A next open question exists, as [Start](#start) defines it.
-- Each condition of an automatic start of [Start](#start) holds for that question, apart from the condition "No pane is
-  open".
-- The user did not tell the operator to close the pane, or that it is closed.
+- Each condition of an automatic start of [Start](#start) holds for that question, apart from the condition "No pane of
+  this orchestrator is open".
+- The user did not tell the pane owner to close the pane, or that it is closed.
 
-In each other case, the operator closes the pane. A close with no rounds stays a close. Examples are a close that the
-user asks for and the close after a report that the operator refuses.
+In each other case, the pane owner closes the pane. Under a kind other than `claude`, the owner closes the pane, and the
+next question gets a new pane. A close with no rounds stays a close. Examples are a close that the user asks for and the
+close after a report that the pane owner refuses.
 
-For a reuse, the operator starts one reuse subagent with the reuse prompt of [The prompts](#the-prompts). The pane stays
-open while the reuse subagent runs. The operator gives the first-reply text of the next question under the rules of
-[The question session](#the-question-session), as for a new pane.
+For a reuse, the pane owner starts one reuse subagent with the reuse prompt of [The prompts](#the-prompts). The pane
+stays open while the reuse subagent runs. The pane owner gives the first-reply text of the next question under the rules
+of [The question session](#the-question-session), as for a new pane.
 
 The reuse subagent waits, with a time limit, until the question session waits at its input prompt, in the state `idle`
 or `done`. It sends no input to a session in a turn or in `blocked`. It runs the context clear and the after-clear read.
 Only after a read that shows the context clear, it sends the session prompt of the next question. Then it reads the pane
-for the first reply and reports to the operator.
+for the first reply and reports to the pane owner.
 
 After a reuse that ends with the first reply in the pane, the question session holds the next question. The rules of
 [A question pane](#a-question-pane) for that question then hold, as for a pane of a new start. After the context clear,
@@ -639,24 +649,24 @@ the same. The clear changes no model and no effort.
 
 A step of a reuse can fail or can find a session that is not ready. Then the outcome is one of these:
 
-- The session is in `blocked`. The reuse subagent sends no input to the pane. The operator tells the user the name of
-  the session and its pane id. The other rules of [A blocked session](operator-start.md#a-blocked-session) hold. The
+- The session is in `blocked`. The reuse subagent sends no input to the pane. The orchestrator tells the user the name
+  of the session and its pane id. The other rules of [A blocked session](operator-start.md#a-blocked-session) hold. The
   pane stays open, and the run stops until the user speaks.
-- The wait fails or reaches its time limit. The reuse subagent sends no input to the pane. The operator closes the pane.
-  The next question gets a new pane with an opener subagent, as [Start](#start) says.
+- The wait fails or reaches its time limit. The reuse subagent sends no input to the pane. The pane owner closes the
+  pane. The next question gets a new pane with an opener subagent, as [Start](#start) says.
 - The context clear fails, or the after-clear read fails or does not show the context clear. The reuse subagent sends no
-  session prompt. The operator closes the pane. The next question gets a new pane with an opener subagent.
+  session prompt. The pane owner closes the pane. The next question gets a new pane with an opener subagent.
 - The send of the session prompt fails, or the pane shows no first reply. Then the paragraphs of [Start](#start) for a
   pane that shows no first reply apply.
 - The reuse subagent ends with no report. Then the paragraph of [Start](#start) for an opener subagent that ends with no
   report applies.
-- The user tells the operator to close the pane, or that it is closed, before the reuse subagent ends. Then the operator
-  waits for the report of the reuse subagent. If the pane is still open after the report, the operator closes it. The
-  next question keeps its state, and the run waits for the next word of the user.
-- The user ends the run before the operator starts the reuse subagent. Then the operator closes the pane. After that
+- The user tells the pane owner to close the pane, or that it is closed, before the reuse subagent ends. Then the pane
+  owner waits for the report of the reuse subagent. If the pane is still open after the report, the pane owner closes
+  it. The next question keeps its state, and the run waits for the next word of the user.
+- The user ends the run before the pane owner starts the reuse subagent. Then the pane owner closes the pane. After that
   start, the reuse subagent runs to its end, and the pane continues until its close.
 - A message for an earlier question of the pane arrives after the context clear, for example a late decision message.
-  Then the operator refuses it, as [The operator handles a decision](#the-operator-handles-a-decision) says.
+  Then the pane owner refuses it, as [The pane owner handles a decision](#the-pane-owner-handles-a-decision) says.
 
 This pane close has no tab-list entry, stop message or [Stop a session](operator-start.md#stop-a-session) procedure. Its
 rounds of `/session-review` are the rounds of [The rounds before the close](#the-rounds-before-the-close). For a
@@ -669,28 +679,31 @@ for each context clear of that pane.
 The close of a question pane closes a pane, not a tab. So the sentence of [the operator page](../operator.md) that
 starts "The tab list is the list of the tabs" does not limit it.
 
-If herdr reports `pane_not_found`, the pane is already gone and the operator proceeds. For another close failure, the
-operator tells the user and stops the run until the user speaks.
+If herdr reports `pane_not_found`, the pane is already gone and the pane owner proceeds. For another close failure, the
+orchestrator tells the user and stops the run until the user speaks.
 
-Before a later question, the operator reviews decisions so far and passes the relevant ones on. It does not change the
-sender's question or apply an earlier answer to it. The bullet of [The answer](operator-items.md#the-answer) that starts
-"An answer of the user or an answer of the operator covers only" gives this rule. The user decides the later question in
-the pane of that question, with the decisions so far in view.
+Before a later question, the pane owner reviews decisions so far and passes the relevant ones on. It does not change the
+question of the sender or apply an earlier answer to it. The bullet of [The answer](operator-items.md#the-answer) that
+starts "An answer of the user or an answer of the operator covers only" gives this rule. The user decides the later
+question in the pane of that question, with the decisions so far in view.
 
-If no open question remains, the run ends and the operator tells the user in one line.
+If no open question remains, the run ends and the orchestrator tells the user in one line in its tab.
 
-The user can end a run in the operator chat. An active pane continues until its close, as
-[The rounds before the close](#the-rounds-before-the-close) says.
+The user can end a run with a word to the pane owner. An active pane continues until its close, as
+[The rounds before the close](#the-rounds-before-the-close) says. "The run stops until the user speaks" means until the
+next word of the user to the pane owner. If the pane is closed or shows no first reply, only the tab of the orchestrator
+is left.
 
-An answer in the operator chat wins over a later pane message, and the pane gets its rounds and then a reuse or a close.
+An answer typed in the tab of the orchestrator wins over a later pane message, and the pane gets its rounds and then a
+reuse or a close.
 
 If the user reports closing the pane with no decision, the question stays open and the run waits for the user's next
 word. That question also gets no automatic start, as for a **No decision** message.
 
-While a pane is open or a [write subagent](#terms) runs, the operator starts neither its handoff nor
-[The close of a milestone](operator-start.md#the-close-of-a-milestone). If either is due, the operator tells the user. A
-write subagent can still run after the close of its pane. The close request, the close of the pane and the next pane
-start do not wait for a write subagent.
+While a pane is open or a [write subagent](#terms) runs, the orchestrator starts no handoff. It also does not start the
+rounds of the empty Todo column of [Pick the tickets](pick-the-tickets.md#pick-the-tickets). If either is due, the
+orchestrator tells the user in its tab. A write subagent can still run after the close of its pane. The close request,
+the close of the pane and the next pane start do not wait for a write subagent.
 
 The reason: on 2026-11-13, the user said, as operator-docs relayed it: "File an issue to modify the process for closing
 a question. After the session review passes with no findings, clear the session instead of closing it entirely. Then
@@ -702,66 +715,74 @@ After a reuse, the next question gets the same pane.
 
 The user holds no state of its own in this table. The column "Who tells whom" gives each step of the user.
 
-| Event                                                                                               | Question session                     | Operator                                                           | Sender             | Who tells whom                          |
-| --------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------ | ------------------ | --------------------------------------- |
-| A word of the user starts a pane or a run                                                           | Not started                          | Starts the opener subagent for the pane and the session            | Keeps working      | The user tells the operator             |
-| A word of the user asks for the chat or answers in the chat                                         | Not started                          | Starts no pane. Handles an answer. A chat request stops the run    |                    | The user tells the operator             |
-| No word of the user. The conditions of an automatic start hold                                      | Not started                          | Makes an automatic start for the next open question                | Keeps working      |                                         |
-| A word of the user starts a pane while a pane is open                                               | Running                              | Starts nothing                                                     |                    | The operator tells the user             |
-| The operator is of a kind other than `claude`                                                       | Not started                          | Starts nothing                                                     |                    | The operator tells the user             |
-| No pane opens next to the operator                                                                  | Not started                          | No pane exists. A run stops                                        |                    | The operator tells the user             |
-| The pane does not show the question                                                                 | Not started, reading, or at a prompt | The pane stays open. A run stops                                   |                    | The operator tells the user             |
-| The opener subagent ends with no report                                                             | Not started, reading, or at a prompt | The pane counts as open. A run stops                               |                    | The operator tells the user             |
-| The session starts                                                                                  | Running. Start line, reads, question | The question stays open                                            |                    | The question session tells the user     |
-| The decision message settles the question                                                           | Waits for the close request          | Sends the answer and the draft changes. Sends the close request    | Answer restarts it | The question session tells the operator |
-| The send of the answer fails                                                                        | Waits for the close request          | The question stays answered. Sends the close request               |                    | The operator tells the user             |
-| The decision message does not settle it                                                             | Running                              | Sends what stays open. The question stays open                     |                    | The operator tells the question session |
-| The send of what stays open fails                                                                   | Running                              | The question stays open. A run stops. The failure rule applies     |                    | The operator tells the user             |
-| A send of the question session fails                                                                | Running                              | The question stays open                                            |                    | The question session tells the user     |
-| A "No decision" message                                                                             | Waits for the close request          | Sends the close request. The question stays open                   |                    | The question session tells the operator |
-| A message gives a rule, a fact or a preference                                                      | Waits at its prompt                  | Sends each one to `planner-<slug>`                                 |                    | The operator tells the planner          |
-| The send to `planner-<slug>` fails                                                                  | Waits at its prompt                  | The failure rule applies                                           |                    | The operator tells the user             |
-| A decision message gives a request for a new issue                                                  | Waits at its prompt, or running      | Sends the request to `planner-<slug>`. Starts no write subagent    |                    | The question session tells the operator |
-| The send of a request for a new issue to `planner-<slug>` fails                                     | Waits at its prompt, or running      | The failure rule applies                                           |                    | The operator tells the user             |
-| A settled decision message gives a write action                                                     | Waits for the close request          | Starts a write subagent. Relays two kinds of action                |                    | The operator tells the user             |
-| A call of the write subagent gets a tool block that stops it                                        | Any                                  | Follows "A denied command of the operator"                         |                    | The operator tells the user             |
-| A command of the write subagent fails, the write subagent ends with no report, or a relay fails     | Any                                  | The failure rule applies                                           |                    | The operator tells the user             |
-| A rule of the docs stops the write subagent before a step with the user                             | Any                                  | Tells the user. The action does not run                            |                    | The operator tells the user             |
-| A handoff or a close of the milestone is due while a write subagent runs                            | Any                                  | Starts neither while the write subagent runs                       |                    | The operator tells the user             |
-| The question session gets the close request                                                         | Runs the rounds. Sends the report    | Waits for the report. The pane stays open                          |                    | The operator tells the question session |
-| The send of the close request fails                                                                 | Running, or waits at its prompt      | The pane stays open. A run stops. The failure rule applies         |                    | The operator tells the user             |
-| A round of the question session fails                                                               | Its rounds end. Sends the report     | Waits for the report                                               |                    | The question session tells the user     |
-| The send of the report fails                                                                        | Waits at its prompt                  | Waits for the report. The pane stays open                          |                    | The question session tells the user     |
-| The report of the rounds arrives, and each condition of a reuse holds                               | Waits at its prompt until the reuse  | Sends findings to `planner-<slug>`. Starts the reuse subagent      |                    | The question session tells the operator |
-| The report of the rounds arrives, and a condition of a reuse fails                                  | Waits at its prompt until the close  | Sends findings to `planner-<slug>`. Closes the pane. A run goes on |                    | The question session tells the operator |
-| The reuse subagent waits for the question session                                                   | Waits at its prompt                  | Waits for the report of the reuse subagent. The pane stays open    |                    | The operator tells the reuse subagent   |
-| The question session is in `blocked` when the reuse subagent waits                                  | `blocked`                            | Tells the user the name and the pane id. The pane stays open       |                    | The operator tells the user             |
-| The wait of the reuse subagent fails or reaches its time limit                                      | Any                                  | Closes the pane. The next question gets a new pane                 |                    | The reuse subagent tells the operator   |
-| The context clear fails, or the after-clear read fails or does not show the context clear           | Waits at its prompt                  | Closes the pane. The next question gets a new pane                 |                    | The reuse subagent tells the operator   |
-| The send of the session prompt fails, or the pane shows no first reply                              | Waits at its prompt, or running      | The pane stays open. A run stops                                   |                    | The operator tells the user             |
-| The reuse subagent ends with no report                                                              | Any                                  | The pane counts as open. A run stops                               |                    | The operator tells the user             |
-| The reuse subagent ends, and the pane shows the first reply                                         | Running. Start line, reads, question | The question stays open. The rules of A question pane hold         |                    | The question session tells the user     |
-| The user tells the operator to close the pane, or that it is closed, before the reuse subagent ends | Any                                  | Closes an open pane after the report. A run waits for the user     |                    | The user tells the operator             |
-| The user ends the run before the operator starts the reuse subagent                                 | Waits at its prompt                  | Closes the pane. The reuse subagent runs to its end                |                    | The user tells the operator             |
-| A message for an earlier question of the pane arrives after the context clear                       | Any                                  | Sends nothing. Tells the user. Each question keeps its state       |                    | The operator tells the user             |
-| A report that the operator refuses                                                                  | Any                                  | Sends nothing. The question keeps its state                        |                    | The operator tells the user             |
-| The user tells the operator to close the pane, or that it is closed, before a report                | Any                                  | Closes an open pane with no report. A run waits for the user       |                    | The user tells the operator             |
-| The user asks the session for a step outside it                                                     | Running                              | No change                                                          |                    | The question session tells the user     |
-| The fetch of the question session fails                                                             | Running                              | No change                                                          |                    | The question session tells the user     |
-| A decision message that [the operator refuses](#the-operator-handles-a-decision)                    | Any                                  | Sends nothing. The question keeps its state                        |                    | The operator tells the user             |
-| The user answers in the chat of the operator                                                        | Running until the close              | Handles the answer and sends the close request                     | Answer restarts it | The user tells the operator             |
-| The user closes the pane with no decision                                                           | Ended                                | The question stays open with no automatic start                    |                    | The user tells the operator             |
-| herdr reports that the pane is already gone                                                         | Ended                                | Goes on                                                            |                    |                                         |
-| The close fails in another way                                                                      | Running or waits at its prompt       | A run stops until the word of the user                             |                    | The operator tells the user             |
-| A handoff or a close of the milestone is due while a pane is open                                   | Running                              | Starts neither. No automatic start. A word of the user decides     |                    | The operator tells the user             |
-| A handoff or a close of the milestone is due, and no pane is open                                   | Not started                          | Makes no automatic start                                           |                    |                                         |
-| The user ends the run                                                                               | A running session keeps running      | Starts no next pane. A [stop of a run](#terms) holds               |                    | The user tells the operator             |
-| No open question of the run is left                                                                 | Ended                                | The run ends. A new open question can get an automatic start       |                    | The operator tells the user             |
+| Event                                                                                                 | Question session                     | Pane owner                                                                                                     | Sender               | Who tells whom                            |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------- |
+| A word of the user starts a pane or a run                                                             | Not started                          | Starts the opener subagent for the pane and the session                                                        | Keeps working        | The user tells the pane owner             |
+| A word of the user asks for the tab or answers in the tab                                             | Not started                          | Starts no pane. Handles an answer. A tab request stops the run                                                 |                      | The user tells the pane owner             |
+| No word of the user. The conditions of an automatic start hold                                        | Not started                          | Makes an automatic start for the next open question                                                            | Keeps working        |                                           |
+| A word of the user starts a pane while a pane is open                                                 | Running                              | Starts nothing                                                                                                 |                      | The pane owner tells the user             |
+| A question of a task subagent or of the follow-up planner arrives                                     | Not started                          | The question waits in the list order. It gets a pane at its turn                                               | Keeps working        | The sender tells the pane owner           |
+| A second open question arrives while a pane is open                                                   | Running                              | The question waits in the list order                                                                           |                      |                                           |
+| No pane opens next to the pane owner                                                                  | Not started                          | No pane exists. A run stops                                                                                    |                      | The pane owner tells the user             |
+| The pane does not show the question                                                                   | Not started, reading, or at a prompt | The pane stays open. A run stops                                                                               |                      | The pane owner tells the user             |
+| The opener subagent ends with no report                                                               | Not started, reading, or at a prompt | The pane counts as open. A run stops                                                                           |                      | The pane owner tells the user             |
+| The notification of a pane start or a reuse fails                                                     | Any                                  | The failure rule applies. The pane stays open                                                                  |                      | The pane owner tells the user             |
+| The session starts                                                                                    | Running. Start line, reads, question | The question stays open                                                                                        |                      | The question session tells the user       |
+| A message arrives with the header of the open pane and the current question                           | Waits for the ack                    | Accepts it. Sends the ack                                                                                      |                      | The question session tells the pane owner |
+| A message arrives without the right header                                                            | Waits for the ack                    | Sends nothing. Tells the user. Each question keeps its state                                                   |                      | The pane owner tells the user             |
+| The decision message settles the question                                                             | Waits for the close request          | Sends the ack. Sends the settled decision to the asking session and the draft changes. Sends the close request | Decision restarts it | The question session tells the pane owner |
+| The settled decision goes back to the asking session                                                  | Waits for the close request          | Sends it with `From the user:`. A task subagent gets it by the message path of the orchestration pages         | Decision restarts it | The pane owner tells the sender           |
+| The send of the decision to the asking session fails                                                  | Waits for the close request          | The question stays decided. Sends the close request                                                            |                      | The pane owner tells the user             |
+| The decision message does not settle it                                                               | Running                              | Sends the ack. Sends what stays open. The question stays open                                                  |                      | The pane owner tells the question session |
+| The send of what stays open fails                                                                     | Running                              | The question stays open. A run stops. The failure rule applies                                                 |                      | The pane owner tells the user             |
+| A send of the question session fails                                                                  | Running                              | The question stays open                                                                                        |                      | The question session tells the user       |
+| A send of the herdr path of the pane owner fails                                                      | Any                                  | The failure rule applies                                                                                       |                      | The pane owner tells the user             |
+| A "No decision" message                                                                               | Waits for the close request          | Sends the ack. Sends the close request. The question stays open                                                |                      | The question session tells the pane owner |
+| A message gives a rule, a fact or a preference                                                        | Waits at its prompt                  | Sends each one to `planner-<slug>`. The pane does not wait                                                     |                      | The pane owner tells the planner          |
+| The send to `planner-<slug>` fails                                                                    | Waits at its prompt                  | The failure rule applies                                                                                       |                      | The pane owner tells the user             |
+| A decision message gives a request for a new issue                                                    | Waits at its prompt, or running      | Sends the request to `planner-<slug>`. Starts no write subagent                                                |                      | The question session tells the pane owner |
+| The send of a request for a new issue to `planner-<slug>` fails                                       | Waits at its prompt, or running      | The failure rule applies                                                                                       |                      | The pane owner tells the user             |
+| A settled decision message gives a write action                                                       | Waits for the close request          | Starts a write subagent. Sends a message to another session itself                                             |                      | The pane owner tells the user             |
+| A call of the write subagent gets a tool block that stops it                                          | Any                                  | Follows "A denied command of the operator"                                                                     |                      | The pane owner tells the user             |
+| A command of the write subagent fails, the write subagent ends with no report, or a send fails        | Any                                  | The failure rule applies                                                                                       |                      | The pane owner tells the user             |
+| A rule of the docs stops the write subagent before a step with the user                               | Any                                  | Tells the user. The action does not run                                                                        |                      | The pane owner tells the user             |
+| A handoff or the rounds of the empty Todo column is due while a pane is open or a write subagent runs | Any                                  | Starts neither while the pane is open or the write subagent runs                                               |                      | The pane owner tells the user             |
+| A report arrives from the orchestrator or the follow-up planner                                       | Not started                          | Shows it as text in its tab. No pane starts                                                                    |                      | The pane owner tells the user             |
+| The question session gets the close request                                                           | Runs the rounds. Sends the report    | Waits for the report. The pane stays open                                                                      |                      | The pane owner tells the question session |
+| The send of the close request fails                                                                   | Running, or waits at its prompt      | The pane stays open. A run stops. The failure rule applies                                                     |                      | The pane owner tells the user             |
+| A round of the question session fails                                                                 | Its rounds end. Sends the report     | Waits for the report                                                                                           |                      | The question session tells the user       |
+| The send of the report fails                                                                          | Waits at its prompt                  | Waits for the report. The pane stays open                                                                      |                      | The question session tells the user       |
+| The report of the rounds arrives, and each condition of a reuse holds                                 | Waits at its prompt until the reuse  | Sends the ack. Sends findings to `planner-<slug>`. Starts the reuse subagent                                   |                      | The question session tells the pane owner |
+| The report of the rounds arrives, and a condition of a reuse fails                                    | Waits at its prompt until the close  | Sends the ack. Sends findings to `planner-<slug>`. Closes the pane. A run goes on                              |                      | The question session tells the pane owner |
+| The kind of the pane owner is not `claude`, and a reuse is due                                        | Waits at its prompt until the close  | Closes the pane. The next question gets a new pane                                                             |                      |                                           |
+| The reuse subagent waits for the question session                                                     | Waits at its prompt                  | Waits for the report of the reuse subagent. The pane stays open                                                |                      | The pane owner tells the reuse subagent   |
+| The question session is in `blocked` when the reuse subagent waits                                    | `blocked`                            | Tells the user the name and the pane id. The pane stays open                                                   |                      | The pane owner tells the user             |
+| The wait of the reuse subagent fails or reaches its time limit                                        | Any                                  | Closes the pane. The next question gets a new pane                                                             |                      | The reuse subagent tells the pane owner   |
+| The context clear fails, or the after-clear read fails or does not show the context clear             | Waits at its prompt                  | Closes the pane. The next question gets a new pane                                                             |                      | The reuse subagent tells the pane owner   |
+| The send of the session prompt fails, or the pane shows no first reply                                | Waits at its prompt, or running      | The pane stays open. A run stops                                                                               |                      | The pane owner tells the user             |
+| The reuse subagent ends with no report                                                                | Any                                  | The pane counts as open. A run stops                                                                           |                      | The pane owner tells the user             |
+| The reuse subagent ends, and the pane shows the first reply                                           | Running. Start line, reads, question | The question stays open. The rules of A question pane hold                                                     |                      | The question session tells the user       |
+| The user tells the pane owner to close the pane, or that it is closed, before the reuse subagent ends | Any                                  | Closes an open pane after the report. A run waits for the user                                                 |                      | The user tells the pane owner             |
+| The user ends the run before the pane owner starts the reuse subagent                                 | Waits at its prompt                  | Closes the pane. The reuse subagent runs to its end                                                            |                      | The user tells the pane owner             |
+| A message for an earlier question of the pane arrives after the context clear                         | Any                                  | Sends nothing. Tells the user. Each question keeps its state                                                   |                      | The pane owner tells the user             |
+| A report that the pane owner refuses                                                                  | Any                                  | Sends nothing. The question keeps its state                                                                    |                      | The pane owner tells the user             |
+| The user tells the pane owner to close the pane, or that it is closed, before a report                | Any                                  | Closes an open pane with no report. A run waits for the user                                                   |                      | The user tells the pane owner             |
+| The user asks the session for a step outside it                                                       | Running                              | No change                                                                                                      |                      | The question session tells the user       |
+| The fetch of the question session fails                                                               | Running                              | No change                                                                                                      |                      | The question session tells the user       |
+| A decision message that [the pane owner refuses](#the-pane-owner-handles-a-decision)                  | Any                                  | Sends nothing. The question keeps its state                                                                    |                      | The pane owner tells the user             |
+| The user answers in the tab of the orchestrator                                                       | Running until the close              | Handles the answer and sends the close request                                                                 | Answer restarts it   | The user tells the pane owner             |
+| The user closes the pane with no decision                                                             | Ended                                | The question stays open with no automatic start                                                                |                      | The user tells the pane owner             |
+| herdr reports that the pane is already gone                                                           | Ended                                | Goes on                                                                                                        |                      |                                           |
+| The close fails in another way                                                                        | Running or waits at its prompt       | A run stops until the word of the user                                                                         |                      | The pane owner tells the user             |
+| A handoff is due while a pane is open                                                                 | Running                              | Starts none. No automatic start. A word of the user decides                                                    |                      | The pane owner tells the user             |
+| A handoff is due, and no pane is open                                                                 | Not started                          | Makes no automatic start                                                                                       |                      |                                           |
+| The user ends the run                                                                                 | A running session keeps running      | Starts no next pane. A [stop of a run](#terms) holds                                                           |                      | The user tells the pane owner             |
+| No open question of the run is left                                                                   | Ended                                | The run ends. A new open question can get an automatic start                                                   |                      | The pane owner tells the user             |
 
 If two rows match, the rows of one bullet below follow its rule:
 
-- The row "The user tells the operator to close the pane, or that it is closed, before a report" wins over the rows "The
-  report of the rounds arrives, and each condition of a reuse holds" and "The report of the rounds arrives, and a
+- The row "The user tells the pane owner to close the pane, or that it is closed, before a report" wins over the rows
+  "The report of the rounds arrives, and each condition of a reuse holds" and "The report of the rounds arrives, and a
   condition of a reuse fails".
 - A row of a failed reuse step wins over the rows "The reuse subagent waits for the question session" and "The reuse
   subagent ends, and the pane shows the first reply".
@@ -769,11 +790,13 @@ If two rows match, the rows of one bullet below follow its rule:
   fails or reaches its time limit", "The context clear fails, or the after-clear read fails or does not show the context
   clear" and "The send of the session prompt fails, or the pane shows no first reply", an earlier row wins over a later
   row.
-- The row "The user tells the operator to close the pane, or that it is closed, before the reuse subagent ends" wins
+- The row "The user tells the pane owner to close the pane, or that it is closed, before the reuse subagent ends" wins
   over each row of a failed reuse step.
-- The row "The user ends the run before the operator starts the reuse subagent" wins over the row of a reuse.
+- The row "The user ends the run before the pane owner starts the reuse subagent" wins over the row of a reuse.
 - The row "A message for an earlier question of the pane arrives after the context clear" wins over the row of a
-  decision message that the operator refuses.
+  decision message that the pane owner refuses.
+- The row "The kind of the pane owner is not `claude`, and a reuse is due" wins over the row "The report of the rounds
+  arrives, and each condition of a reuse holds".
 
 ### Measured facts
 
@@ -847,3 +870,8 @@ wait of step 3 of the reuse prompt, and no one measured a permission that the us
   as an unread message. The session waited at its input prompt and did not read it.
 
 For the 2026-10-25 trust-prompt fact of #519, see [#519](first-refine.md).
+
+The rules of this page no longer use `SendMessage`. The records above that name `SendMessage` and `ListAgents` stay as
+facts of the old path. No one measured a send with `herdr pane send-text` into a session that is in a turn. No one
+measured a send into a pi pane in either direction. No one measured a newline inside `send-text`, or the wait for the
+ack. No one measured a context clear in a pi session.

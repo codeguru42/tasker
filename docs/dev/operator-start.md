@@ -866,8 +866,8 @@ commands that the operator runs itself. They are the create or change command of
 [The order of a milestone](#the-order-of-a-milestone) and the removal of the label "on hold" in
 [The close of a milestone](#the-close-of-a-milestone). The third is a call of a
 [write subagent](question-pane.md#terms), as
-[The operator handles a decision](question-pane.md#the-operator-handles-a-decision) says. A denied command of an item of
-another session stays with the tool-block rule, apart from the item of the last paragraph of this section.
+[The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision) says. A denied command of an
+item of another session stays with the tool-block rule, apart from the item of the last paragraph of this section.
 
 If the user declined the call at a permission prompt, the command did not run. Then the operator gives no choices and
 waits for a new word of the user.

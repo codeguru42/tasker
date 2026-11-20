@@ -235,7 +235,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   This bullet covers the session that acts on an answer of the user, also after the operator relays the answer. It does
   not cover an answer of the operator. For an answer of the user to an item, the rules of the operator still win for the
   operator. These rules are in [The answer](operator-items.md#the-answer) and in
-  [The operator handles a decision](question-pane.md#the-operator-handles-a-decision).
+  [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision).
 
   A rule of a narrower case also keeps its own steps. Examples are
   [The word of the user](operator-conversations.md#the-word-of-the-user) and the bullet that starts "When the user names
