@@ -181,12 +181,13 @@ The orchestrator does all the steps of this section.
   stayed in Todo for hours, because the orchestrator read the board only at the start. On 2026-10-25, #495 and three new
   issues had no open blocker, and two slots of orchestrator-m22 stayed free for about an hour. The bullet "When the
   final report of the task subagent of a ticket says that the ticket landed" of
-  [Land the work](land-the-work.md#land-the-work) gives the place of this read among the landing steps. The orchestrator
-  also reads the board when a message of another session names one of these changes. For a milestone scope, the changes
-  are a new issue in the milestone of the orchestrator, an added or a removed blocked-by link of an open issue of that
-  milestone, or a move of an issue into that milestone. For a set scope, the one change is an added or a removed
-  blocked-by link of an open issue of the set. A message about a new issue in the milestone of an issue of the set
-  starts no read. A message of another session never adds an issue to the set. If a read of the board fails,
+  [Land the work](land-the-work.md#land-the-work) gives the place of this read among the landing steps. After this read
+  at a landing, the orchestrator runs [the outside-Todo find](#pick-the-tickets). The orchestrator also reads the board
+  when a message of another session names one of these changes. For a milestone scope, the changes are a new issue in
+  the milestone of the orchestrator, an added or a removed blocked-by link of an open issue of that milestone, or a move
+  of an issue into that milestone. For a set scope, the one change is an added or a removed blocked-by link of an open
+  issue of the set. A message about a new issue in the milestone of an issue of the set starts no read. A message of
+  another session never adds an issue to the set. If a read of the board fails,
   [the failure rule](limits.md#the-failure-rule) applies. The orchestrator starts no ticket that the read covers until a
   later read works. This covers a message of each session on purpose. Today the follow-up planner sends such messages,
   as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running orchestrator
@@ -197,6 +198,66 @@ The orchestrator does all the steps of this section.
   such a read. It does not count for a read that a rule ties to a landing, for example the read of the parent issue in
   [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins, for example the ban of
   [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
+- The outside-Todo find: no issue of the scope waits out of sight of the user. The pick cannot start an issue that is
+  outside Todo. So the orchestrator lists each such issue and raises it one time.
+
+  An issue outside Todo is an open issue of the scope with at least one of these facts:
+  1. Its card is in a column other than Todo, and `tasker status` lists no task for its issue key.
+  2. It has the label `on hold`, as [A ticket on hold](#a-ticket-on-hold) defines it.
+  3. It has an open blocker that is not an issue of the scope, as the read of the board gave it.
+
+  The term also covers an issue with its card in Todo and the label or such a blocker. The facts of an issue are the
+  column of its card, the label `on hold` and its list of open blockers outside the scope.
+
+  The orchestrator runs the find at each start of its session, after the start reads and before the pick of the first
+  ticket. It also runs the find after the read of the board at each landing. Each other read of the board runs no find,
+  for example the read of the board watch job. The find reads each open issue of the scope, and the board watch job
+  reads the board two times each hour. The cost: an issue that leaves Todo between two landings gets its raise at the
+  next landing.
+
+  The find only reads and raises. It starts no ticket and stops no start. It uses the facts that the read of the board
+  gave at that moment, also the `on hold` read of [A ticket on hold](#a-ticket-on-hold). It reads `tasker status` for
+  the tasks in flight.
+
+  For an issue with more than one fact, the first row of this table that holds gives the raise:
+
+  | Fact of the issue                                     | Raise      | Choices of the question            |
+  | ----------------------------------------------------- | ---------- | ---------------------------------- |
+  | Its card is in another column, with no task in flight | A question | Move the card to Todo, or leave it |
+  | It has the label `on hold`                            | A report   |                                    |
+  | It has an open blocker outside the scope              | A report   |                                    |
+
+  Each raise names the issue, its facts and why the pick does not start it. A report needs no answer and starts no wait.
+  One report covers each issue of one find that gets a report. The orchestrator shows it as text in its own tab. The
+  reasons of the table: the orchestrator can act on a decision about a card in a wrong column. A hold comes from a word
+  of the user, and only a word of the user ends it. A blocker outside the scope needs work outside the scope.
+
+  Before the question, an agent evaluates the issues of the question. It gives a recommendation for each issue, or it
+  names groups of issues that share a trait. The orchestrator adds these results to one question that names all issues
+  of the find. It asks the question in its own question pane, in the form of
+  [A decision of the user](working-with-the-user.md#a-decision-of-the-user). The choices of the question are these:
+  accept the recommendations, give the decisions of the user, or split the question into smaller batches as follow-up
+  questions.
+
+  For each issue with the decision "move", the card moves to Todo with the move command of
+  [The project board](issues.md#the-project-board). The actor of the move is the actor that the docs give for a write
+  after a decision of the user. The issue can then start at the next read of the board.
+
+  The orchestrator keeps, in its session, each raised issue with its facts at the raise. At a later find, it raises
+  nothing for an issue with the same facts. A change of the facts gives a new raise.
+
+  If a read of the find fails, [the failure rule](limits.md#the-failure-rule) applies. The find raises nothing, and it
+  runs again at the next read of the board.
+
+  Case 1: the card of #A is in In progress, and `tasker status` lists no task for #A. At the start, after the start
+  reads, the find puts #A in the question.
+
+  Case 2: the user answers "leave it" for #A. A ticket lands, and #A has the same facts. The find after the read of the
+  board raises nothing for #A.
+
+  Case 3: #C has the label `on hold`, and its card is in Todo. The find at the start gives a report on #C. At the next
+  landing, the find raises nothing for #C.
+
 - Run at most 3 task subagents at the same time, one ticket for each task subagent.
 - The pi gate: while [the pi wait](quota.md#the-pi-wait) lasts, start no task subagent for a ticket of a repo whose
   `assistant.provider` is `pi`. A new session for a task of the pi wait is not held back. Read the provider of the repo
