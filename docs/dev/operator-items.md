@@ -115,18 +115,17 @@ The operator does these things for the open items:
 - The list order of the operator is the order of the open questions in its one list. The operator sorts its open
   questions by these keys, in this order:
 
-  1. The sender: a question of an item of `orchestrator-<slug>` comes before a question of an item of `planner-<slug>`.
-  2. The priority of the issue of the question: `P0` first, then `P1`, then no priority, then `P2`. This is the order of
+  1. The priority of the issue of the question: `P0` first, then `P1`, then no priority, then `P2`. This is the order of
      [the priority rule](pick-the-tickets.md#pick-the-tickets).
-  3. The number of the issue of the question: the lower number first. Among the questions with the same keys 1 and 2, a
+  2. The number of the issue of the question: the lower number first. Among the questions with the same key 1, a
      question with no issue comes after each question with an issue.
-  4. The arrival of the item: a question of an item that arrived earlier comes first. In one item, the lower question
+  3. The arrival of the item: a question of an item that arrived earlier comes first. In one item, the lower question
      number of the sender comes first.
 
   The issue of a question is the issue that the question is about, for example the ticket of a question of an
   orchestrator. The operator judges the issue of each question, and this judgment is open on purpose. A question about a
   draft of a new issue has no issue, and so it has no priority. If a question is about two or more issues, it takes the
-  issue that comes first by keys 2 and 3. After a handoff of the operator, the order of the open items in the handoff
+  issue that comes first by keys 1 and 2. After a handoff of the operator, the order of the open items in the handoff
   file counts as their order of arrival.
 
   The operator reads the priorities before each reply that gives the list of open questions. It also reads them before
@@ -212,7 +211,7 @@ The operator does these things for the open items:
   applies the answer to no other question that waits for an answer. This rule also holds for a planner or an
   orchestrator that gets the answer from another session. A question of another item waits for the answer of its own
   item. A planner that wants to apply the answer to a question outside an item asks that question first in a new item.
-  An orchestrator asks it in a new item at the time that the rules of that question give, for example
+  An orchestrator asks it in its question pane at the time that the rules of that question give, for example
   [the open-question rule](pick-the-tickets.md#the-open-question-rule).
 
   On 2026-11-07, the user answered "a" to a question of item orchestrator-m16-5. planner-m16 also applied that "a" to a

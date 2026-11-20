@@ -16,9 +16,8 @@ The operator reads them at its start, as [the doc-read rule](dev/doc-reads.md#th
 [The form of a reply](dev/working-with-the-user.md#the-form-of-a-reply) gives the form of each reply to the user.
 
 Messages of the other sessions break into the conversation of the user, and open questions scroll out of view. A planner
-or an orchestrator sends each item that needs the user to the operator. This holds until the end of the role of the
-operator in [the close of a milestone](dev/operator-start.md#the-close-of-a-milestone). Then the user reads the items in
-one place and answers the questions for the user alone.
+sends no item that needs the user to the operator, and an orchestrator sends none either. Each such question goes to a
+question pane of an orchestrator, as [question-pane.md](dev/question-pane.md) says.
 
 In the close of a milestone, the operator settles each open question and each open decision before its terminal
 delegation. It uses [the question gate of the close](dev/operator-items.md#the-question-gate-of-the-close).
