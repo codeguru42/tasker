@@ -1,13 +1,14 @@
 # Orchestrator
 
 [The orchestration pages](orchestrator.md) give the rules for an orchestrator. The orchestrator is the assistant session
-that picks tickets, starts one task subagent for each ticket. It moves the cards and sets the landing order.
+that runs one [scope](dev/GLOSSARY.md). It picks tickets and starts one task subagent for each ticket. It moves the
+cards and sets the landing order.
 
 A ticket is an issue on the project board. A task subagent, as [GLOSSARY.md](dev/GLOSSARY.md) defines it, runs the steps
 of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the person who works with the
-sessions, as [GLOSSARY.md](dev/GLOSSARY.md) says. The operator starts the orchestrator, as
-[Start a session](dev/operator-start.md#start-a-session) of operator-start.md says. The user does not type in the
-session of the orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
+sessions, as [GLOSSARY.md](dev/GLOSSARY.md) says. The user starts the orchestrator, as
+[The start of an orchestrator](#the-start-of-an-orchestrator) says. The user does not type in the session of the
+orchestrator. The user answers a permission prompt in the tab of the orchestrator, as
 [A blocked session](dev/operator-start.md#a-blocked-session) says. The orchestrator of the kind `claude` reads its own
 name and its slug from the first line of the output of `ListAgents`, as [sessions.md](sessions.md) says. A pi
 orchestrator uses the read of [sessions.md](sessions.md) that names `PI_SESSION_FILE`. A task is the record that tasker
@@ -48,8 +49,8 @@ the PATH from a global install. The installed `tasker` is a build of this repo, 
 
 The start docs of the orchestrator are `docs/orchestrator.md`, the pages of the list "The pages" below,
 [docs/dev/rules.md](dev/rules.md), [docs/dev/working-with-the-user.md](dev/working-with-the-user.md),
-[docs/sessions.md](sessions.md) and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). The orchestrator reads them at its start,
-as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
+[docs/sessions.md](sessions.md) and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). At its start, the orchestrator makes a
+complete read of each start doc before any other work, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
 
 The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages":
 
@@ -80,6 +81,162 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   "The steps of the old orchestrator", "The handoff file of the orchestrator" and "The start of the new orchestrator".
 - [docs/dev/limits.md](dev/limits.md): "Limits", the own-worktree rule, the update rule, the local-commit rule, the
   shared-clone rule, the address rule, the answer-wait rule and the failure rule.
+
+## The start of an orchestrator
+
+This section gives the scope, the slug and the start of an orchestrator. [docs/dev/GLOSSARY.md](dev/GLOSSARY.md) defines
+the scope, the slug and the own name.
+
+### The scope
+
+Each orchestrator works on one scope. A milestone scope is one milestone of the repo, and it holds the issues of that
+milestone. A set scope is a set of issues that the first prompt names. The issues of a set scope can belong to any
+milestone or to no milestone. The kind of the scope of an orchestrator does not change in its session, and no step of
+the docs changes it.
+
+The first prompt is the last argument of the start command of a session. The column "First prompt" of
+[the seam of an agent kind](config.md#the-seam-of-an-agent-kind) gives this form.
+
+Several orchestrators run at the same time, one for each scope. A milestone scope and a set scope can run at the same
+time. No rule limits the count of orchestrators.
+
+### The slug
+
+The user gives the slug in the first prompt. The slug has only lowercase ASCII letters, digits and `-`. The slug of a
+milestone scope is the first word of the milestone title in lowercase. The slug of a set scope is not the first word of
+the title of an open milestone. The user starts no orchestrator with another slug, for example `M31` or `my scope`.
+
+The own name of an orchestrator is `orchestrator-<slug>`. The role is the part before the first `-`, so a `-` in the
+slug keeps the role. For example, `orchestrator-docs-fix` has the role `orchestrator` and the slug `docs-fix`. Each rule
+of the docs that finds the orchestrator of a milestone uses the slug of that milestone.
+
+No two orchestrators that run at the same time have the same slug. The reason: two sessions with one name break each
+`SendMessage` to that name, as [A handoff](dev/operator-start.md#a-handoff) says. The kind `pi` has no tool that lists
+sessions, as the column "Messages" of the seam gives it. So for a pi orchestrator, the user alone keeps the slugs apart.
+
+### The steps of the user
+
+The user starts each orchestrator in these steps. They take the form of step 2 of
+[The order of a milestone](dev/operator-start.md#the-order-of-a-milestone).
+
+1. Run `tasker show-config --repo <key>`. `<key>` is the repo key of the local clone, for example `codeguru42/tasker`.
+2. If the command fails, start no orchestrator.
+3. Read `sessions.kind` and the entry of `sessions.models.orchestrator` in the output.
+4. Open a new herdr tab. The folder of the tab is the local clone.
+5. In that tab, run the start command of the kind, with the own name and the first prompt.
+
+For the kind `claude`, the start command is:
+
+```sh
+claude -n orchestrator-<slug> --model <model> --effort <effort> "<first prompt>"
+```
+
+For the kind `pi`, the start command is:
+
+```sh
+pi -n orchestrator-<slug> --provider <upstream> --model <model> --thinking <effort> "<first prompt>"
+```
+
+The row of the kind in [the seam of an agent kind](config.md#the-seam-of-an-agent-kind) gives each flag and the place of
+the first prompt. If `sessions.models.orchestrator` has no entry, the user leaves out the model flags and the effort
+flag. An example is `claude -n orchestrator-m31 "<first prompt>"`.
+
+The tab list of the operator does not hold the tab of an orchestrator that the user starts.
+[Stop a session](dev/operator-start.md#stop-a-session) covers such a tab. The operator tells the user, and it closes the
+tab only on the word of the user. The user closes the tab of an orchestrator that the user starts. In a handoff, the old
+orchestrator closes its own tab, as
+[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
+
+In a handoff, the old orchestrator starts the new orchestrator, as
+[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
+
+### The first prompt
+
+The first prompt names the own name and the scope. It also names the fetch and the reads of `AGENTS.md` and
+`docs/orchestrator.md` from `origin/main`, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) gives them. It
+also asks for a complete read of each start doc before any other work.
+
+The first prompt of a milestone scope has this form. `<milestone>` is the title of the milestone.
+
+```text
+You are orchestrator-<slug>. Your scope is the milestone <milestone>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/orchestrator.md. Read each start doc in full before any other work. Then start.
+```
+
+The first prompt of a set scope has this form. Each `<key>` is an issue key in a form of
+[docs/dev/issue-keys.md](dev/issue-keys.md).
+
+```text
+You are orchestrator-<slug>. Your scope is the issues <key>, <key> and <key>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/orchestrator.md. Read each start doc in full before any other work. Then start.
+```
+
+For example, the first prompt for the milestone `M31 — Orchestrator` is:
+
+```text
+You are orchestrator-m31. Your scope is the milestone M31 — Orchestrator. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/orchestrator.md. Read each start doc in full before any other work. Then start.
+```
+
+An example of the scope part of a set scope is:
+
+```text
+Your scope is the issues codeguru42/tasker#756, codeguru42/tasker#522 and codeguru42/tasker#748.
+```
+
+### The start checks
+
+After the complete start reads and before its role work, the orchestrator does these steps in order. If a step fails,
+the orchestrator does no role work. It tells the user in its own tab, with the error if one exists.
+
+1. Read your own name, as [docs/sessions.md](sessions.md) says.
+2. For the kind `claude`, read the output of `ListAgents`. If the read fails, stop.
+3. If any row of the output of `ListAgents` has your own name, stop. A second session with that name runs.
+4. Make sure that the slug of your own name is the slug of the first prompt.
+5. Make sure that the slug has only lowercase ASCII letters, digits and `-`.
+6. Make sure that the first prompt names exactly one scope. A first prompt with no scope fails, and so does a first
+   prompt with a milestone and a set.
+7. Read the milestones with `gh api --paginate 'repos/codeguru42/tasker/milestones?state=all&per_page=100'`. If the read
+   fails, stop.
+8. For a milestone scope, make sure that the slug is the first word of the title of that milestone, in lowercase.
+9. For a set scope, make sure that the slug is not the first word of the title of an open milestone, in lowercase.
+
+In these steps, "stop" means: do no role work, and tell the user in your own tab. A pi orchestrator does not do steps 2
+and 3. For a pi orchestrator, the user alone keeps the slugs apart.
+
+If the first prompt names a handoff file, a row of `ListAgents` with the own name can be the old orchestrator. Then the
+orchestrator runs `herdr agent list` and reads each row whose `terminal_title_stripped` is the own name. Its own row is
+the row whose `pane_id` is `HERDR_PANE_ID`. Each other such row must have the `tab_id` that the handoff file gives as
+the tab id of the old orchestrator.
+
+If each other row has that tab id, the orchestrator tells the user in its own tab that the old orchestrator still runs.
+Then it goes on with step 4. If a row has another tab id, step 3 stops the orchestrator. If `HERDR_PANE_ID` is not set,
+or the handoff file gives no tab id, step 3 stops it. If `herdr agent list` fails, step 3 stops it, and it tells the
+user the command and the error.
+
+The first line of the output of `ListAgents` names the own session, as [docs/sessions.md](sessions.md) says. The rows
+after it name the other sessions. The task subagent of #961 measured steps 2 and 3 on 2026-11-19, with Claude Code
+2.1.329 and herdr 0.9.3, in one herdr workspace. It ran
+`claude -n test-dup-961 "Run ListAgents and print its output, then stop."` in two tabs with `herdr agent start`.
+`claude -n` did not refuse the second start, and both sessions ran with different session refs.
+
+Each session did not list itself in `ListAgents`. Each session listed the other session as a row with the name
+`test-dup-961`. The facts hold only with herdr as the start tool.
+
+The measure had four possible outcomes:
+
+- `claude -n` refuses the second start: the user sees the error, and no second session runs. Step 3 stays.
+- Both sessions start, and `ListAgents` lists both: step 3 stops the new orchestrator. This outcome happened.
+- Both sessions start, and `ListAgents` lists only one: step 3 cannot see the second session. The user alone then keeps
+  the slugs apart, as for pi.
+- No measure: the user alone keeps the slugs apart, as for pi, and the docs say that no one measured the case.
+
+### The states of a start
+
+| State                         | User                         | Orchestrator                       | Who tells whom                                 |
+| ----------------------------- | ---------------------------- | ---------------------------------- | ---------------------------------------------- |
+| The read of the configuration | Runs `tasker show-config`    |                                    |                                                |
+| The read fails                | Starts no orchestrator       |                                    | The command tells the user                     |
+| The start                     | Runs the command of the kind | Runs the fetch and the start reads |                                                |
+| A start check fails           |                              | Does no role work                  | The orchestrator tells the user in its own tab |
+| The start checks pass         |                              | Starts its role work               |                                                |
 
 ## The request rule
 
