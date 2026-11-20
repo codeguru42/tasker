@@ -16,8 +16,8 @@ export function setRoleModel(text: string, repoKey: string, role: AssistantRole,
   return editChoice(text, ["repos", repoKey, "assistant", "models", role], 0, change);
 }
 
-// Same as setRoleModel for a session role or a subagent role. The keys sessions, models and the role are optional in a file. The
-// function adds each one that is missing, so a new role gets the keys model and effort in this order.
+// Same as setRoleModel for a session role or a subagent role. The keys sessions, models and the role are optional in a
+// file. The function adds each one that is missing, so a new role gets the keys model and effort in this order.
 export function setSessionRoleModel(text: string, repoKey: string, role: SessionRole, change: RoleChange): string {
   return editChoice(text, ["repos", repoKey, "sessions", "models", role], 3, change);
 }
