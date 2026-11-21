@@ -22,9 +22,7 @@ import {
 } from "../helpers/prompts.js";
 import { planTodo, validPlanAnswer } from "../helpers/plan.js";
 
-const EXECUTE_PROMPT = executePrompts().execute;
-const EXECUTE_TODO_PROMPT = executePrompts().todo;
-const EXECUTE_FIX_PROMPT = executePrompts().fix;
+const { execute: EXECUTE_PROMPT, todo: EXECUTE_TODO_PROMPT, fix: EXECUTE_FIX_PROMPT } = executePrompts();
 
 interface PromptCase {
   name: string;
