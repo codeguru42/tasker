@@ -392,9 +392,9 @@ For a write of a file, the first-reply text shows the absolute path and the full
 it shows the session name and the text. It shows them only if the pane owner already has them. A text that the question
 session makes in the talk goes to the user before the session asks for approval, as Send a decision says.
 
-The first-reply text does not show the text of an input file. The command names the path of the file. A pick cannot
-approve the text of an input file. So the question session shows the text after the pick and gets the approval word of
-the user before it sends the message.
+The first-reply text does not show the text of an input file. The command names the path of the file. Each choice that
+leads to a write action says in its own text whether a pick approves the commands shown under it. The pane owner or the
+sender writes this into the choice text, and the question session shows it word for word.
 
 If the write actions differ between the choices, the first-reply text shows one set of commands under each choice that
 leads to a write action. A choice with no write action shows none.
@@ -402,14 +402,21 @@ leads to a write action. A choice with no write action shows none.
 The commands and the undo steps of this subsection do not count in the five-sentence limit of
 [The question session](#the-question-session). A code block of another kind still counts as one sentence.
 
-Each choice that leads to a write action says in its own text whether a pick approves the commands shown under it. The
-pane owner or the sender writes this into the choice text, and the question session shows it word for word. A pick
-approves the shown commands and undo steps only if the text of the picked choice says so in plain words. A command or a
-text that changed after the first reply is not approved. A pick of a choice that does not say that it approves the
-commands approves nothing, and the question session asks the user for a separate approval word. The decision message
-gives the pick or that word as the approval, word for word.
+Approval holds the send of a write action, not the send of the decision. A direct pick, or a yes to the confirm question
+for a planned choice, approves the shown commands and undo steps only if the text of that choice says so in plain words.
+In each other case, the question session asks the user for an approval word before it sends the message. These cases are
+a choice whose text does not say so, a write action with an input file, and a command, a path or a text that the first
+reply did not show.
 
-A direct pick stays a direct pick, as Send a decision says. The confirm question stays as it is and lists no choices.
+A command that changed after the first reply is new, and the old pick does not approve it. With the question for the
+approval word, the session shows the text of each input file and each new or changed command or text. A reply that gives
+the word approves only what the session showed.
+
+The question for an approval word is not a confirm question and not a send case, so the send cases stay three. A direct
+pick is sent with no confirm question, and the confirm question stays the only question for the decision. The decision
+message gives the decision and the pick, the yes or the approval word, word for word. If the user gives no approval
+word, the message gives no write action as approved, and the pane owner runs none, as
+[The pane owner handles a decision](#the-pane-owner-handles-a-decision) says.
 
 A question that leads to no write action shows no command, no undo step, no path and no text of a write. A request of
 [Terms](#terms), for example a [title or body request](#terms), keeps its own form.
@@ -522,7 +529,9 @@ never a guess. The judgment of a direct pick and of a guess is open on purpose. 
 are a discussion and the reading is a guess.
 
 For a direct pick, the question session sends the decision message at once. It shows no evaluation and asks no confirm
-question. The message has no part about a confirm question.
+question. The message has no part about a confirm question. A direct pick is sent at once, with no confirm question. A
+write action that needs an approval word waits for it, as
+[The commands in the first reply](#the-commands-in-the-first-reply) says.
 
 For a discussion, the question session shows the evaluation. The evaluation names the choice that the words fit best, or
 says that no choice fits. It also says what stays open.
@@ -585,7 +594,8 @@ same for each [write action](#terms). For an action with no undo step, it says t
 first reply already shows each command and its undo step, as
 [The commands in the first reply](#the-commands-in-the-first-reply) says. Before the send, the question session shows
 the user the text of each input file and each command or text that the first reply did not show. The message gives the
-approval of the user verbatim, as that subsection says.
+approval of the user verbatim, as that subsection says. The approval of a write action follows
+[The commands in the first reply](#the-commands-in-the-first-reply).
 
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
