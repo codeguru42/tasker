@@ -346,7 +346,9 @@ The rules:
 - After an accept of its own user, the sending orchestrator sends the request with `SendMessage`. The target is the
   orchestrator of the task, found as [The orchestrator of a task](#the-orchestrator-of-a-task) says. For the end of a
   milestone hold, the target is the held orchestrator. The sending orchestrator sends no request of a peer to an
-  operator as an item.
+  operator as an item. If item 4 of [A milestone hold](dev/working-with-the-user.md#a-milestone-hold) holds the request
+  back, the request goes to the user by the third bullet of item 6, and the sending orchestrator does not send it to the
+  held orchestrator.
 - The receiving orchestrator does not do the requested change. It asks the decision of the user in its own question
   pane, as [Start](dev/question-pane.md#start) says. The decision in the pane is the decision of the user. The
   recommendation mode of [A decision of the user](dev/working-with-the-user.md#a-decision-of-the-user) does not cover

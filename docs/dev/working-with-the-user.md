@@ -555,8 +555,9 @@ The rules of a milestone hold:
    - A doc notice: the sender does nothing more. Item 9 of this section covers the doc change.
    - The message of the follow-up planner after a post: the sender does nothing more. Item 9 of this section covers the
      change of the board.
-   - Each other skipped message: the sender sends it to the user in an item, through its own operator, in place of the
-     held session. The item names the held session. The user decides what happens with it.
+   - Each other skipped message: the sender tells the user the message, as [The operator](#the-operator) gives "tell the
+     user" for its role, in place of the held session. The report names the held session. The user decides what happens
+     with it.
 7. The sender reads the hold records of the open milestones right before each message to a session of another slug. A
    read of an earlier turn does not count, because a milestone hold can start at any time.
 8. The rule covers these states of a milestone hold:
@@ -584,7 +585,7 @@ The rules of a milestone hold:
    machine can read. A list in a session is lost at a compaction, a handoff or a move to another machine.
 
 10. If the read of item 7 of this section fails, [the failure rule](limits.md#the-failure-rule) applies. The sender then
-    handles each message of that send as the third bullet of item 6 of this section says, in one item.
+    handles each message of that send as the third bullet of item 6 of this section says, in one report.
 11. If the write of item 3 of this section or a send of item 9 of this section fails, the failure rule applies. The
     session tells the user. A denied write follows [the tool-block rule](tasker-commands.md#the-tool-block-rule). For
     the operator, it follows [A denied command of the operator](operator-start.md#a-denied-command-of-the-operator).
