@@ -17,3 +17,12 @@ export const SHARED_RULE_NAMES: readonly string[] = [
   "RULE_ANSWER_LEAD",
   "RULE_ANSWER_KEYS",
 ];
+
+// The RULE_EXECUTE_ names of the turn rule files, in the order of the execute-todo prompt.
+export const EXECUTE_TURN_RULE_NAMES: readonly string[] = [
+  "RULE_EXECUTE_KEEP_SIMPLE_ENGLISH",
+  "RULE_EXECUTE_NO_QUESTION_SKILL",
+  "RULE_EXECUTE_FILE_ACCESS",
+  "RULE_EXECUTE_WORKING_FOLDER",
+  "RULE_EXECUTE_NO_QUESTION_END",
+];

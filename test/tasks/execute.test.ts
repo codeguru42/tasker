@@ -1,19 +1,18 @@
-import { existsSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkTurnResult } from "../../src/plan/turn-result.js";
 import type { Config } from "../../src/config/schema.js";
+import { packagePath } from "../../src/package-path.js";
 import { promptVersion } from "../../src/prompts/archive.js";
 import { captureAssistantStartInputs } from "../helpers/assistant-run.js";
 import {
   currentTodoText,
-  EXECUTE_FIX_PROMPT,
   EXECUTE_FIX_PROMPT_NAME,
-  EXECUTE_PROMPT,
   EXECUTE_PROMPT_NAME,
-  EXECUTE_TODO_PROMPT,
   EXECUTE_TODO_PROMPT_NAME,
   NO_VERIFY_LOG,
+  readExecutePrompts,
   resolvedQuestionsText,
   todosText,
 } from "../../src/prompts/execute.js";
@@ -54,7 +53,7 @@ import {
   turnResultStream,
 } from "../helpers/plan.js";
 import { quotaPauseLineExpected } from "../helpers/quota.js";
-import { writeFileWithParents } from "../helpers/temp.js";
+import { useTempDir, writeFileWithParents } from "../helpers/temp.js";
 import {
   databasePathOf,
   eventsOf,
@@ -183,6 +182,11 @@ describe("executeTask checks", () => {
   });
 });
 
+// The three execute prompts, as the files give them.
+const templates = () =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  readExecutePrompts();
+
 // The commit rules of the execute prompt.
 const commitText = (): string => readExecuteCommitText();
 
@@ -190,7 +194,7 @@ const commitText = (): string => readExecuteCommitText();
 const TODOS = [planTodo("b", ["a"]), planTodo("a")];
 
 const todoPrompt = (id: string): string =>
-  fillTemplate(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT, {
+  fillTemplate(EXECUTE_TODO_PROMPT_NAME, templates().todo, {
     CURRENT_TODO: currentTodoText(TODOS.find((todo) => todo.id === id)!),
   });
 
@@ -199,7 +203,7 @@ const expectedPrefix = (fixture: ExecuteFixture, todos: typeof TODOS, doneIds: R
   const { dataRoot } = fixture.started;
   const baseRevision = requireBaseRevision(gitProvider(), latestTaskOf(dataRoot, fixture.started.key));
   const questions = withDataRootStore(dataRoot, (store) => store.resolvedQuestionsThrough(fixture.task.id, 1));
-  return fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, {
+  return fillTemplate(EXECUTE_PROMPT_NAME, templates().execute, {
     COMMIT_RULES: fillTemplate("commit-rules", commitText(), { BASE_REF: baseRevision }),
     PLAN_MARKDOWN: fixture.revision.answer.plan_markdown,
     TODOS: todosText(todos, doneIds),
@@ -208,7 +212,7 @@ const expectedPrefix = (fixture: ExecuteFixture, todos: typeof TODOS, doneIds: R
 };
 
 const fixPrompt = (): string =>
-  fillTemplate(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT, {
+  fillTemplate(EXECUTE_FIX_PROMPT_NAME, templates().fix, {
     VERIFY_FAILURE: "npm test failed",
     VERIFY_LOG: NO_VERIFY_LOG,
   });
@@ -291,7 +295,7 @@ describe("executeTask turns", () => {
     expect(argAfter(calls[0].argv, "--resume")).toBe(TEST_EXECUTE_SESSION_ID);
     expect(calls[0].stdin).toBe(todoPrompt("b"));
     expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
-      prompts: [promptVersion(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT)],
+      prompts: [promptVersion(EXECUTE_TODO_PROMPT_NAME, templates().todo)],
     });
   });
 
@@ -316,8 +320,8 @@ describe("executeTask turns", () => {
         data: {
           version: 1,
           prompts: [
-            promptVersion(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT),
-            promptVersion(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT),
+            promptVersion(EXECUTE_PROMPT_NAME, templates().execute),
+            promptVersion(EXECUTE_TODO_PROMPT_NAME, templates().todo),
           ],
           from: "executing",
           to: "executed",
@@ -532,9 +536,9 @@ describe("executeTask fix turn", () => {
     ]);
     expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
       prompts: [
-        promptVersion(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT),
-        promptVersion(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT),
-        promptVersion(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT),
+        promptVersion(EXECUTE_PROMPT_NAME, templates().execute),
+        promptVersion(EXECUTE_TODO_PROMPT_NAME, templates().todo),
+        promptVersion(EXECUTE_FIX_PROMPT_NAME, templates().fix),
       ],
     });
     expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
@@ -558,8 +562,8 @@ describe("executeTask fix turn", () => {
     expect(calls[0].stdin).toBe(`${expectedPrefix(fixture, ONE, new Set(["a"]))}\n${fixPrompt()}`);
     expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
       prompts: [
-        promptVersion(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT),
-        promptVersion(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT),
+        promptVersion(EXECUTE_PROMPT_NAME, templates().execute),
+        promptVersion(EXECUTE_FIX_PROMPT_NAME, templates().fix),
       ],
     });
     expect(result).toMatchObject({ fixTurnDone: true });
@@ -900,5 +904,28 @@ describe("executeTask quota warning", () => {
 
     expect(result).toMatchObject({ todosDone: 2, todosTotal: 2 });
     expect(stateOf(fixture)).toBe("executed");
+  });
+});
+
+describe("executeTask prompt files", () => {
+  it("refuses a run when a fragment file of the execute prompts cannot be read", async () => {
+    const fixture = await useExecuteFixture({});
+    const root = join(useTempDir("tasker-execute-templates-"), "prompt-templates");
+    cpSync(packagePath("prompt-templates"), root, { recursive: true });
+    const missing = join(root, "tasker", "execute-file-access.md");
+    rmSync(missing);
+
+    await expectRefused(fixture, `prompt template ${missing} has problems:`, { promptRoot: root });
+  });
+
+  it("sends no turn prompt with an open placeholder", async () => {
+    const fixture = await useExecuteFixture({ stream: doneStream }, { answer: { todos: TODOS } });
+    withDataRootStore(fixture.config.dataRoot, (store) => seedExecuteFixTurn(store, fixture.task.id, 1, "queued"));
+
+    await runExecute(fixture);
+
+    const calls = fixture.claude.calls();
+    expect(calls.length).toBeGreaterThan(0);
+    for (const call of calls) expect(call.stdin).not.toContain("{{");
   });
 });

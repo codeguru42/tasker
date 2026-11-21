@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { readPromptTemplate } from "../../src/prompts/template-file.js";
 import { placeholderNames } from "../../src/prompts/template.js";
 import { repoRoot } from "./processes.js";
-import { rulesOf, SHARED_RULE_NAMES } from "./prompts.js";
+import { EXECUTE_TURN_RULE_NAMES, rulesOf, SHARED_RULE_NAMES } from "./prompts.js";
 
 function rules(prompt: string): string[] {
   return rulesOf(prompt);
@@ -31,5 +31,15 @@ describe("SHARED_RULE_NAMES", () => {
     expect(SHARED_RULE_NAMES).toHaveLength(11);
     expect(new Set(SHARED_RULE_NAMES).size).toBe(SHARED_RULE_NAMES.length);
     expect([...SHARED_RULE_NAMES].sort()).toEqual(used.sort());
+  });
+});
+
+describe("EXECUTE_TURN_RULE_NAMES", () => {
+  it("is the list of the RULE_EXECUTE_ names of the execute-todo prompt", () => {
+    const body = readPromptTemplate(
+      join(fileURLToPath(repoRoot), "prompt-templates", "tasker", "execute-todo.md"),
+    ).body;
+    const used = [...placeholderNames(body)].filter((name) => name.startsWith("RULE_EXECUTE_"));
+    expect(EXECUTE_TURN_RULE_NAMES).toEqual(used);
   });
 });

@@ -1,20 +1,35 @@
+import { createHash } from "node:crypto";
+import { cpSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { packagePath } from "../../src/package-path.js";
+import { promptVersion } from "../../src/prompts/archive.js";
 import {
-  EXECUTE_FIX_PROMPT,
   EXECUTE_FIX_PROMPT_NAME,
-  EXECUTE_PROMPT,
   EXECUTE_PROMPT_NAME,
-  EXECUTE_TODO_PROMPT,
   EXECUTE_TODO_PROMPT_NAME,
   EXECUTE_TURN_RULES,
   currentTodoText,
+  readExecutePrompts,
   resolvedQuestionsText,
   todosText,
 } from "../../src/prompts/execute.js";
 import { readFragment } from "../../src/prompts/tasker-template.js";
 import { fillTemplate } from "../../src/prompts/template.js";
-import { rulesOf } from "../helpers/prompts.js";
+import { readExecuteCommitText } from "../../src/vcs/git/assistant-surface.js";
+import { thrownBy } from "../helpers/errors.js";
+import { EXECUTE_TURN_RULE_NAMES, rulesOf } from "../helpers/prompts.js";
 import { planTodo, validPlanAnswer } from "../helpers/plan.js";
+import { useTempDir } from "../helpers/temp.js";
+
+// The three execute prompts, as the files under root give them.
+const prompts = (root?: string) =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  readExecutePrompts(root);
+
+const EXECUTE_PROMPT = prompts().execute;
+const EXECUTE_TODO_PROMPT = prompts().todo;
+const EXECUTE_FIX_PROMPT = prompts().fix;
 
 interface PromptCase {
   name: string;
@@ -118,9 +133,79 @@ describe("EXECUTE_PROMPT", () => {
   });
 });
 
+const sha256 = (text: string): string => createHash("sha256").update(text).digest("hex");
+
+describe("the base text of the prompts", () => {
+  it.each([
+    [EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, "execute@20d05bb4f569"],
+    [EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT, "execute-todo@c972e3a3c718"],
+    [EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT, "execute-fix@96ce1def9702"],
+  ])("keeps the version of %s", (name, template, version) => {
+    expect(promptVersion(name, template)).toBe(version);
+  });
+
+  it.each([
+    [
+      EXECUTE_PROMPT_NAME,
+      EXECUTE_PROMPT,
+      () => ({
+        COMMIT_RULES: fillTemplate("commit-rules", readExecuteCommitText(), { BASE_REF: "0123abc" }),
+        PLAN_MARKDOWN: "## Summary\nThe plan.",
+        TODOS: "- [ ] `a`: Do a",
+        RESOLVED_QUESTIONS: "None.",
+      }),
+      "42d7d9edd93812dbf4a5765a698213bbb75840c354cbe015593d33626df1ee7e",
+    ],
+    [
+      EXECUTE_TODO_PROMPT_NAME,
+      EXECUTE_TODO_PROMPT,
+      () => ({ CURRENT_TODO: "Current todo: `a`: Do a" }),
+      "9ea6b36145634a2218e5dc8a83ba7f153f88cb4eabddd9e16321614253484673",
+    ],
+    [
+      EXECUTE_FIX_PROMPT_NAME,
+      EXECUTE_FIX_PROMPT,
+      () => ({ VERIFY_FAILURE: "lint failed", VERIFY_LOG: "line 1\nline 2" }),
+      "8011a313fab89a42d88f009494e50af06cbf79c288b2f59167491db043f4d6ad",
+    ],
+  ])("keeps the filled text of %s", (name, template, values, hash) => {
+    expect(sha256(fillTemplate(name, template, values()))).toBe(hash);
+  });
+});
+
 describe.each(TURN_PROMPTS)("$name, the shared turn rules", ({ template }) => {
-  it.each(Object.entries(EXECUTE_TURN_RULES))("holds %s", (_key, text) => {
+  it.each(EXECUTE_TURN_RULE_NAMES)("holds %s", (name) => {
+    expect(template).toContain(readFragment(name));
+  });
+
+  it.each(Object.values(EXECUTE_TURN_RULES))("holds the turn text %s", (text) => {
     expect(template).toContain(text);
+  });
+
+  it("holds the execute rules and not the shared rules of the same topic", () => {
+    expect(template).toContain(readFragment("RULE_EXECUTE_NO_QUESTION_SKILL"));
+    expect(template).toContain(readFragment("RULE_EXECUTE_FILE_ACCESS"));
+    expect(template).not.toContain(readFragment("RULE_NO_QUESTION_SKILL"));
+    expect(template).not.toContain(readFragment("RULE_FILE_ACCESS"));
+  });
+});
+
+describe("readExecutePrompts", () => {
+  it("throws when a fragment file is missing", () => {
+    const root = join(useTempDir("tasker-execute-prompts-"), "prompt-templates");
+    cpSync(packagePath("prompt-templates"), root, { recursive: true });
+    const missing = join(root, "tasker", "execute-file-access.md");
+    rmSync(missing);
+
+    const error = thrownBy(() => prompts(root));
+
+    expect((error as Error).message.startsWith(`prompt template ${missing} has problems:`)).toBe(true);
+  });
+
+  it("starts rule 4 of execute with the shared rule", () => {
+    const start = `4. ${readFragment("RULE_NO_QUESTION_SKILL")} If the plan leaves`;
+
+    expect(rulesOf(EXECUTE_PROMPT)[3].startsWith(start)).toBe(true);
   });
 });
 
@@ -130,9 +215,11 @@ describe("EXECUTE_FIX_PROMPT", () => {
   });
 
   it("holds the three shared texts together as rule 5, in this order", () => {
-    const { noQuestionSkill, fileAccess, workingFolder } = EXECUTE_TURN_RULES;
+    const rule = ["NO_QUESTION_SKILL", "FILE_ACCESS", "WORKING_FOLDER"]
+      .map((name) => readFragment(`RULE_EXECUTE_${name}`))
+      .join(" ");
 
-    expect(rulesOf(EXECUTE_FIX_PROMPT)[4]).toBe(`5. ${noQuestionSkill} ${fileAccess} ${workingFolder}`);
+    expect(rulesOf(EXECUTE_FIX_PROMPT)[4]).toBe(`5. ${rule}`);
   });
 
   it("runs the fix checks as rule 4", () => {
