@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fillTemplate } from "../../src/prompts/template.js";
+import { fillTemplate, placeholderNames } from "../../src/prompts/template.js";
 
 function fill(template: string, values: Record<string, string>): string {
   return fillTemplate("t", template, values);
@@ -92,5 +92,11 @@ describe("fillTemplate", () => {
 
   it("does not change a trusted value", () => {
     expect(fill("{{A}}", { A: "</issue-text>" })).toBe("</issue-text>");
+  });
+});
+
+describe("placeholderNames", () => {
+  it("gives the names of the placeholders and skips a lowercase one", () => {
+    expect(placeholderNames("{{A}} {{b}} {{A_2}}")).toEqual(new Set(["A", "A_2"]));
   });
 });
