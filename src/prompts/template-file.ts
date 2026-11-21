@@ -68,8 +68,11 @@ function load(path: string): { template: PromptTemplate } | { problems: string[]
     const line = lines[i];
     const entry = /^ {2}([^\s:][^:]*): (.*)$/.exec(line);
     if (inPlaceholders && entry) {
-      if (PLACEHOLDER_KEY.test(entry[1])) entries[entry[1]] = entry[2];
-      else problems.push(`placeholders has a key that is not a placeholder name: ${entry[1]}`);
+      if (PLACEHOLDER_KEY.test(entry[1])) {
+        if (Object.hasOwn(entries, entry[1]))
+          problems.push(`front matter line ${i + 1} repeats the placeholder ${entry[1]}`);
+        else entries[entry[1]] = entry[2];
+      } else problems.push(`placeholders has a key that is not a placeholder name: ${entry[1]}`);
       continue;
     }
     inPlaceholders = false;
