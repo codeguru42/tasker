@@ -5,8 +5,9 @@ that runs one [scope](dev/GLOSSARY.md). It picks tickets and starts one task sub
 cards and sets the landing order.
 
 A ticket is an issue on the project board. A task subagent, as [GLOSSARY.md](dev/GLOSSARY.md) defines it, runs the steps
-of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. The user is the person who works with the
-sessions, as [GLOSSARY.md](dev/GLOSSARY.md) says. The user starts the orchestrator, as
+of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. A task subagent for one task change runs
+only one `tasker` command of a task. The user is the person who works with the sessions, as
+[GLOSSARY.md](dev/GLOSSARY.md) says. The user starts the orchestrator, as
 [The start of an orchestrator](#the-start-of-an-orchestrator) says. The user can type in the session of the
 orchestrator, but most words of the user reach it through its question pane. No one measured how a session queues a text
 that arrives during a turn. The user answers a permission prompt in the tab of the orchestrator, as

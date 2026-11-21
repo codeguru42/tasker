@@ -1,11 +1,13 @@
 # Run one ticket
 
-The reader of this page is the task subagent of a ticket. [The base rule](#the-base-rule) covers each command of this
-page that uses `origin/<base branch>`.
+The reader of this page is the task subagent of a ticket. A task subagent for one task change runs only its command and
+no step of this page, as [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says.
+[The base rule](#the-base-rule) covers each command of this page that uses `origin/<base branch>`.
 
 ## Run one ticket
 
-The task subagent of the ticket runs steps 1 to 11. Each step gives the state of the task after its command succeeds.
+The task subagent of the ticket runs steps 1 to 11. A task subagent for one task change runs none of them. Each step
+gives the state of the task after its command succeeds.
 
 1. Run `tasker doctor`. A timeout line is a line of the output of `tasker doctor` that starts with `error` and ends with
    `the check did not finish in <n> ms`. `<n>` is a number. If the output of the first run has a timeout line, run

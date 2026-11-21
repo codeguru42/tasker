@@ -262,7 +262,9 @@ The orchestrator does all the steps of this section.
   Case 3: #C has the label `on hold`, and its card is in Todo. The find at the start gives a report on #C. At the next
   landing, the find raises nothing for #C.
 
-- Run at most 3 task subagents at the same time, one ticket for each task subagent.
+- Run at most 3 task subagents at the same time, one ticket for each task subagent. A task subagent for one task change
+  takes a free slot. So does an ended task subagent whose slot the orchestrator freed. If all 3 slots are in use, the
+  command waits for a free slot.
 - The pi gate: while [the pi wait](quota.md#the-pi-wait) lasts, start no task subagent for a ticket of a repo whose
   `assistant.provider` is `pi`. A new session for a task of the pi wait is not held back. Read the provider of the repo
   with the command of the test of [A pi stop](quota.md#a-pi-stop). If the read fails,
@@ -987,6 +989,13 @@ slot and landing rules still apply.
     it read and its review loops. For a task subagent with no name, the orchestrator puts the full issue key in the text
     of each message, each resume message and each quota job prompt, in place of the session name. The orchestrator names
     each new task subagent.
+- A task subagent for one task change runs one `tasker` command of a task that has no task subagent of this
+  orchestrator, as [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says. Its prompt
+  names the issue key, the command, and the words of the user that ask for it. It also names the base list of docs and
+  the quota slot. The task subagent runs only that command and then gives its final report. It runs no step of
+  ["Run one ticket"](run-one-ticket.md#run-one-ticket). ["Quota"](quota.md#quota) covers it as each other task subagent.
+  Its name follows the naming bullet above, with the suffix `-2` when this session already started a session for the
+  ticket.
 - Before the task subagent starts, the orchestrator makes the folder of the task subagent for its files (see the folder
   bullet of ["Limits"](limits.md#limits)). In one case, a background command of a task subagent wrote into a missing
   folder and failed.

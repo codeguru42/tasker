@@ -39,7 +39,7 @@ in `src/issue-key/path-slug.ts` and `src/vcs/git/worktree.ts`.
 **Socket address**: The `uds:` value in the `from` field of a message from a session, for example
 `uds:/run/user/30033/cc-socks/2406691.sock`. After a handoff of the session, its socket address is stale.
 
-**Task subagent**: A subagent that the orchestrator starts for one ticket with the
+**Task subagent**: A subagent that the orchestrator starts for one ticket, or for one task change of a task, with the
 [native subagent tools](pick-the-tickets.md#the-prompt-of-a-task-subagent) of its session. _Avoid_: Agent
 
 **Ticket subagent**: A subagent that a planner starts with the Agent tool for the work on one draft of an issue. A
