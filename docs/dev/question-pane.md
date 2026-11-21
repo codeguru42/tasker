@@ -744,7 +744,7 @@ itself.
 
 The reason of issue #967: the user chose a closed list of user-level files. The user said: "A for now. Eventually I will
 have a separate repo for agent config." The user also said: "The planner should run review loops and post without my
-approval." So the planner runs its review loops on a text that the user approved in a pane.
+approval." So the planner runs its review loops on each request of a pane and posts with no new approval of the user.
 
 If the words do not settle the question, the pane owner sends only the question session one message saying what remains
 open. The message goes with the herdr path and starts with `PANE-OWNER <owner name> <question id>:`. The pane
@@ -770,7 +770,9 @@ blocked-by link or of the field `Priority`, and a change of a tracked file of th
 also when the message does not settle the question. The pane does not wait for it. The message starts with
 `From the user:`. It names the question pane and the question id. It gives the words of the user word for word and each
 guess of the question session that the user accepted, still marked as a guess. A message from a pane that the user
-closed with a confirm question open holds no guess. For a text change, it gives the exact text and the start hash.
+closed with a confirm question open holds no guess. For a title or body request, it gives the words of the user and the
+issue reading only, with no exact text and no start hash. For a comment, a change of a blocked-by link or a change of
+the field `Priority`, it gives the exact text and the start hash.
 
 If the planner is the sender and the message settles the question, the request goes in the answer to the planner. In
 each other case, the request goes in a message of its own. Such a message is a relay to `planner-<slug>`, not an answer
@@ -784,15 +786,30 @@ the request as a proposed issue of the orchestrator, with its review loops and i
 the post or the drop to the orchestrator. For a draft that waits for a decision of the user, it sends the question to
 `orchestrator-<slug>`.
 
-The planner runs its review loops on a text that the user approved in a pane. If a loop changes the text, the planner
-posts the changed text with no new approval of the user. It still runs each other rule of
-[Before a post](issues.md#before-a-post). This sentence is a reading of the answer of the user, not the words of the
-user.
+For a title or body request, the user approves the request, not a text. The planner drafts the change, runs its review
+loops and posts the reviewed text, as for a new issue. It needs no approval of the user for the text. The draft starts
+from a read of the issue, as [Before a post](issues.md#before-a-post) and
+[A change of an open issue](issue-draft.md#a-change-of-an-open-issue) say. If the words and the issue reading name no
+single issue, the planner asks the user through the orchestrator, as [The escape hatch](planner.md#the-escape-hatch)
+says.
+
+For a comment, a change of a blocked-by link or a change of the field `Priority`, the planner runs its review loops on a
+text that the user approved in a pane. If a loop changes the text, the planner posts the changed text with no new
+approval of the user. It still runs each other rule of [Before a post](issues.md#before-a-post). This paragraph is a
+reading of the answer of the user, not the words of the user.
 
 The reason: the planner runs its review loops on each new issue that the user asks for, also from a question pane. On
 2026-11-13, operator-docs relayed a proposal of the question session question-914-codex. In that pane, the user said
 "file separate tickets for codex and pi. Put them in the appropriate milestones". The session sent the request to the
 sender as a requested draft change, with no command.
+
+The reason of issue #992: on 2026-11-20, in a question pane, the user said that a change to an issue goes through a
+planner and a review, like a new issue. The user wrote: "A change to a github issue must go through a planner and review
+process like always. If the review is approved, then it is posted. This is the same as drafting a new issue." The user
+also wrote: "Under what scenario does an "old body" and a "new body" have anything to do with the question pane?" and
+"This needs a change in design: a proposed title or body change must go to the planner to draft it." So a question pane
+has no use for an old body and a new body. Issue #987 asked a pane to show a summary and two paths for an old and a new
+body. It is closed as not planned, and this rule replaces its idea.
 
 ### The rounds before the close
 
