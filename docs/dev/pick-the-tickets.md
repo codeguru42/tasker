@@ -266,6 +266,54 @@ The orchestrator does all the steps of this section.
 - Run at most 3 task subagents at the same time, one ticket for each task subagent. A task subagent for one task change
   takes a free slot. So does an ended task subagent whose slot the orchestrator freed. If all 3 slots are in use, the
   command waits for a free slot.
+
+  The fill rule is the lower limit for the slots of the quota rules. When no task subagent holds a slot and no hold of
+  [the parent-hold rule](#the-parent-hold-rule) keeps it, the slot is free. A ticket that can start is a ticket of the
+  scope with each fact of "A ticket that can start now" of [the open-question rule](#the-open-question-rule). The fill
+  rule does not need the first fact of that term, a free slot or a kept slot.
+
+  While a ticket can start, the orchestrator keeps each slot full. At the start of the orchestrator and after each event
+  that frees a slot, it reads the board. Then it starts a ticket for each free slot, one by one, until each slot is full
+  or no ticket can start. The events are a landing, a defer and the end of a hold of
+  [the parent-hold rule](#the-parent-hold-rule). A stop of a task subagent whose slot the orchestrator frees is also an
+  event.
+
+  The orchestrator picks each ticket by the order of the bullet of a live security gap and of the priority rule. It does
+  not ask the user which ticket to start. It offers no list of tickets for a free slot, and it waits for no answer.
+
+  A rule that stops a start still wins over the fill rule. These are the gates:
+
+  - The pi gate
+  - The ban of [A failed CI run](ci-wait.md#a-failed-ci-run)
+  - The ban on a new ticket after the suggestion of a handoff, in
+    [The landing count](handoff-orchestrator.md#the-landing-count)
+  - [A ticket on hold](#a-ticket-on-hold)
+  - The shared-file bullet
+  - [The stacking rule](#the-stacking-rule)
+  - The bullet of a manual-steps issue
+  - [The open-question rule](#the-open-question-rule)
+  - The move rule
+  - [The link offer](#the-link-offer)
+  - The earlier-blocker offer
+
+  For a ticket that a gate holds back, the slot stays free. The orchestrator starts the next ticket that the gate does
+  not hold back. A ticket that waits for its parent under [the stacking rule](#the-stacking-rule) takes no slot. A
+  ticket with no such parent still starts.
+
+  Each question that a gate or another rule of [the orchestration pages](../orchestrator.md) requires stays. The fill
+  rule bans only a question that offers a choice among tickets that can start. One example is the question of the bullet
+  of a live security gap about a task in flight that holds the shared file. Another example is the question about a move
+  of an issue into another milestone, as [the move paragraph](#pick-the-tickets) of the first bullet says. While the
+  answer to a question waits, the next ticket takes the free slot. See
+  [the open-question rule](#the-open-question-rule).
+
+  If fewer tickets can start than there are free slots, the orchestrator starts the tickets that can start and waits for
+  no more tickets. At its next read of the board, it starts a ticket that can then start. The fill rule does not raise
+  the number of slots.
+
+  The reason for the fill rule is a case of 2026-10-25: two slots of orchestrator-m22 stayed free for about an hour. The
+  bullet "Each time a ticket lands, read the board again" records that case.
+
 - The pi gate: while [the pi wait](quota.md#the-pi-wait) lasts, start no task subagent for a ticket of a repo whose
   `assistant.provider` is `pi`. A new session for a task of the pi wait is not held back. Read the provider of the repo
   with the command of the test of [A pi stop](quota.md#a-pi-stop). If the read fails,
