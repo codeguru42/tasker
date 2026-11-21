@@ -1042,11 +1042,12 @@ the text object next. The first candidate that passes wins.
 
 Tasker reads the text of the last assistant message for the text object. It parses the whole text as JSON first. If that
 fails, it takes the last valid JSON code fence. The answer extension adds the `tasker-answer` section to the system
-prompt in its `before_agent_start` handler. The section tells the model three things: call `submit_answer` one time, as
-the last action; after three rejected calls, the tool goes away; with no tool, end the reply with the answer as one JSON
-object in a fenced `json` block. The prompts of the steps do not change, so they stay the same for every provider. The
-rule is in a section of its own, because pi leaves the description and the prompt guidelines of a hidden tool out of the
-request. After three rejected top-level `submit_answer` calls, the extension registers the tool again with
+prompt in its `before_agent_start` handler. The words of the section live in `prompt-templates/pi/answer-section.md`,
+and the extension reads the file at its load. The section tells the model three things: call `submit_answer` one time,
+as the last action; after three rejected calls, the tool goes away; with no tool, end the reply with the answer as one
+JSON object in a fenced `json` block. The prompts of the steps do not change, so they stay the same for every provider.
+The rule is in a section of its own, because pi leaves the description and the prompt guidelines of a hidden tool out of
+the request. After three rejected top-level `submit_answer` calls, the extension registers the tool again with
 `exposure: "hidden"`. Nested calls do not count.
 
 ### Corrective turns
@@ -1058,8 +1059,9 @@ the arguments of the last accepted call, then the text object. The first candida
 A clean end with no usable answer can start a corrective turn, while the limit and the time of the run allow it.
 [The outcome of pi](#the-outcome-of-pi) defines a clean end. A corrective turn is a pi process that continues the
 session of the run with a corrective prompt on stdin. Each corrective turn uses the model of the first process of the
-run. The prompt names the problems and gives the schema again. The provider starts at most `assistant.correctiveTurns`
-corrective turns in one run.
+run. The prompt names the problems and gives the schema again. The provider reads the words of the corrective prompt
+from `prompt-templates/pi/corrective.md` before the first process of a run with a schema and `assistant.correctiveTurns`
+above 0. The provider starts at most `assistant.correctiveTurns` corrective turns in one run.
 
 Each caller that sets `jsonSchema` also sets `checkAnswer`, as this table says:
 
