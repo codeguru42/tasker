@@ -183,9 +183,7 @@ describe("executeTask checks", () => {
 });
 
 // The three execute prompts, as the files give them.
-const templates = () =>
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  readExecutePrompts();
+const templates = () => readExecutePrompts();
 
 // The commit rules of the execute prompt.
 const commitText = (): string => readExecuteCommitText();

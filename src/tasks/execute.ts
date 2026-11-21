@@ -11,13 +11,11 @@ import { checkTurnResult, readTurnResult, turnResultJsonSchema } from "../plan/t
 import { archivePrompt } from "../prompts/archive.js";
 import {
   currentTodoText,
-  EXECUTE_FIX_PROMPT,
   EXECUTE_FIX_PROMPT_NAME,
-  EXECUTE_PROMPT,
   EXECUTE_PROMPT_NAME,
-  EXECUTE_TODO_PROMPT,
   EXECUTE_TODO_PROMPT_NAME,
   NO_VERIFY_LOG,
+  readExecutePrompts,
   resolvedQuestionsText,
   todosText,
 } from "../prompts/execute.js";
@@ -55,6 +53,8 @@ export interface ExecuteRequest {
   io: Io;
   // The clock of the deadline, in milliseconds. The default is Date.now. The deadline tests give their own clock.
   clock?: () => number;
+  // The folder of the prompt templates. The default is packagePath("prompt-templates"). A test gives its own folder.
+  promptRoot?: string;
 }
 
 export interface ExecutedRun {
@@ -85,6 +85,7 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   if (revision === undefined) throw new Error(`the task of ${task.issueKey} is approved, but no revision is pinned`);
   const version = revision.version;
   const planText = readPlanFile(config.dataRoot, task, version);
+  const templates = readExecutePrompts(request.promptRoot);
   const ordered = orderTodos(revision.answer.todos);
   const { vcs, ctx } = vcsForRepo(config, task.repoKey, env);
   const baseRevision = requireBaseRevision(vcs, task);
@@ -114,19 +115,19 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
   const prompts: string[] = [];
   let prefix: string | undefined;
   if (stored === undefined && subjects.length > 0) {
-    prefix = fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, {
+    prefix = fillTemplate(EXECUTE_PROMPT_NAME, templates.execute, {
       COMMIT_RULES: fillTemplate("commit-rules", prepared.executeCommitText, { BASE_REF: baseRevision }),
       PLAN_MARKDOWN: planText,
       TODOS: todosText(revision.answer.todos, doneIds),
       RESOLVED_QUESTIONS: resolvedQuestionsText(store.resolvedQuestionsThrough(task.id, version)),
     });
-    prompts.push(archivePrompt(config.dataRoot, EXECUTE_PROMPT_NAME, EXECUTE_PROMPT).version);
+    prompts.push(archivePrompt(config.dataRoot, EXECUTE_PROMPT_NAME, templates.execute).version);
   }
   if (subjects.some((subject) => subject.kind === "todo")) {
-    prompts.push(archivePrompt(config.dataRoot, EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT).version);
+    prompts.push(archivePrompt(config.dataRoot, EXECUTE_TODO_PROMPT_NAME, templates.todo).version);
   }
   if (fixTurn !== undefined) {
-    prompts.push(archivePrompt(config.dataRoot, EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT).version);
+    prompts.push(archivePrompt(config.dataRoot, EXECUTE_FIX_PROMPT_NAME, templates.fix).version);
   }
   // A run with no subject records no session: an id that no conversation holds must not be continued.
   if (stored === undefined && subjects.length > 0) {
@@ -177,12 +178,12 @@ async function executeLocked(store: TaskStore, request: ExecuteRequest): Promise
         if (subject.kind === "todo") {
           store.setExecuteTodoState(task.id, version, subject.todo.id, "in_progress");
           store.appendEvent(task.id, "todo_started", { id: subject.todo.id });
-          turnPrompt = fillTemplate(EXECUTE_TODO_PROMPT_NAME, EXECUTE_TODO_PROMPT, {
+          turnPrompt = fillTemplate(EXECUTE_TODO_PROMPT_NAME, templates.todo, {
             CURRENT_TODO: currentTodoText(subject.todo),
           });
         } else {
           store.appendEvent(task.id, "fix_turn_started");
-          turnPrompt = fillTemplate(EXECUTE_FIX_PROMPT_NAME, EXECUTE_FIX_PROMPT, {
+          turnPrompt = fillTemplate(EXECUTE_FIX_PROMPT_NAME, templates.fix, {
             VERIFY_FAILURE: subject.turn.verifyFailure,
             VERIFY_LOG: subject.turn.verifyLogTail ?? NO_VERIFY_LOG,
           });

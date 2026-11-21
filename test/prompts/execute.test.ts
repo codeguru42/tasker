@@ -23,9 +23,7 @@ import { planTodo, validPlanAnswer } from "../helpers/plan.js";
 import { useTempDir } from "../helpers/temp.js";
 
 // The three execute prompts, as the files under root give them.
-const prompts = (root?: string) =>
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  readExecutePrompts(root);
+const prompts = (root?: string) => readExecutePrompts(root);
 
 const EXECUTE_PROMPT = prompts().execute;
 const EXECUTE_TODO_PROMPT = prompts().todo;
