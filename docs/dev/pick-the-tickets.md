@@ -249,12 +249,12 @@ The orchestrator does all the steps of this section.
 
   For an issue with more than one fact, the first row of this table that holds gives the raise:
 
-  | Fact of the issue                                     | Raise      | Choices of the question            |
-  | ----------------------------------------------------- | ---------- | ---------------------------------- |
-  | Its card is in another column, with no task in flight | A question | Move the card to Todo, or leave it |
-  | It has the label `on hold`                            | A report   |                                    |
-  | It has an open blocker outside the scope              | A report   |                                    |
-  | It has no card on the project board                   | A report   |                                    |
+  | Fact of the issue                                       | Raise      | Choices of the question            |
+  | ------------------------------------------------------- | ---------- | ---------------------------------- |
+  | It has a card in another column, with no task in flight | A question | Move the card to Todo, or leave it |
+  | It has the label `on hold`                              | A report   |                                    |
+  | It has an open blocker outside the scope                | A report   |                                    |
+  | It has no card on the project board                     | A report   |                                    |
 
   Each raise names the issue, its facts and why the pick does not start it. A report needs no answer and starts no wait.
   One report covers each issue of one find that gets a report. The orchestrator shows it as text in its own tab. The
