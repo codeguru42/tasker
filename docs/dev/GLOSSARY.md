@@ -20,6 +20,13 @@ not an issue-review subagent.
 **Own name**: The name of a session. The role is the part of the own name before the first `-`, and the slug is the part
 after it.
 
+**Peer**: Each other orchestrator of an orchestrator: each session whose name starts with `orchestrator-`, except the
+own session.
+
+**Peer message**: A message with `SendMessage` from an orchestrator to a peer.
+[The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message) give six kinds and a seventh kind, the request
+of the request rule.
+
 **Question session**: The Claude Code session in a [question pane](question-pane.md#a-question-pane). It has no role and
 no slug, although its name starts with `question-`.
 
