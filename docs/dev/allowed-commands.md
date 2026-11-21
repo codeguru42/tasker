@@ -61,7 +61,8 @@ Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-w
   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule).
 - K2: each task change of that rule, in the plain form, for example `tasker start`, `tasker plan`, `tasker approve`,
   `tasker execute`, `tasker verify`, `tasker review`, `tasker accept`, `tasker merge` and `tasker finish`. It never runs
-  `tasker approve-credits`. `tasker abort` and `tasker update-branch` with `--undo` ask the user.
+  `tasker approve-credits`. `tasker abort` and `tasker update-branch` with `--undo` ask the user (the cell says "asks
+  the user").
 - K3: `git log`, `git show` and `git diff` on `tasker/<task branch>`, and the other `git` reads of
   [Limits](limits.md#limits).
 - K4: `git fetch tasker`, `git fetch origin`, `git worktree add`, `git worktree remove` and `git reset --keep`, as the
