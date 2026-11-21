@@ -281,9 +281,7 @@ The orchestrator does all the steps of this section.
 
   While a ticket can start, the orchestrator keeps each slot full. At the start of the orchestrator and after each event
   that frees a slot, it reads the board. Then it starts a ticket for each free slot, one by one, until each slot is full
-  or no ticket can start. The events are a landing, a defer and the end of a hold of
-  [the parent-hold rule](#the-parent-hold-rule). A stop of a task subagent whose slot the orchestrator frees is also an
-  event.
+  or no ticket can start. The bullet "Each time a ticket lands, read the board again" gives the events.
 
   The orchestrator picks each ticket by the order of the bullet of a live security gap and of the priority rule. It does
   not ask the user which ticket to start. It offers no list of tickets for a free slot, and it waits for no answer.
@@ -308,18 +306,17 @@ The orchestrator does all the steps of this section.
   ticket with no such parent still starts.
 
   Each question that a gate or another rule of [the orchestration pages](../orchestrator.md) requires stays. The fill
-  rule bans only a question that offers a choice among tickets that can start. One example is the question of the bullet
-  of a live security gap about a task in flight that holds the shared file. Another example is the question about a move
-  of an issue into another milestone, as [the move paragraph](#pick-the-tickets) of the first bullet says. While the
-  answer to a question waits, the next ticket takes the free slot. See
-  [the open-question rule](#the-open-question-rule).
+  rule bans only a question that offers a choice among tickets that can start. A question of the bullet of a live
+  security gap stays, for a task in flight that holds the shared file. A question about a move of an issue into another
+  milestone stays too, as [the move paragraph](#pick-the-tickets) of the first bullet says. While the answer to a
+  question waits, the next ticket takes the free slot. See [the open-question rule](#the-open-question-rule).
 
   If fewer tickets can start than there are free slots, the orchestrator starts the tickets that can start and waits for
   no more tickets. At its next read of the board, it starts a ticket that can then start. The fill rule does not raise
   the number of slots.
 
-  The reason for the fill rule is a case of 2026-10-25: two slots of orchestrator-m22 stayed free for about an hour. The
-  bullet "Each time a ticket lands, read the board again" records that case.
+  The reason for the fill rule is the case of 2026-10-25 that the bullet "Each time a ticket lands, read the board
+  again" records.
 
 - The pi gate: while [the pi wait](quota.md#the-pi-wait) lasts, start no task subagent for a ticket of a repo whose
   `assistant.provider` is `pi`. A new session for a task of the pi wait is not held back. Read the provider of the repo
