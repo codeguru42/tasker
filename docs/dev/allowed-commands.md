@@ -15,7 +15,8 @@ The form of the send is open. A later ticket decides it. Until then, the lists a
 - Each command comes from the rule text of the doc that the section names. No command is invented. If no doc names a
   command for a kind, the actor has no list for that kind. The cell of the table then says "never runs".
 - The kinds K1 to K16 are the kinds of [the kinds of command](permissions.md#the-kinds-of-command).
-- A command that runs only after a word of the user for that call carries the words "asks the user".
+- A command that runs only after a word of the user for that call carries the words "asks the user" in its list. The
+  cell of the table says "asks the user" only when each command of the list for that kind asks.
 - A command that a step of a source names, but that no kind names, goes in the list "Named other commands". Such a
   command is in no kind of K1 to K15, and K16 stays "never runs" for it.
 
@@ -61,8 +62,9 @@ Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-w
   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule).
 - K2: each task change of that rule, in the plain form, for example `tasker start`, `tasker plan`, `tasker approve`,
   `tasker execute`, `tasker verify`, `tasker review`, `tasker accept`, `tasker merge` and `tasker finish`. It never runs
-  `tasker approve-credits`. `tasker abort` and `tasker update-branch` with `--undo` ask the user (the cell says "asks
-  the user").
+  `tasker approve-credits`. `tasker abort` and `tasker update-branch` with `--undo` ask the user. The K2 cell says
+  "runs", because most task changes run with no word of the user. A cell says "asks the user" only when each command of
+  the list asks.
 - K3: `git log`, `git show` and `git diff` on `tasker/<task branch>`, and the other `git` reads of
   [Limits](limits.md#limits).
 - K4: `git fetch tasker`, `git fetch origin`, `git worktree add`, `git worktree remove` and `git reset --keep`, as the

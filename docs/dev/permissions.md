@@ -104,10 +104,11 @@ Code matches. The rules of the parent session reach a subagent of the Agent tool
 the rights of the user. See [The seam of an agent kind](../config.md#the-seam-of-an-agent-kind).
 
 The ask rules of [Claude Code](setup.md#claude-code) live in the user file. They reach each actor, because the rules of
-the parent reach a subagent, as [the measured facts](#measured-facts) show. The words "asks the user" for `tasker abort`
-and `tasker update-branch` with `--undo` come from these ask rules. An ask rule adds a prompt to a command. It adds no
-command to a list. So `tasker approve-credits` and the force forms of `git push` never run for an actor whose list does
-not name them.
+the parent reach a subagent, as [the measured facts](#measured-facts) show. The ask rules make single commands ask
+inside a list, for example `tasker abort` and `tasker update-branch` with `--undo` in the K2 list of a task subagent. No
+cell changes for them, unless each command of the list asks. An ask rule adds a prompt to a command. It adds no command
+to a list. So `tasker approve-credits` and the force forms of `git push` never run for an actor whose list does not name
+them.
 
 No row of the table says that a tool enforces a rule. A later ticket can add a `PreToolUse` hook for one actor at a
 time. The measured facts give its start.
