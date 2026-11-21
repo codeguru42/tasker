@@ -28,13 +28,13 @@ export function promptTemplateParts(path: string): { family: string; name: strin
 }
 
 // Reads the file at path and finds its problems. The template is set only when there is no problem.
-function load(path: string): { template: PromptTemplate | undefined; problems: string[] } {
+function load(path: string): { template: PromptTemplate } | { problems: string[] } {
   const problems: string[] = [];
   if (!promptTemplateParts(path)) problems.push(PATH_PROBLEM);
   const file = readTextFile(path);
   if (file.text === undefined) {
     problems.push(`the file cannot be read: ${file.error}`);
-    return { template: undefined, problems };
+    return { problems };
   }
   let text = file.text;
   if (text.includes("\r")) {
@@ -45,41 +45,54 @@ function load(path: string): { template: PromptTemplate | undefined; problems: s
   const close = lines[0] === "---" ? lines.indexOf("---", 1) : -1;
   if (close < 0) {
     problems.push("the file has no front matter between two --- lines");
-    return { template: undefined, problems };
+    return { problems };
   }
   const body = lines.slice(close + 1).join("\n");
 
-  let name: string | undefined;
-  let description: string | undefined;
-  let placeholders: Record<string, string> | undefined;
+  const seen = new Set<string>();
+  let name = "";
+  let description = "";
+  const placeholders: Record<string, string> = {};
+  let entries: Record<string, string> = placeholders;
   let inPlaceholders = false;
+  // True for the first line of a key. A later line of the same key is a problem, and the first value stays.
+  const first = (key: string, i: number): boolean => {
+    if (seen.has(key)) {
+      problems.push(`front matter line ${i + 1} repeats the key ${key}`);
+      return false;
+    }
+    seen.add(key);
+    return true;
+  };
   for (let i = 1; i < close; i++) {
     const line = lines[i];
     const entry = /^ {2}([^\s:][^:]*): (.*)$/.exec(line);
     if (inPlaceholders && entry) {
-      if (PLACEHOLDER_KEY.test(entry[1])) placeholders![entry[1]] = entry[2];
+      if (PLACEHOLDER_KEY.test(entry[1])) entries[entry[1]] = entry[2];
       else problems.push(`placeholders has a key that is not a placeholder name: ${entry[1]}`);
       continue;
     }
     inPlaceholders = false;
     let match: RegExpExecArray | null;
-    if ((match = /^name: (.+)$/.exec(line))) name = match[1];
-    else if ((match = /^description: (.+)$/.exec(line))) description = match[1];
-    else if (line === "placeholders: {}") placeholders = {};
+    if ((match = /^name: (.+)$/.exec(line))) {
+      if (first("name", i)) name = match[1];
+    } else if ((match = /^description: (.+)$/.exec(line))) {
+      if (first("description", i)) description = match[1];
+    } else if (line === "placeholders: {}") first("placeholders", i);
     else if (line === "placeholders:") {
-      placeholders = {};
+      entries = first("placeholders", i) ? placeholders : {};
       inPlaceholders = true;
     } else problems.push(`front matter line ${i + 1} is not a known key: ${line}`);
   }
 
   const fileName = basename(path, ".md");
-  if (name === undefined) problems.push("name is missing");
+  if (!seen.has("name")) problems.push("name is missing");
   else if (name !== fileName) problems.push(`name "${name}" is not the file name "${fileName}"`);
-  if (description === undefined) problems.push("description is missing");
+  if (!seen.has("description")) problems.push("description is missing");
   else if (!description.startsWith(DESCRIPTION_START)) {
     problems.push(`description does not start with "${DESCRIPTION_START}"`);
   }
-  if (placeholders === undefined) problems.push("placeholders is missing");
+  if (!seen.has("placeholders")) problems.push("placeholders is missing");
   else {
     const used = placeholderNames(body);
     for (const key of Object.keys(placeholders)) {
@@ -90,22 +103,23 @@ function load(path: string): { template: PromptTemplate | undefined; problems: s
     }
   }
 
-  if (problems.length > 0 || name === undefined || description === undefined || placeholders === undefined) {
-    return { template: undefined, problems };
-  }
-  return { template: { name, description, placeholders, body }, problems };
+  if (problems.length > 0) return { problems };
+  return { template: { name, description, placeholders, body } };
 }
 
 // The problems of the template file at path. An empty list means that the file is valid.
 export function checkPromptTemplate(path: string): string[] {
-  return load(path).problems;
+  const result = load(path);
+  return "problems" in result ? result.problems : [];
 }
 
 // The template at path. It throws one error that lists each problem if the file is not valid.
 export function readPromptTemplate(path: string): PromptTemplate {
-  const { template, problems } = load(path);
-  if (!template || problems.length > 0) {
-    throw new Error(`prompt template ${path} has problems:\n${problems.map((problem) => `- ${problem}`).join("\n")}`);
+  const result = load(path);
+  if ("problems" in result) {
+    throw new Error(
+      `prompt template ${path} has problems:\n${result.problems.map((problem) => `- ${problem}`).join("\n")}`,
+    );
   }
-  return template;
+  return result.template;
 }
