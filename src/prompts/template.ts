@@ -1,5 +1,10 @@
 const TOKEN = /\{\{([A-Z][A-Z0-9_]*)\}\}/g;
 
+// The names of the placeholders in text. A name has capital letters, digits and _, so {{a}} is plain text.
+export function placeholderNames(text: string): Set<string> {
+  return new Set([...text.matchAll(TOKEN)].map((match) => match[1]));
+}
+
 // docs/dev/assistants.md gives the reason for the tags.
 const UNTRUSTED_TOKENS: Readonly<Record<string, string>> = {
   ISSUE_TEXT: "issue-text",
@@ -34,7 +39,7 @@ export function harmlessClosingTags(value: string, namePattern: string): string 
 }
 
 export function fillTemplate(name: string, template: string, values: Readonly<Record<string, string>>): string {
-  const tokens = new Set([...template.matchAll(TOKEN)].map((match) => match[1]));
+  const tokens = placeholderNames(template);
   for (const token of tokens) {
     if (!Object.hasOwn(values, token)) throw new Error(`prompt ${name} needs a value for {{${token}}}`);
   }
