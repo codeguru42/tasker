@@ -354,13 +354,13 @@ After its first reply, the question session follows these rules. Each item names
 
 - It sends each message to the pane owner with the herdr path and the header of [Terms](#terms). It waits for the ack of
   [Terms](#terms).
-- It sends each write action and each request of [Terms](#terms) back to the pane owner, as the paragraphs of this
-  section that start "The question session sends each" and "For a request for a new issue" say.
+- It sends each write action and each request of [Terms](#terms) back to the pane owner.
+  [Send a decision](#send-a-decision) gives the send.
 - It shows and approves commands and input files as [The commands in the first reply](#the-commands-in-the-first-reply)
   says.
 - It decides when to send a decision, and it handles a direct pick, a discussion, the confirm question, a guess and **No
-  decision**, as [Send a decision](#send-a-decision) says.
-- It gives the parts of the decision message and handles a failed send, as [Send a decision](#send-a-decision) says.
+  decision**. It gives the parts of the decision message and handles a failed send. [Send a decision](#send-a-decision)
+  gives these rules.
 - It starts no subagent that plans, drafts, reviews or posts an issue, as the paragraph of this section that starts "A
   question session starts no subagent" says.
 - It runs the rounds after a close request, as [The rounds before the close](#the-rounds-before-the-close) says.
@@ -496,7 +496,7 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 ```text question-session
 You are the question session <name>. You discuss one open question with the user for the pane owner <owner name>, in the pane <owner pane id>. The question id is <question id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. In it, write a newline in place of each word LINE-BREAK, and remove the one space on each side of it. Before that reply, use no AskUserQuestion tool, and do only the three steps that follow, in their order.
 First, show the start line with no other text. The start line is: I read my rules first, and then I show the question. The start line is not your first reply. Second, run git -C <local clone> fetch origin. If the fetch fails, use the last origin/main, and tell the user in your second reply. Third, read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md. Also read the section The doc-read rule of docs/dev/doc-reads.md. Read each file with git -C <local clone> show origin/main: and its path. The rules of these docs change no word of your first reply.
-In docs/dev/question-pane.md, the sections The question session and Send a decision hold each rule for what you send to <owner name> and for a decision. The section The question session lists the rules that you follow after your first reply. The section A question pane holds the herdr path and the header of each message. Your own pane id is the value of $HERDR_PANE_ID in your shell. FIRST-REPLY <first reply>
+In docs/dev/question-pane.md, the section The question session lists the rules that you follow after your first reply. Each item links to the section that holds the rule, for example Send a decision. The section A question pane holds the herdr path and the header of each message. Your own pane id is the value of $HERDR_PANE_ID in your shell. FIRST-REPLY <first reply>
 ```
 
 The opener subagent and the reuse subagent read the session prompt from `origin/main` and fill it. The session prompt
@@ -511,9 +511,10 @@ each rule that the blocks state. Step 3 of [Start a session](operator-start.md#s
 rule also changes the block. The blocks are an exception to [the one-home rule](rules.md#code).
 
 The block `question-session` is a short exception. It holds only the values, the first-reply rule, the start steps and a
-pointer. The rules for the time after the first reply have their homes in [The question session](#the-question-session)
-and [Send a decision](#send-a-decision). The block holds at most 300 words and at most 2000 characters by the block
-count. A change of the block keeps it within this limit. The block count is the output of this command:
+pointer. The rules for the time after the first reply have their homes in the sections that the list of
+[The question session](#the-question-session) links, for example [Send a decision](#send-a-decision). The block holds at
+most 300 words and at most 2000 characters by the block count. A change of the block keeps it within this limit. The
+block count is the output of this command:
 
 ````text
 awk '/^```text question-session$/{f=1;next} f&&/^```$/{exit} f' docs/dev/question-pane.md | wc -wm
