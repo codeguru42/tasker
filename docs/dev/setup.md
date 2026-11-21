@@ -77,6 +77,9 @@ The orchestrator runs the tickets with the installed `tasker`, as [docs/orchestr
 The repo file `.claude/settings.json` needs no change, as [the plain-form rule](tasker-commands.md#the-plain-form-rule)
 says.
 
+The permission rules of the actors of the orchestration live in the docs. See [the permission model](permissions.md).
+The steps below set up the user file only.
+
 1. In `$HOME/.claude/settings.json`, set `permissions.defaultMode` to `"auto"`.
 2. Add these rules to `permissions.ask`, so that the user approves each such command:
    - `Bash(tasker approve-credits)` and `Bash(tasker approve-credits *)`
