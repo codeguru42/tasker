@@ -597,8 +597,9 @@ the user that approved it, word for word: the pick or the yes to the confirm que
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
 `--body-file`, the command names a new path under `/tmp/tasker/<slug>/drafts/`. The slug is the slug of the pane owner.
-The message then gives the text of the file verbatim. The write subagent writes each input file at that path, with the
-slug of the orchestrator.
+The message that gives the approval word then gives the text of the file verbatim, as
+[The commands in the first reply](#the-commands-in-the-first-reply) says. The write subagent writes each input file at
+that path, with the slug of the orchestrator.
 
 For a write of a [user-level file](#terms), the question session first runs `sha256sum <path>` in its own call. It keeps
 the output as the start hash. For a file that does not exist, the start hash is "no file". The question session reads
