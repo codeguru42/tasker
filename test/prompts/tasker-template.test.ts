@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { fragmentFileName, readFragment, TASKER_FAMILY, taskerPrompt } from "../../src/prompts/tasker-template.js";
+import { placeholderNames } from "../../src/prompts/template.js";
 import { readPromptTemplate } from "../../src/prompts/template-file.js";
 import { repoRoot } from "../helpers/processes.js";
 import { useTempDir, writeFileWithParents } from "../helpers/temp.js";
@@ -86,7 +87,7 @@ describe("taskerPrompt", () => {
 describe("the real folder", () => {
   const root = join(fileURLToPath(repoRoot), "prompt-templates");
   const folder = join(root, TASKER_FAMILY);
-  const names = (text: string): string[] => [...text.matchAll(/\{\{(RULE_[A-Z0-9_]+)\}\}/g)].map((match) => match[1]);
+  const names = (text: string): string[] => [...placeholderNames(text)].filter((name) => name.startsWith("RULE_"));
   const bodies = ["plan", "refine", "review"].map((name) => readPromptTemplate(join(folder, `${name}.md`)).body);
   const used = new Set(bodies.flatMap(names));
 

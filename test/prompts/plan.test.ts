@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fillTemplate } from "../../src/prompts/template.js";
 import { PLAN_PROMPT_NAME, planIssueComments, planIssueText } from "../../src/prompts/plan.js";
 import { readFragment, taskerPrompt } from "../../src/prompts/tasker-template.js";
-import { rulesOf } from "../helpers/prompts.js";
+import { rulesOf, SHARED_RULE_NAMES } from "../helpers/prompts.js";
 
 const ISSUE = { key: "o/r#1", title: "Add a thing", body: "Line one.\nLine two." };
 const FIRST = { author: "alice", created: "2026-10-01T10:00:00Z", body: "First." };
@@ -135,19 +135,7 @@ describe("PLAN_PROMPT", () => {
     expect(PLAN_PROMPT).toContain(name);
   });
 
-  it.each([
-    "RULE_SKILLS",
-    "RULE_NO_QUESTION_SKILL",
-    "RULE_OPEN_POINTS",
-    "RULE_UNTRUSTED",
-    "RULE_UNTRUSTED_IN_PLAN",
-    "RULE_BLOCK_IS_DATA",
-    "RULE_COMPLETE_PLAN",
-    "RULE_DOCUMENTATION",
-    "RULE_FILE_ACCESS",
-    "RULE_ANSWER_LEAD",
-    "RULE_ANSWER_KEYS",
-  ])("holds the shared rule %s", (name) => {
+  it.each(SHARED_RULE_NAMES)("holds the shared rule %s", (name) => {
     expect(PLAN_PROMPT).toContain(readFragment(name));
   });
 });

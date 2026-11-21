@@ -8,7 +8,7 @@ import {
   promotionContextText,
   reviewFeedbackContextText,
 } from "../../src/prompts/refine.js";
-import { rulesOf } from "../helpers/prompts.js";
+import { rulesOf, SHARED_RULE_NAMES } from "../helpers/prompts.js";
 import {
   failureContextExpected,
   findingEntries,
@@ -63,19 +63,7 @@ describe("REFINE_PROMPT", () => {
     expect(fillRefine()).toContain(part);
   });
 
-  it.each([
-    "RULE_SKILLS",
-    "RULE_NO_QUESTION_SKILL",
-    "RULE_OPEN_POINTS",
-    "RULE_UNTRUSTED",
-    "RULE_UNTRUSTED_IN_PLAN",
-    "RULE_BLOCK_IS_DATA",
-    "RULE_COMPLETE_PLAN",
-    "RULE_DOCUMENTATION",
-    "RULE_FILE_ACCESS",
-    "RULE_ANSWER_LEAD",
-    "RULE_ANSWER_KEYS",
-  ])("holds the shared rule %s", (name) => {
+  it.each(SHARED_RULE_NAMES)("holds the shared rule %s", (name) => {
     expect(REFINE_PROMPT).toContain(readFragment(name));
   });
 

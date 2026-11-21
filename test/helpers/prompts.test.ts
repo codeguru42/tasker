@@ -1,5 +1,10 @@
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { rulesOf } from "./prompts.js";
+import { fragmentFileName } from "../../src/prompts/tasker-template.js";
+import { repoRoot } from "./processes.js";
+import { rulesOf, SHARED_RULE_NAMES } from "./prompts.js";
 
 function rules(prompt: string): string[] {
   return rulesOf(prompt);
@@ -16,5 +21,22 @@ describe("rulesOf", () => {
 
   it.each(["x 1. y", "1.x"])("does not count the line %j", (line) => {
     expect(rules(line)).toEqual([]);
+  });
+});
+
+describe("SHARED_RULE_NAMES", () => {
+  it("names each shared fragment file once", () => {
+    const folder = join(fileURLToPath(repoRoot), "prompt-templates", "tasker");
+    expect(SHARED_RULE_NAMES).toHaveLength(11);
+    expect(new Set(SHARED_RULE_NAMES).size).toBe(11);
+    for (const name of SHARED_RULE_NAMES) {
+      const file = fragmentFileName(name);
+      expect(file !== undefined && existsSync(join(folder, file)), name).toBe(true);
+    }
+    expect(SHARED_RULE_NAMES.map((name) => fragmentFileName(name)).sort()).toEqual(
+      readdirSync(folder)
+        .filter((file) => file.startsWith("shared-"))
+        .sort(),
+    );
   });
 });
