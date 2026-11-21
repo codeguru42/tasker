@@ -210,12 +210,14 @@ The orchestrator does all the steps of this section.
   outside Todo. So the orchestrator lists each such issue and raises it one time.
 
   An issue outside Todo is an open issue of the scope with at least one of these facts:
-  1. Its card is in a column other than Todo, and `tasker status` lists no task for its issue key.
+  1. It has a card in a column other than Todo, and `tasker status` lists no task for its issue key.
   2. It has the label `on hold`, as [A ticket on hold](#a-ticket-on-hold) defines it.
   3. It has an open blocker outside the scope.
+  4. It has no card on the project board.
 
-  The term also covers an issue with its card in Todo and the label or such a blocker. The facts of an issue are the
-  column of its card, the label `on hold` and its list of open blockers outside the scope.
+  The term also covers an issue with its card in Todo and the label or such a blocker. For this term, no card is also a
+  column of the issue. The facts of an issue are the column of its card, the label `on hold` and its list of open
+  blockers outside the scope.
 
   The orchestrator runs the find at each start of its session, after the start reads and before the pick of the first
   ticket. It also runs the find after the read of the board at each landing. Each other read of the board runs no find,
@@ -231,6 +233,9 @@ The orchestrator does all the steps of this section.
   Each line of the output gives the number of an issue, the columns of its cards separated by commas, and its labels
   separated by commas. A `|` separates the three parts. On 2026-11-21, with gh 2.102.1, the command printed one line for
   each of the 25 open issues of M31, for example `748|Todo|on hold`. It reads `tasker status` for the tasks in flight.
+
+  On 2026-11-21, with gh 2.105.0, the filter of this read printed `748||on hold` for input with no card and the label
+  `on hold`. So an empty second part shows an issue with no card.
 
   For a milestone scope, the read of the open blockers is a read of the find:
   `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number,blockedBy`. On 2026-11-21, with gh
@@ -249,11 +254,15 @@ The orchestrator does all the steps of this section.
   | Its card is in another column, with no task in flight | A question | Move the card to Todo, or leave it |
   | It has the label `on hold`                            | A report   |                                    |
   | It has an open blocker outside the scope              | A report   |                                    |
+  | It has no card on the project board                   | A report   |                                    |
 
   Each raise names the issue, its facts and why the pick does not start it. A report needs no answer and starts no wait.
   One report covers each issue of one find that gets a report. The orchestrator shows it as text in its own tab. The
   reasons of the table: the orchestrator can act on a decision about a card in a wrong column. A hold comes from a word
   of the user, and only a word of the user ends it. A blocker outside the scope needs work outside the scope.
+
+  The reason of the last row: the docs give no command that adds a card to the board. A workflow of the board adds each
+  new issue, so the orchestrator has no move to offer.
 
   Before the question, an agent evaluates the issues of the question. It gives a recommendation for each issue, or it
   names groups of issues that share a trait. The orchestrator adds these results to one question that names all issues
@@ -285,6 +294,14 @@ The orchestrator does all the steps of this section.
 
   Case 5: #F has one open blocker, an issue of the scope in Todo. The only blocker of #K is closed. The find raises
   neither #F nor #K for a blocker.
+
+  Case 6: #G has no card. The find gives a report on #G, with no question and no move.
+
+  Case 7: #G has no card and the label `on hold`. The label row is the first row that holds. So #G gets the report of
+  that row, and the report names both facts.
+
+  Case 8: #M has no card and an open blocker outside the scope. The no-card row is the last row, so the row of the
+  blocker gives the raise. The report names both facts.
 
 - Run at most 3 task subagents at the same time, one ticket for each task subagent. A task subagent for one task change
   takes a free slot. So does an ended task subagent whose slot the orchestrator freed. If all 3 slots are in use, the
