@@ -601,7 +601,7 @@ only on the word of the user. Say this in the report of the capture.
   schedules the jobs for the new session name, as
   [Schedule a job when a task subagent starts](#schedule-a-job-when-a-task-subagent-starts) says. The reason: a job
   lives in the session of the orchestrator, and its prompt names the old task subagent. On 2026-10-24, the jobs survived
-  a restart of that session.
+  a resume of that session.
 - If CronDelete fails, [the failure rule](limits.md#the-failure-rule) applies. The job stays. When the job fires, the
   case of "When the job fires" for its state applies. An example is the case of a finished task, which schedules
   nothing.

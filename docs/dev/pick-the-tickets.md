@@ -996,7 +996,7 @@ slot and landing rules still apply.
     of the new name, as the first bullet of this section says. The comeback rule then finds the old task worktree
     through the branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves
     the quota jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage
-    failed in this way after a restart of the session of the orchestrator at a `/rename`.
+    failed in this way after a resume of the session of the orchestrator at a `/rename`.
   - If a task subagent already runs with no name, the orchestrator does not restart the task subagent only to give it a
     name. The reason: a new task subagent does not have the context of the old task subagent, for example the plans that
     it read and its review loops. For a task subagent with no name, the orchestrator puts the full issue key in the text
