@@ -23,6 +23,12 @@ export function useTempFile(prefix: string, name: string, content: string): stri
   return path;
 }
 
+// A path of a file in a folder that does not exist. The new temp folder (see useTempDir()) is removed after the test.
+// Call it inside a test.
+export function useMissingFile(prefix: string, name: string): string {
+  return join(useTempDir(prefix), "missing", name);
+}
+
 // A new temp folder (see useTempDir()) as HOME, with XDG_CONFIG_HOME at <HOME>/config. Call it inside a test.
 export function useTempHome(): { HOME: string; XDG_CONFIG_HOME: string } {
   const home = useTempDir("tasker-home-");

@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
-import { useProcessEnv, useTempDir } from "./temp.js";
+import { useMissingFile, useProcessEnv, useTempDir } from "./temp.js";
 import { validConfig, writeTempConfig } from "./config.js";
 import { withRawDatabase } from "./store.js";
 import { pathWithFirst } from "./fake-commands.js";
@@ -179,7 +179,7 @@ describe("startFixture", () => {
   });
 
   it("rejects with the stderr when the child ends first", async () => {
-    const dbPath = join(useTempDir("tasker-fixture-"), "missing", "tasker.db");
+    const dbPath = useMissingFile("tasker-fixture-", "tasker.db");
 
     await expect(startFixture("lock-holder.ts", [dbPath, "test-lock"]).firstLine).rejects.toThrow(
       "unable to open database file",
@@ -205,7 +205,7 @@ describe("startFixture", () => {
   });
 
   it("gives the stderr after the exit", async () => {
-    const dbPath = join(useTempDir("tasker-fixture-"), "missing", "tasker.db");
+    const dbPath = useMissingFile("tasker-fixture-", "tasker.db");
     const child = startFixture("lock-holder.ts", [dbPath, "test-lock"]);
 
     await expect(child.exited).resolves.toEqual({ code: 1, signal: null });
@@ -221,7 +221,7 @@ describe("startWriteLockHolder", () => {
   });
 
   it("rejects with the stderr when the child ends first", async () => {
-    const dbPath = join(useTempDir("tasker-write-lock-"), "missing", "tasker.db");
+    const dbPath = useMissingFile("tasker-write-lock-", "tasker.db");
 
     await expect(startWriteLockHolder(dbPath, 0)).rejects.toThrow("unable to open database file");
   });

@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 import { type ChildResult, runChild } from "../../src/process/run-child.js";
 import { gitOutput, gitTestEnv } from "../helpers/git.js";
 import { repoRoot } from "../helpers/processes.js";
-import { treeSnapshot, useTempDir, useTempHome, writeFileWithParents } from "../helpers/temp.js";
+import { treeSnapshot, useMissingFile, useTempDir, useTempHome, writeFileWithParents } from "../helpers/temp.js";
 
 interface DenialRepo {
   clone: string;
@@ -296,7 +296,7 @@ interface StoreFixture extends DenialRepo {
 
 function useStoreFixture(fixture: DenialRepo, records: Record<string, unknown>[], content?: string): StoreFixture {
   const out = useTempDir("tasker-denial-output-");
-  const store = join(useTempDir("tasker-denial-store-"), "missing", "store.jsonl");
+  const store = useMissingFile("tasker-denial-store-", "store.jsonl");
   writeFileWithParents(join(out, "records.jsonl"), `${records.map((record) => JSON.stringify(record)).join("\n")}\n`);
   if (content !== undefined) writeFileWithParents(store, content);
   return { ...fixture, out, store };
@@ -407,7 +407,7 @@ describe("denial record command validation", () => {
 
   it("accepts folders outside Git and checks the nearest existing ancestor", async () => {
     const { clone, env, script } = await useDenialRepo();
-    const out = join(useTempDir("tasker-denial-out-"), "missing", "child");
+    const out = useMissingFile("tasker-denial-out-", "child");
     const result = await runScript(
       script,
       clone,
@@ -1280,7 +1280,7 @@ describe("denial record store and redaction", () => {
   it("sets scan folder and file modes", async () => {
     const fixture = await useDenialRepo();
     writeTranscript(fixture.home, { cwd: fixture.clone });
-    const out = join(useTempDir("tasker-scan-modes-"), "missing", "output");
+    const out = useMissingFile("tasker-scan-modes-", "output");
     const result = await scan(
       fixture,
       "scan",

@@ -5,7 +5,7 @@ import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
 import { planAnswerJsonSchema } from "../../../src/plan/answer.js";
 import { reviewAnswerJsonSchema } from "../../../src/review/answer.js";
 import { thrownBy } from "../../helpers/errors.js";
-import { useTempDir } from "../../helpers/temp.js";
+import { useMissingFile, useTempDir } from "../../helpers/temp.js";
 import answerExtension, {
   ANSWER_SECTION_PATH,
   createAnswerExtension,
@@ -97,7 +97,7 @@ describe("answerExtension", () => {
   });
 
   it("names the path of a missing answer section", () => {
-    const missing = join(useTempDir("tasker-pi-answer-section-"), "missing", "answer-section.md");
+    const missing = useMissingFile("tasker-pi-answer-section-", "answer-section.md");
     const error = thrownBy(() =>
       loadAnswerExtension(writeSchema(planAnswerJsonSchema()), createAnswerExtension(missing)),
     );

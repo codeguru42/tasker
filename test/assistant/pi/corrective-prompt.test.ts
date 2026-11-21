@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CORRECTIVE_TEMPLATE_PATH,
@@ -6,7 +5,7 @@ import {
   readCorrectiveTemplate,
 } from "../../../src/assistant/pi/corrective-prompt.js";
 import { thrownBy } from "../../helpers/errors.js";
-import { useTempDir } from "../../helpers/temp.js";
+import { useMissingFile } from "../../helpers/temp.js";
 
 describe("correctivePrompt", () => {
   it("gives the corrective prompt of the base", () => {
@@ -58,7 +57,7 @@ describe("correctivePrompt", () => {
   });
 
   it("names the path of a missing template", () => {
-    const path = join(useTempDir("tasker-pi-corrective-"), "missing", "corrective.md");
+    const path = useMissingFile("tasker-pi-corrective-", "corrective.md");
 
     expect(String(thrownBy(() => readCorrectiveTemplate(path)))).toContain(path);
   });

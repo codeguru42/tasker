@@ -39,7 +39,7 @@ import {
 } from "../../helpers/pi-provider.js";
 import { relativeSessionFolderReason } from "../../helpers/pi-reasons.js";
 import { checkSummaries } from "../../helpers/doctor.js";
-import { useTempDir } from "../../helpers/temp.js";
+import { useMissingFile, useTempDir } from "../../helpers/temp.js";
 
 vi.mock("node:os", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:os")>();
@@ -362,7 +362,7 @@ function expectReadOnlyTools(args: string[]) {
 
 describe("createPiProvider pre-spawn refusals", () => {
   it("refuses a run with a schema when the corrective template is missing", async () => {
-    const missing = join(useTempDir("tasker-pi-corrective-"), "missing", "corrective.md");
+    const missing = useMissingFile("tasker-pi-corrective-", "corrective.md");
     const fake = useFakePi([]);
     const input = correctiveInput();
     input.env = { ...input.env, ...fake.env };
@@ -1953,7 +1953,7 @@ describe("pi corrective turns", () => {
   });
 
   it("does not read the corrective template without a schema", async () => {
-    const missing = join(useTempDir("tasker-pi-corrective-"), "missing", "corrective.md");
+    const missing = useMissingFile("tasker-pi-corrective-", "corrective.md");
     const input = validInput({ jsonSchema: undefined, correctiveTurns: 2 });
     const files = makeFiles();
     const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
@@ -1966,7 +1966,7 @@ describe("pi corrective turns", () => {
   });
 
   it("does not read the corrective template with no corrective turns", async () => {
-    const missing = join(useTempDir("tasker-pi-corrective-"), "missing", "corrective.md");
+    const missing = useMissingFile("tasker-pi-corrective-", "corrective.md");
     const input = correctiveInput({ correctiveTurns: 0 });
     const files = makeFiles();
     const fake = processScripts(input, files, [
