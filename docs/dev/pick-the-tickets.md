@@ -242,10 +242,31 @@ The orchestrator does all the steps of this section.
   2.105.0, each node of `.blockedBy.nodes` had a state, and a closed blocker also showed in the nodes. So the find keeps
   only the nodes with the state `OPEN`.
 
-  An open blocker is outside the scope when its number is not in the list of the open issues of the milestone. The find
-  reads no milestone of a blocker for this test. For the open blockers of one issue, the find uses the read of the
-  paragraph "If the new milestone is" of step 7 of [the defer rule](#the-defer-rule). If a raise names the milestone of
-  a blocker, the find uses the read of [the earlier-blocker offer](#pick-the-tickets).
+  For a milestone scope, an open blocker is outside the scope when its number is not in the list of the open issues of
+  the milestone. The find reads no milestone of a blocker for this test. For the open blockers of one issue, the find
+  uses the read of the paragraph "If the new milestone is" of step 7 of [the defer rule](#the-defer-rule). If a raise
+  names the milestone of a blocker, the find uses the read of [the earlier-blocker offer](#pick-the-tickets).
+
+  For a set scope, an issue of the scope is an issue of the set, as the first bullet of this section says. The reason:
+  no issue of a set waits out of sight of the user. The find covers each open issue of the set. A closed issue of the
+  set drops out of the find, and the find raises nothing for it. The find runs at the same times as for a milestone
+  scope. Each other rule of the find holds in the same way, for example the failure rule, the table and the record.
+
+  For a set scope, the find takes the state, the column and the open blockers of each issue from the set read. The set
+  read is the one of [the board-read bullet](#pick-the-tickets). If a read of the board at that moment already gave a
+  fact, the find uses that fact.
+
+  The find takes the label `on hold` from the read of [A ticket on hold](#a-ticket-on-hold). An issue of the set has the
+  label when its number is in the output of that read. For fact 1, the task in flight comes from
+  [the set-scope status read](#pick-the-tickets), `tasker status --issue <issue key>`. A task of the set that another
+  session started counts as a task in flight, because it is a task of the scope.
+
+  For a set scope, an open blocker is outside the scope when the set does not name it. The milestone of the blocker does
+  not decide this, so the find reads no milestone of a blocker. Such a blocker is fact 3 only when it is not ready to
+  stack, as [the outside-blocker offer](#pick-the-tickets) says. So the find raises nothing for an issue that the pick
+  can start by [the stacking rule](#the-stacking-rule). The find also raises nothing for a held issue of the set, as the
+  move paragraph of the first bullet defines it. The reason: the move paragraph already tells the user, and a held issue
+  starts no task.
 
   For an issue with more than one fact, the first row of this table that holds gives the raise:
 
@@ -286,12 +307,12 @@ The orchestrator does all the steps of this section.
   outside Todo again, the next find raises it.
 
   A rule that already asks or tells the user about an issue gives the raise of that issue. The find then raises nothing
-  more for that issue. [The earlier-blocker offer](#pick-the-tickets) is such a rule. If the earlier-blocker offer asks
-  the user about the issue or tells the user about it, this counts as the raise of the issue. The entry of the issue
-  then holds the facts of that moment.
+  more for that issue. [The earlier-blocker offer](#pick-the-tickets) and [the outside-blocker offer](#pick-the-tickets)
+  are such rules. If one of these offers asks the user about the issue or tells the user about it, this counts as the
+  raise of the issue. The entry of the issue then holds the facts of that moment.
 
-  The answer "leave it" to a question of the find keeps the entry. A "no" of the user to the earlier-blocker offer also
-  keeps the entry. So a later find raises nothing for the same facts.
+  The answer "leave it" to a question of the find keeps the entry. A "no" of the user to the earlier-blocker offer or to
+  the outside-blocker offer also keeps the entry. So a later find raises nothing for the same facts.
 
   The record serves only the find. Each other rule keeps its own memory of what it asked.
 
@@ -333,6 +354,21 @@ The orchestrator does all the steps of this section.
 
   Case 12: the user says no to the earlier-blocker offer for #E. A later find with the same facts of #E raises nothing
   for #E.
+
+  Case 13: a set scope of #H and #J. The card of #H is in In progress, and `tasker status --issue` lists no task for #H.
+  At the start, after the start reads, the find puts #H in the question. #J is closed, so the find covers only #H.
+
+  Case 14: the same set. #H has an open blocker #K that the set does not name. #K is in the milestone of #H, and it is
+  not ready to stack. #K is outside the scope. The outside-blocker offer asks the user about #K, and this counts as the
+  raise of #H. The find raises nothing more for #H.
+
+  Case 15: the same set. #H has an open blocker #J that the set names, or an open blocker #E outside the set that is
+  ready to stack. The find does not raise #H for that blocker.
+
+  Case 16: the same set. The card of #H is in In progress, and `tasker status --issue` lists a task of #H that another
+  session started. That task counts as a task in flight, so the find does not put #H in the question.
+
+  Case 17: the same set. #H is a held issue, and its card is in Todo. The find raises nothing for #H.
 
 - Run at most 3 task subagents at the same time, one ticket for each task subagent. A task subagent for one task change
   takes a free slot. So does an ended task subagent whose slot the orchestrator freed. If all 3 slots are in use, the
@@ -968,9 +1004,10 @@ issues that are only blocked due to the "same file" rule."
 Each rule of the orchestration pages leaves out a ticket on hold and its task, as if they are outside the milestone.
 This covers the start of a ticket, an empty Todo column, the shared-file bullet, the link offer and the earlier-blocker
 offer. [The outside-Todo find](#pick-the-tickets) does not leave out a ticket on hold. It reads each ticket on hold of
-the scope and raises it. A ticket that a ticket on hold blocks waits while the link stays, and it never stacks on the
-task of a ticket on hold. A rule that names a parked task or a postponed ticket still applies, for example the bullet
-"If the user postpones the parent" of the stacked-ticket rule. The report of a done milestone names each ticket on hold.
+the scope and raises it, except a held issue of a set scope. A ticket that a ticket on hold blocks waits while the link
+stays, and it never stacks on the task of a ticket on hold. A rule that names a parked task or a postponed ticket still
+applies, for example the bullet "If the user postpones the parent" of the stacked-ticket rule. The report of a done
+milestone names each ticket on hold.
 
 A waiting question of a ticket on hold is an open question of the orchestrator about that ticket, as
 [Start](question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a done milestone,
