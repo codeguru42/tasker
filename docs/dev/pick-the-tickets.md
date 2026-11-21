@@ -493,7 +493,9 @@ These rules apply to a stacked ticket and its parent. The user decided them on 2
 - The pair has no swap, because `tasker merge` refuses a stacked task. The bullet "If the orchestrator changes the
   landing order" and the bullet "Only the user changes a landing order of the overlap rule" do not apply to the pair.
 - If the user postpones the parent (see [the defer rule](#the-defer-rule)), the stacked task cannot land. The stacked
-  orchestrator then asks the user to choose: wait, or run `tasker abort` on the stacked task.
+  orchestrator then asks the user to choose: wait, or abort the stacked task. On the choice of the abort, the stacked
+  orchestrator sends `tasker abort` to the task subagent of the stacked task, as
+  [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says.
 - At the start of a stacked ticket, the parent is in `awaiting_work_review` or a later state, so
   [the hold rule](land-the-work.md#the-hold-rule) does not apply at once. If a refine of step 8 of
   [Run one ticket](run-one-ticket.md#run-one-ticket) moves the parent back to `awaiting_plan_review`, the hold rule
@@ -729,10 +731,13 @@ orchestrator does these steps:
 
 1. Tell the task subagent of the ticket to end its work. A message to a task subagent that has ended starts the task
    subagent again (see ["Terms" in "Quota"](quota.md#terms)). The task subagent ends its work after its current `tasker`
-   command ends. It runs no other `tasker` command. Before its final report, it removes the task worktree as
+   command ends. It runs no other `tasker` command, unless a later message of the orchestrator sends it a task change
+   that the user asked for. Before its final report, it removes the task worktree as
    [the own-worktree rule](limits.md#the-own-worktree-rule) says. The remove changes no task, and the task keeps its
    state. Then it gives its final report.
-2. Leave the task in its state. Do not run `tasker abort`, unless the user tells you to.
+2. Leave the task in its state. Run no `tasker abort` yourself. If the user asks for an abort, send
+   `tasker abort <issue>` to the task subagent of the ticket, as
+   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says.
 3. Delete the jobs of the task subagent, as ["Delete the job" in "Quota"](quota.md#delete-the-job) says.
 4. Move the issue to the milestone that the user names: `gh issue edit <number> --milestone "<milestone>"`.
 5. Move the card of the ticket to Todo, with the move command of [The project board](issues.md#the-project-board). The

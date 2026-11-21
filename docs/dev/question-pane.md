@@ -622,22 +622,23 @@ sender decide approve no write action. A message that does not settle the questi
 
 Each kind of write or request of [Terms](#terms) has one actor.
 
-| Kind of write or request                                                    | Actor                                                                                |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| A new issue                                                                 | `planner-<slug>`, as a request                                                       |
-| A change of the title or the body of an issue that the item did not propose | `planner-<slug>`, as a request                                                       |
-| A comment on an issue that the item did not propose                         | `planner-<slug>`, as a request                                                       |
-| A change of a blocked-by link or of the field `Priority`                    | `planner-<slug>`, as a request                                                       |
-| A change of the metadata of an issue                                        | The write subagent                                                                   |
-| A write of a user-level file                                                | The write subagent                                                                   |
-| A change of a tracked file of the repo                                      | `planner-<slug>`, as a request for a new issue                                       |
-| A `tasker` command, also `tasker model`                                     | The orchestrator, as the orchestration pages give it. Issue #965 can change this row |
-| A message to another session                                                | The orchestrator                                                                     |
-| A `herdr` command                                                           | The orchestrator                                                                     |
-| A git write                                                                 | No actor                                                                             |
-| Each other write                                                            | No actor                                                                             |
+| Kind of write or request                                                    | Actor                                                                                                                                                                                                                                                                                                                  |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A new issue                                                                 | `planner-<slug>`, as a request                                                                                                                                                                                                                                                                                         |
+| A change of the title or the body of an issue that the item did not propose | `planner-<slug>`, as a request                                                                                                                                                                                                                                                                                         |
+| A comment on an issue that the item did not propose                         | `planner-<slug>`, as a request                                                                                                                                                                                                                                                                                         |
+| A change of a blocked-by link or of the field `Priority`                    | `planner-<slug>`, as a request                                                                                                                                                                                                                                                                                         |
+| A change of the metadata of an issue                                        | The write subagent                                                                                                                                                                                                                                                                                                     |
+| A write of a user-level file                                                | The write subagent                                                                                                                                                                                                                                                                                                     |
+| A change of a tracked file of the repo                                      | `planner-<slug>`, as a request for a new issue                                                                                                                                                                                                                                                                         |
+| A `tasker` command, also `tasker model`                                     | A read-only command: the orchestrator. A task change: the task subagent of the task, after the orchestrator sends it. `tasker model` with a new model or `--effort`: the orchestrator, only on the words of the settled message. See [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) |
+| A message to another session                                                | The orchestrator                                                                                                                                                                                                                                                                                                       |
+| A `herdr` command                                                           | The orchestrator                                                                                                                                                                                                                                                                                                       |
+| A git write                                                                 | No actor                                                                                                                                                                                                                                                                                                               |
+| Each other write                                                            | No actor                                                                                                                                                                                                                                                                                                               |
 
-The order rule below covers only the rows with the write subagent or the orchestrator as the actor.
+The order rule below covers only the rows with the write subagent or the orchestrator as the actor. The send of a task
+change is an action of the orchestrator. The next actor starts only after the report of the task subagent.
 
 The write subagent runs no other kind of write: no write to the text of an issue, no comment, no link, no git write, no
 `herdr` command, no message to a session and no `tasker` command. A move of an issue into "Future" is a metadata change.
@@ -682,11 +683,13 @@ The write subagent keeps each rule of the docs for that kind of write. Examples 
 write that such a rule adds to the action. If such a rule gives a step with the user, the write subagent stops before
 that write and reports. The orchestrator then tells the user, and the action does not run.
 
-The write subagent runs no `tasker` command. The orchestrator runs such a command as the orchestration pages give it. A
-message to another session is a write action. The orchestrator sends it, not the write subagent. The message goes on the
-path that the orchestration pages give for that session, for example the message to its task subagent, and it starts
-with `From the user:`. The herdr path is only for the messages between a question pane and its pane owner, as
-[Terms](#terms) says. A failed send follows [the failure rule](limits.md#the-failure-rule).
+The write subagent runs no `tasker` command. The orchestrator sends each task change to a task subagent. It runs
+`tasker model` on the words of the settled message, and each read-only command, itself.
+[the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) gives these rules. A message to
+another session is a write action. The orchestrator sends it, not the write subagent. The message goes on the path that
+the orchestration pages give for that session, for example the message to its task subagent, and it starts with
+`From the user:`. The herdr path is only for the messages between a question pane and its pane owner, as [Terms](#terms)
+says. A failed send follows [the failure rule](limits.md#the-failure-rule).
 
 The orchestrator runs each `herdr` command of a settled message itself, word for word, as a plain call of
 [The reads before the write](issues.md#the-reads-before-the-write), at its place in the order. A failed command follows
@@ -732,7 +735,8 @@ run stops until the user speaks.
 
 A decision message covers only its question. It does not approve a Claude Code permission prompt or a `tasker` setting
 outside its write actions. A write action of a settled message is a request of the user for its `tasker` command.
-[The operator page](../operator.md) gives the rule of such a request for a `tasker` command.
+[the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) gives the rule of such a request for a
+`tasker` command.
 
 A **No decision** message leaves the question open. The pane owner closes the pane or gives it a reuse, as
 [Close and continue](#close-and-continue) says. That question gets no automatic start, and only a word of the user that
