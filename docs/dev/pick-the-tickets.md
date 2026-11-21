@@ -193,13 +193,12 @@ The orchestrator does all the steps of this section.
   [the failure rule](limits.md#the-failure-rule) applies. The orchestrator starts no ticket that the read covers until a
   later read works. This covers a message of each session on purpose. Today the follow-up planner sends such messages,
   as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running orchestrator
-  also reads the board with its board watch job, as
-  [the board watch rule](handoff-orchestrator.md#the-long-running-orchestrator) says. Each read of the board that does
-  not come at a landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts
-  "at its next read of the board" or "each time it reads the board". So the priority rule applies to each start after
-  such a read. It does not count for a read that a rule ties to a landing, for example the read of the parent issue in
-  [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins, for example the ban of
-  [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
+  also reads the board with its board watch job, as [the board watch rule](../orchestrator.md#the-board-watch-job) says.
+  Each read of the board that does not come at a landing is a read of the board, but it is not a landing. It counts for
+  each rule of this page that acts "at its next read of the board" or "each time it reads the board". So the priority
+  rule applies to each start after such a read. It does not count for a read that a rule ties to a landing, for example
+  the read of the parent issue in [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still
+  wins, for example the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
 
   The orchestrator also reads the board after a defer and after the end of a hold of
   [the parent-hold rule](#the-parent-hold-rule). It also reads the board after a stop of a task subagent whose slot it
@@ -981,8 +980,8 @@ at the word of the user. For a ticket with a task in flight, the steps come in p
 7. A removed link of step 4 or step 6 can free an issue of another milestone. Send no message about it to a peer, as
    [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message) says. The peer finds the freed issue at its
    next read of the board. An orchestrator of a numbered milestone has no board watch job, because
-   ["The long-running orchestrator"](handoff-orchestrator.md#the-long-running-orchestrator) gives that job only to a
-   long-running orchestrator. So an idle peer whose tickets all wait on the freed issue does not start it.
+   ["The long-running orchestrator"](../orchestrator.md#the-board-watch-job) gives that job only to a long-running
+   orchestrator. So an idle peer whose tickets all wait on the freed issue does not start it.
 
 If the list of step 1 fails, [the failure rule](limits.md#the-failure-rule) applies, and no link changes. A later word
 of the user can start the link removal again. If `tasker status` or the read of the state fails, the orchestrator skips
