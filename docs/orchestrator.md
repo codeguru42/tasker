@@ -26,14 +26,10 @@ the user" reads. A report or a question to the user that a rule of the orchestra
 same split: a progress report shows in the tab, and a question goes to the pane. When a rule waits for the user, the
 answer of the question that the rule waits for ends the wait. The orchestrator sends each lesson, each finding of a
 session review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the planner bullet
-of [The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The messages between
-orchestrators that go straight are the doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule), the
-broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run), the messages of
-[the hold rule](dev/land-the-work.md#the-hold-rule), a landing order of
-[the overlap rule](dev/land-the-work.md#the-overlap-rule), a change to an issue in flight
-([Land the work](dev/land-the-work.md#land-the-work)) and the messages of
-[the hold before an install](dev/release.md#the-hold-before-an-install). [The request rule](#the-request-rule) covers
-each other request between orchestrators that needs a decision of the user.
+of [The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. An orchestrator sends a
+peer only the seven kinds of [The kinds of peer message](#the-kinds-of-peer-message).
+[The request rule](#the-request-rule) gives the seventh kind, the request for a decision of the user that needs a peer
+to act.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
 not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).
@@ -244,7 +240,90 @@ The measure had four possible outcomes:
 | A start check fails           |                              | Does no role work                  | The orchestrator tells the user in its own tab |
 | The start checks pass         |                              | Starts its role work               |                                                |
 
+## Peer messages
+
+A peer of an orchestrator is each other orchestrator: each session whose name starts with `orchestrator-`, except the
+own session, as step 3 of [the notice rule](dev/doc-reads.md#the-notice-rule) lists them. A peer message is a message
+with `SendMessage` from an orchestrator to a peer. The orchestrator of a task is the orchestrator whose task subagent
+runs the task. The asking orchestrator is the orchestrator whose work needs a decision of the user.
+
+This section covers only peer messages. The messages of an orchestrator to its task subagents, to a planner and to a
+question session keep their own rules.
+
+### The kinds of peer message
+
+An orchestrator sends a peer only these seven kinds of message:
+
+1. The doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule): the notice of a landing.
+2. The broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run): the notice with the number of the
+   broken-test issue.
+3. The hold of [the hold rule](dev/land-the-work.md#the-hold-rule): the request for reports, and each report of a state
+   or of a close. [The stacked-ticket rule](dev/pick-the-tickets.md#the-stacked-ticket-rule) uses them.
+4. The landing order of [the overlap rule](dev/land-the-work.md#the-overlap-rule): the landing order, the relay of a
+   change, the answer that accepts or rejects the change, and the notice of a postpone. The bullet "Only the user
+   changes a landing order of the overlap rule" of [Land the work](dev/land-the-work.md#land-the-work) gives the relay.
+5. The change to an issue in flight of [Land the work](dev/land-the-work.md#land-the-work): the link of the comment, and
+   the answer that no step takes the correction.
+6. The install hold of [the hold before an install](dev/release.md#the-hold-before-an-install): the request of the hold,
+   each report of the state of the tasks, a "no" of the user and the end of the hold.
+7. The request of [the request rule](#the-request-rule): the request, and the answer with the decision of the user. The
+   end of a milestone hold of a held peer, in item 9 of
+   [A milestone hold](dev/working-with-the-user.md#a-milestone-hold), is such a request.
+
+Each kind keeps the rules of its page, except the find of the orchestrator of a task and the relay of a landing order.
+An orchestrator sends no other message to a peer. The request rule is the only way for a decision of the user to make a
+peer act.
+
+### The orchestrator of a task
+
+The rules that send a peer message about one task use this find: the hold rule, the stacked-ticket rule, the landing
+order of the overlap rule, the requester bullet of [Land the work](dev/land-the-work.md#land-the-work) and
+[the request rule](#the-request-rule).
+
+1. The sender reads the milestone of the issue with `gh issue view <number> --json milestone -q '.milestone.title'`.
+2. The slug is the first word of that title in lowercase, as [The slug](#the-slug) gives it for a milestone scope. For
+   example, the title "M31 - Orchestrator" gives the slug `m31`.
+3. The target is `orchestrator-<slug>`.
+4. If the slug is the own slug, the task is of the own milestone, and no peer message goes out.
+
+The find fails in three cases. The read of the milestone fails, the issue has no milestone, or `ListAgents` shows no
+running session of that name. After a failed find, [the failure rule](dev/limits.md#the-failure-rule) applies. The
+sender sends no message of that rule for that task, and it tells the user. Each answer and each report goes back to the
+session of the sender.
+
+The find has these costs:
+
+- The sender cannot tell that a set scope runs the task. An orchestrator of a set scope gets no hold, no landing order
+  and no change to an issue in flight from a peer.
+- A wrong target is possible. A set-scope orchestrator can run the task while `orchestrator-<slug>` of the milestone
+  also runs. The message then reaches an orchestrator that does not run the task, and that orchestrator can act on it.
+- A task of the own milestone that another orchestrator runs keeps the case "no rule finds which one".
+- The words of the user decide neither a set scope nor an issue with no milestone, so the docs give no other rule for
+  them.
+
+### A message outside the kinds
+
+An orchestrator acts on no message of a peer outside the seven kinds. It runs no step and sends no answer. It tells the
+user the name of the sender and the first line of the message. The reason for no answer: an answer is itself a message
+outside the kinds.
+
+This rule covers a peer that runs older rules. It also covers a note for later from a peer, as
+[A note for later](dev/working-with-the-user.md#a-note-for-later) defines it. The docs give no other form of a peer
+message.
+
+### The reasons of the peer messages
+
+- One short list says what an orchestrator can send to a peer.
+- Each decision of the user goes to the question pane of the orchestrator that needs it.
+- A message from another session is not a word of the user, as [The operator](dev/working-with-the-user.md#the-operator)
+  says.
+- The cost of the seventh kind: the user answers one decision in two panes, and the request waits in the queue of the
+  pane of the peer.
+
 ## The request rule
+
+The request of this rule is the seventh kind of [The kinds of peer message](#the-kinds-of-peer-message). It is the one
+exception to the rule that an orchestrator sends no other message to a peer.
 
 The terms of this rule:
 
@@ -254,13 +333,20 @@ The terms of this rule:
 
 The rules:
 
-- The messages between orchestrators that go straight, as the intro of this page lists them, still go straight from
+- The messages of the first six kinds of [The kinds of peer message](#the-kinds-of-peer-message) still go straight from
   orchestrator to orchestrator. Each one keeps its own rules. The hold before an install of tasker, in
-  [the hold before an install](dev/release.md#the-hold-before-an-install), also goes straight and keeps its own rules.
-- Each other request that needs a decision of the user goes through the question pane of the receiving orchestrator. An
-  example is "our user wants X". The sending orchestrator judges whether a request needs a decision of the user. This
-  judgment is open on purpose. The sending orchestrator sends the request to `orchestrator-<slug>` of the other
-  milestone with `SendMessage`.
+  [the hold before an install](dev/release.md#the-hold-before-an-install), is one of these kinds.
+- Each other request that needs a decision of the user goes through the question pane of the receiving orchestrator.
+  There are three examples. The first is "our user wants X" for a ticket of a peer. The second is a `tasker` command for
+  a task of a peer in a settled decision message. The third is the end of a milestone hold of a held peer, as item 9 of
+  [A milestone hold](dev/working-with-the-user.md#a-milestone-hold) says. The sending orchestrator judges whether a
+  request needs a decision of the user. This judgment is open on purpose.
+- Before it sends the request, the sending orchestrator asks its own user in its own question pane, as
+  [Start](dev/question-pane.md#start) says. Before that decision, it sends no request to a peer.
+- After an accept of its own user, the sending orchestrator sends the request with `SendMessage`. The target is the
+  orchestrator of the task, found as [The orchestrator of a task](#the-orchestrator-of-a-task) says. For the end of a
+  milestone hold, the target is the held orchestrator. The sending orchestrator sends no request of a peer to an
+  operator as an item.
 - The receiving orchestrator does not do the requested change. It asks the decision of the user in its own question
   pane, as [Start](dev/question-pane.md#start) says. The decision in the pane is the decision of the user. The
   recommendation mode of [A decision of the user](dev/working-with-the-user.md#a-decision-of-the-user) does not cover
@@ -269,8 +355,9 @@ The rules:
   sending orchestrator the decision of the user with `SendMessage`. The sending orchestrator does its own step that
   matches the request, if it has one, only after an accept. An example of such a step is a message to its own task
   subagent.
-- A message of this rule fails when the send fails or when no session of the target name runs. Then
-  [the failure rule](dev/limits.md#the-failure-rule) applies to the orchestrator that sends it.
+- A message of this rule fails when the send fails, when the find of the orchestrator of the task fails, or when no
+  session of the target name runs. Then [the failure rule](dev/limits.md#the-failure-rule) applies to the orchestrator
+  that sends it.
 - When the sending orchestrator sends a request that needs a decision of the user, it also shows one report for that
   request as text in its own tab. The same holds for each relayed change of a landing order under the bullet "Only the
   user changes a landing order of the overlap rule" of [Land the work](dev/land-the-work.md#land-the-work).
