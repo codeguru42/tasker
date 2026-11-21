@@ -268,7 +268,8 @@ The orchestrator does all the steps of this section.
 - The pi gate: while [the pi wait](quota.md#the-pi-wait) lasts, start no task subagent for a ticket of a repo whose
   `assistant.provider` is `pi`. A new session for a task of the pi wait is not held back. Read the provider of the repo
   with the command of the test of [A pi stop](quota.md#a-pi-stop). If the read fails,
-  [the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start at that moment.
+  [the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start at that moment. The gate does
+  not hold back a task subagent for one task change, because the user asked for that command.
 
   The gate wins over each bullet and rule of this page that starts a ticket. These are the earlier-blocker offer, the
   priority rule, the bullet of a live security gap, the stacking rule, the parent-hold rule and the link offer. For a
@@ -999,8 +1000,8 @@ slot and landing rules still apply.
   names the issue key, the command, and the words of the user that ask for it. It also names the base list of docs and
   the quota slot. The task subagent runs only that command and then gives its final report. It runs no step of
   ["Run one ticket"](run-one-ticket.md#run-one-ticket). ["Quota"](quota.md#quota) covers it as each other task subagent.
-  Its name follows the naming bullet above, with the suffix `-2` when this session already started a session for the
-  ticket.
+  Its name follows the naming bullet above, with a suffix that no earlier session of the ticket used, and its prompt
+  gives that suffix.
 - Before the task subagent starts, the orchestrator makes the folder of the task subagent for its files (see the folder
   bullet of ["Limits"](limits.md#limits)). In one case, a background command of a task subagent wrote into a missing
   folder and failed.
