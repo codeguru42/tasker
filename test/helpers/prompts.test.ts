@@ -1,8 +1,8 @@
-import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { fragmentFileName } from "../../src/prompts/tasker-template.js";
+import { readPromptTemplate } from "../../src/prompts/template-file.js";
+import { placeholderNames } from "../../src/prompts/template.js";
 import { repoRoot } from "./processes.js";
 import { rulesOf, SHARED_RULE_NAMES } from "./prompts.js";
 
@@ -25,18 +25,11 @@ describe("rulesOf", () => {
 });
 
 describe("SHARED_RULE_NAMES", () => {
-  it("names each shared fragment file once", () => {
-    const folder = join(fileURLToPath(repoRoot), "prompt-templates", "tasker");
+  it("is the set of the RULE_ names of the plan prompt", () => {
+    const body = readPromptTemplate(join(fileURLToPath(repoRoot), "prompt-templates", "tasker", "plan.md")).body;
+    const used = [...placeholderNames(body)].filter((name) => name.startsWith("RULE_"));
     expect(SHARED_RULE_NAMES).toHaveLength(11);
-    expect(new Set(SHARED_RULE_NAMES).size).toBe(11);
-    for (const name of SHARED_RULE_NAMES) {
-      const file = fragmentFileName(name);
-      expect(file !== undefined && existsSync(join(folder, file)), name).toBe(true);
-    }
-    expect(SHARED_RULE_NAMES.map((name) => fragmentFileName(name)).sort()).toEqual(
-      readdirSync(folder)
-        .filter((file) => file.startsWith("shared-"))
-        .sort(),
-    );
+    expect(new Set(SHARED_RULE_NAMES).size).toBe(SHARED_RULE_NAMES.length);
+    expect([...SHARED_RULE_NAMES].sort()).toEqual(used.sort());
   });
 });
