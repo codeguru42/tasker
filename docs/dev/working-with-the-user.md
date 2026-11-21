@@ -284,10 +284,11 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [Land the work](land-the-work.md#land-the-work)).
 
   Some kinds of choice still go to the user first. These kinds are a security gap, a change of scope, a landing order
-  across milestones and an extra review loop. They also include a request of
-  [the request rule](../orchestrator.md#the-request-rule), a [tool block](tasker-commands.md#the-tool-block-rule) and a
-  read of a file of the data folder. A run of `tasker abort` and the meaning of an unclear answer of the user are also
-  such kinds.
+  across milestones and an extra review loop. They also include a request of the seventh kind of
+  [peer message](../orchestrator.md#the-kinds-of-peer-message), as
+  [the request rule](../orchestrator.md#the-request-rule) gives it, a
+  [tool block](tasker-commands.md#the-tool-block-rule) and a read of a file of the data folder. A run of `tasker abort`
+  and the meaning of an unclear answer of the user are also such kinds.
 
   The mode holds for the session that got it, until the user ends it. The mode also passes through a handoff. The old
   session lists the mode as a decision of the user in its [handoff file](handoff.md#the-items-of-a-handoff-file). The
@@ -489,9 +490,10 @@ with the question, don't move it above".
 
 A note for later is a text for another session that asks for an action at a later time. A session can read a message as
 a request to act now. The trigger of a note is an event that the reader can test, for example the start of a ticket.
-Words such as "when you reach #635" give no trigger. This section does not cover an item, a message of
-[the request rule](../orchestrator.md#the-request-rule) or another message with its own rule. Examples are a doc notice,
-a landing order and each other message that the intro of [docs/orchestrator.md](../orchestrator.md) lists.
+Words such as "when you reach #635" give no trigger. This section does not cover an item, a peer message of
+[the seven kinds](../orchestrator.md#the-kinds-of-peer-message) or another message with its own rule. Examples are a doc
+notice and a landing order. An orchestrator acts on no note for later from a peer, as
+[A message outside the kinds](../orchestrator.md#a-message-outside-the-kinds) says.
 
 - A note for later about an issue goes in that issue, as a comment or in the body. The issue keeps the note through a
   handoff. [Before a post](issues.md#before-a-post) says who approves the text.
@@ -541,7 +543,7 @@ The rules of a milestone hold:
    - The doc notice of [The notice rule](doc-reads.md#the-notice-rule).
    - The message of the follow-up planner after a complete post, in
      [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
-   - Each other message between orchestrators that the intro of [docs/orchestrator.md](../orchestrator.md) lists.
+   - Each other peer message of [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message).
 5. These messages still go to a held session, with no read of item 7 of this section. Item 5 of this section wins over
    item 4 of this section.
    - A message that relays a word of the user, for example the message of
@@ -563,9 +565,14 @@ The rules of a milestone hold:
    - Held: items 4 to 6 of this section apply.
    - Ended: the messages go as before. Item 9 of this section covers the doc changes and the board changes that the held
      sessions missed.
-9. The session that gets the word of the user to end a milestone hold sends one end message to each held session.
-   `ListAgents` gives the held sessions that run. The end message names the held milestone. It says that the milestone
-   hold ended. Each held session then does these steps:
+9. The session that gets the word of the user to end a milestone hold sends one end message to each held session, except
+   a held orchestrator of another slug. For that held orchestrator, the end goes as a request of
+   [the request rule](../orchestrator.md#the-request-rule). The orchestrator that got the word is the sending
+   orchestrator, and the held orchestrator is the receiving orchestrator. The held orchestrator asks its own user in its
+   own question pane. It ends its hold only on an accept. Then it tells the sending orchestrator the decision, and it
+   does the steps of the bullet "A held orchestrator" below. This request is the end message of item 5 of this section
+   for that held orchestrator, so item 4 lets it through. `ListAgents` gives the held sessions that run. The end message
+   names the held milestone. It says that the milestone hold ended. Each held session then does these steps:
    - A held orchestrator does the steps of [The re-read rule](doc-reads.md#the-re-read-rule). Its last read covers each
      doc change that it missed. It then sends a task subagent notice to its task subagents in flight.
      [The task subagent notice](doc-reads.md#the-task-subagent-notice) gives its form for the end of a milestone hold.

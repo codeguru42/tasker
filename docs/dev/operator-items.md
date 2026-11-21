@@ -32,7 +32,6 @@ This page uses these terms for the questions of an item that needs an answer:
 - A question for the user alone is a question of one of these kinds:
   - A kind of choice of the list in the bullet that starts "The user can let the session decide open choices by its own
     recommendation" of [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
-  - The request of [the request rule](../orchestrator.md#the-request-rule).
   - A choice of [The rules for the user alone](planner.md#the-rules-for-the-user-alone).
   - A choice of [The state of the user](plan-review.md#the-state-of-the-user): the approval of a measure that changes
     the state of the user.
