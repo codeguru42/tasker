@@ -68,7 +68,9 @@ The rule has two exceptions:
   [the hold before an install](release.md#the-hold-before-an-install) says.
 - The orchestrator runs `tasker model` with a new model or with `--effort` itself, only on the words of the user in a
   settled decision message of its [question pane](question-pane.md#send-a-decision). This command writes the
-  configuration file of tasker.
+  configuration file of tasker. If the user types such a request in the tab of the orchestrator, the orchestrator does
+  not run the command. It asks the question in its question pane, and it runs the command only after the settled
+  decision message.
 
 The rule covers only `tasker` commands. The `gh`, `git` and `herdr` commands keep their own rules.
 
