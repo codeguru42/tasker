@@ -16,7 +16,7 @@ function promptFile(name: string, placeholders: string[], body: string): string 
 }
 
 function setup(promptBody: string, placeholders: string[], fragmentBody = "One line."): string {
-  const root = useTempDir("tasker-template-");
+  const root = join(useTempDir("tasker-template-"), "prompt-templates");
   writeFileWithParents(join(root, "tasker", "shared-x.md"), fragmentFile("shared-x", fragmentBody));
   writeFileWithParents(join(root, "tasker", "p.md"), promptFile("p", placeholders, promptBody));
   return root;
