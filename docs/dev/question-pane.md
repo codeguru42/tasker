@@ -117,8 +117,9 @@ request outside the question. A request for a new issue is not a write action.
 
 A title or body request is words of the user in a question pane. The words ask for a change of the title or the body of
 an issue. The item of the sender did not propose the change. A title or body request takes the form and the path of a
-request for a new issue. The issue reading is the reading of the question session that names the issue of the words. It
-is always a guess.
+request for a new issue. The issue reading is the reading of the question session that names the issue of the words. The
+issue reading is a guess. It goes through the confirm question of [Send a decision](#send-a-decision), as each other
+guess does.
 
 A [write subagent](#the-pane-owner-handles-a-decision) is a subagent of the pane owner. It runs one run of
 write-subagent actions in a row of one settled decision message. A write subagent writes no file other than a user-level
@@ -578,18 +579,20 @@ For a message to a session other than the pane owner, the message gives the name
 Such a message has no command and no undo step.
 
 A [title or body request](#terms) goes to the pane owner in the form of a request for a new issue. The decision message
-gives the words of the user word for word and the issue reading, marked as a guess. The question session reads no title
-and no body of the issue for this request, and it keeps no start hash. It shows the user no new title, no new body, no
-old body, no summary of a change and no path of a body file. It asks the user to approve no text, because the words of
-the user approve the request. The message gives no exact new text, no start hash, no command, no undo step and no input
-file.
+gives the words of the user word for word. The question session can add the issue reading and its guess that the words
+are a change of the draft of the sender. Each one is a guess and goes through the confirm question of the guess rule
+above. The message gives only the guesses that the user accepted, each marked as a guess. With no accepted issue
+reading, the message gives no reading, and the planner finds the issue from the words. The question session reads no
+title and no body of the issue for this request, and it keeps no start hash. It shows the user no new title, no new
+body, no old body, no summary of a change and no path of a body file. It asks the user to approve no text, because the
+words of the user approve the request. The message gives no exact new text, no start hash, no command, no undo step and
+no input file.
 
-A comment on an issue, a change of a blocked-by link and a change of the field `Priority` keep the form that the page
-gave them before issue #992. For each of them, the question session sends a request, in the form of a request for a new
-issue. When it first shows the text to the user, it reads the title and the body, as
-[Before a post](issues.md#before-a-post) gives the read. It keeps that read as the start hash. The message gives the
-exact text that the user approved and the start hash of that read. The question session runs the self-check of Before a
-post over the text that it shows, with no file.
+For a comment on an issue, a change of a blocked-by link and a change of the field `Priority`, the question session
+sends a request, in the form of a request for a new issue. When it first shows the text to the user, it reads the title
+and the body, as [Before a post](issues.md#before-a-post) gives the read. It keeps that read as the start hash. The
+message gives the exact text that the user approved and the start hash of that read. The question session runs the
+self-check of Before a post over the text that it shows, with no file.
 
 These rules cover only a change or a comment that the item did not propose. A requested change of the draft of the
 sender stays with the sender.
@@ -744,7 +747,8 @@ itself.
 
 The reason of issue #967: the user chose a closed list of user-level files. The user said: "A for now. Eventually I will
 have a separate repo for agent config." The user also said: "The planner should run review loops and post without my
-approval." So the planner runs its review loops on each request of a pane and posts with no new approval of the user.
+approval." So the planner runs its review loops on a request of a pane and posts the reviewed text with no new approval
+of the user, as for a new issue.
 
 If the words do not settle the question, the pane owner sends only the question session one message saying what remains
 open. The message goes with the herdr path and starts with `PANE-OWNER <owner name> <question id>:`. The pane
@@ -770,9 +774,9 @@ blocked-by link or of the field `Priority`, and a change of a tracked file of th
 also when the message does not settle the question. The pane does not wait for it. The message starts with
 `From the user:`. It names the question pane and the question id. It gives the words of the user word for word and each
 guess of the question session that the user accepted, still marked as a guess. A message from a pane that the user
-closed with a confirm question open holds no guess. For a title or body request, it gives the words of the user and the
-issue reading only, with no exact text and no start hash. For a comment, a change of a blocked-by link or a change of
-the field `Priority`, it gives the exact text and the start hash.
+closed with a confirm question open holds no guess. For a title or body request, it gives the words of the user and each
+guess that the user accepted, with no exact text and no start hash. For a comment, a change of a blocked-by link or a
+change of the field `Priority`, it gives the exact text and the start hash.
 
 If the planner is the sender and the message settles the question, the request goes in the answer to the planner. In
 each other case, the request goes in a message of its own. Such a message is a relay to `planner-<slug>`, not an answer
@@ -789,9 +793,11 @@ the post or the drop to the orchestrator. For a draft that waits for a decision 
 For a title or body request, the user approves the request, not a text. The planner drafts the change, runs its review
 loops and posts the reviewed text, as for a new issue. It needs no approval of the user for the text. The draft starts
 from a read of the issue, as [Before a post](issues.md#before-a-post) and
-[A change of an open issue](issue-draft.md#a-change-of-an-open-issue) say. If the words and the issue reading name no
-single issue, the planner asks the user through the orchestrator, as [The escape hatch](planner.md#the-escape-hatch)
-says.
+[A change of an open issue](issue-draft.md#a-change-of-an-open-issue) say. The planner finds the issue from the words
+and from the issue reading, if the user accepted one. If they name no single issue, the planner posts nothing and asks
+the user first. It sends the question to `orchestrator-<slug>`, in the way that
+[The escape hatch](planner.md#the-escape-hatch) gives for a draft of the follow-up planner that waits for a decision of
+the user.
 
 For a comment, a change of a blocked-by link or a change of the field `Priority`, the planner runs its review loops on a
 text that the user approved in a pane. If a loop changes the text, the planner posts the changed text with no new
