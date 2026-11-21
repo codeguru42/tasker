@@ -1,13 +1,36 @@
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { readPromptTemplate } from "../../src/prompts/template-file.js";
 import { placeholderNames } from "../../src/prompts/template.js";
 import { repoRoot } from "./processes.js";
-import { EXECUTE_TURN_RULE_NAMES, rulesOf, SHARED_RULE_NAMES } from "./prompts.js";
+import {
+  commitText,
+  EXECUTE_TURN_RULE_NAMES,
+  executePrompts,
+  rulesOf,
+  SHARED_RULE_NAMES,
+  templateCopyWithout,
+} from "./prompts.js";
 
 function rules(prompt: string): string[] {
   return rulesOf(prompt);
+}
+
+function commitRules(): string {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return commitText();
+}
+
+function prompts(root?: string): unknown {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return executePrompts(root);
+}
+
+function copyWithout(fileName: string): { root: string; missing: string } {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  return templateCopyWithout(fileName);
 }
 
 describe("rulesOf", () => {
@@ -41,5 +64,29 @@ describe("EXECUTE_TURN_RULE_NAMES", () => {
     ).body;
     const used = [...placeholderNames(body)].filter((name) => name.startsWith("RULE_EXECUTE_"));
     expect(EXECUTE_TURN_RULE_NAMES).toEqual(used);
+  });
+});
+
+describe("commitText", () => {
+  it("gives the body of commit-rules.md", () => {
+    const path = join(fileURLToPath(repoRoot), "prompt-templates", "tasker", "commit-rules.md");
+    expect(commitRules()).toBe(readPromptTemplate(path).body);
+  });
+});
+
+describe("executePrompts", () => {
+  it("reads the prompts under the given root", () => {
+    const { root } = copyWithout("shared-skills.md");
+    expect(prompts(root)).toEqual(prompts());
+  });
+});
+
+describe("templateCopyWithout", () => {
+  it("gives a copy of the templates without the named file", () => {
+    const { root, missing } = copyWithout("execute-file-access.md");
+    expect(basename(root)).toBe("prompt-templates");
+    expect(missing).toBe(join(root, "tasker", "execute-file-access.md"));
+    expect(existsSync(missing)).toBe(false);
+    expect(existsSync(join(root, "tasker", "execute.md"))).toBe(true);
   });
 });
