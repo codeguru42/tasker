@@ -193,7 +193,8 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   `tasker execute` and `tasker verify`, as step 5 says, and it runs no `tasker review`. The refine, and
   `tasker review <issue> "<feedback>"`, run no review session, so they are no loop. The count stays 5, and the final
   report gives 5. If `tasker verify` fails, [the verify-failure rule](verify-failures.md#the-verify-failure-rule)
-  applies, and no `tasker review` follows.
+  applies. This bullet wins over the words of that rule that run `tasker review` after a passing `tasker verify`, so no
+  `tasker review` follows.
 
   Then the task subagent does [the diff read](run-one-ticket.md#the-diff-read) of the whole change one time, as step 9
   says. If the diff read finds work, the task subagent stops. The exception covers one fix round. If the diff read finds

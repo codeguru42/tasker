@@ -187,8 +187,8 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   task subagent holds no start base.
 - Each finding that the task subagent dismissed, with its reason.
 - Each leftover that the task subagent fixed under [the leftover exception](review-findings.md#review-findings), with
-  the finding, the earlier loop whose fix made the text false, and the false text. The item also says that no sixth
-  review ran.
+  the finding, the earlier loop or other step of the ticket that made the text false, and the false text. The item also
+  says that no sixth review ran.
 - The edge cases that the task subagent left out (see ["Review findings"](review-findings.md#review-findings)).
 - Each claim of the issue that was no longer true and each conflict (see
   [the issue check](plan-review.md#the-issue-check)). For a false claim, the bullet gives the current fact and the
