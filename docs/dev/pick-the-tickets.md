@@ -219,9 +219,10 @@ The orchestrator does all the steps of this section.
   that moment already gave, also the `on hold` read of [A ticket on hold](#a-ticket-on-hold). If no such read gave the
   fact, for example at the start, the find reads it. For a milestone scope, it reads the column of each card and the
   labels of the open issues of the milestone with
-  `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number,labels,projectItems`. On 2026-11-20,
-  with gh 2.102.1, the command printed one line for each of the 25 open issues of M31, for example `988 Todo` and
-  `748 Todo on hold`. It reads `tasker status` for the tasks in flight.
+  `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number,labels,projectItems --jq '.[] | "\(.number) \([.projectItems[].status.name] | join(",")) \([.labels[].name] | join(","))"'`.
+  Each line of the output gives the number of an issue, the columns of its cards separated by commas, and its labels
+  separated by commas. On 2026-11-20, with gh 2.102.1, the command printed one line for each of the 25 open issues of
+  M31, for example `988 Todo` and `748 Todo on hold`. It reads `tasker status` for the tasks in flight.
 
   For an issue with more than one fact, the first row of this table that holds gives the raise:
 
