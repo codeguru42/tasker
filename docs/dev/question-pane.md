@@ -393,8 +393,10 @@ it shows the session name and the text. It shows them only if the pane owner alr
 session makes in the talk is shown to the user in the talk, and the decision message gives it.
 
 The first-reply text does not show the text of an input file. The command names the path of the file. Each choice that
-leads to a write action says in its own text whether a pick approves the commands shown under it. The pane owner or the
-sender writes this into the choice text, and the question session shows it word for word.
+leads to a write action says in its own text whether a pick approves the commands shown under it. For a write action
+with an input file, the choice text says that the user approves the text of the file after the pick, not that a pick
+approves it. The pane owner or the sender writes this into the choice text, and the question session shows it word for
+word.
 
 If the write actions differ between the choices, the first-reply text shows one set of commands under each choice that
 leads to a write action. A choice with no write action shows none.
@@ -405,9 +407,14 @@ The commands and the undo steps of this subsection do not count in the five-sent
 The pane asks no approval question. A direct pick and a yes to the confirm question are sent at once, as
 [Send a decision](#send-a-decision) says. A yes to the confirm question counts as the pick of the planned choice. A
 write action is approved only if the text of the picked choice says so in plain words, the action has no input file, and
-its command was in the first reply and did not change. The decision message marks each other write action "not
-approved", with its command, its undo step and the text of each input file. The pane owner runs none of them, and the
-user can approve one later in a new pane message or in the tab of the orchestrator.
+its command, path or text was in the first reply and did not change. The decision message marks each other write action
+"not approved", with its command and its undo step. The pane owner runs none of them, and the user can approve one later
+in a new pane message or in the tab of the orchestrator.
+
+A pick never approves a write action with an input file. After the send, the question session shows the text of the file
+in the pane, from the talk or from the sender. After the user gives an approval word, the session sends a second message
+with the text and the word, word for word. If the session has no text for the file, the decision message says that the
+text is missing. The action then stays "not approved".
 
 A question that leads to no write action shows no command, no undo step, no path and no text of a write. A request of
 [Terms](#terms), for example a [title or body request](#terms), keeps its own form.
@@ -581,8 +588,9 @@ about the pane or the run, also after the close request.
 For a measure that changes user state, the question session also gives the command and undo step verbatim. It gives the
 same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. The
 first reply already shows each command and its undo step, as
-[The commands in the first reply](#the-commands-in-the-first-reply) says. The message gives the text of each input file
-and each command or text that the first reply did not show. For a write action that is approved, it gives the words of
+[The commands in the first reply](#the-commands-in-the-first-reply) says. The message gives each command or text that
+the first reply did not show. It gives no text of an input file that the session does not have. The session sends that
+text later with the approval word, as that subsection says. For a write action that is approved, it gives the words of
 the user that approved it, word for word: the pick or the yes to the confirm question. It marks each other write action
 "not approved", as that subsection says. The question session sends the message at once and asks no approval question.
 
