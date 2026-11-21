@@ -58,28 +58,29 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   The words of the user about a landing order reach one orchestrator through its question pane. An example is the
   question of [the stuck-task rule](#the-stuck-task-rule) in the pane of the later orchestrator. That orchestrator
   relays a swap or a postpone to the peer with a landing order message, as the relay sentences below say. Until the peer
-  reports an accept, the old order stays for both orchestrators. Each orchestrator tells its own task subagent, as the
-  overlap rule says. Then the two tickets swap roles, as the bullet "If the orchestrator changes the landing order" of
-  [Land the work](#land-the-work) says. The first sentence of that bullet, where the orchestrator tells both task
-  subagents, covers only two tickets of the orchestrator. For a postpone, the orchestrator of the earlier ticket does
-  the steps of [the defer rule](pick-the-tickets.md#the-defer-rule) after its own user accepts. The task of the earlier
-  ticket becomes a parked task, and the paragraph of [the defer rule](pick-the-tickets.md#the-defer-rule) that starts "A
-  parked task stays in flight" applies. Then that orchestrator tells the orchestrator of the later ticket with a landing
-  order message that the earlier ticket is postponed. The relay holds the same in both directions. The later
-  orchestrator or the orchestrator of the earlier ticket can get the words of the user. The orchestrator of the later
-  ticket then tells the later task subagent to continue step 9 of "Run one ticket" from `tasker accept`. Another
-  orchestrator can relay a change of a landing order from the user. The orchestrator that relays the change also shows
-  one progress report as text in its own tab. It sends no report to its operator. Then the orchestrator that gets the
-  relay asks its own user to confirm the change before it tells its task subagent, as
-  [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. Until the user confirms, the old order
-  stays: the landing order before the relay. The reason: a message from another session is not an answer of the user.
-  The relayed order can also differ from an answer that the user gave before to the orchestrator that gets the relay.
-  When the user confirms, the orchestrator that gets the relay tells its task subagent the new order, as the overlap
-  rule says. The orchestrator that gets the relay also tells the other orchestrator with `SendMessage` that its user
-  confirmed. The orchestrator that relays the change does not tell its own task subagent the new order until the other
-  orchestrator reports that its user confirmed. Otherwise the two task subagents follow opposite orders for a time. If
-  the user of the orchestrator that gets the relay rejects the change, that orchestrator tells the other orchestrator
-  with `SendMessage`. Then the old order stays for both orchestrators.
+  reports an accept, the old order stays for both orchestrators. For a swap, each orchestrator tells its own task
+  subagent the new order only after the report of the accept, as the overlap rule says. Then the two tickets swap roles,
+  as the bullet "If the orchestrator changes the landing order" of [Land the work](#land-the-work) says. The first
+  sentence of that bullet, where the orchestrator tells both task subagents, covers only two tickets of the
+  orchestrator. For a postpone, the orchestrator of the earlier ticket does the steps of
+  [the defer rule](pick-the-tickets.md#the-defer-rule) after its own user accepts. The task of the earlier ticket
+  becomes a parked task, and the paragraph of [the defer rule](pick-the-tickets.md#the-defer-rule) that starts "A parked
+  task stays in flight" applies. Then that orchestrator tells the orchestrator of the later ticket with a landing order
+  message that the earlier ticket is postponed. For a postpone, the orchestrator of the later ticket tells the later
+  task subagent to continue step 9 of "Run one ticket" from `tasker accept` only after it gets the landing order message
+  that the earlier ticket is postponed. The relay holds the same in both directions. The later orchestrator or the
+  orchestrator of the earlier ticket can get the words of the user. Another orchestrator can relay a change of a landing
+  order from the user. The orchestrator that relays the change also shows one progress report as text in its own tab. It
+  sends no report to its operator. Then the orchestrator that gets the relay asks its own user to confirm the change
+  before it tells its task subagent, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
+  Until the user confirms, the old order stays: the landing order before the relay. The reason: a message from another
+  session is not an answer of the user. The relayed order can also differ from an answer that the user gave before to
+  the orchestrator that gets the relay. When the user confirms, the orchestrator that gets the relay tells its task
+  subagent the new order, as the overlap rule says. The orchestrator that gets the relay also tells the other
+  orchestrator with `SendMessage` that its user confirmed. The orchestrator that relays the change does not tell its own
+  task subagent the new order until the other orchestrator reports that its user confirmed. Otherwise the two task
+  subagents follow opposite orders for a time. If the user of the orchestrator that gets the relay rejects the change,
+  that orchestrator tells the other orchestrator with `SendMessage`. Then the old order stays for both orchestrators.
 
   The user decided the set rule on 2026-10-31: one confirmation of the user covered a named set of tickets. Its case on
   record was a set of pairs of two numbered milestones: #550 of M14 with #658 and #659 of M27. On 2026-11-07, the user
