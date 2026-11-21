@@ -350,6 +350,21 @@ The question session follows the general user-facing, simple-English, [memory](r
 After the first reply, the question session can read drafts and reports, use read-only commands other than `herdr`
 commands, and run `git fetch origin`. If fetch fails, it tells the user and reads the last successful `origin/main`.
 
+After its first reply, the question session follows these rules. Each item names the home of the rule:
+
+- It sends each message to the pane owner with the herdr path and the header of [Terms](#terms). It waits for the ack of
+  [Terms](#terms).
+- It sends each write action and each request of [Terms](#terms) back to the pane owner, as the paragraphs of this
+  section that start "The question session sends each" and "For a request for a new issue" say.
+- It shows and approves commands and input files as [The commands in the first reply](#the-commands-in-the-first-reply)
+  says.
+- It decides when to send a decision, and it handles a direct pick, a discussion, the confirm question, a guess and **No
+  decision**, as [Send a decision](#send-a-decision) says.
+- It gives the parts of the decision message and handles a failed send, as [Send a decision](#send-a-decision) says.
+- It starts no subagent that plans, drafts, reviews or posts an issue, as the paragraph of this section that starts "A
+  question session starts no subagent" says.
+- It runs the rounds after a close request, as [The rounds before the close](#the-rounds-before-the-close) says.
+
 The question session sends each [write action](#terms) and each request of [Terms](#terms) back to the pane owner with
 the herdr path, as [Send a decision](#send-a-decision) says. The pane owner hands each one to its actor, as
 [The actor of each write action](#the-actor-of-each-write-action) says.
@@ -529,8 +544,9 @@ are a discussion and the reading is a guess.
 For a direct pick, the question session sends the decision message at once. It shows no evaluation and asks no confirm
 question. The message has no part about a confirm question.
 
-For a discussion, the question session shows the evaluation. The evaluation names the choice that the words fit best, or
-says that no choice fits. It also says what stays open.
+For a discussion, the question session shows the evaluation. The evaluation says for each shown choice whether the words
+fit it and why. Then it names the choice that the words fit best, or says that no choice fits. It also says what stays
+open.
 
 Then the session asks one confirm question. The confirm question gives the planned decision as the reading of the
 session, marked as a guess. It gives each other guess of the same message as a numbered reading. It asks one question
@@ -582,8 +598,9 @@ can start work that the user did not choose.
 
 The decision message goes to the pane owner with the herdr path. It first gives the header
 `QUESTION-PANE <own pane id> <question id>:`. It then gives the decision and the user's settling words verbatim, each
-requested draft change, and each doc rule, fact, or preference the user stated. It can also give a word of the user
-about the pane or the run, also after the close request.
+requested draft change, and each doc rule, fact, or preference the user stated. It also gives each word of the user that
+closes the pane, ends the run or adds an issue to a set (a set scope, as the term Scope of [the glossary](GLOSSARY.md)
+and [The scope](../orchestrator.md#the-scope) define it), word for word, also after the close request.
 
 For a measure that changes user state, the question session also gives the command and undo step verbatim. It gives the
 same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. The
