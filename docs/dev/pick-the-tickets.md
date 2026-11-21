@@ -362,8 +362,8 @@ The orchestrator does all the steps of this section.
   not ready to stack. #K is outside the scope. The outside-blocker offer asks the user about #K, and this counts as the
   raise of #H. The find raises nothing more for #H.
 
-  Case 15: the same set. #H has an open blocker #J that the set names, or an open blocker #E outside the set that is
-  ready to stack. The find does not raise #H for that blocker.
+  Case 15: a set scope of #H and #J. #H has an open blocker #J, or an open blocker #E outside the set that is ready to
+  stack. The find does not raise #H for that blocker.
 
   Case 16: the same set. The card of #H is in In progress, and `tasker status --issue` lists a task of #H that another
   session started. That task counts as a task in flight, so the find does not put #H in the question.
