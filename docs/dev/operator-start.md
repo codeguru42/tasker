@@ -869,6 +869,13 @@ commands that the operator runs itself. They are the create or change command of
 [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision) says. A denied command of an
 item of another session stays with the tool-block rule, apart from the item of the last paragraph of this section.
 
+The orchestrator follows this section in the place of the operator, for a denied call of its own and of each actor of
+[the table](permissions.md#the-table). The choices that the orchestrator gives hold no `!` run. For a call of a write
+subagent, of the planner subagent or of an issue subagent, the first choice gives the word to the actor that got the
+denial. The orchestrator never runs that call itself. For a call of the orchestrator itself, also a `git` write in its
+local clone, the first choice lets the orchestrator run the call again one time on the word of the user. This adds no
+rule for the operator.
+
 If the user declined the call at a permission prompt, the command did not run. Then the operator gives no choices and
 waits for a new word of the user.
 
