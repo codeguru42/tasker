@@ -93,8 +93,7 @@ describe("the real folder", () => {
   it("maps each rule name of a prompt to a fragment file that exists", () => {
     for (const name of used) {
       const file = fragmentFileName(name);
-      expect(file, name).toBeDefined();
-      expect(existsSync(join(folder, file ?? "")), name).toBe(true);
+      expect(file !== undefined && existsSync(join(folder, file)), name).toBe(true);
     }
   });
 

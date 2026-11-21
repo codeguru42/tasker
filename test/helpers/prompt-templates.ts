@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { packagePath } from "../../src/package-path.js";
 import { TASKER_FAMILY, taskerPrompt } from "../../src/prompts/tasker-template.js";
-import { fillTemplate, placeholderNames } from "../../src/prompts/template.js";
+import { fillTemplate } from "../../src/prompts/template.js";
 import {
   checkPromptTemplate,
   PATH_PROBLEM,
@@ -50,10 +50,6 @@ export function promptFileProblems(
   const path = join(root, TASKER_FAMILY, `${name}.md`);
   const problems = checkPromptTemplate(path);
   if (problems.length > 0) return problems;
-  const template = readPromptTemplate(path);
-  const used = [...placeholderNames(template.body)].sort().join(", ");
-  const listed = Object.keys(template.placeholders).sort().join(", ");
-  if (used !== listed) problems.push(`the placeholders of the body (${used}) differ from the list (${listed})`);
   const filled = fillTemplate(name, taskerPrompt(name, root), values);
   if (filled.includes("{{")) problems.push("the filled text holds {{");
   if (!filled.endsWith("\n") || filled.endsWith("\n\n")) problems.push("the filled text has an extra newline");

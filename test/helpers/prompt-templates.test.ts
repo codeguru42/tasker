@@ -107,4 +107,10 @@ describe("promptFileProblems", () => {
       "the filled text has an extra newline",
     );
   });
+
+  it("reports a rule name of the body that the list lacks", () => {
+    expect(promptFileProblems("p", { DATA: "x" }, root("Text {{DATA}} {{RULE_FILE_ACCESS}}\n"))).toContain(
+      "the body uses {{RULE_FILE_ACCESS}}, but placeholders does not list it",
+    );
+  });
 });
