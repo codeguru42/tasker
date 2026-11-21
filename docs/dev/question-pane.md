@@ -296,11 +296,11 @@ If a detail of the question does not fit in this limit, the first-reply text nam
 a draft or a report of the question comes first. The tab of the orchestrator is the place only for a detail with no such
 path. A sentence that names such a place does not count.
 
-For a measure that changes the state of the user, the first-reply text gives the command and its undo step word for
-word. It also gives each other part of such a question that
-[The state of the user](plan-review.md#the-state-of-the-user) asks for. An example is what the command and the undo step
-each change. These parts do not count in the limit. The question session needs them for its decision message, as
-[Send a decision](#send-a-decision) says.
+For a measure that changes the state of the user, the first-reply text gives the command and its undo step, as
+[The commands in the first reply](#the-commands-in-the-first-reply) says. It also gives each other part of such a
+question that [The state of the user](plan-review.md#the-state-of-the-user) asks for. An example is what the command and
+the undo step each change. These parts do not count in the limit. The question session needs them for its decision
+message, as [Send a decision](#send-a-decision) says.
 
 The reason: on 2026-11-13, the user said, as operator-docs relayed it: "details sent to the question pane need to be
 shorter, like 5 sentences max". On that day, operator-docs reported a paragraph each for what happened, the problem and
@@ -381,6 +381,42 @@ user can also type it in the tab of the orchestrator.
 
 The first reply gives no fact of the question session's own. Some bullets of “A decision of the user” ask the session to
 measure or to read a rule first. These bullets hold from the second reply on.
+
+### The commands in the first reply
+
+If a question leads to a [write action](#terms), the first-reply text shows the exact command and the undo step of each
+write action before the choices. For an action with no undo step, it says that the action has no undo step. These are
+the words that the decision message gives later, as [Send a decision](#send-a-decision) says.
+
+For a write of a file, the first-reply text shows the absolute path and the full new text. For a message to a session,
+it shows the session name and the text. It shows them only if the pane owner already has them. A text that the question
+session makes in the talk goes to the user before the session asks for approval, as Send a decision says.
+
+The first-reply text does not show the text of an input file. The command names the path of the file. A pick cannot
+approve the text of an input file. So the question session shows the text after the pick and gets the approval word of
+the user before it sends the message.
+
+If the write actions differ between the choices, the first-reply text shows one set of commands under each choice that
+leads to a write action. A choice with no write action shows none.
+
+The commands and the undo steps of this subsection do not count in the five-sentence limit of
+[The question session](#the-question-session). A code block of another kind still counts as one sentence.
+
+Each choice that leads to a write action says in its own text whether a pick approves the commands shown under it. The
+pane owner or the sender writes this into the choice text, and the question session shows it word for word. A pick
+approves the shown commands and undo steps only if the text of the picked choice says so in plain words. A command or a
+text that changed after the first reply is not approved. A pick of a choice that does not say that it approves the
+commands approves nothing, and the question session asks the user for a separate approval word. The decision message
+gives the pick or that word as the approval, word for word.
+
+A direct pick stays a direct pick, as Send a decision says. The confirm question stays as it is and lists no choices.
+
+A question that leads to no write action shows no command, no undo step, no path and no text of a write. A request of
+[Terms](#terms), for example a [title or body request](#terms), keeps its own form.
+
+The reason: on 2026-11-20, the user said in a question pane: "No, the exact commands should be shown before the
+choices". In the refine of the plan of #988, the user said about the approval: "Each choice should explicitly include in
+the text if they approve the commands."
 
 ### The prompts
 
@@ -545,9 +581,11 @@ requested draft change, and each doc rule, fact, or preference the user stated. 
 about the pane or the run, also after the close request.
 
 For a measure that changes user state, the question session also gives the command and undo step verbatim. It gives the
-same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. Before
-the send, the question session shows the user the command, the undo step and the text of each input file. The message
-gives the word of the user that approves them verbatim.
+same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. The
+first reply already shows each command and its undo step, as
+[The commands in the first reply](#the-commands-in-the-first-reply) says. Before the send, the question session shows
+the user the text of each input file and each command or text that the first reply did not show. The message gives the
+approval of the user verbatim, as that subsection says.
 
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
