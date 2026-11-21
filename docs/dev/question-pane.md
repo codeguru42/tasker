@@ -581,10 +581,10 @@ about the pane or the run, also after the close request.
 For a measure that changes user state, the question session also gives the command and undo step verbatim. It gives the
 same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. The
 first reply already shows each command and its undo step, as
-[The commands in the first reply](#the-commands-in-the-first-reply) says. Before the send, the question session shows
-the user the text of each input file and each command or text that the first reply did not show. The message gives the
-approval of the user verbatim, as that subsection says. The message marks each write action that is not approved "not
-approved", as [The commands in the first reply](#the-commands-in-the-first-reply) says.
+[The commands in the first reply](#the-commands-in-the-first-reply) says. The message gives the text of each input file
+and each command or text that the first reply did not show. For a write action that is approved, it gives the words of
+the user that approved it, word for word: the pick or the yes to the confirm question. It marks each other write action
+"not approved", as that subsection says. The question session sends the message at once and asks no approval question.
 
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
