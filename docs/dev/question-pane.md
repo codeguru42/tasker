@@ -272,6 +272,31 @@ the example of that section. For each other rule of that section, the question o
 question 1. The reason: on 2026-11-13, the user said: "In the question pane, the question itself no longer needs to be
 numbered."
 
+If the question has an issue of the question, the first line of the first-reply text is the issue line. The issue of the
+question is the one issue that the question is about. Examples are the issue whose draft the question asks about and the
+ticket of the task subagent that asks. The issue line has this form: the word `Issue:`, one space, the link of the issue
+as the [issue-link rule](working-with-the-user.md#the-issue-link-rule) gives it, a comma and a phrase of at most 10
+words that says what the issue is about. An example is
+`Issue: [#988](https://github.com/codeguru42/tasker/issues/988), show the commands in the first reply`. The phrase holds
+no sentence, so the issue line does not count in the limit of the paragraph that starts "The other details of the
+first-reply text".
+
+The issue line is the only fixed line of the first-reply text. A later mention of the same issue in the first-reply text
+gives only the link, as the issue-link rule says. A question has one issue line at most. If the question is about two or
+more issues, the issue line names the issue that the question is mainly about. Each other issue stays a mention under
+the issue-link rule. The pane owner judges the issue of the question, and this judgment is open on purpose.
+
+If the question has no issue of the question, the first-reply text has no issue line. Examples are a question about the
+work in general and a question about two or more issues with no main issue. The first-reply text then also has no empty
+issue line and no line such as `Issue: none`. The pane owner writes the issue line when it prepares the first-reply
+text, for the first question of a pane and for the question of each reuse. The issue line of an earlier question of the
+pane does not carry over. The opener subagent and the reuse subagent change no word of the issue line, and the question
+session shows it as part of its first reply.
+
+The reason: the user opens the issue of the question with one click and does not look for its key in the text. On
+2026-11-20, the user said: "file a ticket to update the question pane template to include a link to the issue under
+discussion".
+
 The other details of the first-reply text have a limit: at most five sentences.
 [The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives examples of them, in its bullet that starts
 "Inside a question, only". The question, its proposed steps, its choices, the paths and the decisions so far do not
@@ -475,7 +500,9 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 - `<local clone>`: the path of the local clone, as [the doc-read rule](doc-reads.md#the-doc-read-rule) uses it.
 - `<repo key>`: the repo key of the repo of the local clone, for example `codeguru42/tasker`.
 - `<question id>`: the question id of the question, as [Terms](#terms) defines it.
-- `<first reply>`: the first-reply text, with its lines as the pane owner wrote them.
+- `<first reply>`: the first-reply text, with its lines as the pane owner wrote them. Its first line can be the issue
+  line of [The question session](#the-question-session), in the form `Issue:`, the link of the issue, a comma and a
+  phrase.
 
 ````text question-reuse
 You are the reuse subagent of the question pane <pane id>. Its question session is <name>, for the pane owner <owner name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session. Send no input to the pane, apart from steps 4 and 7.
@@ -496,7 +523,9 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 - `<name>`: the own name of the question session. The context clear keeps it.
 - `<owner name>`, `<owner pane id>` and `<local clone>`: as in the list of the opener prompt.
 - `<question id>`: the question id of the next question.
-- `<first reply>`: the first-reply text of the next question, with its lines as the pane owner wrote them.
+- `<first reply>`: the first-reply text of the next question, with its lines as the pane owner wrote them. Its first
+  line can be the issue line of [The question session](#the-question-session), in the form `Issue:`, the link of the
+  issue, a comma and a phrase.
 
 ```text question-session
 You are the question session <name>. You discuss one open question with the user for the pane owner <owner name>, in the pane <owner pane id>. The question id is <question id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. In it, write a newline in place of each word LINE-BREAK, and remove the one space on each side of it. Before that reply, use no AskUserQuestion tool, and do only the three steps that follow, in their order.
