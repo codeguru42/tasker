@@ -11,7 +11,8 @@ The orchestrator does all the steps of this section.
   of the milestone of a milestone scope, or an issue of the set of a set scope.
   - For a milestone scope, take tickets only from the milestone of the scope. Do not start a ticket from a later
     milestone. A new issue can join the milestone during the run. The orchestrator picks it at its next read of the
-    board, and it asks the user nothing about it.
+    board, and it asks the user nothing about it. The fill rule of the bullet "Run at most 3 task subagents at the same
+    time" covers each pick.
   - For a set scope, start only an issue of the set whose card is in Todo. The milestone of the issue does not stop its
     start. An issue with no milestone can also start. Start no issue outside the set, also an issue in the same
     milestone as an issue of the set. The sentence "Do not start a ticket from a later milestone" does not cover a set
@@ -199,6 +200,12 @@ The orchestrator does all the steps of this section.
   such a read. It does not count for a read that a rule ties to a landing, for example the read of the parent issue in
   [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins, for example the ban of
   [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
+
+  The orchestrator also reads the board after a defer and after the end of a hold of
+  [the parent-hold rule](#the-parent-hold-rule). It also reads the board after a stop of a task subagent whose slot it
+  frees. The fill rule applies after each of these reads and after the read at a landing. The bullet "Run at most 3 task
+  subagents at the same time" gives it.
+
 - The outside-Todo find: no issue of the scope waits out of sight of the user. The pick cannot start an issue that is
   outside Todo. So the orchestrator lists each such issue and raises it one time.
 
