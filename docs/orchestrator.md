@@ -37,7 +37,8 @@ not task subagents and they do not run the steps on [the orchestration pages](or
 The orchestrator and its task subagents run tasker from the local clone of the orchestrator. For one ticket, the task
 subagent of that ticket is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names. The
 orchestrator runs only read-only `tasker` commands itself, and a task subagent runs each command that changes a task, as
-[the orchestrator-command rule](dev/tasker-commands.md#the-orchestrator-command-rule) says.
+[the orchestrator-command rule](dev/tasker-commands.md#the-orchestrator-command-rule) says. The orchestrator looks up
+the commands that it sends to each actor in [the allowed commands](dev/allowed-commands.md).
 
 Every `tasker` command on [the orchestration pages](orchestrator.md) is the installed `tasker`: the `tasker` command on
 the PATH from a global install. When

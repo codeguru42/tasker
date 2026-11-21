@@ -29,6 +29,8 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/run-one-ticket.md](docs/dev/run-one-ticket.md): how the task subagent runs one ticket.
 - [docs/dev/plan-review.md](docs/dev/plan-review.md): the review of a plan.
 - [docs/dev/tasker-commands.md](docs/dev/tasker-commands.md): how a session runs the tasker commands.
+- [docs/dev/permissions.md](docs/dev/permissions.md): the permission model of the actors of the orchestration.
+- [docs/dev/allowed-commands.md](docs/dev/allowed-commands.md): the commands that the orchestrator sends to each actor.
 - [docs/dev/verify-failures.md](docs/dev/verify-failures.md): the steps after a failed verify run.
 - [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the wait for CI.
 - [docs/dev/review-findings.md](docs/dev/review-findings.md): the steps for review findings.
