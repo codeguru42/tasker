@@ -279,11 +279,12 @@ A real need is a need of one ticket for the code or the docs that the other tick
 output must describe the keys that the other ticket adds. The orchestrator that does the compare judges a real need, and
 this judgment is open on purpose. For a real need, the overlap rule sets a landing order. A ticket of the same milestone
 or of no milestone then follows the bullets of [Land the work](#land-the-work). Each orchestrator tells its own task
-subagent the landing order, also for the ticket that lands first. The orchestrator that does the compare sends the
-landing order to the orchestrator of the other ticket, found as
-[The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) says. If the slug of the milestone of the
-other ticket is the own slug, the ticket is its own, and no message goes out. For a ticket with no milestone, the find
-fails, and [the failure rule](limits.md#the-failure-rule) applies.
+subagent the landing order, also for the ticket that lands first. If a peer runs the other ticket, the orchestrator that
+does the compare sends the landing order to that peer, found as
+[The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) says. If the orchestrator runs the other
+ticket itself, for example when the slug of its milestone is the own slug or when the ticket is of the own set scope, no
+message goes out. If a peer runs the other ticket and the find fails, [the failure rule](limits.md#the-failure-rule)
+applies.
 
 For two tickets of different milestones, [the Docs rule](#the-docs-rule) applies instead of the two paragraphs before
 this one. For a stacked ticket and its parent, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule)
