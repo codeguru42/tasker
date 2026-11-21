@@ -169,6 +169,8 @@ handoff file:
 - The number of each open broken-test issue that the old orchestrator knows of (see the broken-test rule in
   [A failed CI run](ci-wait.md#a-failed-ci-run)).
 - A table of the open issues of the scope, with the columns issue, topic, blockers and files.
+- The record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets), with one entry for each raised issue.
+  Each entry gives the issue and its facts at the raise.
 - Each open finding of the review rounds. A handled finding, as [Session-review rounds](session-review-rounds.md)
   defines it, leaves the file.
 - The name, the tab id and the pane id of the old orchestrator. The tab id is `$HERDR_TAB_ID`, and the pane id is
@@ -232,5 +234,8 @@ The new orchestrator then starts with the re-read rule. Right after the first do
 orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). After that
 check, it reads the tasks in flight with `tasker status`, also [the parked tasks](pick-the-tickets.md#the-defer-rule).
 It reads the other sessions with `ListAgents`. Then it makes its board watch job, as
-[the board watch rule](#the-long-running-orchestrator) says. Then, before the pick of the first ticket, it runs
-[the outside-Todo find](pick-the-tickets.md#pick-the-tickets).
+[the board watch rule](#the-long-running-orchestrator) says. Then, before the pick of the first ticket, it reads the
+record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file and runs that find.
+
+The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
+record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
