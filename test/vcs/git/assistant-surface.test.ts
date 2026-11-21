@@ -16,8 +16,8 @@ import { join, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DENIED_COMMANDS,
-  EXECUTE_COMMIT_TEXT,
   readDenyPaths,
+  readExecuteCommitText,
   sandboxWritePaths,
   sharedFolder,
   trackedPaths,
@@ -43,6 +43,11 @@ const EXPECTED = [
   "Commit each red/green pair, or each completed todo, as its own commit. Never collect the whole plan into one commit at the end. If a run stops partway (a quota limit, a timeout), the work that it finished must stay committed.",
   "The branch can already hold commits from an earlier execute run of an earlier revision of this plan. Before you start, run `git log --reverse {{BASE_REF}}..HEAD` and read what is there. Build on that work. Do not do it again.",
 ].join("\n\n");
+
+// The commit rules of the execute prompt.
+const commitText = (): string =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  readExecuteCommitText();
 
 // The bwrap arguments: / read-only, each path of writable open for writes.
 function bwrapArgs(writable: readonly string[], cwd: string, command: readonly string[]): string[] {
@@ -89,7 +94,7 @@ function snapshot(folder: string): Map<string, string> {
 
 describe("assistant surface values", () => {
   it("gives the commit rules of the execute prompt", () => {
-    expect(EXECUTE_COMMIT_TEXT).toBe(EXPECTED);
+    expect(commitText()).toBe(EXPECTED);
   });
 
   it("names git push as a command that the assistant must not run", () => {

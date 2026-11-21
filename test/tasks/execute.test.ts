@@ -22,7 +22,7 @@ import { transitionTask } from "../../src/state/machine.js";
 import { executeTranscriptPath, planRevisionPath, taskTranscriptsDir } from "../../src/store/layout.js";
 import { resumeTask } from "../../src/tasks/resume.js";
 import { requireBaseRevision } from "../../src/tasks/task-state.js";
-import { EXECUTE_COMMIT_TEXT } from "../../src/vcs/git/assistant-surface.js";
+import { readExecuteCommitText } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
 import { withTrustedExtensions } from "../helpers/config.js";
@@ -183,6 +183,11 @@ describe("executeTask checks", () => {
   });
 });
 
+// The commit rules of the execute prompt.
+const commitText = (): string =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  readExecuteCommitText();
+
 // The todos in the plan order b, a, so that the dependency order a, b shows in the tests.
 const TODOS = [planTodo("b", ["a"]), planTodo("a")];
 
@@ -197,7 +202,7 @@ const expectedPrefix = (fixture: ExecuteFixture, todos: typeof TODOS, doneIds: R
   const baseRevision = requireBaseRevision(gitProvider(), latestTaskOf(dataRoot, fixture.started.key));
   const questions = withDataRootStore(dataRoot, (store) => store.resolvedQuestionsThrough(fixture.task.id, 1));
   return fillTemplate(EXECUTE_PROMPT_NAME, EXECUTE_PROMPT, {
-    COMMIT_RULES: fillTemplate("commit-rules", EXECUTE_COMMIT_TEXT, { BASE_REF: baseRevision }),
+    COMMIT_RULES: fillTemplate("commit-rules", commitText(), { BASE_REF: baseRevision }),
     PLAN_MARKDOWN: fixture.revision.answer.plan_markdown,
     TODOS: todosText(todos, doneIds),
     RESOLVED_QUESTIONS: resolvedQuestionsText(questions),

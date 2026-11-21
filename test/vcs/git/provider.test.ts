@@ -5,8 +5,8 @@ import type { BaseBranchMemory } from "../../../src/vcs/provider.js";
 import { checkSummaries } from "../../helpers/doctor.js";
 import {
   DENIED_COMMANDS,
-  EXECUTE_COMMIT_TEXT,
   readDenyPaths,
+  readExecuteCommitText,
   sandboxWritePaths,
   sharedFolder,
   trackedPaths,
@@ -42,6 +42,11 @@ import {
   makeProviderFixture,
   type ProviderFixture,
 } from "../../helpers/git.js";
+
+// The commit rules of the execute prompt.
+const commitText = (): string =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  readExecuteCommitText();
 
 describe("createGitProvider", () => {
   let fixture: ProviderFixture;
@@ -499,7 +504,7 @@ describe("createGitProvider", () => {
 
     it("gives the text, the rules and the deny paths of the git code", () => {
       const surface = keyedProvider().assistantSurface(fixture.context);
-      expect(surface.executeCommitText).toBe(EXECUTE_COMMIT_TEXT);
+      expect(surface.executeCommitText).toBe(commitText());
       expect(surface.deniedCommands).toEqual(DENIED_COMMANDS);
       expect(surface.denyReadPaths).toEqual(readDenyPaths(keyed()));
     });

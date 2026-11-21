@@ -2,9 +2,16 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { fragmentFileName, readFragment, TASKER_FAMILY, taskerPrompt } from "../../src/prompts/tasker-template.js";
+import {
+  fragmentFileName,
+  readFragment,
+  readTaskerTemplateBody,
+  TASKER_FAMILY,
+  taskerPrompt,
+} from "../../src/prompts/tasker-template.js";
 import { placeholderNames } from "../../src/prompts/template.js";
 import { readPromptTemplate } from "../../src/prompts/template-file.js";
+import { thrownBy } from "../helpers/errors.js";
 import { repoRoot } from "../helpers/processes.js";
 import { useTempDir, writeFileWithParents } from "../helpers/temp.js";
 
@@ -52,6 +59,24 @@ describe("readFragment", () => {
   it("throws for a name that is no rule name", () => {
     const root = setup("A {{RULE_X}} B\n", ["RULE_X"]);
     expect(() => readFragment("ISSUE_TEXT", root)).toThrow("not a fragment placeholder: ISSUE_TEXT");
+  });
+});
+
+// The body of the template file fileName in the tasker folder under root.
+const templateBody = (fileName: string, root: string): string =>
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  readTaskerTemplateBody(fileName, root);
+
+describe("readTaskerTemplateBody", () => {
+  it("gives the body of a template file under the root", () => {
+    const root = setup("A {{RULE_X}} B\n", ["RULE_X"]);
+    expect(templateBody("shared-x.md", root)).toBe("One line.");
+  });
+
+  it("throws an error that names the path of a missing file", () => {
+    const root = setup("A {{RULE_X}} B\n", ["RULE_X"]);
+    const error = thrownBy(() => templateBody("missing.md", root));
+    expect((error as Error).message).toContain(join(root, "tasker", "missing.md"));
   });
 });
 
