@@ -160,11 +160,13 @@ No part of a denied call runs. This includes a redirect or a command before the 
 
 After a tool block, the task subagent [stops](limits.md#the-answer-wait-rule). It reports the exact text of the denial,
 the exact command, the step of the work that the command belongs to, and the purpose of the command. The orchestrator
-tells the user these facts. The orchestrator does not run the blocked action for the task subagent, unless the user
-tells it to. The recommendation mode of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) does
-not cover a tool block: the orchestrator always waits for the user. The report says that the denied call did not run. It
-names no file and no output of the denied call as made. This also applies to each other report of a denial, as the
-paragraph that starts "Each report of a denial quotes" lists them.
+tells the user these facts. For a denied task change, the orchestrator never runs the blocked action, as
+[the orchestrator-command rule](#the-orchestrator-command-rule) says. For each other denied call, the orchestrator does
+not run the blocked action for the task subagent, unless the user tells it to. The recommendation mode of
+[A decision of the user](working-with-the-user.md#a-decision-of-the-user) does not cover a tool block: the orchestrator
+always waits for the user. The report says that the denied call did not run. It names no file and no output of the
+denied call as made. This also applies to each other report of a denial, as the paragraph that starts "Each report of a
+denial quotes" lists them.
 
 Each report of a denial quotes the exact denied call word for word, as the transcript of the session that ran the call
 holds it. A short form or a description of the call does not take its place. This also applies to an item, a later
