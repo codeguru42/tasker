@@ -438,11 +438,11 @@ outside source of fact. This exception wins over [the repo-files rule](#the-repo
 (2026-10-31) and #700 (2026-11-01), each such plan cost one refine.
 
 A plan can also name a skill that the plan prompt or the refine prompt of tasker tells the plan session to use. The
-`skills` entry of `SHARED_RULES` in `src/prompts/shared.ts` of the task worktree gives these skills, and the task
-subagent reads the list there. The plan can say that a session reads, uses or follows such a skill. It can also tell a
-session to use such a skill, or give the purpose of the skill as the prompt of tasker gives it. Such a plan does not
-count like a quote of a file outside the worktree. The reason: the prompt of tasker tells the plan session to use the
-skill, so such a plan gives no outside source of fact.
+fragment file `prompt-templates/tasker/shared-skills.md` of the task worktree gives these skills, and the task subagent
+reads the list there. The plan can say that a session reads, uses or follows such a skill. It can also tell a session to
+use such a skill, or give the purpose of the skill as the prompt of tasker gives it. Such a plan does not count like a
+quote of a file outside the worktree. The reason: the prompt of tasker tells the plan session to use the skill, so such
+a plan gives no outside source of fact.
 
 This exception wins over [the repo-files rule](#the-repo-files-rule) for these skills only. Each other text from the
 file of such a skill still counts like a quote, for example a rule of the `writing-plans` skill. A rule of the

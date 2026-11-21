@@ -1670,6 +1670,13 @@ Nobody measured these cases:
 
 ## The plan answer and the prompts
 
+The words of the plan prompt, the refine prompt and the review prompt live in template files:
+[`plan.md`](../../prompt-templates/tasker/plan.md), [`refine.md`](../../prompt-templates/tasker/refine.md) and
+[`review.md`](../../prompt-templates/tasker/review.md). A fragment is a text that more than one prompt uses. In a prompt
+file, `{{RULE_<WORDS>}}` stands for the fragment file `shared-<words>.md` in the same folder. `{{RULE_EXECUTE_<WORDS>}}`
+stands for `execute-<words>.md`. The function `taskerPrompt` in `src/prompts/tasker-template.ts` puts the fragments in
+place. The data placeholders, such as `{{ISSUE_TEXT}}`, stay open until `fillTemplate` fills them.
+
 ### The untrusted tag
 
 An untrusted value, such as the text of an issue, stands in its own tag in the prompt. The tag lets the assistant tell
@@ -1761,8 +1768,9 @@ plan. The list `files_changed` covers the whole revision, for the same reason as
 The open questions keep their ids across rounds. As a result, an answered question drops out, and an open question stays
 trackable.
 
-The prompts share their common rules in one place in the code, for example the data sentence of each block. The turn
-prompts of the execute run also share their text in one place. As a result, one change updates each of them.
+The prompts share their common rules in the fragment files `prompt-templates/tasker/shared-*.md`, for example the data
+sentence of each block. The turn prompts of the execute run also share their text in one place. As a result, one change
+updates each of them.
 
 ### The review prompt and the findings answer
 
@@ -1786,7 +1794,8 @@ Each command that prints findings uses the same text form.
 ### The prompt version and the archive
 
 Each step records the version of its prompt. The archive keeps each version. As a result, a prompt can change at any
-time, and the history of earlier tasks stays exact.
+time, and the history of earlier tasks stays exact. The version is the hash of the prompt text with each fragment in
+place and the data placeholders not filled, and the archive file holds that text.
 
 The same version always has the same text. For this reason, a file that already exists counts as a success when the
 archive writes a version. The archive writes a temp file and links it into place. As a result, a cut write never leaves
