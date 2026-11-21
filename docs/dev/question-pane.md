@@ -390,7 +390,7 @@ the words that the decision message gives later, as [Send a decision](#send-a-de
 
 For a write of a file, the first-reply text shows the absolute path and the full new text. For a message to a session,
 it shows the session name and the text. It shows them only if the pane owner already has them. A text that the question
-session makes in the talk goes to the user before the session asks for approval, as Send a decision says.
+session makes in the talk goes to the user before the send, as Send a decision says.
 
 The first-reply text does not show the text of an input file. The command names the path of the file. Each choice that
 leads to a write action says in its own text whether a pick approves the commands shown under it. The pane owner or the
@@ -402,21 +402,12 @@ leads to a write action. A choice with no write action shows none.
 The commands and the undo steps of this subsection do not count in the five-sentence limit of
 [The question session](#the-question-session). A code block of another kind still counts as one sentence.
 
-Approval holds the send of a write action, not the send of the decision. A direct pick, or a yes to the confirm question
-for a planned choice, approves the shown commands and undo steps only if the text of that choice says so in plain words.
-In each other case, the question session asks the user for an approval word before it sends the message. These cases are
-a choice whose text does not say so, a write action with an input file, and a command, a path or a text that the first
-reply did not show.
-
-A command that changed after the first reply is new, and the old pick does not approve it. With the question for the
-approval word, the session shows the text of each input file and each new or changed command or text. A reply that gives
-the word approves only what the session showed.
-
-The question for an approval word is not a confirm question and not a send case, so the send cases stay three. A direct
-pick is sent with no confirm question, and the confirm question stays the only question for the decision. The decision
-message gives the decision and the pick, the yes or the approval word, word for word. If the user gives no approval
-word, the message gives no write action as approved, and the pane owner runs none, as
-[The pane owner handles a decision](#the-pane-owner-handles-a-decision) says.
+The pane asks no approval question. A direct pick and a yes to the confirm question are sent at once, as
+[Send a decision](#send-a-decision) says. A yes to the confirm question counts as the pick of the planned choice. A
+write action is approved only if the text of the picked choice says so in plain words, the action has no input file, and
+its command was in the first reply and did not change. The decision message marks each other write action "not
+approved", with its command, its undo step and the text of each input file. The pane owner runs none of them, and the
+user can approve one later in a new pane message or in the tab of the orchestrator.
 
 A question that leads to no write action shows no command, no undo step, no path and no text of a write. A request of
 [Terms](#terms), for example a [title or body request](#terms), keeps its own form.
@@ -529,9 +520,7 @@ never a guess. The judgment of a direct pick and of a guess is open on purpose. 
 are a discussion and the reading is a guess.
 
 For a direct pick, the question session sends the decision message at once. It shows no evaluation and asks no confirm
-question. The message has no part about a confirm question. A direct pick is sent at once, with no confirm question. A
-write action that needs an approval word waits for it, as
-[The commands in the first reply](#the-commands-in-the-first-reply) says.
+question. The message has no part about a confirm question.
 
 For a discussion, the question session shows the evaluation. The evaluation names the choice that the words fit best, or
 says that no choice fits. It also says what stays open.
@@ -594,8 +583,8 @@ same for each [write action](#terms). For an action with no undo step, it says t
 first reply already shows each command and its undo step, as
 [The commands in the first reply](#the-commands-in-the-first-reply) says. Before the send, the question session shows
 the user the text of each input file and each command or text that the first reply did not show. The message gives the
-approval of the user verbatim, as that subsection says. The approval of a write action follows
-[The commands in the first reply](#the-commands-in-the-first-reply).
+approval of the user verbatim, as that subsection says. The message marks each write action that is not approved "not
+approved", as [The commands in the first reply](#the-commands-in-the-first-reply) says.
 
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
@@ -685,7 +674,8 @@ the orchestrator itself has no sender, and the orchestrator acts on the decision
 
 A settled message can give [write actions](#terms), as [Send a decision](#send-a-decision) says. The approval of the
 user in the message covers one run of the command of each write action, word for word. Words of the user that let the
-sender decide approve no write action. A message that does not settle the question starts no write subagent.
+sender decide approve no write action. A write action marked "not approved" does not run, as words that let the sender
+decide approve no write action. A message that does not settle the question starts no write subagent.
 
 #### The actor of each write action
 
