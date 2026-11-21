@@ -171,8 +171,8 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   orchestrator reports to the user. The bullet "The leftover exception" gives the one exception.
 - The leftover exception: after review 5, the task subagent fixes a leftover of its own change and does not stop. Review
   5 is the fifth `tasker review` that counts as a loop. A same-patch review is not review 5. The own change is the first
-  plan of the ticket, the fix of each of reviews 1 to 4, and each later step of the ticket. An example of a later step
-  is a refine after a failed `tasker verify`.
+  plan of the ticket and the fix of each of reviews 1 to 4. It also includes each later step of the ticket. An example
+  of a later step is a refine after a failed `tasker verify`.
 
   A leftover is a real finding of review 5 that meets both tests. The cause test: a change of the own change made the
   named sentence, link, cell, number or name false, dead or out of date. The file can be a file that the ticket did not
@@ -182,8 +182,8 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   The certainty test: the issue and the own change give the right fix. The fix needs no new rule and no choice between
   two ways that both follow the issue.
 
-  If each real finding of review 5 is a leftover, the task subagent first names, for each leftover, the earlier change
-  that made the text false. It also names the false text. Then it fixes all the leftovers with one add-work refine. In
+  If each real finding of review 5 is a leftover, the task subagent first names the false text and the earlier change
+  that caused it. It does this for each leftover. Then it fixes all the leftovers with one add-work refine. In
   `reviewed`, that is the refine of step 8 of ["Run one ticket"](run-one-ticket.md#run-one-ticket). In
   `awaiting_work_review`, that is `tasker review <issue> "<feedback>"` of
   [the add-work rule](run-one-ticket.md#the-add-work-rule). The feedback names each leftover and says "apply everywhere
@@ -234,7 +234,7 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   close the gap, the orchestrator first posts [a change-of-scope comment](plan-review.md#the-change-of-scope-comment),
   and the task subagent follows the steps of that section. After that, the task subagent adds the work with the step
   that fits the state of the task: the refine of step 4 or step 8, or the add-work rule. If the report comes in the 5th
-  loop, a decision to close the gap counts as a real finding that is still open, and the bullet "After the 5th loop"
+  loop, a decision to close the gap counts as a real finding that is still open. Then the bullet "After the 5th loop"
   applies. The security report does not cover a security gap in a plan before `tasker approve`. The third case of the
   stop rule covers that gap.
 - A refactor or duplication finding is not cosmetic. The task subagent refines a refactor finding in the ticket that
