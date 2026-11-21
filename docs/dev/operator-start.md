@@ -876,8 +876,8 @@ actor that got the denial:
 
 - Task subagent: the orchestrator relays the word, and the task subagent runs the call one time, in the form of the
   word. The orchestrator never runs a task change itself, as step 5 of the denial steps says.
-- Write subagent: the orchestrator starts a new write subagent that runs the call, as the tool-block paragraph of the
-  write subagent in [the question pane](question-pane.md) says.
+- Write subagent: The steps of the paragraph of [the question pane](question-pane.md#the-pane-owner-handles-a-decision)
+  that starts "The commands after the denied call wait" apply.
 - Planner subagent, issue subagent, opener subagent, reuse subagent and question session: the orchestrator gives the
   word to the actor that got the denial, through its starter where [the report chain](permissions.md#the-report-chain)
   says so. The orchestrator never runs that call itself.

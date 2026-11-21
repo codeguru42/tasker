@@ -103,9 +103,10 @@ Each actor of [the table](permissions.md#the-table) follows these steps for a de
    a denial of step 1.
 3. A starter that gets the report sends it on to its own starter, up to the orchestrator.
 4. On the word of the user, the actor that got the denial runs the call again one time, in the form of the word. For a
-   task subagent, the orchestrator relays the word. For a write subagent, the orchestrator starts a new write subagent
-   that runs the call, as [the question pane](question-pane.md) says. For an issue subagent, the orchestrator relays the
-   word to the planner subagent, and the planner subagent relays it to the issue subagent.
+   task subagent, the orchestrator relays the word. For a write subagent, the steps of the paragraph of
+   [the question pane](question-pane.md#the-pane-owner-handles-a-decision) that starts "The commands after the denied
+   call wait" apply. For an issue subagent, the orchestrator relays the word to the planner subagent, and the planner
+   subagent relays it to the issue subagent.
 5. No third actor runs the denied call. The one exception: the orchestrator runs a call of a task subagent on the word
    of the user, as the paragraph that starts "After a tool block" says, but never a task change. Without a word of the
    user, no actor runs a form of the call.
