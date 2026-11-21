@@ -199,12 +199,12 @@ broken-test notice, it keeps the number of the issue and follows the ban.
 The ban: an orchestrator that knows of an open broken-test issue starts no ticket, except the broken-test issue itself.
 The orchestrator knows of the issue because it filed the issue, because it got the notice, or because the label check
 found the issue. The ban rests on the label. The notice stays as the fast path. On 2026-10-18, review 1 of #288 found
-that an orchestrator that starts later, outside a handoff, gets no notice, for example a new session for a new milestone
-or a new session after a crash or a `/clear`. The label check: at the start of its session and before each start of a
-ticket, the orchestrator runs `gh issue list --state open --label broken-test --limit 1000 --json number` in its local
-clone. If the list has an issue, the ban holds, except for the start of that issue itself. When the list is empty, the
-ban ends. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no
-ticket.
+that an orchestrator that starts later, outside a handoff, gets no notice, for example a new session for a new
+milestone, a new session after a crash or a session after a `/clear`. The label check: at the start of its session and
+before each start of a ticket, the orchestrator runs
+`gh issue list --state open --label broken-test --limit 1000 --json number` in its local clone. If the list has an
+issue, the ban holds, except for the start of that issue itself. When the list is empty, the ban ends. If the command
+fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket.
 
 The ban covers only the start of a ticket. A task in flight is not a start, so the ban does not stop it. The rule gives
 no steps for two broken-test issues open at the same time. A second failed run most likely has the same cause, and the
