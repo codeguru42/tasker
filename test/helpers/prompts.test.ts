@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { readPromptTemplate } from "../../src/prompts/template-file.js";
 import { placeholderNames } from "../../src/prompts/template.js";
+import { thrownBy } from "./errors.js";
 import { repoRoot } from "./processes.js";
 import {
   commitText,
@@ -72,9 +73,10 @@ describe("commitText", () => {
 });
 
 describe("executePrompts", () => {
-  it("reads the prompts under the given root", () => {
-    const { root } = copyWithout("shared-skills.md");
-    expect(prompts(root)).toEqual(prompts());
+  it("passes its root on to the read of the prompts", () => {
+    const { root, missing } = copyWithout("execute-file-access.md");
+    const error = thrownBy(() => prompts(root));
+    expect((error as Error).message).toContain(missing);
   });
 });
 
