@@ -156,11 +156,15 @@ In a handoff, the old orchestrator starts the new orchestrator, as
 
 ### A stop with no handoff
 
-A stop of an orchestrator is the end of its session with no handoff. Examples are a close of its tab by the user and a
-crash of the session. A resume of the same session keeps its context, so it is not a stop. An example is a resume at a
-`/rename`. A `/clear` is also not a stop of this subsection, and no doc gives what a `/clear` keeps.
+A stop of an orchestrator is the end of its session with no handoff and outside the close of a milestone. The stop at
+the close of a milestone is a planned stop that
+[The close of a milestone](dev/operator-start.md#the-close-of-a-milestone) gives, so it is not a stop of this
+subsection. Examples are a close of its tab by the user and a crash of the session. A resume of the same session keeps
+its context, so it is not a stop. An example is a resume at a `/rename`. A `/clear` is also not a stop of this
+subsection, and no doc gives what a `/clear` keeps.
 
-An orchestrator runs until its milestone is complete or it drafts a handoff. So the docs expect no stop with no handoff.
+An orchestrator runs until its milestone is complete or it drafts a handoff. So the docs expect no other stop with no
+handoff.
 
 Suppose that the user starts a new orchestrator with the slug of a stopped orchestrator outside a handoff. The docs give
 no steps for it. The new orchestrator runs [the start checks](#the-start-checks) and then its role work, as for a first
