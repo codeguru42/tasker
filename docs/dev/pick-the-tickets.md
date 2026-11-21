@@ -225,10 +225,10 @@ The orchestrator does all the steps of this section.
   job. The find reads each open issue of the scope, and the board watch job reads the board two times each hour. The
   cost: an issue that leaves Todo between two landings gets its raise at the next landing.
 
-  The find only reads and raises. It starts no ticket and stops no start. It uses a fact that a read of the board at
-  that moment already gave, also the `on hold` read of [A ticket on hold](#a-ticket-on-hold). If no such read gave the
-  fact, for example at the start, the find reads it. For a milestone scope, it reads the column of each card and the
-  labels of the open issues of the milestone with
+  The find only reads, raises and updates the record. It starts no ticket and stops no start. It uses a fact that a read
+  of the board at that moment already gave, also the `on hold` read of [A ticket on hold](#a-ticket-on-hold). If no such
+  read gave the fact, for example at the start, the find reads it. For a milestone scope, it reads the column of each
+  card and the labels of the open issues of the milestone with
   `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number,labels,projectItems --jq '.[] | "\(.number)|\([.projectItems[].status.name] | join(","))|\([.labels[].name] | join(","))"'`.
   Each line of the output gives the number of an issue, the columns of its cards separated by commas, and its labels
   separated by commas. A `|` separates the three parts. On 2026-11-21, with gh 2.102.1, the command printed one line for
@@ -274,11 +274,29 @@ The orchestrator does all the steps of this section.
   For each issue with the decision "move", the orchestrator moves the card to Todo with the move command of
   [The project board](issues.md#the-project-board). The issue can then start at the next read of the board.
 
-  The orchestrator keeps, in its session, each raised issue with its facts at the raise. At a later find, it raises
-  nothing for an issue with the same facts. A change of the facts gives a new raise.
+  The record of the find holds one entry for each raised issue. The entry holds the issue and its facts at the raise.
+  The orchestrator keeps the record in its session. It writes no comment, no label and no file for the record, except
+  the handoff file that
+  [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) gives.
 
-  If a read of the find fails, [the failure rule](limits.md#the-failure-rule) applies. The find raises nothing, and it
-  runs again at the next read of the board.
+  At each find, the orchestrator compares the facts of each issue outside Todo with the record. If the entry of the
+  issue holds the same facts, the find raises nothing for the issue. If the issue has no entry, or its entry holds other
+  facts, the find raises the issue. The record then holds an entry with the new facts. At each find, the orchestrator
+  also drops the entry of each issue that is no longer an issue outside Todo. So if that issue later becomes an issue
+  outside Todo again, the next find raises it.
+
+  A rule that already asks or tells the user about an issue gives the raise of that issue. The find then raises nothing
+  more for that issue. [The earlier-blocker offer](#pick-the-tickets) is such a rule. If the earlier-blocker offer asks
+  the user about the issue or tells the user about it, this counts as the raise of the issue. The entry of the issue
+  then holds the facts of that moment.
+
+  The answer "leave it" to a question of the find keeps the entry. A "no" of the user to the earlier-blocker offer also
+  keeps the entry. So a later find raises nothing for the same facts.
+
+  The record serves only the find. Each other rule keeps its own memory of what it asked.
+
+  If a read of the find fails, [the failure rule](limits.md#the-failure-rule) applies. The find raises nothing and
+  changes no entry, and it runs again at the next read of the board.
 
   Case 1: the card of #A is in In progress, and `tasker status` lists no task for #A. At the start, after the start
   reads, the find puts #A in the question.
@@ -302,6 +320,19 @@ The orchestrator does all the steps of this section.
 
   Case 8: #M has no card and an open blocker outside the scope. The no-card row is the last row, so the row of the
   blocker gives the raise. The report names both facts.
+
+  Case 9: the find raised #C for the label `on hold`, and the card of #C is in Todo. Later the user removes the label,
+  and #C is no longer an issue outside Todo. The next find drops the entry of #C. Later the user adds the label again.
+  The next find raises #C again.
+
+  Case 10: the find raised #A for its card in In progress, and `tasker status` lists no task for #A. Later #A gets an
+  open blocker outside the scope. The next find raises #A again, and the entry of #A then holds the new facts.
+
+  Case 11: #E has an open blocker of an earlier milestone that no orchestrator runs. The earlier-blocker offer asks the
+  user about #E. This counts as the raise of #E, so the find raises nothing more for #E.
+
+  Case 12: the user says no to the earlier-blocker offer for #E. A later find with the same facts of #E raises nothing
+  for #E.
 
 - Run at most 3 task subagents at the same time, one ticket for each task subagent. A task subagent for one task change
   takes a free slot. So does an ended task subagent whose slot the orchestrator freed. If all 3 slots are in use, the
