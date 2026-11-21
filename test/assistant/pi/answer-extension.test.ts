@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PI_ANSWER_TOOL_NAME } from "../../../src/assistant/pi/answer-tool.js";
@@ -6,15 +6,19 @@ import { planAnswerJsonSchema } from "../../../src/plan/answer.js";
 import { reviewAnswerJsonSchema } from "../../../src/review/answer.js";
 import { thrownBy } from "../../helpers/errors.js";
 import { useTempDir } from "../../helpers/temp.js";
-import answerExtension from "../../../src/assistant/pi/answer-extension.js";
+import answerExtension, {
+  ANSWER_SECTION_PATH,
+  createAnswerExtension,
+} from "../../../src/assistant/pi/answer-extension.js";
+import { packagePath } from "../../../src/package-path.js";
 import { useFakePiExtension } from "../../helpers/fake-pi-extension.js";
 
-function loadAnswerExtension(schemaPath: string) {
+function loadAnswerExtension(schemaPath: string, load: typeof answerExtension = answerExtension) {
   const extension = useFakePiExtension();
   const previousArgv = process.argv;
   process.argv = [...previousArgv, "--tasker-answer-schema", schemaPath];
   try {
-    answerExtension(extension.pi);
+    load(extension.pi);
   } finally {
     process.argv = previousArgv;
   }
@@ -85,6 +89,21 @@ describe("answerExtension", () => {
         "After three rejected calls, the tool goes away.\n" +
         "With no tool, end the reply with the answer as one JSON object in a fenced json block.",
     );
+  });
+
+  it("finds the answer section in the source tree", () => {
+    expect(ANSWER_SECTION_PATH).toBe(packagePath("prompt-templates/pi/answer-section.md"));
+    expect(existsSync(ANSWER_SECTION_PATH)).toBe(true);
+  });
+
+  it("names the path of a missing answer section", () => {
+    const missing = join(useTempDir("tasker-pi-answer-section-"), "missing", "answer-section.md");
+    const error = thrownBy(() =>
+      loadAnswerExtension(writeSchema(planAnswerJsonSchema()), createAnswerExtension(missing)),
+    );
+
+    expect(String(error)).toContain("cannot read its template file");
+    expect(String(error)).toContain("missing");
   });
 
   it("hides the answer tool after three rejected top-level calls", async () => {
