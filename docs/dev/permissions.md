@@ -175,8 +175,8 @@ The facts:
   of the parent to the Agent tool had no `agent_type`.
 - In auto mode, a shell write (`echo hi > w.txt`) ran with no denial. The `PermissionRequest` hook did not run, and a
   `PreToolUse` hook saw the call. In default mode, the same call needed approval, the `PermissionRequest` hook ran, and
-  the call was denied. So a `PermissionRequest` hook misses calls that auto mode allows. A hook for choice C must be a
-  `PreToolUse` hook.
+  the call was denied. So a `PermissionRequest` hook misses calls that auto mode allows. A hook that gives each actor
+  its own limits must be a `PreToolUse` hook.
 - Not shown: whether a `tools` list of a subagent removes a tool. The probe wrote the file with a Bash redirect and made
   no Write call.
 - Not measured: that a failure of a hook denies the call.
