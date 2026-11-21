@@ -1775,8 +1775,8 @@ The open questions keep their ids across rounds. As a result, an answered questi
 trackable.
 
 The prompts share their common rules in the fragment files `prompt-templates/tasker/shared-*.md`, for example the data
-sentence of each block. The turn prompts of the execute run also share their text in the fragment files
-`prompt-templates/tasker/execute-*.md`. As a result, one change updates each of them.
+sentence of each block. The turn prompts of the execute run also share their text in the fragment files that the
+placeholders `{{RULE_EXECUTE_<WORDS>}}` name. As a result, one change updates each of them.
 
 ### The review prompt and the findings answer
 
