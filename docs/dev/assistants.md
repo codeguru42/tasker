@@ -80,6 +80,8 @@ A task runs the assistant in one of three roles: plan, execute or review. The pl
 limits and differ only in their model. The execute role has its own limits, because it does more steps than the other
 two.
 
+The rows of the plan, execute and review sessions in [the table](permissions.md#the-table) follow these limits.
+
 ### The plan and review roles
 
 These roles run in the plan mode. Their shell runs in the sandbox of [the execute role](#the-execute-role), with the

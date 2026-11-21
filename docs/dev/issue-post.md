@@ -123,3 +123,5 @@ The subagent changes no other metadata. It moves no card. It runs no `gh project
 of [The project board](issues.md#the-project-board) that starts "A workflow of the board". It sets no priority, as the
 bullet of [The body of an issue](issue-subagents.md#the-body-of-an-issue) that starts "When the planner plans an issue"
 says. It posts no comment, and it closes and reopens no issue.
+
+The row of the issue-post subagent in [the table](permissions.md#the-table) gives its kinds of command.

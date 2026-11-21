@@ -16,6 +16,9 @@ A [question pane](#a-question-pane) is a herdr pane that an opener subagent open
 holds one [open question](operator-items.md#the-open-items) at a time, even when questions belong to one item or concern
 one action. After a reuse, it holds the next open question.
 
+The rows of the opener subagent, the reuse subagent and the write subagent in [the table](permissions.md#the-table) give
+the kinds of command that each of them runs.
+
 The pane owner (short form: owner) is the session that starts a question pane. An orchestrator of each kind is a pane
 owner. Each pane owner has at most one open pane.
 
@@ -245,6 +248,8 @@ The pane owner gives each part of this paragraph through the opener prompt or th
 gives the question session its own name, the name of the pane owner, the pane id of the pane owner and the question id.
 It also gives the full question. For a question of a task subagent or of the follow-up planner, the first reply names
 the ticket and the session that asks.
+
+The row of a question session in [the table](permissions.md#the-table) gives its kinds of command.
 
 The pane owner gives all offered choices and costs, the recommendation of the sender, and each draft or report path
 named by the question.

@@ -6,6 +6,9 @@ The readers of this page are the orchestrator and the task subagents.
 
 These limits apply to the orchestrator and to the task subagents, except where a bullet or a rule names one actor.
 
+The row of the orchestrator and the rows of the task subagents in [the table](permissions.md#the-table) give the kinds
+of command that each of them runs.
+
 - The task subagent reads the output of a task with the `tasker show` commands, for example `tasker show`,
   `tasker show-plan`, `tasker show-verify` and `tasker show-review`. [The own-worktree rule](#the-own-worktree-rule)
   gives the rule for a direct read of a file of the data folder of tasker, for example a transcript or a log file.
