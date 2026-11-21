@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { useProcessEnv, useTempDir, useTempFile, useTempHome, writeFileWithParents } from "./temp.js";
+import { useMissingFile, useProcessEnv, useTempDir, useTempFile, useTempHome, writeFileWithParents } from "./temp.js";
 
 describe("useTempDir", () => {
   let saved = "";
@@ -40,6 +40,31 @@ describe("useTempFile", () => {
 
     expect(savedFolder).not.toBe("");
     expect(existsSync(savedFolder)).toBe(true);
+  });
+
+  it("removes the folder after the test", () => {
+    expect(savedFolder).not.toBe("");
+    expect(existsSync(savedFolder)).toBe(false);
+  });
+});
+
+describe("useMissingFile", () => {
+  let savedFolder = "";
+
+  it("gives a path in a missing folder", () => {
+    const path = useMissingFile("tasker-use-missing-file-", "note.txt");
+
+    expect(path.endsWith("/missing/note.txt")).toBe(true);
+    expect(existsSync(path)).toBe(false);
+  });
+
+  it("makes the folder above the missing parent and writes nothing", () => {
+    const path = useMissingFile("tasker-use-missing-file-", "note.txt");
+    savedFolder = dirname(dirname(path));
+
+    expect(existsSync(dirname(path))).toBe(false);
+    expect(existsSync(savedFolder)).toBe(true);
+    expect(readdirSync(savedFolder)).toEqual([]);
   });
 
   it("removes the folder after the test", () => {
