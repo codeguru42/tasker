@@ -27,6 +27,12 @@ own session.
 [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message) give six kinds and a seventh kind, the request
 of the request rule.
 
+**Placeholder**: A name in double braces, for example `{{ISSUE_TEXT}}`, in the body of a prompt template. The code fills
+it with a value. [prompt-templates.md](prompt-templates.md) gives the form.
+
+**Prompt template**: A file `prompt-templates/<family>/<name>.md` with front matter and a body. The body is the words of
+one prompt. [prompt-templates.md](prompt-templates.md) gives the rules.
+
 **Question session**: The Claude Code session in a [question pane](question-pane.md#a-question-pane). It has no role and
 no slug, although its name starts with `question-`.
 

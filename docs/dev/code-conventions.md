@@ -32,8 +32,9 @@ when one function serves several cases.
   run. See [assistants.md](assistants.md).
 - `src/review/` holds the findings answer of a review run (its shape and its checks) and the text form of a list of
   findings. See [assistants.md](assistants.md).
-- `src/prompts/` holds the prompt templates, their fill, their version and the archive. See
-  [assistants.md](assistants.md).
+- `src/prompts/` holds the code that fills, versions and archives the prompts. The template files live in
+  `prompt-templates/` at the root of the repo. See [assistants.md](assistants.md) and
+  [prompt-templates.md](prompt-templates.md).
 - `AGENTS.md` is an index that links to the docs. [The section "AGENTS.md" of rules.md](rules.md#agentsmd) says which
   rule text it holds. Each assistant session reads it first.
 - `CLAUDE.md` has one line, `@AGENTS.md`. Claude Code reads `CLAUDE.md`, and the line imports `AGENTS.md`.

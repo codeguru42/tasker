@@ -64,6 +64,7 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/tasks.md](docs/dev/tasks.md): the task commands.
 - [docs/dev/phases.md](docs/dev/phases.md): the phases.
 - [docs/dev/assistants.md](docs/dev/assistants.md): the assistant providers.
+- [docs/dev/prompt-templates.md](docs/dev/prompt-templates.md): the prompt templates.
 - [docs/dev/codex-sessions.md](docs/dev/codex-sessions.md): the measured facts of Codex sessions.
 - [docs/dev/pi-sessions.md](docs/dev/pi-sessions.md): measured pi tools and limits for a pi session in a herdr pane.
 - [docs/dev/release.md](docs/dev/release.md): the releases.
