@@ -1,19 +1,20 @@
-const CORRECTIVE_PROMPT = [
-  "Tasker refuses your last answer. Tasker found these problems:",
-  "",
-  "<problems>",
-  "",
-  "Give the whole answer again. Call the tool `submit_answer` one time, as your last action. If the tool is gone, end",
-  "your reply with one JSON object in a fenced `json` block. The answer must match this JSON Schema:",
-  "",
-  "```json",
-  "<schema>",
-  "```",
-].join("\n");
+import { packagePath } from "../../package-path.js";
+import { fillTemplate } from "../../prompts/template.js";
+import { readPromptTemplate } from "../../prompts/template-file.js";
 
-export function correctivePrompt(problems: readonly string[], schema: Record<string, unknown>): string {
-  const problemsText = problems.map((problem) => `- ${problem}`).join("\n");
-  return CORRECTIVE_PROMPT.replace(/<problems>|<schema>/gu, (placeholder) =>
-    placeholder === "<problems>" ? problemsText : JSON.stringify(schema, null, 2),
-  );
+export const CORRECTIVE_TEMPLATE_PATH = packagePath("prompt-templates/pi/corrective.md");
+
+export function readCorrectiveTemplate(path: string): string {
+  return readPromptTemplate(path).body;
+}
+
+export function correctivePrompt(
+  template: string,
+  problems: readonly string[],
+  schema: Record<string, unknown>,
+): string {
+  return fillTemplate("pi/corrective", template, {
+    PROBLEMS: problems.map((problem) => `- ${problem}`).join("\n"),
+    SCHEMA: JSON.stringify(schema, null, 2),
+  });
 }

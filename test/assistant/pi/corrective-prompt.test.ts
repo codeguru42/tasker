@@ -52,8 +52,8 @@ describe("correctivePrompt", () => {
   });
 
   it("fills with fillTemplate", () => {
-    expect(String(thrownBy(() => correctivePrompt("{{PROBLEMS}}", ["p"], {})))).toContain(
-      "needs a value for {{SCHEMA}}",
+    expect(String(thrownBy(() => correctivePrompt("{{PROBLEMS}} {{SCHEMA}} {{OTHER}}", ["p"], {})))).toContain(
+      "needs a value for {{OTHER}}",
     );
   });
 

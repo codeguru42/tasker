@@ -12,7 +12,7 @@ import type { AssistantEvent, AssistantProvider, RunInput, RunOutcome, Usage } f
 import { assistantModelCheck } from "../model-check.js";
 import { upstreamOf } from "../models.js";
 import { piAnswer } from "./answer.js";
-import { correctivePrompt } from "./corrective-prompt.js";
+import { CORRECTIVE_TEMPLATE_PATH, correctivePrompt, readCorrectiveTemplate } from "./corrective-prompt.js";
 import { type PiFiles, piArgs } from "./args.js";
 import { piChildEnv } from "./child-env.js";
 import { piAuthCheck, piDoctorChecks } from "./doctor.js";
@@ -131,7 +131,10 @@ function outcomeOfRun(
 
 type PiChildEnv = NodeJS.ProcessEnv & { PI_CODING_AGENT_DIR: string };
 
-export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvider {
+export function createPiProvider(
+  files: PiFiles = DEFAULT_FILES,
+  correctiveTemplatePath: string = CORRECTIVE_TEMPLATE_PATH,
+): AssistantProvider {
   return {
     id: "pi",
     async run(input) {
@@ -176,6 +179,14 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
 
       const initialCheck = checkBeforeSpawn(input);
       if ("failure" in initialCheck) return initialCheck.failure;
+      let correctiveTemplate: string | undefined;
+      if (input.jsonSchema !== undefined && input.correctiveTurns > 0) {
+        try {
+          correctiveTemplate = readCorrectiveTemplate(correctiveTemplatePath);
+        } catch (error) {
+          return failed(input, errorMessage(error));
+        }
+      }
 
       const execute = input.access === "workspace-write";
       const schemaPath =
@@ -352,7 +363,7 @@ export function createPiProvider(files: PiFiles = DEFAULT_FILES): AssistantProvi
         priorOutcome = combined(current);
         if (corrections >= input.correctiveTurns || Date.now() >= deadline) return priorOutcome;
         corrections += 1;
-        prompt = correctivePrompt(processResult.noAnswerProblems, input.jsonSchema!);
+        prompt = correctivePrompt(correctiveTemplate!, processResult.noAnswerProblems, input.jsonSchema!);
       }
     },
     doctorChecks: (repos) => piDoctorChecks(repos, os.platform()),
