@@ -2,7 +2,7 @@ import type { VcsContext, VcsProvider } from "../provider.js";
 import type { GitVcsConfig } from "./config.js";
 import {
   DENIED_COMMANDS,
-  EXECUTE_COMMIT_TEXT,
+  readExecuteCommitText,
   readDenyPaths,
   sandboxWritePaths,
   sharedFolder,
@@ -203,7 +203,10 @@ export function createGitProvider({ remote, config }: { remote: string; config: 
     assistantSurface(ctx) {
       const { clone, publishTokens } = pathsOf(ctx);
       return {
-        executeCommitText: EXECUTE_COMMIT_TEXT,
+        // Only the execute run reads this, so a plan run or a review run never reads the file.
+        get executeCommitText() {
+          return readExecuteCommitText();
+        },
         deniedCommands: DENIED_COMMANDS,
         denyReadPaths: readDenyPaths(config),
         publishTokensPath: publishTokens,

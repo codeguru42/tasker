@@ -44,9 +44,7 @@ import {
 } from "../../helpers/git.js";
 
 // The commit rules of the execute prompt.
-const commitText = (): string =>
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  readExecuteCommitText();
+const commitText = (): string => readExecuteCommitText();
 
 describe("createGitProvider", () => {
   let fixture: ProviderFixture;

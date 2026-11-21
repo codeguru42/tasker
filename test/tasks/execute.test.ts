@@ -184,9 +184,7 @@ describe("executeTask checks", () => {
 });
 
 // The commit rules of the execute prompt.
-const commitText = (): string =>
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  readExecuteCommitText();
+const commitText = (): string => readExecuteCommitText();
 
 // The todos in the plan order b, a, so that the dependency order a, b shows in the tests.
 const TODOS = [planTodo("b", ["a"]), planTodo("a")];

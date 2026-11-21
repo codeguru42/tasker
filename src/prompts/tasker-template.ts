@@ -17,17 +17,22 @@ export function fragmentFileName(placeholder: string): string | undefined {
   return words.startsWith("execute-") ? `${words}.md` : `shared-${words}.md`;
 }
 
+// The body of the template file fileName (with .md) in the tasker folder under root.
+export function readTaskerTemplateBody(fileName: string, root: string = packagePath("prompt-templates")): string {
+  return readPromptTemplate(join(root, TASKER_FAMILY, fileName)).body;
+}
+
 // The body of the fragment file of a RULE_ placeholder.
 export function readFragment(placeholder: string, root: string = packagePath("prompt-templates")): string {
   const file = fragmentFileName(placeholder);
   if (file === undefined) {
     throw new Error(`not a fragment placeholder: ${placeholder}`);
   }
-  return readPromptTemplate(join(root, TASKER_FAMILY, file)).body;
+  return readTaskerTemplateBody(file, root);
 }
 
 // The text of a prompt file with each RULE_ placeholder replaced by its fragment. Data placeholders stay open.
 export function taskerPrompt(name: string, root: string = packagePath("prompt-templates")): string {
-  const { body } = readPromptTemplate(join(root, TASKER_FAMILY, `${name}.md`));
+  const body = readTaskerTemplateBody(`${name}.md`, root);
   return body.replace(RULE_PLACEHOLDER, (_match, placeholder: string) => readFragment(placeholder, root));
 }

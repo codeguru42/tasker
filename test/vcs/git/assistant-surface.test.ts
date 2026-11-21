@@ -45,9 +45,7 @@ const EXPECTED = [
 ].join("\n\n");
 
 // The commit rules of the execute prompt.
-const commitText = (): string =>
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  readExecuteCommitText();
+const commitText = (): string => readExecuteCommitText();
 
 // The bwrap arguments: / read-only, each path of writable open for writes.
 function bwrapArgs(writable: readonly string[], cwd: string, command: readonly string[]): string[] {

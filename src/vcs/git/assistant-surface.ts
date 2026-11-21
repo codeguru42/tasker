@@ -2,16 +2,18 @@ import { mkdirSync, realpathSync } from "node:fs";
 import { userInfo } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { errnoCode } from "../../errno.js";
+import { packagePath } from "../../package-path.js";
+import { readTaskerTemplateBody } from "../../prompts/tasker-template.js";
 import type { GitVcsConfig } from "./config.js";
 import { runGit } from "./run.js";
 import { homeKeyPath } from "./ssh.js";
 import { assertTaskWorktree, withoutLineEnd } from "./worktree.js";
 
-// The commit rules of the execute prompt. The caller replaces {{BASE_REF}} with the base revision.
-export const EXECUTE_COMMIT_TEXT = [
-  "Commit each red/green pair, or each completed todo, as its own commit. Never collect the whole plan into one commit at the end. If a run stops partway (a quota limit, a timeout), the work that it finished must stay committed.",
-  "The branch can already hold commits from an earlier execute run of an earlier revision of this plan. Before you start, run `git log --reverse {{BASE_REF}}..HEAD` and read what is there. Build on that work. Do not do it again.",
-].join("\n\n");
+// The commit rules of the execute prompt, from prompt-templates/tasker/commit-rules.md.
+// The caller replaces {{BASE_REF}} with the base revision.
+export function readExecuteCommitText(root: string = packagePath("prompt-templates")): string {
+  return readTaskerTemplateBody("commit-rules.md", root);
+}
 
 // The commands that the shell of the assistant must not run. Each entry is the leading words of a shell command.
 export const DENIED_COMMANDS: readonly string[] = ["git push"];

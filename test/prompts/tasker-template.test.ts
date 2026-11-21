@@ -63,9 +63,7 @@ describe("readFragment", () => {
 });
 
 // The body of the template file fileName in the tasker folder under root.
-const templateBody = (fileName: string, root: string): string =>
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  readTaskerTemplateBody(fileName, root);
+const templateBody = (fileName: string, root: string): string => readTaskerTemplateBody(fileName, root);
 
 describe("readTaskerTemplateBody", () => {
   it("gives the body of a template file under the root", () => {
