@@ -86,7 +86,8 @@ gives the state of the task after its command succeeds.
 8. If real findings are still open, run one `tasker refine <issue> "<feedback>"`. It acts on all the open findings. Add
    the repo-files rule to the feedback text. The task goes to `awaiting_plan_review`. After the refine, do steps 3 and 4
    for the new plan. Then do steps 5 to 8 again, starting with `tasker approve`. The
-   ["Review findings"](review-findings.md#review-findings) section limits the number of loops.
+   ["Review findings"](review-findings.md#review-findings) section limits the number of loops. After review 5,
+   [the leftover exception](review-findings.md#review-findings) says which steps follow the refine.
 9. Run each `tasker` command of this step as [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. The
    rule also covers the `tasker` commands that change a task in the other steps. Before each `tasker accept` of this
    step, also the one after `tasker update-branch`, do [the diff read](#the-diff-read), except after
@@ -185,6 +186,9 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   of the work. In that case, for a stacked task, the result also gives the start base of the last read, or says that the
   task subagent holds no start base.
 - Each finding that the task subagent dismissed, with its reason.
+- Each leftover that the task subagent fixed under [the leftover exception](review-findings.md#review-findings), with
+  the finding, the earlier loop whose fix made the text false, and the false text. The item also says that no sixth
+  review ran.
 - The edge cases that the task subagent left out (see ["Review findings"](review-findings.md#review-findings)).
 - Each claim of the issue that was no longer true and each conflict (see
   [the issue check](plan-review.md#the-issue-check)). For a false claim, the bullet gives the current fact and the
@@ -313,7 +317,8 @@ to the feedback text. The task reaches `awaiting_work_review` after a review wit
 after the task subagent dismisses all the findings in step 7. In this state, `tasker refine` refuses to run. The work
 can come from the orchestrator, for example. After `tasker review <issue> "<feedback>"`, the task goes to `refining`,
 and tasker makes a new plan revision. Then the task goes to `awaiting_plan_review`. Then the task subagent does steps 3
-and 4 for the new plan, and steps 5 to 8 again, starting with `tasker approve`.
+and 4 for the new plan, and steps 5 to 8 again, starting with `tasker approve`. After review 5,
+[the leftover exception](review-findings.md#review-findings) says which steps follow.
 
 ### The diff read
 
