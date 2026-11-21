@@ -1,9 +1,8 @@
-import { cpSync, existsSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkTurnResult } from "../../src/plan/turn-result.js";
 import type { Config } from "../../src/config/schema.js";
-import { packagePath } from "../../src/package-path.js";
 import { promptVersion } from "../../src/prompts/archive.js";
 import { captureAssistantStartInputs } from "../helpers/assistant-run.js";
 import {
@@ -12,7 +11,6 @@ import {
   EXECUTE_PROMPT_NAME,
   EXECUTE_TODO_PROMPT_NAME,
   NO_VERIFY_LOG,
-  readExecutePrompts,
   resolvedQuestionsText,
   todosText,
 } from "../../src/prompts/execute.js";
@@ -21,7 +19,6 @@ import { transitionTask } from "../../src/state/machine.js";
 import { executeTranscriptPath, planRevisionPath, taskTranscriptsDir } from "../../src/store/layout.js";
 import { resumeTask } from "../../src/tasks/resume.js";
 import { requireBaseRevision } from "../../src/tasks/task-state.js";
-import { readExecuteCommitText } from "../../src/vcs/git/assistant-surface.js";
 import { executeTask, type ExecuteRequest } from "../../src/tasks/execute.js";
 import { captureIo } from "../helpers/cli.js";
 import { withTrustedExtensions } from "../helpers/config.js";
@@ -34,6 +31,7 @@ import {
   signalTasker,
 } from "../helpers/remote-push.js";
 import { gitProvider } from "../helpers/git.js";
+import { commitText, executePrompts, templateCopyWithout } from "../helpers/prompts.js";
 import {
   argAfter,
   claudeApprovalWarningEvent,
@@ -53,7 +51,7 @@ import {
   turnResultStream,
 } from "../helpers/plan.js";
 import { quotaPauseLineExpected } from "../helpers/quota.js";
-import { useTempDir, writeFileWithParents } from "../helpers/temp.js";
+import { writeFileWithParents } from "../helpers/temp.js";
 import {
   databasePathOf,
   eventsOf,
@@ -183,16 +181,13 @@ describe("executeTask checks", () => {
 });
 
 // The three execute prompts, as the files give them.
-const templates = () => readExecutePrompts();
-
-// The commit rules of the execute prompt.
-const commitText = (): string => readExecuteCommitText();
+const templates = executePrompts();
 
 // The todos in the plan order b, a, so that the dependency order a, b shows in the tests.
 const TODOS = [planTodo("b", ["a"]), planTodo("a")];
 
 const todoPrompt = (id: string): string =>
-  fillTemplate(EXECUTE_TODO_PROMPT_NAME, templates().todo, {
+  fillTemplate(EXECUTE_TODO_PROMPT_NAME, templates.todo, {
     CURRENT_TODO: currentTodoText(TODOS.find((todo) => todo.id === id)!),
   });
 
@@ -201,7 +196,7 @@ const expectedPrefix = (fixture: ExecuteFixture, todos: typeof TODOS, doneIds: R
   const { dataRoot } = fixture.started;
   const baseRevision = requireBaseRevision(gitProvider(), latestTaskOf(dataRoot, fixture.started.key));
   const questions = withDataRootStore(dataRoot, (store) => store.resolvedQuestionsThrough(fixture.task.id, 1));
-  return fillTemplate(EXECUTE_PROMPT_NAME, templates().execute, {
+  return fillTemplate(EXECUTE_PROMPT_NAME, templates.execute, {
     COMMIT_RULES: fillTemplate("commit-rules", commitText(), { BASE_REF: baseRevision }),
     PLAN_MARKDOWN: fixture.revision.answer.plan_markdown,
     TODOS: todosText(todos, doneIds),
@@ -210,7 +205,7 @@ const expectedPrefix = (fixture: ExecuteFixture, todos: typeof TODOS, doneIds: R
 };
 
 const fixPrompt = (): string =>
-  fillTemplate(EXECUTE_FIX_PROMPT_NAME, templates().fix, {
+  fillTemplate(EXECUTE_FIX_PROMPT_NAME, templates.fix, {
     VERIFY_FAILURE: "npm test failed",
     VERIFY_LOG: NO_VERIFY_LOG,
   });
@@ -293,7 +288,7 @@ describe("executeTask turns", () => {
     expect(argAfter(calls[0].argv, "--resume")).toBe(TEST_EXECUTE_SESSION_ID);
     expect(calls[0].stdin).toBe(todoPrompt("b"));
     expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
-      prompts: [promptVersion(EXECUTE_TODO_PROMPT_NAME, templates().todo)],
+      prompts: [promptVersion(EXECUTE_TODO_PROMPT_NAME, templates.todo)],
     });
   });
 
@@ -318,8 +313,8 @@ describe("executeTask turns", () => {
         data: {
           version: 1,
           prompts: [
-            promptVersion(EXECUTE_PROMPT_NAME, templates().execute),
-            promptVersion(EXECUTE_TODO_PROMPT_NAME, templates().todo),
+            promptVersion(EXECUTE_PROMPT_NAME, templates.execute),
+            promptVersion(EXECUTE_TODO_PROMPT_NAME, templates.todo),
           ],
           from: "executing",
           to: "executed",
@@ -534,9 +529,9 @@ describe("executeTask fix turn", () => {
     ]);
     expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
       prompts: [
-        promptVersion(EXECUTE_PROMPT_NAME, templates().execute),
-        promptVersion(EXECUTE_TODO_PROMPT_NAME, templates().todo),
-        promptVersion(EXECUTE_FIX_PROMPT_NAME, templates().fix),
+        promptVersion(EXECUTE_PROMPT_NAME, templates.execute),
+        promptVersion(EXECUTE_TODO_PROMPT_NAME, templates.todo),
+        promptVersion(EXECUTE_FIX_PROMPT_NAME, templates.fix),
       ],
     });
     expect(withDataRootStore(fixture.config.dataRoot, (store) => store.executeFixTurnState(fixture.task.id, 1))).toBe(
@@ -560,8 +555,8 @@ describe("executeTask fix turn", () => {
     expect(calls[0].stdin).toBe(`${expectedPrefix(fixture, ONE, new Set(["a"]))}\n${fixPrompt()}`);
     expect(eventTypes(fixture, ["executed"])[0].data).toMatchObject({
       prompts: [
-        promptVersion(EXECUTE_PROMPT_NAME, templates().execute),
-        promptVersion(EXECUTE_FIX_PROMPT_NAME, templates().fix),
+        promptVersion(EXECUTE_PROMPT_NAME, templates.execute),
+        promptVersion(EXECUTE_FIX_PROMPT_NAME, templates.fix),
       ],
     });
     expect(result).toMatchObject({ fixTurnDone: true });
@@ -908,10 +903,7 @@ describe("executeTask quota warning", () => {
 describe("executeTask prompt files", () => {
   it("refuses a run when a fragment file of the execute prompts cannot be read", async () => {
     const fixture = await useExecuteFixture({});
-    const root = join(useTempDir("tasker-execute-templates-"), "prompt-templates");
-    cpSync(packagePath("prompt-templates"), root, { recursive: true });
-    const missing = join(root, "tasker", "execute-file-access.md");
-    rmSync(missing);
+    const { root, missing } = templateCopyWithout("execute-file-access.md");
 
     await expectRefused(fixture, `prompt template ${missing} has problems:`, { promptRoot: root });
   });

@@ -6,11 +6,11 @@ import { checkSummaries } from "../../helpers/doctor.js";
 import {
   DENIED_COMMANDS,
   readDenyPaths,
-  readExecuteCommitText,
   sandboxWritePaths,
   sharedFolder,
   trackedPaths,
 } from "../../../src/vcs/git/assistant-surface.js";
+import { commitText } from "../../helpers/prompts.js";
 import { baseRevision, resolveBaseBranch } from "../../../src/vcs/git/base-branch.js";
 import {
   changedPaths,
@@ -42,9 +42,6 @@ import {
   makeProviderFixture,
   type ProviderFixture,
 } from "../../helpers/git.js";
-
-// The commit rules of the execute prompt.
-const commitText = (): string => readExecuteCommitText();
 
 describe("createGitProvider", () => {
   let fixture: ProviderFixture;

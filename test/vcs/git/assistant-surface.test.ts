@@ -17,11 +17,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DENIED_COMMANDS,
   readDenyPaths,
-  readExecuteCommitText,
   sandboxWritePaths,
   sharedFolder,
   trackedPaths,
 } from "../../../src/vcs/git/assistant-surface.js";
+import { commitText } from "../../helpers/prompts.js";
 import { runGit } from "../../../src/vcs/git/run.js";
 import { isInside } from "../../../src/real-path.js";
 import { createTaskWorktree } from "../../../src/vcs/git/worktree.js";
@@ -43,9 +43,6 @@ const EXPECTED = [
   "Commit each red/green pair, or each completed todo, as its own commit. Never collect the whole plan into one commit at the end. If a run stops partway (a quota limit, a timeout), the work that it finished must stay committed.",
   "The branch can already hold commits from an earlier execute run of an earlier revision of this plan. Before you start, run `git log --reverse {{BASE_REF}}..HEAD` and read what is there. Build on that work. Do not do it again.",
 ].join("\n\n");
-
-// The commit rules of the execute prompt.
-const commitText = (): string => readExecuteCommitText();
 
 // The bwrap arguments: / read-only, each path of writable open for writes.
 function bwrapArgs(writable: readonly string[], cwd: string, command: readonly string[]): string[] {

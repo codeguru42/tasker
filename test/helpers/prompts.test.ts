@@ -19,17 +19,14 @@ function rules(prompt: string): string[] {
 }
 
 function commitRules(): string {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return commitText();
 }
 
 function prompts(root?: string): unknown {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return executePrompts(root);
 }
 
 function copyWithout(fileName: string): { root: string; missing: string } {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   return templateCopyWithout(fileName);
 }
 

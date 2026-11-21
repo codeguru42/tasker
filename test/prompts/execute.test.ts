@@ -1,8 +1,5 @@
 import { createHash } from "node:crypto";
-import { cpSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { packagePath } from "../../src/package-path.js";
 import { promptVersion } from "../../src/prompts/archive.js";
 import {
   EXECUTE_FIX_PROMPT_NAME,
@@ -10,24 +7,24 @@ import {
   EXECUTE_TODO_PROMPT_NAME,
   EXECUTE_TURN_RULES,
   currentTodoText,
-  readExecutePrompts,
   resolvedQuestionsText,
   todosText,
 } from "../../src/prompts/execute.js";
 import { readFragment } from "../../src/prompts/tasker-template.js";
 import { fillTemplate } from "../../src/prompts/template.js";
-import { readExecuteCommitText } from "../../src/vcs/git/assistant-surface.js";
 import { thrownBy } from "../helpers/errors.js";
-import { EXECUTE_TURN_RULE_NAMES, rulesOf } from "../helpers/prompts.js";
+import {
+  commitText,
+  EXECUTE_TURN_RULE_NAMES,
+  executePrompts,
+  rulesOf,
+  templateCopyWithout,
+} from "../helpers/prompts.js";
 import { planTodo, validPlanAnswer } from "../helpers/plan.js";
-import { useTempDir } from "../helpers/temp.js";
 
-// The three execute prompts, as the files under root give them.
-const prompts = (root?: string) => readExecutePrompts(root);
-
-const EXECUTE_PROMPT = prompts().execute;
-const EXECUTE_TODO_PROMPT = prompts().todo;
-const EXECUTE_FIX_PROMPT = prompts().fix;
+const EXECUTE_PROMPT = executePrompts().execute;
+const EXECUTE_TODO_PROMPT = executePrompts().todo;
+const EXECUTE_FIX_PROMPT = executePrompts().fix;
 
 interface PromptCase {
   name: string;
@@ -147,7 +144,7 @@ describe("the base text of the prompts", () => {
       EXECUTE_PROMPT_NAME,
       EXECUTE_PROMPT,
       () => ({
-        COMMIT_RULES: fillTemplate("commit-rules", readExecuteCommitText(), { BASE_REF: "0123abc" }),
+        COMMIT_RULES: fillTemplate("commit-rules", commitText(), { BASE_REF: "0123abc" }),
         PLAN_MARKDOWN: "## Summary\nThe plan.",
         TODOS: "- [ ] `a`: Do a",
         RESOLVED_QUESTIONS: "None.",
@@ -190,12 +187,9 @@ describe.each(TURN_PROMPTS)("$name, the shared turn rules", ({ template }) => {
 
 describe("readExecutePrompts", () => {
   it("throws when a fragment file is missing", () => {
-    const root = join(useTempDir("tasker-execute-prompts-"), "prompt-templates");
-    cpSync(packagePath("prompt-templates"), root, { recursive: true });
-    const missing = join(root, "tasker", "execute-file-access.md");
-    rmSync(missing);
+    const { root, missing } = templateCopyWithout("execute-file-access.md");
 
-    const error = thrownBy(() => prompts(root));
+    const error = thrownBy(() => executePrompts(root));
 
     expect((error as Error).message.startsWith(`prompt template ${missing} has problems:`)).toBe(true);
   });
