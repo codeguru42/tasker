@@ -187,7 +187,8 @@ The orchestrator does all the steps of this section.
   the milestone of the orchestrator, an added or a removed blocked-by link of an open issue of that milestone, or a move
   of an issue into that milestone. For a set scope, the one change is an added or a removed blocked-by link of an open
   issue of the set. A message about a new issue in the milestone of an issue of the set starts no read. A message of
-  another session never adds an issue to the set. If a read of the board fails,
+  another session never adds an issue to the set. No peer sends such a message, as
+  [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message) says. If a read of the board fails,
   [the failure rule](limits.md#the-failure-rule) applies. The orchestrator starts no ticket that the read covers until a
   later read works. This covers a message of each session on purpose. Today the follow-up planner sends such messages,
   as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A long-running orchestrator
@@ -503,9 +504,12 @@ These rules apply to a stacked ticket and its parent. The user decided them on 2
   applies as written.
 - If the parent belongs to another orchestrator, the stacked orchestrator uses the messages of the hold rule. When the
   stacked ticket starts, the stacked orchestrator sends one message with `SendMessage` to the parent orchestrator, as
-  the hold rule does when the hold starts. Then the parent orchestrator sends two reports to the stacked orchestrator
-  with `SendMessage`. The first report comes when the parent task is in `awaiting_work_review` or a later state. The
-  second report comes when the issue of the parent closes. A refused request or a missing answer is out of scope (#164).
+  the hold rule does when the hold starts. The stacked orchestrator finds the parent orchestrator as
+  [The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) says. If the find fails,
+  [the failure rule](limits.md#the-failure-rule) applies, no message of the hold rule goes out, and the stacked
+  orchestrator tells the user. Then the parent orchestrator sends two reports to the stacked orchestrator with
+  `SendMessage`. The first report comes when the parent task is in `awaiting_work_review` or a later state. The second
+  report comes when the issue of the parent closes. A refused request or a missing answer is out of scope (#164).
 
 ### The parent-hold rule
 
@@ -822,12 +826,15 @@ at the word of the user. For a ticket with a task in flight, the steps come in p
 5. If step 4 removed a link, read the board at once.
 6. Tell the user each removed link and each skipped removal with its reason. If other links exist, ask the user which of
    them to remove. Then remove each link that the user names, and read the board again.
-7. A removed link of step 4 or step 6 can free an issue of another milestone. If the session list of the tools has
-   `orchestrator-<milestone>` of that milestone, tell that session the removed link.
+7. A removed link of step 4 or step 6 can free an issue of another milestone. Send no message about it to a peer, as
+   [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message) says. The peer finds the freed issue at its
+   next read of the board. An orchestrator of a numbered milestone has no board watch job, because
+   ["The long-running orchestrator"](handoff-orchestrator.md#the-long-running-orchestrator) gives that job only to a
+   long-running orchestrator. So an idle peer whose tickets all wait on the freed issue does not start it.
 
 If the list of step 1 fails, [the failure rule](limits.md#the-failure-rule) applies, and no link changes. A later word
 of the user can start the link removal again. If `tasker status` or the read of the state fails, the orchestrator skips
-that removal and tells the user. If a removal, the session list or a message fails, the failure rule applies.
+that removal and tells the user. If a removal fails, the failure rule applies.
 
 The task of an issue in flight already started, so its link no longer stops a start. A stacked task on the task of the
 ticket on hold follows the postpone bullet of [the stacked-ticket rule](#the-stacked-ticket-rule).
