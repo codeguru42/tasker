@@ -262,17 +262,32 @@ The measure had four possible outcomes:
 
 ## The board watch job
 
-A long-running orchestrator also reads the board with one recurring job, the board watch job. A new issue can arrive
-when no ticket of the milestone runs. Then no landing comes, and no read of the board follows. On 2026-10-25,
-orchestrator-docs read the board with a job at minute 7 and minute 37 of each hour.
+Each orchestrator reads the board with one recurring job, the board watch job. The rule covers an orchestrator of a
+numbered milestone, an orchestrator of a [set scope](#the-scope) and a
+[long-running orchestrator](dev/handoff-orchestrator.md#the-long-running-orchestrator). For each kind of scope, a new
+issue can arrive at a time with no running ticket of the scope. Then no landing comes, and no read of the board follows.
+On 2026-10-25, orchestrator-docs read the board with a job at minute 7 and minute 37 of each hour.
+
+The rule names no kind of session, so it covers each kind. No one measured a tool for a recurring job in a session of
+the kind `pi`. If a pi orchestrator cannot make the job, the bullet "If CronList or CronCreate fails" of this section
+applies.
+
+The job of each orchestrator fires two times each hour. Each fire costs the tokens of one read of the board. A pi
+orchestrator that cannot make the job gets a failure at each read of the board.
+[The failure rule](dev/limits.md#the-failure-rule) then tells the user each time.
 
 The description of the CronCreate tool of Claude Code 2.1.310 (read by planner-docs on 2026-10-25) gives these facts:
 
 - A job lives only in its session.
 - A job fires only while the session is idle.
-- A recurring job expires after 7 days. It fires one last time, and then the tool deletes it.
+- A recurring job expires after 7 days. It fires one last time, and then the tool deletes it. No one measured this
+  expiry.
 - CronCreate returns a job id that CronDelete takes.
 - CronList lists the jobs of the session.
+
+On 2026-11-21, orchestrator-m31 read the description of the CronCreate tool in its session. That description said that a
+recurring job expires after 30 days. No one measured this expiry. On the same day, `claude --version` on the machine
+printed `2.1.330 (Claude Code)`. A running session can have an older version, so the version of that read is not known.
 
 The board watch rule has these parts:
 
@@ -287,7 +302,9 @@ The board watch rule has these parts:
   the tickets allow. It reads the issue of a ticket only right before its start, as
   [the open-question rule](dev/pick-the-tickets.md#the-open-question-rule) says. The job changes none of these rules.
 - A read by the job is a read of the board that does not come at a landing. The general rule of the bullet "Each time a
-  ticket lands, read the board again" of [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets) applies to it.
+  ticket lands, read the board again" of [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets) applies to it. A
+  read by the job can also come during the close of a milestone. Then it follows the same rules as a read of the board
+  on a message of another session.
 - Each rule that stops a start wins over the job. Examples are the ban of
   [A failed CI run](dev/ci-wait.md#a-failed-ci-run), a hold of the user and step 1 of
   [The steps of the old orchestrator](dev/handoff-orchestrator.md#the-steps-of-the-old-orchestrator). Another example is
@@ -307,7 +324,9 @@ The board watch rule has these parts:
   board watch job, it reads the board at the other moments that the docs give, for example after each landing.
 - When the job fires 6 days or more after the kept time, the orchestrator deletes it with CronDelete. Then it makes a
   new job, with CronList first. If CronDelete fails, the failure rule applies, and the retry after a failure that the
-  bullet "If CronList or CronCreate fails" gives makes a new job after the old job expires.
+  bullet "If CronList or CronCreate fails" gives makes a new job after the old job expires. The renewal comes before the
+  expiry under each of the two figures, 7 days and 30 days. Under 30 days, the cost is one extra CronDelete and
+  CronCreate each 6 days.
 - At the start of a handoff, as [The suggestion of a handoff](dev/handoff.md#the-suggestion-of-a-handoff) says, the
   orchestrator deletes the job with CronDelete, before step 1 of The steps of the old orchestrator. If CronDelete fails,
   the failure rule applies. The new orchestrator makes its own job. A session that ends with no handoff loses the job
