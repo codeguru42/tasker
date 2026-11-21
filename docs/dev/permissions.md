@@ -158,4 +158,4 @@ The facts:
 - Cost: `total_cost_usd` was 0.107 and 0.104, about 0.21 USD at the API price. The share of the quota of the user is not
   measured.
 
-No row of the table says that a tool enforces a rule, so requirement 5 needs no further measure.
+So these facts need no further measure, as [the place of the rules](#the-place-of-the-rules) says.

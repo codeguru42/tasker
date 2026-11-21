@@ -815,10 +815,6 @@ and after a second check failure, the write subagent stops. It reports the exact
 folder of the call and the purpose. The orchestrator then follows
 [A denied command of the operator](operator-start.md#a-denied-command-of-the-operator) for that call.
 
-A request for a permission rule of an actor in `$HOME/.claude/settings.json` is not a write action of the write
-subagent. It is a request for a new issue to `planner-<slug>`, and no write subagent starts for it. See
-[A change of the rules](permissions.md#a-change-of-the-rules).
-
 The commands after the denied call wait for the answer of the user. If the denied call ran in any choice of that
 section, the orchestrator starts a new write subagent. It runs the commands after the denied call, under the same
 approval. If the user declines the call, or the result is "did not run", the orchestrator tells the user each command
