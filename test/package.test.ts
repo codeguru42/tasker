@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -45,5 +45,12 @@ describe("npm pack", () => {
 
   it("holds no stale file of dist/", () => {
     expect(paths).not.toContain(stalePath);
+  });
+});
+
+describe("package.json", () => {
+  it("lists prompt-templates in files", () => {
+    const text = readFileSync(join(fileURLToPath(repoRoot), "package.json"), "utf8");
+    expect((JSON.parse(text) as { files: string[] }).files).toContain("prompt-templates");
   });
 });
