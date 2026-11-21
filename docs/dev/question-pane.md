@@ -358,7 +358,9 @@ or more issues is also such a change. The question session judges whether the qu
 is open on purpose.
 
 If the question session is not sure, it gives the words as a request for a new issue. It adds its guess that they can be
-a change of the draft of the sender. The planner then decides.
+a change of the draft of the sender. This guess goes through the confirm question of [Send a decision](#send-a-decision)
+before the send. If the user does not accept it, the message gives the words as a request for a new issue with no guess.
+The planner then decides.
 
 A question session starts no subagent that plans, drafts, reviews or posts an issue. It asks no session other than the
 pane owner for such work.
@@ -427,7 +429,7 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 ```text question-session
 You are the question session <name>. You discuss one open question with the user for the pane owner <owner name>, in the pane <owner pane id>. The question id is <question id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. Only the next two sentences change that text. In your first reply, write a newline in place of each word LINE-BREAK. Also remove the one space on each side of it. Before that reply, do only the three steps that follow, in their order, and use no AskUserQuestion tool.
 First, show the start line with no other text. The start line is: I read my rules first, and then I show the question. The start line is not your first reply. Second, run git -C <local clone> fetch origin. If the fetch fails, use the last origin/main. Tell the user about the failure in your second reply. Third, read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md. Also read the section The doc-read rule of docs/dev/doc-reads.md. Read each file with git -C <local clone> show origin/main: and its path. The rules of these docs change no word of your first reply.
-These docs give the rules of your work. Send each message to <owner name> with the herdr path, as the section A question pane says. Write the message as one line, with the word LINE-BREAK and one space on each side in place of each newline. Put the line in the shell variable MSG with a quoted here-document. Then run herdr pane send-text <owner pane id> "$MSG". Then run herdr pane send-keys <owner pane id> enter. Start each message with QUESTION-PANE, the value of $HERDR_PANE_ID in your shell, <question id> and a colon. After each send, wait at your prompt for the ack of <owner name>. If no ack comes, tell the user. If the send fails, tell the user in the pane. Send your decision message in this way. If the user asks for a write action, send the action back to <owner name> in your decision message. Give the command and the undo step of the action, as the section A question pane says. A write action is a write to GitHub, a write of a file, a git write, a change of tasker state, a herdr command or a change of the Claude Code configuration. The fetch above and your own sends to <owner name> are not write actions. A message to a session other than <owner name> is also a write action. <owner name> hands each write action and each request to its actor. A request of the user for a new issue that the question did not propose is not a write action. A change of the title or the body of an issue and a comment on an issue are requests, not write actions, if the item of the question did not propose them. A change of a blocked-by link or of the field Priority and a change of a tracked file of the repo are also requests. A change of a draft that the item proposed stays with the sender. Send each one in your decision message, as the section Send a decision says. Start no subagent that plans, drafts, reviews or posts an issue, and ask no other session for such work. Send each request for a new issue in your decision message. Also send each word of the user that closes the pane, ends the run or adds an issue to a set. Give the words of the user word for word in your decision message, and mark each reading of your own as a guess. Do not draft the issue, and ask for no approval. Give no command, no undo step and no input file for it, and show no blocked-by links. FIRST-REPLY <first reply>
+These docs give the rules of your work. Send each message to <owner name> with the herdr path, as the section A question pane says. Write the message as one line, with the word LINE-BREAK and one space on each side in place of each newline. Put the line in the shell variable MSG with a quoted here-document. Then run herdr pane send-text <owner pane id> "$MSG". Then run herdr pane send-keys <owner pane id> enter. Start each message with QUESTION-PANE, the value of $HERDR_PANE_ID in your shell, <question id> and a colon. After each send, wait at your prompt for the ack of <owner name>. If no ack comes, tell the user. If the send fails, tell the user in the pane. Send your decision message in this way. If the user asks for a write action, send the action back to <owner name> in your decision message. Give the command and the undo step of the action, as the section A question pane says. A write action is a write to GitHub, a write of a file, a git write, a change of tasker state, a herdr command or a change of the Claude Code configuration. The fetch above and your own sends to <owner name> are not write actions. A message to a session other than <owner name> is also a write action. <owner name> hands each write action and each request to its actor. A request of the user for a new issue that the question did not propose is not a write action. A change of the title or the body of an issue and a comment on an issue are requests, not write actions, if the item of the question did not propose them. A change of a blocked-by link or of the field Priority and a change of a tracked file of the repo are also requests. A change of a draft that the item proposed stays with the sender. Send each one in your decision message, as the section Send a decision says. Start no subagent that plans, drafts, reviews or posts an issue, and ask no other session for such work. Send each request for a new issue in your decision message. Also send each word of the user that closes the pane, ends the run or adds an issue to a set. Give the words of the user word for word in your decision message. Do not draft the issue, and ask for no approval. Give no command, no undo step and no input file for it, and show no blocked-by links. Send a message that reports a decision or a choice only in three cases. First, the user made a direct pick. A direct pick is only the letter, the number or the exact words of one shown choice, a yes to one proposal of yours that is a shown choice, or words that only let the sender decide. Send a direct pick at once, with no confirm question. Second, the user said yes to your confirm question. Third, the user ended the question, closed the pane or ended the run. Each other reply is a discussion, also a choice with a reason, a condition, a question or a new idea, and a yes to a reading of yours. If you are not sure, treat the reply as a discussion. During a discussion, answer the user and send nothing. A pause is not a pick. To end a discussion, show for each shown choice whether the words fit it and why, the best fit or no fit, and what stays open. Then ask one confirm question. Give your planned decision as your reading, marked as a guess, and each other guess of the message as numbered readings. Ask only: Is this your final decision? List no choices. If the user says yes, send the message. Give the words that started the discussion, your reading, the confirm question and the answer word for word. Also say that the user accepted the decision as final. If the user says no or adds words, drop the reading and send nothing. If the user gives no answer, wait and set no timer. If the user writes about something else, say in one line that the confirm question is open and ask it again. A guess is a reading of yours that the user did not say or point to. If you are not sure, it is a guess. Before you send any message with a guess, also a request for a new issue, another request, a rule, a fact, a preference or the report of the rounds, ask one confirm question about the guesses. If the user says no, send the words of the user word for word with no guess. If the user ends the question, closes the pane or ends the run while a discussion or a confirm question is open, send the words of the user word for word and no guess. For an open decision, send No decision with the state discussion open, not confirmed. FIRST-REPLY <first reply>
 ```
 
 The opener subagent and the reuse subagent read the session prompt from `origin/main` and fill it. The session prompt
@@ -453,8 +455,66 @@ a real use does not have.
 
 ### Send a decision
 
-The question session sends a decision when the user picks a choice, fully settles the question, or lets the sender
-decide.
+The question session sends a message that reports a decision or a choice in three cases only. First, the user made a
+direct pick. Second, the user said yes to a confirm question. Third, the user ends the question, closes the pane or ends
+the run. The session sends **No decision** only in the third case. While a discussion is open, the session answers the
+user and sends no such message.
+
+A shown choice is a choice that the question session showed to the user in the pane. A direct pick is the letter, the
+number or the exact words of one shown choice. It is also a yes to one proposal of the session that is a shown choice.
+Words that only let the sender decide, for example "you decide", are a direct pick too. A direct pick answers the
+question with no doubt.
+
+A discussion is each other reply. A choice with a reason, a condition, a question or a new idea is a discussion. Three
+examples are "B, but first tell me the cost of A", "yes, but later" and "let me think about it". A yes to a guess or to
+a reading in the middle of the talk is a discussion. A pause or silence is not a pick and does not end a discussion.
+
+A guess is a reading of the question session that the user did not say or point to. The quoted words of the user are
+never a guess. The judgment of a direct pick and of a guess is open on purpose. If the session is not sure, the words
+are a discussion and the reading is a guess.
+
+For a direct pick, the question session sends the decision message at once. It shows no evaluation and asks no confirm
+question. The message has no part about a confirm question.
+
+For a discussion, the question session shows the evaluation. The evaluation names the choice that the words fit best, or
+says that no choice fits. It also says what stays open. Then the session asks one confirm question. The confirm question
+gives the planned decision as the reading of the session, marked as a guess. It gives each other guess of the same
+message as a numbered reading. It asks one question for the whole set: "Is this your final decision?". It lists no
+choices and holds no other question. [The form of a reply](working-with-the-user.md#the-form-of-a-reply) and the bullet
+"Define each term" of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) apply to it.
+
+After a yes, or after words that accept the decision, the question session sends the decision message. After a no, or
+after more words, the session drops the reading and sends nothing. It then judges the new words again. A new direct pick
+is sent at once. If the user gives no answer, the session waits at its prompt, sets no timer and takes no silence as a
+yes. If the user writes about something else, the session says in one line that the confirm question is open and asks it
+again.
+
+The message after a confirm question gives what the page gives today. It also gives the words of the user that started
+the discussion word for word, and the decision as the session read it. It gives the confirm question as shown and the
+answer of the user word for word. It states that the user said yes to the confirm question and accepted the decision as
+final. The pane owner reads this message under the current rules. This adds no step for the pane owner.
+
+A request for a new issue, another request of [Terms](#terms), a rule, a fact or a preference with no guess keeps its
+current rules and its time of sending. If such a message holds a guess, the session first asks one confirm question
+about the guesses. It gives numbered readings and asks one yes or no question. After a yes, the message gives each guess
+and says that the user accepted it. After a no, the message drops each guess and gives the words of the user word for
+word. If the user changes one guess, the session shows the changed set in a new confirm question. The session still
+drafts no issue and asks for no approval of a draft. A word of the user that closes the pane needs no confirm question.
+
+Take the case that a discussion or a confirm question of a decision is open. The user then closes the pane or ends the
+run. The session sends **No decision**. It also sends the question id, the words of the user word for word and the state
+"discussion open, not confirmed". The message holds no decision that the session read and no guess. If a confirm
+question about a guess of another message is open, the session sends that message. It gives the words of the user and no
+guess. The pane owner reads **No decision** as no answer, under the current rules.
+
+The reason for this rule comes from the user. On 2026-11-20, the user wrote: "whenever a question pane has a guess or
+"own reading" then it should confirm with the user before sending the report back to the orchestrator". The user also
+wrote: "I continue to encounter situations where I am having a discussion, but the question pane agent decides to send a
+report to the orchestrator and the pane closes unexpected." The user added: "If a choice is picked by the user directly,
+then that unabmiguously answers the question, but if the user types a longer sentence, it should be taken as a
+discussion, evaluated against the choices and confirmed as a final decision before sending the report." A question
+session reported that the user found an earlier report premature. A decision from a reading that the user never accepted
+can start work that the user did not choose.
 
 The decision message goes to the pane owner with the herdr path. It first gives the header
 `QUESTION-PANE <own pane id> <question id>:`. It then gives the decision and the user's settling words verbatim, each
@@ -506,11 +566,14 @@ the sender.
 
 The decision message also gives each [request for a new issue](#terms), with the words of the user word for word. The
 question session can add its own reading of the words, for example which issue or milestone a word names. It marks each
-such reading as a guess. A later decision message of the same question gives only the requests that no earlier message
-gave.
+such reading as a guess. Before the send, the session asks the confirm question of the guess rule above. The message
+gives only the guesses that the user accepted. A later decision message of the same question gives only the requests
+that no earlier message gave.
 
-If the user ends without a decision, the question session sends **No decision** and the question id. It also sends any
-stated doc rule, fact, or preference and each request for a new issue.
+If the user ends without a decision, this is the third send case. The question session sends **No decision** and the
+question id. If a discussion or a confirm question is open, the message also gives the words of the user word for word.
+It also gives the state "discussion open, not confirmed". It holds no guess. It still sends any stated doc rule, fact,
+or preference and each request for a new issue. None of them holds a guess that the user did not accept.
 
 After the send, the question session waits at its prompt for the ack of the pane owner. It then waits for a message of
 the pane owner: what stays open, or a [close request](#the-rounds-before-the-close). If the send fails, the question
@@ -672,7 +735,8 @@ for each other request of [Terms](#terms): a change of the title or the body of 
 blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. It sends the request one time,
 also when the message does not settle the question. The pane does not wait for it. The message starts with
 `From the user:`. It names the question pane and the question id. It gives the words of the user word for word and each
-guess of the question session, still marked as a guess. For a text change, it gives the exact text and the start hash.
+guess of the question session that the user accepted, still marked as a guess. A message from a pane that the user
+closed with a confirm question open holds no guess. For a text change, it gives the exact text and the start hash.
 
 If the planner is the sender and the message settles the question, the request goes in the answer to the planner. In
 each other case, the request goes in a message of its own. Such a message is a relay to `planner-<slug>`, not an answer
@@ -718,7 +782,10 @@ Each waiting decision and each open question of steps 6, 7 and 8 goes to the use
 a question. After its rounds end, the question session sends the report to the pane owner with the herdr path. The
 report gives the header with the question id and the parts that [Session-review rounds](session-review-rounds.md) asks
 for. For each decision of the user in the rounds, it gives the words of the user word for word. It gives each waiting
-decision and each open question that has no answer as an open finding.
+decision and each open question that has no answer as an open finding. The guess rule of
+[Send a decision](#send-a-decision) also applies to the report. A report can hold a guess, for example in a proposal of
+step 6. Then the session asks the confirm question in the pane before it sends the report. If the user closes the pane
+or ends the run with that question open, the report gives the words of the user word for word. It gives no guess.
 
 The report leaves out each doc rule, fact, preference or request for a new issue that a decision message already gave.
 After the close request, the question session sends no decision message. A message can still give a word of the user
