@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { promptTemplateTestProblems } from "./prompt-templates.js";
+import { fragmentProblems, promptFileProblems, promptTemplateTestProblems } from "./prompt-templates.js";
 import { repoRoot } from "./processes.js";
 import { useTempDir, writeFileWithParents } from "./temp.js";
 
@@ -54,5 +54,57 @@ describe("promptTemplateTestProblems", () => {
   it("gives no problem for the real folders", () => {
     const root = fileURLToPath(repoRoot);
     expect(promptTemplateTestProblems(join(root, "prompt-templates"), join(root, "test/prompt-templates"))).toEqual([]);
+  });
+});
+
+function fragmentText(body: string, placeholders = "{}"): string {
+  return `---\nname: shared-x\ndescription: Load this template when you write a prompt.\nplaceholders: ${placeholders}\n---\n${body}`;
+}
+
+function promptText(body: string): string {
+  return `---\nname: p\ndescription: Load this template when you write a prompt.\nplaceholders:\n  DATA: text\n---\n${body}`;
+}
+
+describe("fragmentProblems", () => {
+  function fragment(text: string): string {
+    const path = join(useTempDir("tasker-fragment-"), "prompt-templates", "tasker", "shared-x.md");
+    writeFileWithParents(path, text);
+    return path;
+  }
+
+  it("gives no problem for a valid fragment", () => {
+    expect(fragmentProblems(fragment(fragmentText("One line.")), "One line.")).toEqual([]);
+  });
+
+  it("reports a placeholder in the body", () => {
+    expect(fragmentProblems(fragment(fragmentText("One {{X}} line.")), "One {{X}} line.")).not.toEqual([]);
+  });
+
+  it("reports a final newline in the body", () => {
+    expect(fragmentProblems(fragment(fragmentText("One line.\n")), "One line.")).toContain(
+      "the body ends with a newline",
+    );
+  });
+
+  it("reports a body that is not the text", () => {
+    expect(fragmentProblems(fragment(fragmentText("One line.")), "Other line.")).toContain("the body is not the text");
+  });
+});
+
+describe("promptFileProblems", () => {
+  function root(body: string): string {
+    const dir = join(useTempDir("tasker-prompt-file-"), "prompt-templates");
+    writeFileWithParents(join(dir, "tasker", "p.md"), promptText(body));
+    return dir;
+  }
+
+  it("gives no problem for a valid prompt", () => {
+    expect(promptFileProblems("p", { DATA: "x" }, root("Text {{DATA}}\n"))).toEqual([]);
+  });
+
+  it("reports a body that ends with two newlines", () => {
+    expect(promptFileProblems("p", { DATA: "x" }, root("Text {{DATA}}\n\n"))).toContain(
+      "the filled text has an extra newline",
+    );
   });
 });

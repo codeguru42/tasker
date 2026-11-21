@@ -1,6 +1,10 @@
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { fragmentFileName, readFragment, taskerPrompt } from "../../src/prompts/tasker-template.js";
+import { fragmentFileName, readFragment, TASKER_FAMILY, taskerPrompt } from "../../src/prompts/tasker-template.js";
+import { readPromptTemplate } from "../../src/prompts/template-file.js";
+import { repoRoot } from "../helpers/processes.js";
 import { useTempDir, writeFileWithParents } from "../helpers/temp.js";
 
 function fragmentFile(name: string, body: string): string {
@@ -76,5 +80,26 @@ describe("taskerPrompt", () => {
   it("throws when a fragment file holds a placeholder", () => {
     const root = setup("A {{RULE_X}} B\n", ["RULE_X"], "Has {{ISSUE_TEXT}} inside.");
     expect(() => taskerPrompt("p", root)).toThrow("{{ISSUE_TEXT}}");
+  });
+});
+
+describe("the real folder", () => {
+  const root = join(fileURLToPath(repoRoot), "prompt-templates");
+  const folder = join(root, TASKER_FAMILY);
+  const names = (text: string): string[] => [...text.matchAll(/\{\{(RULE_[A-Z0-9_]+)\}\}/g)].map((match) => match[1]);
+  const bodies = ["plan", "refine", "review"].map((name) => readPromptTemplate(join(folder, `${name}.md`)).body);
+  const used = new Set(bodies.flatMap(names));
+
+  it("maps each rule name of a prompt to a fragment file that exists", () => {
+    for (const name of used) {
+      const file = fragmentFileName(name);
+      expect(file, name).toBeDefined();
+      expect(existsSync(join(folder, file ?? "")), name).toBe(true);
+    }
+  });
+
+  it("has a fragment file for exactly the rule names that a prompt uses", () => {
+    const files = readdirSync(folder).filter((file) => file.startsWith("shared-"));
+    expect(files.sort()).toEqual([...used].map((name) => fragmentFileName(name)).sort());
   });
 });

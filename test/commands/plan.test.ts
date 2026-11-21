@@ -4,7 +4,8 @@ import { describe, expect, it, onTestFinished } from "vitest";
 import { checkPlanAnswer } from "../../src/plan/answer.js";
 import { plan, planIssue } from "../../src/commands/plan.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
-import { PLAN_PROMPT, PLAN_PROMPT_NAME } from "../../src/prompts/plan.js";
+import { PLAN_PROMPT_NAME } from "../../src/prompts/plan.js";
+import { taskerPrompt } from "../../src/prompts/tasker-template.js";
 import { transitionTask } from "../../src/state/machine.js";
 import { planRevisionPath, planTranscriptPath, taskPlansDir } from "../../src/store/layout.js";
 import { taskLockName } from "../../src/store/locks.js";
@@ -112,7 +113,10 @@ describe("plan", () => {
 
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     const revision = planRevisionOf(fixture.started.dataRoot, task.id, 1);
-    const promptPath = archivePrompt(fixture.started.dataRoot, PLAN_PROMPT_NAME, PLAN_PROMPT).path;
+    const promptPath = archivePrompt(fixture.started.dataRoot, PLAN_PROMPT_NAME, taskerPrompt(PLAN_PROMPT_NAME)).path;
+    const archived = readFileSync(promptPath, "utf8");
+    expect(archived).toContain("<issue-text>{{ISSUE_TEXT}}</issue-text>");
+    expect(archived).not.toContain("{{RULE_");
     const planPath = planRevisionPath(fixture.started.dataRoot, task, 1);
     expect(result).toEqual({
       code: 0,

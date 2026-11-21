@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { review } from "../../src/commands/review.js";
 import { planRevisionPath, planTranscriptPath, reviewTranscriptPath } from "../../src/store/layout.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
-import { REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
+import { REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
+import { taskerPrompt } from "../../src/prompts/tasker-template.js";
 import { formatFindings } from "../../src/review/findings-text.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { splitRoleModelsRepo } from "../helpers/config.js";
@@ -70,7 +71,7 @@ const outputOf = (dataRoot: string, number: number, count: string, findings: Par
   const task = latestTaskOf(dataRoot, KEY);
   return [
     `reviewed ${KEY}: review ${number}, ${count}`,
-    `${formatFindings(findings)}prompt: ${archivePrompt(dataRoot, REVIEW_PROMPT_NAME, REVIEW_PROMPT).path}`,
+    `${formatFindings(findings)}prompt: ${archivePrompt(dataRoot, REVIEW_PROMPT_NAME, taskerPrompt(REVIEW_PROMPT_NAME)).path}`,
     `transcript: ${reviewTranscriptPath(dataRoot, task, number)}`,
     "",
   ].join("\n");

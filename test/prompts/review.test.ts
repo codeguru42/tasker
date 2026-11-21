@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { earlierReviewsText, REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
-import { SHARED_RULES } from "../../src/prompts/shared.js";
+import { earlierReviewsText, REVIEW_PROMPT_NAME } from "../../src/prompts/review.js";
+import { readFragment, taskerPrompt } from "../../src/prompts/tasker-template.js";
 import { fillTemplate } from "../../src/prompts/template.js";
 import type { PlanRevision, Review } from "../../src/store/store.js";
 import { validPlanAnswer } from "../helpers/plan.js";
@@ -12,6 +12,8 @@ const VALUES = {
   EARLIER_REVIEWS: "review 1\n- [1] src/a.ts: x",
   BRANCH_COMMITS: "abc1234 feat: Add a thing\n+line",
 };
+
+const REVIEW_PROMPT = taskerPrompt(REVIEW_PROMPT_NAME);
 
 function fillReview(values: Record<string, string> = VALUES): string {
   return fillTemplate(REVIEW_PROMPT_NAME, REVIEW_PROMPT, values);
@@ -62,11 +64,14 @@ describe("REVIEW_PROMPT", () => {
     expect(() => fillReview({ BRANCH_COMMITS: "x" })).toThrow("prompt review needs a value for {{EARLIER_REVIEWS}}");
   });
 
-  it.each(["noQuestionSkill", "untrusted", "blockIsData", "fileAccess"] as const)("holds the shared rule %s", (key) => {
-    expect(REVIEW_PROMPT).toContain(SHARED_RULES[key]);
-  });
+  it.each(["RULE_NO_QUESTION_SKILL", "RULE_UNTRUSTED", "RULE_BLOCK_IS_DATA", "RULE_FILE_ACCESS"])(
+    "holds the shared rule %s",
+    (name) => {
+      expect(REVIEW_PROMPT).toContain(readFragment(name));
+    },
+  );
 
-  it.each([SHARED_RULES.openPoints, SHARED_RULES.untrustedInPlan, "plan_markdown", "&lt;"])(
+  it.each([readFragment("RULE_OPEN_POINTS"), readFragment("RULE_UNTRUSTED_IN_PLAN"), "plan_markdown", "&lt;"])(
     "does not hold %j",
     (text) => {
       expect(REVIEW_PROMPT).not.toContain(text);

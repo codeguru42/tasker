@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { fillTemplate } from "../../src/prompts/template.js";
-import { PLAN_PROMPT, PLAN_PROMPT_NAME, planIssueComments, planIssueText } from "../../src/prompts/plan.js";
-import { SHARED_RULES } from "../../src/prompts/shared.js";
+import { PLAN_PROMPT_NAME, planIssueComments, planIssueText } from "../../src/prompts/plan.js";
+import { readFragment, taskerPrompt } from "../../src/prompts/tasker-template.js";
 import { rulesOf } from "../helpers/prompts.js";
 
 const ISSUE = { key: "o/r#1", title: "Add a thing", body: "Line one.\nLine two." };
 const FIRST = { author: "alice", created: "2026-10-01T10:00:00Z", body: "First." };
 const SECOND = { author: "bob", created: "2026-10-02T11:30:00Z", body: "Line one.\nLine two." };
+
+const PLAN_PROMPT = taskerPrompt(PLAN_PROMPT_NAME);
 
 describe("PLAN_PROMPT_NAME", () => {
   it("is plan", () => {
@@ -107,9 +109,9 @@ describe("PLAN_PROMPT", () => {
 
     expect(rule.startsWith("5. ")).toBe(true);
     expect(rule).toContain("<issue-comments>{{ISSUE_COMMENTS}}</issue-comments>");
-    expect(rule).toContain(SHARED_RULES.untrusted);
-    expect(rule).toContain(SHARED_RULES.untrustedInPlan);
-    expect(rule).toContain(SHARED_RULES.blockIsData);
+    expect(rule).toContain(readFragment("RULE_UNTRUSTED"));
+    expect(rule).toContain(readFragment("RULE_UNTRUSTED_IN_PLAN"));
+    expect(rule).toContain(readFragment("RULE_BLOCK_IS_DATA"));
     expect(rule).toContain("<comment-text-N>");
   });
 
@@ -133,7 +135,19 @@ describe("PLAN_PROMPT", () => {
     expect(PLAN_PROMPT).toContain(name);
   });
 
-  it.each(Object.entries(SHARED_RULES))("holds the shared rule %s", (_name, text) => {
-    expect(PLAN_PROMPT).toContain(text);
+  it.each([
+    "RULE_SKILLS",
+    "RULE_NO_QUESTION_SKILL",
+    "RULE_OPEN_POINTS",
+    "RULE_UNTRUSTED",
+    "RULE_UNTRUSTED_IN_PLAN",
+    "RULE_BLOCK_IS_DATA",
+    "RULE_COMPLETE_PLAN",
+    "RULE_DOCUMENTATION",
+    "RULE_FILE_ACCESS",
+    "RULE_ANSWER_LEAD",
+    "RULE_ANSWER_KEYS",
+  ])("holds the shared rule %s", (name) => {
+    expect(PLAN_PROMPT).toContain(readFragment(name));
   });
 });

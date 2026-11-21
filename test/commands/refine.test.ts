@@ -4,12 +4,8 @@ import { describe, expect, it, onTestFinished } from "vitest";
 import { checkPlanAnswer } from "../../src/plan/answer.js";
 import { refine } from "../../src/commands/refine.js";
 import { archivePrompt, promptVersion } from "../../src/prompts/archive.js";
-import {
-  openQuestionsText,
-  PLAIN_REFINE_CONTEXT,
-  REFINE_PROMPT,
-  REFINE_PROMPT_NAME,
-} from "../../src/prompts/refine.js";
+import { openQuestionsText, PLAIN_REFINE_CONTEXT, REFINE_PROMPT_NAME } from "../../src/prompts/refine.js";
+import { taskerPrompt } from "../../src/prompts/tasker-template.js";
 import { transitionTask } from "../../src/state/machine.js";
 import type { Task } from "../../src/store/store.js";
 import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js";
@@ -93,7 +89,7 @@ const V2_ANSWER = validPlanAnswer({
 });
 
 const refinePromptPath = (dataRoot: string) =>
-  join(dataRoot, "prompts", `${promptVersion(REFINE_PROMPT_NAME, REFINE_PROMPT)}.md`);
+  join(dataRoot, "prompts", `${promptVersion(REFINE_PROMPT_NAME, taskerPrompt(REFINE_PROMPT_NAME))}.md`);
 
 // What a run that did not start must leave: the state and the events as before, no claude call, no lock,
 // no second revision, no transcript of v2 and no archive of the refine prompt.
@@ -133,7 +129,7 @@ describe("refine", () => {
 
     const task = latestTaskOf(dataRoot, KEY);
     const revision = planRevisionOf(dataRoot, task.id, 2);
-    const promptPath = archivePrompt(dataRoot, REFINE_PROMPT_NAME, REFINE_PROMPT).path;
+    const promptPath = archivePrompt(dataRoot, REFINE_PROMPT_NAME, taskerPrompt(REFINE_PROMPT_NAME)).path;
     expect(result).toEqual({
       code: 0,
       out: [

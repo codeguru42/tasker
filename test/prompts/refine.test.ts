@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   PLAIN_REFINE_CONTEXT,
   REOPEN_REFINE_CONTEXT,
-  REFINE_PROMPT,
   REFINE_PROMPT_NAME,
   failureContextText,
   openQuestionsText,
@@ -17,7 +16,7 @@ import {
   reviewFeedbackContextExpected,
 } from "../helpers/review.js";
 import { newReview } from "../helpers/store.js";
-import { SHARED_RULES } from "../../src/prompts/shared.js";
+import { readFragment, taskerPrompt } from "../../src/prompts/tasker-template.js";
 import { fillTemplate } from "../../src/prompts/template.js";
 
 const QUESTION = { id: "q-one", question: "Which file?", context: "Two exist." };
@@ -36,6 +35,8 @@ const promotionText = (open = findingEntries(newReview(1).findings), verifyRun: 
 
 const feedbackText = (verifyRun: number | null = 1) =>
   reviewFeedbackContextText("4b825dc642cb", verifyRun ?? undefined);
+
+const REFINE_PROMPT = taskerPrompt(REFINE_PROMPT_NAME);
 
 function fillRefine(): string {
   return fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, VALUES);
@@ -62,8 +63,20 @@ describe("REFINE_PROMPT", () => {
     expect(fillRefine()).toContain(part);
   });
 
-  it.each(Object.entries(SHARED_RULES))("holds the shared rule %s", (_name, text) => {
-    expect(REFINE_PROMPT).toContain(text);
+  it.each([
+    "RULE_SKILLS",
+    "RULE_NO_QUESTION_SKILL",
+    "RULE_OPEN_POINTS",
+    "RULE_UNTRUSTED",
+    "RULE_UNTRUSTED_IN_PLAN",
+    "RULE_BLOCK_IS_DATA",
+    "RULE_COMPLETE_PLAN",
+    "RULE_DOCUMENTATION",
+    "RULE_FILE_ACCESS",
+    "RULE_ANSWER_LEAD",
+    "RULE_ANSWER_KEYS",
+  ])("holds the shared rule %s", (name) => {
+    expect(REFINE_PROMPT).toContain(readFragment(name));
   });
 
   it("gives the context in rule 9 and the feedback in rule 10", () => {

@@ -8,7 +8,8 @@ import { verify } from "../../src/commands/verify.js";
 import { accept } from "../../src/commands/accept.js";
 import { push } from "../../src/commands/push.js";
 import { archivePrompt } from "../../src/prompts/archive.js";
-import { REFINE_PROMPT, REFINE_PROMPT_NAME } from "../../src/prompts/refine.js";
+import { REFINE_PROMPT_NAME } from "../../src/prompts/refine.js";
+import { taskerPrompt } from "../../src/prompts/tasker-template.js";
 import { planRevisionPath, planTranscriptPath } from "../../src/store/layout.js";
 import { runCommand, runHelp } from "../helpers/cli.js";
 import { TEST_SESSION_ID } from "../helpers/fake-claude.js";
@@ -370,6 +371,8 @@ describe("reopen", () => {
     const task = latestTaskOf(fixture.started.dataRoot, KEY);
     expect(existsSync(planRevisionPath(fixture.started.dataRoot, task, 2))).toBe(true);
     expect(existsSync(planTranscriptPath(fixture.started.dataRoot, task, 2))).toBe(true);
-    expect(existsSync(archivePrompt(fixture.started.dataRoot, REFINE_PROMPT_NAME, REFINE_PROMPT).path)).toBe(true);
+    expect(
+      existsSync(archivePrompt(fixture.started.dataRoot, REFINE_PROMPT_NAME, taskerPrompt(REFINE_PROMPT_NAME)).path),
+    ).toBe(true);
   });
 });
