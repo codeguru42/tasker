@@ -24,7 +24,8 @@ Each file starts with a front matter block between two `---` lines. The block ha
 - `description`: One line that starts with `Load this template when`.
 - `placeholders`: The list of the placeholders of the body.
 
-Each key stands once. A second line of a key is a problem, and the code keeps the first value.
+Each key stands once, and each name in the `placeholders` list stands once too. A second line of a key or of a name is a
+problem, and the code keeps the first value.
 
 A placeholder is a name in double braces, for example `{{ISSUE_TEXT}}`. Its name has capital letters, digits and `_`. A
 name in lowercase, for example `{{a}}`, is plain text.
