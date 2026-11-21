@@ -1,4 +1,8 @@
 import { readFileSync } from "node:fs";
+import { errorMessage } from "../../error-message.js";
+import { packagePath } from "../../package-path.js";
+import { fillTemplate } from "../../prompts/template.js";
+import { readPromptTemplate } from "../../prompts/template-file.js";
 import { PI_ANSWER_TOOL_NAME } from "./answer-tool.js";
 
 interface ToolResult {
@@ -53,51 +57,64 @@ interface AnswerExtensionApi {
 
 const FLAG = "--tasker-answer-schema";
 
+export const ANSWER_SECTION_PATH = packagePath("prompt-templates/pi/answer-section.md");
+
 export default function answerExtension(pi: AnswerExtensionApi): void {
-  pi.registerFlag("tasker-answer-schema", {
-    description: "Path to the JSON Schema for the tasker answer tool",
-    type: "string",
-  });
+  createAnswerExtension(ANSWER_SECTION_PATH)(pi);
+}
 
-  const flagIndex = process.argv.indexOf(FLAG);
-  const schemaPath = flagIndex < 0 ? undefined : process.argv[flagIndex + 1];
-  if (!schemaPath) throw new Error(`the answer extension needs a path after ${FLAG}`);
+export function createAnswerExtension(templatePath: string): (pi: AnswerExtensionApi) => void {
+  return (pi) => {
+    pi.registerFlag("tasker-answer-schema", {
+      description: "Path to the JSON Schema for the tasker answer tool",
+      type: "string",
+    });
 
-  let schema: unknown;
-  try {
-    schema = JSON.parse(readFileSync(schemaPath, "utf8")) as unknown;
-  } catch {
-    throw new Error("the answer extension cannot read its schema file");
-  }
-  if (schema === null || typeof schema !== "object" || Array.isArray(schema)) {
-    throw new Error("the answer extension schema is not a JSON object");
-  }
+    const flagIndex = process.argv.indexOf(FLAG);
+    const schemaPath = flagIndex < 0 ? undefined : process.argv[flagIndex + 1];
+    if (!schemaPath) throw new Error(`the answer extension needs a path after ${FLAG}`);
 
-  const tool: ToolDefinition = {
-    name: PI_ANSWER_TOOL_NAME,
-    label: "Submit answer",
-    description: "Submit the structured plan or review answer.",
-    parameters: schema as Record<string, unknown>,
-    async execute() {
-      return {
-        content: [{ type: "text", text: "Answer accepted." }],
-        details: {},
-        terminate: true,
-      };
-    },
+    let schema: unknown;
+    try {
+      schema = JSON.parse(readFileSync(schemaPath, "utf8")) as unknown;
+    } catch {
+      throw new Error("the answer extension cannot read its schema file");
+    }
+    if (schema === null || typeof schema !== "object" || Array.isArray(schema)) {
+      throw new Error("the answer extension schema is not a JSON object");
+    }
+
+    let body: string;
+    try {
+      body = readPromptTemplate(templatePath).body;
+    } catch (error) {
+      throw new Error(`the answer extension cannot read its template file: ${errorMessage(error)}`, { cause: error });
+    }
+    const section = fillTemplate("pi/answer-section", body, { ANSWER_TOOL: PI_ANSWER_TOOL_NAME });
+
+    const tool: ToolDefinition = {
+      name: PI_ANSWER_TOOL_NAME,
+      label: "Submit answer",
+      description: "Submit the structured plan or review answer.",
+      parameters: schema as Record<string, unknown>,
+      async execute() {
+        return {
+          content: [{ type: "text", text: "Answer accepted." }],
+          details: {},
+          terminate: true,
+        };
+      },
+    };
+    pi.registerTool(tool);
+    pi.on("before_agent_start", (event) => {
+      event.systemPromptOptions.sections["tasker-answer"] = section;
+    });
+
+    let rejectedTopLevelCalls = 0;
+    pi.on("tool_execution_end", (event) => {
+      if (event.toolName !== PI_ANSWER_TOOL_NAME || !event.isError || event.parentToolCallId !== undefined) return;
+      rejectedTopLevelCalls += 1;
+      if (rejectedTopLevelCalls === 3) pi.registerTool({ ...tool, exposure: "hidden" });
+    });
   };
-  pi.registerTool(tool);
-  pi.on("before_agent_start", (event) => {
-    event.systemPromptOptions.sections["tasker-answer"] =
-      `Call ${PI_ANSWER_TOOL_NAME} one time, as the last action.\n` +
-      "After three rejected calls, the tool goes away.\n" +
-      "With no tool, end the reply with the answer as one JSON object in a fenced json block.";
-  });
-
-  let rejectedTopLevelCalls = 0;
-  pi.on("tool_execution_end", (event) => {
-    if (event.toolName !== PI_ANSWER_TOOL_NAME || !event.isError || event.parentToolCallId !== undefined) return;
-    rejectedTopLevelCalls += 1;
-    if (rejectedTopLevelCalls === 3) pi.registerTool({ ...tool, exposure: "hidden" });
-  });
 }
