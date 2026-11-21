@@ -212,7 +212,7 @@ The orchestrator does all the steps of this section.
   An issue outside Todo is an open issue of the scope with at least one of these facts:
   1. Its card is in a column other than Todo, and `tasker status` lists no task for its issue key.
   2. It has the label `on hold`, as [A ticket on hold](#a-ticket-on-hold) defines it.
-  3. It has an open blocker that is not an issue of the scope, as the read of the board gave it.
+  3. It has an open blocker outside the scope.
 
   The term also covers an issue with its card in Todo and the label or such a blocker. The facts of an issue are the
   column of its card, the label `on hold` and its list of open blockers outside the scope.
@@ -231,6 +231,16 @@ The orchestrator does all the steps of this section.
   Each line of the output gives the number of an issue, the columns of its cards separated by commas, and its labels
   separated by commas. A `|` separates the three parts. On 2026-11-21, with gh 2.102.1, the command printed one line for
   each of the 25 open issues of M31, for example `748|Todo|on hold`. It reads `tasker status` for the tasks in flight.
+
+  For a milestone scope, the read of the open blockers is a read of the find:
+  `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number,blockedBy`. On 2026-11-21, with gh
+  2.105.0, each node of `.blockedBy.nodes` had a state, and a closed blocker also showed in the nodes. So the find keeps
+  only the nodes with the state `OPEN`.
+
+  An open blocker is outside the scope when its number is not in the list of the open issues of the milestone. The find
+  reads no milestone of a blocker for this test. For the open blockers of one issue, the find uses the read of the
+  paragraph "If the new milestone is" of step 7 of [the defer rule](#the-defer-rule). If a raise names the milestone of
+  a blocker, the find uses the read of [the earlier-blocker offer](#pick-the-tickets).
 
   For an issue with more than one fact, the first row of this table that holds gives the raise:
 
@@ -269,6 +279,12 @@ The orchestrator does all the steps of this section.
 
   Case 3: #C has the label `on hold`, and its card is in Todo. The find at the start gives a report on #C. At the next
   landing, the find raises nothing for #C.
+
+  Case 4: #D is an issue of the milestone. Its open blocker is an issue of "Docs", and no other rule offers to run it.
+  The number of the blocker is not in the list of the open issues of the milestone. So the find gives a report on #D.
+
+  Case 5: #F has one open blocker, an issue of the scope in Todo. The only blocker of #K is closed. The find raises
+  neither #F nor #K for a blocker.
 
 - Run at most 3 task subagents at the same time, one ticket for each task subagent. A task subagent for one task change
   takes a free slot. So does an ended task subagent whose slot the orchestrator freed. If all 3 slots are in use, the
