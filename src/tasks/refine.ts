@@ -7,9 +7,9 @@ import {
   openQuestionsText,
   PLAIN_REFINE_CONTEXT,
   promotionContextText,
-  REFINE_PROMPT,
   REFINE_PROMPT_NAME,
 } from "../prompts/refine.js";
+import { taskerPrompt } from "../prompts/tasker-template.js";
 import { fillTemplate } from "../prompts/template.js";
 import { approvedResetsAtOf, originText, lastTransitionError } from "../state/machine.js";
 import { withTaskLock } from "../store/locks.js";
@@ -135,14 +135,15 @@ export async function runRefine(store: TaskStore, run: RefineRun): Promise<PlanR
   const branch = requireBranch(task);
   const branchCommits = await vcs.ownCommits(ctx, { taskRef: branch, baseRevision });
   const tipGuard = await startTipGuard(vcs, ctx, branch);
-  const prompt = fillTemplate(REFINE_PROMPT_NAME, REFINE_PROMPT, {
+  const template = taskerPrompt(REFINE_PROMPT_NAME);
+  const prompt = fillTemplate(REFINE_PROMPT_NAME, template, {
     CURRENT_PLAN: currentPlan,
     BRANCH_COMMITS: branchCommits,
     CONTEXT: context,
     FEEDBACK: feedback ?? "None.",
     OPEN_QUESTIONS: openQuestionsText(revision.answer.questions),
   });
-  const archived = archivePrompt(config.dataRoot, REFINE_PROMPT_NAME, REFINE_PROMPT);
+  const archived = archivePrompt(config.dataRoot, REFINE_PROMPT_NAME, template);
   const version = store.nextPlanVersion(task.id);
   // The session is already recorded, so refine does not record it again.
   const prepared = await prepareTaskPlanModeRun({

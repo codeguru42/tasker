@@ -2,7 +2,8 @@ import type { Io } from "../cli.js";
 import type { Config } from "../config/schema.js";
 import type { IssueRef } from "../issue-key/ref.js";
 import { archivePrompt } from "../prompts/archive.js";
-import { earlierReviewsText, REVIEW_PROMPT, REVIEW_PROMPT_NAME } from "../prompts/review.js";
+import { earlierReviewsText, REVIEW_PROMPT_NAME } from "../prompts/review.js";
+import { taskerPrompt } from "../prompts/tasker-template.js";
 import { fillTemplate } from "../prompts/template.js";
 import { checkReviewAnswer, reviewAnswerJsonSchema } from "../review/answer.js";
 import type { FindingEntry } from "../review/findings-text.js";
@@ -55,11 +56,12 @@ async function reviewLocked(store: TaskStore, request: ReviewRequest): Promise<R
   const branchCommits = await vcs.ownCommits(ctx, { taskRef: branch, baseRevision });
   const tipGuard = await startTipGuard(vcs, ctx, branch);
   const earlier = earlierReviewsText(store.listReviews(task.id), store.listPlanRevisions(task.id));
-  const prompt = fillTemplate(REVIEW_PROMPT_NAME, REVIEW_PROMPT, {
+  const template = taskerPrompt(REVIEW_PROMPT_NAME);
+  const prompt = fillTemplate(REVIEW_PROMPT_NAME, template, {
     EARLIER_REVIEWS: earlier,
     BRANCH_COMMITS: branchCommits,
   });
-  const archived = archivePrompt(config.dataRoot, REVIEW_PROMPT_NAME, REVIEW_PROMPT);
+  const archived = archivePrompt(config.dataRoot, REVIEW_PROMPT_NAME, template);
   const prepared = await prepareTaskPlanModeRun({
     config,
     store,

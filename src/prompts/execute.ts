@@ -2,7 +2,7 @@
 import type { PlanAnswer } from "../plan/answer.js";
 import { orderTodos } from "../plan/todo-order.js";
 import type { TaskStore } from "../store/store.js";
-import { SHARED_RULES } from "./shared.js";
+import { readFragment } from "./tasker-template.js";
 
 type PlanTodo = PlanAnswer["todos"][number];
 // The type comes from the store, so that it has one home.
@@ -30,7 +30,7 @@ export const EXECUTE_TURN_RULES = {
     "Never end a turn with a question or a request for permission, because nobody is present. One denied command does not mean that every command is denied. Try another way, and report `blocked` only when the work truly cannot be finished.",
 } as const;
 
-const B = SHARED_RULES.blockIsData;
+const B = readFragment("RULE_BLOCK_IS_DATA");
 const T = EXECUTE_TURN_RULES;
 
 export const EXECUTE_PROMPT = [
