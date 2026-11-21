@@ -209,21 +209,18 @@ was
 On that short form, operator-m16 told the user that the denials of that day did not fit the guess that a chain caused
 them. Then operator-m16 withdrew that guess. The exact call later showed that the denied call was a chain.
 
-The classifier of auto mode can deny a `gh` write of a follow-up planner or an orchestrator. An orchestrator asks in its
-question pane with the exact command, the folder and the exact text of the denial. A follow-up planner sends them to
-`orchestrator-<slug>`, which asks in its pane. The user runs the command and gives the exit code and the output to the
+The classifier of auto mode can deny a `gh` write of a follow-up planner. The follow-up planner sends the exact command,
+the folder and the exact text of the denial to `orchestrator-<slug>`, which asks in its
+[question pane](question-pane.md#start). The user runs the command and gives the exit code and the output to the
 question session in the pane. The question session sends them in its decision message, as
 [Send a decision](question-pane.md#send-a-decision) says.
 
-The message to that session gives the output of the command, or says that the command did not run. The output goes with
-the words of the user. If the command ran, the session goes on with its work. If it did not run, the step stays open,
-and the session runs the action in no other form.
+The message to the planner gives the output of the command, or says that the command did not run. The output goes with
+the words of the user. If the command ran, the planner goes on with its work. If it did not run, the step stays open,
+and the planner runs the action in no other form.
 
 An initial planner gives the user the command directly. A check failure keeps its own bullets. On 2026-10-30, the
 classifier denied `gh issue comment` and `gh issue edit` of planner-m26, and the user ran each command.
-
-An actor of [the table](permissions.md#the-table) follows the denial steps above for a denied `gh` write. The
-orchestrator asks the user in its [question pane](question-pane.md#start).
 
 A check failure is a denial whose text says that the classifier of auto mode gave no verdict. A check failure is a tool
 block, with these differences:
