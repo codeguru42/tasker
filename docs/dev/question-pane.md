@@ -685,7 +685,7 @@ that write and reports. The orchestrator then tells the user, and the action doe
 
 The write subagent runs no `tasker` command. The orchestrator sends each task change to a task subagent. It runs
 `tasker model` on the words of the settled message, and each read-only command, itself.
-[the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) gives these rules. A message to
+[The orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) gives these rules. A message to
 another session is a write action. The orchestrator sends it, not the write subagent. The message goes on the path that
 the orchestration pages give for that session, for example the message to its task subagent, and it starts with
 `From the user:`. The herdr path is only for the messages between a question pane and its pane owner, as [Terms](#terms)
@@ -735,7 +735,7 @@ run stops until the user speaks.
 
 A decision message covers only its question. It does not approve a Claude Code permission prompt or a `tasker` setting
 outside its write actions. A write action of a settled message is a request of the user for its `tasker` command.
-[the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) gives the rule of such a request for a
+[The orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) gives the rule of such a request for a
 `tasker` command.
 
 A **No decision** message leaves the question open. The pane owner closes the pane or gives it a reuse, as

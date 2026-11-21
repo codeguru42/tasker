@@ -76,10 +76,11 @@ To run a task change, the orchestrator sends the command to the task subagent of
 under the plain-form rule and the command rules, and it reports the result. An ended task subagent gets the command in a
 message, because a message starts it again, as ["Terms" in "Quota"](quota.md#terms) says. A task with no task subagent
 of this orchestrator gets a new task subagent for this one task change. An example is a parked task of an earlier
-session. See [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. Each step after a
-task change stays. An example is [Delete the job](quota.md#delete-the-job) after the final report of an abort. If the
-send or the start fails, [the failure rule](limits.md#the-failure-rule) applies. The command did not run, and the
-orchestrator does not run it itself. The write subagent of a question pane runs no `tasker` command.
+session. [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the prompt for this
+task subagent. Each step after a task change stays. An example is [Delete the job](quota.md#delete-the-job) after the
+final report of an abort. If the send or the start fails, [the failure rule](limits.md#the-failure-rule) applies. The
+command did not run, and the orchestrator does not run it itself. The write subagent of a question pane runs no `tasker`
+command.
 
 The orchestrator never runs a denied task change. On the word of the user, the task subagent runs the call again in the
 form that the user names. Or the user runs the exact call. [The tool-block rule](#the-tool-block-rule) links here.
