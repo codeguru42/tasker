@@ -1726,7 +1726,11 @@ run, and that run is the one that counts.
 ### The execute prompts
 
 The execute run uses three prompts: `execute`, `execute-todo` and `execute-fix`. `tasker execute` sends them: `execute`
-in the first turn of a new session, `execute-todo` for a todo and `execute-fix` for the fix turn.
+in the first turn of a new session, `execute-todo` for a todo and `execute-fix` for the fix turn. The words of the
+prompts live in the template files [`execute.md`](../../prompt-templates/tasker/execute.md),
+[`execute-todo.md`](../../prompt-templates/tasker/execute-todo.md) and
+[`execute-fix.md`](../../prompt-templates/tasker/execute-fix.md). The commit rules of `execute` live in
+[`commit-rules.md`](../../prompt-templates/tasker/commit-rules.md).
 
 The reasons for the design:
 
@@ -1771,8 +1775,8 @@ The open questions keep their ids across rounds. As a result, an answered questi
 trackable.
 
 The prompts share their common rules in the fragment files `prompt-templates/tasker/shared-*.md`, for example the data
-sentence of each block. The turn prompts of the execute run also share their text in one place. As a result, one change
-updates each of them.
+sentence of each block. The turn prompts of the execute run also share their text in the fragment files
+`prompt-templates/tasker/execute-*.md`. As a result, one change updates each of them.
 
 ### The review prompt and the findings answer
 
