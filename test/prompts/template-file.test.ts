@@ -106,6 +106,33 @@ describe("checkPromptTemplate", () => {
     ]);
   });
 
+  it("reports a repeated name", () => {
+    const text = `${front("name: x", "name: y", DESCRIPTION, "placeholders: {}")}plain\n`;
+    expect(checkPromptTemplate(writeTemplate("fam", "x", text))).toEqual(["front matter line 3 repeats the key name"]);
+  });
+
+  it("reports a repeated description", () => {
+    const text = `${front("name: x", DESCRIPTION, "description: Use this.", "placeholders: {}")}plain\n`;
+    expect(checkPromptTemplate(writeTemplate("fam", "x", text))).toEqual([
+      "front matter line 4 repeats the key description",
+    ]);
+  });
+
+  it("reports a placeholders list followed by an empty placeholders key", () => {
+    const text = `${front("name: x", DESCRIPTION, "placeholders:", "  A: v", "placeholders: {}")}{{A}}\n`;
+    expect(checkPromptTemplate(writeTemplate("fam", "x", text))).toEqual([
+      "front matter line 6 repeats the key placeholders",
+    ]);
+  });
+
+  it("reports a repeated key and another fault in one run", () => {
+    const text = `${front("name: x", "name: z", "placeholders: {}")}plain\n`;
+    expect(checkPromptTemplate(writeTemplate("fam", "x", text))).toEqual([
+      "front matter line 3 repeats the key name",
+      "description is missing",
+    ]);
+  });
+
   it.each([["x"], ["Family/x"], ["a/b/c"]])("reports the path problem for prompt-templates/%s.md", (rest) => {
     const parts = rest.split("/");
     const name = parts.pop()!;
