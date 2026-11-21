@@ -168,7 +168,55 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   user.
 
 - After the 5th loop, if a real finding is still open, or the diff read finds work, the task subagent stops. The
-  orchestrator reports to the user.
+  orchestrator reports to the user. The bullet "The leftover exception" gives the one exception.
+- The leftover exception: after review 5, the task subagent fixes a leftover of its own change and does not stop. Review
+  5 is the fifth `tasker review` that counts as a loop. A same-patch review is not review 5. The own change is the first
+  plan of the ticket, the fix of each of reviews 1 to 4, and each later step of the ticket. An example of a later step
+  is a refine after a failed `tasker verify`.
+
+  A leftover is a real finding of review 5 that meets both tests. The cause test: a change of the own change made the
+  named sentence, link, cell, number or name false, dead or out of date. The file can be a file that the ticket did not
+  edit. Examples are a link to a section that a fix removed, and a table cell that a new rule made false. The examples
+  are not a list of kinds.
+
+  The certainty test: the issue and the own change give the right fix. The fix needs no new rule and no choice between
+  two ways that both follow the issue.
+
+  If each real finding of review 5 is a leftover, the task subagent first names, for each leftover, the earlier change
+  that made the text false. It also names the false text. Then it fixes all the leftovers with one add-work refine. In
+  `reviewed`, that is the refine of step 8 of ["Run one ticket"](run-one-ticket.md#run-one-ticket). In
+  `awaiting_work_review`, that is `tasker review <issue> "<feedback>"` of
+  [the add-work rule](run-one-ticket.md#the-add-work-rule). The feedback names each leftover and says "apply everywhere
+  it fits".
+
+  After the refine, the task subagent does steps 3 and 4 for the new plan. Then it runs `tasker approve`,
+  `tasker execute` and `tasker verify`, as step 5 says, and it runs no `tasker review`. The refine, and
+  `tasker review <issue> "<feedback>"`, run no review session, so they are no loop. The count stays 5, and the final
+  report gives 5. If `tasker verify` fails, [the verify-failure rule](verify-failures.md#the-verify-failure-rule)
+  applies, and no `tasker review` follows.
+
+  Then the task subagent does [the diff read](run-one-ticket.md#the-diff-read) of the whole change one time, as step 9
+  says. If the diff read finds work, the task subagent stops. The exception covers one fix round. If the diff read finds
+  no work, step 9 goes on. If the branch is behind the base branch, step 9 runs `tasker update-branch` as before. The
+  review after that update is the review of the update, and the no-loop-left rule decides it.
+
+  A finding needs a decision when it is a real finding of review 5 and not a leftover. One example is a finding that
+  needs a new rule or a choice between two ways. Another example is a finding about a thing that no change of the ticket
+  made false. If the task subagent is not sure that a finding is a leftover, the finding needs a decision. If one real
+  finding of review 5 needs a decision, the task subagent stops and fixes no finding of review 5. The report of the stop
+  names each finding of review 5 and the test that it meets or fails.
+
+  The exception does not cover some cases. These cases keep the stop of the bullet "After the 5th loop". They are a
+  same-patch review after loop 5, the review after `tasker update-branch` under the no-loop-left rule, and the security
+  report. Work that the diff read found before the exception also keeps that stop. The sixth case of
+  [the stop rule](plan-review.md#the-stop-rule) wins over the exception. It stops the task subagent before
+  `tasker approve`, also when the finding of review 5 meets both tests.
+
+  The reason: a stop for a small fix that is certain costs the user a decision. On 2026-11-20, on #962, #988 and #975,
+  review 5 found only a leftover of the fix of an earlier review. The task subagent fixed it with an add-work refine and
+  its own diff read, and no sixth review ran. On #988, the fix used `tasker review <issue> "<feedback>"` from
+  `awaiting_work_review`.
+
 - On the 5th loop, the task subagent dismisses cosmetic findings with a reason.
 - If a finding is an edge case outside the issue, and it is not a security gap and not a bug in the core path, the task
   subagent dismisses it in step 7. The core path is the main use that the issue describes. The reason says that the edge
@@ -185,7 +233,7 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   close the gap, the orchestrator first posts [a change-of-scope comment](plan-review.md#the-change-of-scope-comment),
   and the task subagent follows the steps of that section. After that, the task subagent adds the work with the step
   that fits the state of the task: the refine of step 4 or step 8, or the add-work rule. If the report comes in the 5th
-  loop, a decision to close the gap counts as a real finding that is still open, and the second bullet of this section
+  loop, a decision to close the gap counts as a real finding that is still open, and the bullet "After the 5th loop"
   applies. The security report does not cover a security gap in a plan before `tasker approve`. The third case of the
   stop rule covers that gap.
 - A refactor or duplication finding is not cosmetic. The task subagent refines a refactor finding in the ticket that
