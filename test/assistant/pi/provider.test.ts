@@ -63,8 +63,8 @@ const measures = JSON.parse(
   readFileSync(new URL("../../fixtures/pi-streams/measures.json", import.meta.url), "utf8"),
 ) as Record<string, { sessionFile: string; stdout: Record<string, unknown>[]; session: unknown[] }>;
 
-function callPi(input: RunInput, files: PiFiles): Promise<RunOutcome> {
-  return fromCreatePiProvider(files).run(input);
+function callPi(input: RunInput, files: PiFiles, correctiveTemplatePath?: string): Promise<RunOutcome> {
+  return fromCreatePiProvider(files, correctiveTemplatePath).run(input);
 }
 
 function validInput(overrides: Partial<RunInput> = {}): RunInput {
@@ -361,6 +361,18 @@ function expectReadOnlyTools(args: string[]) {
 }
 
 describe("createPiProvider pre-spawn refusals", () => {
+  it("refuses a run with a schema when the corrective template is missing", async () => {
+    const missing = join(useTempDir("tasker-pi-corrective-"), "missing", "corrective.md");
+    const fake = useFakePi([]);
+    const input = correctiveInput();
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, makeFiles(), missing);
+
+    expect(refusalOf(outcome).reason).toContain(missing);
+    expect(fake.calls()).toEqual([]);
+  });
+
   it("refuses a JSON Schema without a caller check before spawn", async () => {
     const fake = useFakePi([]);
     const input = validInput({ jsonSchema: planAnswerJsonSchema(), checkAnswer: undefined });
@@ -1921,6 +1933,51 @@ describe("pi corrective turns", () => {
     const correctiveStdin = fake.calls()[1]?.stdin;
     expect(correctiveStdin).toBe(correctivePrompt(["submit_answer: <schema>: unrecognized key"], input.jsonSchema!));
     expect(correctiveStdin).toContain("- submit_answer: <schema>: unrecognized key");
+  });
+
+  it("preserves schema placeholders in braces inside corrective problems", async () => {
+    const input = correctiveInput({
+      checkAnswer: () => ({ ok: false, problems: ["{{SCHEMA}}: unrecognized key"] }),
+    });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstCallStream(input, { findings: [] }), session: firstSession(input) },
+      { stream: continuationCallStream({ findings: [] }), session: continuationSession() },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    await callPi(input, files);
+
+    const correctiveStdin = fake.calls()[1]?.stdin;
+    expect(correctiveStdin).toBe(correctivePrompt(["submit_answer: {{SCHEMA}}: unrecognized key"], input.jsonSchema!));
+  });
+
+  it("does not read the corrective template without a schema", async () => {
+    const missing = join(useTempDir("tasker-pi-corrective-"), "missing", "corrective.md");
+    const input = validInput({ jsonSchema: undefined, correctiveTurns: 2 });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [{ stream: firstTextStream(input), session: firstSession(input) }]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files, missing);
+
+    expect(outcome.kind).toBe("success");
+    expect(fake.calls()).toHaveLength(1);
+  });
+
+  it("does not read the corrective template with no corrective turns", async () => {
+    const missing = join(useTempDir("tasker-pi-corrective-"), "missing", "corrective.md");
+    const input = correctiveInput({ correctiveTurns: 0 });
+    const files = makeFiles();
+    const fake = processScripts(input, files, [
+      { stream: firstCallStream(input, { findings: [] }), session: firstSession(input) },
+    ]);
+    input.env = { ...input.env, ...fake.env };
+
+    const outcome = await callPi(input, files, missing);
+
+    expect(outcome.kind).toBe("success");
+    expect(fake.calls()).toHaveLength(1);
   });
 
   it("uses the plan check problem for a placeholder answer", async () => {
