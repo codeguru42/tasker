@@ -13,7 +13,7 @@ const FOLDER = "prompt-templates";
 const PART = /^[a-z0-9-]+$/;
 const PLACEHOLDER_KEY = /^[A-Z][A-Z0-9_]*$/;
 const DESCRIPTION_START = "Load this template when";
-const PATH_PROBLEM = `the path is not ${FOLDER}/<family>/<name>.md, with lowercase letters, digits and - in each part`;
+export const PATH_PROBLEM = `the path is not ${FOLDER}/<family>/<name>.md, with lowercase letters, digits and - in each part`;
 
 // The family and the name of a template path, or undefined if the path is not prompt-templates/<family>/<name>.md.
 export function promptTemplateParts(path: string): { family: string; name: string } | undefined {
