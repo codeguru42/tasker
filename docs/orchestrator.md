@@ -87,8 +87,9 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
 
 ## The start of an orchestrator
 
-This section gives the scope, the slug and the start of an orchestrator. [docs/dev/GLOSSARY.md](dev/GLOSSARY.md) defines
-the scope, the slug and the own name.
+This section gives the scope, the slug, the start of an orchestrator and
+[a stop with no handoff](#a-stop-with-no-handoff). [docs/dev/GLOSSARY.md](dev/GLOSSARY.md) defines the scope, the slug
+and the own name.
 
 ### The scope
 
@@ -152,6 +153,23 @@ orchestrator closes its own tab, as
 
 In a handoff, the old orchestrator starts the new orchestrator, as
 [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
+
+### A stop with no handoff
+
+A stop of an orchestrator is the end of its session with no handoff. Examples are a close of its tab by the user and a
+crash of the session. A resume of the same session keeps its context, so it is not a stop. An example is a resume at a
+`/rename`. A `/clear` is also not a stop of this subsection, and no doc gives what a `/clear` keeps.
+
+An orchestrator runs until its milestone is complete or it drafts a handoff. So the docs expect no stop with no handoff.
+
+Suppose that the user starts a new orchestrator with the slug of a stopped orchestrator outside a handoff. The docs give
+no steps for it. The new orchestrator runs [the start checks](#the-start-checks) and then its role work, as for a first
+start. It does not rebuild the tasks in flight, the jobs, the open questions or the peer messages of the stopped
+orchestrator. The user deals with the result.
+
+The user said this in a pane about #976: "This will never happen. An orchestrator runs until its milestone is complete
+or it drafts a handoff. If the user attempts to start a new fresh orchestrator outside of this, then it is on them and
+the user has to deal with the mess."
 
 ### The first prompt
 
