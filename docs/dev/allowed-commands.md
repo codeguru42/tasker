@@ -17,8 +17,8 @@ The form of the send is open. A later ticket decides it. Until then, the lists a
 - The kinds K1 to K16 are the kinds of [the kinds of command](permissions.md#the-kinds-of-command).
 - A command that runs only after a word of the user for that call carries the words "asks the user" in its list. The
   cell of the table says "asks the user" only when each command of the list for that kind asks.
-- A command that a step of a source names, but that no kind names, goes in the list "Named other commands". Such a
-  command is in no kind of K1 to K15, and K16 stays "never runs" for it.
+- A command that a step of a source names, but that no kind names, goes in the list "Named other commands". This list is
+  the K16 list of the actor, as [K16](permissions.md#the-kinds-of-command) says.
 
 ## The orchestrator
 
@@ -49,7 +49,7 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   give for that session.
 - K11: the start of a task subagent, a planner subagent, a write subagent, an opener subagent and a reuse subagent.
 - K12: the body file of an issue and the handoff file, in the folder of the orchestrator.
-- K13 to K16: no list.
+- K13 to K15: no list.
 - Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says).
 
 ## A task subagent for a whole ticket
@@ -74,7 +74,7 @@ Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-w
 - K12 and K14: files of its own task worktree.
 - Named other commands: `npm ci` before a direct npm script, `npm run check` and the other direct npm scripts of the
   task worktree, and `gh run rerun <run id> --failed` (the only write on GitHub Actions).
-- K7 to K11, K13, K15 and K16: no list.
+- K7 to K11, K13 and K15: no list.
 
 ## A task subagent for one task change
 
