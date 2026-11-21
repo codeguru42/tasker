@@ -390,7 +390,7 @@ the words that the decision message gives later, as [Send a decision](#send-a-de
 
 For a write of a file, the first-reply text shows the absolute path and the full new text. For a message to a session,
 it shows the session name and the text. It shows them only if the pane owner already has them. A text that the question
-session makes in the talk goes to the user before the send, as Send a decision says.
+session makes in the talk is shown to the user in the talk, and the decision message gives it.
 
 The first-reply text does not show the text of an input file. The command names the path of the file. Each choice that
 leads to a write action says in its own text whether a pick approves the commands shown under it. The pane owner or the
