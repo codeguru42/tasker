@@ -870,11 +870,21 @@ commands that the operator runs itself. They are the create or change command of
 item of another session stays with the tool-block rule, apart from the item of the last paragraph of this section.
 
 The orchestrator follows this section in the place of the operator, for a denied call of its own and of each actor of
-[the table](permissions.md#the-table). The choices that the orchestrator gives hold no `!` run. For a call of a write
-subagent, of the planner subagent or of an issue subagent, the first choice gives the word to the actor that got the
-denial. The orchestrator never runs that call itself. For a call of the orchestrator itself, also a `git` write in its
-local clone, the first choice lets the orchestrator run the call again one time on the word of the user. This adds no
-rule for the operator.
+[the table](permissions.md#the-table). The choices that the orchestrator gives hold no `!` run. A check failure keeps
+its own steps, as [the tool-block rule](tasker-commands.md#the-tool-block-rule) says. The first choice depends on the
+actor that got the denial:
+
+- Task subagent: the orchestrator relays the word, and the task subagent runs the call one time, in the form of the
+  word. The orchestrator never runs a task change itself, as step 5 of the denial steps says.
+- Write subagent: the orchestrator starts a new write subagent that runs the call, as the tool-block paragraph of the
+  write subagent in [the question pane](question-pane.md) says.
+- Planner subagent, issue subagent, opener subagent, reuse subagent and question session: the orchestrator gives the
+  word to the actor that got the denial, through its starter where [the report chain](permissions.md#the-report-chain)
+  says so. The orchestrator never runs that call itself.
+- The orchestrator itself, also for a `git` write in its local clone: the orchestrator runs the call again one time on
+  the word of the user.
+
+This adds no rule for the operator.
 
 If the user declined the call at a permission prompt, the command did not run. Then the operator gives no choices and
 waits for a new word of the user.
