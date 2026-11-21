@@ -1,7 +1,9 @@
 # Tasker commands
 
 The readers of this page are the task subagent of a ticket, and the orchestrator for the plain-form rule, the
-orchestrator-command rule and the tool-block rule. The planner and the operator also read the tool-block rule.
+orchestrator-command rule and the tool-block rule. Each other actor of [the table](permissions.md#the-table) also reads
+the tool-block rule: the planner subagent, the issue-draft, issue-review and issue-post subagents, the write subagent,
+the opener subagent, the reuse subagent and a question session. The planner and the operator also read it.
 
 ## The plain-form rule
 
@@ -91,6 +93,26 @@ form that the user names. Or the user runs the exact call. [The tool-block rule]
 
 A tool block is a denial of a tool call. The permission rules, the classifier of auto mode or the user can deny a call.
 The user denies a call when the user declines it at a permission prompt.
+
+Each actor of [the table](permissions.md#the-table) follows these steps for a denial.
+[The report chain](permissions.md#the-report-chain) gives the path of each report.
+
+1. After a denial, the actor runs the denied action in no other form and no part of it. It stops that step. It reports
+   the exact call, the exact text of the denial, the folder of the call, the step and the purpose to its starter.
+2. After a check failure, the actor first runs the same call again one time, in the same form. A second check failure is
+   a denial of step 1.
+3. A starter that gets the report sends it on to its own starter, up to the orchestrator.
+4. On the word of the user, the actor that got the denial runs the call again one time, in the form of the word. For a
+   task subagent, the orchestrator relays the word. For an issue subagent, the orchestrator relays the word to the
+   planner subagent, and the planner subagent relays it to the issue subagent.
+5. No third actor runs the denied call. The one exception: the orchestrator runs a call of a task subagent on the word
+   of the user, as the paragraph that starts "After a tool block" says, but never a task change. Without a word of the
+   user, no actor runs a form of the call.
+6. The orchestrator brings each denial to the user in its question pane. It gives the choices of
+   [A denied command of the operator](operator-start.md#a-denied-command-of-the-operator), with no `!` run.
+7. Only the user approves a permission prompt, in the session where Claude Code shows it. A word of the user in a
+   decision message or in a relayed message approves no permission prompt. The recommendation mode of
+   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) never covers a denial.
 
 A task subagent runs a git command in the local clone of the orchestrator with `git -C <clone>`, not with
 `cd <clone> && git ...` in a chain.
@@ -184,18 +206,12 @@ was
 On that short form, operator-m16 told the user that the denials of that day did not fit the guess that a chain caused
 them. Then operator-m16 withdrew that guess. The exact call later showed that the denied call was a chain.
 
-The classifier of auto mode can deny a `gh` write of a follow-up planner or an orchestrator. An orchestrator asks in its
-[question pane](question-pane.md#start) with the exact command, the folder and the exact text of the denial. A follow-up
-planner sends them to `orchestrator-<slug>`, which asks in its pane. The user runs the command and gives the exit code
-and the output to the question session in the pane. The question session sends them in its decision message, as
-[Send a decision](question-pane.md#send-a-decision) says.
-
-The message to that session gives the output of the command, or says that the command did not run. The output goes with
-the words of the user. If the command ran, the session goes on with its work. If it did not run, the step stays open,
-and the session runs the action in no other form.
-
-An initial planner gives the user the command directly. A check failure keeps its own bullets. On 2026-10-30, the
-classifier denied `gh issue comment` and `gh issue edit` of planner-m26, and the user ran each command.
+The classifier of auto mode can deny a `gh` write of an actor, for example of an issue-post subagent or of the
+orchestrator. The actor follows the denial steps above. The report gives the exact command, the folder and the exact
+text of the denial. The orchestrator asks the user in its [question pane](question-pane.md#start). The question session
+sends the answer in its decision message, as [Send a decision](question-pane.md#send-a-decision) says. If the call ran,
+the actor goes on with its work. If it did not run, the step stays open, and the actor runs the action in no other form.
+On 2026-10-30, the classifier denied `gh issue comment` and `gh issue edit` of planner-m26.
 
 A check failure is a denial whose text says that the classifier of auto mode gave no verdict. A check failure is a tool
 block, with these differences:
@@ -209,17 +225,10 @@ block, with these differences:
   task subagent stops, as the paragraph that starts "After a tool block" says. In its report, the task subagent also
   says that the denial is a check failure. If the second try gets a denial that is not a check failure, that denial is a
   tool block with none of these differences.
-- For a check failure, the orchestrator tells the user the exact command and the link https://status.claude.com/. The
-  task subagent also gives the folder where the call ran, and the orchestrator tells the user that folder. The user can
-  run the command with the `!` prefix of Claude Code, which does not go through the classifier. If the user runs the
-  command, the orchestrator tells the task subagent in its answer that the command ran, with its output.
-- The orchestrator follows the same steps for a check failure of its own call: it runs the same call again one time, in
-  the same form. If that try also fails with a check failure, the orchestrator tells the user the exact command and the
-  link, so that the user can run the command with the `!` prefix.
-- A planner follows the same steps for a check failure of its own call. If the second try also fails with a check
-  failure, a follow-up planner sends the question to `orchestrator-<slug>`, which gives the user the link in its pane.
-  The paragraph that starts "The classifier of auto mode can deny" and the paragraph after it give the steps of the
-  question. An initial planner gives the user the command and the link directly.
+- For a check failure, the orchestrator tells the user the exact command, the folder of the call and the link
+  https://status.claude.com/, and it follows step 6 of the denial steps.
+- Each other actor follows the same steps for a check failure of its own call. A second check failure goes up the report
+  chain to the orchestrator.
 
 On 2026-10-25, in the session of #428, each Bash call that no permission rule allowed failed with this text:
 
