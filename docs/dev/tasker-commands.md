@@ -1,7 +1,7 @@
 # Tasker commands
 
-The readers of this page are the task subagent of a ticket, and the orchestrator for the plain-form rule and the
-tool-block rule. The planner and the operator also read the tool-block rule.
+The readers of this page are the task subagent of a ticket, and the orchestrator for the plain-form rule, the
+orchestrator-command rule and the tool-block rule. The planner and the operator also read the tool-block rule.
 
 ## The plain-form rule
 
@@ -28,9 +28,61 @@ subagent follows [the tool-block rule](#the-tool-block-rule). The command did no
 The plain-form rule does not cover these:
 
 - A read-only `tasker` command, which does not change a task. Examples are `tasker show`, `tasker status`,
-  `tasker show-plan`, `tasker show-review`, `tasker show-quota` and `tasker doctor`. Such a command can have a pipe, for
-  example `tasker show-quota | jq` in ["Quota"](quota.md#quota).
+  `tasker show-plan`, `tasker show-review`, `tasker show-quota` and `tasker doctor`.
+  [The orchestrator-command rule](#the-orchestrator-command-rule) gives the list of read-only commands. Such a command
+  can have a pipe, for example `tasker show-quota | jq` in ["Quota"](quota.md#quota).
 - A change to `.claude/settings.json`. The rule does not change the permission rules of the repo.
+
+## The orchestrator-command rule
+
+A read-only command is a `tasker` command that changes no task, no configuration file and no installed file. A task
+change is a `tasker` command that changes the state or the record of a task, its worktree or its branch. The task
+subagent of a task is the task subagent that the orchestrator started for the ticket of that task.
+
+The orchestrator runs only read-only commands itself. A task subagent runs each task change. The reason: the
+[plain-form rule](#the-plain-form-rule) and the command rules cover the task subagent. So does
+["What the task subagent does"](quota.md#what-the-task-subagent-does).
+
+These commands are read-only:
+
+- `tasker show-config`, `tasker show-config-schema`, `tasker show-quota` and `tasker status`.
+- `tasker show`, `tasker show-bootstrap`, `tasker show-plan`, `tasker show-questions`, `tasker show-verify` and
+  `tasker show-review`.
+- `tasker doctor`.
+- `tasker model` with no new model and no `--effort`.
+- `tasker --version`, `tasker --help` and `tasker help`.
+
+These commands are task changes: `start`, `plan`, `refine`, `reopen`, `approve`, `unapprove`, `execute`, `verify`,
+`review`, `dismiss-review`, `retry`, `resume`, `approve-credits`, `accept`, `merge`, `push`, `open-pr`, `mark-landed`,
+`update-branch`, `finish` and `abort`. No session runs `approve-credits`, as [Limits](limits.md#limits) says.
+
+A command that neither list names is not a read-only command. The orchestrator does not run it.
+
+`tasker status` and each `show-*` command that reads one task stay read-only after they find a dead run. They only
+report the dead run, as [A dead run](tasks.md#a-dead-run) says. A schema migration after an install also keeps a command
+read-only, because the migration comes from the install. See [Schema versions](data-root.md#schema-versions).
+
+The rule has two exceptions:
+
+- An installing orchestrator runs `npm run install:global`, which runs `tasker install-skills`, as
+  [the hold before an install](release.md#the-hold-before-an-install) says.
+- The orchestrator runs `tasker model` with a new model or with `--effort` itself, only on the words of the user in a
+  settled decision message of its [question pane](question-pane.md#send-a-decision). This command writes the
+  configuration file of tasker.
+
+The rule covers only `tasker` commands. The `gh`, `git` and `herdr` commands keep their own rules.
+
+To run a task change, the orchestrator sends the command to the task subagent of the task. The task subagent runs it
+under the plain-form rule and the command rules, and it reports the result. An ended task subagent gets the command in a
+message, because a message starts it again, as ["Terms" in "Quota"](quota.md#terms) says. A task with no task subagent
+of this orchestrator gets a new task subagent for this one task change. An example is a parked task of an earlier
+session. See [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. Each step after a
+task change stays. An example is [Delete the job](quota.md#delete-the-job) after the final report of an abort. If the
+send or the start fails, [the failure rule](limits.md#the-failure-rule) applies. The command did not run, and the
+orchestrator does not run it itself. The write subagent of a question pane runs no `tasker` command.
+
+The orchestrator never runs a denied task change. On the word of the user, the task subagent runs the call again in the
+form that the user names. Or the user runs the exact call. [The tool-block rule](#the-tool-block-rule) links here.
 
 ## The tool-block rule
 

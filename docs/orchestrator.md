@@ -38,11 +38,15 @@ tasker also starts its own sessions for plan, execute and review. They run in a 
 not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).
 
 The orchestrator and its task subagents run tasker from the local clone of the orchestrator. For one ticket, the task
-subagent of that ticket is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names.
+subagent of that ticket is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names. The
+orchestrator runs only read-only `tasker` commands itself, and a task subagent runs each command that changes a task, as
+[the orchestrator-command rule](dev/tasker-commands.md#the-orchestrator-command-rule) says.
 
 Every `tasker` command on [the orchestration pages](orchestrator.md) is the installed `tasker`: the `tasker` command on
-the PATH from a global install. The installed `tasker` is a build of this repo, from a version that can be older than
-`main`. For this reason, `skills/tasker/SKILL.md` does not list its commands (see
+the PATH from a global install. When
+[the orchestrator-command rule](dev/tasker-commands.md#the-orchestrator-command-rule) lets it, the orchestrator runs
+such a command. The installed `tasker` is a build of this repo, from a version that can be older than `main`. For this
+reason, `skills/tasker/SKILL.md` does not list its commands (see
 [The installed skill](dev/rules.md#the-installed-skill)). See the install bullet of [Limits](dev/limits.md#limits) in
 `docs/dev/limits.md`. For the known behaviors of the installed `tasker`, see
 [the facts of the installed tasker](dev/tasker-commands.md#the-facts-of-the-installed-tasker).
@@ -64,8 +68,8 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   rule, the add-work rule, the diff read and the measure rule.
 - [docs/dev/plan-review.md](dev/plan-review.md): the repo-files rule, the fact test, the issue check, the stop rule, the
   change-of-scope comment, the design-gap rule and the quote check.
-- [docs/dev/tasker-commands.md](dev/tasker-commands.md): the plain-form rule, the tool-block rule, the command rules,
-  the facts of the installed tasker and the run times.
+- [docs/dev/tasker-commands.md](dev/tasker-commands.md): the plain-form rule, the orchestrator-command rule, the
+  tool-block rule, the command rules, the facts of the installed tasker and the run times.
 - [docs/dev/verify-failures.md](dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the broken-commit
   steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](dev/ci-wait.md): the CI wait and "A failed CI run".
