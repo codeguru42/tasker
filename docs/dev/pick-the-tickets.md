@@ -211,13 +211,17 @@ The orchestrator does all the steps of this section.
 
   The orchestrator runs the find at each start of its session, after the start reads and before the pick of the first
   ticket. It also runs the find after the read of the board at each landing. Each other read of the board runs no find,
-  for example the read of the board watch job. The find reads each open issue of the scope, and the board watch job
-  reads the board two times each hour. The cost: an issue that leaves Todo between two landings gets its raise at the
-  next landing.
+  except the next read of the board after a failed find. An example of such another read is the read of the board watch
+  job. The find reads each open issue of the scope, and the board watch job reads the board two times each hour. The
+  cost: an issue that leaves Todo between two landings gets its raise at the next landing.
 
-  The find only reads and raises. It starts no ticket and stops no start. It uses the facts that the read of the board
-  gave at that moment, also the `on hold` read of [A ticket on hold](#a-ticket-on-hold). It reads `tasker status` for
-  the tasks in flight.
+  The find only reads and raises. It starts no ticket and stops no start. It uses a fact that a read of the board at
+  that moment already gave, also the `on hold` read of [A ticket on hold](#a-ticket-on-hold). If no such read gave the
+  fact, for example at the start, the find reads it. For a milestone scope, it reads the column of each card and the
+  labels of the open issues of the milestone with
+  `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number,labels,projectItems`. On 2026-11-20,
+  with gh 2.102.1, the command printed one line for each of the 25 open issues of M31, for example `988 Todo` and
+  `748 Todo on hold`. It reads `tasker status` for the tasks in flight.
 
   For an issue with more than one fact, the first row of this table that holds gives the raise:
 
@@ -239,9 +243,8 @@ The orchestrator does all the steps of this section.
   accept the recommendations, give the decisions of the user, or split the question into smaller batches as follow-up
   questions.
 
-  For each issue with the decision "move", the card moves to Todo with the move command of
-  [The project board](issues.md#the-project-board). The actor of the move is the actor that the docs give for a write
-  after a decision of the user. The issue can then start at the next read of the board.
+  For each issue with the decision "move", the orchestrator moves the card to Todo with the move command of
+  [The project board](issues.md#the-project-board). The issue can then start at the next read of the board.
 
   The orchestrator keeps, in its session, each raised issue with its facts at the raise. At a later find, it raises
   nothing for an issue with the same facts. A change of the facts gives a new raise.
