@@ -133,6 +133,21 @@ describe("checkPromptTemplate", () => {
     ]);
   });
 
+  it("reports a placeholder that stands twice in the list", () => {
+    const text = `${front("name: x", DESCRIPTION, "placeholders:", "  A: the first value", "  A: the second value")}{{A}}\n`;
+    expect(checkPromptTemplate(writeTemplate("fam", "x", text))).toEqual([
+      "front matter line 6 repeats the placeholder A",
+    ]);
+  });
+
+  it("reports a repeated placeholder and a repeated key in line order", () => {
+    const text = `${front("name: x", "name: y", DESCRIPTION, "placeholders:", "  A: v", "  A: w")}{{A}}\n`;
+    expect(checkPromptTemplate(writeTemplate("fam", "x", text))).toEqual([
+      "front matter line 3 repeats the key name",
+      "front matter line 7 repeats the placeholder A",
+    ]);
+  });
+
   it.each([["x"], ["Family/x"], ["a/b/c"]])("reports the path problem for prompt-templates/%s.md", (rest) => {
     const parts = rest.split("/");
     const name = parts.pop()!;
