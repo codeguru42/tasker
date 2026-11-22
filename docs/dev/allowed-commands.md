@@ -89,9 +89,13 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 
 ## The planner subagent
 
-Source: [Sessions](../config.md#sessions). That section says that the planner subagent starts the draft, review and post
-subagents. No doc of this base names another command of the planner subagent.
+Sources: [Sessions](../config.md#sessions), [the doc-read rule](doc-reads.md#the-doc-read-rule) and
+[The result](planner-subagent.md#the-result). The section Sessions says that the planner subagent starts the draft,
+review and post subagents.
 
+- K3: `git -C <local clone> show origin/main:<path>`, for each doc that it reads.
+- K4: `git -C <local clone> fetch origin`, before its first doc read.
+- K10: `SendMessage` to `main` only, after a refused `SubagentHandback` call.
 - K11: the start of an issue-draft subagent, an issue-review subagent and an issue-post subagent.
 - Each other kind: no list.
 
