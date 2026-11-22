@@ -30,10 +30,12 @@ An issue-post subagent does these steps in this order:
 
 1. Run the duplicate search right before the post, in its own call. The bullet of
    [Before a post](issues.md#before-a-post) that starts "Right before each post" gives it.
-2. For a new issue, write the body file and run `gh issue create` alone in a plain call. The bullet of Before a post
-   that starts "The session makes the body file" gives these steps. The milestone of the call is the milestone of the
-   draft, under [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue).
-3. For a change of an open issue, write the body file of the same bullet. Then do the reads and the write of
+2. For a new issue, write the body file. Then run the count of [The count of the body](#the-count-of-the-body). Then run
+   `gh issue create` alone in a plain call. The bullet of Before a post that starts "The session makes the body file"
+   gives the body file and the create. The milestone of the call is the milestone of the draft, under
+   [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue).
+3. For a change of an open issue, write the body file of the same bullet. For a change of the body, run the count of The
+   count of the body. Then do the reads and the write of
    [The reads before the write](issues.md#the-reads-before-the-write), with the start hash of the prompt.
 4. Do the compare after the post. The bullet of Before a post that starts "Right after each post of the body" gives it.
 5. For each blocked-by link of the prompt, do the walk of the open blockers, the reads before the write and the link
@@ -50,6 +52,36 @@ These bullets of [The blocked-by links](issue-subagents.md#the-blocked-by-links)
 - "A ticket that changes the form or the layout of a file goes early in its chain", for the in-flight check.
 
 For an issue-post subagent, "the session" and "the planner" in these rules name the issue-post subagent.
+
+## The count of the body
+
+GitHub refuses an issue body of more than 65536 characters.
+
+The issue-post subagent counts the characters of the body file before each write that sends the body file of an issue:
+
+- The `gh issue create` call of a new issue.
+- The `gh issue edit` call of a change of the body of an open issue.
+
+A change of the title only sends no body file, as the sentence "Use only the flags for the change" of
+[The reads before the write](issues.md#the-reads-before-the-write) says. It gets no count. The second post after a
+failed compare of [Before a post](issues.md#before-a-post) gets no new count. It sends the same body file, and the first
+count already measured that file.
+
+The count is `wc -m <absolute path of the body file>`. It runs alone in its own plain call, after the subagent writes
+the body file. For a new issue, the count runs before the create. It can run between the duplicate search and the
+create. For a change of an open issue, the count runs before the reads of The reads before the write. The reason: that
+section allows no other step between the last read and the write.
+
+- If the count is at or under 65536, the post goes on with its next step.
+- If the count is over 65536, the subagent makes no write. Its result says that the body is over the limit, gives the
+  count and says that the post is not complete.
+- If the count fails, the subagent makes no write. A failed count is a count call with an exit code other than 0, an
+  output with no number, or a denied call. A failed count gives no answer, so it never passes the count. The result
+  gives the command and the error and says that the post is not complete. After a denied call, the subagent also follows
+  item 5 of [The result of an issue-post subagent](#the-result-of-an-issue-post-subagent).
+
+The session that started the issue-post subagent handles such a stop as a post that is not complete, under its existing
+rules.
 
 ## The bullets of Before a post
 
