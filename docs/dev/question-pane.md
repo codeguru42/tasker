@@ -123,7 +123,11 @@ such file is outside the local clone and outside each worktree. An untracked fil
 `$HOME/.claude/skills/`. The user plans a separate repo for agent config. That repo can need a new write area, and this
 waits for a later decision.
 
-The planner of the orchestrator is `planner-<slug>`, with the slug of the orchestrator.
+For an orchestrator of the kind `claude`, the planner of the orchestrator is a new
+[planner subagent](planner-subagent.md) for each request, relay or open finding. On this page, a send to such a planner
+is the start of a planner subagent. A failed start counts as a failed send, as
+[The start](planner-subagent.md#the-start) says. For an orchestrator of another kind, the planner of the orchestrator is
+`planner-<slug>`, with the slug of the orchestrator.
 
 An input file is a file under `/tmp/tasker/<slug>/drafts/`, with the slug of the pane owner.
 
@@ -753,10 +757,12 @@ of that measure.
 The orchestrator sends the settled decision to the session that asked the question, at once. A question of a task
 subagent goes back to that task subagent with the message path that the orchestration pages give for a task subagent. A
 task subagent has no pane, so the herdr path does not reach it. A question of a session that tasker starts goes back
-through the task subagent of its task. A question of the follow-up planner goes back to `planner-<slug>`. Each such
-message starts `From the user:`. The next line identifies question pane `<name>`. It gives the question id, the user's
-words, and requested draft changes. The sender treats that message as any other `From the user:` message. A question of
-the orchestrator itself has no sender, and the orchestrator acts on the decision.
+through the task subagent of its task. A question of the follow-up planner goes back to `planner-<slug>`. A planner
+subagent is never the sender of a question of a pane. Its questions come in its result, and the orchestrator asks them
+as its own open questions. See [The result](planner-subagent.md#the-result). Each such message starts `From the user:`.
+The next line identifies question pane `<name>`. It gives the question id, the user's words, and requested draft
+changes. The sender treats that message as any other `From the user:` message. A question of the orchestrator itself has
+no sender, and the orchestrator acts on the decision.
 
 A settled message can give [write actions](#terms), as [Send a decision](#send-a-decision) says. The approval of the
 user in the message covers one run of the command of each write action, word for word. Words of the user that let the
@@ -769,14 +775,14 @@ Each kind of write or request of [Terms](#terms) has one actor.
 
 | Kind of write or request                                                    | Actor                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A new issue                                                                 | `planner-<slug>`, as a request                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| A change of the title or the body of an issue that the item did not propose | `planner-<slug>`, as a request                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| A comment on an issue that the item did not propose                         | `planner-<slug>`, as a request                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| A change of a blocked-by link or of the field `Priority`                    | `planner-<slug>`, as a request                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| A new issue                                                                 | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A change of the title or the body of an issue that the item did not propose | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A comment on an issue that the item did not propose                         | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A change of a blocked-by link or of the field `Priority`                    | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
 | A change of the metadata of an issue                                        | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | A write of a user-level file                                                | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| A change of a tracked file of the repo                                      | `planner-<slug>`, as a request for a new issue                                                                                                                                                                                                                                                                                                                                                                                                     |
-| A permission rule of an actor in `$HOME/.claude/settings.json`              | `planner-<slug>`, as a request for a new issue. No write subagent starts. See [A change of the rules](permissions.md#a-change-of-the-rules)                                                                                                                                                                                                                                                                                                        |
+| A change of a tracked file of the repo                                      | The planner of the orchestrator, as a request for a new issue                                                                                                                                                                                                                                                                                                                                                                                      |
+| A permission rule of an actor in `$HOME/.claude/settings.json`              | The planner of the orchestrator, as a request for a new issue. No write subagent starts. See [A change of the rules](permissions.md#a-change-of-the-rules)                                                                                                                                                                                                                                                                                         |
 | A `tasker` command, also `tasker model`                                     | A read-only command: the orchestrator. A task change: the task subagent of the task, after the orchestrator sends it. A task change of a task of a peer goes to the peer as a request of [the request rule](../orchestrator.md#the-request-rule). `tasker model` with a new model or `--effort`: the orchestrator, only on the words of the settled message. See [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) |
 | A message to another session                                                | The orchestrator. A message to a peer is a request of [the request rule](../orchestrator.md#the-request-rule)                                                                                                                                                                                                                                                                                                                                      |
 | A `herdr` command                                                           | The orchestrator                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -797,9 +803,9 @@ The answer to the sender names each write action and says that the orchestrator 
 start after the answer, also after a failed send of it. The write actions of one settled message run in the order of the
 message. The write subagent and the orchestrator are the actors of this order. The orchestrator starts one
 [write subagent](#terms) for each run of write-subagent actions in a row. It starts the next of these actors only after
-the report of the actor before it. A request is not part of this order. The orchestrator sends it to `planner-<slug>`
-one time and does not wait for it, as the paragraph on requests says. A failure of any write action stops each later
-write action. The orchestrator tells the user each action that did not run.
+the report of the actor before it. A request is not part of this order. The orchestrator sends it to the planner of the
+orchestrator one time and does not wait for it, as the paragraph on requests says. A failure of any write action stops
+each later write action. The orchestrator tells the user each action that did not run.
 
 The write subagent first writes each input file at its path, with the slug of the orchestrator. Then it does its actions
 in order. It reports the exit code and the output of each command, and the orchestrator then tells the user the result
@@ -892,14 +898,14 @@ A **No decision** message leaves the question open. The pane owner closes the pa
 [Close and continue](#close-and-continue) says. That question gets no automatic start, and only a word of the user that
 names it starts its pane again.
 
-The pane owner relays stated doc rules, facts, and preferences to `planner-<slug>`. If the planner is the sender, the
-pane owner combines that relay with the answer. A failed relay invokes the failure rule. The orchestrator sends each
-relay one time. The pane does not wait for it.
+The pane owner relays stated doc rules, facts, and preferences to the planner of the orchestrator. If the planner is the
+sender, the pane owner combines that relay with the answer. A failed relay invokes the failure rule. The orchestrator
+sends each relay one time. The pane does not wait for it.
 
-The pane owner sends each [request for a new issue](#terms) of a decision message to `planner-<slug>`. It does the same
-for each other request of [Terms](#terms): a change of the title or the body of an issue, a comment, a change of a
-blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. It sends the request one time,
-also when the message does not settle the question. The pane does not wait for it. The message starts with
+The pane owner sends each [request for a new issue](#terms) of a decision message to the planner of the orchestrator. It
+does the same for each other request of [Terms](#terms): a change of the title or the body of an issue, a comment, a
+change of a blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. It sends the request
+one time, also when the message does not settle the question. The pane does not wait for it. The message starts with
 `From the user:`. It names the question pane and the question id. It gives the words of the user word for word and each
 guess of the question session that the user accepted, still marked as a guess. A message from a pane that the user
 closed with a confirm question open holds no guess. For a title or body request, it gives the words of the user and each
@@ -907,16 +913,20 @@ guess that the user accepted, with no exact text and no start hash. For a commen
 change of the field `Priority`, it gives the exact text and the start hash.
 
 If the planner is the sender and the message settles the question, the request goes in the answer to the planner. In
-each other case, the request goes in a message of its own. Such a message is a relay to `planner-<slug>`, not an answer
-to the sender. So the rule that the pane owner sends nothing to the sender for a message that does not settle the
-question does not stop it.
+each other case, the request goes in a message of its own. Such a message is a relay to the planner of the orchestrator,
+not an answer to the sender. So the rule that the pane owner sends nothing to the sender for a message that does not
+settle the question does not stop it. For an orchestrator of the kind `claude`, the planner of the orchestrator is never
+the sender. So the answer to the follow-up planner holds no relay and no request.
 
 The pane owner drafts no issue and starts no write subagent for a request. After the send, the orchestrator tells the
-user in one line in its tab that `planner-<slug>` has the request. If the send fails,
+user in one line in its tab that the planner of the orchestrator has the request. If the send fails,
 [the failure rule](limits.md#the-failure-rule) applies, as for the relay of a doc rule of the user. The planner handles
 the request as a proposed issue of the orchestrator, with its review loops and its post rules. The planner then reports
 the post or the drop to the orchestrator. For a draft that waits for a decision of the user, it sends the question to
 `orchestrator-<slug>`.
+
+A planner subagent gives its report of the post or the drop and each question in its result instead, as
+[The result](planner-subagent.md#the-result) says.
 
 For a title or body request, the user approves the request, not a text. The planner drafts the change, runs its review
 loops and posts the reviewed text, as for a new issue. It needs no approval of the user for the text. The draft starts
@@ -987,8 +997,8 @@ the report fails, the question session tells the user in the pane.
 
 The pane owner accepts a report only with the header of its open pane id and its current question id, after its close
 request. It then sends the ack. For each other report, the pane owner tells the user in one line, sends nothing and
-keeps the state of the question. After a report that it accepts, the orchestrator sends each open finding to
-`planner-<slug>`, with the words of the user for that finding. The paragraph of
+keeps the state of the question. After a report that it accepts, the orchestrator sends each open finding to the planner
+of the orchestrator, with the words of the user for that finding. The paragraph of
 [The pane owner handles a decision](#the-pane-owner-handles-a-decision) that starts "The pane owner relays stated doc
 rules" gives this relay and its failure. Then the pane owner decides between a reuse and a close, also after a failed
 relay, as [Close and continue](#close-and-continue) says. The orchestrator tells the user in one line how many findings
@@ -1133,10 +1143,10 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | A send of the question session fails                                                                  | Running                              | The question stays open                                                                                                                                                               |                      | The question session tells the user                          |
 | A send of the herdr path of the pane owner fails                                                      | Any                                  | The failure rule applies                                                                                                                                                              |                      | The pane owner tells the user                                |
 | A "No decision" message                                                                               | Waits for the close request          | Sends the ack. Sends the close request. The question stays open                                                                                                                       |                      | The question session tells the pane owner                    |
-| A message gives a rule, a fact or a preference                                                        | Waits at its prompt                  | Sends each one to `planner-<slug>`. The pane does not wait                                                                                                                            |                      | The pane owner tells the planner                             |
-| The send to `planner-<slug>` fails                                                                    | Waits at its prompt                  | The failure rule applies                                                                                                                                                              |                      | The pane owner tells the user                                |
-| A decision message gives a request                                                                    | Waits at its prompt, or running      | Sends the request to `planner-<slug>`. Starts no write subagent                                                                                                                       |                      | The question session tells the pane owner                    |
-| The send of a request to `planner-<slug>` fails                                                       | Waits at its prompt, or running      | The failure rule applies                                                                                                                                                              |                      | The pane owner tells the user                                |
+| A message gives a rule, a fact or a preference                                                        | Waits at its prompt                  | Sends each one to the planner of the orchestrator. The pane does not wait                                                                                                             |                      | The pane owner tells the planner                             |
+| The send to the planner of the orchestrator fails                                                     | Waits at its prompt                  | The failure rule applies                                                                                                                                                              |                      | The pane owner tells the user                                |
+| A decision message gives a request                                                                    | Waits at its prompt, or running      | Sends the request to the planner of the orchestrator. Starts no write subagent                                                                                                        |                      | The question session tells the pane owner                    |
+| The send of a request to the planner of the orchestrator fails                                        | Waits at its prompt, or running      | The failure rule applies                                                                                                                                                              |                      | The pane owner tells the user                                |
 | A settled decision message gives a write action                                                       | Waits for the close request          | Starts each actor in the order of the message. Sends a message to another session itself                                                                                              |                      | The pane owner tells the user                                |
 | A call of the write subagent gets a tool block that stops it                                          | Any                                  | Follows "A denied command of the operator"                                                                                                                                            |                      | The pane owner tells the user                                |
 | A command of the write subagent fails, the write subagent ends with no report, or a send fails        | Any                                  | The failure rule applies                                                                                                                                                              |                      | The pane owner tells the user                                |
@@ -1151,8 +1161,8 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | The send of the close request fails                                                                   | Running, or waits at its prompt      | The pane stays open. A run stops. The failure rule applies                                                                                                                            |                      | The pane owner tells the user                                |
 | A round of the question session fails                                                                 | Its rounds end. Sends the report     | Waits for the report                                                                                                                                                                  |                      | The question session tells the user                          |
 | The send of the report fails                                                                          | Waits at its prompt                  | Waits for the report. The pane stays open                                                                                                                                             |                      | The question session tells the user                          |
-| The report of the rounds arrives, and each condition of a reuse holds                                 | Waits at its prompt until the reuse  | Sends the ack. Sends findings to `planner-<slug>`. Starts the reuse subagent                                                                                                          |                      | The question session tells the pane owner                    |
-| The report of the rounds arrives, and a condition of a reuse fails                                    | Waits at its prompt until the close  | Sends the ack. Sends findings to `planner-<slug>`. Closes the pane. A run goes on                                                                                                     |                      | The question session tells the pane owner                    |
+| The report of the rounds arrives, and each condition of a reuse holds                                 | Waits at its prompt until the reuse  | Sends the ack. Sends findings to the planner of the orchestrator. Starts the reuse subagent                                                                                           |                      | The question session tells the pane owner                    |
+| The report of the rounds arrives, and a condition of a reuse fails                                    | Waits at its prompt until the close  | Sends the ack. Sends findings to the planner of the orchestrator. Closes the pane. A run goes on                                                                                      |                      | The question session tells the pane owner                    |
 | The kind of the pane owner is not `claude`, and a reuse is due                                        | Waits at its prompt until the close  | Closes the pane. The next question gets a new pane                                                                                                                                    |                      |                                                              |
 | The reuse subagent waits for the question session                                                     | Waits at its prompt                  | Waits for the report of the reuse subagent. The pane stays open                                                                                                                       |                      | The pane owner tells the reuse subagent                      |
 | The question session is in `blocked` when the reuse subagent waits                                    | `blocked`                            | Tells the user the name and the pane id. The pane stays open                                                                                                                          |                      | The pane owner tells the user                                |

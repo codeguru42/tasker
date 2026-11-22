@@ -10,7 +10,7 @@ zod facts and the tests.
   in this repo, for example a doc, a file under `src/` or `.claude/settings.json`. The rule does not say who makes the
   commit of a change. On 2026-11-04, about the commit of the key of #756 to `.claude/settings.json`, the user said: "I
   mean that a change to a tracked file requires an issue". A change of a tracked file that the user asks for in a
-  question pane goes to `planner-<slug>` as a request for a new issue, as
+  question pane goes to the planner of the orchestrator as a request for a new issue, as
   [The question session](question-pane.md#the-question-session) says.
 
 ## Check
