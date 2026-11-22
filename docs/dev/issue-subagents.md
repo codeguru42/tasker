@@ -284,8 +284,9 @@ likely edit the same file", which name the planner.
   docs-only issue is about no milestone, it also goes in "Docs". For example, on 2026-10-25, the user moved #436 from
   the open milestone "M21 — Release" to "Docs", because orchestrator-m21 ran and then stopped. Also on 2026-10-25,
   planner-docs posted #490 and #493 in "M22 — Operator". The reason of the user was: "Note: issues involving operators
-  belong in M22, not docs. They can be planned here, but they go to that milestone." The tickets of "Docs" have no order
-  with the numbered milestones.
+  belong in M22, not docs. They can be planned here, but they go to that milestone." In the plan and in the landing, the
+  tickets of "Docs" have no order with the numbered milestones. The start order of the tickets that can start comes from
+  [the priority rule](pick-the-tickets.md#pick-the-tickets), and a milestone does not change it.
 - GitHub holds the state of each issue and each piece of pending work. If the planner defers a fix, it writes the fix as
   an issue in its later milestone at once.
 

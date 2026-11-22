@@ -149,8 +149,19 @@ The orchestrator does all the steps of this section.
 
 - The priority rule: among the tickets that can start, the orchestrator starts a ticket with the priority `P0` first.
   Then it starts a ticket with `P1`, then a ticket with no priority, then a ticket with `P2`. The priority of a ticket
-  is the value of the field `Priority` on its card, as [The project board](issues.md#the-project-board) says. Two
-  tickets of the same priority have no order. The rule covers the tickets of the scope.
+  is the value of the field `Priority` on its card, as [The project board](issues.md#the-project-board) says. The rule
+  covers the tickets of the scope.
+
+  The tie breaker of the priority rule orders the tickets of the same priority of one repo. Among such tickets, the
+  ticket with the lower issue number starts first. This also holds among the tickets with no priority. The order is the
+  same for a milestone scope and for a set scope. In a set scope, the milestone of an issue does not change its place in
+  the order. The tie breaker uses the issue number, not the date of creation.
+
+  The tie breaker adds no read of an issue and no read of the board. The reads of the board that this section already
+  does give the number of each ticket. This page gives no order of two tickets of different repos. The reason for the
+  tie breaker: the start order of the tickets is known in advance. An older issue most often holds the older decision,
+  and a later issue builds on it. In this repo, GitHub gives the issues their numbers in the order of creation, so the
+  lower number is the older issue.
 
   For a milestone scope, read the priorities with
   `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .milestone.title == "<milestone>" and .priority != null) | "\(.content.number) \(.priority)"'`.
@@ -159,17 +170,32 @@ The orchestrator does all the steps of this section.
   [The project board](issues.md#the-project-board). If a read fails, [the failure rule](limits.md#the-failure-rule)
   applies, and the orchestrator starts no ticket until the read works.
 
-  The rule changes no other rule of this section. A ticket with a priority still waits as
-  [the stacking rule](#the-stacking-rule) says. It also still waits for the shared-file rule and the move rule. A rule
-  that stops a start still wins. Examples are the ban of [A failed CI run](ci-wait.md#a-failed-ci-run), and the ban on a
-  new ticket after the suggestion of a handoff in [The landing count](handoff-orchestrator.md#the-landing-count). Other
-  examples are step 1 of [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator)
-  and a hold of the user.
+  A measure on 2026-11-22, with gh 2.105.0, found no pair of issues of this repo out of the order of creation. The list
+  orders of [Start](question-pane.md#start) and of [The open items](operator-items.md#the-open-items) also use the lower
+  issue number after the priority.
 
-  The ticket of a parked task that comes back to Todo in the scope takes its place by its priority (see
-  [the defer rule](#the-defer-rule)). Each time the orchestrator reads the board, it applies the rule again. Then a
-  ticket with `P0` or `P1` that joined the scope and can start takes the next free agent before the tickets with no
-  priority.
+  The rule changes no other rule of this section. The tie breaker is a part of the priority rule, so each rule that wins
+  over the priority rule also wins over the tie breaker. A ticket with a priority still waits as
+  [the stacking rule](#the-stacking-rule) says. It also still waits for the shared-file bullet and the move rule. A rule
+  that orders or stops a start still wins. Examples are the pi gate, the bullet of a live security gap,
+  [A ticket on hold](#a-ticket-on-hold) and the other gates of the fill rule.
+
+  Other examples are the ban of [A failed CI run](ci-wait.md#a-failed-ci-run), and the ban on a new ticket after the
+  suggestion of a handoff in [The landing count](handoff-orchestrator.md#the-landing-count). Step 1 of
+  [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) and a hold of the user
+  also win. So does a held issue of a set scope, as [the move paragraph](#pick-the-tickets) says. A kept slot of
+  [the parent-hold rule](#the-parent-hold-rule) goes to its planned stacked ticket, whatever its number.
+
+  A ticket that such a rule holds back takes no slot, and the next ticket in the order starts. At a later read of the
+  board, the ticket takes its place by its priority and its issue number again. The one exception is an open question of
+  [the open-question rule](#the-open-question-rule). Such a ticket keeps its place in the order, and the next ticket
+  takes the free slot while the answer waits.
+
+  The ticket of a parked task can come back to Todo in the scope (see [the defer rule](#the-defer-rule)). Such a ticket
+  takes its place by its priority and then by its issue number. Each time the orchestrator reads the board, it applies
+  the rule again. Then a ticket with `P0` or `P1` that joined the scope and can start takes the next free agent before
+  the tickets with no priority. Among the tickets of the same priority, the ticket with the lower issue number takes it
+  first.
 
 - Each time a ticket lands, read the board again: the open issues of the scope and the issues that block them. For a
   milestone scope, the read stays as it is. For a set scope, run one read for each issue of the set:
@@ -195,10 +221,10 @@ The orchestrator does all the steps of this section.
   as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. Each orchestrator also
   reads the board with its board watch job, as [the board watch rule](../orchestrator.md#the-board-watch-job) says. Each
   read of the board that does not come at a landing is a read of the board, but it is not a landing. It counts for each
-  rule of this page that acts "at its next read of the board" or "each time it reads the board". So the priority rule
-  applies to each start after such a read. It does not count for a read that a rule ties to a landing, for example the
-  read of the parent issue in [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins,
-  for example the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
+  rule of this page that acts "at its next read of the board" or "each time it reads the board". So the priority rule,
+  with its tie breaker, applies to each start after such a read. It does not count for a read that a rule ties to a
+  landing, for example the read of the parent issue in [the parent-hold rule](#the-parent-hold-rule). Each rule that
+  stops a start still wins, for example the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
 
   The orchestrator also reads the board after a defer and after the end of a hold of
   [the parent-hold rule](#the-parent-hold-rule). It also reads the board after a stop of a task subagent whose slot it
@@ -382,8 +408,9 @@ The orchestrator does all the steps of this section.
   that frees a slot, it reads the board. Then it starts a ticket for each free slot, one by one, until each slot is full
   or no ticket can start. The bullet "Each time a ticket lands, read the board again" gives the events.
 
-  The orchestrator picks each ticket by the order of the bullet of a live security gap and of the priority rule. It does
-  not ask the user which ticket to start. It offers no list of tickets for a free slot, and it waits for no answer.
+  The orchestrator picks each ticket by the order of the bullet of a live security gap and of the priority rule, with
+  its tie breaker. It does not ask the user which ticket to start. It offers no list of tickets for a free slot, and it
+  waits for no answer.
 
   A rule that stops a start still wins over the fill rule. These are the gates:
 
@@ -400,15 +427,17 @@ The orchestrator does all the steps of this section.
   - [The link offer](#the-link-offer)
   - The earlier-blocker offer
 
-  For a ticket that a gate holds back, the slot stays free. The orchestrator starts the next ticket that the gate does
-  not hold back. A ticket that waits for its parent under [the stacking rule](#the-stacking-rule) takes no slot. A
-  ticket with no such parent still starts.
+  For a ticket that a gate holds back, the slot stays free. The orchestrator starts the next ticket in that order that
+  the gate does not hold back. A ticket with an open question of [the open-question rule](#the-open-question-rule) keeps
+  its place in that order, as that rule says. A ticket that waits for its parent under
+  [the stacking rule](#the-stacking-rule) takes no slot. A ticket with no such parent still starts.
 
   Each question that a gate or another rule of [the orchestration pages](../orchestrator.md) requires stays. The fill
   rule bans only a question that offers a choice among tickets that can start. A question of the bullet of a live
   security gap stays, for a task in flight that holds the shared file. A question about a move of an issue into another
   milestone stays too, as [the move paragraph](#pick-the-tickets) of the first bullet says. While the answer to a
-  question waits, the next ticket takes the free slot. See [the open-question rule](#the-open-question-rule).
+  question waits, the next ticket in that order takes the free slot. See
+  [the open-question rule](#the-open-question-rule).
 
   If fewer tickets can start than there are free slots, the orchestrator starts the tickets that can start and waits for
   no more tickets. At its next read of the board, it starts a ticket that can then start. The fill rule does not raise
@@ -842,8 +871,9 @@ A ticket that can start now is a ticket with each of these facts:
 
 - A slot is free, or the orchestrator keeps a slot for the ticket, as [the stacking rule](#the-stacking-rule) says. The
   ticket gets that slot.
-- The ticket comes next for the slot in the order of Pick the tickets. The tickets that the third item or a kept result
-  of a read stops do not count for this order.
+- The ticket comes next for the slot in the order of Pick the tickets: by its priority, then by its issue number. The
+  tickets that the third item or a kept result of a read stops do not count for this order. A ticket whose issue holds
+  an open question of this rule still counts, as the paragraph of such a question says.
 - Each other rule of the orchestration pages that needs no read of the issue lets the ticket start. Examples are the
   stacking rule, [A ticket on hold](#a-ticket-on-hold), the pi gate and the ban of
   [A failed CI run](ci-wait.md#a-failed-ci-run).
@@ -870,12 +900,12 @@ the kept result, and the next start reads the issue again. If the command fails,
 An issue can hold an open question that stops its start. The note of
 [the change-of-scope comment](plan-review.md#the-change-of-scope-comment) that starts
 `## Open question after the change of scope` and the hold comment of [A ticket on hold](#a-ticket-on-hold) are forms of
-such a question. For the order of the priority rule, the orchestrator counts such a ticket as a ticket that can start.
-If that ticket is the next ticket for a free agent, the orchestrator asks the user about the question. Before that, the
-orchestrator does not ask, also with a free agent. On 2026-10-31, #635 held such a question.
+such a question. For the order of the priority rule and its tie breaker, the orchestrator counts such a ticket as a
+ticket that can start. If that ticket is the next ticket for a free agent, the orchestrator asks the user about the
+question. Before that, the orchestrator does not ask, also with a free agent. On 2026-10-31, #635 held such a question.
 
-While the answer waits, the ticket after it takes the free agent. After the answer, and after each body edit that the
-issue asks for, the ticket can start.
+While the answer waits, the next ticket in the order of the priority rule takes the free agent. After the answer, and
+after each body edit that the issue asks for, the ticket can start.
 
 ### The defer rule
 

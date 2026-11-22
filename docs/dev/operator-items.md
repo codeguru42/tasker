@@ -114,8 +114,9 @@ The operator does these things for the open items:
 - The list order of the operator is the order of the open questions in its one list. The operator sorts its open
   questions by these keys, in this order:
 
-  1. The priority of the issue of the question: `P0` first, then `P1`, then no priority, then `P2`. This is the order of
-     [the priority rule](pick-the-tickets.md#pick-the-tickets).
+  1. The priority of the issue of the question: `P0` first, then `P1`, then no priority, then `P2`. Keys 1 and 2
+     together give the order of [the priority rule](pick-the-tickets.md#pick-the-tickets): the priority, then the lower
+     issue number.
   2. The number of the issue of the question: the lower number first. Among the questions with the same key 1, a
      question with no issue comes after each question with an issue.
   3. The arrival of the item: a question of an item that arrived earlier comes first. In one item, the lower question
