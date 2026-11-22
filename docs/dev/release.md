@@ -58,8 +58,9 @@ The installing session does the install in the local clone:
    says.
 3. Run `tasker doctor`.
 
-The reason for the pull of step 2: since #411, the doc reads use `git show origin/main:<path>`, so the local `main` does
-not move by itself. On 2026-10-25, the local `main` was at c6efaf33 and `origin/main` was at 22cbbedd.
+The reason for the pull of step 2: a covered session pulls `main` only before a doc read and only on a clean `main`, as
+[the doc-read rule](doc-reads.md#the-doc-read-rule) says. So the local `main` does not move by itself. On 2026-10-25,
+the local `main` was at c6efaf33 and `origin/main` was at 22cbbedd.
 
 After `tasker doctor` passes, the installing session tells each orchestrator in the hold to end the hold. The message
 gives the new version of tasker, as `tasker --version` prints it. If the install or `tasker doctor` fails, the
@@ -142,10 +143,13 @@ For the HEAD of `main`:
 
 For a commit that is not on `main`:
 
-1. Check out the commit in the current clone.
-2. Optional: to give the install a version of your own, add a local tag on HEAD: `git tag <version>`. Without a tag, the
+1. Record the output of `git branch --show-current`. For a detached `HEAD`, record `git rev-parse --verify HEAD`.
+2. Check out the commit in the current clone.
+3. Optional: to give the install a version of your own, add a local tag on HEAD: `git tag <version>`. Without a tag, the
    script sets the version `yyyy.m.d-<commit>`.
-3. Install the commit: `npm run install:global`.
+4. Install the commit: `npm run install:global`.
+5. If the recorded branch was `main`, run `git checkout main`. Otherwise, tell the user in one message that the clone is
+   not on `main`, and that covered sessions stop reading docs until the user checks out `main`.
 
 The pre-release tag stays local and never goes to GitHub.
 
