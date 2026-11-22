@@ -1172,9 +1172,11 @@ A **No decision** message leaves the question open. The pane owner closes the pa
 [Close and continue](#close-and-continue) says. That question gets no automatic start, and only a word of the user that
 names it starts its pane again.
 
-The pane owner relays stated doc rules, facts, and preferences to the planner of the orchestrator. If the planner is the
-sender, the pane owner combines that relay with the answer. A failed relay invokes the failure rule. The orchestrator
-sends each relay one time. The pane does not wait for it.
+The pane owner relays each [doc proposal](#send-a-decision) to the planner of the orchestrator as the message gave it.
+The relay gives the words of the user word for word, each doc and change that the user said or pointed to, and each
+guess that the user accepted, still marked as a guess. If the planner is the sender, the pane owner combines that relay
+with the answer. A failed relay invokes the failure rule. The orchestrator sends each relay one time. The pane does not
+wait for it.
 
 The pane owner sends each [request for a new issue](#terms) of a decision message to the planner of the orchestrator. It
 does the same for each other request of [Terms](#terms): a change of the title or the body of an issue, a comment, a
@@ -1194,9 +1196,9 @@ the sender. So the answer to the follow-up planner holds no relay and no request
 
 The pane owner drafts no issue and starts no write subagent for a request. After the send, the orchestrator tells the
 user in one line in its tab that the planner of the orchestrator has the request. If the send fails,
-[the failure rule](limits.md#the-failure-rule) applies, as for the relay of a doc rule of the user. The planner handles
-the request as a proposed issue of the orchestrator, with its review loops and its post rules. The planner then reports
-the post or the drop to the orchestrator. For a draft that waits for a decision of the user, it sends the question to
+[the failure rule](limits.md#the-failure-rule) applies, as for the relay of a doc proposal. The planner handles the
+request as a proposed issue of the orchestrator, with its review loops and its post rules. The planner then reports the
+post or the drop to the orchestrator. For a draft that waits for a decision of the user, it sends the question to
 `orchestrator-<slug>`.
 
 A planner subagent gives its report of the post or the drop and each question in its result instead, as
@@ -1370,7 +1372,7 @@ each one. So the orchestrator sends each finding one time. After each report tha
 user in one line how many findings it sent.
 
 The paragraph of [The pane owner handles a decision](#the-pane-owner-handles-a-decision) that starts "The pane owner
-relays stated doc rules" gives each such send and its failure. The pane owner decides between a reuse and a close only
+relays each doc proposal" gives each such send and its failure. The pane owner decides between a reuse and a close only
 after the final report, also after a failed relay, as [Close and continue](#close-and-continue) says. The question keeps
 its state.
 
@@ -1554,7 +1556,7 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | A send of the question session fails                                                                       | Running                              | The question stays open                                                                                                                                                                                                                                                                                                                           |                      | The question session tells the user                          |
 | A send of the herdr path of the pane owner fails                                                           | Any                                  | The failure rule applies                                                                                                                                                                                                                                                                                                                          |                      | The pane owner tells the user                                |
 | A "No decision" message                                                                                    | Waits for the close request          | Sends the ack. Sends the close request. The question stays open                                                                                                                                                                                                                                                                                   |                      | The question session tells the pane owner                    |
-| A message gives a rule, a fact or a preference                                                             | Waits at its prompt                  | Sends each one to the planner of the orchestrator. The pane does not wait                                                                                                                                                                                                                                                                         |                      | The pane owner tells the planner                             |
+| A message gives a doc proposal                                                                             | Waits at its prompt                  | Sends each doc proposal to the planner of the orchestrator as the message gave it. The pane does not wait                                                                                                                                                                                                                                         |                      | The pane owner tells the planner                             |
 | The send to the planner of the orchestrator fails                                                          | Waits at its prompt                  | The failure rule applies                                                                                                                                                                                                                                                                                                                          |                      | The pane owner tells the user                                |
 | A decision message gives a request                                                                         | Waits at its prompt, or running      | Sends the request to the planner of the orchestrator. Starts no write subagent                                                                                                                                                                                                                                                                    |                      | The question session tells the pane owner                    |
 | The send of a request to the planner of the orchestrator fails                                             | Waits at its prompt, or running      | The failure rule applies                                                                                                                                                                                                                                                                                                                          |                      | The pane owner tells the user                                |
