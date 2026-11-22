@@ -117,6 +117,33 @@ of each kind and of each request.
 The metadata of an issue is its milestone, its labels, its state (open or closed) and the column of its card on the
 project board. The blocked-by links and the field `Priority` are not metadata in these rules.
 
+A metadata request is a set of words of the user in a question pane. The words ask for a change of the metadata of one
+or more issues. They name the issue and the new value, for example "move #12 to M31" or "close #40". The item of the
+sender did not propose the change. A question, a maybe or a thought is not a metadata request, for example "should we
+move #12 to M31?" or "maybe close #40". Words that only let the sender decide are not a metadata request.
+
+The question session judges whether the item proposed the change. This judgment is open on purpose. If the session is
+not sure whether the item proposed the change, it treats the words as a metadata request. It also adds its guess that
+they can be a choice of the item. The confirm question of [Send a decision](#send-a-decision) then covers that guess, as
+it does for each guess. If the session is not sure that the words ask for a change, it treats them as a discussion and
+sends nothing.
+
+A metadata request covers only a change of the metadata of an issue. It covers no change of a milestone itself, for
+example its description, its hold record or its close. It covers no change of the title, the body or a comment of an
+issue.
+
+A move of an issue into the milestone "Future" is not a metadata request. Such a move also removes the blocked-by links
+of the issue, as the "Future" bullet of [The blocked-by links](issue-subagents.md#the-blocked-by-links) says. A
+blocked-by link is not metadata, so no new metadata request can undo that removal.
+
+A metadata request is a write action, not a request of the paragraph that starts "These kinds are requests". A metadata
+change that the item of the sender proposes is a proposed step of the sender, not a metadata request.
+
+A look-first word is a word of the user that asks to see or to approve the command of a metadata request before it runs.
+Examples are "show me the command first", "ask me before you do it" and "let me approve it". The question session judges
+whether words are a look-first word. This judgment is open on purpose. If the session is not sure, the words count as a
+look-first word.
+
 A user-level file is one of three files: the configuration file of tasker at the path of
 [Where the file is](../config.md#where-the-file-is), `$HOME/.claude/settings.json` and `$HOME/.claude/CLAUDE.md`. Each
 such file is outside the local clone and outside each worktree. An untracked file of the local clone, for example
@@ -146,8 +173,10 @@ issue reading is a guess. It goes through the confirm question of [Send a decisi
 guess does.
 
 A [write subagent](#the-pane-owner-handles-a-decision) is a subagent of the pane owner. It runs one run of
-write-subagent actions in a row of one settled decision message. A write subagent writes no file other than a user-level
-file and an input file. It writes no memory note, as [the memory rule](rules.md#docs) says.
+write-subagent actions in a row of one settled decision message. An exception covers a decision message that does not
+settle the question. For that message, a write subagent runs the metadata requests of the message, as
+[The pane owner handles a decision](#the-pane-owner-handles-a-decision) says. A write subagent writes no file other than
+a user-level file and an input file. It writes no memory note, as [the memory rule](rules.md#docs) says.
 
 A context clear is a step that removes the context of the question session. The context is each prompt, each reply and
 each tool output that the session holds.
