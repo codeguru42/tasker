@@ -1,9 +1,9 @@
 # Session-review rounds
 
 This page gives the rounds of `/session-review` that a session runs before it stops. An orchestrator runs them before
-its report that the milestone is done, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
+its end reads and the close, as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says.
 [The close of a milestone](operator-start.md#the-close-of-a-milestone) gives the order of the rounds of each session at
-the end of a milestone. The orchestrator runs its rounds first. The operator runs its rounds after the stop of the
+the end of a milestone. The orchestrator runs its rounds first. The operator runs its rounds after the end of the
 orchestrator. The planner runs its rounds after the end of the role of the operator. This page covers only an
 orchestrator, a planner, an operator and a [question session](question-pane.md#a-question-pane). A task subagent runs no
 round, as [Limits](limits.md#limits) says.
@@ -79,17 +79,26 @@ open until the planner handles it. A finding that is not handled is open.
 A question session first gives each proposal to the user, as
 [The rounds before the close](question-pane.md#the-rounds-before-the-close) says.
 
-After the rounds, each orchestrator and each planner sends the report of the rounds to [its operator](../operator.md).
-After the end of the role of its operator, a planner gives the report of its rounds to the user directly, as
-[The operator](working-with-the-user.md#the-operator) says. The report gives how many rounds ran, what each round found,
-and the state of each finding. An initial planner sends it with `SendMessage`. Each other orchestrator or planner sends
-it as a report, as [The form of an item](operator-items.md#the-form-of-an-item) says. An operator gives it to the user
-in a reply.
+After the rounds, each planner and each orchestrator of a milestone scope sends the report of the rounds to
+[its operator](../operator.md). After the end of the role of its operator, a planner gives the report of its rounds to
+the user directly, as [The operator](working-with-the-user.md#the-operator) says. The report gives how many rounds ran,
+what each round found, and the state of each finding. An initial planner sends it with `SendMessage`. Each other
+orchestrator or planner sends it as a report, as [The form of an item](operator-items.md#the-form-of-an-item) says. An
+operator gives it to the user in a reply.
+
+An orchestrator of a set scope has no operator. So its report of the rounds is a progress report in its own tab, as
+[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says for its last report.
 
 In the close of a milestone, the operator and the planner each resolve each open question and each open decision first.
 Steps 6, 7, 10 and 11 of [The steps that end each role](operator-start.md#the-steps-that-end-each-role) give this rule.
 It also covers an open decision about work outside the milestone. Open work with no answer still does not keep the
 rounds running, as step 7 (e) of [the session-review skill](../../.claude/skills/session-review/SKILL.md) says.
+
+The rounds of an orchestrator end only after each open question and each waiting decision of the rounds is settled.
+After the last answer, the orchestrator runs one more round, and that round must find nothing new. It runs that round
+also with no work after its earlier rounds. This rule wins over the paragraph that starts "If the rounds of a session
+already ended". An answer that asks for work is work after the rounds. [Terms](question-pane.md#terms) gives the path of
+each such question to the user.
 
 In the close of a milestone, the operator and the planner each run the round of step 7 or of step 11. They run it also
 with no work after their earlier rounds. This rule wins over the next paragraph. The close report of the operator or the
@@ -102,8 +111,9 @@ Other examples are the item with the path of the handoff file and the close of a
 after the rounds is open on purpose, and the session makes it. In the close, an answer of the user that asks for more
 work is work after the rounds. See [The question gate of the close](operator-items.md#the-question-gate-of-the-close).
 
-For an orchestrator, the report that the milestone is done holds the report of the rounds. The report again is not a
-second report that the milestone is done. At its stop in
-[The close of a milestone](operator-start.md#the-close-of-a-milestone), an orchestrator that did no work after its
-rounds runs no new round. It only gives the report again. A new ticket that the orchestrator runs after its report is
-work after its rounds. So the orchestrator runs its rounds again before its next report that the milestone is done.
+For an orchestrator, the report that the milestone is done holds the report of the rounds. A new ticket that the
+orchestrator runs after its rounds is work after its rounds. So the orchestrator runs its rounds again at its next end,
+as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says. A pi orchestrator stops at the
+stop of the operator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). If it did no work after
+its rounds, it runs no new round there and only gives the report again. The report again is not a second report that the
+milestone is done.
