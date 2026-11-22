@@ -112,7 +112,8 @@ history of the session, the closed items or the measured facts. The rule is the 
     step.
   - The prompt holds only the facts of this handoff, for example the path of the file, the session name and the first
     free item id. The first message of the new session always names the path of the handoff file.
-  - If the old session is not the operator, the prompt also names the operator of the old session by its name only.
+  - If the old session is not the operator and not an orchestrator, the prompt also names the operator of the old
+    session by its name only. The prompt of an orchestrator names no operator.
   - The first step of the prompt is the prompt read, in these words:
     `Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and <role index> as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and <role index> with git show origin/main:<path>.`
     The old session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`.
@@ -167,11 +168,11 @@ The handoff file and the prompt for the new session name the first free item id.
 after the last item id that the old session used. For an orchestrator, the count also covers each question of
 [Terms](question-pane.md#terms) and each progress report of [The operator](working-with-the-user.md#the-operator). So
 the first free item id is the number after the last id of an item, a question or a progress report. If the old session
-sends an item with the path of the handoff file, that item has the last item id. The old session knows that id when it
-writes the file, because the item gets the next number of its count. An example is "Your first item id is
-planner-docs-6." The new session counts its item ids from that id. When an answer names an id of the old session, the
-new session takes the item of that id from the handoff file. The reason: "Count your item ids on from planner-docs-5"
-can read as "start at planner-docs-5".
+sends an item with the path of the handoff file, that item has the last item id. An old orchestrator sends no such item.
+The old session knows that id when it writes the file, because the item gets the next number of its count. An example is
+"Your first item id is planner-docs-6." The new session counts its item ids from that id. When an answer names an id of
+the old session, the new session takes the item of that id from the handoff file. The reason: "Count your item ids on
+from planner-docs-5" can read as "start at planner-docs-5".
 
 When an answer names an id of the old session, a new orchestrator first takes a question of that id from its question
 file. [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the steps.
