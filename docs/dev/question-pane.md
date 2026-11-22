@@ -841,7 +841,12 @@ no sender, and the orchestrator acts on the decision.
 A settled message can give [write actions](#terms), as [Send a decision](#send-a-decision) says. The approval of the
 user in the message covers one run of the command of each write action, word for word. Words of the user that let the
 sender decide approve no write action. A write action marked "not approved" does not run, as words that let the sender
-decide approve no write action. A message that does not settle the question starts no write subagent.
+decide approve no write action. A message that does not settle the question starts no write subagent, apart from the
+case of the next paragraph.
+
+The words of the user that ask for a metadata change are the approval of its command. If a message does not settle the
+question, the pane owner still starts one write subagent for its metadata requests. A request with a guess that the user
+did not accept does not run. The pane owner starts no actor for another write action of such a message.
 
 #### The actor of each write action
 
@@ -880,6 +885,10 @@ message. The write subagent and the orchestrator are the actors of this order. T
 the report of the actor before it. A request is not part of this order. The orchestrator sends it to the planner of the
 orchestrator one time and does not wait for it, as the paragraph on requests says. A failure of any write action stops
 each later write action. The orchestrator tells the user each action that did not run.
+
+The metadata requests of a message that does not settle the question run in the order of the message. That message has
+no answer to the sender, so the write subagent starts after the ack. A failure of one request stops each later request,
+and the orchestrator tells the user each request that did not run.
 
 The write subagent first writes each input file at its path, with the slug of the orchestrator. Then it does its actions
 in order. It reports the exit code and the output of each command, and the orchestrator then tells the user the result
@@ -1064,10 +1073,11 @@ or ends the run with that question open, the report gives the words of the user 
 
 The report leaves out each doc rule, fact, preference or request for a new issue that a decision message already gave.
 After the close request, the question session sends no decision message. A message can still give a word of the user
-about the pane or the run. For a new word of the user on the question of the pane, for example a write action or a
-request for a new issue, the question session tells the user to type it in the tab of the orchestrator. If a round
-fails, the question session tells the user in the pane, its rounds end, and the report names the failure. If the send of
-the report fails, the question session tells the user in the pane.
+about the pane or the run. If the user gives a new word on the question, the session tells the user to type it in the
+tab of the orchestrator. Examples of such a word are a write action, a metadata request and a request for a new issue.
+
+If a round fails, the question session tells the user in the pane, its rounds end, and the report names the failure. If
+the send of the report fails, the question session tells the user in the pane.
 
 The pane owner accepts a report only with the header of its open pane id and its current question id, after its close
 request. It then sends the ack. For each other report, the pane owner tells the user in one line, sends nothing and
