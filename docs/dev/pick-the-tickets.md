@@ -142,10 +142,10 @@ The orchestrator does all the steps of this section.
   done. The earlier-blocker offer does not cover such an issue.
 
   For an open issue of this kind, the orchestrator of its milestone asks the user in its question pane, as
-  [Start](question-pane.md#start) says. If an open question or the handoff file of the orchestrator already asks for
-  these steps, the orchestrator asks nothing. The question asks the user to do the steps, to close the issue and then to
-  answer the question. After the answer, the orchestrator reads the board. If the issue is still open, the orchestrator
-  tells the user that its tickets wait. If the read fails, [the failure rule](limits.md#the-failure-rule) applies.
+  [Start](question-pane.md#start) says. If an open question of the orchestrator already asks for these steps, the
+  orchestrator asks nothing. The question asks the user to do the steps, to close the issue and then to answer the
+  question. After the answer, the orchestrator reads the board. If the issue is still open, the orchestrator tells the
+  user that its tickets wait. If the read fails, [the failure rule](limits.md#the-failure-rule) applies.
 
 - The priority rule: among the tickets that can start, the orchestrator starts a ticket with the priority `P0` first.
   Then it starts a ticket with `P1`, then a ticket with no priority, then a ticket with `P2`. The priority of a ticket
@@ -1014,6 +1014,9 @@ the orchestrator moves each waiting question to a hold comment on its ticket. A 
 `## Open question of a ticket on hold`. It gives the question and its choices word for word, as the question gave them,
 and the question id. It says that the orchestrator asks the question again in its pane at the end of the hold.
 
+At the move, the orchestrator deletes the [question file](question-pane.md#the-question-file) of the question. If the
+delete fails, the rule of The question file for a failed delete applies.
+
 The orchestrator posts each hold comment at once, with no approval of the user, as it posts the open-question note of
 [the change-of-scope comment](plan-review.md#the-change-of-scope-comment). This rule wins over the approval of a comment
 in [Before a post](issues.md#before-a-post). The report of a done milestone names each question that the orchestrator
@@ -1037,6 +1040,9 @@ hold comment with no answer comment. This ask wins over the time of the ask in t
 can start while the answer waits. The open-question rule stops the start of the ticket until the answer. If the read of
 the comments fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket until
 the read works.
+
+At the end of the hold, each question that the orchestrator asks again gets a new question id. It also gets a new
+question file, as a question that arrives.
 
 If the milestone is open and no orchestrator of its slug runs, the operator removes the label and starts one, as
 [The close of a milestone](operator-start.md#the-close-of-a-milestone) says. If the label is already gone at the word of
