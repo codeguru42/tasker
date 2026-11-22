@@ -55,3 +55,31 @@ export function promptFileProblems(
   if (!filled.endsWith("\n") || filled.endsWith("\n\n")) problems.push("the filled text has an extra newline");
   return problems;
 }
+
+// The problems of the question-pane template at path, and of its text after a fill with values. The body ends with
+// FIRST-REPLY {{FIRST_REPLY}}, and the filled text holds no {{ before the first reply.
+export function questionPaneTemplateProblems(path: string, values: Record<string, string>): string[] {
+  const problems = checkPromptTemplate(path);
+  if (problems.length > 0) return problems;
+  const template = readPromptTemplate(path);
+  if (!template.body.endsWith("FIRST-REPLY {{FIRST_REPLY}}")) {
+    problems.push("the body does not end with FIRST-REPLY {{FIRST_REPLY}}");
+  }
+  const filled = fillTemplate(template.name, template.body, values);
+  const end = `FIRST-REPLY ${values.FIRST_REPLY}`;
+  const head = filled.endsWith(end) ? filled.slice(0, filled.length - end.length) : filled;
+  if (head.includes("{{")) problems.push("the filled text holds {{ before the first reply");
+  return problems;
+}
+
+// The problems of the read step of the session file in the question-pane template at path. It throws if the file is
+// not valid.
+export function sessionReadProblems(path: string): string[] {
+  const problems: string[] = [];
+  const body = readPromptTemplate(path).body;
+  if (!body.includes("git -C {{LOCAL_CLONE}} show origin/main:prompt-templates/question-pane/session.md")) {
+    problems.push("the body does not read prompt-templates/question-pane/session.md");
+  }
+  if (/^\s*```/m.test(body)) problems.push("the body has a line that starts with three backticks");
+  return problems;
+}

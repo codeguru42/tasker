@@ -1,7 +1,13 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { fragmentProblems, promptFileProblems, promptTemplateTestProblems } from "./prompt-templates.js";
+import {
+  fragmentProblems,
+  promptFileProblems,
+  promptTemplateTestProblems,
+  questionPaneTemplateProblems,
+  sessionReadProblems,
+} from "./prompt-templates.js";
 import { repoRoot } from "./processes.js";
 import { useTempDir, writeFileWithParents } from "./temp.js";
 
@@ -111,6 +117,67 @@ describe("promptFileProblems", () => {
   it("reports a rule name of the body that the list lacks", () => {
     expect(promptFileProblems("p", { DATA: "x" }, root("Text {{DATA}} {{RULE_FILE_ACCESS}}\n"))).toContain(
       "the body uses {{RULE_FILE_ACCESS}}, but placeholders does not list it",
+    );
+  });
+});
+
+function questionPaneText(placeholders: string[], body: string): string {
+  const lines = placeholders.map((name) => `  ${name}: text`).join("\n");
+  return `---\nname: q\ndescription: Load this template when you write a prompt.\nplaceholders:\n${lines}\n---\n${body}`;
+}
+
+function questionPaneFile(placeholders: string[], body: string): string {
+  const path = join(useTempDir("tasker-question-pane-"), "prompt-templates", "question-pane", "q.md");
+  writeFileWithParents(path, questionPaneText(placeholders, body));
+  return path;
+}
+
+describe("questionPaneTemplateProblems", () => {
+  const names = ["NAME", "FIRST_REPLY"];
+  const body = "You are {{NAME}}. FIRST-REPLY {{FIRST_REPLY}}";
+  const values = { NAME: "question-x", FIRST_REPLY: "Issue: x\nThe text {{NAME}} stays." };
+
+  it("gives no problem for a valid template", () => {
+    expect(questionPaneTemplateProblems(questionPaneFile(names, body), values)).toEqual([]);
+  });
+
+  it("reports a problem of the file check", () => {
+    const text = "You are {{NAME}} {{OTHER}}. FIRST-REPLY {{FIRST_REPLY}}";
+    expect(questionPaneTemplateProblems(questionPaneFile(names, text), values)).toContain(
+      "the body uses {{OTHER}}, but placeholders does not list it",
+    );
+  });
+
+  it("reports a body that does not end with the first reply", () => {
+    expect(questionPaneTemplateProblems(questionPaneFile(names, `${body}\n`), values)).toContain(
+      "the body does not end with FIRST-REPLY {{FIRST_REPLY}}",
+    );
+  });
+
+  it("reports a filled text that holds {{ before the first reply", () => {
+    expect(questionPaneTemplateProblems(questionPaneFile(names, body), { ...values, NAME: "{{X}}" })).toContain(
+      "the filled text holds {{ before the first reply",
+    );
+  });
+});
+
+describe("sessionReadProblems", () => {
+  const read = "2. Run git -C {{LOCAL_CLONE}} show origin/main:prompt-templates/question-pane/session.md.";
+
+  it("gives no problem for a body that reads the session file", () => {
+    expect(sessionReadProblems(questionPaneFile(["LOCAL_CLONE"], read))).toEqual([]);
+  });
+
+  it("reports a body that does not read the session file", () => {
+    const text = "2. Run git -C {{LOCAL_CLONE}} show origin/main:docs/dev/question-pane.md.";
+    expect(sessionReadProblems(questionPaneFile(["LOCAL_CLONE"], text))).toContain(
+      "the body does not read prompt-templates/question-pane/session.md",
+    );
+  });
+
+  it("reports a fence line", () => {
+    expect(sessionReadProblems(questionPaneFile(["LOCAL_CLONE"], `${read}\n\`\`\`text\nx\n\`\`\`\n`))).toContain(
+      "the body has a line that starts with three backticks",
     );
   });
 });
