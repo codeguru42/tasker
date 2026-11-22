@@ -29,7 +29,14 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 [the re-read rule](doc-reads.md#the-re-read-rule), [Pick the tickets](pick-the-tickets.md),
 [Land the work](land-the-work.md), [the CI wait](ci-wait.md#the-ci-wait),
 [The actor of each write action](question-pane.md#the-actor-of-each-write-action),
-[The herdr path](question-pane.md#terms) and [Limits](limits.md#limits).
+[The herdr path](question-pane.md#terms), [Start](question-pane.md#start),
+[The question file](question-pane.md#the-question-file), [The handoff file](handoff.md#the-handoff-file),
+[The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder),
+[The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
+[The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator),
+[The proposal file](planner-subagent.md#the-proposal-file), [Limits](limits.md#limits),
+[the own-worktree rule](limits.md#the-own-worktree-rule) and
+[The orchestrator folder](limits.md#the-orchestrator-folder).
 
 - K1: the read-only `tasker` commands of
   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule). They are `show-config`,
@@ -54,11 +61,23 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 - K10: a message to a task subagent, a planner subagent or a question session, on the path that the orchestration pages
   give for that session.
 - K11: the start of a task subagent, a planner subagent, a write subagent, an opener subagent and a reuse subagent.
-- K12: the body file of an issue and the handoff file, in the folder of the orchestrator.
+- K12: these writes, in the folder of the orchestrator:
+  - A write of the body file of an issue
+  - A write of the file of a topic handoff in the shared handoff folder
+  - A write and a delete (`rm <file>`) of a file of its own three folders
+  - `mkdir -p` on its own three folders
+
+  The three folders of the [orchestrator folder](limits.md#the-orchestrator-folder), and the parent folders that
+  `mkdir -p` makes for them, count as the folder of the orchestrator for K12.
+
 - K13 to K15: no list.
 - Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says),
   `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)), a Read call on a file of the
-  local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call.
+  local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'`, a Read call on the saved output of its own tool call,
+  `ls` on its own three folders and a Read call on a file of its own three folders.
+
+This list gives the forms of the kind `claude`. [The orchestrator folder](limits.md#the-orchestrator-folder) gives the
+forms of the kinds `pi` and `codex`, and no one measured them.
 
 ## A task subagent for a whole ticket
 

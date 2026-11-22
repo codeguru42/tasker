@@ -287,8 +287,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   across milestones and an extra review loop. They also include a request of the seventh kind of
   [peer message](../orchestrator.md#the-kinds-of-peer-message), as
   [the request rule](../orchestrator.md#the-request-rule) gives it, a
-  [tool block](tasker-commands.md#the-tool-block-rule) and a read of a file of the data folder. A run of `tasker abort`
-  and the meaning of an unclear answer of the user are also such kinds.
+  [tool block](tasker-commands.md#the-tool-block-rule) and a read of a file of the data folder outside the
+  [orchestrator folder](limits.md#the-orchestrator-folder) of the orchestrator. A run of `tasker abort` and the meaning
+  of an unclear answer of the user are also such kinds.
 
   The mode holds for the session that got it, until the user ends it. The mode also passes through a handoff. The old
   session lists the mode as a decision of the user in its [handoff file](handoff.md#the-items-of-a-handoff-file). The
