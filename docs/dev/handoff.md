@@ -288,13 +288,20 @@ as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session does
 The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. Under
 `pi`, the new session gets this name from `-n`, as [Start a session](operator-start.md#start-a-session) says.
 [docs/dev/GLOSSARY.md](GLOSSARY.md) gives the form of the own name of a session. The old session puts this name in the
-item and in the prompt of the handoff file. The prompt also names [the operator of the old session](../operator.md) as
-the operator that the new session works with.
+prompt of the handoff file, and in the item when it sends one. If the old session is not an orchestrator, the prompt
+also names [the operator of the old session](../operator.md) as the operator that the new session works with. The prompt
+of an orchestrator names no operator.
 
-The old session sends the path of the file to [its operator](../operator.md) as an item, as
-[The form of an item](operator-items.md#the-form-of-an-item) says. The operator gives the path of the file to the user.
-When the user asks for the start, the operator starts the new session with the prompt of the file as its first message,
-as [Start a session](operator-start.md#start-a-session) says. The operator does not stop the old session. The steps of
+An old session that is not an orchestrator or the operator sends the path of the file to [its operator](../operator.md)
+as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says. The operator gives the path of the
+file to the user. When the user asks for the start, the operator starts the new session with the prompt of the file as
+its first message, as [Start a session](operator-start.md#start-a-session) says. The operator does not stop the old
+session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and
+[The stop and the start](#the-stop-and-the-start) do not apply.
+
+When the old session is an orchestrator, it sends no item. It gives the path of the file and the prompt to the user as a
+progress report of [The operator](working-with-the-user.md#the-operator), in its own tab. The user starts the new
+session in a new tab, with the prompt of the file as its first message. The old orchestrator keeps running. The steps of
 the role page, [The end of a handoff](#the-end-of-a-handoff) and [The stop and the start](#the-stop-and-the-start) do
 not apply.
 
