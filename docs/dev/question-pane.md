@@ -212,7 +212,7 @@ Each pane owner has at most one open pane. Two orchestrators can each have one o
 never holds a question of another orchestrator. A pane holds one question at a time.
 
 The condition "No handoff of the orchestrator is due or running" holds through the whole handoff. Each open question
-stays open, and the handoff file holds it, as
+stays open. Its question file stays, and the handoff file holds only a question with no file, as
 [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. A new pane
 that opens during a handoff can stay open after the close of the old orchestrator. The new orchestrator accepts a
 decision message only from the question session of its own open pane, as
@@ -252,6 +252,15 @@ three keys, and a key breaks the tie of the key before it:
 2. The issue number: the lower number first. A question with no issue comes last within its priority.
 3. The arrival: the earlier first. In one message, the lower question number of the asking session comes first.
 
+The list order covers each [question file](#the-question-file) and each question with no file. For keys 1 and 2, the
+issue of a question is the issue on the issue line of its question file. The orchestrator reads only that line for the
+order. If that read fails, the question counts as a question with no issue and no priority. For key 3, the orchestrator
+orders the questions by the number at the end of the question id. It compares these numbers as numbers, not as text, so
+`orchestrator-m31-99` comes before `orchestrator-m31-100`.
+
+The orchestrator gives the question ids in the arrival order of key 3. This holds for both parts of key 3. The earlier
+question comes first. In one message, the lower question number of the asking session comes first.
+
 A word of the user that names an open question starts the pane of that question first. An open question that arrives
 later takes its place in the list order, so it can come before an older open question. This holds before, during and
 after a run.
@@ -289,6 +298,98 @@ in its tab. The orchestrator stops the run.
 A pane that shows the first reply is a successful start, also after an error of herdr. The report of the opener subagent
 can say that the pane shows no first reply. Then the orchestrator tells the user the command and the error in its tab.
 The orchestrator leaves the pane open and stops the run until the user speaks.
+
+### The question file
+
+A question file is the file `questions/<question id>.md` in the
+[orchestrator folder](limits.md#the-orchestrator-folder), for example `questions/orchestrator-m31-161.md`. Each open
+question of the orchestrator gets its own question file. The orchestrator folder gives the reads, the calls and the
+fallback for this folder.
+
+Each of these kinds of open question gets a question file:
+
+- A question of the orchestrator itself
+- A question of a task subagent
+- A question of the follow-up planner
+- A question in the result of a planner subagent
+- A question of a peer request of [The request rule](../orchestrator.md#the-request-rule)
+- A question that arrives while a pane is open
+- A question that arrives during a handoff, before the write of the handoff file
+
+For a peer request, the receiving orchestrator writes the question file in its own folder. The sending orchestrator is
+the session that asked.
+
+The orchestrator writes the question file at the arrival of the question, right after it gives the question id. It
+writes the file before any pane start or reuse for that question. The file holds the first-reply text, as the pane owner
+prepares it under [The question session](#the-question-session). If the question has an issue of the question, the file
+starts with the issue line of that section. The file is plain text with no heading of its own, so its text goes into the
+prompt word for word.
+
+The question file stands alone, because the orchestrator can read it after a compaction or in a later session. It holds
+each fact that the question needs, and it names the session that asks and the ticket. It names nothing that only the
+context of the orchestrator holds, for example "the question before". A detail outside the five-sentence limit of The
+question session goes where that section says. A path of a draft or a report comes first. The tab of the orchestrator
+holds only a detail with no such path.
+
+A part of the text can change before the pane start or the reuse of the question. An example is the decisions so far of
+[Close and continue](#close-and-continue). Then the orchestrator writes the question file again before that start. If
+this write fails, the fallback applies.
+
+At each pane start and each reuse, the orchestrator reads the question file of the question. It puts the text of the
+file in the opener prompt or the reuse prompt as the first-reply text. For a question with no file, and under the
+fallback, it uses the text from its session. The opener subagent, the reuse subagent and the question session read no
+file of the orchestrator folder.
+
+The opener prompt, the reuse prompt and the session prompt do not change. The files in `prompt-templates/question-pane/`
+that hold them do not change either.
+
+If the read at a pane start or a reuse fails, the fallback applies, and the orchestrator uses the text from its session.
+If the session no longer holds that text, the orchestrator starts no pane for that question and tells the user in its
+tab. The question stays open, and its file stays.
+
+The question files of `questions/` are the open questions of the orchestrator. A question with no file is the one
+exception, and it stays open in the session of the orchestrator. Because the folder is the list, an open question stays
+through a compaction of the context. Before each pane start and each reuse, the orchestrator lists `questions/` with
+`ls`. It then picks the next open question in the list order of [Start](#start). Under the fallback, it runs no list and
+picks from the open questions of its session.
+
+If the list of `questions/` fails, the fallback applies. The orchestrator also makes no automatic start until the next
+word of the user. It tells the user in its tab that the folder can hold open questions. At the next word of the user, it
+lists the folder again.
+
+A question stops being open at one of these points:
+
+- The orchestrator accepts a decision message that settles the question, and it sends the settled decision to the
+  session that asked. A failed send of that decision is also such a point, because the question then stays decided, as
+  the [State table](#state-table) says.
+- For a question of the orchestrator itself, the orchestrator accepts a decision message that settles the question.
+- An answer of the user in the tab of the orchestrator settles the question.
+- A word of the user ends or drops the question.
+- The question no longer applies, for example because its sender takes it back, or its ticket landed or was dropped.
+
+Whether a question no longer applies is a judgment of the orchestrator, open on purpose. The orchestrator then tells the
+user in its tab.
+
+Right after that point, the orchestrator deletes the question file. A **No decision** message, a message that does not
+settle the question and a close of the pane with no decision delete no file. Such a question gets no automatic start, as
+the State table says. If the delete fails, the question still stops being open. The orchestrator tells the user the path
+of the file, and it does not count that file as an open question in its session. The fallback also applies.
+
+A question with no file is a question that the orchestrator keeps in its session under the fallback. Its pane starts
+with the text from the session. At a handoff, the handoff file holds the full text of each such question, as
+[The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. The old orchestrator writes no question file
+for a question that reaches it after the write of its handoff file.
+[The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) gives this rule.
+[A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) gives the delete of a question file at a hold.
+
+After a compaction of the context of the orchestrator or after a handoff, these known limits hold:
+
+- A question that got a **No decision** message or a close with no decision can get an automatic start again. The
+  question file holds no mark of that rule, and the handoff file holds no such mark either.
+- A question whose delete failed can get a pane again.
+- A detail of a question that went to the tab of the orchestrator is lost.
+
+The user can close the pane or end the question.
 
 ### The question session
 
@@ -801,6 +902,18 @@ The next line identifies question pane `<name>`. It gives the question id, the u
 changes. The sender treats that message as any other `From the user:` message. A question of the orchestrator itself has
 no sender, and the orchestrator acts on the decision.
 
+When the pane owner accepts a decision message, it reads the [question file](#the-question-file) again. It judges from
+that text whether the message settles the question. It also reads the question file again when a word of the user in its
+tab names a question id. For a question with no file, it uses the text from its session.
+
+If such a read fails, the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) applies, and the pane
+owner uses the text from its session. If the session no longer holds the text, the pane owner still sends the ack for a
+decision message. It treats the message as a message that does not settle the question, and it tells the user in its
+tab. For a word of the user, it tells the user in its tab that it cannot read the question of that id.
+
+Right after it sends the settled decision, or after that send fails, the pane owner deletes the question file, as The
+question file says.
+
 A settled message can give [write actions](#terms), as [Send a decision](#send-a-decision) says. The approval of the
 user in the message covers one run of the command of each write action, word for word. Words of the user that let the
 sender decide approve no write action. A write action marked "not approved" does not run, as words that let the sender
@@ -1260,6 +1373,9 @@ question of the sender or apply an earlier answer to it. The bullet of [The answ
 starts "An answer of the user or an answer of the operator covers only" gives this rule. The user decides the later
 question in the pane of that question, with the decisions so far in view.
 
+The orchestrator writes the question file of the later question again with the decisions so far. It does this before the
+pane start or the reuse, as [The question file](#the-question-file) says.
+
 If no open question remains, the run ends and the orchestrator tells the user in one line in its tab.
 
 The user can end a run with a word to the pane owner. An active pane continues until its close, as
@@ -1298,18 +1414,28 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | No word of the user. The conditions of an automatic start hold                                        | Not started                          | Makes an automatic start for the next open question                                                                                                                                                                                                                                                                                               | Keeps working        |                                                              |
 | A word of the user starts a pane while a pane is open                                                 | Running                              | Starts nothing                                                                                                                                                                                                                                                                                                                                    |                      | The pane owner tells the user                                |
 | A question of a task subagent or of the follow-up planner arrives                                     | Not started                          | The question waits in the list order. It gets a pane at its turn                                                                                                                                                                                                                                                                                  | Keeps working        | The sender tells the pane owner                              |
+| An open question arrives, and no bar of the fallback holds                                            | Not started                          | Gives the question id. Writes the question file before any pane start or reuse. The question waits in the list order                                                                                                                                                                                                                              | Keeps working        | The sender tells the pane owner                              |
+| A question arrives after the old orchestrator wrote its handoff file                                  | Not started                          | Writes no question file and gives no question id. Shows the full text of the question as a report in its tab                                                                                                                                                                                                                                      | Keeps working        | The pane owner tells the user                                |
 | A second open question arrives while a pane is open                                                   | Running                              | The question waits in the list order                                                                                                                                                                                                                                                                                                              |                      |                                                              |
 | No pane opens next to the pane owner                                                                  | Not started                          | No pane exists. A run stops                                                                                                                                                                                                                                                                                                                       |                      | The pane owner tells the user                                |
 | The pane does not show the question                                                                   | Not started, reading, or at a prompt | The pane stays open. A run stops                                                                                                                                                                                                                                                                                                                  |                      | The pane owner tells the user                                |
 | The opener subagent ends with no report                                                               | Not started, reading, or at a prompt | The pane counts as open. A run stops                                                                                                                                                                                                                                                                                                              |                      | The pane owner tells the user                                |
 | The pane owner cannot start an opener subagent, a reuse subagent or a write subagent                  | Not started, or waits at its prompt  | The failure rule applies. No pane starts, and a run stops. A write action does not run                                                                                                                                                                                                                                                            |                      | The pane owner tells the user                                |
 | The notification of a pane start or a reuse fails                                                     | Any                                  | The failure rule applies. The pane stays open                                                                                                                                                                                                                                                                                                     |                      | The pane owner tells the user                                |
+| A pane start or a reuse for a question with a question file                                           | Not started                          | Lists the questions folder. Reads the question file. Puts its text in the opener or reuse prompt as the first-reply text                                                                                                                                                                                                                          |                      | The pane owner tells the opener or reuse subagent            |
+| The read of the question file fails at a pane start or a reuse                                        | Not started                          | The fallback holds. Uses the text from its session. If the session holds no text, starts no pane for the question. The question stays open                                                                                                                                                                                                        |                      | The pane owner tells the user                                |
+| The list of the questions folder fails                                                                | Not started                          | The fallback holds. Makes no automatic start until the next word of the user. Lists the folder again at that word                                                                                                                                                                                                                                 |                      | The pane owner tells the user                                |
+| A call on the three folders fails or gets a denial                                                    | Any state                            | The fallback holds. Runs no later call on the three folders until the next word of the user. A pane starts with the text from the session                                                                                                                                                                                                         | Keeps working        | The pane owner tells the user                                |
+| The next word of the user after a failed or denied call on the three folders                          | Any state                            | Ends the bar. Writes a question file for each open question with no file and a proposal file for each waiting request with no file                                                                                                                                                                                                                |                      | The user tells the pane owner                                |
 | The session starts                                                                                    | Running. Start line, reads, question | The question stays open                                                                                                                                                                                                                                                                                                                           |                      | The question session tells the user                          |
 | A message arrives with the header of the open pane and the current question                           | Waits for the ack                    | Accepts it. Sends the ack                                                                                                                                                                                                                                                                                                                         |                      | The question session tells the pane owner                    |
+| A decision message arrives, and the read of the question file fails with no text in the session       | Waits for the ack                    | Sends the ack. The message does not settle the question. The question stays open                                                                                                                                                                                                                                                                  |                      | The pane owner tells the user                                |
 | A message arrives without the right header                                                            | Waits for the ack                    | Sends nothing. Tells the user. Each question keeps its state                                                                                                                                                                                                                                                                                      |                      | The pane owner tells the user                                |
 | The decision message settles the question                                                             | Waits for the close request          | Sends the ack. Sends the settled decision to the asking session and the draft changes. Sends the close request                                                                                                                                                                                                                                    | Decision restarts it | The question session tells the pane owner                    |
 | The settled decision goes back to the asking session                                                  | Waits for the close request          | Sends it with `From the user:`. A task subagent gets it by the message path of the orchestration pages                                                                                                                                                                                                                                            | Decision restarts it | The pane owner tells the sender                              |
 | The send of the decision to the asking session fails                                                  | Waits for the close request          | The question stays decided. Sends the close request                                                                                                                                                                                                                                                                                               |                      | The pane owner tells the user                                |
+| A question stops being open, as The question file says                                                | Any state                            | Deletes the question file right after that point                                                                                                                                                                                                                                                                                                  |                      |                                                              |
+| The delete of a question file fails                                                                   | Any state                            | The question stops being open. Does not count the file as open in its session. The fallback holds                                                                                                                                                                                                                                                 |                      | The pane owner tells the user                                |
 | The decision message does not settle it                                                               | Running                              | Sends the ack. Sends what stays open. The question stays open                                                                                                                                                                                                                                                                                     |                      | The pane owner tells the question session                    |
 | The send of what stays open fails                                                                     | Running                              | The question stays open. A run stops. The failure rule applies                                                                                                                                                                                                                                                                                    |                      | The pane owner tells the user                                |
 | A send of the question session fails                                                                  | Running                              | The question stays open                                                                                                                                                                                                                                                                                                                           |                      | The question session tells the user                          |
@@ -1404,6 +1530,24 @@ If two rows match, the rows of one bullet below follow its rule:
   the planner of the orchestrator.
 - The row "The report of a round holds a guess" wins over the row "A round finds something new and no finding needs a
   word of the user" until the user answers the confirm question.
+- The row "An open question arrives, and no bar of the fallback holds" and the row "A question of a task subagent or of
+  the follow-up planner arrives" both apply. The first row adds the write of the question file before the wait.
+- The row "A question arrives after the old orchestrator wrote its handoff file" wins over the row "An open question
+  arrives, and no bar of the fallback holds".
+- The row "A call on the three folders fails or gets a denial" also applies after the rows "The read of the question
+  file fails at a pane start or a reuse", "The list of the questions folder fails" and "The delete of a question file
+  fails".
+- The row "The list of the questions folder fails" wins over the row "No word of the user. The conditions of an
+  automatic start hold" until the next word of the user.
+- The row "A decision message arrives, and the read of the question file fails with no text in the session" wins over
+  the rows "A message arrives with the header of the open pane and the current question" and "The decision message
+  settles the question".
+- The row "A question stops being open, as The question file says" follows the rows "The settled decision goes back to
+  the asking session" and "The send of the decision to the asking session fails".
+- The row "The delete of a question file fails" wins over the row "A question stops being open, as The question file
+  says" for the state of the file.
+- The rows "A "No decision" message" and "The user closes the pane with no decision" delete no question file. The row "A
+  question stops being open, as The question file says" does not apply to them.
 
 ### Measured facts
 

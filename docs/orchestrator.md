@@ -59,7 +59,7 @@ complete read of each start doc before any other work, as [the doc-read rule](de
 
 The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages":
 
-- [docs/dev/question-pane.md](dev/question-pane.md): "A question pane".
+- [docs/dev/question-pane.md](dev/question-pane.md): "A question pane" and "The question file".
 - [docs/dev/pick-the-tickets.md](dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket
   rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold" and "The prompt
   of a task subagent".
