@@ -316,16 +316,38 @@ These rules hold for each reply to the user:
   roman numerals (i, ii, iii) instead. The reason: a step with a letter looks like a choice, and a step with a number
   looks like a question.
 
+- A reply gives each series of items as a numbered list. The items of such a series have an order, or the user can
+  answer or act on them one by one. Examples are a step, a choice, a question, an offer, a finding and a proposal. A
+  nested list with letters or roman numerals also meets this rule, as the bullet that starts "A nested list uses
+  letters" says. The reply does not number such a series with ordinal words in prose. An ordinal word is a word such as
+  "first", "second" or "third" that gives the place of an item in a series.
+
+  A word that only refers to a part of a doc or of an earlier list is not an ordinal word of this rule. An example is
+  "the first bullet of A decision of the user". Whether the words of a reply in prose give such a series is a judgment
+  of the session, open on purpose.
+
+  Three rules win over this bullet. The bullet that starts "Inside a question, only the proposed steps" wins inside a
+  question. So the other details of a question stay sentences. In a reply about the status of an orchestrator, the owned
+  tasks stay in one table. The bullet of [A question of the user](#a-question-of-the-user) that starts "When the user
+  asks for the status of an orchestrator" says this. In the first-reply text of a question pane, the question has no
+  number. See [The question session](question-pane.md#the-question-session).
+
+  The reason: the user names an item by its number in an answer, for example "3. yes". The bullet that starts "The list
+  numbers from 1 in each reply" says so. The user cannot name an item that only an ordinal word in prose numbers.
+
 - Before the session sends a reply, it makes sure that the reply holds no unordered list. It changes each unordered list
-  into a numbered list or into sentences. If the reply gives open questions, the session also makes sure that question 1
-  gives the full details of the bullet that starts "Question 1 of the list". Inside a question, it gives the choices as
-  a nested list with letters and the proposed steps as a nested list with roman numerals. It changes each other list
-  inside a question into sentences. For a list inside a question, these two sentences win over the second sentence of
-  this bullet.
+  into a numbered list or into sentences. If the unordered list gives a series of items, it changes the list into a
+  numbered list, not into sentences. A series is the series of the bullet that starts "A reply gives each series of
+  items". Each other unordered list can still change into sentences. If the reply gives open questions, the session also
+  makes sure that question 1 gives the full details of the bullet that starts "Question 1 of the list". Inside a
+  question, it gives the choices as a nested list with letters and the proposed steps as a nested list with roman
+  numerals. It changes each other list inside a question into sentences. For a list inside a question, these two
+  sentences win over the second sentence of this bullet.
 
 These rules hold for each list of the decisions that the user must make, and for each reply that gives open questions:
 
-- A reply gives all open questions in one numbered list.
+- A reply gives all open questions in one numbered list. No question and no offer stands in prose outside this list,
+  also not in the last lines of a long reply.
 - Question 1 of the list gives the full details. These are what happened, what the problem is, what each choice does and
   a recommendation, as the first bullet of [A decision of the user](#a-decision-of-the-user) says. Question 1 also gives
   the command and the result of each fact, as the bullet that starts "Before a decision of the user" says. For question
@@ -383,6 +405,19 @@ These rules hold for each list of the decisions that the user must make, and for
 - Each question says whether it is new or continues an earlier question or answer. A continued question names the
   earlier question or answer by its content. The bullet "When the session reminds the user of a decision that still
   waits" gives this rule. For example, it gives the words of the user.
+- An offer of the session to the user is an open question. An example is "Do you want me to post the draft?". The offer
+  has its own number in the one numbered list, and each other bullet of this list holds for it. If the offer is question
+  1, it gives the full details of the bullet that starts "Question 1 of the list".
+
+  An unanswered offer stays in the list of the next reply. The bullet that starts "The list holds each question that is
+  still open" says this for a question. The offer also says whether it is new or continues an earlier question or
+  answer. The bullet that starts "Each question says whether it is new" says this for a question.
+
+  This bullet permits no offer that a rule bans. The first bullet of [A question of the user](#a-question-of-the-user)
+  bans each offer that the user did not ask for. Each exception of the bullet that starts "A reply gives each series of
+  items" also holds for an offer. The short form of a later question and each other short form of this section stay.
+
+  The reason: an offer in prose in the last lines of a reply has no number, so the user cannot name it in an answer.
 
 An example:
 
@@ -416,6 +451,8 @@ item should not be lettered, it makes them look like they are the answers".
 On the same day, planner-m16 asked the user, through operator-m16, where the proposed steps of a question go. The user
 said: "proposed steps can be numbered with roman numerals i, ii, iii, etc." The user also said: "and keep the details
 with the question, don't move it above".
+
+For this rule, the user said: "Always us numbered lists, not verbal ordinals."
 
 ## A question of the user
 
