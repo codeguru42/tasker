@@ -19,11 +19,11 @@ A question session runs this skill in the rounds of [The rounds before the close
 
 1. Find the candidates in the transcript. A candidate is a decision, a correction or a confirmation of how to work, a settled design tradeoff, or a state that changed. Examples of a state are a deadline, an owner and an outside reference.
 2. First, read the memory index and each memory file. Then do these checks. The staleness check covers each existing note: does each file, function or flag that it names still exist, and did a later decision of this session replace it? The doc check covers each existing memory note, also a note that names no issue. Do the doc check with the items (a) to (i):
-   - (a) Run `git -C <local clone> fetch origin` one time.
-   - (b) If the fetch fails, tell the user the command and the error. Then the doc check changes no note, and step 5 covers only the notes of its item (f).
+   - (a) Do step 1 of [the doc-read rule](../../../docs/dev/doc-reads.md#the-doc-read-rule) one time.
+   - (b) If the branch check of step 1 fails, tell the user the command and its output. Then the doc check changes no note, and step 5 covers only the notes of its item (f). Each other case of step 1 follows the doc-read rule.
    - (c) For each note, find each tracked doc of the repo that the note names. If the note names no tracked doc, it has nothing to compare. Keep the note.
-   - (d) Read each doc that the note names with `git -C <local clone> show origin/main:<path>`.
-   - (e) A doc that no longer exists is an answer, not a failure. [The doc-read rule](../../../docs/dev/doc-reads.md#the-doc-read-rule) gives the two error forms. Then the doc holds no line of the note.
+   - (d) Read each doc that the note names as the doc-read rule says.
+   - (e) A doc that no longer exists is an answer, not a failure. The doc-read rule gives its forms for both reads. Then the doc holds no line of the note.
    - (f) If a read fails, tell the user the command and the error. Keep that note as it was. Step 5 covers the note only in its item (f). Go on with the next note.
    - (g) Compare each line of the note with those docs. The frontmatter and the links of the note are not lines to compare.
    - (h) If the compare leaves no line besides the frontmatter and the links, delete the note and its line in the memory index in step 4.
