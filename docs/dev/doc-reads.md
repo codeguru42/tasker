@@ -193,26 +193,115 @@ full.
 ## The doc-read rule
 
 The local clone holds the checkout of the user, for example a commit of a pre-release. The docs of the orchestration
-come from `origin/main`, not from that checkout.
+come from `origin/main`, not from that checkout. A covered session pulls `main` only when the branch check, the clean
+tree and the hash checks protect the read.
 
-1. Before the orchestrator, the operator, a planner, a task subagent or a
-   [question session](question-pane.md#a-question-pane) reads a doc, it runs `git -C <local clone> fetch origin`.
-2. Then it reads each doc with `git -C <local clone> show origin/main:<path>`, in a Bash call. `<path>` is the path of
-   the doc from the root of the repo, for example `docs/dev/limits.md`.
+This section is the only home of the read steps. Each other doc links here. The exceptions are the start prompts and the
+lists of [the allowed commands](allowed-commands.md).
 
-This read is an exception to the Read-tool bullet of
-[The tools of a session](working-with-the-user.md#the-tools-of-a-session).
+### The covered sessions
 
-Each reader of this rule makes a complete read of each doc that it reads. A complete read is a read of each part of the
-output of the doc read, in order. The readers are the orchestrator, the operator, a planner, a task subagent and a
-question session. The rule covers each reader, because one rule is simpler than one rule for each role.
+Only a session of the kind `claude` is covered. The covered sessions are:
+
+- The orchestrator, the operator, each planner session and the [question session](question-pane.md#a-question-pane).
+- Each session that works with the user and has no role.
+- A session that runs `/session-review`.
+- The issue subagents (issue-draft, issue-review and issue-post), whatever session starts them.
+- The subagent of the main session that posts a reviewed ad hoc draft.
+
+These sessions keep the old read, also for a doc that they reach by a link:
+
+- Each task subagent, for a whole ticket or for one task change. A task subagent never pulls in the shared local clone.
+- The planner subagent, the opener subagent, the reuse subagent and the write subagent of the orchestrator, if such a
+  subagent reads a doc. This covers each helper subagent of such a subagent, apart from the issue subagents.
+- A read subagent that a session with no role starts for a read of code or docs.
+- The ticket subagent and the review agent of a planner. The user deprecated them on 2026-11-21.
+- A session of a kind other than `claude`, for example `pi`. The measured `pi` sessions had only `bash`. Such a session
+  runs no pull.
+
+A session with no local clone has no step 1 and gets no command.
+
+### The terms
+
+- The old read is the fetch, then `git -C <local clone> show origin/main:<path>` in a Bash call.
+- A clean tree is a tree for which `git -C <local clone> status --porcelain --untracked-files=no` exits with 0 and
+  prints nothing.
+- The branch check is `git -C <local clone> branch --show-current`.
+
+### Step 1: pull the local clone
+
+The session does step 1 one time for each group of reads that one step of its work needs.
+
+1. Run the branch check. It passes on exit 0 with the output `main`. If it prints another name or an empty line, `main`
+   is not checked out. The session follows [the failure rule](limits.md#the-failure-rule). It tells the user the command
+   and its output. It reads no doc, makes no old read, and runs no `git checkout` or `git switch`. It goes on with each
+   step that needs no doc read. The orchestrator starts no work that a rule of an unread doc governs.
+2. Run the clean-tree check. If the command prints a line, a tracked file changed. The session runs no pull and makes
+   the old read. It says in its next message, one time, that it did not pull because of a changed tracked file.
+3. Run `git -C <local clone> pull --ff-only origin main`, and no other pull form. The session runs no `git stash`,
+   `git checkout`, `git switch`, `git reset` or `git clean`.
+4. After exit 0, read `<head>` and `<origin>` one time each with `git -C <local clone> rev-parse --verify HEAD` and
+   `git -C <local clone> rev-parse --verify origin/main`. Then run the clean-tree check.
+   - If `<head>` equals `<origin>` and the tree is clean, step 1 passed.
+   - If `git -C <local clone> merge-base --is-ancestor <head> <origin>` exits with 0 and the tree is clean, pull one
+     more time and read the hashes again.
+   - Each other result is a failed pull. Exit 1 of `--is-ancestor` means that the commit is no ancestor.
+5. Each other exit code of a check command is an error. Then step 1 counts as a failed pull. An error of the branch
+   check is not a wrong branch.
+6. If a command gives a lock error, delete no lock file. Wait with `timeout 20 bash -c 'sleep 5'` and run the checks of
+   item 4 one time. If they pass, step 1 is done. Otherwise pull one more time. A second failure follows item 7.
+7. After a failed pull, a denied pull, a refused prompt or a pull whose checks fail, the session follows the failure
+   rule and tells the user the command and the error. Then it runs `git -C <local clone> fetch origin` and makes the old
+   read. Its work goes on.
+
+An error with "cannot lock" counts as a lock error. So does `Unable to create '<path>/index.lock': File exists`. The
+text "fatal: Cannot fast-forward to multiple branches." names no lock, so it follows item 7. A fetch of the old read
+with a lock error takes the same wait.
+
+On 2026-11-21, with git 2.47.3, two pulls ran at the same moment 11 times. One pull printed "error: cannot lock ref
+'refs/remotes/origin/main': is at <hash> but expected <hash>" and exited with 1. In some tries, the other pull printed
+"fatal: Cannot fast-forward to multiple branches." and exited with 128. In 7 of 11 tries, `HEAD` and `origin/main`
+differed after both pulls ended. No one measured other forms.
+
+`--ff-only` changes nothing when it cannot fast-forward. `.claude/settings.json` has no rule for the pull, so the
+classifier of auto mode decides each call that no rule matches. The commands of this rule stand in the lists of
+[the allowed commands](allowed-commands.md).
+
+A pull brings only commits that landed on `origin/main`, and it changes no tracked file of its own. So it is no change
+under [the tracked-change rule](rules.md#changes) and no write action of a question pane.
+
+### Step 2: read each doc with the Read tool
+
+This step runs after step 1 passed.
+
+1. Read each doc with the Read tool on the file in the local clone. `<path>` is the path of the doc from the root of the
+   repo, for example `docs/dev/limits.md`. Read in pieces with `offset` and `limit`, from line 1.
+2. The read reaches the end when the last piece returns fewer lines than its `limit`. It also reaches the end when the
+   pieces reach the count of `wc -l <path>`.
+3. If a call is refused for too many tokens, halve `limit` and read again from the same `offset`. A piece before the end
+   is not a complete read, and a refused call is not a read.
+4. After the last piece of a doc, run `git -C <local clone> rev-parse --verify HEAD` and the clean-tree check. If the
+   hash is not `<head>` or the tree is not clean, read that doc again with the old read.
+
+The size of a piece changes with the size of the doc and with the version of Claude Code. So this rule gives no piece
+size.
+
+A missing doc is an answer, not a failure. With the old read, the two `fatal:` texts below are the answer. With the Read
+tool, an error that starts "File does not exist." is the answer. On 2026-11-21, with Claude Code 2.1.330, a Read call on
+a missing file of the local clone returned that error.
+
+### The old read
+
+The old read runs `git -C <local clone> fetch origin`. Then it reads each doc with
+`git -C <local clone> show origin/main:<path>` in a Bash call. A read of `origin/main` in one command needs no hash
+read.
+
+Each reader makes a complete read of each doc that it reads. A complete read is a read of each part of the output of the
+doc read, in order. A failed read is never a complete read. Each other failed read follows the failure rule.
 
 Claude Code cuts a long output. It saves the full output to a file and shows a preview. Then the session reads the rest
-of that file in parts, in order, before its next action. A read with a cut output is not a complete read. Before the
-read is complete, the session reports no start read as done.
-
-A failed fetch and a missing doc keep the outcomes that this rule gives. Each other failed read follows
-[the failure rule](limits.md#the-failure-rule). A failed read is never a complete read.
+of that file in parts, in order, with the Read tool, before its next action. A read with a cut output is not a complete
+read. Before the read is complete, the session reports no start read as done.
 
 These facts show the cut:
 
@@ -224,35 +313,57 @@ These facts show the cut:
 - On 2026-11-16, planner-m16 reported a cut read with Claude Code 2.1.325. One call that printed only
   `docs/dev/handoff.md` gave 33.1 KB, and Claude Code showed a preview. No one measured this case again.
 
-The start prompts and the handoff prompts give these commands with no `-C`, because the session starts in the local
-clone. The session has no other way to learn them before its first read. `CLAUDE.md` loads `AGENTS.md` from the
-checkout, so that index can also be old. On 2026-11-01, the new operator-m27 read a checkout 149 commits behind
-`origin/main` and used old rules for hours. The same day, planner-m27 read an old checkout and did not know the rule
-that some posts also give a message to an orchestrator.
-
-The rule has no branch check and no merge. The checkout of the local clone does not matter. `git show` needs no
-checkout, so no branch check and no merge can fail.
-
-A link in a doc that the reader follows is also a doc read. The reader resolves the relative path of the link against
-the folder of the doc, and drops the part from `#` (the anchor). For example, the link `limits.md#the-failure-rule` in
-`docs/dev/doc-reads.md` gives `docs/dev/limits.md`, and the link `../../README.md#install` in `docs/dev/setup.md` gives
-`README.md`. Then the reader reads that path with the command of step 2. The Read tool and relative links work only on
-files on disk. `git show` does not resolve `..`: `git show origin/main:docs/dev/../config.md` fails with
+`git show` does not resolve `..`: `git show origin/main:docs/dev/../config.md` fails with
 `fatal: path 'docs/dev/../config.md' exists on disk, but not in 'origin/main'`.
-
-A read with the Read tool of a file in the local clone is not a doc read. That file can be of another commit.
 
 If `git show` prints `fatal: path '<path>' does not exist in '<commit>'` or
 `fatal: path '<path>' exists on disk, but not in '<commit>'`, the doc does not exist on that commit, and the reader has
-nothing to read. That is an answer, not a failure.
+nothing to read.
 
-Each doc read uses `origin/main` in one command, so [the shared-clone rule](limits.md#the-shared-clone-rule) needs no
-hash read for it. A fetch of another session between two reads can give a newer doc of `origin/main`.
+A read of a file on disk without a passed step 1 is not a doc read, because the file can be of another commit.
 
-If the fetch fails, a task subagent [stops](limits.md#the-answer-wait-rule) and reports the error. For the orchestrator,
-[the re-read rule](#the-re-read-rule) gives the failure path. If the fetch of the doc-read rule fails for the operator
-or a planner, [the failure rule](limits.md#the-failure-rule) of `docs/dev/limits.md` applies to that session. Then that
-session reads the doc with `git -C <local clone> show origin/main:<path>`. The read uses the `origin/main` of the last
-fetch that worked. Then that session continues its work.
+If the fetch fails, a task subagent [stops](limits.md#the-answer-wait-rule) and reports the error. Each other session
+that keeps the old read follows the failure rule and reads from the `origin/main` of the last fetch that worked. The
+question session tells the user in its second reply. An issue subagent gives each fact for the user in its result. For
+the orchestrator, [the re-read rule](#the-re-read-rule) gives the failure path.
 
-If the fetch fails for a question session, [A question pane](question-pane.md#a-question-pane) gives the next step.
+### A link in a doc
+
+A link in a doc that the reader follows is also a doc read. The reader drops the part from `#` (the anchor). It resolves
+the path against the folder of the doc. For example, the link `limits.md#the-failure-rule` in `docs/dev/doc-reads.md`
+gives `docs/dev/limits.md`, and the link `../../README.md#install` in `docs/dev/setup.md` gives `README.md`. With the
+Read tool, `..` works. The `..` failure of `git show` applies only to the old read.
+
+### The start prompts
+
+The start prompts and the handoff prompts give the branch check, the clean-tree check and the pull with no `-C`, because
+the session starts in the local clone. The block `question-session` of [A question pane](question-pane.md) keeps
+`<local clone>`. The session has no other way to learn these commands before its first read.
+
+The start prompts are the first prompts of the orchestrator, the start prompts of the planner, the prompt read of a
+handoff and the block `question-session`. The prompt of an issue subagent and of the ad hoc post subagent is also a
+start prompt.
+
+After the pull, the session reads this doc first with the Read tool, and does the checks of step 2 for it. Then it reads
+its other start docs as this rule says. A change of step 1 or step 2 also changes each start prompt and the lists of the
+allowed commands, in the same change.
+
+`CLAUDE.md` loads `AGENTS.md` before step 1. So after step 1, the session reads `AGENTS.md` again. An issue subagent
+does not. On 2026-11-01, the new operator-m27 read a checkout 149 commits behind `origin/main` and used old rules for
+hours. The same day, planner-m27 read an old checkout and did not know the rule that some posts also give a message to
+an orchestrator.
+
+### Why the rule pulls
+
+The old rule had no branch check and no merge, and a doc read never used the checkout of the local clone. The user asked
+for a read of the newest version of the docs that also works with the Read tool. On 2026-11-21, the user said, word for
+word: "We need a central location for the rules for reading the newest version of docs. I think this is `doc-reads.md`
+and should be the source of truth."
+
+The rule has these limits, and each one has a reason:
+
+- A wrong branch reads nothing, because a pull of another branch can change the docs in a way that no one checked.
+- A changed tracked file gets the old read, because a pull must not touch the edit of the user.
+- A task subagent never pulls, because its worktree and the shared local clone must stay as they are.
+- A pre-release install leaves the local clone on a commit that is not `main`. Then a covered session stops reading docs
+  until the user checks out `main`, as [Release](release.md) says.
