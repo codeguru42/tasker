@@ -117,7 +117,8 @@ An issue-post subagent makes only these writes:
   a post. The prompt gives no reversed link, so the subagent removes no old link before the walk. The paragraph that
   starts "If the walk finds a cycle" gives that removal.
 - The body file `/tmp/tasker/issue-post/<slug>-body.md`. The `<slug>` is the base name of the draft file from the
-  prompt. The subagent writes no other file.
+  prompt. The subagent writes no other file. The pull of step 1 of [the doc-read rule](doc-reads.md#the-doc-read-rule)
+  is no write, as [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 
 The subagent changes no other metadata. It moves no card. It runs no `gh project item-add`, for the reason of the bullet
 of [The project board](issues.md#the-project-board) that starts "A workflow of the board". It sets no priority, as the

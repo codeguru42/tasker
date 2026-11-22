@@ -11,6 +11,7 @@ are these:
 - Each issue-draft subagent, as [the read rule](issue-subagents.md#the-read-rule) says.
 - Each [ticket subagent](GLOSSARY.md) of a planner, for the work on its draft. It follows each rule of this page, as an
   issue-draft subagent does. For a ticket subagent, "the issue-draft subagent" on this page names the ticket subagent.
+  The ticket subagent keeps the old read of [the doc-read rule](doc-reads.md#the-doc-read-rule).
 - Each planner, because some steps of a planner name a part of this page. The next paragraph names these steps.
 
 These steps name a part of this page:
@@ -38,10 +39,13 @@ It makes each scratch folder under `/tmp`. These rules come from step 1 of
 [The review loop of a draft](planner.md#the-review-loop-of-a-draft). They also come from
 [The ticket subagent](planner.md#the-ticket-subagent).
 
+The pull of step 1 of the doc-read rule is no write of a file, as
+[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+
 ## The fresh base
 
-The issue-draft subagent runs `git fetch origin` in the local clone before its first read of the repo. It reads each
-file that a claim of the draft names with `git show origin/main:<path>`.
+The issue-draft subagent reads each file that a claim of the draft names as
+[the doc-read rule](doc-reads.md#the-doc-read-rule) says.
 
 ## The self-check
 

@@ -14,6 +14,8 @@ readers of this page are these:
 - Each ticket subagent of a planner. Step 4 of [The review loop of a draft](planner.md#the-review-loop-of-a-draft) gives
   a review agent the tests and the bans of this page.
 
+The review agent and the ticket subagent keep the old read of [the doc-read rule](doc-reads.md#the-doc-read-rule).
+
 When a step of its work needs a doc that a link of this page names, a reader reads that doc. A reader does not read it
 at its start, as [The read rule](issue-subagents.md#the-read-rule) of issue-subagents.md says.
 
@@ -42,8 +44,8 @@ The issue-review subagent tests the draft against these items:
   [The blocked-by links](issue-subagents.md#the-blocked-by-links) and
   [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue).
 - The simple-english skill.
-- Each claim of the draft about the docs or the code. The issue-review subagent reads each file with
-  `git show origin/main:<path>`.
+- Each claim of the draft about the docs or the code. The issue-review subagent reads each file as
+  [the doc-read rule](doc-reads.md#the-doc-read-rule) says.
 - Each open and closed issue that covers the same change, and each open issue that edits the same place of a file.
 - Each part of the source that the draft leaves out, and each part that the draft adds.
 
