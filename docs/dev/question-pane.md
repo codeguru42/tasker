@@ -1269,6 +1269,12 @@ The first target of each proposal of step 6 is the user in the pane. So each suc
 7 of `/session-review`. The user accepts, changes or drops it in the pane. The question session still drafts no issue
 and posts nothing.
 
+A proposal of step 6 is not a doc proposal of [Send a decision](#send-a-decision), and it already names the file and the
+change. If such a proposal rests on words of the user, it gives those words word for word, beside the file and the
+change. If the words are a decision of the user in the rounds, the words that the report already gives for that decision
+meet this rule. The question session combines similar proposals of one report into one proposal, as Send a decision says
+for doc proposals. The combined proposal gives the words of the user of each part, word for word.
+
 A recurrence, as [A recurrence](issues.md#a-recurrence) defines it, also goes to the user in the pane first, as a
 proposal of step 6. The reason: step 6 of `/session-review` sends the session to that section for a recurrence. The
 report of its round names the open issue. It also gives the ticket, the date and the facts of the new case, as a
