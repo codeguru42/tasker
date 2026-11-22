@@ -1177,6 +1177,7 @@ issue of the scope. A ticket on hold counts as an open issue. An orchestrator of
 because no close of a milestone follows. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) gives
 what this report changes for a handoff.
 
+A long-running orchestrator gives its report that the milestone is done at each start of its end that runs a round.
 Before the word of the user that starts the close, a long-running orchestrator keeps its role, does no end reads and
 closes no milestone. After that word, it does the end reads, and the rest of the end follows.
 [The start and the authority](operator-start.md#the-start-and-the-authority) gives that word.

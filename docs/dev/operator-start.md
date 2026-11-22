@@ -410,10 +410,10 @@ its own. A word of the user can still start one.
 
 A session that starts the close ends its role. It does not keep its role for the next milestone.
 
-The milestone of a long-running orchestrator, for example "Docs", stays open after its last ticket closes. At the start
-of its end, the long-running orchestrator runs its rounds and gives its report that the milestone is done.
-[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives these steps. The close of that
-milestone starts only on the word of the user.
+The milestone of a long-running orchestrator, for example "Docs", stays open after its last ticket closes. At a start of
+its end that runs a round, the long-running orchestrator gives its report that the milestone is done.
+[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the rule of that round. The close of
+that milestone starts only on the word of the user.
 
 After that word, the long-running orchestrator does its end reads. It sends the report that the close started only after
 end reads that find no open issue. Until that word, the long-running orchestrator keeps its role and its other rules
