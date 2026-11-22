@@ -1,8 +1,8 @@
 # Doc reads
 
 The readers of this page are the orchestrator, the task subagents, the operator, each planner, each question session,
-the issue subagents and each session with no role. The operator reads the notice rule and the doc-read rule. Each other
-session reads the doc-read rule.
+the issue subagents and each session with no role. The operator reads the notice rule and the doc-read rule. Each
+planner, each question session, each issue subagent and each session with no role read the doc-read rule.
 
 ## The re-read rule
 
@@ -240,9 +240,10 @@ A session with no local clone has no step 1 and gets no command.
 The session does step 1 one time for each group of reads that one step of its work needs.
 
 1. Run the branch check. It passes on exit 0 with the output `main`. If it prints another name or an empty line, `main`
-   is not checked out. The session follows [the failure rule](limits.md#the-failure-rule). It tells the user the command
-   and its output. It reads no doc, makes no old read, and runs no `git checkout` or `git switch`. It goes on with each
-   step that needs no doc read. The orchestrator starts no work that a rule of an unread doc governs.
+   is not checked out. The session follows [the failure rule](limits.md#the-failure-rule). It tells the user the
+   command, its output and that `main` is not checked out. It reads no doc, makes no old read, and runs no
+   `git checkout` or `git switch`. It goes on with each step that needs no doc read. The orchestrator starts no work
+   that a rule of an unread doc governs. This is the only case of step 1 that fails with no fallback.
 2. Run the clean-tree check. If the command prints a line, a tracked file changed. The session runs no pull and makes
    the old read. It says in its next message, one time, that it did not pull because of a changed tracked file.
 3. Run `git -C <local clone> pull --ff-only origin main`, and no other pull form. The session runs no `git stash`,
@@ -250,8 +251,9 @@ The session does step 1 one time for each group of reads that one step of its wo
 4. After exit 0, read `<head>` and `<origin>` one time each with `git -C <local clone> rev-parse --verify HEAD` and
    `git -C <local clone> rev-parse --verify origin/main`. Then run the clean-tree check.
    - If `<head>` equals `<origin>` and the tree is clean, step 1 passed.
-   - If `git -C <local clone> merge-base --is-ancestor <head> <origin>` exits with 0 and the tree is clean, pull one
-     more time and read the hashes again.
+   - If `<head>` is an ancestor of `<origin>` and the tree is clean, pull one more time, once. The test is that
+     `git -C <local clone> merge-base --is-ancestor <head> <origin>` exits with 0. Then read the two hashes again. If
+     they still do not pass, the pull failed, and item 7 applies.
    - Each other result is a failed pull. Exit 1 of `--is-ancestor` means that the commit is no ancestor.
 5. Each other exit code of a check command is an error. Then step 1 counts as a failed pull. An error of the branch
    check is not a wrong branch.
@@ -290,8 +292,15 @@ This step runs after step 1 passed.
 4. After the last piece of a doc, run `git -C <local clone> rev-parse --verify HEAD` and the clean-tree check. If the
    hash is not `<head>` or the tree is not clean, read that doc again with the old read.
 
-The size of a piece changes with the size of the doc and with the version of Claude Code. So this rule gives no piece
-size.
+On 2026-11-20, with Claude Code 2.1.330, one Read call with `limit: 2000` on `docs/dev/pick-the-tickets.md` failed. At
+commit `507bcddb`, that file had 1077 lines and 91,959 bytes. The error was "File content (31880 tokens) exceeds maximum
+allowed tokens (25000)". So the doc was above 25000 tokens. A Read call on `docs/dev/doc-reads.md` returned all its
+lines. At commit `507bcddb`, that file had 258 lines. At commit `507bcddb`, no doc under `docs/` was longer than 2000
+lines. The longest was `docs/dev/assistants.md`, with 1804 lines.
+
+At commit `941a4f88`, `docs/dev/pick-the-tickets.md` had 1236 lines and 103,281 bytes. The longest doc under `docs/` was
+still `docs/dev/assistants.md`, with 1821 lines. Each count is a fact of its commit. No one measured which doc the Read
+tool refuses in one call. So this rule gives the pieces rule and no piece size.
 
 A missing doc is an answer, not a failure. With the old read, the two `fatal:` texts below are the answer. With the Read
 tool, an error that starts "File does not exist." is the answer. On 2026-11-21, with Claude Code 2.1.330, a Read call on
@@ -351,9 +360,10 @@ The start prompts are the first prompts of the orchestrator, the start prompts o
 handoff and the block `question-session`. The prompt of an issue subagent and of the ad hoc post subagent is also a
 start prompt.
 
-After the pull, the session reads this doc first with the Read tool, and does the checks of step 2 for it. Then it reads
-its other start docs as this rule says. A change of step 1 or step 2 also changes each start prompt and the lists of the
-allowed commands, in the same change.
+After the pull, the session reads this doc first, with the Read tool. Then it reads `<head>` and `<origin>` and runs the
+clean-tree check, as step 1 item 4 says. Then it does step 2 item 4 for this doc. If a check fails, the session follows
+this rule, also for this doc. Then it reads its other start docs as this rule says. A change of step 1 or step 2 also
+changes each start prompt and the lists of the allowed commands, in the same change.
 
 `CLAUDE.md` loads `AGENTS.md` before step 1. So after step 1, the session reads `AGENTS.md` again. An issue subagent
 does not. On 2026-11-01, the new operator-m27 read a checkout 149 commits behind `origin/main` and used old rules for
@@ -362,15 +372,21 @@ an orchestrator.
 
 ### Why the rule pulls
 
-The old rule had no branch check and no merge, and a doc read never used the checkout of the local clone. The user asked
-for a read of the newest version of the docs that also works with the Read tool. On 2026-11-21, the user said, word for
-word: "We need a central location for the rules for reading the newest version of docs. I think this is `doc-reads.md`
-and should be the source of truth."
+The old rule had no branch check and no merge, and a doc read never used the checkout of the local clone. On 2026-11-20,
+the user said, word for word: "File a ticket to modify this rule: 1. Run `git pull` in the local clone to get up to date
+copies. 2. Use the Read() tool to read the instruciton files." Later the same day, the user added, word for word: "The
+issue for pulling main and reading instruction files directly should also double check that main is checked out and fail
+if not." On 2026-11-21, the user said, word for word: "We need a central location for the rules for reading the newest
+version of docs. I think this is `doc-reads.md` and should be the source of truth."
 
 The rule has these limits, and each one has a reason:
 
-- A wrong branch reads nothing, because a pull of another branch can change the docs in a way that no one checked.
-- A changed tracked file gets the old read, because a pull must not touch the edit of the user.
-- A task subagent never pulls, because its worktree and the shared local clone must stay as they are.
-- A pre-release install leaves the local clone on a commit that is not `main`. Then a covered session stops reading docs
-  until the user checks out `main`, as [Release](release.md) says.
+- A wrong branch reads nothing. A wrong branch can mean that the user works in the clone, and the user decides what to
+  do. The old read gives the committed text in the other cases. A failure in each case stops each session for a cause
+  that the old read handles.
+- A changed tracked file gets the old read. A pull over a changed file keeps the change, and then the Read tool shows
+  text that is not on `origin/main`.
+- A task subagent works in its own task worktree on its own task branch. It never pulls in the local clone, because that
+  clone is shared.
+- A pre-release install can leave the local clone on a commit that is not `main`. Then each covered session fails its
+  doc read until `main` is checked out again, as [Release](release.md) says.
