@@ -363,8 +363,10 @@ start prompt.
 
 After the pull, the session reads this doc first, with the Read tool. Then it reads `<head>` and `<origin>` and runs the
 clean-tree check, as step 1 item 4 says. Then it does step 2 item 4 for this doc. If a check fails, the session follows
-this rule, also for this doc. Then it reads its other start docs as this rule says. A change of step 1 or step 2 also
-changes each start prompt and the lists of the allowed commands, in the same change.
+this rule, also for this doc. Then it reads its other start docs as this rule says. A start prompt or a list of the
+allowed commands changes with step 1 or step 2 in two cases only. It then changes in the same change as the step. In the
+first case, the change makes the words of that prompt or list untrue. In the second case, the change alters a command
+that the prompt or list gives.
 
 `CLAUDE.md` loads `AGENTS.md` before step 1. So after step 1, the session reads `AGENTS.md` again. An issue subagent
 does not. On 2026-11-01, the new operator-m27 read a checkout 149 commits behind `origin/main` and used old rules for
