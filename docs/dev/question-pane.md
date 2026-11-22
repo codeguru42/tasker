@@ -773,7 +773,8 @@ never a guess. The judgment of a direct pick and of a guess is open on purpose. 
 are a discussion and the reading is a guess.
 
 For a direct pick, the question session sends the decision message at once. It shows no evaluation and asks no confirm
-question. The message has no part about a confirm question.
+question. The message has no part about a confirm question. The paragraph that starts "Take a decision message after a
+direct pick" gives the one exception.
 
 For a discussion, the question session shows the evaluation. The evaluation says for each shown choice whether the words
 fit it and why. Then it names the choice that the words fit best, or says that no choice fits. It also says what stays
@@ -845,9 +846,10 @@ asks no confirm question for it. If the user did not, the question session gives
 change. Each such reading is a guess under the guess rule above. The message gives the reading only after the user
 accepted it, and marks it as a guess that the user accepted.
 
-For a discussion, the guess goes in the confirm question of the planned decision, as a numbered reading. For each other
-message, the session asks the confirm question about the guesses before the send, as the paragraph that starts "A
-request for a new issue, another request of" says.
+For a discussion, the guess goes in the confirm question of the planned decision, as a numbered reading. For a decision
+message after a direct pick, the paragraph that starts "Take a decision message after a direct pick" gives the confirm
+question. For a message with no planned decision, the session asks the confirm question about the guesses before the
+send, as the paragraph that starts "A request for a new issue, another request of" says.
 
 After a no to the confirm question, the doc proposal gives the words of the user word for word. It names no part of a
 doc and no change that the user did not say or point to. The same holds after a close of the pane, or an end of the run,
@@ -861,6 +863,26 @@ confirm question about a guess of a doc proposal.
 The question session combines similar doc proposals of one message into one doc proposal. The combined doc proposal
 gives the words of the user of each part, word for word. Which doc proposals are similar is a judgment of the question
 session. This judgment is open on purpose.
+
+Take a decision message after a direct pick that holds a guess of a doc proposal from an earlier reply of the same
+question. Before the send, the question session asks the confirm question about the guesses. It shows no evaluation. The
+confirm question gives only the guesses, each as a numbered reading, and asks one yes or no question. It does not ask
+about the direct pick, and the direct pick stays the decision. A reply that holds the direct pick and also a request or
+a reading of the session stays a discussion, as the paragraph that starts "A shown choice" says.
+
+After a yes, the message gives the direct pick as the decision and each guess as a guess that the user accepted. After a
+no, the message gives the direct pick as the decision and drops each guess, as the paragraph that starts "After a no to
+the confirm question, the doc proposal" says. If the user closes the pane or ends the run while that confirm question is
+open, the message gives the direct pick as the decision and no guess, as the paragraph that starts "After a no to the
+confirm question, the doc proposal" says. Each other answer follows the guess rule, for example a changed guess or a
+reply about another topic.
+
+A guess of a doc proposal can stand in the confirm question of an earlier discussion of the same question. The user can
+answer that confirm question with a direct pick, not with a yes or a no. Then the session drops the planned decision of
+that discussion. It keeps the guess and gives it in the confirm question about the guesses before the send of the direct
+pick. For this case only, this paragraph and the two before it win over the paragraph that starts "For a direct pick"
+and over the sentence "It then judges the new words again, and a new direct pick is sent at once". A decision message
+after a direct pick with no guess still goes at once, with no confirm question.
 
 The reason for the doc proposal: on 2026-11-21, in the question pane orchestrator-m31-135, the user accepted the rule,
 as orchestrator-m31 relayed it.
