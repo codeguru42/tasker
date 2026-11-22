@@ -24,12 +24,13 @@ says. It sends no item to an operator, and no answer of an operator ends a wait.
 [The operator](dev/working-with-the-user.md#the-operator) of working-with-the-user.md says how "tell the user" or "ask
 the user" reads. A report or a question to the user that a rule of the orchestration pages calls a reply follows the
 same split: a progress report shows in the tab, and a question goes to the pane. When a rule waits for the user, the
-answer of the question that the rule waits for ends the wait. The orchestrator sends each lesson, each finding of a
-session review, each recurrence and each proposed issue only to `planner-<slug>` of its own slug, as the planner bullet
-of [The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. An orchestrator sends a
-peer only the seven kinds of [The kinds of peer message](#the-kinds-of-peer-message).
-[The request rule](#the-request-rule) gives the seventh kind, the request for a decision of the user that needs a peer
-to act.
+answer of the question that the rule waits for ends the wait. The orchestrator gives each lesson, each finding of a
+session review, each recurrence and each proposed issue to its planner. The planner bullet of
+[The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the steps. For an
+orchestrator of the kind `claude`, the planner is a new [planner subagent](dev/planner-subagent.md) for each one. For
+another kind, the planner is `planner-<slug>` of its own slug. An orchestrator sends a peer only the seven kinds of
+[The kinds of peer message](#the-kinds-of-peer-message). [The request rule](#the-request-rule) gives the seventh kind,
+the request for a decision of the user that needs a peer to act.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
 not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).

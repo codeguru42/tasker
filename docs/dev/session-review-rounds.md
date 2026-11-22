@@ -21,7 +21,7 @@ A failed round is not a round that finds nothing new. In the close, the close th
 [The close of a milestone](operator-start.md#the-close-of-a-milestone) says.
 
 A finding is handled when it is posted as an issue or added to an open issue. It is also handled when the user decided
-to drop it, or when a follow-up planner dropped it, as
+to drop it, or when a follow-up planner or a [planner subagent](planner-subagent.md) dropped it, as
 [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. A write to memory does not
 handle a finding. A session that is not a planner sends each finding to the planner as a proposal. That finding stays
 open until the planner handles it. A finding that is not handled is open.

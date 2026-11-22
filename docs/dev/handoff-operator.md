@@ -34,7 +34,7 @@ the count of a suggestion. The old operator judges when the topic ends, and this
 After the start, the old operator does these steps:
 
 1. Run the rounds of [Session-review rounds](session-review-rounds.md). Send each finding to `planner-<slug>` with
-   `SendMessage`. The orchestrator does the same, as the planner bullet of
+   `SendMessage`. The orchestrator gives each finding of its rounds to its planner, as the planner bullet of
    [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. Then wait until each finding
    is handled or waits for an answer of the user. Do not wait in a loop.
 

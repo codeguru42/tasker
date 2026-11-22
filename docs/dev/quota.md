@@ -563,7 +563,8 @@ its question open. The task stays in `failed`.
 
 Make the capture a proposed comment with the date, `codex --version` output, first user answer, report lines, and any
 permitted copy in a code block. If an open issue adds the Codex quota outcome, propose the comment there; on 2026-11-11
-that issue was #662. Otherwise send the capture to `planner-<slug>` as a proposed issue.
+that issue was #662. Otherwise give the capture to the planner as a proposed issue, as the planner bullet of
+[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 If the issue-state read fails, post nothing, tell the user, and keep the capture only in the report in the tab. Ask the
 approval of the comment draft in the pane. Post only after user approval, using any changes the user requests. If the
