@@ -936,10 +936,16 @@ close and a reuse. It holds after a settled answer, a failed answer send, a **No
 in the tab of the orchestrator.
 
 The close request is this message with the herdr path:
-`PANE-OWNER <owner name> <question id>: close. Run the rounds of docs/dev/session-review-rounds.md, then report.` It is
-a word of the pane owner, not a word of the user, so it does not start with "From the user:". The pane owner sends at
-most one close request for each question of a pane. Each question of a pane gets its own rounds before its context clear
-or its close. The report is not a later pane message that an answer in the tab of the orchestrator wins over.
+`PANE-OWNER <owner name> <question id>: close. Run the rounds of docs/dev/session-review-rounds.md until a round finds nothing new, then report.`
+It is a word of the pane owner, not a word of the user, so it does not start with "From the user:". The pane owner sends
+at most one close request for each question of a pane. Each question of a pane gets its own rounds before its context
+clear or its close. The report is not a later pane message that an answer in the tab of the orchestrator wins over.
+
+The reason for the words "until a round finds nothing new": the words ", then report" alone can read as a report after
+one round. On 2026-11-21, a question session got the earlier message and sent its report after round 1, before round 2
+ran. Its report said that 2 rounds ran and that round 2 found nothing new. The question session corrected its report
+later. The question session reported this case itself, and no one else measured it. The user chose the new words on the
+same day.
 
 After the close request, the question session runs the rounds of [Session-review rounds](session-review-rounds.md) with
 the user in its pane. The rounds keep each rule of [The question session](#the-question-session). So the question
