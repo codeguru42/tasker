@@ -118,5 +118,6 @@ scope stops at the stop of the operator in [The close of a milestone](operator-s
 did no work after its rounds, it runs no new round there and only gives the report again. The report again is not a
 second report that the milestone is done.
 
-A restart of the end during the wait is no work after its rounds. So it runs no new round and sends no second report of
-the rounds.
+A start of the end with no work after its last rounds runs no new round and sends no second report of the rounds.
+[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule. A new ticket, or an answer
+that asks for work, is work after the rounds, so the rounds run again.

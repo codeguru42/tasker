@@ -1096,6 +1096,10 @@ Examples are the pi gate, the ban of [A failed CI run](ci-wait.md#a-failed-ci-ru
 [the hold before an install](release.md#the-hold-before-an-install). A ticket on hold is not a ready ticket, so the gate
 of a ticket on hold does not stop the end.
 
+If no work came after its last rounds, a start of the end runs no new rounds. The orchestrator then sends no second
+report of the rounds and no second report that the milestone is done. A new ticket, or an answer that asks for work, is
+work after the rounds, as [Session-review rounds](session-review-rounds.md) says. Then the rounds run again.
+
 The orchestrator runs the rounds of [Session-review rounds](session-review-rounds.md) first. While a question pane of
 the orchestrator is open or its write subagent runs, the rounds do not start, as [Start](question-pane.md#start) says.
 Each finding of the rounds that needs a decision of the user is an open question of the orchestrator, as
@@ -1145,8 +1149,7 @@ raise of that issue. An open question of another rule that names the issue also 
 [the earlier-blocker offer](#pick-the-tickets).
 
 During the wait, the milestone and the own tab stay open. Each read of the board starts each ticket that can start.
-After a read with no start, no live task and no ready ticket, the end starts again. If no work came after its last
-rounds, the orchestrator runs no new rounds and sends no second report of the rounds. The
+After a read with no start, no live task and no ready ticket, the end starts again. The
 [board watch job](../orchestrator.md#the-board-watch-job) starts a read of the board two times each hour during the
 wait.
 
@@ -1169,9 +1172,9 @@ issue of the scope. A ticket on hold counts as an open issue. An orchestrator of
 because no close of a milestone follows. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) gives
 what this report changes for a handoff.
 
-A long-running orchestrator runs its rounds and gives its report that the milestone is done at the start of its end.
-Before the word of the user that starts the close, it keeps its role, does no end reads and closes no milestone. After
-that word, it does the end reads, and the rest of the end follows.
+A long-running orchestrator runs its rounds and gives its report that the milestone is done at the first start of its
+end after work. Before the word of the user that starts the close, it keeps its role, does no end reads and closes no
+milestone. After that word, it does the end reads, and the rest of the end follows.
 [The start and the authority](operator-start.md#the-start-and-the-authority) gives that word.
 
 Only an orchestrator of a milestone scope and of the kind `claude` closes the GitHub milestone. It does the reads and
