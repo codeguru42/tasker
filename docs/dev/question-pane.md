@@ -1689,8 +1689,34 @@ On 2026-11-20, a session measured two problems of the herdr path on one machine.
 The cause of the unsubmitted Enter is a guess. The guess is that the Enter arrives while the pasted text still comes in.
 No one measured this cause, and no one measured the wait of one second.
 
+On 2026-11-22, a session measured the `MSG` lines of the message number in a shell that sends nothing. On that machine,
+`bash --version | head -1` printed `GNU bash, version 5.2.37(1)-release (x86_64-pc-linux-gnu)`. The command:
+
+```sh
+bash -c 'HERDR_PANE_ID=w1:p2; IFS= read -r BODY <<'"'"'EOF'"'"'
+text with $HOME and `x`
+EOF
+MSG="QUESTION-PANE $HERDR_PANE_ID orchestrator-m31-1 m3: $BODY"; printf "%s\n" "$MSG"'
+```
+
+The output, with exit code 0:
+
+```text
+QUESTION-PANE w1:p2 orchestrator-m31-1 m3: text with $HOME and `x`
+```
+
+So `m3` stays literal, the shell fills in `$HERDR_PANE_ID`, and the shell expands nothing in the body. In this line, the
+first colon that has a space after it is the colon after `m3`. The colon of `w1:p2` has no space after it. The same form
+with the body `ACK m3. The report arrived.` and `MSG="PANE-OWNER orchestrator-m31 orchestrator-m31-1: $BODY"` printed
+this line, with exit code 0:
+
+```text
+PANE-OWNER orchestrator-m31 orchestrator-m31-1: ACK m3. The report arrived.
+```
+
 The rules of this page no longer use `SendMessage`. The records above that name `SendMessage` and `ListAgents` stay as
 facts of the old path. No one measured a send with `herdr pane send-text` into a session that is in a turn. No one
 measured a send into a pi pane in either direction. No one measured a newline inside `send-text`, or the wait for the
-ack. No one measured a context clear in a pi session. No one measured that a pi orchestrator can start an opener
-subagent, a reuse subagent or a write subagent.
+ack. No one measured the header or the ack with the message number through `herdr pane send-text`. No one measured a
+context clear in a pi session. No one measured that a pi orchestrator can start an opener subagent, a reuse subagent or
+a write subagent.
