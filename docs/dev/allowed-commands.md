@@ -25,7 +25,8 @@ The form of the send is open. A later ticket decides it. Until then, the lists a
 Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule),
 [the hold before an install](release.md#the-hold-before-an-install), [Pick the tickets](pick-the-tickets.md),
 [Land the work](land-the-work.md), [the CI wait](ci-wait.md#the-ci-wait),
-[The actor of each write action](question-pane.md#the-actor-of-each-write-action) and [Limits](limits.md#limits).
+[The actor of each write action](question-pane.md#the-actor-of-each-write-action),
+[The herdr path](question-pane.md#terms) and [Limits](limits.md#limits).
 
 - K1: the read-only `tasker` commands of
   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule). They are `show-config`,
@@ -50,7 +51,8 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 - K11: the start of a task subagent, a planner subagent, a write subagent, an opener subagent and a reuse subagent.
 - K12: the body file of an issue and the handoff file, in the folder of the orchestrator.
 - K13 to K15: no list.
-- Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says).
+- Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says)
+  and `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)).
 
 ## A task subagent for a whole ticket
 
@@ -158,15 +160,16 @@ for word.
 - K4: `git -C <local clone> fetch origin`.
 - K8: `herdr agent wait`, `herdr agent get` and `herdr pane read`.
 - K9: `herdr pane send-text` and `herdr pane send-keys`.
-- Named other commands: `timeout 20 bash -c 'sleep 10'`.
+- Named other commands: `timeout 20 bash -c 'sleep 10'` and `timeout 20 bash -c 'sleep 1'`.
 - Each other kind: no list.
 
 ## A question session
 
-Source: [The question session](question-pane.md#the-question-session).
+Sources: [The question session](question-pane.md#the-question-session) and [The herdr path](question-pane.md#terms).
 
 - K1, K3 and K5: the read-only commands, other than `herdr` commands.
 - K4: `git fetch origin`.
 - K9 and K10: only the herdr path to its pane owner, for the messages that
   [Send a decision](question-pane.md#send-a-decision) gives.
+- Named other commands: `timeout 20 bash -c 'sleep 1'`.
 - Each other kind: no list. It sends each write action back to its pane owner.
