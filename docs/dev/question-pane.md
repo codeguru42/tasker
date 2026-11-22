@@ -152,10 +152,10 @@ such file is outside the local clone and outside each worktree. An untracked fil
 waits for a later decision.
 
 For an orchestrator of the kind `claude`, the planner of the orchestrator is a new
-[planner subagent](planner-subagent.md) for each request, relay or open finding. On this page, a send to such a planner
-is the start of a planner subagent. A failed start counts as a failed send, as
-[The start](planner-subagent.md#the-start) says. For an orchestrator of another kind, the planner of the orchestrator is
-`planner-<slug>`, with the slug of the orchestrator.
+[planner subagent](planner-subagent.md) for each request, relay or open finding. This also holds for an accepted
+proposal. On this page, a send to such a planner is the start of a planner subagent. A failed start counts as a failed
+send, as [The start](planner-subagent.md#the-start) says. For an orchestrator of another kind, the planner of the
+orchestrator is `planner-<slug>`, with the slug of the orchestrator.
 
 An input file is a file under `/tmp/tasker/<slug>/drafts/`, with the slug of the pane owner.
 
@@ -1059,20 +1059,66 @@ ran. Its report said that 2 rounds ran and that round 2 found nothing new. The q
 later. The question session reported this case itself, and no one else measured it. The user chose the new words on the
 same day.
 
-After the close request, the question session runs the rounds of [Session-review rounds](session-review-rounds.md) with
-the user in its pane. The rounds keep each rule of [The question session](#the-question-session). So the question
-session skips steps 2, 4 and 5 of `/session-review`, the steps of the memory notes. Steps 4 and 5 delete notes, and step
-2 serves only these steps. The question of the pane is not open work of the rounds, because the pane owner already holds
-its state. Each proposal of step 6 goes to the pane owner in the report.
+After the close request, the question session does the steps of the list of
+[Session-review rounds](session-review-rounds.md), with the user in its pane. The rounds keep each rule of
+[The question session](#the-question-session). So the question session skips steps 2, 4 and 5 of `/session-review`, the
+steps of the memory notes. Steps 4 and 5 delete notes, and step 2 serves only these steps. The question of the pane is
+not open work of the rounds, because the pane owner already holds its state.
+
+The first target of each proposal of step 6 is the user in the pane. So each such proposal is a waiting decision of step
+7 of `/session-review`. The user accepts, changes or drops it in the pane. The question session still drafts no issue
+and posts nothing.
+
+For a question session, step 2 of the list also holds the next round for each new open question, until its wait ends. A
+new open question is an open question that no earlier round of the same rounds listed. As
+[Session-review rounds](session-review-rounds.md) says, this hold has no time limit, and a pause or a silence of the
+user ends no wait. The end of the rounds by the user covers each wait, also the wait of a new open question.
+
+The wait of a new open question ends when the words of the user answer it, drop it, or say that it stays open. The wait
+also ends when the question session drops it as moot work by step 7 (c) and names the drop in the pane. The question
+session judges whether the words of the user end the wait, and this judgment is open on purpose. Unfinished work of step
+7 does not hold the next round, because it needs no word of the user.
+
+This is a hold rule, as [Session-review rounds](session-review-rounds.md) defines it. It holds the next round and the
+end of the rounds until the wait of each waiting decision and each new open question ends. For this hold rule, the end
+of a wait counts as settled, also a word that a question stays open. This meaning gives no state of the question. When
+the last wait ends, the hold ends, and the question session starts the next round at once. This hold rule permits the
+end of the rounds by the user.
+
+In a question session, this hold rule wins over the rule that other open work holds no round. It wins over the start at
+once after a round with no waiting decision. So a round with a new open question and no waiting decision does not start
+the next round at once. It wins over the end by the user, which this hold rule makes wider. It wins over the end rule of
+step 3 of the list. The outcome stays the same, because each earlier wait ended before the round that finds nothing new.
+
+Under this hold rule, "no more findings" in the words of the user means that a round finds nothing new. It also means
+that each earlier finding that needs a word of the user has one. A repeat of an earlier finding is not new, as step 7
+(e) of `/session-review` says.
 
 Each waiting decision and each open question of steps 6, 7 and 8 goes to the user in the pane, not to the pane owner as
 a question. After its rounds end, the question session sends the report to the pane owner with the herdr path. The
 report gives the header with the question id and the parts that [Session-review rounds](session-review-rounds.md) asks
-for. For each decision of the user in the rounds, it gives the words of the user word for word. It gives each waiting
-decision and each open question that has no answer as an open finding. The guess rule of
-[Send a decision](#send-a-decision) also applies to the report. A report can hold a guess, for example in a proposal of
-step 6. Then the session asks the confirm question in the pane before it sends the report. If the user closes the pane
-or ends the run with that question open, the report gives the words of the user word for word. It gives no guess.
+for. For each decision of the user in the rounds, it gives the words of the user word for word. It gives each open
+finding of the report. The guess rule of [Send a decision](#send-a-decision) also applies to the report. A report can
+hold a guess, for example in an accepted proposal. Then the session asks the confirm question in the pane before it
+sends the report. If the user closes the pane or ends the run with that question open, the report gives the words of the
+user word for word. It gives no guess.
+
+In the report, an open finding is each finding of these kinds:
+
+- A waiting decision whose wait did not end
+- An open question of step 7 that has no answer and no drop
+- Unfinished work of step 7 that the question session did not finish or drop
+
+An accepted proposal is a proposal that the user accepted or changed in the pane. It is not an open finding, and the
+report gives it with the words of the user, word for word. A dropped proposal is a proposal that the user rejected or
+dropped in the pane. It is a handled finding, as [Session-review rounds](session-review-rounds.md) says for a drop of
+the user. The report names the drop and gives it to no one as a proposal.
+
+The first sentence of the report after the header says whether the work of the pane on the question is done. The work is
+done if the last round found nothing new, the report names no failed round, and the report gives no open finding. If a
+condition fails, the first sentence says that the work is not done. The report then names each open finding, the failed
+round, or the end by the user before a round found nothing new. The first sentence names no state of the question. It
+does not say that the question is settled, decided or open.
 
 The report leaves out each doc rule, fact, preference or request for a new issue that a decision message already gave.
 After the close request, the question session sends no decision message. A message can still give a word of the user
@@ -1084,12 +1130,15 @@ the send of the report fails, the question session tells the user in the pane.
 
 The pane owner accepts a report only with the header of its open pane id and its current question id, after its close
 request. It then sends the ack. For each other report, the pane owner tells the user in one line, sends nothing and
-keeps the state of the question. After a report that it accepts, the orchestrator sends each open finding to the planner
-of the orchestrator, with the words of the user for that finding. The paragraph of
+keeps the state of the question. After a report that it accepts, the orchestrator sends each open finding and each
+accepted proposal to the planner of the orchestrator. It gives the words of the user for each one. The paragraph of
 [The pane owner handles a decision](#the-pane-owner-handles-a-decision) that starts "The pane owner relays stated doc
 rules" gives this relay and its failure. Then the pane owner decides between a reuse and a close, also after a failed
 relay, as [Close and continue](#close-and-continue) says. The orchestrator tells the user in one line how many findings
 it sent, and the question keeps its state.
+
+The pane owner changes no state of the question for the first sentence of the report. The question keeps the state that
+the decision message, the **No decision** message or the answer in the tab gave it.
 
 While the pane owner waits for the report, the pane is open, and the wait has no time limit. If the send of the close
 request fails, the failure rule applies, the pane stays open, and the run stops until the user speaks. Before a report
@@ -1097,6 +1146,17 @@ arrives, the user can tell the pane owner to close the pane, or that the pane is
 pane owner then closes it with no report. In both cases, the question keeps its state, and the run waits for the next
 word of the user. This paragraph wins over the paragraph that starts "Before the pane owner closes or reuses a question
 pane".
+
+The reason for the first sentence of the report: the decision message settles the question, and a **No decision**
+message leaves it open. The close request also comes after a failed answer send and after an answer typed in the tab of
+the orchestrator. So the question session cannot always know the state of the question. In this report, "resolved" in
+the words of the user means that the work of the pane on the question is done.
+
+A word of the user that a new open question stays open ends its wait, because the user can have no answer yet. The
+report still gives the question as an open finding, so the work of the pane is not done. The reason for the open finding
+of unfinished work: a reuse clears the context of the question session, so the unfinished work is lost. So unfinished
+work makes the first sentence of the report say "not done", blocks a reuse and goes to the planner of the orchestrator.
+[Session-review rounds](session-review-rounds.md) already counts it as open: "A finding that is not handled is open."
 
 The reason: on 2026-11-13, the user said to operator-docs: "file an issue to run `/session-review` in question panes
 before closing". No one measured the tokens of the rounds in a question pane.
@@ -1120,6 +1180,9 @@ The pane owner makes a reuse only in one case, with each of these conditions:
 In each other case, the pane owner closes the pane. Under a kind other than `claude`, the owner closes the pane, and the
 next question gets a new pane. A close with no rounds stays a close. Examples are a close that the user asks for and the
 close after a report that the pane owner refuses.
+
+An open finding has the meaning that [The rounds before the close](#the-rounds-before-the-close) gives. An accepted
+proposal is no open finding, so it does not stop a reuse.
 
 For a reuse, the pane owner starts one reuse subagent with the reuse prompt of [The prompts](#the-prompts). The pane
 stays open while the reuse subagent runs. The pane owner gives the first-reply text of the next question under the rules
@@ -1246,6 +1309,9 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | A handoff or the rounds of the empty Todo column is due while a pane is open or a write subagent runs | Any                                  | Starts neither while the pane is open or the write subagent runs                                                                                                                                                                                                                                                                                  |                      | The pane owner tells the user                                |
 | A report arrives from the orchestrator or the follow-up planner                                       | Not started                          | Shows it as text in its tab. No pane starts                                                                                                                                                                                                                                                                                                       |                      | The pane owner tells the user                                |
 | The question session gets the close request                                                           | Runs the rounds. Sends the report    | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The pane owner tells the question session                    |
+| A round of the question session finds a finding that needs a word of the user                         | Holds the next round                 | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The question session tells the user                          |
+| The wait of the last such finding ends                                                                | Starts the next round at once        | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The user tells the question session                          |
+| The user ends the rounds before each wait ends                                                        | Ends its rounds. Reports at once     | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The user tells the question session                          |
 | The send of the close request fails                                                                   | Running, or waits at its prompt      | The pane stays open. A run stops. The failure rule applies                                                                                                                                                                                                                                                                                        |                      | The pane owner tells the user                                |
 | A round of the question session fails                                                                 | Its rounds end. Sends the report     | Waits for the report                                                                                                                                                                                                                                                                                                                              |                      | The question session tells the user                          |
 | The send of the report fails                                                                          | Waits at its prompt                  | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The question session tells the user                          |
@@ -1300,6 +1366,8 @@ If two rows match, the rows of one bullet below follow its rule:
 - The row "A decision message gives a metadata request" wins over the rows "The decision message does not settle it" and
   "A "No decision" message" for the start of the write subagent of a metadata request. For a settled message, it follows
   the row "A settled decision message gives a write action".
+- The row "The user ends the rounds before each wait ends" wins over the row "A round of the question session finds a
+  finding that needs a word of the user".
 
 ### Measured facts
 
