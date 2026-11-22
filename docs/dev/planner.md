@@ -416,9 +416,11 @@ The ticket subagent of a draft does these steps:
 6. If the loop changed the draft, run the next loop from step 3. Run at most 3 loops for one draft.
 
 The work on a draft ends after a loop with no finding that the ticket subagent takes, or after loop 3. After loop 3,
-each planner posts the draft as it stands after the decisions of the ticket subagent on the findings of loop 3. If a
-finding of an escape-hatch kind is still not resolved, that finding sends the draft to
-[the escape hatch](#the-escape-hatch).
+each planner posts the draft as it stands after the decisions of the ticket subagent on the findings of loop 3. The
+draft that each planner posts after the last loop includes each cut of length only of
+[The size of a draft](issue-draft.md#the-size-of-a-draft) of issue-draft.md. This holds for a last loop with no finding
+that the ticket subagent takes, and for loop 3. If a finding of an escape-hatch kind is still not resolved, that finding
+sends the draft to [the escape hatch](#the-escape-hatch).
 
 ### The bans of a review agent
 

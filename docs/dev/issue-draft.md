@@ -19,6 +19,8 @@ These steps name a part of this page:
 - The paragraph of [The ticket subagent](planner.md#the-ticket-subagent) about a question of a report.
 - The report paragraph of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
 - The edge-case sentence of [The escape hatch](planner.md#the-escape-hatch).
+- The sentence of [The review loop of a draft](planner.md#the-review-loop-of-a-draft) that starts "The draft that each
+  planner posts after the last loop".
 - The bullet of [Core features first](working-with-the-user.md#core-features-first) that starts "Each piece of work that
   waits".
 
@@ -47,11 +49,48 @@ The pull of step 1 of the doc-read rule is no write of a file, as
 The issue-draft subagent reads each file that a claim of the draft names as
 [the doc-read rule](doc-reads.md#the-doc-read-rule) says.
 
+## The size of a draft
+
+The draft of an issue keeps its body at or under a size target of 60000 characters. The target gives a margin under the
+limit of [The count of the body](issue-post.md#the-count-of-the-body). The target binds the draft of an issue, not the
+draft of a comment. The reason: an issue-draft subagent also drafts a comment, as change 9 of
+[The changed rules](planner-subagent.md#the-changed-rules) of planner-subagent.md says.
+
+Before each report, and before the self-check, the issue-draft subagent does these steps:
+
+1. Count the characters of the draft file in its own call with `wc -m <draft file>`. The count of the whole draft file
+   also counts the title line, so it is never lower than the count of the body.
+2. If the count is over the target, cut the draft in length only. Then count again with `wc -m <draft file>`.
+
+A cut of length only changes no meaning. Each requirement, each acceptance case and each fact stays. The cut removes,
+for example, repeated text and table padding. The count and the cut run before the self-check, so the self-check covers
+the text after the cut. They run before each report, not only after the last loop, because a cut before a review gets
+that review.
+
+The report gives the count. After a cut, it also gives the count before the cut and each removal. If the count fails,
+the report gives the command and the error. For a denied count, the report gives the exact command and the exact text of
+the denial. If the count after the cut is still over the target, the report gives that count as a fact. The draft then
+goes on under the existing rules, and the count of The count of the body still stops a body over the limit.
+
+A cut is a change of the draft, as each other change of the issue-draft subagent is:
+
+- If a review follows the report, that review sees the cut, under the existing loop rules.
+- If no review follows the report, the draft goes to the post as it stands, with the cut, under the existing loop rules.
+  The report gives each removal and the counts, so the session that started the issue-draft subagent sees them.
+
+A cut gets no review of its own. This section adds no exception to a review loop and no new approval rule.
+
+A ticket subagent of a planner runs all its review loops before its report. Its last loop is a loop with no finding that
+it takes, or loop 3. So its count and its cut come after its last loop, and no review follows its report. The draft that
+the planner posts after that last loop includes the cut, in both cases.
+
 ## The self-check
 
 The issue-draft subagent runs the self-check of the simple-english skill over the draft file, as
-[Before a post](issues.md#before-a-post) says. It runs the check before its report. A ticket subagent still runs the
-check before its first loop, as step 2 of [The review loop of a draft](planner.md#the-review-loop-of-a-draft) says.
+[Before a post](issues.md#before-a-post) says. It runs the check before its report, after the count and the cut of
+[The size of a draft](#the-size-of-a-draft). A ticket subagent still runs the check before its first loop, as step 2 of
+[The review loop of a draft](planner.md#the-review-loop-of-a-draft) says. After a cut, a ticket subagent runs the check
+again over the draft file before its report.
 
 ## The read bans
 
@@ -93,7 +132,8 @@ the issue-draft subagent dismissed, with its reason. It also gives each finding 
 [the escape hatch](planner.md#the-escape-hatch). It also gives the blocked-by links with their reasons, and each command
 and result that a rule of the planner pages gives to the user. It also gives each open question of
 [the state of the user](plan-review.md#the-state-of-the-user), with its command. For a change of an open issue, it also
-gives the start hash of [Before a post](issues.md#before-a-post).
+gives the start hash of [Before a post](issues.md#before-a-post). It also gives the counts, the removals and a failed
+count of [The size of a draft](#the-size-of-a-draft).
 
 ## The findings and the edge cases
 

@@ -133,7 +133,7 @@ review and post subagents.
 
 ## The issue-draft subagent
 
-Sources: [The draft file](issue-draft.md#the-draft-file),
+Sources: [The draft file](issue-draft.md#the-draft-file), [The size of a draft](issue-draft.md#the-size-of-a-draft),
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) and
 [the doc-read rule](doc-reads.md#the-doc-read-rule).
 
@@ -142,8 +142,8 @@ Sources: [The draft file](issue-draft.md#the-draft-file),
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 - K12: its draft file, its report file and the files of a scratch folder under `/tmp`.
-- Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a
-  Read call on the saved output of its own tool call.
+- Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `wc -m <draft file>`,
+  `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call.
 - Each other kind: no list.
 
 ## The issue-review subagent

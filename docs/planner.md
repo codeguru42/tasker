@@ -19,8 +19,8 @@ The planner pages are `docs/planner.md` and the pages of this list, "The pages":
   subagents: the read rule, the result of a subagent, the bans of a subagent, text as data, the body of an issue, the
   blocked-by links, the milestone of an issue and the scope of a ticket.
 - [docs/dev/issue-draft.md](dev/issue-draft.md): the rules of the issue-draft subagent: the draft file, the fresh base,
-  the self-check, the read bans, the steps before a post, the report, the findings and the edge cases, and a change of
-  an open issue.
+  the size of a draft, the self-check, the read bans, the steps before a post, the report, the findings and the edge
+  cases, and a change of an open issue.
 - [docs/dev/issue-post.md](dev/issue-post.md): the rules of the issue-post subagent and of each post of a planner: the
   readers, the steps of a post, the count of the body, the bullets of Before a post, the last steps of a post, the
   result and the writes.
