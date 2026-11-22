@@ -159,6 +159,15 @@ describe("questionPaneTemplateProblems", () => {
       "the filled text holds {{ before the first reply",
     );
   });
+
+  it("reports a filled text that does not end with the first reply", () => {
+    const problems = questionPaneTemplateProblems(
+      questionPaneFile(names, "You are {{NAME}}. FIRST-REPLY {{FIRST_REPLY}} x"),
+      { NAME: "question-x", FIRST_REPLY: "Issue: x" },
+    );
+    expect(problems).toContain("the body does not end with FIRST-REPLY {{FIRST_REPLY}}");
+    expect(problems).toContain("the filled text does not end with FIRST-REPLY and the first reply");
+  });
 });
 
 describe("sessionReadProblems", () => {

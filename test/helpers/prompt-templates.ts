@@ -57,7 +57,8 @@ export function promptFileProblems(
 }
 
 // The problems of the question-pane template at path, and of its text after a fill with values. The body ends with
-// FIRST-REPLY {{FIRST_REPLY}}, and the filled text holds no {{ before the first reply.
+// FIRST-REPLY {{FIRST_REPLY}}, the filled text ends with FIRST-REPLY and the first reply, and the filled text holds no
+// {{ before the first reply.
 export function questionPaneTemplateProblems(path: string, values: Record<string, string>): string[] {
   const problems = checkPromptTemplate(path);
   if (problems.length > 0) return problems;
@@ -67,7 +68,12 @@ export function questionPaneTemplateProblems(path: string, values: Record<string
   }
   const filled = fillTemplate(template.name, template.body, values);
   const end = `FIRST-REPLY ${values.FIRST_REPLY}`;
-  const head = filled.endsWith(end) ? filled.slice(0, filled.length - end.length) : filled;
+  let head = filled;
+  if (filled.endsWith(end)) {
+    head = filled.slice(0, filled.length - end.length);
+  } else {
+    problems.push("the filled text does not end with FIRST-REPLY and the first reply");
+  }
   if (head.includes("{{")) problems.push("the filled text holds {{ before the first reply");
   return problems;
 }
