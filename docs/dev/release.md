@@ -59,8 +59,9 @@ The installing session does the install in the local clone:
 3. Run `tasker doctor`.
 
 The reason for the pull of step 2: a covered session pulls `main` only before a doc read and only on a clean `main`, as
-[the doc-read rule](doc-reads.md#the-doc-read-rule) says. So the local `main` does not move by itself. On 2026-10-25,
-the local `main` was at c6efaf33 and `origin/main` was at 22cbbedd.
+[the doc-read rule](doc-reads.md#the-doc-read-rule) says. So the local `main` can still be behind `origin/main` at an
+install. For example, no session read a doc since the last landing, or a tracked file had a change, so no pull ran. On
+2026-10-25, the local `main` was at c6efaf33 and `origin/main` was at 22cbbedd.
 
 After `tasker doctor` passes, the installing session tells each orchestrator in the hold to end the hold. The message
 gives the new version of tasker, as `tasker --version` prints it. If the install or `tasker doctor` fails, the
