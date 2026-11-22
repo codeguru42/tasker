@@ -270,13 +270,13 @@ The measure had four possible outcomes:
 
 ### The states of a start
 
-| State                         | User                         | Orchestrator                    | Who tells whom                                 |
-| ----------------------------- | ---------------------------- | ------------------------------- | ---------------------------------------------- |
-| The read of the configuration | Runs `tasker show-config`    |                                 |                                                |
-| The read fails                | Starts no orchestrator       |                                 | The command tells the user                     |
-| The start                     | Runs the command of the kind | Runs step 1 and the start reads |                                                |
-| A start check fails           |                              | Does no role work               | The orchestrator tells the user in its own tab |
-| The start checks pass         |                              | Starts its role work            |                                                |
+| State                         | User                         | Orchestrator                                                                            | Who tells whom                                 |
+| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| The read of the configuration | Runs `tasker show-config`    |                                                                                         |                                                |
+| The read fails                | Starts no orchestrator       |                                                                                         | The command tells the user                     |
+| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                           |                                                |
+| A start check fails           |                              | Does no role work and makes no board watch job                                          | The orchestrator tells the user in its own tab |
+| The start checks pass         |                              | Lists `questions/` and `proposals/`, makes the board watch job and starts its role work |                                                |
 
 ## The board watch job
 
@@ -309,9 +309,17 @@ printed `2.1.330 (Claude Code)`. A running session can have an older version, so
 
 The board watch rule has these parts:
 
-- The orchestrator makes the board watch job with CronCreate at the start of its session. On a start from the start
-  prompt, it does this after the first doc read of the re-read rule. On a start after a handoff, it does this after the
-  check of the handoff folder, as
+- The orchestrator makes the board watch job only after all the steps of [the start checks](#the-start-checks) pass. The
+  CronCreate of the job is role work. Until the start checks pass, the orchestrator makes no job. This holds before the
+  start checks begin, while they run and after a failed step. After a failed step, the orchestrator does no role work
+  and tells the user in its own tab, as the start checks say. Then no job exists, so no job fires later in the session
+  and no CronDelete is necessary. A pi orchestrator does not do steps 2 and 3 of the start checks, so it makes the job
+  after the other steps pass. The reason: a job can fire while the session is idle. Its prompt can start role work that
+  a failed start check bans.
+- On a start whose first prompt names no handoff file, the orchestrator makes the job after it lists `questions/` and
+  `proposals/` at the end of the start steps, and before the pick of its first ticket. A new orchestrator after
+  [a stop with no handoff](#a-stop-with-no-handoff) starts in this way. On a start after a handoff, it makes the job
+  after `ListAgents`, as
   [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The job fires
   two times each hour, for example with the cron `7,37 * * * *`.
 - The prompt of the job starts with "Board watch:". The rest of the prompt says: read the board, as
@@ -328,7 +336,8 @@ The board watch rule has these parts:
   [The steps of the old orchestrator](dev/handoff-orchestrator.md#the-steps-of-the-old-orchestrator). Another example is
   the ban on a new ticket after the suggestion of a handoff in
   [The landing count](dev/handoff-orchestrator.md#the-landing-count). While such a rule holds, the job still fires, and
-  it starts no ticket.
+  it starts no ticket. A failed start check is not such a rule, because no job exists after it, as the first bullet
+  says.
 - The orchestrator has at most one board watch job. It keeps the id of the job and the time of its CronCreate. Before it
   makes the job, it lists its jobs with CronList. If the list holds the kept id, it makes no second job. A quota job has
   another id, so it is not a board watch job.
