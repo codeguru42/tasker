@@ -10,7 +10,8 @@ round, as [Limits](limits.md#limits) says.
 
 For a question session, [The rounds before the close](question-pane.md#the-rounds-before-the-close) gives the target of
 the report and the steps of a failure. It also gives the first target of each proposal, what an open finding is, and the
-hold rule of a question session. That subsection wins over this page.
+hold rule of a question session. That subsection also defines the report of each round and the final report. That
+subsection wins over this page.
 
 A round is one run of `/session-review`. A memory change, a new proposal and new open work that no earlier round listed
 each count as something new. A round can find a lesson that an earlier round missed, or a new fact from the answers of
