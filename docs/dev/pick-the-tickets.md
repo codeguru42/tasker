@@ -535,6 +535,12 @@ The orchestrator does all the steps of this section.
 - The end: after the last work of the scope, the orchestrator does the steps of
   [The end of an orchestrator](#the-end-of-an-orchestrator). Do not write the issues of the next milestone.
 
+  The stop of this bullet does not cover a long-running orchestrator (see
+  [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review rounds and the
+  list of the findings of this bullet cover a long-running orchestrator at the empty Todo column. So does the report
+  that the milestone is done. A long-running orchestrator sends the report that the close started only after the word of
+  the user that starts the close. See [The start and the authority](operator-start.md#the-start-and-the-authority).
+
 ### The stacking rule
 
 A blocker is an issue that blocks the ticket. The orchestrator can start a ticket when each blocker is closed or is
