@@ -380,12 +380,13 @@ Read tool, `..` works. The `..` failure of `git show` applies only to the old re
 ### The start prompts
 
 The start prompts and the handoff prompts give the branch check, the clean-tree check and the pull with no `-C`, because
-the session starts in the local clone. The block `question-session` of [A question pane](question-pane.md) keeps
-`<local clone>`. The session has no other way to learn these commands before its first read.
+the session starts in the local clone. The session prompt in
+[`prompt-templates/question-pane/session.md`](../../prompt-templates/question-pane/session.md) keeps `{{LOCAL_CLONE}}`.
+The session has no other way to learn these commands before its first read.
 
-The start prompts are the first prompts of the orchestrator, the start prompts of the planner, the prompt read of a
-handoff and the block `question-session`. The prompt of an issue subagent and of the ad hoc post subagent is also a
-start prompt.
+The start prompts are the first prompts of the orchestrator, the start prompts of the planner and the prompt read of a
+handoff. The session prompt of a question pane is also a start prompt. The prompt of an issue subagent and of the ad hoc
+post subagent is also a start prompt.
 
 After the pull, the session reads this doc first, with the Read tool. Then it reads `<head>` and `<origin>` and runs the
 clean-tree check, as step 1 item 4 says. Then it does step 2 item 4 for this doc. If a check fails, the session follows

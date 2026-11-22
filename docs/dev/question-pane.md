@@ -536,89 +536,51 @@ the text if they approve the commands."
 
 ### The prompts
 
-This subsection holds the opener prompt, the reuse prompt and the session prompt of a question pane. The opener prompt
-is the prompt of the opener subagent. The reuse prompt is the prompt of the reuse subagent. The session prompt is the
-prompt of the question session.
+This subsection gives the rules of the opener prompt, the reuse prompt and the session prompt of a question pane. The
+opener prompt is the prompt of the opener subagent. The reuse prompt is the prompt of the reuse subagent. The session
+prompt is the prompt of the question session. These files hold the words of the three prompts:
 
-The pane owner puts a value in place of each placeholder of the lists that follow the opener prompt and the reuse
-prompt. It adds no other words. The pane owner does not write or fill the session prompt. No herdr output of a reuse
-goes into the context of the pane owner, apart from the report of the reuse subagent.
+- [`prompt-templates/question-pane/opener.md`](../../prompt-templates/question-pane/opener.md): the opener prompt.
+- [`prompt-templates/question-pane/reuse.md`](../../prompt-templates/question-pane/reuse.md): the reuse prompt.
+- [`prompt-templates/question-pane/session.md`](../../prompt-templates/question-pane/session.md): the session prompt.
 
-````text question-opener
-You are the opener subagent of the question pane <name> of the pane owner <owner name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session.
-1. Run git -C <local clone> fetch origin. If the fetch fails, go on with the last origin/main.
-2. Run git -C <local clone> show origin/main:docs/dev/question-pane.md. In its output, find the fenced block whose first line, at the start of a line, is ```text question-session. That block is the session prompt.
-3. In the session prompt, replace each placeholder with the value of the same name in the list of values. Replace <first reply> last. In its value, put one space, the word LINE-BREAK and one space in place of each newline. Change nothing else inside its value, apart from step 4.
-4. Join the lines of the session prompt into one line, with one space between two lines. Write each single quote of the result as '\''. Then put the result in single quotes.
-5. Run tasker show-config --repo <repo key>. Keep .sessions.kind and the entry .sessions.models.question of the output.
-6. Run herdr pane split <owner pane id> --direction right --cwd <local clone>. Keep the new pane id from .result.pane.pane_id of the output.
-7. Run herdr agent start <name> --kind <kind> --pane <new pane id> -- -n <name> <model flags> <quoted prompt>. If it fails, still do step 8.
-In step 7, <kind> is the kind of step 5, and <new pane id> is the pane id of step 6. <model flags> are the flags of the row of the kind in the seam table of docs/config.md, with the values of the entry of step 5. For the kind claude, they are --model <model> --effort <effort>. For the kind pi, they are --provider <upstream> --model <model> --thinking <effort>, and <upstream> is the part of the model before the first /. With no entry, leave them out. <quoted prompt> is the result of step 4.
-8. Run herdr pane read with the new pane id. If the pane shows no first reply, run timeout 20 bash -c 'sleep 10' and read it again. Read the pane at most 6 times. If the pane shows the first reply, the start worked. The typed prompt is not the first reply. The start line of the session prompt is also not the first reply.
-Your final report gives the new pane id and each command with its exit code and its error. It also says whether the pane shows the first reply. Keep the report short.
-The list of values: name <name>, owner name <owner name>, owner pane id <owner pane id>. The list goes on: question id <question id>, local clone <local clone>.
-The value of first reply is all the text after the last word FIRST-REPLY of this prompt. FIRST-REPLY <first reply>
-````
+[The prompt templates](prompt-templates.md) gives the form of each file. The `placeholders` list of each file gives the
+meaning of each value.
 
-- `<name>`: the own name of the question session. It starts with `question-` and is unique.
-- `<owner name>`: the own name of the pane owner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines the own name.
-- `<owner pane id>`: the pane id of the pane owner, the value of `$HERDR_PANE_ID` in its shell.
-- `<local clone>`: the path of the local clone, as [the doc-read rule](doc-reads.md#the-doc-read-rule) uses it.
-- `<repo key>`: the repo key of the repo of the local clone, for example `codeguru42/tasker`.
-- `<question id>`: the question id of the question, as [Terms](#terms) defines it.
-- `<first reply>`: the first-reply text, with its lines as the pane owner wrote them. Its first line can be the issue
-  line of [The question session](#the-question-session), in the form `Issue:`, the link of the issue, a comma and a
-  phrase.
+The pane owner reads the opener file or the reuse file as [the doc-read rule](doc-reads.md#the-doc-read-rule) says, at
+the step that sends the prompt. It takes the body, puts a value in place of each placeholder and gives the result as the
+prompt of the subagent. It fills `{{FIRST_REPLY}}` last, because the first-reply text can hold text such as `{{NAME}}`.
+It adds no other words. The pane owner does not write or fill the session prompt. No herdr output of a reuse goes into
+the context of the pane owner, apart from the report of the reuse subagent.
 
-````text question-reuse
-You are the reuse subagent of the question pane <pane id>. Its question session is <name>, for the pane owner <owner name>. Do the steps that follow in order. If a step fails, do no later step, unless the step says otherwise. Close no pane and send no message to a session. Send no input to the pane, apart from steps 4 and 7.
-1. Run git -C <local clone> fetch origin. If the fetch fails, go on with the last origin/main.
-2. Run git -C <local clone> show origin/main:docs/dev/question-pane.md. In its output, find the fenced block whose first line, at the start of a line, is ```text question-session. That block is the session prompt.
-3. Run herdr agent wait <pane id> --timeout 600000. If it fails or reaches its time limit, do no later step. Read the state at .result.agent.agent_status. If the state is not idle and not done, do no later step.
-4. Run herdr agent get <pane id>. Keep the value at .result.agent.agent_session.value as the old session value. Run herdr pane send-text <pane id> '/clear' && timeout 20 bash -c 'sleep 1' && herdr pane send-keys <pane id> enter. Run these three commands in one call.
-5. This step is the after-clear read. Run herdr agent get <pane id>. The read shows the context clear if .result.agent.agent_session.value differs from the old session value and .result.agent.agent_status is idle or done. If it does not show the context clear, run timeout 20 bash -c 'sleep 10' and read again. Read at most 6 times. If no read shows the context clear, do no later step.
-6. In the session prompt, replace each placeholder with the value of the same name in the list of values. Replace <first reply> last. In its value, put one space, the word LINE-BREAK and one space in place of each newline. Change nothing else inside its value.
-7. Join the lines of the session prompt into one line, with one space between two lines. Keep each single quote as it is. Put the result in the shell variable PROMPT with a quoted here-document, so that the shell expands nothing in it. Run herdr pane send-text <pane id> "$PROMPT" && timeout 20 bash -c 'sleep 1' && herdr pane send-keys <pane id> enter. Write the here-document and run these three commands in one call.
-8. Run herdr pane read <pane id>. If the pane shows no first reply, run timeout 20 bash -c 'sleep 10' and read it again. Read the pane at most 6 times. If the pane shows the first reply, the reuse worked. The typed prompt is not the first reply. The start line of the session prompt is also not the first reply.
-Your final report gives the pane id and each command with its exit code and its error. It also gives the old and the new session value, and whether the after-clear read showed the context clear. It also says whether the pane shows the first reply. Keep the report short.
-The list of values: name <name>, owner name <owner name>, owner pane id <owner pane id>. The list goes on: question id <question id>, local clone <local clone>.
-The value of first reply is all the text after the last word FIRST-REPLY of this prompt. FIRST-REPLY <first reply>
-````
+The values of the prompts have these homes:
 
-- `<pane id>`: the pane id of the question pane, as the report of the opener subagent gave it.
-- `<name>`: the own name of the question session. The context clear keeps it.
-- `<owner name>`, `<owner pane id>` and `<local clone>`: as in the list of the opener prompt.
-- `<question id>`: the question id of the next question.
-- `<first reply>`: the first-reply text of the next question, with its lines as the pane owner wrote them. Its first
-  line can be the issue line of [The question session](#the-question-session), in the form `Issue:`, the link of the
-  issue, a comma and a phrase.
+- The own name: [docs/dev/GLOSSARY.md](GLOSSARY.md).
+- The local clone: [the doc-read rule](doc-reads.md#the-doc-read-rule).
+- The question id: [Terms](#terms).
+- The issue line of the first reply: [The question session](#the-question-session).
 
-```text question-session
-You are the question session <name>. You discuss one open question with the user for the pane owner <owner name>, in the pane <owner pane id>. The question id is <question id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. In it, write a newline in place of each word LINE-BREAK, and remove the one space on each side of it. Before that reply, use no AskUserQuestion tool, and do only the three steps that follow, in their order.
-First, show the start line with no other text. The start line is: I read my rules first, and then I show the question. The start line is not your first reply. Second, in <local clone>, run git branch --show-current. If it does not print main, read no file and say so in your second reply. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. Third, after a pull that worked, read The doc-read rule of docs/dev/doc-reads.md with the Read tool. Then read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md as it says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read the five files with git show origin/main: and the path. The rules of these docs change no word of your first reply.
-In docs/dev/question-pane.md, the section The question session lists the rules that you follow after your first reply. Each item links to the section that holds the rule, for example Send a decision. The section A question pane holds the herdr path and the header of each message. Your own pane id is the value of $HERDR_PANE_ID in your shell. FIRST-REPLY <first reply>
-```
-
-The opener subagent and the reuse subagent read the session prompt from `origin/main` and fill it. The session prompt
+The opener subagent and the reuse subagent read `session.md` from `origin/main`, take its body and fill it. `session.md`
 holds no single quote. Step 4 of the opener prompt writes each single quote of the first-reply text so that the shell
 keeps it. Step 7 of the reuse prompt keeps each single quote. The send command types the text into the session, not into
 a shell.
 
-The three blocks are the only place of the words of the three prompts. The rules of "A question pane" stay the home of
-each rule that the blocks state. Step 3 of [Start a session](operator-start.md#start-a-session),
+The three files are the only place of the words of the three prompts. The rules of "A question pane" stay the home of
+each rule that the files state. Step 3 of [Start a session](operator-start.md#start-a-session),
 [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), [`sessions`](../config.md#sessions),
 [the doc-read rule](doc-reads.md#the-doc-read-rule) and `AGENTS.md` are also such homes. An issue that changes such a
-rule also changes the block. The blocks are an exception to [the one-home rule](rules.md#code).
+rule also changes the file that states it. The files are the exception that
+[The family issues](prompt-templates.md#the-family-issues) gives to [the one-home rule](rules.md#code).
 
-The block `question-session` is a short exception. It holds only the values, the first-reply rule, the start steps and a
+The body of `session.md` is a short exception. It holds only the values, the first-reply rule, the start steps and a
 pointer. The rules for the time after the first reply have their homes in the sections that the list of
-[The question session](#the-question-session) links, for example [Send a decision](#send-a-decision). The block holds at
-most 300 words and at most 2000 characters by the block count. A change of the block keeps it within this limit. The
-block count is the output of this command:
+[The question session](#the-question-session) links, for example [Send a decision](#send-a-decision). The body holds at
+most 300 words and at most 2000 characters, with each placeholder unfilled. A change of the file keeps the body within
+this limit. The body count is the output of this command:
 
-````text
-awk '/^```text question-session$/{f=1;next} f&&/^```$/{exit} f' docs/dev/question-pane.md | wc -wm
-````
+```text
+awk 'n>1; n<2 && /^---$/ {n++}' prompt-templates/question-pane/session.md | wc -wm
+```
 
 The question session runs with the model and the effort of the entry `sessions.models.question` of
 [`sessions`](../config.md#sessions). If `sessions.models` has no entry `question`, the rule of that section for a role

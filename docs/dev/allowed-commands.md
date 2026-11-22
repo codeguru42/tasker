@@ -176,11 +176,12 @@ Sources: [The actor of each write action](question-pane.md#the-actor-of-each-wri
 
 ## The opener subagent
 
-Source: the prompt `question-opener` of [The prompts](question-pane.md#the-prompts). The prompt gives each command word
-for word.
+Source: the opener prompt in
+[`prompt-templates/question-pane/opener.md`](../../prompt-templates/question-pane/opener.md), as
+[The prompts](question-pane.md#the-prompts) gives it. The prompt gives each command word for word.
 
 - K1: `tasker show-config --repo <repo key>`.
-- K3: `git -C <local clone> show origin/main:docs/dev/question-pane.md`.
+- K3: `git -C <local clone> show origin/main:prompt-templates/question-pane/session.md`.
 - K4: `git -C <local clone> fetch origin`.
 - K8: `herdr pane read`.
 - K9: `herdr pane split` and `herdr agent start`.
@@ -189,10 +190,10 @@ for word.
 
 ## The reuse subagent
 
-Source: the prompt `question-reuse` of [The prompts](question-pane.md#the-prompts). The prompt gives each command word
-for word.
+Source: the reuse prompt in [`prompt-templates/question-pane/reuse.md`](../../prompt-templates/question-pane/reuse.md),
+as [The prompts](question-pane.md#the-prompts) gives it. The prompt gives each command word for word.
 
-- K3: `git -C <local clone> show origin/main:docs/dev/question-pane.md`.
+- K3: `git -C <local clone> show origin/main:prompt-templates/question-pane/session.md`.
 - K4: `git -C <local clone> fetch origin`.
 - K8: `herdr agent wait`, `herdr agent get` and `herdr pane read`.
 - K9: `herdr pane send-text` and `herdr pane send-keys`.
