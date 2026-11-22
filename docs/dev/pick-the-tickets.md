@@ -1145,7 +1145,8 @@ raise of that issue. An open question of another rule that names the issue also 
 [the earlier-blocker offer](#pick-the-tickets).
 
 During the wait, the milestone and the own tab stay open. Each read of the board starts each ticket that can start.
-After a read with no start, no live task and no ready ticket, the end starts again. The
+After a read with no start, no live task and no ready ticket, the end starts again. If no work came after its last
+rounds, the orchestrator runs no new rounds and sends no second report of the rounds. The
 [board watch job](../orchestrator.md#the-board-watch-job) starts a read of the board two times each hour during the
 wait.
 

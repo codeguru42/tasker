@@ -117,3 +117,6 @@ as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) 
 scope stops at the stop of the operator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). If it
 did no work after its rounds, it runs no new round there and only gives the report again. The report again is not a
 second report that the milestone is done.
+
+A restart of the end during the wait is no work after its rounds. So it runs no new round and sends no second report of
+the rounds.
