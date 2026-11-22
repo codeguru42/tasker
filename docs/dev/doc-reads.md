@@ -288,7 +288,8 @@ This step runs after step 1 passed.
 2. The read reaches the end when the last piece returns fewer lines than its `limit` and the result is not a partial
    view. It also reaches the end when the pieces reach the count of `wc -l <path>`.
 3. If a call is refused for too many tokens, halve `limit` and read again from the same `offset`. A piece before the end
-   is not a complete read, and a refused call is not a read. Item 5 gives each other result that is not a complete read.
+   is not a complete read, and a refused call is not a read. Item 5 also names a partial view as a result that is not a
+   complete read.
 4. After the last piece of a doc, run `git -C <local clone> rev-parse --verify HEAD` and the clean-tree check. If the
    hash is not `<head>` or the tree is not clean, read that doc again with the old read.
 
@@ -310,8 +311,8 @@ This step runs after step 1 passed.
 
    - (a) Not started: the session made no Read call on the doc. It has no read of the doc.
    - (b) Running: the session made one or more Read calls, and the read did not reach the end of item 2. No piece of
-     this state is a complete read, also not a partial view. After a partial view, the session goes on as this item
-     says.
+     this state is a complete read. This also holds for a partial view. After a partial view, the session goes on as
+     this item says.
    - (c) Ended: the read reached the end of item 2. Then the read of the pieces is complete, and the session does
      item 4.
 
