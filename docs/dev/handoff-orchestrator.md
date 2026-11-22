@@ -94,8 +94,14 @@ After the start, the old orchestrator does these steps:
    nobody resumes it after a quota stop.
 3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17.
    Then, for an orchestrator of the kind `claude`, do the steps of
-   [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Then write the handoff file, as
-   [The handoff file](handoff.md#the-handoff-file) says.
+   [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Then write the handoff file in your own
+   handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
+
+   Before the write, read the data root and run `mkdir -p` on the folder, as
+   [The orchestrator folder](limits.md#the-orchestrator-folder) says. If one of these calls or the write fails, follow
+   [the failure rule](limits.md#the-failure-rule). Then start no new orchestrator, keep your tab open and tell the user.
+   While the bar of the fallback holds, wait for the next word of the user before the write.
+
 4. Start the new orchestrator, and then close your own tab, as
    [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says.
 
@@ -128,6 +134,16 @@ handoff file:
   `$HERDR_PANE_ID`. The old orchestrator gets the two ids before it writes the file. If it cannot get the pane id, the
   file says so. The close of step 6 of [The start of the new orchestrator](#the-start-of-the-new-orchestrator) uses the
   same ids. The file gives no session ref of the old orchestrator.
+
+The handoff file holds no text and no list of the open questions that have a
+[question file](question-pane.md#the-question-file). It holds no list of the requests that have a
+[proposal file](planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It gives
+no path of the three folders. The new orchestrator makes that path itself from the data root, the repo key and its own
+slug.
+
+After the write of its handoff file, the old orchestrator writes no new file in the three folders and gives no new
+question id. A question that reaches it after the write gets no question file. The old orchestrator shows the full text
+of that question as a report in its tab.
 
 ## The start of the new orchestrator
 
@@ -181,12 +197,27 @@ The new orchestrator is `orchestrator-<slug>`. Under `pi`, the name comes from `
 role work, so the prompt holds no name step. The new orchestrator does
 [the start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff file.
 
+The start checks can read the handoff file of the first message with a Read call. This read can come before the read of
+the data root, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
+
 The new orchestrator then starts with the re-read rule. Right after the first doc read of the re-read rule, the new
-orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). After that
-check, it reads the tasks in flight with `tasker status`, also [the parked tasks](pick-the-tickets.md#the-defer-rule).
-It reads the other sessions with `ListAgents`. Then it makes its board watch job, as
-[the board watch rule](../orchestrator.md#the-board-watch-job) says. Then, before the pick of the first ticket, it reads
-the record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file and runs that find.
+orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). Right
+after that check, at the end of its start steps, it lists `questions/` and `proposals/`, as
+[The orchestrator folder](limits.md#the-orchestrator-folder) says. It reads no question file at its start.
+
+After these lists, it reads the tasks in flight with `tasker status`, also
+[the parked tasks](pick-the-tickets.md#the-defer-rule). It reads the other sessions with `ListAgents`. Then it makes its
+board watch job, as [the board watch rule](../orchestrator.md#the-board-watch-job) says. Then, before the pick of the
+first ticket, it reads the record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file
+and runs that find.
 
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
 record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
+
+An answer can name the id of a question of the old session, as [The last item id](handoff.md#the-last-item-id) says.
+Then the new orchestrator takes the question from its [question file](question-pane.md#the-question-file). A question
+with no file comes from the handoff file. If no question file has that id and the handoff file does not hold it, the
+question is not open. The new orchestrator then tells the user.
+
+If the read of the question file fails, the fallback of The orchestrator folder applies. The new orchestrator then tells
+the user that it cannot read the question of that id.

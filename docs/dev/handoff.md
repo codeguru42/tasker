@@ -90,6 +90,11 @@ The old session writes the handoff file `$HOME/Documents/tasker/handoff/<date>-<
 `date +%Y-%m-%d-%H%M` prints the date and the time. Take the date and the time when you write the file, not at the start
 of the handoff.
 
+This folder is the shared handoff folder. An orchestrator writes its handoff file in its own handoff folder, `handoffs/`
+of its [orchestrator folder](limits.md#the-orchestrator-folder), with the same name form. An example is
+`2026-11-22-1505-m31-orchestrator.md`. Each other role and each [topic handoff](#a-topic-handoff) use the shared handoff
+folder. No file of the shared handoff folder moves.
+
 ## The items of a handoff file
 
 The handoff file holds only the parts of this list and the parts of the role page. It holds no other part, for example a
@@ -111,7 +116,9 @@ history of the session, the closed items or the measured facts. The rule is the 
     no rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
 - Each open item with its id, as [The form of an item](operator-items.md#the-form-of-an-item) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
-  [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
+  [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. For an orchestrator, this bullet
+  covers only a question with no question file, as
+  [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says.
 - Each note for later that a message carried and that the session still keeps, with its trigger, as
   [A note for later](working-with-the-user.md#a-note-for-later) says.
 - Each decision of the user that still applies and that no doc and no open issue holds. This covers the old session and
@@ -122,7 +129,8 @@ history of the session, the closed items or the measured facts. The rule is the 
   entry before it.
 
 The reason: the old session puts the full text of each open question in the file, because the new session has no other
-source for it.
+source for it. For an orchestrator, this reason does not hold for a question with a
+[question file](question-pane.md#the-question-file), because the new orchestrator reads that file.
 
 The old session puts no rule in the handoff file. The rules stay in the docs, and the prompt points to them.
 
@@ -161,11 +169,16 @@ planner-docs-6." The new session counts its item ids from that id. When an answe
 new session takes the item of that id from the handoff file. The reason: "Count your item ids on from planner-docs-5"
 can read as "start at planner-docs-5".
 
+When an answer names an id of the old session, a new orchestrator first takes a question of that id from its question
+file. [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the steps.
+
 ## The check of the handoff folder
 
 The new session does this check right after the prompt read, before each other step of the prompt.
 [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the order of that
-session. The new session lists the folder `$HOME/Documents/tasker/handoff/` with `ls`.
+session. The new session lists the shared handoff folder `$HOME/Documents/tasker/handoff/` with `ls`. A new orchestrator
+lists its own handoff folder in its place, as [The handoff file](#the-handoff-file) says. Before that list, it reads the
+data root and runs `mkdir -p`, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
 
 The files of its role are the files whose names [The handoff file](#the-handoff-file) gives for that role. A file with a
 later date and time in its name is newer.
@@ -179,6 +192,10 @@ The new session then does the case of this list that applies:
   works from the newest file.
 - If the list fails, for example because the folder is missing, [the failure rule](limits.md#the-failure-rule) applies.
   Then the new session works from the file of its first message.
+
+A new orchestrator lists its own handoff folder. The first message can name a file in the shared handoff folder. If the
+own handoff folder holds no newer file, or no file, the new orchestrator works from the file of the first message. If
+the own handoff folder holds a newer file, the new orchestrator tells the user. Then it works from the newest file.
 
 [The failure rule](limits.md#the-failure-rule) covers each role in this check.
 
@@ -248,9 +265,11 @@ unless the topic needs them. The other items of [The items of a handoff file](#t
 rule of the names. The prompt names [The check of the handoff folder](#the-check-of-the-handoff-folder), not the start
 section of a role page.
 
-The file goes in the folder of [The handoff file](#the-handoff-file), with the name form of that section. The role part
-is the role of the new session with the topic as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session
-does [The check of the handoff folder](#the-check-of-the-handoff-folder).
+The file goes in the shared handoff folder of [The handoff file](#the-handoff-file), with the name form of that section.
+This also holds for a topic handoff of an orchestrator. The reason: the new session of a topic handoff can have another
+role, and only an orchestrator has its own handoff folder. The role part is the role of the new session with the topic
+as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session does
+[The check of the handoff folder](#the-check-of-the-handoff-folder).
 
 The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. Under
 `pi`, the new session gets this name from `-n`, as [Start a session](operator-start.md#start-a-session) says.
