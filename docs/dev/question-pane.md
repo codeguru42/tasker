@@ -62,7 +62,7 @@ lines:
 IFS= read -r BODY <<'EOF'
 <text of the message>
 EOF
-MSG="QUESTION-PANE $HERDR_PANE_ID <question id>: $BODY"
+MSG="QUESTION-PANE $HERDR_PANE_ID <question id> m<n>: $BODY"
 herdr pane send-text <receiver pane id> "$MSG" && timeout 20 bash -c 'sleep 1' && herdr pane send-keys <receiver pane id> enter
 ```
 
@@ -70,15 +70,56 @@ The pane owner uses the same lines, with `MSG="PANE-OWNER <owner name> <question
 line. A message with no effective Enter stays in the pane and stops the work, and a header with the literal text
 `$HERDR_PANE_ID` names no pane.
 
-A message of the question session starts with the header `QUESTION-PANE <own pane id> <question id>:`. The own pane id
-is `$HERDR_PANE_ID` in the shell of the question session. A message of the pane owner starts with
-`PANE-OWNER <owner name> <question id>:`. A typed header does not prove its sender, because any pane can type it. The
-user did not settle the form of the header. The form of this page is the choice of this page.
+A message of the question session starts with the header `QUESTION-PANE <own pane id> <question id> m<n>:`. The own pane
+id is `$HERDR_PANE_ID` in the shell of the question session. The header is the first words of a message, up to and with
+the first colon that has a space after it. A pane id can hold a colon with no space after it, for example `w1:p2`. That
+colon stays inside the header.
+
+A message number is the number of one message of the question session in its question. It is the letter `m` and a whole
+number from 1 up, with no leading zero and no space between them, for example `m3`. In the header, the message number is
+the word after the question id, after one space. The colon follows the message number with no space, and a space follows
+the colon. The question session writes the message number as literal text in the `MSG` line, outside the quoted
+here-document, as it writes the question id. A part such as `m31` of the question id `orchestrator-m31-157` is no
+message number.
+
+The question session numbers its messages for the current question from `m1` up, in the order of the first send of each
+message. Each new message gets the next number. Each kind of message of the question session gets a message number:
+
+- A decision message or a **No decision** message
+- A second message with the text of an input file and the approval word
+- A request outside the question
+- A message after the close request with a word of the user about the pane or the run
+- Each report of a round and the final report
+
+A message whose first send failed keeps its number. A later send is a send of a message again, after its first send. A
+later send keeps the number of that message, so an ack answers that message, whichever copy arrived. After a reuse, the
+next question has a new question id. So the count of the next question starts at `m1` again.
+
+The reason for the message number: the question id already names the question, so a number inside the question is
+enough. A number needs no choice of words. The order of the numbers shows which ack is missing. A question session
+reported the case of this rule. In one session, it sent 4 messages to its pane owner and got 4 acks with the same text.
+It did not know which message each ack answered.
+
+A message of the pane owner starts with `PANE-OWNER <owner name> <question id>:` and has no message number. The pane
+owner accepts each message of the question session, each report included, with one of two header forms:
+`QUESTION-PANE <pane id> <question id> m<n>:` and `QUESTION-PANE <pane id> <question id>:`. The open pane id and the
+current question id of the header decide the accept. The message number decides no accept and no refuse. A question
+session that read this page before the message number came sends a header with no number. The pane owner refuses a
+header of another form, tells the user in one line, sends nothing and keeps the state of each question.
+
+A typed header does not prove its sender, because any pane can type it. The user did not settle the form of the header.
+The form of this page is the choice of this page.
 
 An ack is a short reply that says that a message arrived. For each message of the question session that it accepts, the
-pane owner sends `PANE-OWNER <owner name> <question id>: ACK. The report arrived.` with the herdr path. It sends no ack
-for a message that it refuses. After each send, the question session waits at its prompt for the ack. The wait has no
-time limit. If no ack comes, the user can ask the question session to send again. No one measured this wait.
+pane owner sends `PANE-OWNER <owner name> <question id>: ACK m<n>. The report arrived.` with the herdr path. `m<n>` is
+the message number of the header of that message, word for word. For an accepted message with no number in its header,
+the ack has no number: `PANE-OWNER <owner name> <question id>: ACK. The report arrived.` The pane owner sends no ack for
+a message that it refuses.
+
+The question session matches each ack to its own message with the same message number. After a later send of a message,
+an ack with that number answers that message, whichever copy arrived. After each send, the question session waits at its
+prompt for the ack. The wait has no time limit. If no ack comes, the user can ask the question session to send again. No
+one measured this wait.
 
 A report is a message that needs no answer from the user. The orchestrator shows each of its reports as text in its own
 tab. A report of the follow-up planner goes to `orchestrator-<slug>`, which shows it the same way. No pane starts for a
@@ -781,10 +822,11 @@ session reported that the user found an earlier report premature. A decision fro
 can start work that the user did not choose.
 
 The decision message goes to the pane owner with the herdr path. It first gives the header
-`QUESTION-PANE <own pane id> <question id>:`. It then gives the decision and the user's settling words verbatim, each
-requested draft change, and each doc rule, fact, or preference the user stated. It also gives each word of the user that
-closes the pane, ends the run or adds an issue to a set (a set scope, as the term Scope of [the glossary](GLOSSARY.md)
-and [The scope](../orchestrator.md#the-scope) define it), word for word, also after the close request.
+`QUESTION-PANE <own pane id> <question id> m<n>:` of [Terms](#terms), with its message number. It then gives the
+decision and the user's settling words verbatim, each requested draft change, and each doc rule, fact, or preference the
+user stated. It also gives each word of the user that closes the pane, ends the run or adds an issue to a set (a set
+scope, as the term Scope of [the glossary](GLOSSARY.md) and [The scope](../orchestrator.md#the-scope) define it), word
+for word, also after the close request.
 
 For a measure that changes user state, the question session also gives the command and undo step verbatim. It gives the
 same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. The
@@ -890,10 +932,10 @@ session tells the user in the pane. The question stays open.
 
 ### The pane owner handles a decision
 
-The pane owner accepts a decision message only with the header `QUESTION-PANE <pane id> <question id>:` of its open pane
-id and its current question id. It then sends the ack, as [Terms](#terms) says. For every other message, the pane owner
-tells the user in one line, sends nothing, and keeps the state of each question. The header does not prove the sender,
-because any pane can type it.
+The pane owner accepts a decision message only with a header of its open pane id and its current question id. The header
+has one of the two forms of [Terms](#terms), and the message number decides no accept. It then sends the ack, as
+[Terms](#terms) says. For every other message, the pane owner tells the user in one line, sends nothing, and keeps the
+state of each question. The header does not prove the sender, because any pane can type it.
 
 The pane owner judges whether the quoted words fully settle that question, with or without choices. A settled message is
 the user's decision without a second word in the tab of the orchestrator. The quoted words of an accepted message are a
@@ -1204,9 +1246,9 @@ that each earlier finding that needs a word of the user has one. A repeat of an 
 
 Each waiting decision and each open question of steps 6, 7 and 8 goes to the user in the pane, not to the pane owner as
 a question. The question session sends each report of a round and the final report to the pane owner with the herdr
-path. Each report gives the header with the question id. It says its kind: "the report of round N" or "the final
-report". A report with no such mark counts as the final report. For each decision of the user in the rounds, a report
-gives the words of the user word for word.
+path. Each report gives the header of [Terms](#terms), with the question id and the message number. It says its kind:
+"the report of round N" or "the final report". A report with no such mark counts as the final report. For each decision
+of the user in the rounds, a report gives the words of the user word for word.
 
 The guess rule of [Send a decision](#send-a-decision) also applies to each report. A report can hold a guess, for
 example in an accepted proposal. Then the session asks the confirm question in the pane before it sends the report. The
