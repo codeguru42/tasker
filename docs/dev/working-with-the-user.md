@@ -342,7 +342,7 @@ These rules hold for each reply to the user:
   makes sure that question 1 gives the full details of the bullet that starts "Question 1 of the list". Inside a
   question, it gives the choices as a nested list with letters and the proposed steps as a nested list with roman
   numerals. It changes each other list inside a question into sentences. For a list inside a question, these two
-  sentences win over the second sentence of this bullet.
+  sentences win over the second and the third sentence of this bullet.
 
 These rules hold for each list of the decisions that the user must make, and for each reply that gives open questions:
 
