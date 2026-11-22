@@ -19,11 +19,14 @@ The form of the send is open. A later ticket decides it. Until then, the lists a
   cell of the table says "asks the user" only when each command of the list for that kind asks.
 - A command that a step of a source names, but that no kind names, goes in the list "Named other commands". This list is
   the K16 list of the actor, as [K16](permissions.md#the-kinds-of-command) says.
+- A list names each Read call that a source names as a step. A list with no Read call bans no Read call.
 
 ## The orchestrator
 
 Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule),
-[the hold before an install](release.md#the-hold-before-an-install), [Pick the tickets](pick-the-tickets.md),
+[the hold before an install](release.md#the-hold-before-an-install),
+[Install a pre-release](release.md#install-a-pre-release), [the doc-read rule](doc-reads.md#the-doc-read-rule),
+[the re-read rule](doc-reads.md#the-re-read-rule), [Pick the tickets](pick-the-tickets.md),
 [Land the work](land-the-work.md), [the CI wait](ci-wait.md#the-ci-wait),
 [The actor of each write action](question-pane.md#the-actor-of-each-write-action),
 [The herdr path](question-pane.md#terms) and [Limits](limits.md#limits).
@@ -36,7 +39,11 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   pane.
 - K3: `git rev-parse`, `git merge-base`, `git merge-base --is-ancestor`, `git diff`, `git show`, `git grep`,
   `git cat-file`, `git status --porcelain`, `git worktree list` and `git ls-remote --exit-code`.
-- K4: `git fetch origin`, `git fetch --multiple` and `git pull --ff-only`, in its local clone.
+- K3, for the doc-read rule and the release steps: `git branch --show-current`,
+  `git status --porcelain --untracked-files=no`, `git rev-parse --verify`, `git merge-base --is-ancestor`,
+  `git diff --name-only`, `git show origin/main:<path>` and `git show <tip>:<path>`.
+- K4: `git fetch origin`, `git fetch --multiple`, `git pull --ff-only` and `git pull --ff-only origin main`, in its
+  local clone. For the release steps: `git checkout <commit>` and `git checkout main`.
 - K5: `gh issue view`, `gh issue list`, `gh run list`, `gh run view`, `gh run watch`, `gh project item-list` and the
   read forms of `gh api`.
 - K6: `gh issue create`, only for the issue of a failed CI run, as [A failed CI run](ci-wait.md#a-failed-ci-run) says.
@@ -52,13 +59,15 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 - K12: the body file of an issue and the handoff file, in the folder of the orchestrator.
 - K13 to K15: no list.
 - Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says)
-  and `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)).
+  `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)), a Read call on a file of the
+  local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call.
 
 ## A task subagent for a whole ticket
 
 Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-worktree-rule),
 [the plain-form rule](tasker-commands.md#the-plain-form-rule), [Run one ticket](run-one-ticket.md#run-one-ticket),
-[the CI wait](ci-wait.md#the-ci-wait) and the ask rules of [Claude Code](setup.md#claude-code).
+[the CI wait](ci-wait.md#the-ci-wait), [the doc-read rule](doc-reads.md#the-doc-read-rule) and the ask rules of
+[Claude Code](setup.md#claude-code).
 
 - K1: `tasker show`, `tasker show-plan`, `tasker show-verify`, `tasker show-review` and the other read-only commands of
   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule).
@@ -67,24 +76,29 @@ Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-w
   `tasker approve-credits`. `tasker abort` and `tasker update-branch` with `--undo` ask the user. The K2 cell says
   "runs", because most task changes run with no word of the user. A cell says "asks the user" only when each command of
   the list asks.
-- K3: `git log`, `git show` and `git diff` on `tasker/<task branch>`, and the other `git` reads of
-  [Limits](limits.md#limits).
+- K3: `git log`, `git show` and `git diff` on `tasker/<task branch>`, `git show origin/main:<path>`, and the other `git`
+  reads of [Limits](limits.md#limits).
 - K4: `git fetch tasker`, `git fetch origin`, `git worktree add`, `git worktree remove` and `git reset --keep`, as the
   own-worktree rule and [Limits](limits.md#limits) say.
 - K5: `gh run list`, `gh run view`, `gh run watch` and `gh issue view`.
 - K6: the comment of step 11 of "Run one ticket". It is the only write of the text of an issue.
 - K12 and K14: files of its own task worktree.
 - Named other commands: `npm ci` before a direct npm script, `npm run check` and the other direct npm scripts of the
-  task worktree, and `gh run rerun <run id> --failed` (the only write on GitHub Actions).
+  task worktree, `gh run rerun <run id> --failed` (the only write on GitHub Actions), a Read call on a saved output of
+  its own tool call, and `timeout 20 bash -c 'sleep 5'`.
 - K7 to K11, K13 and K15: no list.
 
 ## A task subagent for one task change
 
-Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) and
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent).
+Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule),
+[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) and
+[the doc-read rule](doc-reads.md#the-doc-read-rule).
 
 - K2: the one `tasker` command that the orchestrator sent, in the plain form of
   [the plain-form rule](tasker-commands.md#the-plain-form-rule).
+- K3: `git show origin/main:<path>`.
+- K4: `git fetch origin`.
+- Named other commands: a Read call on a saved output of its own tool call, and `timeout 20 bash -c 'sleep 5'`.
 - Each other kind: no list.
 
 ## The planner subagent
@@ -95,38 +109,58 @@ review and post subagents.
 
 - K3: `git -C <local clone> show origin/main:<path>`, for each doc that it reads.
 - K4: `git -C <local clone> fetch origin`, before its first doc read.
+- Named other commands: a Read call on a saved output of its own tool call, and `timeout 20 bash -c 'sleep 5'`.
 - K10: `SendMessage` to `main` only, after a refused `SubagentHandback` call.
 - K11: the start of an issue-draft subagent, an issue-review subagent and an issue-post subagent.
 - Each other kind: no list.
 
 ## The issue-draft subagent
 
-Sources: [The draft file](issue-draft.md#the-draft-file) and
-[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent).
+Sources: [The draft file](issue-draft.md#the-draft-file),
+[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) and
+[the doc-read rule](doc-reads.md#the-doc-read-rule).
 
-- K3: `git show origin/main:<path>`.
-- K4: `git fetch origin`, in the local clone before its first read.
+- K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
+  `git merge-base --is-ancestor` and `git show origin/main:<path>`.
+- K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
+  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 - K12: its draft file, its report file and the files of a scratch folder under `/tmp`.
+- Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a
+  Read call on the saved output of its own tool call.
 - Each other kind: no list.
 
 ## The issue-review subagent
 
 Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent) and
-[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent).
+[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) and
+[the doc-read rule](doc-reads.md#the-doc-read-rule).
 
-- K3: `git show origin/main:<path>`.
-- K5: `gh issue list ... | jq ...` and the other `gh` reads of the open and closed issues. It writes no file.
+- K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
+  `git merge-base --is-ancestor` and `git show origin/main:<path>`.
+- K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
+  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+- K5: `gh issue list ... | jq ...` and the other `gh` reads of the open and closed issues. It writes no file. The pull
+  of step 1 is no write of a file, as [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+- Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a
+  Read call on the saved output of its own tool call.
 - Each other kind: no list.
 
 ## The issue-post subagent
 
-Source: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-issue-post-subagent).
+Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-issue-post-subagent) and
+[the doc-read rule](doc-reads.md#the-doc-read-rule).
 
+- K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
+  `git merge-base --is-ancestor` and `git show origin/main:<path>`.
+- K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
+  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 - K5: the `gh` reads of [Before a post](issues.md#before-a-post).
 - K6: `gh issue create` and `gh issue edit` of the title and the body.
 - K7: the `gh issue edit` calls that add or remove a blocked-by link, with the milestone and the labels of the draft in
   `gh issue create`.
 - K12: the body file `/tmp/tasker/issue-post/<slug>-body.md`.
+- Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a
+  Read call on the saved output of its own tool call.
 - Each other kind: no list.
 
 ## The write subagent of the orchestrator
@@ -169,11 +203,13 @@ for word.
 
 ## A question session
 
-Sources: [The question session](question-pane.md#the-question-session) and [The herdr path](question-pane.md#terms).
+Sources: [The question session](question-pane.md#the-question-session), [The herdr path](question-pane.md#terms) and
+[the doc-read rule](doc-reads.md#the-doc-read-rule).
 
 - K1, K3 and K5: the read-only commands, other than `herdr` commands.
-- K4: `git fetch origin`.
+- K4: `git fetch origin` and `git pull --ff-only origin main`, in its local clone.
 - K9 and K10: only the herdr path to its pane owner, for the messages that
   [Send a decision](question-pane.md#send-a-decision) gives.
-- Named other commands: `timeout 20 bash -c 'sleep 1'`.
+- Named other commands: `timeout 20 bash -c 'sleep 1'`, a Read call on a file of the local clone, `wc -l <path>`,
+  `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call.
 - Each other kind: no list. It sends each write action back to its pane owner.
