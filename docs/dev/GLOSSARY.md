@@ -30,6 +30,10 @@ of the request rule.
 **Placeholder**: A name in double braces, for example `{{ISSUE_TEXT}}`, in the body of a prompt template. The code fills
 it with a value. [prompt-templates.md](prompt-templates.md) gives the form.
 
+**Planner subagent**: A subagent that an orchestrator of the kind `claude` starts with the Agent tool for one planning
+request. It starts the issue-draft, issue-review and issue-post subagents as its work needs, and it returns one result.
+[planner-subagent.md](planner-subagent.md) gives its rules.
+
 **Prompt template**: A file `prompt-templates/<family>/<name>.md` with front matter and a body. The body is the words of
 one prompt. [prompt-templates.md](prompt-templates.md) gives the rules.
 
