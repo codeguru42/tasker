@@ -27,6 +27,18 @@ describe("prompt-templates/question-pane/session.md", () => {
     expect(problems(sample)).toEqual([]);
   });
 
+  it("reads all of docs/dev/doc-reads.md after a pull that worked", () => {
+    expect(body()).toContain("read docs/dev/doc-reads.md with the Read tool, in pieces to the end.");
+  });
+
+  it("names no section of docs/dev/doc-reads.md as the start read", () => {
+    expect(body()).not.toContain("The doc-read rule of docs/dev/doc-reads.md");
+  });
+
+  it("keeps the old read of the five files", () => {
+    expect(body()).toContain("run git fetch origin. Then read the five files with git show origin/main: and the path.");
+  });
+
   it("holds no single quote", () => {
     expect(body().includes("'")).toBe(false);
   });
