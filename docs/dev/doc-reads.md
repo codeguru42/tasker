@@ -285,12 +285,37 @@ This step runs after step 1 passed.
 
 1. Read each doc with the Read tool on the file in the local clone. `<path>` is the path of the doc from the root of the
    repo, for example `docs/dev/limits.md`. Read in pieces with `offset` and `limit`, from line 1.
-2. The read reaches the end when the last piece returns fewer lines than its `limit`. It also reaches the end when the
-   pieces reach the count of `wc -l <path>`.
+2. The read reaches the end when the last piece returns fewer lines than its `limit` and the result is not a partial
+   view. It also reaches the end when the pieces reach the count of `wc -l <path>`.
 3. If a call is refused for too many tokens, halve `limit` and read again from the same `offset`. A piece before the end
-   is not a complete read, and a refused call is not a read.
+   is not a complete read, and a refused call is not a read. Item 5 gives each other result that is not a complete read.
 4. After the last piece of a doc, run `git -C <local clone> rev-parse --verify HEAD` and the clean-tree check. If the
    hash is not `<head>` or the tree is not clean, read that doc again with the old read.
+
+5. A partial view is a result of a Read call that shows fewer lines than the call asks for. It has a notice that names a
+   next `offset`. For a call with no `limit`, it shows fewer lines than the file has. A result with no such notice is
+   not a partial view. For example, a piece before the end of the file has no such notice.
+
+   After a partial view, read again from the `offset` that its notice names. Read in pieces with `offset` and `limit`,
+   until the read reaches the end of item 2.
+
+   A partial view is not a complete read of the doc, and it never reaches the end of item 2. This also holds when it
+   shows fewer lines than the `limit` of its call.
+
+   This item holds for a Read call with a `limit` and for a Read call with no `limit`. It also holds for each piece of
+   the read, not only for the first piece. A session can make a call with no `limit`, for example the read that a start
+   prompt asks for. Such a call is outside item 1.
+
+   The read of one doc has these states:
+
+   - (a) Not started: the session made no Read call on the doc. It has no read of the doc.
+   - (b) Running: the session made one or more Read calls, and the read did not reach the end of item 2. No piece of
+     this state is a complete read, also not a partial view. After a partial view, the session goes on as this item
+     says.
+   - (c) Ended: the read reached the end of item 2. Then the read of the pieces is complete, and the session does
+     item 4.
+
+   This item gives no piece size, as Step 2 gives none. It changes no rule of item 3 for a refused call.
 
 On 2026-11-20, with Claude Code 2.1.330, one Read call with `limit: 2000` on `docs/dev/pick-the-tickets.md` failed. At
 commit `507bcddb`, that file had 1077 lines and 91,959 bytes. The error was "File content (31880 tokens) exceeds maximum
