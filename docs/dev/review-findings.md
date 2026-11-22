@@ -224,7 +224,10 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   case is outside the issue. The task subagent lists the finding in its final report, and the ticket does not grow. A
   refactor or duplication finding is not such an edge case.
 - If a finding contradicts an exact rule of the issue, the task subagent dismisses it in step 7. The reason quotes that
-  rule of the issue.
+  rule of the issue. This bullet does not cover a finding that shows a needed doc change. For such a finding,
+  [the needed-doc-change rule](plan-review.md#the-issue-check) wins over the Docs item that the finding contradicts, and
+  the task subagent fixes it. The cap of 5 review loops, the bullet "After the 5th loop" and the leftover exception
+  still apply. So if review 5 finds a needed doc change that is not a leftover, the task subagent still stops.
 - The security report: if the task subagent dismisses a finding in step 7 because the finding contradicts the issue, and
   the finding points to a possible security gap, the task subagent also reports the gap to the orchestrator in the same
   step. A security gap is a way to harm the user or the system. For example, text of a third party, such as an issue
