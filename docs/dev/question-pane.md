@@ -27,8 +27,19 @@ sessions are, for example, a task subagent and the follow-up planner. The orches
 
 The question id is the name of one open question. The orchestrator gives each question the next free item id of its own
 counter, in the form `orchestrator-<slug>-<n>`. Each progress report of
-[The operator](working-with-the-user.md#the-operator) also takes the next number of that counter. The handoff file of
-the orchestrator carries that counter, so the id stays unique through a handoff.
+[The operator](working-with-the-user.md#the-operator) also takes the next number of that counter. The first free item id
+of the handoff file carries that counter through a handoff, as [The last item id](handoff.md#the-last-item-id) says.
+
+At a start with no handoff file, the orchestrator reads the highest number at the end of a question id in `questions/`
+of its [orchestrator folder](limits.md#the-orchestrator-folder). The first free item id is 1 more than that number. If
+that folder holds no question file, the first free item id is 1. So a new question file never overwrites an old one.
+
+If the list of `questions/` fails at such a start, the orchestrator gives item ids as usual. While the bar of the
+fallback holds, it writes no question file, so no id overwrites a file. At the first list that works, the orchestrator
+raises its next item id above the highest number in `questions/`.
+
+After a stop with no handoff, a new item id can still repeat an id of the stopped session. Examples are the id of a
+progress report and the id of a deleted question. The reason: the count reads only the question files.
 
 [The glossary](GLOSSARY.md) defines a question session.
 

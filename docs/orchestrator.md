@@ -170,9 +170,17 @@ resume at a `/rename`. A `/clear` is also not a stop of this subsection, and no 
 An orchestrator runs until its milestone is complete or it drafts a handoff. So the docs expect no stop with no handoff.
 
 Suppose that the user starts a new orchestrator with the slug of a stopped orchestrator outside a handoff. The docs give
-no steps for it. The new orchestrator runs [the start checks](#the-start-checks) and then its role work, as for a first
-start. It does not rebuild the tasks in flight, the jobs, the open questions or the peer messages of the stopped
-orchestrator. The user deals with the result.
+no steps for it, except for the files of its orchestrator folder. The new orchestrator runs
+[the start checks](#the-start-checks) and then its role work, as for a first start.
+
+The files of the stopped orchestrator stay in its [orchestrator folder](dev/limits.md#the-orchestrator-folder). At the
+end of its start steps, the new orchestrator lists `questions/` and `proposals/`. If one of these folders holds a file,
+the new orchestrator tells the user in its tab. It starts no pane and no planner subagent from those files until the
+word of the user. The word of the user decides what the orchestrator does with the files.
+[Terms](dev/question-pane.md#terms) gives the first free item id of such a start.
+
+The new orchestrator does not rebuild the tasks in flight, the jobs or the peer messages of the stopped orchestrator.
+The user deals with the result.
 
 The user said this in a pane about #976: "This will never happen. An orchestrator runs until its milestone is complete
 or it drafts a handoff. If the user attempts to start a new fresh orchestrator outside of this, then it is on them and
@@ -229,6 +237,9 @@ the orchestrator does no role work. It tells the user in its own tab, with the e
 
 In these steps, "stop" means: do no role work, and tell the user in your own tab. A pi orchestrator does not do steps 2
 and 3. For a pi orchestrator, the user alone keeps the slugs apart.
+
+After these steps, the orchestrator lists its folders `questions/` and `proposals/`, as
+[The orchestrator folder](dev/limits.md#the-orchestrator-folder) says for the end of the start steps.
 
 If the first prompt names a handoff file, a row of `ListAgents` with the own name can be the old orchestrator. Then the
 orchestrator runs `herdr agent list` and reads each row whose `terminal_title_stripped` is the own name. Its own row is
