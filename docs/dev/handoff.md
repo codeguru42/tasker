@@ -208,9 +208,13 @@ file of 09:09 for the same role existed. Most issues of the table of the old fil
 
 ## The end of a handoff
 
-In a handoff of an orchestrator or a follow-up planner, the handoff ends when the operator stops the old session and
-starts the new session, as steps 4 and 5 of [A handoff](operator-start.md#a-handoff) say. This also covers an old
-session that the user started.
+In a handoff of an orchestrator, the handoff ends after step 4 of
+[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator). The operator has no part
+in it.
+
+In a handoff of a follow-up planner, the handoff ends when the operator stops the old session and starts the new
+session, as steps 4 and 5 of [A handoff](operator-start.md#a-handoff) say. This also covers an old session that the user
+started.
 
 The rule of the user of 2026-10-25 is the request of the user for these steps: "Then stop the orchestrator and start a
 new one."
@@ -233,14 +237,19 @@ start and no reuse of a question pane, as [Start](question-pane.md#start) says.
 
 ## The stop and the start
 
-In a handoff of an orchestrator or a follow-up planner, the operator stops the old session and starts the new session,
-as [A handoff](operator-start.md#a-handoff) says. This step covers each old orchestrator and each old follow-up planner,
-also one that the user started. The first message of the new session is the prompt of the handoff file. The first
-message names the path of the handoff file.
+In a handoff of a follow-up planner, the operator stops the old session and starts the new session, as
+[A handoff](operator-start.md#a-handoff) says. This step covers each old follow-up planner, also one that the user
+started. The first message of the new session is the prompt of the handoff file. The first message names the path of the
+handoff file.
 
-The item with the path of the handoff file starts the stop and the start by the operator, with no answer of the user. If
-this item arrives in a handoff of the operator before the hold messages, the old operator does the stop and the start,
-and steps 1 and 2 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) give the rest.
+In a handoff of an orchestrator, the old orchestrator starts the new orchestrator and closes its own tab, as
+[The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The first message
+of the new orchestrator is the prompt of the handoff file, and it names the path of the handoff file.
+
+In a handoff of a follow-up planner, the item with the path of the handoff file starts the stop and the start by the
+operator, with no answer of the user. If this item arrives in a handoff of the operator before the hold messages, the
+old operator does the stop and the start, and steps 1 and 2 of
+[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) give the rest.
 
 In a handoff of the operator, [the start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives
 the end of the handoff. [The end of the hold by the user](#the-end-of-the-hold-by-the-user) gives a second end.
