@@ -16,7 +16,9 @@ name and its slug from the first line of the output of `ListAgents`, as [session
 orchestrator uses the read of [sessions.md](sessions.md) that names `PI_SESSION_FILE`. A task is the record that tasker
 keeps for one ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
 
-Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo.
+Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo. The files of the
+[orchestrator folder](dev/limits.md#the-orchestrator-folder) are not memory. The docs define these files, and they hold
+no rule, fact or preference that belongs in a doc of the repo.
 
 The orchestrator asks the user each open question in its own question pane, as [question-pane.md](dev/question-pane.md)
 says. It shows each progress report as text in its own tab, as [The operator](dev/working-with-the-user.md#the-operator)

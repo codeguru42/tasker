@@ -151,6 +151,9 @@ task.
   proposal, as step 6 of `/session-review` says. If the content belongs in no tracked doc, the session tells the user so
   in its reply.
 
+  The rule does not ban a write of a file of the [orchestrator folder](limits.md#the-orchestrator-folder), because such
+  a file is not memory, as [docs/orchestrator.md](../orchestrator.md) says.
+
   [docs/orchestrator.md](../orchestrator.md) defines memory. [What goes in a ticket](planner.md#what-goes-in-a-ticket)
   of planner.md says where each new rule, fact or preference goes, and why. Step 2 and step 5 (f) of
   [`/session-review`](../../.claude/skills/session-review/SKILL.md) say what happens to a note that the user keeps out
