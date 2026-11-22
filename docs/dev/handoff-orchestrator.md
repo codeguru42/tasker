@@ -92,8 +92,10 @@ After the start, the old orchestrator does these steps:
    [the task subagent notice](doc-reads.md#the-task-subagent-notice). The reason: a job lives only in the session of the
    orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task is still in flight at the handoff,
    nobody resumes it after a quota stop.
-3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17. Then
-   write the handoff file, as [The handoff file](handoff.md#the-handoff-file) says.
+3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17.
+   Then, for an orchestrator of the kind `claude`, do the steps of
+   [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Then write the handoff file, as
+   [The handoff file](handoff.md#the-handoff-file) says.
 4. Start the new orchestrator, and then close your own tab, as
    [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says.
 

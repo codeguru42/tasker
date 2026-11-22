@@ -134,6 +134,10 @@ fails, also because no session has that name, an orchestrator shows them as a re
 sends them to `orchestrator-<slug>`. The old operator has no operator, so [the failure rule](limits.md#the-failure-rule)
 applies to it.
 
+An old orchestrator of the kind `claude` starts a [planner subagent](planner-subagent.md) for these facts and lessons,
+in place of the send to `planner-<slug>`. A failed start counts as a failed send. The old orchestrator waits for the
+result, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says.
+
 The handoff file names each session other than the new session by its name, also in the prompt. It gives no
 [session ref and no socket address](GLOSSARY.md) of such a session. The tab list of the file of the operator keeps the
 tab id of each entry. In a handoff of the operator, the file names the old operator by its name, its tab id and its pane
