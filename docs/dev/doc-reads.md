@@ -385,15 +385,26 @@ the session starts in the local clone. The session prompt in
 The session has no other way to learn these commands before its first read.
 
 The start prompts are the first prompts of the orchestrator, the start prompts of the planner and the prompt read of a
-handoff. The session prompt of a question pane is also a start prompt. The prompt of an issue subagent and of the ad hoc
-post subagent is also a start prompt.
+handoff. The session prompt of a question pane is also a start prompt. These four kinds of start prompt read this doc at
+their start. The prompt of an issue subagent and of the ad hoc post subagent is also a start prompt. The ad hoc post
+subagent is the subagent of the main session that posts a reviewed ad hoc draft. These two prompts do not read this doc
+at their start. An issue subagent keeps [the read rule](issue-subagents.md#the-read-rule). The ad hoc post subagent
+follows each rule of [docs/dev/issue-post.md](issue-post.md), so it keeps the same read rule.
 
-After the pull, the session reads this doc first, with the Read tool. Then it reads `<head>` and `<origin>` and runs the
-clean-tree check, as step 1 item 4 says. Then it does step 2 item 4 for this doc. If a check fails, the session follows
-this rule, also for this doc. Then it reads its other start docs as this rule says. A start prompt or a list of the
-allowed commands changes with step 1 or step 2 in two cases only. It then changes in the same change as the step. In the
-first case, the change makes the words of that prompt or list untrue. In the second case, the change alters a command
-that the prompt or list gives.
+After the pull, a session of one of the four kinds reads this doc first, with the Read tool. This read is a complete
+read of this doc, as item 2 of step 2 says. The first paragraph of this doc names the rules that each reader follows. It
+does not give the part of this doc that a reader reads at its start. Then the session reads `<head>` and `<origin>` and
+runs the clean-tree check, as step 1 item 4 says. Then it does step 2 item 4 for this doc. If a check fails, the session
+follows this rule, also for this doc. Then it reads its other start docs as this rule says.
+
+Each start prompt above is an exception to the only home of the read steps. This includes the prompt of an issue
+subagent and of the ad hoc post subagent. A start prompt or a list of the allowed commands changes with step 1 or step 2
+in two cases only. It then changes in the same change as the step. In the first case, the change makes the words of that
+prompt or list untrue. In the second case, the change alters a command that the prompt or list gives.
+
+The reason for the complete read: each start prompt that reads this doc at its start makes the same read of it. The old
+read in the session prompt already reads the whole file. One question session read only lines 200 to 422 of this doc,
+because the session prompt named only the section "The doc-read rule".
 
 `CLAUDE.md` loads `AGENTS.md` before step 1. So after step 1, the session reads `AGENTS.md` again. An issue subagent
 does not. On 2026-11-01, the new operator-m27 read a checkout 149 commits behind `origin/main` and used old rules for
