@@ -568,12 +568,12 @@ block of text, with no list and no paragraph.
 Before its first reply, the question session does step 1 of [the doc-read rule](doc-reads.md#the-doc-read-rule). Then it
 reads `docs/dev/doc-reads.md`, before its other start reads. Then it reads `AGENTS.md`, `docs/dev/question-pane.md`,
 [working with the user](working-with-the-user.md) and [the rules](rules.md), as the doc-read rule says. Each start read
-is a complete read of its file, from line 1 to the end, as [The start prompts](doc-reads.md#the-start-prompts) says.
-Step 1 and these reads are its start reads, and the session prompt gives them. The second reply gives the command and
-its output for each case of step 1 that the doc-read rule gives to the user. For a wrong branch, the second reply also
-says that the rules are unread. The session then sends no decision and no write action. The existing `AGENTS.md` rule
-for a user-facing session with no role still applies, and this rule adds these docs to it. The rules of these docs
-change no word of the first-reply text.
+is a complete read of its file, from line 1 to the end, as
+[step 2](doc-reads.md#step-2-read-each-doc-with-the-read-tool) of the doc-read rule says. Step 1 and these reads are its
+start reads, and the session prompt gives them. The second reply gives the command and its output for each case of step
+1 that the doc-read rule gives to the user. For a wrong branch, the second reply also says that the rules are unread.
+The session then sends no decision and no write action. The existing `AGENTS.md` rule for a user-facing session with no
+role still applies, and this rule adds these docs to it. The rules of these docs change no word of the first-reply text.
 
 Before its start reads, the question session shows the start line, word for word: "I read my rules first, and then I
 show the question." The start line tells the user that the question follows. In the rules of this page, the start line

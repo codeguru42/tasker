@@ -403,8 +403,8 @@ in two cases only. It then changes in the same change as the step. In the first 
 prompt or list untrue. In the second case, the change alters a command that the prompt or list gives.
 
 The reason for the complete read: each start prompt that reads this doc at its start makes the same read of it. The old
-read in the session prompt already reads the whole file. One question session read only lines 200 to 422 of this doc,
-because the session prompt named only the section "The doc-read rule".
+read in the session prompt already reads the whole file. At commit `b410b27a`, one question session read only lines 200
+to 422 of this doc, the section "The doc-read rule", because the session prompt named only that section.
 
 `CLAUDE.md` loads `AGENTS.md` before step 1. So after step 1, the session reads `AGENTS.md` again. An issue subagent
 does not. On 2026-11-01, the new operator-m27 read a checkout 149 commits behind `origin/main` and used old rules for
