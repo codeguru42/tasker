@@ -246,38 +246,42 @@ The commands below work with gh 2.101.0:
 
 [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) of issue-subagents.md gives the milestone of
 each issue. The start of [The close of a milestone](operator-start.md#the-close-of-a-milestone) is the authority for the
-GitHub milestone closure of a milestone with no work left. The planner needs no other word of the user for it.
-[Pick the tickets](pick-the-tickets.md#pick-the-tickets) of pick-the-tickets.md gives the report of an orchestrator when
-its milestone is done.
+GitHub milestone closure of a milestone with no work left. The session that closes the milestone needs no other word of
+the user for it. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) of pick-the-tickets.md
+gives the report of an orchestrator when its milestone is done. This section gives the reads and the write of the
+session that closes a milestone. That session is the orchestrator of the kind `claude` at its end, or the planner after
+its rounds.
 
-After its rounds, the planner reads the milestone with `gh api repos/codeguru42/tasker/milestones/<number>`. The read
-gives the title, the state and the description of the milestone. If the state is `closed`, the planner reports that
-state. It does not open the milestone again, and it does not run the command again. The hold record is the start of the
-description, as item 2 of [A milestone hold](working-with-the-user.md#a-milestone-hold) says. If the milestone is held,
-the planner does not close it and tells the user.
+First, the session reads the milestone with `gh api repos/codeguru42/tasker/milestones/<number>`. The read gives the
+title, the state and the description of the milestone. If the state is `closed`, the session reports that state. It does
+not open the milestone again, and it does not run the command again. The hold record is the start of the description, as
+item 2 of [A milestone hold](working-with-the-user.md#a-milestone-hold) says. If the milestone is held, the session does
+not close it and tells the user.
 
-Then the planner reads the open issues of the milestone and the tasks in flight of the milestone again. It reads the
+Then the session reads the open issues of the milestone and the tasks in flight of the milestone again. It reads the
 open issues with `gh issue list --milestone "<title>" --state open --limit 1000 --json number`. The title comes from the
 read above, because a title that no milestone has prints `[]` and exits with 0.
 
 It reads the tasks in flight with `tasker status --repo codeguru42/tasker`. The output has no milestone. For each listed
-task, the planner takes the issue number from the issue key of the task. It reads the milestone of that issue with
+task, the session takes the issue number from the issue key of the task. It reads the milestone of that issue with
 `gh issue view <number> --json milestone`. The task belongs to the milestone when that read gives the number of the
 milestone of the close.
 
-If new work belongs to the milestone, the milestone stays open. The planner tells the user about that work directly. It
-starts no new orchestrator and does not report the close of the milestone as done. The planner keeps its role, and the
-word of the user decides the next step, for example the start of an operator.
+If new work belongs to the milestone, the milestone stays open. For the orchestrator,
+[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the next step. The planner tells the
+user about that work directly. It starts no new orchestrator and does not report the close of the milestone as done. The
+planner keeps its role, and the word of the user decides the next step, for example the start of an operator.
 
-If the reads work and no work is left, the planner runs
+If the reads work and no work is left, the session runs
 `gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`. If a read, the match or the command
-fails, the planner tells the user, and the milestone stays open. The planner does not close the milestone after a failed
-read. After the command, the planner reads the milestone again with
+fails, the session tells the user, and the milestone stays open. The session does not close the milestone after a failed
+read. After the command, the session reads the milestone again with
 `gh api repos/codeguru42/tasker/milestones/<number>`. It reports the GitHub milestone closure as done only after this
 read shows the number of the milestone and the state `closed`.
 
-The planner does not run the command again after a write that worked. If the write or the read after it fails, the
-planner tells the user about the failure. It does not end its role, and it keeps the work for a later recovery. After
+The session does not run the command again after a write that worked. If the write or the read after it fails, the
+session tells the user about the failure. It does not end its role, and it keeps the work for a later recovery. After
 the read shows the state `closed`, the planner deletes only each memory note whose delete condition is the close of that
 milestone. Then the planner gives the result in its close report, as step 14 of
-[The steps that end each role](operator-start.md#the-steps-that-end-each-role) says.
+[The steps that end each role](operator-start.md#the-steps-that-end-each-role) says. The orchestrator gives the result
+in its report that the milestone is done.
