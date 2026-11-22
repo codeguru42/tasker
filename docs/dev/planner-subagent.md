@@ -54,13 +54,14 @@ The orchestrator starts a new planner subagent for each planning request. It sen
 subagent that runs or that ended. The reason: a message to an ended subagent starts it again, as
 [the answer-wait rule](limits.md#the-answer-wait-rule) says. A new start gives each request a new context.
 
-At most one planner subagent of an orchestrator runs at a time. A new request waits in the session of the orchestrator
-for the result of the planner subagent that runs. Then the orchestrator starts the planner subagent of the next request,
-in the order of arrival. This choice holds until the user changes it.
+At most one planner subagent of an orchestrator runs at a time. A new request waits in its
+[proposal file](#the-proposal-file) for the result of the planner subagent that runs. Then the orchestrator starts the
+planner subagent of the next request, in the order of arrival. This choice holds until the user changes it.
 
 The cost of this choice: a request waits for each draft, review and post of the requests before it. A request that waits
-lives only in the session of the orchestrator. The follow-up planner of a milestone can post at the same time. Its draft
-folder differs from the folder of [The prompt](#the-prompt), so the file names do not collide.
+stays in its proposal file through a compaction of the context of the orchestrator. The follow-up planner of a milestone
+can post at the same time. Its draft folder differs from the folder of [The prompt](#the-prompt), so the file names do
+not collide.
 
 The orchestrator does these steps for each start:
 
@@ -105,6 +106,65 @@ The name of each issue subagent of a planner subagent starts with the name of th
 the rules of these names. The Agent tool refuses a name of more than 64 characters, as
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The limit of 12 characters
 keeps room for the rest of each such name.
+
+### The proposal file
+
+A proposal file is the file `proposals/<number>.md` in the [orchestrator folder](limits.md#the-orchestrator-folder), for
+one planning request. Only an orchestrator of the kind `claude` queues planning requests and writes proposal files. An
+orchestrator of another kind sends each request at once and writes no proposal file. The orchestrator folder gives the
+reads, the calls and the fallback for this folder.
+
+Each planning request gets a proposal file at its arrival. This also covers a request whose planner subagent starts at
+once. The reason: the file stays until the result, so a compaction during the run of the planner subagent loses no
+request.
+
+Before the write, the orchestrator lists `proposals/` with `ls`. `<number>` is 1 more than the highest number that
+`proposals/` holds or that the orchestrator gave in its session. If neither holds a number, `<number>` is 1. So the
+orchestrator never uses a proposal number again in one session, and the order of the numbers is the order of arrival.
+For example, `proposals/` holds no file, and the orchestrator gave the number 4 earlier in its session. Then the next
+request gets `proposals/5.md`.
+
+The proposal file holds each fact of [The prompt](#the-prompt) that comes from the request. These facts are the request
+word for word, its sender, its date and the source of each fact. A request can come from an answer of the user. Then the
+file also holds the path of the draft file, the question and the words of the user word for word. The file stands alone,
+as a [question file](question-pane.md#the-question-file) does.
+
+When no planner subagent runs, the orchestrator lists `proposals/`. It reads the file with the lowest number, builds the
+prompt from it and starts the planner subagent. It does this at the arrival of a request, after the result of a planner
+subagent and at the end of its start steps. At a start with no handoff file,
+[A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) gives the steps. While the bar of the fallback
+holds, the orchestrator takes the next request that waits in its session in place of a file.
+
+Before the start of a planner subagent, the orchestrator writes the name of that planner subagent into its proposal
+file. The name is `plan-<count>` of [The name](#the-name). The file holds the tie of the request and the planner
+subagent, so the tie stays through a compaction. If the write of the name fails, the orchestrator starts no planner
+subagent from that file until the next word of the user.
+
+At a result, the orchestrator deletes only the proposal file that names the sender of the result. A result whose sender
+no file names deletes nothing, for example a second result of the same planner subagent. A result through `SendMessage`
+after a refused `SubagentHandback` call is also a result. If the delete fails, the file stays, and the orchestrator
+tells the user the path of the file. It does not count that file as a waiting request in its session, and the fallback
+also applies.
+
+These two cases stop the queue:
+
+- The start fails. [The failure rule](limits.md#the-failure-rule) applies, and the orchestrator keeps the file. A failed
+  start still counts as a failed send of the planner bullet, as [The start](#the-start) says.
+- The planner subagent and its one restart both end with no report. The orchestrator tells the user and keeps the file.
+
+After each of these cases, the orchestrator starts no planner subagent until the next word of the user. The reason: the
+next list gives the same file again. The user decides.
+
+A file can still stay in `proposals/` at the write of the handoff file, for example a kept file of a failed start. Such
+a file stays in the folder, and the new orchestrator finds it at the end of its start steps.
+
+These known limits hold:
+
+- After a compaction or a handoff, a request that a stop of the queue held can get a planner subagent again. This also
+  holds for a request whose proposal file stayed after a failed delete.
+- A planner subagent that runs again for a kept proposal file can post a duplicate issue on GitHub. Right before each
+  post, the search of [Before a post](issues.md#before-a-post) looks for the same change in all the issues of the repo,
+  open and closed. This search lowers the risk.
 
 ## The prompt
 
@@ -157,7 +217,7 @@ The orchestrator handles a result in this way:
    [orchestrator.md](../orchestrator.md) gives this form for each report.
 2. Handle each lesson of the result as a lesson of a final report.
 3. Ask each question of the result in the own [question pane](question-pane.md#a-question-pane), as an open question of
-   the orchestrator.
+   the orchestrator. Each such question gets a [question file](question-pane.md#the-question-file).
 4. Take each answer of the user to such a question as a new planning request.
 
 The new planner subagent of such an answer follows change 6.
@@ -322,11 +382,11 @@ notification of that subsection. A wait notification does not end the wait. The 
 
 If a planner subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the orchestrator.
 The orchestrator then starts one new planner subagent for the same request. If that one also ends with no report, the
-orchestrator tells the user.
+orchestrator tells the user. The proposal file of the request stays, as [The proposal file](#the-proposal-file) says.
 
 A late report of an issue subagent can start an ended planner subagent again. The wait for a report says this for a late
 report of a review agent and its ticket subagent. The orchestrator handles the second result of the planner subagent as
-a result.
+a result. The second result deletes no proposal file, because no file names its sender.
 
 ### The wait before a handoff
 
@@ -335,10 +395,15 @@ its handoff file:
 
 1. Wait for the result of each planner subagent that runs. This includes the planner subagent of the facts and lessons
    of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file).
-2. Start a planner subagent for each request that waits, in turn, as [The start](#the-start) says. Wait for the result
-   of each one.
+2. Start a planner subagent for each request that waits, in turn, as [The start](#the-start) says. This includes the
+   request of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). Take the
+   requests from `proposals/`, in the order of their numbers. While the bar of the fallback holds, take the requests
+   that wait in the session. Wait for the result of each one.
 
 The old orchestrator writes its handoff file only after the result of the last planner subagent.
+
+A file that a stop of the queue holds stays in `proposals/`. Step 2 starts no planner subagent from it. The new
+orchestrator finds it at the end of its start steps.
 
 ## The chain of subagents
 
