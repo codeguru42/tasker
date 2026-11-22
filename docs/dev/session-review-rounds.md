@@ -113,7 +113,7 @@ work is work after the rounds. See [The question gate of the close](operator-ite
 
 For an orchestrator, the report that the milestone is done holds the report of the rounds. A new ticket that the
 orchestrator runs after its rounds is work after its rounds. So the orchestrator runs its rounds again at its next end,
-as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says. A pi orchestrator stops at the
-stop of the operator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). If it did no work after
-its rounds, it runs no new round there and only gives the report again. The report again is not a second report that the
-milestone is done.
+as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says. A pi orchestrator of a milestone
+scope stops at the stop of the operator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). If it
+did no work after its rounds, it runs no new round there and only gives the report again. The report again is not a
+second report that the milestone is done.

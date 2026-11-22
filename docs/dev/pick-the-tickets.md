@@ -1210,13 +1210,18 @@ The own close has these steps:
 If a check or a command fails, the orchestrator closes nothing. It tells the user in its own tab, with the command and
 its output. The user then closes the tab, and the milestone keeps its state.
 
-A pi orchestrator runs the rounds, the end reads and the wait of this subsection. It sends each finding to
-`planner-<slug>`, as the planner bullet of The prompt of a task subagent says. It closes no milestone and does no own
-close. After end reads that find no open issue, it sends the report that the close started and the report that the
-milestone is done. Then the operator stops it, and the follow-up planner closes the milestone, as
-[The close of a milestone](operator-start.md#the-close-of-a-milestone) says. The reason: no one tested the closure of a
-pi session, as [The own-session closure of a pi session](operator-start.md#the-own-session-closure-of-a-pi-session)
-says.
+A pi orchestrator runs the rounds, the end reads and the wait of this subsection. It sends each finding to its planner,
+as the planner bullet of [The prompt of a task subagent](#the-prompt-of-a-task-subagent) says. It does no own close,
+because no one tested the closure of a pi session, as
+[The own-session closure of a pi session](operator-start.md#the-own-session-closure-of-a-pi-session) says.
+
+A pi orchestrator of a milestone scope closes no milestone. After end reads that find no open issue, it sends the report
+that the close started and the report that the milestone is done. Then the operator stops it, and the follow-up planner
+closes the milestone, as [The close of a milestone](operator-start.md#the-close-of-a-milestone) says.
+
+A pi orchestrator of a set scope sends no report that the close started and no report that the milestone is done. After
+end reads that find no open issue of the set, it shows its last report as a progress report in its own tab. That report
+names each issue of the set and its closed state. Then the user closes its tab.
 
 ## The prompt of a task subagent
 
