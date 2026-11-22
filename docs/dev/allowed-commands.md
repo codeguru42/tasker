@@ -38,12 +38,10 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 - K2: `tasker model` with a new model or with `--effort`. Asks the user, in a settled decision message of its question
   pane.
 - K3: `git rev-parse`, `git merge-base`, `git merge-base --is-ancestor`, `git diff`, `git show`, `git grep`,
-  `git cat-file`, `git status --porcelain`, `git worktree list` and `git ls-remote --exit-code`.
-- K3, for the doc-read rule and the release steps: `git branch --show-current`,
-  `git status --porcelain --untracked-files=no`, `git rev-parse --verify`, `git merge-base --is-ancestor`,
-  `git diff --name-only`, `git show origin/main:<path>` and `git show <tip>:<path>`.
-- K4: `git fetch origin`, `git fetch --multiple`, `git pull --ff-only` and `git pull --ff-only origin main`, in its
-  local clone. For the release steps: `git checkout <commit>` and `git checkout main`.
+  `git cat-file`, `git status --porcelain`, `git status --porcelain --untracked-files=no`, `git branch --show-current`,
+  `git worktree list` and `git ls-remote --exit-code`.
+- K4: `git fetch origin`, `git fetch --multiple` and `git pull --ff-only`, in its local clone, and
+  `git checkout <commit>` and `git checkout main` for the release steps.
 - K5: `gh issue view`, `gh issue list`, `gh run list`, `gh run view`, `gh run watch`, `gh project item-list` and the
   read forms of `gh api`.
 - K6: `gh issue create`, only for the issue of a failed CI run, as [A failed CI run](ci-wait.md#a-failed-ci-run) says.
@@ -58,7 +56,7 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 - K11: the start of a task subagent, a planner subagent, a write subagent, an opener subagent and a reuse subagent.
 - K12: the body file of an issue and the handoff file, in the folder of the orchestrator.
 - K13 to K15: no list.
-- Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says)
+- Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says),
   `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)), a Read call on a file of the
   local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call.
 
@@ -139,8 +137,8 @@ Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-i
   `git merge-base --is-ancestor` and `git show origin/main:<path>`.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
-- K5: `gh issue list ... | jq ...` and the other `gh` reads of the open and closed issues. It writes no file. The pull
-  of step 1 is no write of a file, as [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+- K5: `gh issue list ... | jq ...` and the other `gh` reads of the open and closed issues. It writes no file.
+  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) gives the one case of the pull.
 - Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a
   Read call on the saved output of its own tool call.
 - Each other kind: no list.
