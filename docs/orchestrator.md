@@ -178,27 +178,28 @@ the user has to deal with the mess."
 
 ### The first prompt
 
-The first prompt names the own name and the scope. It also names the fetch and the reads of `AGENTS.md` and
-`docs/orchestrator.md` from `origin/main`, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) gives them. It
-also asks for a complete read of each start doc before any other work.
+The first prompt names the own name and the scope. It also names the branch check, step 1 and the start read of
+`docs/dev/doc-reads.md`, `AGENTS.md` and `docs/orchestrator.md`, as
+[the doc-read rule](dev/doc-reads.md#the-doc-read-rule) gives them. It also asks for a complete read of each start doc
+before any other work.
 
 The first prompt of a milestone scope has this form. `<milestone>` is the title of the milestone.
 
 ```text
-You are orchestrator-<slug>. Your scope is the milestone <milestone>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/orchestrator.md. Read each start doc in full before any other work. Then start.
+You are orchestrator-<slug>. Your scope is the milestone <milestone>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/orchestrator.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/orchestrator.md with git show origin/main:<path>. Read each start doc in full before any other work. Then start.
 ```
 
 The first prompt of a set scope has this form. Each `<key>` is an issue key in a form of
 [docs/dev/issue-keys.md](dev/issue-keys.md).
 
 ```text
-You are orchestrator-<slug>. Your scope is the issues <key>, <key> and <key>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/orchestrator.md. Read each start doc in full before any other work. Then start.
+You are orchestrator-<slug>. Your scope is the issues <key>, <key> and <key>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/orchestrator.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/orchestrator.md with git show origin/main:<path>. Read each start doc in full before any other work. Then start.
 ```
 
 For example, the first prompt for the milestone `M31 — Orchestrator` is:
 
 ```text
-You are orchestrator-m31. Your scope is the milestone M31 — Orchestrator. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/orchestrator.md. Read each start doc in full before any other work. Then start.
+You are orchestrator-m31. Your scope is the milestone M31 — Orchestrator. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/orchestrator.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/orchestrator.md with git show origin/main:<path>. Read each start doc in full before any other work. Then start.
 ```
 
 An example of the scope part of a set scope is:
@@ -256,13 +257,13 @@ The measure had four possible outcomes:
 
 ### The states of a start
 
-| State                         | User                         | Orchestrator                       | Who tells whom                                 |
-| ----------------------------- | ---------------------------- | ---------------------------------- | ---------------------------------------------- |
-| The read of the configuration | Runs `tasker show-config`    |                                    |                                                |
-| The read fails                | Starts no orchestrator       |                                    | The command tells the user                     |
-| The start                     | Runs the command of the kind | Runs the fetch and the start reads |                                                |
-| A start check fails           |                              | Does no role work                  | The orchestrator tells the user in its own tab |
-| The start checks pass         |                              | Starts its role work               |                                                |
+| State                         | User                         | Orchestrator                    | Who tells whom                                 |
+| ----------------------------- | ---------------------------- | ------------------------------- | ---------------------------------------------- |
+| The read of the configuration | Runs `tasker show-config`    |                                 |                                                |
+| The read fails                | Starts no orchestrator       |                                 | The command tells the user                     |
+| The start                     | Runs the command of the kind | Runs step 1 and the start reads |                                                |
+| A start check fails           |                              | Does no role work               | The orchestrator tells the user in its own tab |
+| The start checks pass         |                              | Starts its role work            |                                                |
 
 ## The board watch job
 

@@ -234,13 +234,13 @@ The operator puts the milestone title in place of `<milestone>`. Each prompt is 
 The initial planner:
 
 ```text
-You are the planner of <milestone>. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/planner.md. This is the initial planning: the user works with you in this tab. After the start reads, read the title and the description of the milestone. Then start the drafts of its issues.
+You are the planner of <milestone>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>. This is the initial planning: the user works with you in this tab. After the start reads, read the title and the description of the milestone. Then start the drafts of its issues.
 ```
 
 The follow-up planner:
 
 ```text
-You are the planner of <milestone>. This is not the initial planning. Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:docs/planner.md.
+You are the planner of <milestone>. This is not the initial planning. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>.
 ```
 
 The orchestrator: the user starts it with the first prompt of a milestone scope, as

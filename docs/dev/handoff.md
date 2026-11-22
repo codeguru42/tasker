@@ -105,10 +105,10 @@ history of the session, the closed items or the measured facts. The rule is the 
     free item id. The first message of the new session always names the path of the handoff file.
   - If the old session is not the operator, the prompt also names the operator of the old session by its name only.
   - The first step of the prompt is the prompt read, in these words:
-    `Run git fetch origin. Then run git show origin/main:AGENTS.md and git show origin/main:<role index>.` The old
-    session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`. This
-    sub-bullet wins over the sentences "The prompt holds only the facts of this handoff" and "The old session puts no
-    rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
+    `Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and <role index> as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and <role index> with git show origin/main:<path>.`
+    The old session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`.
+    This sub-bullet wins over the sentences "The prompt holds only the facts of this handoff" and "The old session puts
+    no rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
 - Each open item with its id, as [The form of an item](operator-items.md#the-form-of-an-item) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
