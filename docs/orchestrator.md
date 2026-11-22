@@ -65,8 +65,8 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   doc-read rule.
 - [docs/dev/run-one-ticket.md](dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base
   rule, the add-work rule, the diff read and the measure rule.
-- [docs/dev/plan-review.md](dev/plan-review.md): the repo-files rule, the fact test, the issue check, the stop rule, the
-  change-of-scope comment, the design-gap rule and the quote check.
+- [docs/dev/plan-review.md](dev/plan-review.md): the repo-files rule, the fact test, the issue check, the
+  needed-doc-change rule, the stop rule, the change-of-scope comment, the design-gap rule and the quote check.
 - [docs/dev/tasker-commands.md](dev/tasker-commands.md): the plain-form rule, the orchestrator-command rule, the
   tool-block rule, the command rules, the facts of the installed tasker and the run times.
 - [docs/dev/verify-failures.md](dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the broken-commit

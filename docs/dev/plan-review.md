@@ -212,6 +212,63 @@ conflict, the task subagent puts the requirement, the conflicting rule or decisi
 shows it in that report. In each case, the task subagent also lists each false claim and each conflict in its final
 report.
 
+The needed-doc-change rule: a needed doc change is in the scope of the ticket. The scope of a ticket is what the ticket
+must do, as its issue gives it. A needed doc change is a change of a doc of the repo that an acceptance case of the
+issue needs. A doc of the repo is a Markdown file under `docs/`, or one of the files `AGENTS.md` and `CONTRIBUTING.md`.
+If an acceptance case fails with no change of a doc, the case needs a change of that doc. The case reads the merge
+commit of the work, with each other change of the ticket in place.
+
+The rule also covers a doc that the Docs section of the issue does not name. It also covers a doc that a Docs item says
+does not change or stays. This holds also for a Docs item with a true reason. For this rule, an acceptance case counts
+as a requirement of the issue check. The acceptance case wins over such a Docs item. Only the second and the third bound
+below keep the doc as it is.
+
+In the issue check, the acceptance case and the current text of the doc are a conflict. This conflict does not change
+what the ticket must do. The task subagent follows the steps that this section gives for such a conflict:
+
+- It does not stop.
+- It says in the feedback text of the refine of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket) how it
+  resolves the conflict. For a needed doc change, the plan changes the doc.
+- It lists the conflict and the resolution in its final report.
+
+A Docs item can give a reason why the doc does not change. If that reason is false, the task subagent handles it as a
+false claim that does not change what the ticket must do. It puts the current fact in the same feedback text.
+
+A needed doc change can also show after the issue check, for example in a finding of reviews 1 to 4. The rule and its
+bounds still hold then. The task subagent makes the change in that later step, for example in the fix of a real finding
+of a review. For a finding of review 5, see the bullet that starts "If a finding contradicts an exact rule of the issue"
+in [Review findings](review-findings.md#review-findings). No session asks the user whether the ticket can make a needed
+doc change.
+
+Whether an acceptance case needs a change of a doc is a judgment, open on purpose. The session that has the question
+makes the judgment. In the issue check, that session is the task subagent.
+
+The needed-doc-change rule has these bounds:
+
+- A needed doc change only makes the doc fit the requirements and the acceptance cases of the issue. It adds no rule,
+  fact or reason beyond them.
+- If the Out of scope section of the issue excludes the change, the rule does not apply. Then the conflict changes what
+  the ticket must do, and the fifth case of [the stop rule](#the-stop-rule) applies.
+- If the issue gives a decision or a word of the user that the doc stays, the rule does not apply either. Then the fifth
+  case of the stop rule applies.
+- Each other case of the stop rule still applies, for example a security gap. A Docs item can name a doc only to say
+  that the doc does not change. For the fourth case (a shared file), the issue does not name such a doc.
+
+The reason: the acceptance cases of an issue already say what the ticket must do. So the user does not decide whether
+the ticket can meet them.
+
+On #968, a ticket of the milestone M31, an edit history of its body on GitHub holds a version of 2026-11-21T21:17:26Z.
+That version said that `docs/dev/question-pane.md` does not change. Its reason was that #963 sends each request to the
+planner of the orchestrator, and that requirement 2.2 of #968 gives that planner. The reason was false. At that time,
+`docs/dev/question-pane.md` on `origin/main` said: "The planner of the orchestrator is `planner-<slug>`, with the slug
+of the orchestrator."
+
+The body of 2026-11-22T02:21:41Z adds Docs items for `docs/dev/question-pane.md` and `docs/dev/rules.md`. Their reason:
+with no change, acceptance cases 3 and 17 of #968 fail. On 2026-11-22, the question whether #968 can make these changes
+reached the user. The user answered in a question pane: "This shouldn't be a question for me." A planner subagent
+decided the case of #968 on the word of the user. No one measured the path of the question, or the order of the answer
+and the body change.
+
 In an issue, a measure of an outside tool is the one exception to "A requirement is not a claim". It is also a
 requirement, as [The body of an issue](issue-subagents.md#the-body-of-an-issue) says.
 
@@ -274,7 +331,8 @@ these cases:
 
 - A claim of the issue is no longer true, or a requirement of the issue is a conflict, and this changes what the ticket
   must do (see [the issue check](#the-issue-check)). This case does not apply when the orchestrator already answered for
-  that claim or that conflict.
+  that claim or that conflict. This case does not apply to a needed doc change either. See
+  [the needed-doc-change rule](#the-issue-check).
 - Two reviews in a row each find a new edge case that the fix of the loop before drew. After the second such review, the
   task subagent stops before its next `tasker approve`. The task subagent reports the two reviews and their edge cases
   to the orchestrator. The words "a new edge case" are a judgment, open on purpose. The task subagent makes the
