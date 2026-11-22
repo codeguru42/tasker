@@ -327,10 +327,12 @@ These rules hold for each reply to the user:
   of the session, open on purpose.
 
   Three rules win over this bullet. The bullet that starts "Inside a question, only the proposed steps" wins inside a
-  question. So the other details of a question stay sentences. In a reply about the status of an orchestrator, the owned
-  tasks stay in one table. The bullet of [A question of the user](#a-question-of-the-user) that starts "When the user
-  asks for the status of an orchestrator" says this. In the first-reply text of a question pane, the question has no
-  number. See [The question session](question-pane.md#the-question-session).
+  question. So the other details of a question stay sentences.
+
+  In a reply about the status of an orchestrator, the owned tasks stay in one table. The bullet of
+  [A question of the user](#a-question-of-the-user) that starts "When the user asks for the status of an orchestrator"
+  says this. In the first-reply text of a question pane, the question has no number. See
+  [The question session](question-pane.md#the-question-session).
 
   The reason: the user names an item by its number in an answer, for example "3. yes". The bullet that starts "The list
   numbers from 1 in each reply" says so. The user cannot name an item that only an ordinal word in prose numbers.
@@ -338,11 +340,13 @@ These rules hold for each reply to the user:
 - Before the session sends a reply, it makes sure that the reply holds no unordered list. It changes each unordered list
   into a numbered list or into sentences. If the unordered list gives a series of items, it changes the list into a
   numbered list, not into sentences. A series is the series of the bullet that starts "A reply gives each series of
-  items". Each other unordered list can still change into sentences. If the reply gives open questions, the session also
-  makes sure that question 1 gives the full details of the bullet that starts "Question 1 of the list". Inside a
-  question, it gives the choices as a nested list with letters and the proposed steps as a nested list with roman
-  numerals. It changes each other list inside a question into sentences. For a list inside a question, these two
-  sentences win over the second and the third sentence of this bullet.
+  items". For this sentence, a nested list with letters or roman numerals also counts as a numbered list. Each other
+  unordered list can still change into sentences.
+
+  If the reply gives open questions, the session also makes sure that question 1 gives the full details of the bullet
+  that starts "Question 1 of the list". Inside a question, it gives the choices as a nested list with letters and the
+  proposed steps as a nested list with roman numerals. It changes each other list inside a question into sentences. For
+  a list inside a question, these two sentences win over the second and the third sentence of this bullet.
 
 These rules hold for each list of the decisions that the user must make, and for each reply that gives open questions:
 
