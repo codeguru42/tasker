@@ -42,6 +42,7 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/handoff-operator.md](docs/dev/handoff-operator.md): the handoff of the operator.
 - [docs/dev/limits.md](docs/dev/limits.md): the limits of the orchestrator and the task subagents.
 - [docs/dev/planner.md](docs/dev/planner.md): the rules of a planner.
+- [docs/dev/planner-subagent.md](docs/dev/planner-subagent.md): the rules of a planner subagent of the orchestrator.
 - [docs/dev/issue-subagents.md](docs/dev/issue-subagents.md): the rules that each draft, review and post subagent of a
   planner follows.
 - [docs/dev/issue-draft.md](docs/dev/issue-draft.md): the rules of an issue-draft subagent.
