@@ -64,8 +64,8 @@ The code lives in `src/prompts/template-file.ts`.
 Both functions run the same steps, so a check and a read never differ. `placeholderNames` in `src/prompts/template.ts`
 finds the placeholders. `fillTemplate` uses it too, so the pattern has one home.
 
-A session reads a template with the same two steps as [the doc-read rule](doc-reads.md#the-doc-read-rule). Tasker reads
-a template with `readPromptTemplate`.
+A session reads a template as [the doc-read rule](doc-reads.md#the-doc-read-rule) says for that session. Tasker reads a
+template with `readPromptTemplate`.
 
 ## The test of each file
 
