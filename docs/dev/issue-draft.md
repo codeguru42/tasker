@@ -56,7 +56,7 @@ limit of [The count of the body](issue-post.md#the-count-of-the-body). The targe
 draft of a comment. The reason: an issue-draft subagent also drafts a comment, as change 9 of
 [The changed rules](planner-subagent.md#the-changed-rules) of planner-subagent.md says.
 
-Before each report, and before the self-check, the issue-draft subagent does these steps:
+Before each report, and before the self-check that comes before that report, the issue-draft subagent does these steps:
 
 1. Count the characters of the draft file in its own call with `wc -m <draft file>`. The count of the whole draft file
    also counts the title line, so it is never lower than the count of the body.
@@ -64,8 +64,9 @@ Before each report, and before the self-check, the issue-draft subagent does the
 
 A cut of length only changes no meaning. Each requirement, each acceptance case and each fact stays. The cut removes,
 for example, repeated text and table padding. The count and the cut run before the self-check, so the self-check covers
-the text after the cut. They run before each report, not only after the last loop, because a cut before a review gets
-that review.
+the text after the cut. The self-check that a ticket subagent runs before its first loop comes before any count, as
+[The self-check](#the-self-check) says. The ticket subagent counts and cuts only before its report. They run before each
+report, not only after the last loop, because a cut before a review gets that review.
 
 The report gives the count. After a cut, it also gives the count before the cut and each removal. If the count fails,
 the report gives the command and the error. For a denied count, the report gives the exact command and the exact text of
