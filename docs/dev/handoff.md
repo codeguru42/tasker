@@ -74,6 +74,13 @@ orchestrator and the operator, it is the report of the orchestrator that the clo
 the word of the user that starts the close for the operator. For the follow-up planner, it is the word that the close
 started, from the operator or, with no operator, from the user. The rule lasts until the session ends.
 
+For the orchestrator, the report that the close started comes only after end reads that find no open issue.
+[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule. A wait or a return to work
+before that report keeps each handoff rule of the orchestrator. An orchestrator of a numbered milestone has no handoff,
+so for it the report changes no handoff rule. A long-running orchestrator sends the report only after the word of the
+user that starts the close. An orchestrator of a set scope sends no such report, so its handoff rules hold until its own
+close.
+
 This rule wins over each rule that makes a session suggest or start a handoff, also over the go of the operator. Each
 recommendation of a handoff is then "not yet", and its reason is the close. If the user asks for a handoff during the
 close, the session tells the user that the close holds the handoffs. It starts the handoff only on a new word of the
