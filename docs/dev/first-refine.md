@@ -179,8 +179,9 @@ orchestrator.
   first refine gave this hint. On #432 (2026-10-25), refine 1 removed the link to the home of "fact test", because the
   first refine gave this hint. Review 1 asked for the link again, refine 4 added it again, and this cost one review
   loop.
-- If an issue says that a page or a bullet stays, ask the plan to change no line of it. On #632, the Docs section said
-  that a bullet of `docs/dev/operator-items.md` stays, and plan v1 still changed that section.
+- If an issue says that a page or a bullet stays, ask the plan to change no line of it. For a needed doc change, this
+  hint gives way to [the needed-doc-change rule](plan-review.md#the-issue-check). On #632, the Docs section said that a
+  bullet of `docs/dev/operator-items.md` stays, and plan v1 still changed that section.
 - Before `tasker approve`, the task subagent reads the todos and the risks of the plan, and it looks for each claim
   about the source of a text. Examples of such a claim are "the user dictated this text" and "the user decided that X".
   The task subagent tests each such claim against the issue and the feedback of each refine. If neither gives that
@@ -945,8 +946,9 @@ orchestrator.
   meaning or use another term.
 - If a rule limits session reads, ask the plan to find each doc link and path to the limited files. Ask it to name each
   hit. For each hit, check whether Docs names the doc of the hit and Out of scope does not exclude it. For such a hit,
-  ask the plan to change a conflicting use or explain why that use stays. If a hit changes what the ticket must do,
-  apply [the issue check](plan-review.md#the-issue-check).
+  ask the plan to change a conflicting use or explain why that use stays. For a needed doc change, the Docs limit of
+  this hint gives way to [the needed-doc-change rule](plan-review.md#the-issue-check). If a hit changes what the ticket
+  must do, apply [the issue check](plan-review.md#the-issue-check).
 - If an issue changes a bullet, paragraph or sentence, ask the plan to choose its place from current doc text. Ask it to
   say whether text joins an existing part or starts a new part. A bullet with one paragraph counts as one paragraph. In
   a bullet with more paragraphs, each paragraph counts on its own. Ask the plan to count existing sentences in the
@@ -1175,8 +1177,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   recorded step numbers stable.
 - If an issue adds a command, trigger or text, ask the plan to read current lists and gates. Ask it to name each
   conflict. For each conflict, check whether Docs names the doc of the conflict and Out of scope does not exclude the
-  affected part. For such a conflict, ask it to update old triggers and keep the stated priority of rules. If a conflict
-  changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
+  affected part. For such a conflict, ask it to update old triggers and keep the stated priority of rules. For a needed
+  doc change, the Docs limit of this hint gives way to [the needed-doc-change rule](plan-review.md#the-issue-check). If
+  a conflict changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
 
 - If a procedure waits for a decision of the user, ask the plan for each answer's outcome. The kinds are accept with no
   change, change, reject and drop. Reject and drop can share one outcome.
@@ -1501,7 +1504,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 ## A ticket that moves or trims a doc
 
 - If an issue renames a doc name or term, ask the plan to search current docs for each use. Ask it to name each hit and
-  check whether Docs or Out of scope covers it. If a hit changes what the ticket must do, apply
+  check whether Docs or Out of scope covers it. For a needed doc change, the Docs limit of this hint gives way to
+  [the needed-doc-change rule](plan-review.md#the-issue-check). If a hit changes what the ticket must do, apply
   [the issue check](plan-review.md#the-issue-check).
 
 - Each kept rule keeps its conditions and its definitions. When a rule moves from one doc to another, keep every fact of
@@ -1587,18 +1591,22 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   to the rule's home.
 - If a ticket adds a general rule, ask the plan to find narrower copies and related rules. Ask it to name each hit. For
   a copy in a doc that Docs names, check Out of scope. If Out of scope does not exclude the copy, ask the plan to link
-  it to the new home. If a hit changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
+  it to the new home. For a needed doc change, the Docs limit of this hint gives way to
+  [the needed-doc-change rule](plan-review.md#the-issue-check). If a hit changes what the ticket must do, apply
+  [the issue check](plan-review.md#the-issue-check).
 - If a ticket adds a section, ask the plan to find every index that lists that doc's sections. Ask it to update each
-  index that Docs names and Out of scope does not exclude. Ask it to name each other index it finds. If an unnamed or
-  excluded index changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
+  index that Docs names and Out of scope does not exclude. For a needed doc change, the Docs limit of this hint gives
+  way to [the needed-doc-change rule](plan-review.md#the-issue-check). Ask it to name each other index it finds. If an
+  unnamed or excluded index changes what the ticket must do, apply [the issue check](plan-review.md#the-issue-check).
 - If a ticket adds or changes a search hint, ask the plan in the first refine to give that hint the scope form. A search
   hint is a hint that asks the plan to search the docs or the code and to act on each hit. The scope form limits each
   action on a hit to the scope of the issue. The search hint gets each part below that applies to it.
 
   In the scope form, the search hint asks the plan to name each hit. A search hint can also ask the plan to change or
   link a hit. Then the scope form limits that change or link to a hit in a doc that the Docs section of the issue names.
-  Also, the Out of scope section of the issue does not exclude that hit. If a hit changes what the ticket must do, the
-  task subagent applies [the issue check](plan-review.md#the-issue-check).
+  Also, the Out of scope section of the issue does not exclude that hit. For a needed doc change, the Docs limit of the
+  scope form gives way to [the needed-doc-change rule](plan-review.md#the-issue-check). If a hit changes what the ticket
+  must do, the task subagent applies [the issue check](plan-review.md#the-issue-check).
 
   Also ask the plan to make sure that the search hint asks for no change of the scope of the issue. Words such as
   "update the Docs scope" and "keep each affected rule in scope" ask for such a change. Such words widen the scope of
