@@ -294,9 +294,10 @@ This step runs after step 1 passed.
 
 On 2026-11-20, with Claude Code 2.1.330, one Read call with `limit: 2000` on `docs/dev/pick-the-tickets.md` failed. At
 commit `507bcddb`, that file had 1077 lines and 91,959 bytes. The error was "File content (31880 tokens) exceeds maximum
-allowed tokens (25000)". So the doc was above 25000 tokens. A Read call on `docs/dev/doc-reads.md` returned all its
-lines. At commit `507bcddb`, that file had 258 lines. At commit `507bcddb`, no doc under `docs/` was longer than 2000
-lines. The longest was `docs/dev/assistants.md`, with 1804 lines.
+allowed tokens (25000)". So the doc was above 25000 tokens.
+
+A Read call on `docs/dev/doc-reads.md` returned all its lines. At commit `507bcddb`, that file had 258 lines. At commit
+`507bcddb`, no doc under `docs/` was longer than 2000 lines. The longest was `docs/dev/assistants.md`, with 1804 lines.
 
 At commit `941a4f88`, `docs/dev/pick-the-tickets.md` had 1236 lines and 103,281 bytes. The longest doc under `docs/` was
 still `docs/dev/assistants.md`, with 1821 lines. Each count is a fact of its commit. No one measured which doc the Read
