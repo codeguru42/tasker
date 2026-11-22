@@ -95,8 +95,9 @@ A [write action](#the-question-session) is an action that the question session s
 these is a write action:
 
 - A write to GitHub, for example to a label, a milestone, the state of an issue, the project board or a pull request
-- A write of a file
-- A git write, for example a commit, a branch or a push, apart from `git fetch origin`
+- A write of a file, apart from the pull of step 1 of [the doc-read rule](doc-reads.md#the-doc-read-rule)
+- A git write, for example a commit, a branch or a push, apart from `git fetch origin` and the pull of step 1 of
+  [the doc-read rule](doc-reads.md#the-doc-read-rule)
 - A change of tasker state
 - A `herdr` command, apart from the send of the question session to its owner pane
 - A change of the configuration of Claude Code. A user-level file holds such a change. `.claude/settings.json` of the
@@ -378,12 +379,13 @@ do something about the text you send to the question pane. It needs to be format
 questions are formatted here." On that day, operator-docs saw that the first replies of the question panes showed as one
 block of text, with no list and no paragraph.
 
-Before its first reply, the question session runs `git fetch origin`. Then it reads `AGENTS.md`,
-[A question pane](#a-question-pane), [working with the user](working-with-the-user.md), [the rules](rules.md) and
-[the doc-read rule](doc-reads.md#the-doc-read-rule). The fetch and these reads are its start reads, and the session
-prompt gives them. If the fetch fails, the session reads the last successful `origin/main`, and it tells the user in its
-second reply. The existing `AGENTS.md` rule for a user-facing session with no role still applies, and this rule adds
-these docs to it. The rules of these docs change no word of the first-reply text.
+Before its first reply, the question session does step 1 of [the doc-read rule](doc-reads.md#the-doc-read-rule). Then it
+reads `AGENTS.md`, [A question pane](#a-question-pane), [working with the user](working-with-the-user.md) and
+[the rules](rules.md), as the doc-read rule says. Step 1 and these reads are its start reads, and the session prompt
+gives them. The second reply gives the command and its output for each case of step 1 that the doc-read rule gives to
+the user. For a wrong branch, the second reply also says that the rules are unread. The session then sends no decision
+and no write action. The existing `AGENTS.md` rule for a user-facing session with no role still applies, and this rule
+adds these docs to it. The rules of these docs change no word of the first-reply text.
 
 Before its start reads, the question session shows the start line, word for word: "I read my rules first, and then I
 show the question." The start line tells the user that the question follows. In the rules of this page, the start line
@@ -398,7 +400,8 @@ The question session follows the general user-facing, simple-English, [memory](r
 [doc-read](doc-reads.md#the-doc-read-rule) rules from its start.
 
 After the first reply, the question session can read drafts and reports, use read-only commands other than `herdr`
-commands, and run `git fetch origin`. If fetch fails, it tells the user and reads the last successful `origin/main`.
+commands, and run step 1 of [the doc-read rule](doc-reads.md#the-doc-read-rule) in place of `git fetch origin`. For a
+failed step 1, the doc-read rule gives the next step.
 
 After its first reply, the question session follows these rules. Each item names the home of the rule:
 
@@ -549,7 +552,7 @@ The value of first reply is all the text after the last word FIRST-REPLY of this
 
 ```text question-session
 You are the question session <name>. You discuss one open question with the user for the pane owner <owner name>, in the pane <owner pane id>. The question id is <question id>. Your first reply is all the text after the last word FIRST-REPLY of this prompt, word for word. In it, write a newline in place of each word LINE-BREAK, and remove the one space on each side of it. Before that reply, use no AskUserQuestion tool, and do only the three steps that follow, in their order.
-First, show the start line with no other text. The start line is: I read my rules first, and then I show the question. The start line is not your first reply. Second, run git -C <local clone> fetch origin. If the fetch fails, use the last origin/main, and tell the user in your second reply. Third, read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md. Also read the section The doc-read rule of docs/dev/doc-reads.md. Read each file with git -C <local clone> show origin/main: and its path. The rules of these docs change no word of your first reply.
+First, show the start line with no other text. The start line is: I read my rules first, and then I show the question. The start line is not your first reply. Second, in <local clone>, run git branch --show-current. If it does not print main, read no file and say so in your second reply. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. Third, after a pull that worked, read The doc-read rule of docs/dev/doc-reads.md with the Read tool. Then read AGENTS.md, docs/dev/question-pane.md, docs/dev/working-with-the-user.md and docs/dev/rules.md as it says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read the five files with git show origin/main: and the path. The rules of these docs change no word of your first reply.
 In docs/dev/question-pane.md, the section The question session lists the rules that you follow after your first reply. Each item links to the section that holds the rule, for example Send a decision. The section A question pane holds the herdr path and the header of each message. Your own pane id is the value of $HERDR_PANE_ID in your shell. FIRST-REPLY <first reply>
 ```
 
@@ -786,7 +789,7 @@ Each kind of write or request of [Terms](#terms) has one actor.
 | A `tasker` command, also `tasker model`                                     | A read-only command: the orchestrator. A task change: the task subagent of the task, after the orchestrator sends it. A task change of a task of a peer goes to the peer as a request of [the request rule](../orchestrator.md#the-request-rule). `tasker model` with a new model or `--effort`: the orchestrator, only on the words of the settled message. See [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) |
 | A message to another session                                                | The orchestrator. A message to a peer is a request of [the request rule](../orchestrator.md#the-request-rule)                                                                                                                                                                                                                                                                                                                                      |
 | A `herdr` command                                                           | The orchestrator                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| A git write                                                                 | No actor                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| A git write                                                                 | No actor. The fetch and the pull of the doc-read rule are not write actions.                                                                                                                                                                                                                                                                                                                                                                       |
 | Each other write                                                            | No actor                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 The order rule below covers only the rows with the write subagent or the orchestrator as the actor. The send of a task
@@ -1178,6 +1181,8 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | The user tells the pane owner to close the pane, or that it is closed, before a report                | Any                                  | Closes an open pane with no report. A run waits for the user                                                                                                                          |                      | The user tells the pane owner                                |
 | The user asks the session for a step outside it                                                       | Running                              | No change                                                                                                                                                                             |                      | The question session tells the user                          |
 | The fetch of the question session fails                                                               | Running                              | No change                                                                                                                                                                             |                      | The question session tells the user                          |
+| The branch check of the question session fails                                                        | Running                              | No change                                                                                                                                                                             |                      | The question session tells the user                          |
+| The pull of the question session is denied                                                            | Running                              | No change                                                                                                                                                                             |                      | The question session tells the user                          |
 | A decision message that [the pane owner refuses](#the-pane-owner-handles-a-decision)                  | Any                                  | Sends nothing. The question keeps its state                                                                                                                                           |                      | The pane owner tells the user                                |
 | The user answers in the tab of the orchestrator                                                       | Running until the close              | Handles the answer and sends the close request                                                                                                                                        | Answer restarts it   | The user tells the pane owner                                |
 | The user closes the pane with no decision                                                             | Ended                                | The question stays open with no automatic start                                                                                                                                       |                      | The user tells the pane owner                                |
