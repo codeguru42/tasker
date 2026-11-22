@@ -1024,15 +1024,13 @@ not leave out a ticket on hold either.
 
 A ticket that a ticket on hold blocks waits while the link stays, and it never stacks on the task of a ticket on hold. A
 rule that names a parked task or a postponed ticket still applies, for example the bullet "If the user postpones the
-parent" of the stacked-ticket rule. The report of a long-running orchestrator that the milestone is done names each
-ticket on hold.
+parent" of the stacked-ticket rule. The report of a done milestone names each ticket on hold.
 
 A waiting question of a ticket on hold is an open question of the orchestrator about that ticket, as
-[Start](question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a long-running
-orchestrator that the milestone is done, the orchestrator moves each waiting question to a hold comment on its ticket. A
-hold comment starts with `## Open question of a ticket on hold`. It gives the question and its choices word for word, as
-the question gave them, and the question id. It says that the orchestrator asks the question again in its pane at the
-end of the hold.
+[Start](question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a done milestone,
+the orchestrator moves each waiting question to a hold comment on its ticket. A hold comment starts with
+`## Open question of a ticket on hold`. It gives the question and its choices word for word, as the question gave them,
+and the question id. It says that the orchestrator asks the question again in its pane at the end of the hold.
 
 At the move, the orchestrator deletes the [question file](question-pane.md#the-question-file) of the question. If the
 delete fails, the rule of The question file for a failed delete applies.
@@ -1101,9 +1099,10 @@ previous round. A new start of a ticket is one example of new work, not the only
 session, all of its session counts, so a new orchestrator after a handoff runs its rounds.
 
 The steps of the end itself do not count as new transcript, for example the read of the board and the wait for open
-issues. Only the transcript of the orchestrator counts. The transcripts of the sessions that it started do not count,
-for example a task subagent or a question session. A start of the end that runs no round sends no second report of the
-rounds and no second report that the milestone is done.
+issues. The orchestrator judges whether a part of its own transcript is discussion or new work, or a step of the end.
+This judgment is open on purpose. Only the transcript of the orchestrator counts. The transcripts of the sessions that
+it started do not count, for example a task subagent or a question session. A start of the end that runs no round sends
+no second report of the rounds and no second report that the milestone is done.
 
 The orchestrator runs the rounds of [Session-review rounds](session-review-rounds.md) first. While a question pane of
 the orchestrator is open or its write subagent runs, the rounds do not start, as [Start](question-pane.md#start) says.
@@ -1162,9 +1161,8 @@ At the end of a hold before an install, the orchestrator does the end reads agai
 arrives during the wait, the orchestrator also does the end reads again. The end of a milestone hold follows the
 paragraph on a held milestone below.
 
-While a ticket on hold of the scope is open, the end gives no report that the milestone is done. The one exception is
-the report of a long-running orchestrator at a start of its end that runs a round. So only that report moves a waiting
-question to a hold comment, as [A ticket on hold](#a-ticket-on-hold) says.
+While a ticket on hold of the scope is open, the end gives no report of a done milestone. The rules of the hold comment,
+the answer comment and the moved question keep their words.
 
 The orchestrator closes no held milestone. The hold record is the start of the description, as item 2 of
 [A milestone hold](working-with-the-user.md#a-milestone-hold) says. For a held milestone, the orchestrator tells the
@@ -1176,11 +1174,6 @@ An orchestrator of a milestone scope sends the report that the close started onl
 issue of the scope. A ticket on hold counts as an open issue. An orchestrator of a set scope sends no such report,
 because no close of a milestone follows. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) gives
 what this report changes for a handoff.
-
-A long-running orchestrator gives its report that the milestone is done at each start of its end that runs a round.
-Before the word of the user that starts the close, a long-running orchestrator keeps its role, does no end reads and
-closes no milestone. After that word, it does the end reads, and the rest of the end follows.
-[The start and the authority](operator-start.md#the-start-and-the-authority) gives that word.
 
 Only an orchestrator of a milestone scope and of the kind `claude` closes the GitHub milestone. It does the reads and
 the write of [Milestones](issues.md#milestones). The start of the close is the authority for this write, as

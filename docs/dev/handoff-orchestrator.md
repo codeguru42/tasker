@@ -9,11 +9,11 @@ A long-running orchestrator is the orchestrator of a milestone that stays open w
 for example "Docs" (see [docs/dev/issue-subagents.md](issue-subagents.md)). In a handoff, the old orchestrator gives its
 work to a new orchestrator in a new session.
 
-The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone ends with
-[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator). It ends with its own close or, for a pi
-orchestrator, with the stop of the operator. The rules of this page do not cover it. A long-running orchestrator ends
-there too, after its close starts on the word of the user. A stop with no handoff is not a handoff, and the rules of
-this page do not cover it, as [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) says.
+The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone stops at the stop
+of the orchestrator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). The rules of this page do
+not cover it. A long-running orchestrator stops there too, after its close starts on the word of the user. A stop with
+no handoff is not a handoff, and the rules of this page do not cover it, as
+[A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) says.
 
 The rules of this page also cover an orchestrator of a set scope, with the same landing count.
 [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) defines a set scope.

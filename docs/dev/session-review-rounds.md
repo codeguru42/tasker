@@ -111,6 +111,9 @@ Other examples are the item with the path of the handoff file and the close of a
 after the rounds is open on purpose, and the session makes it. In the close, an answer of the user that asks for more
 work is work after the rounds. See [The question gate of the close](operator-items.md#the-question-gate-of-the-close).
 
+For an orchestrator, [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the condition
+for a new round. This condition holds in place of the rule and the judgment of work after the rounds.
+
 For an orchestrator, the report that the milestone is done holds the report of the rounds. At each start of its end, the
 orchestrator runs a round by the rule of [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator). A
 pi orchestrator of a milestone scope stops at the stop of the operator in
