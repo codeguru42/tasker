@@ -53,9 +53,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 - Before a decision of the user or a recommendation to the user, the session measures each fact that the decision or the
   recommendation rests on. A fact about an outside tool comes from [a fact test](plan-review.md#the-fact-test). A fact
   about the code or the docs comes from a read of the ref that holds the fact, for example `origin/main`. The bullet
-  about `git show origin/main:<path>` of [A question of the user](#a-question-of-the-user) gives the read. A fact about
-  a task comes from a read-only `tasker` command. The session gives the command and the result, and next to each fact
-  that it did not measure, it says so.
+  that starts "Before the session answers a question" of [A question of the user](#a-question-of-the-user) gives the
+  read. A fact about a task comes from a read-only `tasker` command. The session gives the command and the result, and
+  next to each fact that it did not measure, it says so.
 
   This bullet also covers a question to the user about a fact, for example whether a gap is a
   [live security gap](pick-the-tickets.md#pick-the-tickets). A cheap read-only measure comes before such a question.
@@ -72,7 +72,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   `src/assistant/claude-code/sandbox.ts` builds it, then settled it (#715).
 
 - Before the session tells the user that a rule of the repo bans or requires an action, it reads the rule on
-  `origin/main`. It reads the rule as the bullet about `git show origin/main:<path>` of
+  `origin/main`. It reads the rule as the bullet that starts "Before the session answers a question" of
   [A question of the user](#a-question-of-the-user) says. Then the session quotes the rule and names its doc and its
   section. If the session finds no such rule, it does not make the claim. This bullet covers each such claim, also when
   the claim is not an answer to a question of the user. On 2026-10-24 and 2026-10-25, orchestrator-m21 told the user
@@ -105,10 +105,10 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   treated a closed issue as an open issue. After a read of the state, its answer about a memory note also changed.
 
 - A rule of the docs on `origin/main` can answer a question before the session asks the user. Then the question is not a
-  question for the user. The session follows the rule and does not ask the user. It reads the rule as the bullet about
-  `git show origin/main:<path>` of [A question of the user](#a-question-of-the-user) says. It can name the rule in its
-  next reply or report. Then it quotes the rule and names its doc and its section, as the bullet that starts "Before the
-  session tells the user" says.
+  question for the user. The session follows the rule and does not ask the user. It reads the rule as the bullet that
+  starts "Before the session answers a question" of [A question of the user](#a-question-of-the-user) says. It can name
+  the rule in its next reply or report. Then it quotes the rule and names its doc and its section, as the bullet that
+  starts "Before the session tells the user" says.
 
   The words of a rule can leave the case of the question open. Then the question stays a question for the user. Whether
   the words of a rule answer a question is a judgment of the session, open on purpose.
@@ -443,13 +443,12 @@ with the question, don't move it above".
   answer was a guess. The user said: "guesses are good here...better yet, recommendations. We are developing what this
   process should be as we do it now."
 
-- Before the session answers a question about the code or the docs of the repo, it runs `git fetch origin` in its local
-  clone. Then it reads each file on `origin/main` that the answer depends on, with `git show origin/main:<path>` in a
-  Bash call. This read is an exception to the Read-tool bullet of [The tools of a session](#the-tools-of-a-session). The
-  session does not answer from files that it read earlier. The fetch and the read are part of the answer, not an extra
-  action. The reason: tickets land while the session runs, so an answer from an earlier read can be false. In one case
-  (2026-10-18), the planner of M13 said that `tasker update-branch` did not exist in the rebuild. It answered after all
-  the M13 tickets landed, from its read of the code at its start, one day earlier. The user corrected it.
+- Before the session answers a question about the code or the docs of the repo, it reads each file that the answer
+  depends on, as [the doc-read rule](doc-reads.md#the-doc-read-rule) says. The session does not answer from files that
+  it read earlier. The read is part of the answer, not an extra action. The reason: tickets land while the session runs,
+  so an answer from an earlier read can be false. In one case (2026-10-18), the planner of M13 said that
+  `tasker update-branch` did not exist in the rebuild. It answered after all the M13 tickets landed, from its read of
+  the code at its start, one day earlier. The user corrected it.
 - When the session looks for a change of Claude Code or of the subscription of the user, it does not search the program
   file of Claude Code. The program file is the executable file that runs Claude Code. The session searches the web for
   recent public news of the change instead, for example the release notes of Claude Code. If the user names a tool for
@@ -464,15 +463,15 @@ with the question, don't move it above".
   On 2026-10-30, a session ran a slow `grep` over the program file of Claude Code to explain a missing value of the
   status line. The user said "wait...what are you searching?" and "no, don't do that".
 
-- When the user names a rule, the session first runs `git fetch origin` in its local clone, as the bullet about
-  `git show origin/main:<path>` of this section says. Then it searches the headings of the docs on `origin/main` for the
-  exact words of the name, for example with `git grep -n -i "^#.*<name>" origin/main -- docs AGENTS.md`. The `-i` flag
-  also finds a heading that starts with a capital letter. Then it reads the section of that heading before it acts, as
-  the bullet about `git show origin/main:<path>` of this section says. If no heading matches, it asks the user which
-  rule the user means. It asks in one line and names each candidate rule. This bullet covers each request that names a
-  rule, also a request that is not a question. On 2026-10-18, the user asked to make "the issue-link rule" general, but
-  the planning session read "link" as a blocked-by link and drafted a wrong issue. The user said "no, you misunderstood.
-  By 'links' here I mean the URL for an issue.", and meant the heading [The issue-link rule](#the-issue-link-rule).
+- When the user names a rule, the session first does step 1 of [the doc-read rule](doc-reads.md#the-doc-read-rule). Then
+  it searches the headings of the docs on `origin/main` for the exact words of the name, for example with
+  `git grep -n -i "^#.*<name>" origin/main -- docs AGENTS.md`. A search is not a doc read. The `-i` flag also finds a
+  heading that starts with a capital letter. Then it reads the section of that heading before it acts, as the doc-read
+  rule says. If no heading matches, it asks the user which rule the user means. It asks in one line and names each
+  candidate rule. This bullet covers each request that names a rule, also a request that is not a question. On
+  2026-10-18, the user asked to make "the issue-link rule" general, but the planning session read "link" as a blocked-by
+  link and drafted a wrong issue. The user said "no, you misunderstood. By 'links' here I mean the URL for an issue.",
+  and meant the heading [The issue-link rule](#the-issue-link-rule).
 - When the user asks for the status of an orchestrator, the session gives only the tasks that the orchestrator owns. An
   issue with no task in `tasker status` has no owner. If no fact says that the orchestrator owns a task, the session
   does not name the task. The facts are the milestone of the issue and a decision of the user. A decision of the user
