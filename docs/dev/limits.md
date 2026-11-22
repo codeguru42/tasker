@@ -123,6 +123,9 @@ an orchestrator read event times from `tasker.db` with `sqlite3 -readonly`, and 
 permission before accessing any tasker resources". `tasker show <issue>` prints the worktree of the task on its
 `worktree:` line, and the rule of this paragraph covers that worktree.
 
+The orchestrator has a third exception for the files of its own orchestrator folder.
+[The orchestrator folder](#the-orchestrator-folder) gives this exception and its limits.
+
 To read or run the code of a task, the task subagent uses its task worktree. The task worktree is the one worktree of a
 task subagent for its task. It is a worktree of the local clone of the orchestrator, in the folder that the folder
 bullet of [Limits](#limits) gives for the task worktree. It is on a local branch with the same name as the task branch.
@@ -162,6 +165,108 @@ The task branch is on the `branch:` line of `tasker show <issue>`.
   remove. The task subagent does not do it again. While the local-commit rule holds, the worktree and the local branch
   stay. They also stay after a step of rebase-conflicts.md stops. The final report names each path that stays.
 - Worktree commands change no task. The task keeps its state.
+
+### The orchestrator folder
+
+The orchestrator folder is the folder `<data root>/<repo slug>/orchestrators/<slug>/` of one orchestrator. It holds the
+open questions, the waiting planning requests and the handoff files of that orchestrator. These files are the own state
+of the orchestrator, not files that tasker keeps. A file there stays through a compaction of the context and through a
+handoff.
+
+The terms of this section:
+
+- The data root is the value `dataRoot` in the output of `tasker show-config`, with no `--repo`.
+- The repo slug is the slug of [The repo slug](version-control.md#the-repo-slug). For example, the repo key
+  `codeguru42/tasker` gives `codeguru42-tasker`.
+- The slug is the slug of the own name of the orchestrator, as [the glossary](GLOSSARY.md) defines it. For example,
+  `orchestrator-m31` has the slug `m31`.
+- The three folders are `questions/`, `proposals/` and `handoffs/` in the orchestrator folder.
+- A call on the three folders is a `mkdir -p`, an `ls`, a Read call, a write or a delete in the three folders.
+- The own handoff folder is `handoffs/`. The shared handoff folder is the folder of
+  [The handoff file](handoff.md#the-handoff-file).
+
+An example of an orchestrator folder is `$HOME/.local/share/tasker/codeguru42-tasker/orchestrators/m31/`, as a name of a
+folder, not as the path of a call. [The question file](question-pane.md#the-question-file) gives the files of
+`questions/`. [The proposal file](planner-subagent.md#the-proposal-file) gives the files of `proposals/`.
+[The handoff file](handoff.md#the-handoff-file) gives the files of `handoffs/`.
+
+Only an orchestrator of that slug writes in its orchestrator folder. tasker makes, reads and changes nothing there. Two
+orchestrators with different slugs have different folders, as [The slug](../orchestrator.md#the-slug) says. During a
+handoff, the old and the new orchestrator of one slug both run. After the write of its handoff file, the old
+orchestrator writes no new file in the three folders and gives no new question id.
+
+Before its first call on the three folders in a session, the orchestrator reads the data root with
+`tasker show-config | jq -r '.dataRoot'`. This read is a K1 command. Step 1 of
+[The orchestrator's data root and questions](quota.md#the-orchestrators-data-root-and-questions) uses the same read. An
+empty output or the output `null` is a failed read. The form with `--repo` prints `null`, because its output holds only
+the keys of the repo.
+
+Before its first list or write of one of the three folders in a session, the orchestrator makes that folder with
+`mkdir -p`. On 2026-11-22, with GNU coreutils 9.7, a measure in a folder under `/tmp` gave these results. A `mkdir -p`
+on a folder that exists exited with 0. An `ls` of an empty folder printed nothing and exited with 0. An `ls` of a
+missing folder exited with 2. So the list of a new folder prints nothing, and an empty `questions/` means that no open
+question with a file exists.
+
+Each call on the three folders uses the absolute path of the file or the folder. The path starts with the data root as
+the read printed it, with no `$HOME` and no `~`. No call uses `cd`. The reasons: the Read tool and the Write tool take
+an absolute path. Also, the ask rule `Bash(cd $HOME/.local/share/tasker/*)` of [Claude Code](setup.md#claude-code) asks
+the user at a `cd` into the data root.
+
+The forms of the calls for the kind `claude`:
+
+- A write: the Write tool.
+- A read: the Read tool.
+- A list: `ls <folder>` in a plain call.
+- A make: `mkdir -p <folder>` in a plain call.
+- A delete: `rm <file>` in a plain call, with no `-r` and no `-f`.
+
+An orchestrator of the kind `pi` or `codex` runs the same `ls`, `mkdir -p` and `rm` in its shell. It reads a file with
+`cat <file>`. It writes a file with `cat > <file> <<'EOF'`, with a quoted end word. The measured pi sessions had only
+the tool `bash`, as [The kind of the orchestrator](planner-subagent.md#the-kind-of-the-orchestrator) says.
+
+No one measured these calls on a file under the data root, for any kind. No one measured whether Claude Code asks a
+permission prompt for them. No one measured whether the classifier of the auto mode denies them. The first use can show
+a permission prompt or a denial, and the fallback of this section covers that case.
+
+A call on the three folders can fail or get a denial of [the tool-block rule](tasker-commands.md#the-tool-block-rule).
+For a failure, [the failure rule](#the-failure-rule) applies. A failed read of the data root or a failed `mkdir -p`
+counts as a failure of the call after it. After a denial, the step of the denied call stops, as step 1 of the tool-block
+rule says. After a failure or a denial, the fallback holds:
+
+- The orchestrator runs no later call on the three folders until the next word of the user. This rule is the bar.
+- Until that word, the orchestrator keeps each new question and each new planning request in its session. A pane starts
+  with the text from the session.
+- The rest of the work of the orchestrator goes on.
+- The next word of the user ends the bar for all calls on the three folders.
+- After that word, the orchestrator writes a question file for each open question that its session holds with no file.
+  It also writes a proposal file for each request that waits in its session with no file.
+
+Step 6 of the tool-block rule stays. The orchestrator brings each denial to the user in its question pane, and that pane
+starts with the text from the session. For a denied list of `questions/`, the rule of
+[The question file](question-pane.md#the-question-file) for a failed list wins over the time of step 6. The denial first
+goes to the user in the tab, and its pane waits for the next word of the user. While the bar holds, the write of the
+handoff file of the orchestrator waits for the next word of the user.
+
+The end of the start steps is the point after [The start checks](../orchestrator.md#the-start-checks). After a handoff,
+it is also after [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). At the end of its start
+steps, the orchestrator lists `questions/` and `proposals/`. So an automatic start can find a question that a session
+before it left. A start with no handoff file is a start whose first prompt names no handoff file.
+[A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) gives the steps for the files of such a start.
+
+The orchestrator folder is an exception to [the own-worktree rule](#the-own-worktree-rule). The exception covers only
+the orchestrator, and it has these limits:
+
+- The orchestrator makes, lists, reads, writes and deletes files only in its own three folders. Its `mkdir -p` can also
+  make the parent folders of the three folders.
+- The exception covers no other file of the data root and no worktree of tasker.
+- The exception covers no task subagent, no planner subagent, no opener subagent, no reuse subagent, no question session
+  and no write subagent.
+- A read of another file of the data folder still needs the permission of the user, as the own-worktree rule says.
+- The exception also covers a Read call on the handoff file that the first prompt names, also before the read of the
+  data root. The reason: [The start checks](../orchestrator.md#the-start-checks) read the tab id of the old orchestrator
+  from that file.
+
+The files of the orchestrator folder are not memory, as [docs/orchestrator.md](../orchestrator.md) says.
 
 ### The update rule
 

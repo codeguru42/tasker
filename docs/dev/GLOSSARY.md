@@ -17,6 +17,10 @@ not an issue-review subagent.
 
 **Orchestrator**: A top-level session that runs one scope. It picks tickets and starts task subagents.
 
+**Orchestrator folder**: The folder `<data root>/<repo slug>/orchestrators/<slug>/` of one orchestrator, with the
+folders `questions/`, `proposals/` and `handoffs/`. Only that orchestrator writes there.
+[The orchestrator folder](limits.md#the-orchestrator-folder) gives its rules.
+
 **Own name**: The name of a session. The role is the part of the own name before the first `-`, and the slug is the part
 after it.
 

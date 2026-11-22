@@ -4,8 +4,8 @@ tasker keeps all of its data under one folder, the `dataRoot` of the configurati
 
 ## Folders
 
-tasker makes each folder that is missing. It does not remove or change anything that exists, so a second start on the
-same `dataRoot` is safe.
+tasker makes each folder that is missing, except the orchestrator folder of the table. It does not remove or change
+anything that exists, so a second start on the same `dataRoot` is safe.
 
 | Path                                                                                           | Content                                                                                                                                                                                                                                                      |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -30,9 +30,14 @@ same `dataRoot` is safe.
 | `<dataRoot>/prompts/`                                                                          | The prompt archive. It is outside `artifacts/` because one prompt version serves many tasks.                                                                                                                                                                 |
 | `<dataRoot>/prompts/<version>.md`                                                              | One file for each prompt version.                                                                                                                                                                                                                            |
 | `<dataRoot>/tasker.db`                                                                         | The SQLite database of the task store.                                                                                                                                                                                                                       |
+| `<dataRoot>/<repo slug>/orchestrators/<orchestrator slug>/`                                    | The orchestrator folder of one orchestrator. The orchestrator makes and writes it. tasker makes, reads and changes nothing there. See [limits.md](limits.md#the-orchestrator-folder).                                                                        |
+| `<dataRoot>/<repo slug>/orchestrators/<orchestrator slug>/questions/`                          | One question file for each open question of the orchestrator. See [question-pane.md](question-pane.md#the-question-file).                                                                                                                                    |
+| `<dataRoot>/<repo slug>/orchestrators/<orchestrator slug>/proposals/`                          | One proposal file for each planning request that waits or runs. See [planner-subagent.md](planner-subagent.md#the-proposal-file).                                                                                                                            |
+| `<dataRoot>/<repo slug>/orchestrators/<orchestrator slug>/handoffs/`                           | The handoff files of the orchestrator. See [handoff.md](handoff.md#the-handoff-file).                                                                                                                                                                        |
 
-`<slug>` comes from the repo key. [version-control.md](version-control.md) describes the slug. The setup of the data
-root does not make the folders of a repo. Provision makes them. tasker never changes or deletes a file in `prompts/`.
+`<slug>` and `<repo slug>` come from the repo key, and they are the same path slug.
+[version-control.md](version-control.md) describes the slug. The setup of the data root does not make the folders of a
+repo. Provision makes them. tasker never changes or deletes a file in `prompts/`.
 
 SQLite runs in WAL mode (write-ahead log). It also makes `tasker.db-wal` and `tasker.db-shm` next to the database file.
 Do not delete these files while a tasker process runs.
