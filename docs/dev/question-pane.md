@@ -39,9 +39,25 @@ An automatic start is the start of a question pane with no word of the user, as 
 
 The herdr path is the way that a pane owner and its question session send messages to each other. It works for each kind
 of session. The sender writes the message as one line. It writes the word `LINE-BREAK` with one space on each side in
-place of each newline. It puts the line in a shell variable with a quoted here-document. Then it runs
-`herdr pane send-text <receiver pane id> "$MSG"` and `herdr pane send-keys <receiver pane id> enter`. No one measured a
-newline inside `send-text`, so the one-line form stays.
+place of each newline. No one measured a newline inside `send-text`, so the one-line form stays.
+
+The sender puts the text in the shell variable `BODY` with a quoted here-document, so that the shell expands nothing in
+it. A quoted here-document does not fill in `$HERDR_PANE_ID`, so the sender writes the header outside it and joins the
+header to `BODY`. Then the sender runs `herdr pane send-text`, the wait command `timeout 20 bash -c 'sleep 1'` and
+`herdr pane send-keys ... enter` in one Bash call, joined with `&&`. A question session sends a message with these
+lines:
+
+```sh
+IFS= read -r BODY <<'EOF'
+<text of the message>
+EOF
+MSG="QUESTION-PANE $HERDR_PANE_ID <question id>: $BODY"
+herdr pane send-text <receiver pane id> "$MSG" && timeout 20 bash -c 'sleep 1' && herdr pane send-keys <receiver pane id> enter
+```
+
+The pane owner uses the same lines, with `MSG="PANE-OWNER <owner name> <question id>: $BODY"` in place of the `MSG`
+line. A message with no effective Enter stays in the pane and stops the work, and a header with the literal text
+`$HERDR_PANE_ID` names no pane.
 
 A message of the question session starts with the header `QUESTION-PANE <own pane id> <question id>:`. The own pane id
 is `$HERDR_PANE_ID` in the shell of the question session. A message of the pane owner starts with
@@ -509,10 +525,10 @@ You are the reuse subagent of the question pane <pane id>. Its question session 
 1. Run git -C <local clone> fetch origin. If the fetch fails, go on with the last origin/main.
 2. Run git -C <local clone> show origin/main:docs/dev/question-pane.md. In its output, find the fenced block whose first line, at the start of a line, is ```text question-session. That block is the session prompt.
 3. Run herdr agent wait <pane id> --timeout 600000. If it fails or reaches its time limit, do no later step. Read the state at .result.agent.agent_status. If the state is not idle and not done, do no later step.
-4. Run herdr agent get <pane id>. Keep the value at .result.agent.agent_session.value as the old session value. Then run herdr pane send-text <pane id> '/clear'. Then run herdr pane send-keys <pane id> enter.
+4. Run herdr agent get <pane id>. Keep the value at .result.agent.agent_session.value as the old session value. Run herdr pane send-text <pane id> '/clear' && timeout 20 bash -c 'sleep 1' && herdr pane send-keys <pane id> enter. Run these three commands in one call.
 5. This step is the after-clear read. Run herdr agent get <pane id>. The read shows the context clear if .result.agent.agent_session.value differs from the old session value and .result.agent.agent_status is idle or done. If it does not show the context clear, run timeout 20 bash -c 'sleep 10' and read again. Read at most 6 times. If no read shows the context clear, do no later step.
 6. In the session prompt, replace each placeholder with the value of the same name in the list of values. Replace <first reply> last. In its value, put one space, the word LINE-BREAK and one space in place of each newline. Change nothing else inside its value.
-7. Join the lines of the session prompt into one line, with one space between two lines. Keep each single quote as it is. Put the result in the shell variable PROMPT with a quoted here-document, so that the shell expands nothing in it. Run herdr pane send-text <pane id> "$PROMPT". Then run herdr pane send-keys <pane id> enter.
+7. Join the lines of the session prompt into one line, with one space between two lines. Keep each single quote as it is. Put the result in the shell variable PROMPT with a quoted here-document, so that the shell expands nothing in it. Run herdr pane send-text <pane id> "$PROMPT" && timeout 20 bash -c 'sleep 1' && herdr pane send-keys <pane id> enter. Write the here-document and run these three commands in one call.
 8. Run herdr pane read <pane id>. If the pane shows no first reply, run timeout 20 bash -c 'sleep 10' and read it again. Read the pane at most 6 times. If the pane shows the first reply, the reuse worked. The typed prompt is not the first reply. The start line of the session prompt is also not the first reply.
 Your final report gives the pane id and each command with its exit code and its error. It also gives the old and the new session value, and whether the after-clear read showed the context clear. It also says whether the pane shows the first reply. Keep the report short.
 The list of values: name <name>, owner name <owner name>, owner pane id <owner pane id>. The list goes on: question id <question id>, local clone <local clone>.
