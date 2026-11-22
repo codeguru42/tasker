@@ -802,12 +802,12 @@ the discussion word for word, and the decision as the session read it. It gives 
 answer of the user word for word. It states that the user said yes to the confirm question and accepted the decision as
 final. The pane owner reads this message under the current rules. This adds no step for the pane owner.
 
-A request for a new issue, another request of [Terms](#terms), a rule, a fact or a preference with no guess keeps its
-current rules and its time of sending. If such a message holds a guess, the session first asks one confirm question
-about the guesses, with numbered readings and one yes or no question. After a yes, the message gives each guess and says
-that the user accepted it. After a no, the message drops each guess and gives the words of the user word for word. This
-holds only for a message with no planned decision, for example a rule, a fact, a preference or a request for a new
-issue. If the user changes one guess, the session shows the changed set in a new confirm question.
+A request for a new issue, another request of [Terms](#terms), or a message with a doc proposal, each with no guess,
+keeps its current rules and its time of sending. If such a message holds a guess, the session first asks one confirm
+question about the guesses, with numbered readings and one yes or no question. After a yes, the message gives each guess
+and says that the user accepted it. After a no, the message drops each guess and gives the words of the user word for
+word. This holds only for a message with no planned decision, for example a message with a doc proposal or a request for
+a new issue. If the user changes one guess, the session shows the changed set in a new confirm question.
 
 The session still drafts no issue and asks for no approval of a draft. A word of the user that closes the pane needs no
 confirm question.
@@ -829,10 +829,41 @@ can start work that the user did not choose.
 
 The decision message goes to the pane owner with the herdr path. It first gives the header
 `QUESTION-PANE <own pane id> <question id> m<n>:` of [Terms](#terms), with its message number. It then gives the
-decision and the user's settling words verbatim, each requested draft change, and each doc rule, fact, or preference the
-user stated. It also gives each word of the user that closes the pane, ends the run or adds an issue to a set (a set
-scope, as the term Scope of [the glossary](GLOSSARY.md) and [The scope](../orchestrator.md#the-scope) define it), word
-for word, also after the close request.
+decision and the user's settling words verbatim, each requested draft change, and each doc proposal. It also gives each
+word of the user that closes the pane, ends the run or adds an issue to a set (a set scope, as the term Scope of
+[the glossary](GLOSSARY.md) and [The scope](../orchestrator.md#the-scope) define it), word for word, also after the
+close request.
+
+A doc proposal is a part of a decision message or of a **No decision** message. It covers one rule, fact or preference
+that the user stated for a tracked doc of the repo. It gives each word of the user that supports it, word for word. It
+also names the tracked doc and the change. Words such as "add to `docs/dev/rules.md` that X" are a doc proposal, not a
+request for a change of a tracked file. A change of a tracked file that states no rule, fact or preference stays a
+request, for example a new allow rule in `.claude/settings.json`.
+
+If the user said or pointed to the tracked doc and the change, the doc proposal names them with no guess. The session
+asks no confirm question for it. If the user did not, the question session gives its reading of the doc and of the
+change. Each such reading is a guess under the guess rule above. The message gives the reading only after the user
+accepted it, and marks it as a guess that the user accepted.
+
+For a discussion, the guess goes in the confirm question of the planned decision, as a numbered reading. For each other
+message, the session asks the confirm question about the guesses before the send, as the paragraph that starts "A
+request for a new issue, another request of" says.
+
+After a no to the confirm question, the doc proposal gives the words of the user word for word. It names no part of a
+doc and no change that the user did not say or point to. The same holds after a close of the pane, or an end of the run,
+before a yes to the confirm question. In these cases, the guess rule wins over the rule that a doc proposal names the
+doc and the change.
+
+After a no, no later confirm question of the same question gives that guess again. Each later message of that question
+gives that doc proposal as the paragraph before this one says. This rule wins over each rule of this section that asks a
+confirm question about a guess of a doc proposal.
+
+The question session combines similar doc proposals of one message into one doc proposal. The combined doc proposal
+gives the words of the user of each part, word for word. Which doc proposals are similar is a judgment of the question
+session. This judgment is open on purpose.
+
+The reason for the doc proposal: on 2026-11-21, in the question pane orchestrator-m31-135, the user accepted the rule,
+as orchestrator-m31 relayed it.
 
 For a measure that changes user state, the question session also gives the command and undo step verbatim. It gives the
 same for each [write action](#terms). For an action with no undo step, it says that the action has no undo step. The
@@ -928,9 +959,10 @@ that no earlier message gave.
 
 If the user ends without a decision, this is the third send case. The question session sends **No decision** and the
 question id. If a discussion or a confirm question is open, the message also gives the words of the user word for word.
-It also gives the state "discussion open, not confirmed". It holds no guess. It still sends any stated doc rule, fact,
-or preference, each request for a new issue and each metadata request. None of them holds a guess that the user did not
-accept.
+It also gives the state "discussion open, not confirmed". It holds no guess.
+
+With **No decision**, the question session still sends each doc proposal, each request for a new issue and each metadata
+request. None of them holds a guess that the user did not accept.
 
 After the send, the question session waits at its prompt for the ack of the pane owner. It then waits for a message of
 the pane owner: what stays open, or a [close request](#the-rounds-before-the-close). If the send fails, the question
