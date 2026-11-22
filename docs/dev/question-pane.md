@@ -508,6 +508,20 @@ its command, path or text was in the first reply and did not change. The decisio
 "not approved", with its command and its undo step. The pane owner runs none of them, and the user can approve one later
 in a new pane message or in the tab of the orchestrator.
 
+A metadata request with no look-first word is an exception to the approval rule of the paragraph before. The words of
+the user that ask for the change are the approval. The question session shows no command, no undo step and no input file
+for it, and it asks no approval question. The decision message does not mark it "not approved".
+
+If the words of the user hold a look-first word for a metadata request, the question session shows the exact command in
+the pane. It also shows the undo step of the change. It asks no approval question, as the paragraph that starts "The
+pane asks no approval question" says. The decision message gives the command and the undo step, and it marks the change
+"not approved". The pane owner does not run it. The user can approve it later in a new pane message or in the tab of the
+orchestrator.
+
+A look-first word covers only the request that it names. The next metadata request of the same pane gets no second step
+unless it holds its own look-first word. A look-first word that comes after the question session sent the request does
+not stop the change. The change is already running.
+
 A pick never approves a write action with an input file. After the send, the question session shows the text of the file
 in the pane, from the talk or from the sender. After the user gives an approval word, the session sends a second message
 with the text and the word, word for word. If the session has no text for the file, the decision message says that the
@@ -707,6 +721,9 @@ text later with the approval word, as that subsection says. For a write action t
 the user that approved it, word for word: the pick or the yes to the confirm question. It marks each other write action
 "not approved", as that subsection says. The question session sends the message at once and asks no approval question.
 
+A metadata request with no look-first word is an exception to the paragraph before. The paragraph that starts "A
+metadata request goes to the pane owner" gives its message.
+
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
 `--body-file`, the command names a new path under `/tmp/tasker/<slug>/drafts/`. The slug is the slug of the pane owner.
@@ -747,6 +764,30 @@ body, no old body, no summary of a change and no path of a body file. It asks th
 words of the user approve the request. The message gives no exact new text, no start hash, no command, no undo step and
 no input file.
 
+A [metadata request](#terms) goes to the pane owner at the time of sending of a request for a new issue. This also holds
+for a message of the kind **No decision**. The decision message gives the words of the user word for word. It gives the
+exact command of each change, in the order of the words, as a [plain call](issues.md#the-reads-before-the-write) that
+names its target itself. It gives no undo step and no text of an input file, because the command takes no input file. A
+later decision message of the same question gives only the metadata requests that no earlier message gave.
+
+A metadata request needs no direct pick and no confirmed decision of the question. It does not end an open discussion,
+and it does not close the pane.
+
+The message says that the words of the user are the approval of each change. It gives no word that approves a command,
+because the question session showed no command. It does not mark the change "not approved". A move of an issue into the
+milestone "Future" keeps the command, the undo step and the approval of the other write actions. The user can undo a
+change with a new metadata request.
+
+If the words name each issue and each new value, the question session adds no guess and asks no confirm question for the
+request. If the session reads a part into the words, for example which issue or which milestone a word names, that part
+is a guess. The confirm question of the guess rule above then asks about the reading, not about the command. If the user
+does not accept a guess, the message gives no command for that request. It gives the words of the user word for word.
+
+The reason for the rule of a metadata request: on 2026-11-20, in a question pane, the user said: "changes to github meta
+data are almost always requested by the user and should just be performed without any further approval unless
+requested." A pane that asks again after the user asked for the change gives the user a second step for one request. The
+look-first word is a choice of issue #997, not the words of the user.
+
 For a comment on an issue, a change of a blocked-by link and a change of the field `Priority`, the question session
 sends a request, in the form of a request for a new issue. When it first shows the text to the user, it reads the title
 and the body, as [Before a post](issues.md#before-a-post) gives the read. It keeps that read as the start hash. The
@@ -765,7 +806,8 @@ that no earlier message gave.
 If the user ends without a decision, this is the third send case. The question session sends **No decision** and the
 question id. If a discussion or a confirm question is open, the message also gives the words of the user word for word.
 It also gives the state "discussion open, not confirmed". It holds no guess. It still sends any stated doc rule, fact,
-or preference and each request for a new issue. None of them holds a guess that the user did not accept.
+or preference, each request for a new issue and each metadata request. None of them holds a guess that the user did not
+accept.
 
 After the send, the question session waits at its prompt for the ack of the pane owner. It then waits for a message of
 the pane owner: what stays open, or a [close request](#the-rounds-before-the-close). If the send fails, the question
