@@ -61,8 +61,8 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
 
 - [docs/dev/question-pane.md](dev/question-pane.md): "A question pane" and "The question file".
 - [docs/dev/pick-the-tickets.md](dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket
-  rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold" and "The prompt
-  of a task subagent".
+  rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold", "The end of an
+  orchestrator" and "The prompt of a task subagent".
 - [docs/dev/doc-reads.md](dev/doc-reads.md): the re-read rule, the notice rule, the task subagent notice and the
   doc-read rule.
 - [docs/dev/run-one-ticket.md](dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base
@@ -348,7 +348,9 @@ The board watch rule has these parts:
 - At the start of a handoff, as [The suggestion of a handoff](dev/handoff.md#the-suggestion-of-a-handoff) says, the
   orchestrator deletes the job with CronDelete, before step 1 of The steps of the old orchestrator. If CronDelete fails,
   the failure rule applies. The new orchestrator makes its own job. A session that ends with no handoff loses the job
-  with the session.
+  with the session. So the job keeps firing during the wait of
+  [The end of an orchestrator](dev/pick-the-tickets.md#the-end-of-an-orchestrator), and the own close of the
+  orchestrator ends it.
 - The board watch job is not a job of [Quota](dev/quota.md#quota). [Delete the job](dev/quota.md#delete-the-job) does
   not cover it. The step "delete the jobs" of step 2 of The steps of the old orchestrator does not cover it either. The
   job takes no slot.

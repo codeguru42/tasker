@@ -532,22 +532,8 @@ The orchestrator does all the steps of this section.
   `moved the card of <issue key> to "<option>" on the tracker`, the orchestrator skips its own move. Otherwise, the
   orchestrator moves the card to In progress with the move command of [The project board](issues.md#the-project-board).
   The board moves the card to Done when `tasker finish` closes the issue.
-- When the Todo column of the milestone is empty, the orchestrator waits until the last ticket of the milestone closes
-  and no task of the milestone is in flight. If the orchestrator did not send the report that the close started yet, it
-  now sends this report to the operator, as [The start and the authority](operator-start.md#the-start-and-the-authority)
-  says. Then the orchestrator runs the rounds of [Session-review rounds](session-review-rounds.md), before it tells the
-  user that the milestone is done and before it stops. Do not write the issues of the next milestone. When the rounds
-  end, the orchestrator tells the user one time that the milestone is done, and it lists each finding with its state.
-
-  The orchestrator does not ask the user to close the milestone, and it does not bring the milestone up again in later
-  replies. On 2026-10-25, orchestrator-m21 asked the user several times whether to ask the planner to close M21, and the
-  user said: "I will decide when to close M21". The planner closes the milestone at the end of
-  [The close of a milestone](operator-start.md#the-close-of-a-milestone), as [Milestones](issues.md#milestones) of
-  issues.md says. The stop of this bullet does not cover a long-running orchestrator (see
-  [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review rounds and the
-  list of the findings of this bullet cover a long-running orchestrator at the empty Todo column. So does the report
-  that the milestone is done. A long-running orchestrator sends the report that the close started only after the word of
-  the user that starts the close. See [The start and the authority](operator-start.md#the-start-and-the-authority).
+- The end: after the last work of the scope, the orchestrator does the steps of
+  [The end of an orchestrator](#the-end-of-an-orchestrator). Do not write the issues of the next milestone.
 
 ### The stacking rule
 
@@ -1031,18 +1017,22 @@ On 2026-11-13, the user said: "more generally, any issue that is on hold should 
 issues that are only blocked due to the "same file" rule."
 
 Each rule of the orchestration pages leaves out a ticket on hold and its task, as if they are outside the milestone.
-This covers the start of a ticket, an empty Todo column, the shared-file bullet, the link offer and the earlier-blocker
-offer. [The outside-Todo find](#pick-the-tickets) does not leave out a ticket on hold. It reads each ticket on hold of
-the scope and raises it, except a held issue of a set scope. A ticket that a ticket on hold blocks waits while the link
-stays, and it never stacks on the task of a ticket on hold. A rule that names a parked task or a postponed ticket still
-applies, for example the bullet "If the user postpones the parent" of the stacked-ticket rule. The report of a done
-milestone names each ticket on hold.
+This covers the start of a ticket, the shared-file bullet, the link offer and the earlier-blocker offer.
+[The outside-Todo find](#pick-the-tickets) does not leave out a ticket on hold. It reads each ticket on hold of the
+scope and raises it, except a held issue of a set scope. [The end of an orchestrator](#the-end-of-an-orchestrator) does
+not leave out a ticket on hold either.
+
+A ticket that a ticket on hold blocks waits while the link stays, and it never stacks on the task of a ticket on hold. A
+rule that names a parked task or a postponed ticket still applies, for example the bullet "If the user postpones the
+parent" of the stacked-ticket rule. The report of a long-running orchestrator that the milestone is done names each
+ticket on hold.
 
 A waiting question of a ticket on hold is an open question of the orchestrator about that ticket, as
-[Start](question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a done milestone,
-the orchestrator moves each waiting question to a hold comment on its ticket. A hold comment starts with
-`## Open question of a ticket on hold`. It gives the question and its choices word for word, as the question gave them,
-and the question id. It says that the orchestrator asks the question again in its pane at the end of the hold.
+[Start](question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a long-running
+orchestrator that the milestone is done, the orchestrator moves each waiting question to a hold comment on its ticket. A
+hold comment starts with `## Open question of a ticket on hold`. It gives the question and its choices word for word, as
+the question gave them, and the question id. It says that the orchestrator asks the question again in its pane at the
+end of the hold.
 
 At the move, the orchestrator deletes the [question file](question-pane.md#the-question-file) of the question. If the
 delete fails, the rule of The question file for a failed delete applies.
@@ -1077,6 +1067,156 @@ question file, as a question that arrives.
 If the milestone is open and no orchestrator of its slug runs, the operator removes the label and starts one, as
 [The close of a milestone](operator-start.md#the-close-of-a-milestone) says. If the label is already gone at the word of
 the user, the orchestrator skips its removal.
+
+### The end of an orchestrator
+
+The end of an orchestrator is the last part of its work on its scope. The end holds the rounds, the end reads, the wait,
+the close of the milestone, the last report and the own close. The scope, a milestone scope and a set scope keep the
+meaning of [The scope](../orchestrator.md#the-scope).
+
+These terms apply in this subsection:
+
+- A live task is a task in flight of the scope that is not the parked task of a ticket on hold.
+- A ready ticket is a ticket of the scope with its card in Todo, no open blocker, no label `on hold` and no live task.
+- A waiting issue is an open issue of the scope with no live task that is not a ready ticket.
+- The end reads are the reads after the rounds. They decide whether the orchestrator goes back to work, waits or closes.
+- The own close is the close of the own tab of the orchestrator by the orchestrator.
+
+A waiting issue has five kinds. The first three kinds are an issue whose card is not in Todo, an issue with no card and
+a [ticket on hold](#a-ticket-on-hold). The other two kinds are an issue with an open blocker and a
+[manual-steps issue](#pick-the-tickets). A ticket on hold and its parked task count as one waiting issue.
+
+The end has this order. First come the rounds and the end reads. Then come the report that the close started and the
+close of the GitHub milestone. Last come the last report and the own close. A wait can come after the end reads. A new
+ready ticket or a live task sends the orchestrator back to its work.
+
+The end starts at a read of the board that starts no ticket of the scope. At that read, the scope has no live task and
+no ready ticket. While a gate of [the fill rule](#pick-the-tickets) holds a ready ticket back, the end does not start.
+Examples are the pi gate, the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and
+[the hold before an install](release.md#the-hold-before-an-install). A ticket on hold is not a ready ticket, so the gate
+of a ticket on hold does not stop the end.
+
+The orchestrator runs the rounds of [Session-review rounds](session-review-rounds.md) first. While a question pane of
+the orchestrator is open or its write subagent runs, the rounds do not start, as [Start](question-pane.md#start) says.
+Each finding of the rounds that needs a decision of the user is an open question of the orchestrator, as
+[Terms](question-pane.md#terms) says. So each orchestrator, of a milestone scope or of a set scope, opens a question
+pane for each such finding. It sends each proposed issue of the rounds to its planner, as the planner bullet of
+[The prompt of a task subagent](#the-prompt-of-a-task-subagent) says. No orchestrator closes until each finding of its
+rounds is handled, as [Session-review rounds](session-review-rounds.md) defines a handled finding.
+
+The orchestrator starts the end reads only after the result of each planner subagent of the rounds. A question in such a
+result is an open question of the orchestrator, as [The result](planner-subagent.md#the-result) says.
+
+The end reads read these facts again:
+
+- For a milestone scope, the title, the state and the description of the milestone, with the read of
+  [Milestones](issues.md#milestones). The description holds the hold record of
+  [A milestone hold](working-with-the-user.md#a-milestone-hold).
+- The open issues of the scope, with the column of each card, the label `on hold` and the open blockers. The reads are
+  the reads of [the outside-Todo find](#pick-the-tickets) for each kind of scope.
+- The tasks in flight of the scope, with `tasker status`.
+
+The end reads count a ticket on hold and its parked task as one waiting issue. So a ticket on hold does not stop the
+start of the end or the rounds.
+
+The orchestrator acts on the result of the end reads as this table says. The first row that holds wins.
+
+| Result of the end reads                                                 | What the orchestrator does                                                                                               |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| A read fails                                                            | [The failure rule](limits.md#the-failure-rule) applies. It closes nothing and reads again at its next read of the board. |
+| A live task or a ready ticket exists                                    | It goes back to its work. The rounds run again at the next end, as work after the rounds.                                |
+| A waiting issue exists                                                  | It waits, as the wait of this subsection says. The milestone and the tab stay open.                                      |
+| The milestone is held                                                   | It waits, as the held milestone of this subsection says. The milestone and the tab stay open.                            |
+| The orchestrator holds a hold before an install, or it is the installer | It waits for the end of the hold. Then it does the end reads again.                                                      |
+| No open issue of the scope is left                                      | It does the close of this subsection.                                                                                    |
+
+A new issue that a round, a planner subagent or another session puts in the scope is an issue of the scope. So it keeps
+the orchestrator at work. For a set scope, only a word of the user adds an issue, as the first bullet of
+[Pick the tickets](#pick-the-tickets) says.
+
+A waiting issue that is an issue outside Todo gets the raise of [the outside-Todo find](#pick-the-tickets). The table of
+the find gives the kind of each raise, a question or a report, and the find gives its form. The end uses the record of
+the find. An issue that the find already raised with the same facts counts as raised, so the end does not raise it
+again. A new raise of the end goes into the same record.
+
+The other waiting issues get no raise of their own. An issue whose open blocker is an issue of the scope waits for that
+blocker, and the end raises the blocker. The question of the bullet of a [manual-steps issue](#pick-the-tickets) is the
+raise of that issue. An open question of another rule that names the issue also counts as its raise. An example is
+[the earlier-blocker offer](#pick-the-tickets).
+
+During the wait, the milestone and the own tab stay open. Each read of the board starts each ticket that can start.
+After a read with no start, no live task and no ready ticket, the end starts again. The
+[board watch job](../orchestrator.md#the-board-watch-job) starts a read of the board two times each hour during the
+wait.
+
+At the end of a hold before an install, the orchestrator does the end reads again. When the result of a planner subagent
+arrives during the wait, the orchestrator also does the end reads again. The end of a milestone hold follows the
+paragraph on a held milestone below.
+
+While a ticket on hold of the scope is open, the end gives no report that the milestone is done. The one exception is
+the report of a long-running orchestrator at the start of its end. So only that report moves a waiting question to a
+hold comment, as [A ticket on hold](#a-ticket-on-hold) says.
+
+The orchestrator closes no held milestone. The hold record is the start of the description, as item 2 of
+[A milestone hold](working-with-the-user.md#a-milestone-hold) says. For a held milestone, the orchestrator tells the
+user one time in its own tab that it waits for the end of the hold. The milestone and the tab stay open. At the end
+message of item 9 of A milestone hold, the orchestrator reads the board. After that read with no start, no live task and
+no ready ticket, the end starts again.
+
+An orchestrator of a milestone scope sends the report that the close started only after end reads that find no open
+issue of the scope. A ticket on hold counts as an open issue. An orchestrator of a set scope sends no such report,
+because no close of a milestone follows. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) gives
+what this report changes for a handoff.
+
+A long-running orchestrator runs its rounds and gives its report that the milestone is done at the start of its end.
+Before the word of the user that starts the close, it keeps its role, does no end reads and closes no milestone. After
+that word, it does the end reads, and the rest of the end follows.
+[The start and the authority](operator-start.md#the-start-and-the-authority) gives that word.
+
+Only an orchestrator of a milestone scope and of the kind `claude` closes the GitHub milestone. It does the reads and
+the write of [Milestones](issues.md#milestones). The start of the close is the authority for this write, as
+[The start and the authority](operator-start.md#the-start-and-the-authority) says. The orchestrator asks the user no
+question and opens no question pane for the close. If the write or the read after it fails,
+[the failure rule](limits.md#the-failure-rule) applies, and the orchestrator keeps its role and does no own close. At
+its next read of the board, it reads the milestone again and goes on from that state.
+
+After the close, the orchestrator of a milestone scope sends the report that the milestone is done. The report keeps its
+form and its target. It also gives the URL of the milestone and the result of the last read of the milestone. The
+orchestrator sends this report before the own close. The row "The survival of a final report" of
+[codex-sessions.md](codex-sessions.md) found no reply after the close of a tab.
+
+Before the report, the orchestrator runs the environment and agent-list checks of
+[The own-session closure](operator-start.md#the-own-session-closure). If both pass, the report gives the `pane_id` of
+its row, and otherwise it says that it gives no pane id.
+
+An orchestrator of a set scope closes no milestone and has no operator. Its last report is a progress report in its own
+tab, as [The operator](working-with-the-user.md#the-operator) gives a progress report. That report names each issue of
+the set and its closed state.
+
+After its last report, the orchestrator of the kind `claude` closes its own tab. It asks the user no question and waits
+for no approval. For a milestone scope, the start of the close is the authority for the own close. For a set scope, the
+end reads that find no open issue of the set are the authority.
+
+The own close has these steps:
+
+1. The orchestrator closes its own question pane, if one is open, as
+   [Close and continue](question-pane.md#close-and-continue) says. The pane splits from the pane of the orchestrator, so
+   it is in the tab of the orchestrator.
+2. The orchestrator waits until no subagent of it runs and no hold before an install holds it.
+3. The orchestrator runs the checks of [The own-session closure](operator-start.md#the-own-session-closure). These cover
+   `HERDR_TAB_ID`, `HERDR_PANE_ID`, the row of its own name and the count of the panes of its tab.
+4. The orchestrator runs `herdr tab close <tab id>` as its last tool call.
+
+If a check or a command fails, the orchestrator closes nothing. It tells the user in its own tab, with the command and
+its output. The user then closes the tab, and the milestone keeps its state.
+
+A pi orchestrator runs the rounds, the end reads and the wait of this subsection. It sends each finding to
+`planner-<slug>`, as the planner bullet of The prompt of a task subagent says. It closes no milestone and does no own
+close. After end reads that find no open issue, it sends the report that the close started and the report that the
+milestone is done. Then the operator stops it, and the follow-up planner closes the milestone, as
+[The close of a milestone](operator-start.md#the-close-of-a-milestone) says. The reason: no one tested the closure of a
+pi session, as [The own-session closure of a pi session](operator-start.md#the-own-session-closure-of-a-pi-session)
+says.
 
 ## The prompt of a task subagent
 
