@@ -79,10 +79,9 @@ For the orchestrator, the report that the close started comes only after end rea
 before that report keeps each handoff rule of the orchestrator. An orchestrator of a set scope sends no such report, so
 its handoff rules hold until its own close.
 
-This rule wins over each rule that makes a session suggest or start a handoff, also over the go of the operator. Each
-recommendation of a handoff is then "not yet", and its reason is the close. If the user asks for a handoff during the
-close, the session tells the user that the close holds the handoffs. It starts the handoff only on a new word of the
-user.
+This rule wins over each rule that makes a session suggest or start a handoff. Each recommendation of a handoff is then
+"not yet", and its reason is the close. If the user asks for a handoff during the close, the session tells the user that
+the close holds the handoffs. It starts the handoff only on a new word of the user.
 
 If a handoff already started, the session tells the user, also when it already sent the path of its handoff file. The
 word of the user then decides whether the handoff goes on. If it goes on, the handoff goes on as its steps say. If it
