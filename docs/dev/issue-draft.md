@@ -64,9 +64,9 @@ Before each report, and before the self-check that comes before that report, the
 
 A cut of length only changes no meaning. Each requirement, each acceptance case and each fact stays. The cut removes,
 for example, repeated text and table padding. The count and the cut run before the self-check, so the self-check covers
-the text after the cut. The self-check that a ticket subagent runs before its first loop comes before any count, as
-[The self-check](#the-self-check) says. The ticket subagent counts and cuts only before its report. They run before each
-report, not only after the last loop, because a cut before a review gets that review.
+the text after the cut. The count and the cut run before each report, not only after the last loop, because a cut before
+a review gets that review. The self-check that a ticket subagent runs before its first loop comes before any count, as
+[The self-check](#the-self-check) says. The ticket subagent counts and cuts only before its report.
 
 The report gives the count. After a cut, it also gives the count before the cut and each removal. If the count fails,
 the report gives the command and the error. For a denied count, the report gives the exact command and the exact text of
