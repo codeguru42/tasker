@@ -38,8 +38,8 @@ Each send of the docs to the planner of the orchestrator is a planning request. 
 - The paragraph of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) about an old orchestrator.
 - Step 1 of [The steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), for the findings of the
   orchestrator.
-- Each relay, request, open finding and accepted proposal that a [question pane](question-pane.md#a-question-pane) sends
-  to the planner of the orchestrator.
+- Each relay, request, open finding, accepted proposal and recurrence that a
+  [question pane](question-pane.md#a-question-pane) sends to the planner of the orchestrator.
 
 For each planning request, the orchestrator of the kind `claude` starts a planner subagent, in place of a message to
 `planner-<slug>`. The [follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) gets no planning
