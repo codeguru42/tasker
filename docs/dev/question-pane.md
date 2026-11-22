@@ -767,16 +767,17 @@ no input file.
 A [metadata request](#terms) goes to the pane owner at the time of sending of a request for a new issue. This also holds
 for a message of the kind **No decision**. The decision message gives the words of the user word for word. It gives the
 exact command of each change, in the order of the words, as a [plain call](issues.md#the-reads-before-the-write) that
-names its target itself. It gives no undo step and no text of an input file, because the command takes no input file. A
-later decision message of the same question gives only the metadata requests that no earlier message gave.
+names its target itself. With no look-first word, the message gives no undo step and no text of an input file, because
+the command takes no input file. A later decision message of the same question gives only the metadata requests that no
+earlier message gave.
 
 A metadata request needs no direct pick and no confirmed decision of the question. It does not end an open discussion,
 and it does not close the pane.
 
-The message says that the words of the user are the approval of each change. It gives no word that approves a command,
-because the question session showed no command. It does not mark the change "not approved". A move of an issue into the
-milestone "Future" keeps the command, the undo step and the approval of the other write actions. The user can undo a
-change with a new metadata request.
+For a request with no look-first word, the message says that the words of the user are the approval of the change. It
+gives no word that approves a command, because the question session showed no command. It does not mark the change "not
+approved". A move of an issue into the milestone "Future" keeps the command, the undo step and the approval of the other
+write actions. The user can undo a change with a new metadata request.
 
 If the words name each issue and each new value, the question session adds no guess and asks no confirm question for the
 request. If the session reads a part into the words, for example which issue or which milestone a word names, that part
@@ -844,9 +845,11 @@ sender decide approve no write action. A write action marked "not approved" does
 decide approve no write action. A message that does not settle the question starts no write subagent, apart from the
 case of the next paragraph.
 
-The words of the user that ask for a metadata change are the approval of its command. If a message does not settle the
-question, the pane owner still starts one write subagent for its metadata requests. A request with a guess that the user
-did not accept does not run. The pane owner starts no actor for another write action of such a message.
+The words of the user that ask for a metadata change with no look-first word are the approval of its command. If a
+message does not settle the question, the pane owner still starts one write subagent for its metadata requests. A
+request with a guess that the user did not accept does not run. The pane owner starts no actor for another write action
+of such a message. In a settled message, the metadata requests run in the order of the message, as the paragraph on the
+order of the actors says.
 
 #### The actor of each write action
 
