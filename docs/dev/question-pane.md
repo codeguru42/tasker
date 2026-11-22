@@ -1271,6 +1271,20 @@ wait of step 3 of the reuse prompt, and no one measured a permission that the us
 
 For the 2026-10-25 trust-prompt fact of #519, see [#519](first-refine.md).
 
+On 2026-11-20, a session measured two problems of the herdr path on one machine. On that day, `claude --version` printed
+`2.1.330` and `herdr --version` printed `0.9.3`.
+
+- 2026-11-20: twice, a session ran `herdr pane send-text` and then `herdr pane send-keys <pane id> enter` in one call,
+  and the Enter had no effect. The first target was the orchestrator pane, for a decision message of a question session.
+  The second target was a question pane, for a close request of the orchestrator. In both cases the text went into the
+  pane and the message stayed unsubmitted. A later Enter submitted each message.
+- 2026-11-20: a quoted here-document does not fill in `$HERDR_PANE_ID`, so the header of a decision message went out
+  with that literal text. The session then filled in the value with shell substitution after the here-document, and the
+  header showed the real pane id.
+
+The cause of the unsubmitted Enter is a guess. The guess is that the Enter arrives while the pasted text still comes in.
+No one measured this cause, and no one measured the wait of one second.
+
 The rules of this page no longer use `SendMessage`. The records above that name `SendMessage` and `ListAgents` stay as
 facts of the old path. No one measured a send with `herdr pane send-text` into a session that is in a turn. No one
 measured a send into a pi pane in either direction. No one measured a newline inside `send-text`, or the wait for the
