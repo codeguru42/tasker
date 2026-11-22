@@ -111,13 +111,12 @@ Other examples are the item with the path of the handoff file and the close of a
 after the rounds is open on purpose, and the session makes it. In the close, an answer of the user that asks for more
 work is work after the rounds. See [The question gate of the close](operator-items.md#the-question-gate-of-the-close).
 
-For an orchestrator, the report that the milestone is done holds the report of the rounds. A new ticket that the
-orchestrator runs after its rounds is work after its rounds. So the orchestrator runs its rounds again at its next end,
-as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says. A pi orchestrator of a milestone
-scope stops at the stop of the operator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). If it
-did no work after its rounds, it runs no new round there and only gives the report again. The report again is not a
-second report that the milestone is done.
+For an orchestrator, the report that the milestone is done holds the report of the rounds. At each start of its end, the
+orchestrator runs a round by the rule of [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator). A
+pi orchestrator of a milestone scope stops at the stop of the operator in
+[The close of a milestone](operator-start.md#the-close-of-a-milestone). If its transcript has nothing new after its
+rounds, it runs no new round there and only gives the report again. The report again is not a second report that the
+milestone is done.
 
-A start of the end with no work after its last rounds runs no new round and sends no second report of the rounds.
-[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule. A new ticket, or an answer
-that asks for work, is work after the rounds, so the rounds run again.
+A start of the end whose transcript has nothing new since the last rounds runs no new round and sends no second report
+of the rounds. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule.
