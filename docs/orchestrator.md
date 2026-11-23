@@ -59,7 +59,7 @@ complete read of each start doc before any other work, as [the doc-read rule](de
 
 The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages":
 
-- [docs/dev/question-pane.md](dev/question-pane.md): "A question pane" and "The question file".
+- [docs/dev/question-pane.md](dev/question-pane.md): "A question pane", "The question file" and "The pane handoff".
 - [docs/dev/pick-the-tickets.md](dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket
   rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold", "The end of an
   orchestrator" and "The prompt of a task subagent".
@@ -84,7 +84,8 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
   topic handoff" and "The hold of the items".
 - [docs/dev/handoff-orchestrator.md](dev/handoff-orchestrator.md): "The long-running orchestrator", "The landing count",
-  "The steps of the old orchestrator", "The handoff file of the orchestrator" and "The start of the new orchestrator".
+  "The steps of the old orchestrator", "The stopping-point case", "The handoff file of the orchestrator", "The task
+  list" and "The start of the new orchestrator".
 - [docs/dev/limits.md](dev/limits.md): "Limits", the own-worktree rule, "The orchestrator folder", the update rule, the
   local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
 - [docs/dev/planner-subagent.md](dev/planner-subagent.md): "The kind of the orchestrator", "The planning requests", "The

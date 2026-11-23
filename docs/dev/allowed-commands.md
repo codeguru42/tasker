@@ -65,6 +65,7 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   - A write of the body file of an issue
   - A write of the file of a topic handoff in the shared handoff folder
   - A write and a delete (`rm <file>`) of a file of its own three folders
+  - A write of a pane handoff file in its own handoff folder
   - `mkdir -p` on its own three folders
 
   The three folders of the [orchestrator folder](limits.md#the-orchestrator-folder), and the parent folders that
