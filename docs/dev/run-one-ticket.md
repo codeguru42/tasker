@@ -186,6 +186,11 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   of the work. In that case, for a stacked task, the result also gives the start base of the last read, or says that the
   task subagent holds no start base.
 - Each finding that the task subagent dismissed, with its reason.
+- For a task subagent with an entry of [the task list](handoff-orchestrator.md#the-task-list) in its prompt: the report
+  carries into it the dismissed findings, the edge cases, the false claims and each `tasker retry` of the verify-failure
+  rule that the entry names. The new task subagent does not lose them.
+- For a stopping-point report, the files that the work of the task changed so far, as
+  [the task list](handoff-orchestrator.md#the-task-list) needs them.
 - Each leftover that the task subagent fixed under [the leftover exception](review-findings.md#review-findings). For
   each one, the item gives the finding and the false text. It also gives the earlier loop or other step of the ticket
   that made the text false. The item also says that no sixth review ran.
@@ -227,7 +232,10 @@ quota stop in ["What the task subagent does" in "Quota"](quota.md#what-the-task-
 
 This rule covers a ticket that already has a task in flight when its task subagent starts, for example a parked task
 that came back (see [the defer rule](pick-the-tickets.md#the-defer-rule)). The task already exists, so the task subagent
-does not run `tasker start` or `tasker plan`. If the issue has a comment that starts with `## Parked task` (step 6 of
+does not run `tasker start` or `tasker plan`. If the prompt gives an entry of
+[the task list](handoff-orchestrator.md#the-task-list) with a start base, that start base counts as the start base of
+the last read. It wins over each `## Parked task` comment. If the prompt gives no entry, or the entry gives no start
+base, the rest of this rule holds as written. If the issue has a comment that starts with `## Parked task` (step 6 of
 the defer rule), the task subagent reads the last such comment. Then it runs `tasker show <issue>`. If the `base:` line
 has the form `refs/heads/<parent branch>`, the task is stacked. Then the task subagent takes the start base only from
 the last `## Parked task` comment of the orchestrator account, `codeguru42`. A comment of another account does not
