@@ -273,6 +273,119 @@ The orchestrator handles a result in this way:
 
 The new planner subagent of such an answer follows change 6.
 
+### A draft that needs the user
+
+A draft that needs the user is a draft of a planner subagent that waits for a word of the user before its post. This
+also covers the draft of a comment on an issue. The kind of such a draft is the reason for its wait.
+
+For a planner subagent, these six kinds take the place of the list of decisions of
+[The escape hatch](planner.md#the-escape-hatch). Each kind keeps the words of its source.
+
+1. A security gap. The sources are the item "A security gap." of The escape hatch and the paragraph of
+   [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) that starts "The paragraph before
+   this one".
+2. A new feature, or a change of a behavior that a user sees. The source is the item of The escape hatch that starts
+   with these words, with its second paragraph. The exception for a feature in the source of the draft stays. So a
+   request of the user that asks for the feature, for example a decision message of a pane, gives no question of this
+   kind.
+3. A choice between two or more designs, where each one has a real cost. A choice of the place or the words of a doc
+   change stays a choice of the ticket plan.
+4. A change of scope of an issue in flight.
+5. A comment on an issue. The sources are three places. The first is the term of The review loop of a draft that starts
+   "A comment on an issue is not a draft". The second is the bullet of
+   [The rules for the user alone](planner.md#the-rules-for-the-user-alone) that starts "A comment on an issue". The
+   third is the first bullet of [Before a post](issues.md#before-a-post). Change 9 gives its actors. "The writes of an
+   issue-post subagent" of [issue-post.md](issue-post.md#the-writes-of-an-issue-post-subagent) still says that an
+   issue-post subagent posts no comment. This page does not change that rule.
+6. A measure that needs a change of [the state of the user](plan-review.md#the-state-of-the-user). The source is the
+   item of The escape hatch that starts "A measure that needs a change". Keep 3 keeps the measure as an open question of
+   the report. Change 2 puts it in the result. Keep 6 leaves its approval to the user. The question gives the command of
+   the measure. The reason: the issue can get a tested fact before its post. The cost: each such measure takes a turn of
+   the question pane.
+
+Each kept rule that names a kind of The escape hatch names one of these six kinds for a planner subagent. Two examples
+follow. The first is the paragraph of [The ticket subagent](planner.md#the-ticket-subagent) that starts "Before the
+planner sends a question of a report to the user". The second is each place of issue-draft.md that names a kind of The
+escape hatch, for example its paragraph that starts "The report gives a question for the user". The reason: the
+issue-draft subagents of a planner subagent follow issue-draft.md. The follow-up planner, the initial planner and the ad
+hoc planner keep the list of The escape hatch.
+
+Sometimes the reviews end and a finding of one of the six kinds is still open. Then the draft is a draft of that kind.
+The source is the last item of the list of The escape hatch, which starts "A finding of one of these kinds".
+
+A question of another kept rule keeps the path of [The result](#the-result) and is not one of the six kinds. Examples:
+
+- The bullet of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) that starts "If the
+  planner cannot tell which case applies".
+- A tool block.
+- An issue subagent that ends twice with no report, as [The wait for an issue subagent](#the-wait-for-an-issue-subagent)
+  and the paragraph of The ticket subagent that starts "A ticket subagent waits for the report" say.
+- A failed read or write of the record file.
+- A failed compare of a match.
+- Words of the user that name no single issue.
+
+The remaining findings are the term of [The issue subagents](#the-issue-subagents). The result gives one more question
+about them, for each draft with remaining findings. For each remaining finding, the question gives its place in the
+draft, its rule or fact, and the recommendation of the review. It has three choices: post the draft as it stands, change
+it, or drop it. The planner subagent gives its recommendation and the cost of each choice.
+
+The form of the result: for each draft that needs the user, the result gives one question for each kind of the draft. It
+gives one more question for the remaining findings of the draft. Each question names its kind, or the words "remaining
+findings". Each question follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user). It gives a
+summary of the draft and the path of the draft file, not the text of the draft. A question about a comment also gives
+the exact text of the comment, because the user approves that text word for word. The result also gives each other fact
+of such a draft that [The result](#the-result) gives, for example each finding that the planner subagent dismissed.
+
+The result numbers its questions in this order:
+
+1. A security gap.
+2. A new feature, or a change of a behavior that a user sees.
+3. A choice between two or more designs.
+4. A change of scope of an issue in flight.
+5. A measure that needs a change of the state of the user.
+6. A comment on an issue.
+7. A question of another kept rule.
+8. The remaining findings.
+
+These numbers are not the numbers of the list of kinds above. A comment is kind 5 and order 6. Two questions of one
+number keep the alphabetic order of the names of their draft files. The reasons for the order:
+
+- The user decides the questions that change the most first.
+- An answer to an early question can make a later question moot.
+- The remaining findings come last, because they depend on the answers to the other questions.
+
+A security gap also goes in the result as a report, with the time that the gap starts.
+[Core features first](working-with-the-user.md#core-features-first) says to tell the user about a security gap at once.
+Step 1 of the steps of the orchestrator shows this report at once. The question about the gap still waits for its place
+in the list order.
+
+The orchestrator handles the questions of one result in these ways:
+
+- It gives the question ids of one result in the order of the numbers of the result. So key 3 of the list order of
+  [Start](question-pane.md#start) orders the questions of one result that tie on keys 1 and 2 by these numbers. Keys 1
+  and 2 still come first.
+- The text of each question that it gives to the pane names the kind of the question, or the words "remaining findings",
+  and the path of the draft file.
+- The path of an answer stays as [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision)
+  gives it in its first paragraph. The same holds for two other places. One is the paragraph of
+  [The question session](question-pane.md#the-question-session) that starts "A question session starts no subagent that
+  plans, drafts, reviews or posts an issue". The other is the sentences that start "A planner subagent is never the
+  sender of a question of a pane".
+- For a draft with two or more questions, it starts the new planner subagent only after the answer to the last open
+  question of the draft. It finds the questions of one draft by the path of the draft file in their text. The proposal
+  file and the prompt give each question and each answer word for word. For such a draft, this rule wins over step 4.
+  The reason: the sentence of The escape hatch that starts "A planner posts nothing for such a draft" bans each post
+  before the answer to each question.
+- An answer that rejects or drops a draft ends the draft. The orchestrator asks no other open question of that draft. It
+  drops each such question as moot work, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user)
+  says. Then it starts the new planner subagent with that answer, and that planner subagent reports the drop.
+
+The steps with each answer are the steps of change 6. For the remaining findings, the answer "post the draft as it
+stands" accepts the draft with no change. The bullet of The escape hatch that starts "If the answer accepts the draft
+with no change" gives this rule. That answer approves the draft, as [The count of reviews](#the-count-of-reviews) says,
+so the new planner subagent starts the post with no new review. "Change it" is an answer that changes the draft, so a
+new issue-draft subagent and new reviews follow.
+
 ## No metadata
 
 The planner subagent changes no metadata of an issue. It moves no card and sets no priority. It adds and removes no
