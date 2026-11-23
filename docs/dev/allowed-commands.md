@@ -120,7 +120,7 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 
 ## The planner subagent
 
-Sources: [Sessions](../config.md#sessions), [the doc-read rule](doc-reads.md#the-doc-read-rule) and
+Sources: [Sessions](../config.md#sessions), [the doc-read rule](doc-reads.md#the-doc-read-rule),
 [The result](planner-subagent.md#the-result) and [The record file](planner-subagent.md#the-record-file). The section
 Sessions says that the planner subagent starts the draft, review and post subagents. The planner subagent keeps the
 record of the findings of each draft in the record file.

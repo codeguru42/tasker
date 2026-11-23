@@ -138,7 +138,7 @@ count of [The size of a draft](#the-size-of-a-draft).
 
 For an issue-draft subagent of a [planner subagent](planner-subagent.md), the result through `SubagentHandback` gives
 each dismissal with its reason. The planner subagent adds each one to its
-[record file](planner-subagent.md#the-record-file). The result gives no other fact of the report.
+[record file](planner-subagent.md#the-record-file).
 
 ## The findings and the edge cases
 
