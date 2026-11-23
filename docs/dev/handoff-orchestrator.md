@@ -526,3 +526,35 @@ question is not open. The new orchestrator then tells the user.
 
 If the read of the question file fails, the fallback of The orchestrator folder applies. The new orchestrator then tells
 the user that it cannot read the question of that id.
+
+### The report of the questions with no automatic start
+
+After its start steps, the new orchestrator tells the user about each open question with no automatic start. It does
+this only if each of [the start checks](../orchestrator.md#the-start-checks) passed. A session whose start check failed
+makes no report. The report comes before the first pane start and before the pick of the first ticket. If the
+orchestrator finds no open question with no automatic start, it makes no report.
+
+The report covers each open question of the list of the questions with no automatic start in the handoff file. It also
+covers each other open question with no automatic start that [The question file](question-pane.md#the-question-file)
+gives. For each question, the report gives the question id, the question in a few words and the reason. If the question
+holds the start of a ticket, the report names that [held ticket](question-pane.md#terms). The report also says that a
+word of the user that names the question starts its pane. A start word for the held ticket also starts it.
+
+The report is a progress report, as [The operator](working-with-the-user.md#the-operator) says. The report starts no
+pane and no wait. It does not lift the rule of no automatic start of a question.
+
+For the report, the new orchestrator lists `questions/` and reads the question file of each question of the report.
+These reads come after its start steps. So they are no exception to the sentence "It reads no question file at its
+start" above. For a question with no file, the orchestrator uses the text of the handoff file. An id of the list that is
+not an open question at the read stays out of the report.
+
+If a read for the report fails, the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) applies.
+The report then names each question whose read failed, with its id. A failed read drops no question from the report.
+
+The reason: on 2026-11-22, the user asked orchestrator-m31 to start a ticket next. An open question held the start of
+that ticket, and that question got no automatic start. The handoff file of that day named the question as a question
+with no automatic start. But no rule told the new orchestrator to tell the user. So the list alone does not fix the
+case. The case also needs this report and the start-word rule of [Start](question-pane.md#start).
+
+The user said: "oh, I didn't know there was an open question about 973". The user also said: "and you didn't open that
+question first after the handoff...".
