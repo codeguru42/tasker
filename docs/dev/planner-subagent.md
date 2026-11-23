@@ -374,6 +374,181 @@ The planner subagent drops these rules:
 11. A wait for an answer of the user. The planner subagent ends with its result. Change 6 gives the steps with the
     answer.
 
+## The issue subagents
+
+These terms apply in this section. The three kinds are the issue-draft subagent, the issue-review subagent and the
+issue-post subagent. A review is one run of an issue-review subagent over one version of a draft. A finding is one point
+of a review that asks for a change. A dismissal is a decision to make no change for a finding, with a one-line reason.
+The record file is the file of [The record file](#the-record-file). The remaining findings of the draft are the findings
+that the planner subagent neither changed in the draft nor dismissed.
+
+### The starter of an issue subagent
+
+Only a planner subagent starts a subagent of the three kinds. It starts each one with the Agent tool, as the work on a
+draft needs. No other session starts such a subagent. This holds for the orchestrator, the operator, a task subagent, a
+question session, a planner and each issue subagent.
+
+The planner subagent is the starter of each issue subagent that it starts. So it does each step of the kept rules that
+names the starter of an agent. These steps include the wait for a report and the decision on each finding.
+
+Change 9 names the actors of a comment on an issue. The planner subagent starts the issue-draft subagent, the
+issue-review subagent and the issue-post subagent for such a comment. It posts no comment itself.
+
+The subagent of the main session that posts a reviewed ad hoc draft is not an issue-post subagent of this page. The
+bullet "A subagent of the main session posts a reviewed ad hoc draft" of
+[working-with-the-user.md](working-with-the-user.md) gives its start. That start does not change.
+
+### The order of the work on a draft
+
+The planner subagent does these steps for each draft:
+
+1. Start an issue-draft subagent. It writes the draft file and its report file.
+2. Run `git fetch origin` in the local clone. Then start an issue-review subagent for the review of the draft.
+3. Add each finding of the review to the record file, with its judgment, as [The record file](#the-record-file) says.
+4. Decide on each finding. Change the draft with a new issue-draft subagent, or dismiss the finding with a one-line
+   reason.
+5. If the draft changed and [The count of reviews](#the-count-of-reviews) permits it, go to step 2.
+6. Start an issue-post subagent. It posts the draft as it stands after the decisions on the last review.
+7. Put the result of each step in the result of the planner subagent, as [The result](#the-result) says.
+
+The planner subagent starts the next subagent of a draft only after the result of the earlier one. It reads no draft
+file and no report file in its own context. It reads the record file.
+
+### The count of reviews
+
+A draft gets at most 3 reviews. The count starts at 1 for the first review of a draft.
+
+A review with no new finding ends the work on the draft. A new finding that the planner subagent takes changes the
+draft. If the count is below 3, one more review follows.
+
+After review 3, the planner subagent starts no more review. It posts the draft as it stands after its decisions on the
+findings of review 3. The draft includes each cut of length only of
+[The size of a draft](issue-draft.md#the-size-of-a-draft).
+
+The count starts again at 1 in two cases. The first case is a change of the draft from an answer of the user. The second
+case is a change of the draft into a change of an open issue. The planner subagent adds a line
+`Count starts again: <reason>` to the record file in each case. The earlier items stay.
+
+A dismissal of an issue-draft subagent counts as a dismissal of the planner subagent. The issue-draft subagent gives
+each dismissal with its reason in its result. The planner subagent adds each one to the record file. It reads no report
+file.
+
+If a finding of an escape-hatch kind is still not resolved after the last review, the draft goes to
+[the escape hatch](planner.md#the-escape-hatch). The planner subagent posts nothing for that draft.
+
+### The new-finding rule
+
+If no earlier item of the record file states the same point about the same place of the draft, the finding is new. The
+planner subagent judges this for each finding of a review.
+
+A finding that is not new gets the judgment `not new: <earlier item>`. The planner subagent takes no new action for it.
+It keeps the earlier decision.
+
+A review with only findings that are not new counts as a review with no new finding. The work on the draft ends after
+such a review.
+
+A new finding gets the judgment `new`. The planner subagent then changes the draft or dismisses the finding.
+
+The planner subagent also judges the finding of a review after a start again of the count. The earlier items of the
+record file still count for this judgment.
+
+### The record file
+
+The record file keeps the findings and the judgments of one draft. Its name is `<file>.findings.md`. It stands in the
+same folder as the draft file `<file>.md`.
+
+A draft file name has only lowercase letters, digits and `-`. So no draft file name has a `.` before `.md`, and a record
+file name is never a draft file name.
+
+The record file has one Markdown list item for each finding. Each item gives these facts:
+
+- The number of the review.
+- The place in the draft.
+- The text of the finding.
+- The judgment: `new`, `not new: <earlier item>` or `dismissed by <actor>: <one-line reason>`.
+
+Each dismissal of the result of an issue-draft subagent is also an item. The planner subagent is the only writer of the
+record file. A line `Count starts again: <reason>` is also part of the file.
+
+The planner subagent writes the record file in the folder of the draft files. It keeps the file until its result.
+
+### The start of an issue subagent
+
+The planner subagent starts each issue subagent with these values:
+
+- The subagent type is `general-purpose`. It never passes the type `fork`. [The start](#the-start) gives the reason.
+- The name is `<planner subagent name>-<kind>-<file>-<count>`. `<kind>` is `draft`, `review` or `post`. `<file>` is the
+  draft file name without `.md`. `<count>` counts the starts of that kind for that draft file in that planner subagent,
+  from 1. A second start after an end with no report also counts. An example is `plan-4-review-plan-4-terms-1`.
+- The `model` and the `effort` come from the entries of the prompt. The key is `issue-draft`, `issue-review` or
+  `issue-post`. If the prompt says that the key has no entry, the planner subagent passes no `model` and no `effort`.
+- The map of [The model of the start](#the-model-of-the-start) also covers these three keys. The planner subagent maps a
+  `model` value as that subsection says.
+
+With a count below 100, a name has at most 47 characters. The Agent tool refuses a name of more than 64 characters.
+
+The planner subagent starts at most one issue subagent for one draft at a time. It can run the work of different drafts
+at the same time.
+
+The start of a subagent below a subagent rests on these records. The chain of
+[The chain of subagents](#the-chain-of-subagents) shows that a subagent can start a subagent.
+[The ticket subagent](planner.md#the-ticket-subagent) and [run-one-ticket.md](run-one-ticket.md) give the earlier start
+rules for a review agent. [The doc-read rule](doc-reads.md#the-doc-read-rule) and its
+[Step 1: pull the local clone](doc-reads.md#step-1-pull-the-local-clone) give the read of a doc.
+
+A failed start counts as an end with no report. If the start fails, the planner subagent puts the failure in its result.
+
+### The prompt of an issue subagent
+
+The prompt of an issue subagent gives these facts:
+
+1. The kind of the subagent, and the document of its kind: [issue-draft.md](issue-draft.md),
+   [issue-review.md](issue-review.md) or [issue-post.md](issue-post.md).
+2. The path of the draft file, and of the record file where the kind needs it.
+3. The source of the draft word for word, with its sender and its date. The prompt names the source of each fact.
+4. The milestone of the draft and each decision of the user on the draft.
+5. For an issue-review subagent, the tests of [the tests of a draft](issue-review.md#the-tests-of-a-draft) and the bans
+   of [The bans of a review agent](planner.md#the-bans-of-a-review-agent), word for word. The prompt gives it no opinion
+   of the planner subagent about the draft.
+6. The ask for the result through the tool `SubagentHandback`.
+7. The own name of the subagent, as [The start of an issue subagent](#the-start-of-an-issue-subagent) gives it.
+
+An issue subagent reads only the documents of [The read rule](issue-subagents.md#the-read-rule) at its start. It loads a
+doc that a link names only on demand, for a specific task that needs the doc.
+
+### The wait for an issue subagent
+
+The planner subagent follows [The wait for a report](planner.md#the-wait-for-a-report) for each issue subagent. It is
+the starter of that wait.
+
+1. A wait notification does not end the wait. The result of the subagent ends it.
+2. If the issue subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies.
+3. The planner subagent then starts one new subagent of the same kind for the same draft. The new start counts in
+   `<count>`.
+4. If that one also ends with no report, the planner subagent puts the failure in its result. It posts nothing for that
+   draft.
+5. The planner subagent starts the next subagent of a draft only after the result of the earlier one.
+6. Before the post of an issue-post subagent, the planner subagent makes sure that the result of the last review is in
+   the record file.
+7. An issue-post subagent posts the body of the draft. Right after the post, it compares the body on GitHub with the
+   body of the draft, as [Before a post](issues.md#before-a-post) and [issues.md](issues.md) say. Its result gives the
+   compare.
+8. The planner subagent reads the result of the issue-post subagent. It adds each fact for the user to its own result.
+9. A result that names a tool block follows [the tool-block rule](tasker-commands.md#the-tool-block-rule).
+10. A late report of an issue subagent can start an ended planner subagent again.
+    [The life of a planner subagent](#the-life-of-a-planner-subagent) gives the steps. The second result deletes no
+    proposal file.
+11. The planner subagent ends only after the result of each issue subagent that it started.
+
+### The other sessions
+
+No other session changes because of this section. The follow-up planner keeps its ticket subagent and its review agent.
+The task subagent, the operator and the question session start no issue subagent.
+
+The ad hoc post subagent of the main session keeps its own start, as
+[The starter of an issue subagent](#the-starter-of-an-issue-subagent) says. The orchestrator starts only the planner
+subagent, as [The start](#the-start) says.
+
 ## The life of a planner subagent
 
 A planner subagent ends after its result. The orchestrator is the starter of
