@@ -391,6 +391,36 @@ A part of the text can change before the pane start or the reuse of the question
 [Close and continue](#close-and-continue). Then the orchestrator writes the question file again before that start. If
 this write fails, the fallback applies.
 
+Before each write of a question file, the orchestrator runs the link check over the first-reply text. This covers the
+first write at the arrival of the question and each later write. The orchestrator also runs the link check before it
+puts a first-reply text in an opener prompt or a reuse prompt. This covers text that it added or changed after the last
+write of the file. It also covers a question with no file, where the text comes from its session under the fallback.
+
+The link check is a read of the text by the orchestrator. It uses no script and no code. It finds each mention of an
+issue outside a code span and outside a code block. A mention is the issue key. The key is `#N` for an issue of this
+repo, for example `#1048`, and the full key for an issue of another repo, for example `owner/repo#12`.
+
+Each mention must pass two points. First, the mention is a markdown link in the form of the
+[issue-link rule](working-with-the-user.md#the-issue-link-rule). Second, the first mention of each issue in the text
+gives a few words of the content of the issue next to its link. The orchestrator chooses these words, and this choice is
+open on purpose. The words stand in the sentence of the mention, so they add no sentence to the limit of five sentences
+of [The question session](#the-question-session).
+
+For example, a question of a task subagent names `#977` as a plain key. The question file then gives
+`[#977](https://github.com/codeguru42/tasker/issues/977)` with a few words of its content at the first mention. An issue
+of another repo gets the link text `owner/repo#12`, as in `[owner/repo#12](https://github.com/owner/repo/issues/12)`.
+The issue line of the question, if it has one, counts as the first mention of that issue. A later mention of the same
+issue gives only the link. A mention inside a code span or a code block stays as it is, as the issue-link rule says.
+
+If a mention fails one of the two points, the orchestrator changes the text so that the mention follows the issue-link
+rule. Then it writes the file or puts the text in the prompt. So a question file and a prompt never hold a mention that
+fails the link check. The link check covers only the first-reply text. A message between two sessions keeps the plain
+key, and the question session still shows the text word for word.
+
+The reason is that the question session cannot fix a missed link, because it shows the text word for word. On
+2026-11-22, the first-reply text of the question orchestrator-m31-221 named eight issues as plain keys outside its issue
+line. The user said: "link for all mentioned issues".
+
 At each pane start and each reuse, the orchestrator reads the question file of the question. It puts the text of the
 file in the opener prompt or the reuse prompt as the first-reply text. For a question with no file, and under the
 fallback, it uses the text from its session. The opener subagent, the reuse subagent and the question session read no
