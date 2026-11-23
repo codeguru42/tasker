@@ -155,9 +155,27 @@ An issue-post subagent makes only these writes:
 - The `gh issue edit` calls that add a blocked-by link or that remove a link of a race. A reversed link is not a step of
   a post. The prompt gives no reversed link, so the subagent removes no old link before the walk. The paragraph that
   starts "If the walk finds a cycle" gives that removal.
-- The body file `/tmp/tasker/issue-post/<slug>-body.md`. The `<slug>` is the base name of the draft file from the
-  prompt. The subagent writes no other file. The pull of step 1 of [the doc-read rule](doc-reads.md#the-doc-read-rule)
-  is no write, as [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+- The body file, in the folder of the draft file of the post. Its path is the absolute path of the draft file from the
+  prompt, with `.body.md` in place of the `.md` at its end. For example, the draft file
+  `/tmp/tasker/orchestrator-m31/drafts/plan-3-links.md` gets the body file
+  `/tmp/tasker/orchestrator-m31/drafts/plan-3-links.body.md`. The draft file `/tmp/tasker/docs/drafts/links.md` gets the
+  body file `/tmp/tasker/docs/drafts/links.body.md`. The subagent writes no other file. The pull of step 1 of
+  [the doc-read rule](doc-reads.md#the-doc-read-rule) is no write, as
+  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+
+The reasons for this path:
+
+- The draft folder holds the own name of the orchestrator, the slug of the planner or the ad hoc name. So a body file
+  collides only where its draft file collides.
+- Two planner subagents of one orchestrator share a draft folder. In one session they never give two drafts one file
+  name, as [The count of planner subagents](planner-subagent.md#the-count-of-planner-subagents) says. A later session
+  with the same own name starts only after the old session waits for each planner subagent.
+  [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says this.
+- Inside one folder, two drafts already have different names, so their body files differ.
+- Each poster has the path of its draft file, and the rule needs no name of a planner subagent.
+- The end `.body.md` differs from `-body.md`. A draft name has only lowercase letters, digits and `-`, as
+  [The ticket subagent](planner.md#the-ticket-subagent) says. So `<name>.body.md` is never a draft path and never
+  overwrites a draft such as `x-body.md`.
 
 The subagent changes no other metadata. It moves no card. It runs no `gh project item-add`, for the reason of the bullet
 of [The project board](issues.md#the-project-board) that starts "A workflow of the board". It sets no priority, as the

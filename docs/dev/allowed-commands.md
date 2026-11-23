@@ -178,7 +178,8 @@ Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-i
 - K6: `gh issue create` and `gh issue edit` of the title and the body.
 - K7: the `gh issue edit` calls that add or remove a blocked-by link, with the milestone and the labels of the draft in
   `gh issue create`.
-- K12: the body file `/tmp/tasker/issue-post/<slug>-body.md`.
+- K12: the body file of the post, next to its draft file: the absolute path of the draft file, with `.body.md` in place
+  of the `.md` at its end.
 - Named other commands: a Read call on a file of the local clone, `wc -l <path>`,
   `wc -m <absolute path of the body file>`, `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its
   own tool call.
