@@ -115,9 +115,11 @@ The orchestrator does all the steps of this section.
       another session. The issue sits in two scopes, for example in the set and in a milestone that another orchestrator
       runs. The orchestrator tells the user and asks the user for a decision, as
       [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The ticket does not start until
-      the user decides. The exception: if the issue has an entry in
-      [the task list](handoff-orchestrator.md#the-task-list) of a handoff file, the new orchestrator starts the task
-      subagent of that entry and asks the user nothing.
+      the user decides. The exception holds only at the start of a new orchestrator, before its first pick. For an entry
+      of [the task list](handoff-orchestrator.md#the-task-list) in the handoff file of its first message, the new
+      orchestrator starts the task subagent of that entry and asks the user nothing, as
+      [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. At each later
+      read, this case holds as written, also for an issue of such an entry.
 
   The ownership rule covers a task that sits in one scope. The check covers an issue that sits in two scopes.
 
