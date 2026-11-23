@@ -39,6 +39,9 @@ function fill(values: Record<string, string>): string {
   return fillTemplate("planner/planner-subagent", body(), { ...sample, ...values });
 }
 
+const DOCS_NONE =
+  "If the docs to read are none, read no doc and start no subagent. End with a result that says that the prompt named no doc to read.";
+
 describe("prompt-templates/planner/planner-subagent.md", () => {
   it("is a valid prompt template", () => {
     expect(checkPromptTemplate(path)).toEqual([]);
@@ -80,7 +83,15 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
 
   it("says what to do when the docs to read are none", () => {
     const filled = fill({ DOCS_TO_READ: "none" });
-    expect(filled).toContain("If the docs to read are none, the prompt names no doc to read.");
+    expect(filled).toContain(DOCS_NONE);
+    expect(filled).not.toContain("the prompt names no doc to read.");
+  });
+
+  it("gives the docs sentence after the last entry line", () => {
+    const filled = fill({ DOCS_TO_READ: "none" });
+    const entry = filled.indexOf("Entry of sessions.models.issue-post:");
+    expect(entry).toBeGreaterThan(-1);
+    expect(filled.indexOf(DOCS_NONE)).toBeGreaterThan(entry);
   });
 
   it("holds one entry as the read gave it and none for the two other keys", () => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { packagePath } from "../../../src/package-path.js";
 import { fillTemplate } from "../../../src/prompts/template.js";
 import { checkPromptTemplate, readPromptTemplate } from "../../../src/prompts/template-file.js";
-import { docPaths, sharedWordRuns } from "../../helpers/doc-text.js";
+import { docPaths, sharedWordRuns, startBlock } from "../../helpers/doc-text.js";
 
 const path = packagePath("prompt-templates/planner/issue-draft.md");
 
@@ -33,6 +33,9 @@ function body(): string {
 function fill(values: Record<string, string>): string {
   return fillTemplate("planner/issue-draft", body(), { ...sample, ...values });
 }
+
+const RULE_DOCS_NONE =
+  "If the rule documents are none, this sentence wins over the start steps. Read no document, do no other work, and end with a result that says that the prompt named no rule document.";
 
 describe("prompt-templates/planner/issue-draft.md", () => {
   it("is a valid prompt template", () => {
@@ -75,7 +78,15 @@ describe("prompt-templates/planner/issue-draft.md", () => {
 
   it("says what to do when the rule documents are none", () => {
     const filled = fill({ RULE_DOCS: "none" });
-    expect(filled).toContain("If the rule documents are none, the prompt names no rule document.");
+    expect(filled).toContain(RULE_DOCS_NONE);
+    expect(filled).not.toContain("the prompt names no rule document.");
+  });
+
+  it("gives the rule documents sentence after the start steps", () => {
+    const filled = fill({ RULE_DOCS: "none" });
+    const block = startBlock(filled);
+    expect(block).toBeDefined();
+    expect(filled.indexOf(RULE_DOCS_NONE)).toBeGreaterThan(filled.indexOf(block!) + (block!).length - 1);
   });
 
   it("says what to do when the decisions of the user are none", () => {
