@@ -80,3 +80,5 @@ On 2026-11-07, three review agents of planner-m16 wrote a file with the name `op
 prompt of one of them banned that write. Another review agent read two saved outputs of its own commands with the Read
 tool, although its prompt banned each read under `$HOME/.claude/projects`. The auto mode classifier denied its Bash
 `grep` of a third saved output with the reason "[PII Data Handling]". Its reads with the Read tool got no denial.
+
+The prompt of an issue-review subagent gives this list word for word through the placeholder REVIEW_BANS.

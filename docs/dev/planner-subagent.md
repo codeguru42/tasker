@@ -233,6 +233,13 @@ The prompt of a planner subagent gives these facts:
   fact that a key has no entry. [The start of an issue subagent](#the-start-of-an-issue-subagent) uses them.
 - The ask for the result through the tool `SubagentHandback`.
 
+The words of this prompt stand in the file
+[`prompt-templates/planner/planner-subagent.md`](../../prompt-templates/planner/planner-subagent.md). The orchestrator
+reads that file as [the doc-read rule](doc-reads.md#the-doc-read-rule) says, and fills each placeholder. An absent fact
+has the value `none`, for example a key with no entry. The file holds the list of the planner subagent in the allowed
+commands as fixed words, so a change of [that list](allowed-commands.md#the-planner-subagent) also changes the file. The
+facts of an answer of the user go in the request.
+
 The reason for the folder: the follow-up planner of the slug writes its drafts to `/tmp/tasker/<slug>/drafts/`. A shared
 folder can give two drafts one file name.
 
@@ -800,6 +807,15 @@ The prompt of an issue-post subagent also gives these facts:
 - For a change of an open issue, the issue key and the start hash.
 - Each blocked-by link of the draft, with the blocked issue, the blocker and the reason.
 - For the end of the post of an existing issue, the key of that issue.
+
+The words of these prompts stand in three files: [`issue-draft.md`](../../prompt-templates/planner/issue-draft.md),
+[`issue-review.md`](../../prompt-templates/planner/issue-review.md) and
+[`issue-post.md`](../../prompt-templates/planner/issue-post.md), in `prompt-templates/planner/`. The planner subagent
+reads each file as [the doc-read rule](doc-reads.md#the-doc-read-rule) says, and fills each placeholder. The placeholder
+`RULE_DOCS` holds the two paths of item 1. A template file is not a rule document. For a comment, the key goes in the
+issue key. The planner subagent also reads the section "The bans of an issue-review subagent" and fills the placeholder
+`REVIEW_BANS` with all the text of that section, after the heading line and up to the next heading. An absent fact has
+the value `none`.
 
 The model and the effort go in the Agent call, not in the prompt.
 
