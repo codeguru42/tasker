@@ -162,22 +162,25 @@ In the stopping-point case, step 2 sends the stopping-point message to each task
 out a parked task. The message does these things:
 
 - It tells the task subagent to do step 1 of the defer rule and no other step.
-- It tells the task subagent to end with a stopping-point report that gives the state of its work.
+- It tells the task subagent to end with a stopping-point report that gives the state of its work. The old orchestrator
+  puts that state in the entry of [the task list](#the-task-list).
 - It names the stopping point. An interim report that names the stopping point ends the wait of the old orchestrator.
 
 The message reaches the task subagent only at its next turn. No one measured how fast a task subagent reads it, so the
 old orchestrator does not guess. The old orchestrator waits with no time limit. If the task subagent ends with no
-report, see the end of a task subagent with no report below.
+report, see [The end with no report](#the-end-with-no-report).
 
 The old orchestrator treats each report as follows:
 
-- A report of a landing is a landing. It gets no entry. The usual steps of a landing hold.
+- A report of a landing is a landing. It gets no entry in [the task list](#the-task-list). The usual steps of a landing
+  hold.
 - For each other report, the old orchestrator does the steps of [Delete the job](quota.md#delete-the-job).
 - No resume message goes out, and no next job starts. If a job of such a task subagent fires, the old orchestrator tells
   the user in one line.
 
 The old orchestrator sends the facts and the lessons of step 4 as usual. The stopping-point case changes no task. If the
-user answers a question of the task after the message, the answer goes into the entry with the words of the user.
+user answers a question of the task after the message, the answer goes into the entry of [the task list](#the-task-list)
+with the words of the user.
 
 ### The end with no report
 
@@ -215,20 +218,19 @@ These steps are not new work in the stopping-point case. They hold as written:
 
 If a task subagent fails, the old orchestrator follows [the failure rule](limits.md#the-failure-rule). It does not wait
 for that task subagent again. It tells the user. The same holds for a task subagent that a quota stop ended. The entry
-of the task says "no report". The list of the tasks in the handoff file has one entry for each task that is not a parked
-task. The page does not describe that list here.
+of the task says "no report". [The task list](#the-task-list) has one entry for each task that is not a parked task.
 
 ### The events
 
-| Event                                      | What the old orchestrator does                                       |
-| ------------------------------------------ | -------------------------------------------------------------------- |
-| The stopping-point report arrives          | It does the steps of Delete the job and makes the entry              |
-| An interim report names the stopping point | It ends the wait for that task subagent                              |
-| A report of a landing arrives              | It does the usual steps of a landing and makes no entry              |
-| The task subagent ends with no report      | It makes the entry "no report" and tells the user                    |
-| A job of the task subagent fires           | It sends no resume message and tells the user in one line            |
-| The user answers a question of the task    | It puts the answer in the entry with the words of the user           |
-| The new orchestrator starts                | It starts a new task subagent for each entry, as its start page says |
+| Event                                      | What the old orchestrator does                                |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| The stopping-point report arrives          | It does the steps of Delete the job and makes the entry       |
+| An interim report names the stopping point | It ends the wait for that task subagent                       |
+| A report of a landing arrives              | It does the usual steps of a landing and makes no entry       |
+| The task subagent ends with no report      | It makes the entry "no report" and tells the user             |
+| A job of the task subagent fires           | It sends no resume message and tells the user in one line     |
+| The user answers a question of the task    | It puts the answer in the entry with the words of the user    |
+| The new orchestrator starts                | It starts a new task subagent for each entry of the task list |
 
 ## The handoff file of the orchestrator
 
@@ -255,6 +257,10 @@ handoff file:
   `$HERDR_PANE_ID`. The old orchestrator gets the two ids before it writes the file. If it cannot get the pane id, the
   file says so. The close of step 6 of [The start of the new orchestrator](#the-start-of-the-new-orchestrator) uses the
   same ids. The file gives no session ref of the old orchestrator.
+- In the stopping-point case, [the task list](#the-task-list).
+- For each question that has a question file and got a pane handoff, the link to the pane handoff file. The link stands
+  next to the question id. It is relative, and its target is only the name of the file. If the write of the pane handoff
+  file failed, the handoff file holds the pane handoff itself in place of the link.
 
 The handoff file holds no text and no list of the open questions that have a
 [question file](question-pane.md#the-question-file). It holds no list of the requests that have a
@@ -265,6 +271,24 @@ slug.
 After the write of its handoff file, the old orchestrator writes no new file in the three folders and gives no new
 question id. A question that reaches it after the write gets no question file. The old orchestrator shows the full text
 of that question as a report in its tab.
+
+### The task list
+
+The task list is a part of the handoff file in the stopping-point case. It has one entry for each task in flight that is
+not a parked task. A task that landed has no entry.
+
+An entry gives these items:
+
+- The issue key, the title and the branch of the ticket
+- The start base of the task, if the task is stacked
+- The state of the work, as the stopping-point report gives it
+- Each answer of the user after the stopping-point message, with the words of the user
+- Each dismissed finding, each edge case, each false claim and each `tasker retry` of the verify-failure rule that the
+  task subagent reported
+
+The entry gives the files that the work changed so far. If the report gives no files, the entry gives the words that the
+diff of the task branch gives. If the task subagent ended with no report, the entry says "no report". The entry gives no
+session name of the old task subagent.
 
 ## The start of the new orchestrator
 
@@ -338,6 +362,29 @@ not the tab id of the handoff file. Then, before the pick of the first ticket, i
 
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
 record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
+
+If the handoff file holds [the task list](#the-task-list), the new orchestrator starts the new task subagents after the
+read of `tasker status` and before the pick of the first ticket. It starts one task subagent for each entry. It asks the
+user nothing about the entry. The steps are:
+
+1. Read `tasker show <issue>` for the ticket of the entry.
+2. Start the task subagent as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+   The prompt gives the entry, the state from `tasker show <issue>` and each answer of the entry.
+3. Give the task subagent the session name of the entry with a new suffix. The suffix is `-h<date><time>`. The digits
+   come from the date and the time in the name of the handoff file. An example is `codeguru42-tasker-108-h202611221505`.
+4. Compare the new task worktree path with each path of an entry. If two paths are the same, add `-2` to the suffix.
+5. Do not move the quota jobs of the old session. The old jobs and the old slot ended with the old orchestrator. The new
+   task subagent gets its own jobs and its own slot, as
+   [Schedule a job when a task subagent starts](quota.md#schedule-a-job-when-a-task-subagent-starts) says.
+
+If the entry says "no report", the new task subagent starts from the state that `tasker show <issue>` gives. If that
+read fails, the new orchestrator does not start that task subagent and tells the user. If the start of a task subagent
+fails, the new orchestrator tells the user and goes on with the next entry.
+
+If the handoff file links a pane handoff file next to a question id, the new orchestrator reads that file before it
+starts the pane of that question. The pane then asks the question again, with the words of the pane handoff file in its
+first reply. If the read of the file fails, the new orchestrator tells the user and asks the question from its question
+file in the usual way.
 
 An answer can name the id of a question of the old session, as [The last item id](handoff.md#the-last-item-id) says.
 Then the new orchestrator takes the question from its [question file](question-pane.md#the-question-file). A question
