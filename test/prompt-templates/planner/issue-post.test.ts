@@ -1,15 +1,20 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { packagePath } from "../../../src/package-path.js";
-import { fillTemplate } from "../../../src/prompts/template.js";
 import { checkPromptTemplate, readPromptTemplate } from "../../../src/prompts/template-file.js";
-import { docPaths, sharedWordRuns, startBlock } from "../../helpers/doc-text.js";
+import { docPaths } from "../../helpers/doc-text.js";
+import {
+  fillPlannerTemplate,
+  ISSUE_RESULT_ASK,
+  PLANNER_WAIT,
+  plannerDocWordRuns,
+  plannerTemplateBody,
+  RULE_DOCS_NONE,
+  standsAfterStartBlock,
+} from "../../helpers/planner-prompts.js";
 
 const path = packagePath("prompt-templates/planner/issue-post.md");
 
-const RESULT_ASK = "Return your result to the session that started you with the tool SubagentHandback.";
 const RULE_DOCS = "docs/dev/issue-subagents.md\ndocs/dev/issue-post.md";
-const WAIT = "timeout 20 bash -c 'sleep 5'";
 
 const sample: Record<string, string> = {
   RULE_DOCS,
@@ -23,17 +28,6 @@ const sample: Record<string, string> = {
   START_HASH: "none",
   LINKS: "none",
 };
-
-function body(): string {
-  return readPromptTemplate(path).body;
-}
-
-function fill(values: Record<string, string>): string {
-  return fillTemplate("planner/issue-post", body(), { ...sample, ...values });
-}
-
-const RULE_DOCS_NONE =
-  "If the rule documents are none, this sentence wins over the start steps. Read no document, do no other work, and end with a result that says that the prompt named no rule document.";
 
 describe("prompt-templates/planner/issue-post.md", () => {
   it("is a valid prompt template", () => {
@@ -56,54 +50,51 @@ describe("prompt-templates/planner/issue-post.md", () => {
   });
 
   it("leaves no {{ after a fill and holds the result ask and the rule documents", () => {
-    const filled = fill({});
+    const filled = fillPlannerTemplate("issue-post", sample);
     expect(filled).not.toContain("{{");
-    expect(filled).toContain(RESULT_ASK);
+    expect(filled).toContain(ISSUE_RESULT_ASK);
     for (const line of RULE_DOCS.split("\n")) expect(filled).toContain(line);
   });
 
   it("has no docs/ path in the body and names only the two rule documents after a fill", () => {
-    expect(docPaths(body())).toEqual([]);
-    expect(docPaths(fill({}))).toEqual(["docs/dev/issue-subagents.md", "docs/dev/issue-post.md"]);
+    expect(docPaths(plannerTemplateBody("issue-post"))).toEqual([]);
+    expect(docPaths(fillPlannerTemplate("issue-post", sample))).toEqual(["docs/dev/issue-subagents.md", "docs/dev/issue-post.md"]);
   });
 
   it("shares no 8-word run with docs/dev/planner-subagent.md", () => {
-    const doc = readFileSync(packagePath("docs/dev/planner-subagent.md"), "utf8");
-    expect(sharedWordRuns(body(), doc)).toEqual([]);
+    expect(plannerDocWordRuns(plannerTemplateBody("issue-post"))).toEqual([]);
   });
 
   it("says what to do when the rule documents are none", () => {
-    const filled = fill({ RULE_DOCS: "none" });
+    const filled = fillPlannerTemplate("issue-post", { ...sample, RULE_DOCS: "none" });
     expect(filled).toContain(RULE_DOCS_NONE);
     expect(filled).not.toContain("the prompt names no rule document.");
   });
 
   it("gives the rule documents sentence after the start steps", () => {
-    const filled = fill({ RULE_DOCS: "none" });
-    const block = startBlock(filled);
-    expect(block).toBeDefined();
-    expect(filled.indexOf(RULE_DOCS_NONE)).toBeGreaterThan(filled.indexOf(block!) + (block!).length - 1);
+    const filled = fillPlannerTemplate("issue-post", { ...sample, RULE_DOCS: "none" });
+    expect(standsAfterStartBlock(filled, RULE_DOCS_NONE)).toBe(true);
   });
 
   it("says what to do when the labels are none", () => {
-    const filled = fill({ LABELS: "none" });
+    const filled = fillPlannerTemplate("issue-post", { ...sample, LABELS: "none" });
     expect(filled).toContain("Labels: none");
     expect(filled).toContain("If the labels are none, the draft gives no label.");
   });
 
   it("says what to do when the blocked-by links are none", () => {
-    const filled = fill({ LINKS: "none" });
+    const filled = fillPlannerTemplate("issue-post", { ...sample, LINKS: "none" });
     expect(filled).toContain("If the blocked-by links are none, the draft gives no blocked-by link.");
   });
 
   it("says what to do when the start hash is none", () => {
-    const filled = fill({ START_HASH: "none" });
+    const filled = fillPlannerTemplate("issue-post", { ...sample, START_HASH: "none" });
     expect(filled).toContain("Start hash: none");
     expect(filled).toContain("If the start hash is none, the prompt gives no start hash.");
   });
 
   it("holds the issue key for the end of the post of an existing issue", () => {
-    const filled = fill({ POST_KIND: "the end of the post of an existing issue", ISSUE_KEY: "codeguru42/tasker#123" });
+    const filled = fillPlannerTemplate("issue-post", { ...sample, POST_KIND: "the end of the post of an existing issue", ISSUE_KEY: "codeguru42/tasker#123" });
     expect(filled).toContain("Issue key: codeguru42/tasker#123");
     expect(filled).not.toContain("{{");
   });
@@ -113,7 +104,7 @@ describe("prompt-templates/planner/issue-post.md", () => {
       "codeguru42/tasker#2 is blocked by codeguru42/tasker#1. Reason: it needs the new file.",
       "codeguru42/tasker#3 is blocked by codeguru42/tasker#2. Reason: it reads the new test.",
     ];
-    const filled = fill({ MILESTONE: "M31 — Orchestrator", LABELS: "docs\nenhancement", LINKS: links.join("\n") });
+    const filled = fillPlannerTemplate("issue-post", { ...sample, MILESTONE: "M31 — Orchestrator", LABELS: "docs\nenhancement", LINKS: links.join("\n") });
     expect(filled).toContain("Milestone: M31 — Orchestrator");
     expect(filled).toContain("docs\nenhancement");
     for (const link of links) expect(filled).toContain(link);
@@ -121,8 +112,8 @@ describe("prompt-templates/planner/issue-post.md", () => {
   });
 
   it("gives the wait command with its quotes", () => {
-    const filled = fill({});
-    expect(filled).toContain(WAIT);
+    const filled = fillPlannerTemplate("issue-post", sample);
+    expect(filled).toContain(PLANNER_WAIT);
     expect(filled).not.toContain("bash -c sleep 5");
   });
 });

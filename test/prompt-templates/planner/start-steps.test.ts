@@ -1,16 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { packagePath } from "../../../src/package-path.js";
-import { readPromptTemplate } from "../../../src/prompts/template-file.js";
 import { startBlock } from "../../helpers/doc-text.js";
-
-const START_LINE =
-  "Do the start steps in the folder where your session starts, which is the local clone. No command has a -C option.";
-const WAIT = "timeout 20 bash -c 'sleep 5'";
+import { PLANNER_WAIT, plannerTemplateBody, START_LINE } from "../../helpers/planner-prompts.js";
 
 const names = ["issue-draft", "issue-review", "issue-post"];
 
 function block(name: string): string | undefined {
-  return startBlock(readPromptTemplate(packagePath(`prompt-templates/planner/${name}.md`)).body);
+  return startBlock(plannerTemplateBody(name));
 }
 
 describe("the start steps of the issue prompt templates", () => {
@@ -19,7 +14,7 @@ describe("the start steps of the issue prompt templates", () => {
       const found = block(name);
       expect(found).toBeDefined();
       expect(found?.startsWith(START_LINE)).toBe(true);
-      expect(found).toContain(WAIT);
+      expect(found).toContain(PLANNER_WAIT);
     });
   }
 
