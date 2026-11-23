@@ -187,6 +187,8 @@ request that waits is a request that waits in the session. These files are not r
 - For step 2 of [The wait before a handoff](#the-wait-before-a-handoff), a file that a stop of the queue holds.
 - At a start with no handoff file, each file that `proposals/` holds at the end of the start steps, until the word of
   the user. [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) gives the steps.
+- A file of a draft that still has an open question, until the answer to the last open question of the draft. See
+  [A settled question](#a-settled-question).
 
 Before the start of a planner subagent, the orchestrator writes the name of that planner subagent into its proposal
 file. The name is `plan-<count>` of [The name](#the-name). The file holds the tie of the request and the planner
@@ -305,10 +307,11 @@ question" says. The orchestrator chooses the files. The two bullets of
 [A decision of the user](working-with-the-user.md#a-decision-of-the-user) that start "A rule of the docs on
 `origin/main` can answer a question" and "Before a decision of the user or a recommendation" still hold.
 
-The orchestrator judges if a rule or a fact settles the question. Each limit of the first bullet holds, also for a fact
-of the code. In doubt, the question is not settled. For a planner question, the limit on a change of a rule of the docs
-reads in this way: a settled answer changes no rule of the docs itself. It only chooses among the choices of a draft.
-The planner subagent reviews and posts that draft under its own rules.
+The orchestrator judges if a rule or a fact settles the question. Each limit of the bullet that starts "A rule of the
+docs on `origin/main` can answer a question" holds, also for a fact of the code. In doubt, the question is not settled.
+For a planner question, the limit on a change of a rule of the docs reads in this way: a settled answer changes no rule
+of the docs itself. It only chooses among the choices of a draft. The planner subagent reviews and posts that draft
+under its own rules.
 
 The orchestrator does not ask the user a settled question and starts no question pane for it. A settled question is not
 an open question of the orchestrator in the meaning of [Terms](question-pane.md#terms) of question-pane.md.
@@ -331,7 +334,11 @@ A settled answer is a new planning request, as step 4 of The result says for an 
 [The start](#the-start). For a draft with two or more questions, the settled answer joins the answers of the other
 questions. The new planner subagent starts after the last answer, as
 [A draft that needs the user](#a-draft-that-needs-the-user) says. The prompt gives the draft path, the questions and the
-answers, each with its source.
+answers, each with its source. A draft can still have an open question when its settled answer comes. Then the
+orchestrator writes the proposal file of the settled answer at once, as [The proposal file](#the-proposal-file) says for
+a request at its arrival. The file holds the draft path, the questions and each answer so far, each with its source. The
+orchestrator starts no planner subagent from that file until the answer to the last open question of the draft. Each
+later answer of that draft joins the same file.
 
 A settled answer can drop a draft only if a rule or a fact already holds the whole change of the draft. Keep 4 permits a
 drop with no approval of the user. Then the drop bullet of A draft that needs the user holds for the settled answer: the
