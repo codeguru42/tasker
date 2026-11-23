@@ -1668,8 +1668,9 @@ the close of the pane and the next pane start do not wait for a write subagent.
 [The stopping-point case](handoff-orchestrator.md#the-stopping-point-case) is the exception for an open pane. In that
 case, the old orchestrator starts the handoff while a pane is open, after it gives the pane its pane handoff or its
 usual close, as [The pane handoff](#the-pane-handoff) says. A running write subagent still holds the start. If the close
-of the pane fails, the old orchestrator follows that section: it tells the user and starts the new orchestrator only
-after the user says that the pane is closed.
+of the pane fails, the old orchestrator follows
+[The panes and the write subagents](handoff-orchestrator.md#the-panes-and-the-write-subagents). It tells the user and
+starts the new orchestrator only after the user says that the pane is closed.
 
 The reason: on 2026-11-13, the user said, as operator-docs relayed it: "File an issue to modify the process for closing
 a question. After the session review passes with no findings, clear the session instead of closing it entirely. Then

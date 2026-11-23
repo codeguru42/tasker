@@ -102,7 +102,8 @@ can name the step:
    [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says. The old jobs and the old slot end with
    the old orchestrator. A task subagent that did not end, for example after a failed send of the stopping-point
    message, stays under the wait case for its task, as [The failures](#the-failures) says. Before step 3, the old
-   orchestrator also waits for each open pane and each write subagent, as that section says.
+   orchestrator also waits for each open pane and each write subagent, as
+   [The panes and the write subagents](#the-panes-and-the-write-subagents) says.
 
 3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17.
 4. After step 3 ended with a round that found nothing new, send each fact and each lesson, as the paragraph that starts
