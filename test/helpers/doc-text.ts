@@ -48,3 +48,20 @@ export function sharedWordRuns(body: string, doc: string, size = 8): string[] {
   }
   return [...shared];
 }
+
+const START_BLOCK_FIRST = "Do the start steps in the folder where your session starts";
+const START_BLOCK_LAST = "After a pull that passed";
+
+/**
+ * Give the start steps of an issue prompt: the lines from the first line that starts with
+ * the start line to the first later line that starts with the last line, both included.
+ * Give `undefined` if either line is missing.
+ */
+export function startBlock(body: string): string | undefined {
+  const lines = body.split("\n");
+  const first = lines.findIndex((line) => line.startsWith(START_BLOCK_FIRST));
+  if (first === -1) return undefined;
+  const offset = lines.slice(first + 1).findIndex((line) => line.startsWith(START_BLOCK_LAST));
+  if (offset === -1) return undefined;
+  return lines.slice(first, first + 1 + offset + 1).join("\n");
+}

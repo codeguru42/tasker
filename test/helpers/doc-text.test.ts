@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { docPaths, markdownSection, sharedWordRuns } from "./doc-text.js";
+import { docPaths, markdownSection, sharedWordRuns, startBlock } from "./doc-text.js";
 
 describe("markdownSection", () => {
   it("gives the lines up to the next heading", () => {
@@ -55,5 +55,23 @@ describe("sharedWordRuns", () => {
     const body = "one two three four five six seven eight";
     const doc = "one two three four five six seven nine";
     expect(sharedWordRuns(body, doc)).toEqual([]);
+  });
+});
+
+describe("startBlock", () => {
+  const first = "Do the start steps in the folder where your session starts, which is the local clone.";
+  const last = "After a pull that passed, read the hashes.";
+
+  it("gives the block with its first and last line", () => {
+    const body = `Intro line.\n\n${first}\nMiddle line.\n${last}\nMore text.\n`;
+    expect(startBlock(body)).toBe(`${first}\nMiddle line.\n${last}`);
+  });
+
+  it("gives undefined when the first line is missing", () => {
+    expect(startBlock(`Intro.\n${last}\n`)).toBeUndefined();
+  });
+
+  it("gives undefined when the last line is missing", () => {
+    expect(startBlock(`${first}\nMiddle line.\n`)).toBeUndefined();
   });
 });

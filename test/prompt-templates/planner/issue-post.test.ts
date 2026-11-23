@@ -9,6 +9,7 @@ const path = packagePath("prompt-templates/planner/issue-post.md");
 
 const RESULT_ASK = "Return your result to the session that started you with the tool SubagentHandback.";
 const RULE_DOCS = "docs/dev/issue-subagents.md\ndocs/dev/issue-post.md";
+const WAIT = "timeout 20 bash -c 'sleep 5'";
 
 const sample: Record<string, string> = {
   RULE_DOCS,
@@ -106,5 +107,11 @@ describe("prompt-templates/planner/issue-post.md", () => {
     expect(filled).toContain("docs\nenhancement");
     for (const link of links) expect(filled).toContain(link);
     expect(filled).not.toContain("{{");
+  });
+
+  it("gives the wait command with its quotes", () => {
+    const filled = fill({});
+    expect(filled).toContain(WAIT);
+    expect(filled).not.toContain("bash -c sleep 5");
   });
 });
