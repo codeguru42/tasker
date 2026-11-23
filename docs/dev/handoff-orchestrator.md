@@ -209,9 +209,10 @@ after that check, at the end of its start steps, it lists `questions/` and `prop
 After these lists, it reads the tasks in flight with `tasker status`, also
 [the parked tasks](pick-the-tickets.md#the-defer-rule). It reads the other sessions with `ListAgents`. Then, if all
 [the start checks](../orchestrator.md#the-start-checks) passed, it makes its board watch job, as
-[the board watch rule](../orchestrator.md#the-board-watch-job) says. If a start check stopped it, it makes no job. An
-example is a stop by step 3 for a row of `herdr agent list` with the own name and a tab id that is not the tab id of the
-handoff file. Then, before the pick of the first ticket, it reads the record of
+[the board watch rule](../orchestrator.md#the-board-watch-job) says. The first read of the board can delete the job, as
+[A ticket that waits for a slot](../orchestrator.md#a-ticket-that-waits-for-a-slot) says. If a start check stopped it,
+it makes no job. An example is a stop by step 3 for a row of `herdr agent list` with the own name and a tab id that is
+not the tab id of the handoff file. Then, before the pick of the first ticket, it reads the record of
 [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file and runs that find.
 
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that

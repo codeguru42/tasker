@@ -219,12 +219,13 @@ The orchestrator does all the steps of this section.
   [the failure rule](limits.md#the-failure-rule) applies. The orchestrator starts no ticket that the read covers until a
   later read works. This covers a message of each session on purpose. Today the follow-up planner sends such messages,
   as [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) says. Each orchestrator also
-  reads the board with its board watch job, as [the board watch rule](../orchestrator.md#the-board-watch-job) says. Each
-  read of the board that does not come at a landing is a read of the board, but it is not a landing. It counts for each
-  rule of this page that acts "at its next read of the board" or "each time it reads the board". So the priority rule,
-  with its tie breaker, applies to each start after such a read. It does not count for a read that a rule ties to a
-  landing, for example the read of the parent issue in [the parent-hold rule](#the-parent-hold-rule). Each rule that
-  stops a start still wins, for example the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
+  reads the board with its board watch job while no ticket of its scope waits for a slot, as
+  [the board watch rule](../orchestrator.md#the-board-watch-job) says. Each read of the board that does not come at a
+  landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts "at its next
+  read of the board" or "each time it reads the board". So the priority rule, with its tie breaker, applies to each
+  start after such a read. It does not count for a read that a rule ties to a landing, for example the read of the
+  parent issue in [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins, for example
+  the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
 
   The orchestrator also reads the board after a defer and after the end of a hold of
   [the parent-hold rule](#the-parent-hold-rule). It also reads the board after a stop of a task subagent whose slot it
@@ -247,8 +248,9 @@ The orchestrator does all the steps of this section.
   The orchestrator runs the find at each start of its session, after the start reads and before the pick of the first
   ticket. It also runs the find after the read of the board at each landing. Each other read of the board runs no find,
   except the next read of the board after a failed find. An example of such another read is the read of the board watch
-  job. The find reads each open issue of the scope, and the board watch job reads the board two times each hour. The
-  cost: an issue that leaves Todo between two landings gets its raise at the next landing.
+  job. The find reads each open issue of the scope. While the orchestrator has the board watch job, the job reads the
+  board two times each hour. The cost: an issue that leaves Todo between two landings gets its raise at the next
+  landing.
 
   The find only reads, raises and updates the record. It starts no ticket and stops no start. It uses a fact that a read
   of the board at that moment already gave, also the `on hold` read of [A ticket on hold](#a-ticket-on-hold). If no such
@@ -1001,9 +1003,10 @@ at the word of the user. For a ticket with a task in flight, the steps come in p
    them to remove. Then remove each link that the user names, and read the board again.
 7. A removed link of step 4 or step 6 can free an issue of another milestone. Send no message about it to a peer, as
    [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message) says. The peer finds the freed issue at its
-   next read of the board. Each orchestrator has a board watch job, as
+   next read of the board. An orchestrator has a board watch job while no ticket of its scope waits for a slot, as
    [the board watch rule](../orchestrator.md#the-board-watch-job) says. So an idle peer finds the freed issue at the
-   next fire of its board watch job, or at another read of the board.
+   next fire of its board watch job, or at another read of the board. A peer with no job for a waiting ticket has each
+   slot in use or kept. The freed issue can start only after a slot frees, and that event reads the board.
 
 If the list of step 1 fails, [the failure rule](limits.md#the-failure-rule) applies, and no link changes. A later word
 of the user can start the link removal again. If `tasker status` or the read of the state fails, the orchestrator skips
@@ -1161,7 +1164,7 @@ raise of that issue. An open question of another rule that names the issue also 
 During the wait, the milestone and the own tab stay open. Each read of the board starts each ticket that can start.
 After a read with no start, no live task and no ready ticket, the end starts again. The
 [board watch job](../orchestrator.md#the-board-watch-job) starts a read of the board two times each hour during the
-wait.
+wait. In the wait, the scope has no live task, so no ticket waits for a slot and the orchestrator keeps its job.
 
 At the end of a hold before an install, the orchestrator does the end reads again. When the result of a planner subagent
 arrives during the wait, the orchestrator also does the end reads again. The end of a milestone hold follows the
