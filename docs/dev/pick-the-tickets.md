@@ -115,7 +115,9 @@ The orchestrator does all the steps of this section.
       another session. The issue sits in two scopes, for example in the set and in a milestone that another orchestrator
       runs. The orchestrator tells the user and asks the user for a decision, as
       [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The ticket does not start until
-      the user decides.
+      the user decides. The exception: if the issue has an entry in
+      [the task list](handoff-orchestrator.md#the-task-list) of a handoff file, the new orchestrator starts the task
+      subagent of that entry and asks the user nothing.
 
   The ownership rule covers a task that sits in one scope. The check covers an issue that sits in two scopes.
 
@@ -915,6 +917,10 @@ orchestrator does these steps:
    that the user asked for. Before its final report, it removes the task worktree as
    [the own-worktree rule](limits.md#the-own-worktree-rule) says. The remove changes no task, and the task keeps its
    state. Then it gives its final report.
+
+   [The stopping-point case](handoff-orchestrator.md#the-stopping-point-case) of a handoff uses step 1 alone. The other
+   steps of this rule do not apply there.
+
 2. Leave the task in its state. Run no `tasker abort` yourself. If the user asks for an abort, send
    `tasker abort <issue>` to the task subagent of the ticket, as
    [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says.
@@ -1341,6 +1347,11 @@ slot and landing rules still apply.
     through the branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves
     the quota jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage
     failed in this way after a resume of the session of the orchestrator at a `/rename`.
+  - The new task subagent of an entry of [the task list](handoff-orchestrator.md#the-task-list) is also a second session
+    for the ticket. Its suffix follows
+    [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator). The move of the
+    quota jobs does not apply across a handoff, because the old jobs end with the old orchestrator. The prompt gives the
+    entry, the state from `tasker show <issue>` and each answer of the entry.
   - If a task subagent already runs with no name, the orchestrator does not restart the task subagent only to give it a
     name. The reason: a new task subagent does not have the context of the old task subagent, for example the plans that
     it read and its review loops. For a task subagent with no name, the orchestrator puts the full issue key in the text
