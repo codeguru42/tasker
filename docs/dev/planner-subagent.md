@@ -16,7 +16,10 @@ as the work needs. An issue subagent on this page is one of these subagents. A p
 - The metadata of an issue is its milestone, its labels, its state, its board column and its priority. A blocked-by link
   is not metadata on this page.
 - A settled question is a question of a result that a rule of the docs or a fact of the code on `origin/main` answers.
-  [A settled question](#a-settled-question) gives the rules. A settled answer is its answer, with its reason.
+  [A settled question](#a-settled-question) gives the rules. A settled answer is its answer, with its reason. On this
+  page, a settled answer comes from a rule of the docs or a fact of the code. It is never a word of the user. In
+  [question-pane.md](question-pane.md) and [handoff-orchestrator.md](handoff-orchestrator.md), the term "settled answer"
+  means an answer of the user that the pane owner accepted. This page does not change those uses.
 - A kept rule is a rule of the docs that the planner subagent follows. [The kept rules](#the-kept-rules) gives them.
 - On this page, keep N is item N of The kept rules. Change N is item N of [The changed rules](#the-changed-rules). Drop
   N is item N of [The dropped rules](#the-dropped-rules).
