@@ -65,10 +65,13 @@ not collide.
 
 The orchestrator does these steps for each start:
 
-1. Run `tasker show-config --repo <key>` and read the entry `sessions.models.planner`. See
-   [`sessions`](../config.md#sessions).
-2. If the read fails, follow [the failure rule](limits.md#the-failure-rule). Then pass no `model` and no `effort`.
-3. If the read gives no entry, pass no `model` and no `effort`.
+1. Run `tasker show-config --repo <key>` and read the entries `sessions.models.planner`, `sessions.models.issue-draft`,
+   `sessions.models.issue-review` and `sessions.models.issue-post`. See [`sessions`](../config.md#sessions).
+2. If the read fails, follow [the failure rule](limits.md#the-failure-rule). Then pass no `model` and no `effort`. The
+   prompt then gives the fact that each of the three issue keys has no entry. The planner subagent cannot read them,
+   because the row of the planner subagent in [permissions.md](permissions.md) says `never runs` for K1.
+3. If the read gives no entry, pass no `model` and no `effort`. If the read gives no entry for one of the three issue
+   keys, the prompt gives the fact that the key has no entry. The reason is the same as in step 2.
 4. If the read gives an entry, pass the `effort` of the entry. Pass the `model` of
    [The model of the start](#the-model-of-the-start).
 5. Pass the subagent type `general-purpose`. Never pass the type `fork`.
@@ -102,10 +105,10 @@ The orchestrator names each planner subagent `plan-<count>`. `<count>` counts th
 the orchestrator, from 1. An example is `plan-1`. Each name is new in the session of the orchestrator. A name has at
 most 12 characters, of lowercase letters, digits and `-`.
 
-The name of each issue subagent of a planner subagent starts with the name of the planner subagent and `-`. #973 gives
-the rules of these names. The Agent tool refuses a name of more than 64 characters, as
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The limit of 12 characters
-keeps room for the rest of each such name.
+The name of each issue subagent of a planner subagent starts with the name of the planner subagent and `-`.
+[The start of an issue subagent](#the-start-of-an-issue-subagent) gives the rules of these names. The Agent tool refuses
+a name of more than 64 characters, as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent)
+says. The limit of 12 characters keeps room for the rest of each such name.
 
 ### The proposal file
 
@@ -180,6 +183,8 @@ The prompt of a planner subagent gives these facts:
   only for a step that needs it. It reads each doc with the commands of
   [the doc-read rule](doc-reads.md#the-doc-read-rule).
 - The list of the planner subagent in [the allowed commands](allowed-commands.md#the-planner-subagent).
+- The entries `sessions.models.issue-draft`, `sessions.models.issue-review` and `sessions.models.issue-post`, or the
+  fact that a key has no entry. [The start of an issue subagent](#the-start-of-an-issue-subagent) uses them.
 - The ask for the result through the tool `SubagentHandback`.
 
 The reason for the folder: the follow-up planner of the slug writes its drafts to `/tmp/tasker/<slug>/drafts/`. A shared
@@ -255,10 +260,11 @@ The planner subagent keeps these rules:
    [The review loop of a draft](planner.md#the-review-loop-of-a-draft) before their first subsections. This includes the
    judgment of a drop of a lesson or a proposed issue. Also
    [The bans of a review agent](planner.md#the-bans-of-a-review-agent). Each issue-review subagent gets these bans, and
-   #973 gives its prompt. Change 3, change 5, change 6, change 7 and drop 8 leave out parts of these rules. Change 8
-   gives their actors.
+   [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives its prompt. Change 3, change 5, change 6,
+   change 7 and drop 8 leave out parts of these rules. Change 8 gives their actors.
 2. [The wait for a report](planner.md#the-wait-for-a-report). The planner subagent is the starter of each of its issue
-   subagents. Change 4 changes one bullet of a late report.
+   subagents. [The wait for an issue subagent](#the-wait-for-an-issue-subagent) gives its steps. Change 4 changes one
+   bullet of a late report.
 3. The first two paragraphs of [The state of the user](planner.md#the-state-of-the-user): the ban, and the measure as an
    open question of the report.
 4. These parts of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner): the post with no
@@ -282,7 +288,8 @@ The planner subagent keeps these rules:
    [The reads before the write](issues.md#the-reads-before-the-write) and the commands of
    [The blocked-by links](issues.md#the-blocked-by-links). Also the reads of
    [The project board](issues.md#the-project-board), and [A recurrence](issues.md#a-recurrence) except its change of
-   metadata. Change 9 gives the actors of the recurrence comment.
+   metadata. Change 9 gives the actors of the recurrence comment. The reviews before each post follow
+   [The count of reviews](#the-count-of-reviews).
 10. The paragraph after the bullets of
     [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) that
     starts "The reason for the folder". Change 7 gives the folder.
@@ -315,12 +322,12 @@ The planner subagent changes these rules:
    [The blocked-by links](issue-subagents.md#the-blocked-by-links) that name the chat with the user are also such
    places.
 3. The names. The names of a ticket subagent and of a review agent in The ticket subagent do not hold for the planner
-   subagent. [The name](#the-name) gives the names of its issue subagents.
+   subagent. [The start of an issue subagent](#the-start-of-an-issue-subagent) gives the names of its issue subagents.
 4. In The wait for a report, the bullet of a late report that starts "If the draft waits for a decision of the user".
    The planner subagent does not wait for the answer. It gives the findings of the late report in its result.
-5. The prompt of a ticket subagent in The ticket subagent does not hold for the planner subagent. #973 gives the prompt
-   of each issue subagent. At its start, an issue subagent reads only the documents of
-   [The read rule](issue-subagents.md#the-read-rule).
+5. The prompt of a ticket subagent in The ticket subagent does not hold for the planner subagent.
+   [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives the prompt of each issue subagent. At its
+   start, an issue subagent reads only the documents of [The read rule](issue-subagents.md#the-read-rule).
 6. The steps with an answer of the user. They hold for the new planner subagent that gets the answer, as The result
    says. One such step is in the bullet of The initial planner and the follow-up planner. That bullet starts "For a
    draft that waits for a decision of the user". So do the outcome bullets of The state of the user, after "The answer
@@ -330,15 +337,19 @@ The planner subagent changes these rules:
    9 gives its actor.
 7. The folder of the draft files is the folder of [The prompt](#the-prompt). The bullet that starts "The ticket subagent
    of each planner writes each draft" gives the folder of the slug. Step 1 of The review loop of a draft also gives it.
-   Neither folder holds for the planner subagent.
+   Neither folder holds for the planner subagent. The draft file, the report file and the record file stand in this
+   folder.
 8. The actors of the work on a draft. The planner subagent starts the issue-draft subagent, the issue-review subagent
    and the issue-post subagent with the Agent tool, as the work needs. It starts no ticket subagent and no review agent.
-   Each start of an agent and each wait for a report in the kept rules is a step of the planner subagent. #973 gives the
-   start rules of the issue subagents and the actor of each other step of the kept rules.
+   Each start of an agent and each wait for a report in the kept rules is a step of the planner subagent.
+   [The issue subagents](#the-issue-subagents) gives the start rules of the issue subagents and the actor of each other
+   step of the kept rules. The same section changes the count of loops of step 6 of The review loop of a draft to
+   [The count of reviews](#the-count-of-reviews). It gives the review loop of the planner subagent in
+   [The order of the work on a draft](#the-order-of-the-work-on-a-draft).
 9. The actors of a comment on an issue. This change covers the comment of the comment rule of keep 7 and the recurrence
    comment of A recurrence. An issue-draft subagent drafts the comment, and an issue-review subagent reviews it. An
    issue-post subagent posts it after the review passes and the user approves it. The planner subagent posts no comment
-   itself. If #973 makes a comment a write of the planner subagent, this change wins.
+   itself.
 
 For a planner subagent, change 9 wins over two sentences. They are in keep 1 and keep 6. Each says that a comment on an
 issue is not a draft of The review loop of a draft. For a planner subagent, these sentences mean only that a comment
