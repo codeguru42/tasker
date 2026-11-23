@@ -333,9 +333,16 @@ handoff file:
   not run stands in the handoff file with the mark "not run", as a decision of the user that still applies. A question
   with a question file stays in its question file. A question with no file keeps its full text in the handoff file, as
   [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says.
+- The list of the questions with no automatic start. The list gives the question id and the reason of each open question
+  with no automatic start, as [Terms](question-pane.md#terms) defines it. The reason is the rule that gives the question
+  no automatic start, for example a **No decision** message or a close of the pane with no decision. If a question of
+  the same list in the handoff file of the own start is still open, the list also gives that question. The list gives no
+  text of a question. For a question with no file, the handoff file already holds its full text, and the list adds its
+  reason.
 
 The handoff file holds no text and no list of the open questions that have a
-[question file](question-pane.md#the-question-file). It holds no list of the requests that have a
+[question file](question-pane.md#the-question-file), apart from one list. That list holds only the question id and the
+reason of each question with no automatic start. It holds no list of the requests that have a
 [proposal file](planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It gives
 no path of the three folders. The new orchestrator makes that path itself from the data root, the repo key and its own
 slug.
@@ -343,6 +350,22 @@ slug.
 After the write of its handoff file, the old orchestrator writes no new file in the three folders and gives no new
 question id. A question that reaches it after the write gets no question file. The old orchestrator shows the full text
 of that question as a report in its tab.
+
+A close of a pane by the old orchestrator is not a close by the user with no decision. An example is the close of a pane
+at its pane handoff, as [The pane handoff](question-pane.md#the-pane-handoff) says. Such a question does not go in the
+list. The mark of no automatic start lives only in the handoff file. No question file and no other record of the
+questions gets the mark.
+
+The list of the questions with no automatic start follows the time at which a question gets its reason:
+
+- Before the write of the handoff file, the question goes in the list.
+- After the write and before the close of the old orchestrator, the old orchestrator does not change its handoff file.
+  The new orchestrator already reads the file. A pane that opened during the handoff gets a **No decision** message or a
+  close with no decision in some cases. For such a question, the old orchestrator shows the question id and the reason
+  as a report in its tab. It does the same for a question that reaches it after the write. The new orchestrator does not
+  get this mark, and this is a known limit: such a question gets an automatic start again after the handoff.
+- After the close of the old orchestrator, no orchestrator accepts a decision message of that pane, as
+  [Start](question-pane.md#start) says. Nothing goes in a list, and nobody shows a report.
 
 ### The task list
 
@@ -491,6 +514,10 @@ orchestrator asks the question in its own pane under the rules of [Start](questi
 start, it reads the pane handoff file. [The pane handoff](question-pane.md#the-pane-handoff) gives the first-reply text.
 If it cannot read the pane handoff file, it starts the pane with the full text from the question file or the handoff
 file. The first-reply text then says that the talk of the old pane is not known.
+
+The new orchestrator gives no automatic start to any open question of the list, as the old orchestrator did. A word of
+the user that names such a question still starts its pane. A [start word](question-pane.md#terms) for a ticket that the
+question holds also starts its pane, as [Start](question-pane.md#start) says.
 
 An answer can name the id of a question of the old session, as [The last item id](handoff.md#the-last-item-id) says.
 Then the new orchestrator takes the question from its [question file](question-pane.md#the-question-file). A question

@@ -268,6 +268,10 @@ The current question of a pane is the question of the last session prompt that w
 A question pane is open from its start until the pane owner closes it. The pane also stops being open if the user tells
 the pane owner that it is closed. A pane stays open through each reuse.
 
+A question with no automatic start is an open question that gets no automatic start by a rule of this page. Examples are
+a question with a **No decision** message and a question whose pane the user closed with no decision.
+[The question file](#the-question-file) gives each such case.
+
 ### Start
 
 A pane is the default place of the conversation about an open question. Each orchestrator, of each kind, starts and owns
@@ -489,8 +493,11 @@ for a question that reaches it after the write of its handoff file.
 
 After a compaction of the context of the orchestrator or after a handoff, these known limits hold:
 
-- A question that got a **No decision** message or a close with no decision can get an automatic start again. The
-  question file holds no mark of that rule, and the handoff file holds no such mark either.
+- A question that got a **No decision** message or a close with no decision can get an automatic start again. After a
+  compaction of the context, this limit stays, because the question file holds no mark of that rule. After a handoff,
+  the list of the questions with no automatic start in
+  [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) keeps the rule.
+  The limit stays for a question that gets its reason after the write of the handoff file.
 - A question whose delete failed can get a pane again.
 - A detail of a question that went to the tab of the orchestrator is lost.
 
