@@ -89,7 +89,7 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
 - [docs/dev/planner-subagent.md](dev/planner-subagent.md): "The kind of the orchestrator", "The planning requests", "The
   start", "The proposal file", "The prompt", "The result", "No metadata", "The kept rules", "The changed rules", "The
-  dropped rules", "The life of a planner subagent" and "The chain of subagents".
+  dropped rules", "The issue subagents", "The life of a planner subagent" and "The chain of subagents".
 
 ## The start of an orchestrator
 
