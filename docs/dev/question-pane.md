@@ -52,6 +52,20 @@ question gets a new question pane or a reuse of the pane before.
 
 An automatic start is the start of a question pane with no word of the user, as [Start](#start) says.
 
+The pane handoff is a message of the question session that carries its talk with the user to the old orchestrator. It
+belongs to [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) of a handoff. The marker of the
+pane handoff is the word `PANE-HANDOFF.` right after the header. An example is
+`QUESTION-PANE p_7 orchestrator-m31-7 m4: PANE-HANDOFF.`
+
+The pane handoff request is the message of the pane owner that asks for the pane handoff. It has this form, with the
+herdr path:
+`PANE-OWNER <owner name> <question id>: pane handoff. Send the pane handoff of docs/dev/question-pane.md with the marker PANE-HANDOFF. Send no decision message after it.`
+
+The pane handoff file is the file in which the old orchestrator keeps the pane handoff. Its name is
+`pane-handoff-<question id>-<date>-<time>.md`, and it lies in `handoffs/` of the orchestrator folder. An example is
+`pane-handoff-orchestrator-m31-7-2026-11-22-1506.md`. The date and the time come from `date +%Y-%m-%d-%H%M` at the
+write. The write of this file is a step of the handoff of the old orchestrator. It is not a write action of this page.
+
 The herdr path is the way that a pane owner and its question session send messages to each other. It works for each kind
 of session. The sender writes the message as one line. It writes the word `LINE-BREAK` with one space on each side in
 place of each newline. No one measured a newline inside `send-text`, so the one-line form stays.
@@ -635,6 +649,7 @@ After its first reply, the question session follows these rules. Each item names
 - It starts no subagent that plans, drafts, reviews or posts an issue, as the paragraph of this section that starts "A
   question session starts no subagent" says.
 - It runs the rounds after a close request, as [The rounds before the close](#the-rounds-before-the-close) says.
+- It sends the pane handoff after a pane handoff request, as [The pane handoff](#the-pane-handoff) says.
 
 The question session sends each [write action](#terms) and each request of [Terms](#terms) back to the pane owner with
 the herdr path, as [Send a decision](#send-a-decision) says. The pane owner hands each one to its actor, as
@@ -1049,6 +1064,16 @@ When the pane owner accepts a decision message, it reads the [question file](#th
 that text whether the message settles the question. It also reads the question file again when a word of the user in its
 tab names a question id. For a question with no file, it uses the text from its session.
 
+A message with the marker `PANE-HANDOFF.` is a pane handoff, not a decision message. The pane owner accepts or refuses
+it as [The pane handoff](#the-pane-handoff) says. If a decision message arrives before the pane handoff, the pane owner
+does the usual steps of this section for it first. Then the pane handoff request waits for the pane handoff of the next
+state, as that section says.
+
+A decision of the user can settle the question of a task subagent after the stopping-point message of
+[the stopping-point case](handoff-orchestrator.md#the-stopping-point-case). The orchestrator then sends nothing to that
+task subagent. It puts the answer in the entry of [the task list](handoff-orchestrator.md#the-task-list) with the words
+of the user.
+
 If such a read fails, the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) applies, and the pane
 owner uses the text from its session. If the session no longer holds the text, the pane owner still sends the ack for a
 decision message. It treats the message as a message that does not settle the question, and it tells the user in its
@@ -1445,6 +1470,68 @@ list of open findings.
 
 The reason: on 2026-11-13, the user said to operator-docs: "file an issue to run `/session-review` in question panes
 before closing". No one measured the tokens of the rounds in a question pane.
+
+### The pane handoff
+
+The pane handoff gives the old orchestrator the talk of an open pane, so that the new orchestrator can ask the question
+again. The old orchestrator asks for it in [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case),
+before step 3 of its handoff. The pane handoff leaves the question open. It settles nothing.
+
+The pane owner sends the pane handoff request when all of these hold:
+
+- The pane is open and holds an open question with a question file.
+- No decision message of that question waits for its steps.
+- No opener subagent or reuse subagent of that pane runs. If one runs, the pane owner waits for its report first.
+
+The pane owner sends at most one request for each question. It sends it again only for a failed send, with the same
+rules as any message of the herdr path.
+
+The pane handoff has these parts, after the marker:
+
+- The question id
+- The words of the user in this pane since the first reply, in the order that the user said them
+- Each guess that the question session made, marked as a guess
+- Each decision so far that the question session holds
+- Each command and input file that the question session showed, with the state of its approval
+
+The question session asks no confirm question before it sends the pane handoff. It sends no decision message after the
+request. The pane handoff is not a decision.
+
+The pane owner accepts a message with the marker only when its header holds the open pane id and the current question
+id. Then it sends the ack, as [Terms](#terms) says. For each other message with the marker, the pane owner tells the
+user in one line, sends nothing and keeps the state of each question. The question session can refuse the request in its
+first words with the reason. Then the pane owner uses the usual close and the rounds of the next paragraph, and the
+question has no pane handoff.
+
+After the ack, the old orchestrator writes the pane handoff file. It sends the words of the user and each fact of the
+pane handoff to the planner of the orchestrator as they are. It adds no guess of its own. The question keeps its
+question file, because no decision settled it.
+
+If a decision message arrived before the pane handoff, the pane owner did its usual steps first. The old orchestrator
+marks any step that it did not run as "not run" in the handoff file.
+
+After the ack, the pane owner sends the close request of [Terms](#terms). The question session then runs the rounds of
+[The rounds before the close](#the-rounds-before-the-close). The pane does not get a reuse.
+
+A pane in any other state gets no pane handoff request. A pane that is not yet open or that is closing follows
+[Close and continue](#close-and-continue).
+
+The new orchestrator reads the pane handoff file before it starts the pane of its question. The first reply of that pane
+gives the words of the user of the file with the guess marks, so that the user does not repeat them. The first reply
+follows the rules of [The question session](#the-question-session).
+
+These failures can happen:
+
+- If the question session gives no pane handoff after the request, the pane owner tells the user and asks the user how
+  to go on.
+- If the ack fails, the pane owner sends the message again. The old orchestrator waits for the new ack.
+- If the pane handoff has no marker, the pane owner treats it as a message of another kind.
+- If the question has no question file, the old orchestrator writes the full text of the question in the pane handoff
+  file.
+- If the write of the pane handoff file fails, the handoff file of the orchestrator holds the pane handoff itself, as
+  [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says.
+- If the user closes the pane first, the old orchestrator tells the user and keeps the question open with its question
+  file.
 
 ### Close and continue
 

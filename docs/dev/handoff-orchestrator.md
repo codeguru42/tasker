@@ -194,7 +194,7 @@ In the stopping-point case, the old orchestrator does these things before step 3
 sends the stopping-point messages:
 
 - It gives each open question pane its pane handoff, or its usual close. The pane handoff is the handoff of the pane
-  that the question pane page defines. This page names it in words only.
+  that [The pane handoff](question-pane.md#the-pane-handoff) defines.
 - It waits for the report of each write subagent.
 
 The pane must close before step 3. If the close fails with `pane_not_found`, the pane is gone. If the close fails in
@@ -382,9 +382,9 @@ read fails, the new orchestrator does not start that task subagent and tells the
 fails, the new orchestrator tells the user and goes on with the next entry.
 
 If the handoff file links a pane handoff file next to a question id, the new orchestrator reads that file before it
-starts the pane of that question. The pane then asks the question again, with the words of the pane handoff file in its
-first reply. If the read of the file fails, the new orchestrator tells the user and asks the question from its question
-file in the usual way.
+starts the pane of that question, as [The pane handoff](question-pane.md#the-pane-handoff) says. The pane then asks the
+question again, with the words of the pane handoff file in its first reply. If the read of the file fails, the new
+orchestrator tells the user and asks the question from its question file in the usual way.
 
 An answer can name the id of a question of the old session, as [The last item id](handoff.md#the-last-item-id) says.
 Then the new orchestrator takes the question from its [question file](question-pane.md#the-question-file). A question
