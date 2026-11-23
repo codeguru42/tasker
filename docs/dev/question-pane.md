@@ -55,7 +55,7 @@ An automatic start is the start of a question pane with no word of the user, as 
 The pane handoff is a message of the question session that carries its talk with the user to the old orchestrator. It
 belongs to [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) of a handoff. The marker of the
 pane handoff is the word `PANE-HANDOFF.` right after the header. An example is
-`QUESTION-PANE p_7 orchestrator-m31-7 m4: PANE-HANDOFF.`
+`QUESTION-PANE w1:p2 orchestrator-m31-7 m4: PANE-HANDOFF.`
 
 The pane handoff request is a message of the pane owner, not a word of the user. It goes with the herdr path and the
 header of a message of the pane owner. It has this form:
