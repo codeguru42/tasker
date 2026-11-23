@@ -280,8 +280,9 @@ The measure had four possible outcomes:
 
 ## The board watch job
 
-Each orchestrator reads the board with one recurring job, the board watch job. The rule covers an orchestrator of a
-numbered milestone, an orchestrator of a [set scope](#the-scope) and a
+Each orchestrator reads the board with one recurring job, the board watch job, while no ticket of its scope waits for a
+slot. [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot) gives the term and the delete of the job. The
+rule covers an orchestrator of a numbered milestone, an orchestrator of a [set scope](#the-scope) and a
 [long-running orchestrator](dev/handoff-orchestrator.md#the-long-running-orchestrator). For each kind of scope, a new
 issue can arrive at a time with no running ticket of the scope. Then no landing comes, and no read of the board follows.
 On 2026-10-25, orchestrator-docs read the board with a job at minute 7 and minute 37 of each hour.
@@ -290,9 +291,10 @@ The rule names no kind of session, so it covers each kind. No one measured a too
 the kind `pi`. If a pi orchestrator cannot make the job, the bullet "If CronList or CronCreate fails" of this section
 applies.
 
-The job of each orchestrator fires two times each hour. Each fire costs the tokens of one read of the board. A pi
-orchestrator that cannot make the job gets a failure at each read of the board.
-[The failure rule](dev/limits.md#the-failure-rule) then tells the user each time.
+While the orchestrator has the job, the job fires two times each hour. Each fire costs the tokens of one read of the
+board. A pi orchestrator that cannot make the job gets a failure only at two kinds of read: a read of the board after
+which no ticket waits for a slot, and a failed read of the board. [The failure rule](dev/limits.md#the-failure-rule)
+then tells the user each time.
 
 The description of the CronCreate tool of Claude Code 2.1.310 (read by planner-docs on 2026-10-25) gives these facts:
 
@@ -320,8 +322,9 @@ The board watch rule has these parts:
   `proposals/` at the end of the start steps, and before the pick of its first ticket. A new orchestrator after
   [a stop with no handoff](#a-stop-with-no-handoff) starts in this way. On a start after a handoff, it makes the job
   after `ListAgents`, as
-  [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The job fires
-  two times each hour, for example with the cron `7,37 * * * *`.
+  [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The cron
+  fires two times each hour, for example `7,37 * * * *`. Each read of the board after this make follows
+  [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot). So the first read of the board can delete the job.
 - The prompt of the job starts with "Board watch:". The rest of the prompt says: read the board, as
   [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets) says.
 - When the job fires, the orchestrator reads the board as the prompt says. It starts each ticket that the rules of Pick
@@ -335,34 +338,135 @@ The board watch rule has these parts:
   [A failed CI run](dev/ci-wait.md#a-failed-ci-run), a hold of the user and step 1 of
   [The steps of the old orchestrator](dev/handoff-orchestrator.md#the-steps-of-the-old-orchestrator). Another example is
   the ban on a new ticket after the suggestion of a handoff in
-  [The landing count](dev/handoff-orchestrator.md#the-landing-count). While such a rule holds, the job still fires, and
-  it starts no ticket. A failed start check is not such a rule, because no job exists after it, as the first bullet
-  says.
+  [The landing count](dev/handoff-orchestrator.md#the-landing-count). Other examples are the hold before an install in
+  [The hold before an install](dev/release.md#the-hold-before-an-install) and the pi gate. While such a rule holds, the
+  job still fires, and it starts no ticket. A ticket that such a rule holds back does not wait for a slot. So while such
+  a rule holds back each ticket, the job stays, as [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot)
+  says. A failed start check is not such a rule, because no job exists after it, as the first bullet says.
 - The orchestrator has at most one board watch job. It keeps the id of the job and the time of its CronCreate. Before it
-  makes the job, it lists its jobs with CronList. If the list holds the kept id, it makes no second job. A quota job has
-  another id, so it is not a board watch job.
+  makes the job, it lists its jobs with CronList. CronList also comes before each CronDelete of
+  [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot). If the list holds the kept id, it makes no second
+  job. A quota job has another id, so it is not a board watch job.
 - The id and the time live from the CronCreate of the job until the orchestrator deletes the job with CronDelete or the
-  job expires. Before the first CronCreate, the orchestrator keeps no id and no time. When the list of CronList does not
-  hold the kept id, the job ended, and the orchestrator drops the id and the time before it makes a new job.
+  job expires or the orchestrator deletes the job with a CronDelete that works. Before the first CronCreate, the
+  orchestrator keeps no id and no time. When the list of CronList does not hold the kept id, the job ended, and the
+  orchestrator drops the id and the time before it makes a new job.
 - If CronList or CronCreate fails, [the failure rule](dev/limits.md#the-failure-rule) applies, and the orchestrator has
-  no board watch job. At each later read of the board, for any reason, it tries again, CronList and then CronCreate,
-  until it has a board watch job. The read of the board after a landing is one such read, as the bullet "Each time a
-  ticket lands, read the board again" of [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets) says. With no
-  board watch job, it reads the board at the other moments that the docs give, for example after each landing.
-- When the job fires 6 days or more after the kept time, the orchestrator deletes it with CronDelete. Then it makes a
-  new job, with CronList first. If CronDelete fails, the failure rule applies, and the retry after a failure that the
-  bullet "If CronList or CronCreate fails" gives makes a new job after the old job expires. The renewal comes before the
-  expiry under each of the two figures, 7 days and 30 days. Under 30 days, the cost is one extra CronDelete and
-  CronCreate each 6 days.
+  no board watch job. At each later read of the board after which no ticket waits, and at each failed read of the board,
+  it tries again, CronList and then CronCreate, until it has a board watch job. The read of the board after a landing is
+  one such read when no ticket waits after it, as the bullet "Each time a ticket lands, read the board again" of
+  [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets) says. With no board watch job, it reads the board at the
+  other moments that the docs give, for example after each landing.
+- If the orchestrator keeps an id and the kept time is 6 days or more old, the renewal runs at a read after which no
+  ticket waits and at a failed read of the board. It runs CronList. If the list does not hold the id, the orchestrator
+  drops the id and the time, and then it runs CronCreate with no second CronList. If the list holds the id, it runs
+  CronDelete. After a CronDelete that works, it drops the id and the time. Then it makes a new job, with CronList first.
+  If CronList or CronDelete fails, the failure rule applies. The id and the time stay, and the next read at which the
+  renewal runs tries again. If the job still lives, its fire is such a read. If CronList or CronCreate of the new make
+  fails, it is the make case with no kept id. The reason: after a failed CronDelete, the orchestrator cannot know
+  whether the job lives. A renewal only at a fire can then never run. The renewal comes before the expiry under each of
+  the two figures, 7 days and 30 days. Under 30 days, the cost is one extra CronDelete and CronCreate each 6 days. At a
+  fire 6 days or more after the kept time with a ticket that waits for a slot, the orchestrator deletes the job and
+  makes no new job. The handoff bullet wins over the renewal.
 - At the start of a handoff, as [The suggestion of a handoff](dev/handoff.md#the-suggestion-of-a-handoff) says, the
   orchestrator deletes the job with CronDelete, before step 1 of The steps of the old orchestrator. If CronDelete fails,
-  the failure rule applies. The new orchestrator makes its own job. A session that ends with no handoff loses the job
-  with the session. So the job keeps firing during the wait of
-  [The end of an orchestrator](dev/pick-the-tickets.md#the-end-of-an-orchestrator), and the own close of the
-  orchestrator ends it.
+  the failure rule applies. While the steps of the old orchestrator hold, the orchestrator makes no board watch job at
+  any read of the board, also in a renewal. The reason: step 1 holds back each ticket, so no ticket waits, and the make
+  of [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot) makes a new job. When the steps of the old
+  orchestrator no longer hold, that subsection applies again from the next read of the board. An example: during the
+  close of a milestone, the user ends a handoff that started, as
+  [The suggestion of a handoff](dev/handoff.md#the-suggestion-of-a-handoff) says. The new orchestrator makes its own job
+  at its make point, as the make bullet says. A session that ends with no handoff loses the job with the session. So the
+  job keeps firing during the wait of [The end of an orchestrator](dev/pick-the-tickets.md#the-end-of-an-orchestrator),
+  and the own close of the orchestrator ends it. In that wait the scope has no live task, so each slot is free and no
+  ticket waits for a slot.
 - The board watch job is not a job of [Quota](dev/quota.md#quota). [Delete the job](dev/quota.md#delete-the-job) does
   not cover it. The step "delete the jobs" of step 2 of The steps of the old orchestrator does not cover it either. The
   job takes no slot.
+
+### A ticket that waits for a slot
+
+These two facts make a ticket that waits for a slot:
+
+- It is a ticket that can start, as the fill rule of [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets)
+  defines it. That is each fact of "A ticket that can start now" of
+  [the open-question rule](dev/pick-the-tickets.md#the-open-question-rule) except the slot fact.
+- No slot is free, and the orchestrator keeps no slot for it.
+
+For this term, the slot fact of [the stacking rule](dev/pick-the-tickets.md#the-stacking-rule) does not count. The check
+of the tip of the base of the parent does not count either, because that check runs only before a start. The other wait
+cases of the stacking rule and the wait for a fix round of the parent still hold the ticket back.
+
+The judgment uses only the facts after the read of the board. These are the board, the kept results of a read, the
+states of the stacking rule and the states of the session, for example a hold of the user and the CI ban. A ticket that
+a rule holds back with these facts alone does not wait. This covers the rules of the third fact of "A ticket that can
+start now" and each rule that stops a start. Examples are the pi gate, the CI ban, a hold of the user, the hold before
+an install (see [The hold before an install](dev/release.md#the-hold-before-an-install)), a ticket on hold, the ban
+after the suggestion of a handoff, step 1 of the steps of the old orchestrator and the stacking rule. A ticket that a
+kept result of a read stops does not wait either, because the second fact leaves it out of the order.
+
+Some rules need the text of the issue: the bullet of a manual-steps issue, the shared-file bullet, the move rule and the
+link offer. They do not count before the read of the issue. Such a ticket can count as a ticket that waits. This is no
+fault. The next event that frees a slot reads the board, and the read of the issue then decides.
+
+After each read of the board, the orchestrator first does the starts of the fill rule. Then it judges whether a ticket
+of its scope waits for a slot. The judgment follows each one of these reads:
+
+- The read at the start
+- The read at a landing
+- The read at a fire of the job
+- The read on a message of another session
+- The read after a defer
+- The read after the end of a parent hold
+- The read after a stop of a task subagent whose slot it frees
+
+If a ticket waits and the orchestrator keeps an id, it runs CronList. If the list does not hold the id, the job ended,
+and the orchestrator drops the id and the time. Otherwise it runs CronDelete with the kept id. After a CronDelete that
+works, it drops the id and the time. If a ticket waits and the orchestrator keeps no id, it does nothing with the job.
+After the judgment "a ticket waits", no CronCreate runs.
+
+If no ticket waits, the orchestrator keeps its job. If it keeps no id, it makes a job, with CronList first and then
+CronCreate. If the kept time is 6 days or more old, the renewal bullet above applies. The handoff bullet wins: while the
+steps of the old orchestrator hold, no job comes.
+
+While a slot is free, no ticket waits. While the rules of the term hold back each ticket that the other facts let start,
+no ticket waits either. Then the job stays, fires and starts no ticket.
+
+A failed read gives no answer, so it never passes as "a ticket waits" or "no ticket waits". Suppose the read of the
+board fails. Suppose another read of the judgment fails, for example the read of the `on hold` list or of the states of
+the stacking rule. Then the orchestrator makes no judgment and deletes no job. If it keeps no id, it makes a job, with
+CronList first. If the kept time is 6 days or more old, the renewal runs. These are the cron failure cases:
+
+- A failed CronList or CronDelete after "a ticket waits": the failure rule applies, the id and the time stay, and the
+  orchestrator tries again at each later read after which a ticket waits.
+- A failed CronList or CronCreate at a make with no id: the orchestrator has no job. It tries again at each later read
+  after which no ticket waits and at each failed read of the board.
+- A failure at a renewal: the renewal bullet gives the path.
+
+A job that a failed CronDelete leaves still fires. Its fire is a read of the board as usual.
+
+The reason is a rule of the user. On 2026-11-22, the user said: "If there are open tickets waiting for a slot there is
+no reason for a board watch". While a ticket waits, each slot is in use or kept. The fill rule reads the board after
+each event that frees a slot. A new issue that arrives with no landing cannot start before a slot frees, and that event
+reads the board. A ticket can stop its wait with no read, for example when the user puts it on hold. Then no job comes
+until the next read. No start is lost, because each slot stays in use or kept until an event that reads the board.
+
+While a ticket waits, a rule that acts "at the next read of the board" or "each time it reads the board" acts at the
+next read, not at the next fire. Examples in `docs/dev/pick-the-tickets.md` are the notice of a moved held issue of a
+set scope, the first offer and the new try of the earlier-blocker offer and of the outside-blocker offer, the
+outside-Todo find after a failed find, and the check of a kept result of the open-question rule. The list is open on
+purpose. Each change between "a ticket waits" and "no ticket waits" costs a CronList and a CronDelete or a CronCreate.
+
+The states of the job:
+
+| State of the job        | Read after which a ticket waits | Read after which no ticket waits | Failed read of the board       |
+| ----------------------- | ------------------------------- | -------------------------------- | ------------------------------ |
+| The orchestrator has it | CronList, then CronDelete       | Keeps it, or renews it at 6 days | Keeps it, or renews it         |
+| It has no job, no id    | Does nothing with the job       | CronList, then CronCreate        | CronList, then CronCreate      |
+| The job ended           | Drops the id and the time       | Drops the id, then makes a job   | Drops the id, then makes a job |
+
+After the job ended, the orchestrator finds it only through a CronList. No row makes a job during the steps of the old
+orchestrator.
 
 ## Peer messages
 
