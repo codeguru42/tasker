@@ -24,7 +24,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [The form of a reply](#the-form-of-a-reply) and [the issue-link rule](#the-issue-link-rule). The orchestrator writes
   each link itself. It shows the progress report at the step that the rule of the report gives. A progress report starts
   no wait. It gets no question pane and no `herdr notification show`. It sends no message to the operator. A text that
-  waits for a word of the user is not a progress report. It is an open question, and it goes to the question pane. This
+  waits for a word of the user is not a progress report. It is an open question, and it goes to the question pane.
+  During a handoff of the orchestrator, each such text of
+  [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) goes in the tab, as that section says. This
   rule holds for each kind of orchestrator, `claude` and `pi`. The reports of the close in
   [The start and the authority](operator-start.md#the-start-and-the-authority) and
   [The orchestrator ends](operator-start.md#the-orchestrator-ends), and the reports of
