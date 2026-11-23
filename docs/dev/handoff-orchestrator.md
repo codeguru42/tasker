@@ -59,9 +59,10 @@ the landing count has no end. For the orchestrator, the close starts with its re
 The ban on a new ticket holds until the start of the handoff, as
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. From the start, step 1 of
 [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) and the paragraph after the steps hold. The
-reason for this ban: each task in flight, except a parked task, must land before the handoff file, as step 2 of "The
-steps of the old orchestrator" says. So a new ticket delays the handoff. On 2026-10-25, orchestrator-docs sent the
-suggestion at the landing count of 12 and started no new ticket until the go.
+reason for this ban in the wait case: each task in flight, except a parked task, must land before the handoff file. Step
+2 of "The steps of the old orchestrator" says this. So a new ticket delays the handoff. In the stopping-point case, a
+new ticket adds a task to stop and to start again. The ban holds in both cases. On 2026-10-25, orchestrator-docs sent
+the suggestion at the landing count of 12 and started no new ticket until the go.
 
 The reason that the ban starts at the count of 12: the steps of a landing can read the board before the landing report
 goes out. So a ban that starts with the reply comes too late. On 2026-10-25, review 1 of #530 found that the landing of
@@ -94,6 +95,12 @@ can name the step:
    [the task subagent notice](doc-reads.md#the-task-subagent-notice). The reason: a job lives only in the session of the
    orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task is still in flight at the handoff,
    nobody resumes it after a quota stop.
+
+   In the stopping-point case, step 2 sends the stopping-point message in place of the wait for a landing, as
+   [The stopping-point case](#the-stopping-point-case) says. In that case, the task subagent ended, and the new task
+   subagent gets the jobs and the slot at its start. Before step 3, the old orchestrator also waits for each open pane
+   and each write subagent, as that section says.
+
 3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17.
 4. After step 3 ended with a round that found nothing new, send each fact and each lesson, as the paragraph that starts
    "Before it writes the file" of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. Then, for
@@ -115,6 +122,113 @@ can name the step:
 The handoff ends after step 6. The operator has no part in it. Until the end, the old orchestrator starts no new ticket,
 also after step 6. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new
 ticket without the word of the user.
+
+## The stopping-point case
+
+A handoff has two cases. In the wait case, step 2 of
+[The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) waits for each task in flight to land. In the
+stopping-point case, each task subagent for a whole ticket comes to a stopping point. The old orchestrator then sends
+the handoff, and the new orchestrator starts a new task subagent for each of these tasks. The wait case is the default.
+
+The terms of this case are:
+
+- A stopping point of a task subagent is step 1 of [the defer rule](pick-the-tickets.md#the-defer-rule). The task
+  subagent does that step and no other step of the rule. A stopping point is not a stop of
+  [the answer-wait rule](limits.md#the-answer-wait-rule).
+- The stopping-point message is the message of the old orchestrator that asks a task subagent to come to its stopping
+  point.
+- The stopping-point report is the final report of the task subagent after it came to its stopping point.
+
+### The choice of the case
+
+The old orchestrator picks the case by its own judgment. No fixed rule picks it. If the old orchestrator is not sure, it
+reports that it waits for each landing and uses the wait case.
+
+The word of the user picks the case in these ways:
+
+- The user gives the word with the request for the handoff, or during step 2. Then the case holds only for the tasks
+  that did not land and for the panes that are open.
+- The user gives the word in a decision message of a question pane. The go of the handoff then waits for the close of
+  that pane. That pane gets no pane handoff, because its close comes first.
+- A word of the user that names a scope holds only for that scope.
+
+A request for a handoff at the close of a milestone follows
+[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff). The case holds for each kind of orchestrator that
+hands off.
+
+### The stopping-point message
+
+In the stopping-point case, step 2 sends the stopping-point message to each task subagent for a whole ticket. It leaves
+out a parked task. The message does these things:
+
+- It tells the task subagent to do step 1 of the defer rule and no other step.
+- It tells the task subagent to end with a stopping-point report that gives the state of its work.
+- It names the stopping point. An interim report that names the stopping point ends the wait of the old orchestrator.
+
+The message reaches the task subagent only at its next turn. No one measured how fast a task subagent reads it, so the
+old orchestrator does not guess. The old orchestrator waits with no time limit. If the task subagent ends with no
+report, see the end of a task subagent with no report below.
+
+The old orchestrator treats each report as follows:
+
+- A report of a landing is a landing. It gets no entry. The usual steps of a landing hold.
+- For each other report, the old orchestrator does the steps of [Delete the job](quota.md#delete-the-job).
+- No resume message goes out, and no next job starts. If a job of such a task subagent fires, the old orchestrator tells
+  the user in one line.
+
+The old orchestrator sends the facts and the lessons of step 4 as usual. The stopping-point case changes no task. If the
+user answers a question of the task after the message, the answer goes into the entry with the words of the user.
+
+### The end with no report
+
+A task subagent can end with no stopping-point report. In Claude Code, the end notification shows this. In another kind,
+the word of the user shows it. The old orchestrator then does the same steps as for a report. The entry says "no
+report". The old orchestrator tells the user that the task subagent can still run a `tasker` command.
+
+### The panes and the write subagents
+
+In the stopping-point case, the old orchestrator does these things before step 3. It does them at the same time as it
+sends the stopping-point messages:
+
+- It gives each open question pane its pane handoff, or its usual close. The pane handoff is the handoff of the pane
+  that the question pane page defines. This page names it in words only.
+- It waits for the report of each write subagent.
+
+The pane must close before step 3. If the close fails with `pane_not_found`, the pane is gone. If the close fails in
+another way, the old orchestrator tells the user in its tab. It starts the new orchestrator only after the user says
+that the pane is closed.
+
+During a handoff, each text of this case that waits for a word of the user goes in the tab of the old orchestrator. It
+does not go to a question pane. [The operator](working-with-the-user.md#the-operator) gives the usual rule.
+
+### The steps that are not new work
+
+These steps are not new work in the stopping-point case. They hold as written:
+
+- The landing count and the ban on a new ticket
+- The rounds of step 3
+- The facts and the lessons of step 4
+- The write of the handoff file in the own handoff folder
+- The start of the new orchestrator and the close of the old tab
+
+### The failures of a task subagent
+
+If a task subagent fails, the old orchestrator follows [the failure rule](limits.md#the-failure-rule). It does not wait
+for that task subagent again. It tells the user. The same holds for a task subagent that a quota stop ended. The entry
+of the task says "no report". The list of the tasks in the handoff file has one entry for each task that is not a parked
+task. The page does not describe that list here.
+
+### The events
+
+| Event                                      | What the old orchestrator does                                       |
+| ------------------------------------------ | -------------------------------------------------------------------- |
+| The stopping-point report arrives          | It does the steps of Delete the job and makes the entry              |
+| An interim report names the stopping point | It ends the wait for that task subagent                              |
+| A report of a landing arrives              | It does the usual steps of a landing and makes no entry              |
+| The task subagent ends with no report      | It makes the entry "no report" and tells the user                    |
+| A job of the task subagent fires           | It sends no resume message and tells the user in one line            |
+| The user answers a question of the task    | It puts the answer in the entry with the words of the user           |
+| The new orchestrator starts                | It starts a new task subagent for each entry, as its start page says |
 
 ## The handoff file of the orchestrator
 
