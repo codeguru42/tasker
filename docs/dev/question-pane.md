@@ -332,7 +332,9 @@ orders the questions by the number at the end of the question id. It compares th
 `orchestrator-m31-99` comes before `orchestrator-m31-100`.
 
 The orchestrator gives the question ids in the arrival order of key 3. This holds for both parts of key 3. The earlier
-question comes first. In one message, the lower question number of the asking session comes first.
+question comes first. In one message, the lower question number of the asking session comes first. For the questions of
+one result of a [planner subagent](planner-subagent.md#a-draft-that-needs-the-user), the orchestrator gives the question
+ids in the order of the numbers of the result, as that section says.
 
 A word of the user that names an open question starts the pane of that question first. An open question that arrives
 later takes its place in the list order, so it can come before an older open question. This holds before, during and
@@ -506,7 +508,7 @@ the ticket and the session that asks.
 The row of a question session in [the table](permissions.md#the-table) gives its kinds of command.
 
 The pane owner gives all offered choices and costs, the recommendation of the sender, and each draft or report path
-named by the question.
+named by the question. For a question of the result of a planner subagent, it also gives the kind of the question.
 
 The pane owner gives relevant earlier decisions, each marked as a decision so far. The pane owner marks any added
 reading as a guess.
