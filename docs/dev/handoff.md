@@ -22,7 +22,8 @@ the old operator or the request of the user. After the start, the old session do
 [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
 [the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and
 [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its
-current tasks. Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
+current tasks, or their stopping point in [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case).
+Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
 
 The old session can suggest a handoff to the user. The old session counts the events that its role page names:
 [the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count),
@@ -102,7 +103,9 @@ folder. No file of the shared handoff folder moves.
 ## The items of a handoff file
 
 The handoff file holds only the parts of this list and the parts of the role page. It holds no other part, for example a
-history of the session, the closed items or the measured facts. The rule is the list, not these examples:
+history of the session, the closed items or the measured facts. The task list of the orchestrator is the one exception
+to the measured facts, because its entries give the facts of the stopping-point reports, as
+[The task list](handoff-orchestrator.md#the-task-list) says. The rule is the list, not these examples:
 
 - The prompt for the new session, in a code block.
   - The prompt names the section of the role page for its start, for example
@@ -123,7 +126,8 @@ history of the session, the closed items or the measured facts. The rule is the 
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. For an orchestrator, this bullet
   covers only a question with no question file, as
-  [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says.
+  [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. A link to a
+  pane handoff file stands next to the id of its open question, as that section says.
 - Each note for later that a message carried and that the session still keeps, with its trigger, as
   [A note for later](working-with-the-user.md#a-note-for-later) says.
 - Each decision of the user that still applies and that no doc and no open issue holds. This covers the old session and
@@ -187,6 +191,11 @@ data root and runs `mkdir -p`, as [The orchestrator folder](limits.md#the-orches
 
 The files of its role are the files whose names [The handoff file](#the-handoff-file) gives for that role. A file with a
 later date and time in its name is newer.
+
+A pane handoff file is not a file of a role. Its name is `pane-handoff-<question id>-<date>-<time>.md`, and it starts
+with `pane-handoff-`, so it never matches the name form of a role. It never counts as the newest file of a role. An
+example: the folder holds `2026-11-22-1500-orchestrator.md` and `pane-handoff-orchestrator-m31-7-2026-11-22-1506.md`.
+The newest file of the role is still `2026-11-22-1500-orchestrator.md`.
 
 The file of the first message is the handoff file whose path the first message names.
 
