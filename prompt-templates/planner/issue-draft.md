@@ -31,7 +31,7 @@ Issue key: {{ISSUE_KEY}}
 Start hash: {{START_HASH}}
 The issue key is the key of the open issue that the draft changes, or of the issue that gets a comment.
 Every value above is one value, and an absent fact has the value none. Where a list is none, no item stands in it.
-If the rule documents are none, the prompt names no rule document.
+If the rule documents are none, this sentence wins over the start steps. Read no document, do no other work, and end with a result that says that the prompt named no rule document.
 If the decisions of the user are none, the prompt gives no decision of the user on this draft.
 If the draft changes an open issue and the start hash is none, read that issue first. Then write the draft from that read and the change. If that read fails, end, and say so in your report.
 If the findings are none, the prompt gives no finding of a review.

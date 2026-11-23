@@ -36,7 +36,7 @@ Start hash: {{START_HASH}}
 Blocked-by links follow, with one link on each line. Each link names the blocked issue, the blocker and the reason:
 {{LINKS}}
 An absent fact has the value none. A list that is none holds no item, and a list with items holds no line none.
-If the rule documents are none, the prompt names no rule document.
+If the rule documents are none, this sentence wins over the start steps. Read no document, do no other work, and end with a result that says that the prompt named no rule document.
 If the labels are none, the draft gives no label.
 If the blocked-by links are none, the draft gives no blocked-by link.
 If the start hash is none, the prompt gives no start hash.
