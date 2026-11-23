@@ -237,7 +237,8 @@ The reason for the folder: the follow-up planner of the slug writes its drafts t
 folder can give two drafts one file name.
 
 For a planning request of an answer of the user, the prompt also gives the path of the draft file and the question. It
-gives the words of the user word for word.
+gives the words of the user word for word. For a draft with two or more questions, the prompt gives each question and
+each answer word for word, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
 ## The result
 
@@ -250,9 +251,10 @@ that it sends an item. For the planner subagent, the fact or the question goes i
 after each post or drop of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
 
 The result names each complete post. For a draft that waits for a decision of the user, the result gives the path of the
-draft file and each question. It also gives each finding that the planner subagent dismissed. The result gives each
-issue as its plain key, as [the issue-link rule](working-with-the-user.md#the-issue-link-rule) says for a message
-between two sessions.
+draft file and each question. [A draft that needs the user](#a-draft-that-needs-the-user) gives the kinds and the order
+of these questions. It also gives each finding that the planner subagent dismissed. The result gives each issue as its
+plain key, as [the issue-link rule](working-with-the-user.md#the-issue-link-rule) says for a message between two
+sessions.
 
 The planner subagent runs no round of `/session-review`. The reason: the skill deletes memory notes, as
 [Limits](limits.md#limits) says for a task subagent. The result gives each lesson of the work of the planner subagent.
@@ -264,12 +266,15 @@ the orchestrator with `SendMessage` and `to: "main"`. The first line of the mess
 
 The orchestrator handles a result in this way:
 
-1. Show each report of the result as a progress report in the own tab. The intro of
-   [orchestrator.md](../orchestrator.md) gives this form for each report.
+1. Show each report of the result as a progress report in the own tab. Show the report of a security gap at once, as
+   [A draft that needs the user](#a-draft-that-needs-the-user) says. The intro of [orchestrator.md](../orchestrator.md)
+   gives this form for each report.
 2. Handle each lesson of the result as a lesson of a final report.
 3. Ask each question of the result in the own [question pane](question-pane.md#a-question-pane), as an open question of
-   the orchestrator. Each such question gets a [question file](question-pane.md#the-question-file).
-4. Take each answer of the user to such a question as a new planning request.
+   the orchestrator. Each such question gets a [question file](question-pane.md#the-question-file). The text of the
+   question names its kind and the path of its draft file. The question ids follow the order of the result.
+4. Take each answer of the user to such a question as a new planning request. A draft with two or more questions and an
+   answer that drops a draft are exceptions, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
 The new planner subagent of such an answer follows change 6.
 
@@ -435,7 +440,8 @@ The planner subagent keeps these rules:
    orchestrator. An orchestrator of another scope finds the change at its next read of the board.
 5. The list of decisions of [The escape hatch](planner.md#the-escape-hatch), and its last sentence "Each planner goes on
    with the other drafts". Also its sentence that starts "An edge case that a ticket subagent decided as "later"". The
-   planner subagent posts nothing for a draft that waits for a decision of the user.
+   planner subagent posts nothing for a draft that waits for a decision of the user. For a planner subagent, the six
+   kinds of [A draft that needs the user](#a-draft-that-needs-the-user) take the place of the list of decisions.
 6. [The rules for the user alone](planner.md#the-rules-for-the-user-alone), as limits. The planner subagent does none of
    the actions of that list.
 7. The fourth bullet of [The order of the work](planner.md#the-order-of-the-work): a follow-up issue for a closed issue,
@@ -646,14 +652,17 @@ of the draft. The planner subagent judges the findings of review 3 itself. It st
 issue-post subagent after review 3.
 
 Such a draft waits for a decision of the user. The result of the planner subagent gives the path of the draft file and
-the remaining findings of the draft, as [The result](#the-result) says.
+the remaining findings of the draft, as [The result](#the-result) says. It also gives the question about the remaining
+findings, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
-The work on the draft can leave a finding of a kind of the escape hatch open. That finding still sends the draft to the
-escape hatch, also for an approved draft. Keep 1 and keep 5 give this step.
+The work on the draft can leave a finding of one of the six kinds of
+[A draft that needs the user](#a-draft-that-needs-the-user) open. The draft is then a draft of that kind. That finding
+still sends the draft to the escape hatch, also for an approved draft. Keep 1 and keep 5 give this step.
 
 A draft of a comment that the reviews approve waits for the approval of the user. The result gives the path of its draft
-file. Change 9 and the paragraph after "The changed rules" that starts "For a planner subagent, change 9 wins over two
-sentences" give this approval. Change 6 and change 9 give the post after the approval of the user.
+file. It also gives a question of the kind "comment" with the exact text of the comment. Change 9 and the paragraph
+after "The changed rules" that starts "For a planner subagent, change 9 wins over two sentences" give this approval.
+Change 6 and change 9 give the post after the approval of the user.
 
 ### The new-finding rule
 
