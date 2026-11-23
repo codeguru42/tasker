@@ -291,9 +291,13 @@ failed pull, that pull ran between 15:32:13 and 15:42:35.
 In case B, later the same day, a question session in the same question pane ran the allowed pull at the start of its
 `/session-review` rounds. After the failed pull, the session reported that `origin/main` was "still" at `491dbd2f`. It
 did not say which earlier read the word "still" compares with, and no session reported the value before the pull. It
-reported no value of `HEAD`. In the reflog of `refs/remotes/origin/main` above, `origin/main` was at `491dbd2f` from
-15:48:14 to 20:17:38, with no entry between. So the session read `491dbd2f` in that window. This is an inference, not a
-measure: if the failed pull also started in that window, `origin/main` was at `491dbd2f` before it too.
+reported no value of `HEAD`.
+
+On 2026-11-22, after both cases, with git 2.47.3, a read of
+`git -C <local clone> reflog show --date=iso refs/remotes/origin/main` gave the entry `491dbd2f` at 15:48:14, all times
+-0700. The next entry after `491dbd2f` was `39677208` at 20:17:38. No entry lies between these two times. This is an
+inference, not a measure: the session read `491dbd2f` in that window. If the failed pull also started in that window,
+`origin/main` was at `491dbd2f` before it too.
 
 No one measured these facts of cases A and B:
 
