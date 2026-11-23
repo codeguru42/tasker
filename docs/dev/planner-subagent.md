@@ -472,49 +472,75 @@ user.
 
 ### The count of reviews
 
-A draft gets at most 3 reviews. The count starts at 1 for the first review of a draft.
+A draft gets at most 3 reviews. The count starts at 1 for the first review of the draft.
 
-A review with no new finding ends the work on the draft. A new finding that the planner subagent takes changes the
-draft. If the count is below 3, one more review follows.
+The count starts at 1 again for a change of the draft from an answer of the user. It also starts at 1 again for the
+change of a draft into a change of an open issue after the duplicate search. A new ticket subagent of today starts its
+count in the same way, as the paragraph of "The ticket subagent" in [planner.md](planner.md) that starts "A change of
+the draft after a report" says. The planner subagent adds a line `Count starts again: <reason>` to the record file.
 
-After review 3, the planner subagent starts no more review. It posts the draft as it stands after its decisions on the
-findings of review 3. The draft includes each cut of length only of
-[The size of a draft](issue-draft.md#the-size-of-a-draft).
+A review counts only with a report. A second issue-review subagent for the same review adds no review to the count.
 
-The count starts again at 1 in two cases. The first case is a change of the draft from an answer of the user. The second
-case is a change of the draft into a change of an open issue. The planner subagent adds a line
-`Count starts again: <reason>` to the record file in each case. The earlier items stay.
+A review with no new finding approves the draft. An answer of the user that accepts the draft with no change also
+approves it, as the bullet of [the escape hatch](planner.md#the-escape-hatch) that starts "If the answer accepts the
+draft with no change" says. A draft of a comment also needs the approval of the user. No other event approves a draft.
 
-A dismissal of an issue-draft subagent counts as a dismissal of the planner subagent. The issue-draft subagent gives
-each dismissal with its reason in its result. The planner subagent adds each one to the record file. It reads no report
-file.
+A review 1 or 2 with a new finding leads to a new issue-draft subagent. Its prompt gives the new findings of the review.
+Then the next review runs. This also holds for an issue-draft subagent that dismissed each new finding and changed
+nothing.
 
-If a finding of an escape-hatch kind is still not resolved after the last review, the draft goes to
-[the escape hatch](planner.md#the-escape-hatch). The planner subagent posts nothing for that draft.
+The issue-draft subagent changes the draft or dismisses each finding of its prompt with a one-line reason, as
+[The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) says. Its result through
+`SubagentHandback` gives each dismissal with its reason. The planner subagent reads no report file, because its list
+names a Read call only on a saved output of its own tool call and on the record file. It adds each such dismissal to the
+record file.
+
+Before an answer of the user, only a review with no new finding approves a draft. Today step 6 of "The review loop of a
+draft" ends the loops after a loop that changed nothing. So the rule can cost up to two more reviews than today. "The
+ticket subagent" records a median of about 120,000 tokens of context for a review agent.
+
+After a review 3 with a new finding, the draft is not approved. The new findings of review 3 are the remaining findings
+of the draft. The planner subagent judges the findings of review 3 itself. It starts no issue-draft subagent and no
+issue-post subagent after review 3.
+
+Such a draft waits for a decision of the user. The result of the planner subagent gives the path of the draft file and
+the remaining findings of the draft, as [The result](#the-result) says.
+
+The work on the draft can leave a finding of a kind of the escape hatch open. That finding still sends the draft to the
+escape hatch, also for an approved draft. Keep 1 and keep 5 give this step.
+
+A draft of a comment that the reviews approve waits for the approval of the user. The result gives the path of its draft
+file. Change 9 and the paragraph after "The changed rules" that starts "For a planner subagent, change 9 wins over two
+sentences" give this approval. Change 6 and change 9 give the post after the approval of the user.
 
 ### The new-finding rule
 
-If no earlier item of the record file states the same point about the same place of the draft, the finding is new. The
-planner subagent judges this for each finding of a review.
+A finding is not new in two cases. An earlier review of the same draft reported it. Or the planner subagent or an
+issue-draft subagent of the same draft dismissed it earlier, with a reason. Each other finding is new.
 
-A finding that is not new gets the judgment `not new: <earlier item>`. The planner subagent takes no new action for it.
-It keeps the earlier decision.
+The planner subagent is the judge of this rule. It decides whether two findings are the same. This judgment is open on
+purpose. An issue-review subagent writes no file, as
+[The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent) says. So the report of each
+review comes to the planner subagent as the message of its `SubagentHandback` call, and the judgment needs no other
+subagent. The cost: the full text of each review and of the record file fills the context of the planner subagent. Today
+"The ticket subagent" keeps the text of a review out of the context of a planner.
 
-A review with only findings that are not new counts as a review with no new finding. The work on the draft ends after
-such a review.
+An issue-review subagent does not judge whether a finding is new. Its prompt gives no earlier finding.
 
-A new finding gets the judgment `new`. The planner subagent then changes the draft or dismisses the finding.
-
-The planner subagent also judges the finding of a review after a start again of the count. The earlier items of the
-record file still count for this judgment.
+After a change of the draft from an answer of the user, each review and each dismissal of the draft before the change
+still counts. The record file keeps them. The reason: the result of the planner subagent already showed the user each
+dismissed finding, as The result says. The cost: a finding that the change of the user makes true again is not new, so
+no later review stops the post for it.
 
 ### The record file
 
-The record file keeps the findings and the judgments of one draft. Its name is `<file>.findings.md`. It stands in the
-same folder as the draft file `<file>.md`.
+The planner subagent keeps a record of each finding of each review of a draft. It also records each dismissal with its
+reason: its own dismissals and each dismissal of the result of an issue-draft subagent. The record file is in the folder
+of the draft files of [The prompt](#the-prompt), next to the draft file.
 
-A draft file name has only lowercase letters, digits and `-`. So no draft file name has a `.` before `.md`, and a record
-file name is never a draft file name.
+The name is `<file>.findings.md` next to the draft file `<file>.md`. The name of a record file is never the name of a
+draft file. The reason: a draft file name has only lowercase letters, digits and `-`, as "The ticket subagent" says. So
+no draft file name holds a `.` before `.md`.
 
 The record file has one Markdown list item for each finding. Each item gives these facts:
 
@@ -523,10 +549,17 @@ The record file has one Markdown list item for each finding. Each item gives the
 - The text of the finding.
 - The judgment: `new`, `not new: <earlier item>` or `dismissed by <actor>: <one-line reason>`.
 
-Each dismissal of the result of an issue-draft subagent is also an item. The planner subagent is the only writer of the
-record file. A line `Count starts again: <reason>` is also part of the file.
+A line `Count starts again: <reason>` marks a start again of the count. The earlier items stay.
 
-The planner subagent writes the record file in the folder of the draft files. It keeps the file until its result.
+The planner subagent reads the record file before its first judgment of a finding of the draft. Examples are the planner
+subagent of an answer of the user and the planner subagent of a late report. Before the first review of a draft, a
+missing record file counts as an empty record, not as a failed read.
+
+The reason: a new planner subagent starts with no context of an earlier planner subagent, as [The start](#the-start)
+says. A new issue-draft subagent also starts with no context.
+
+If a read or a write of the record file fails, the failure rule applies to the planner subagent. It then starts no
+review and no issue-post subagent for the draft. Its result says so, and the draft waits for a decision of the user.
 
 ### The start of an issue subagent
 
