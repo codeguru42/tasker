@@ -82,7 +82,8 @@ brings the count to 12" carries the suggestion. A landing report is not such an 
 
 ## The steps of the old orchestrator
 
-After the start, the old orchestrator does these steps:
+After the start, the old orchestrator does these steps. Each step has one purpose and its own number, so that other docs
+can name the step:
 
 1. Start no new ticket.
 2. Wait until each task in flight lands. This step leaves out a parked task. For each landing, do the usual steps:
@@ -94,7 +95,9 @@ After the start, the old orchestrator does these steps:
    orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task is still in flight at the handoff,
    nobody resumes it after a quota stop.
 3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17.
-   Then, for an orchestrator of the kind `claude`, do the steps of
+4. After step 3 ended with a round that found nothing new, send each fact and each lesson, as the paragraph that starts
+   "Before it writes the file" of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. Then, for
+   an orchestrator of the kind `claude`, do the steps of
    [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Then write the handoff file in your own
    handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
 
@@ -103,11 +106,14 @@ After the start, the old orchestrator does these steps:
    [the failure rule](limits.md#the-failure-rule). Then start no new orchestrator, keep your tab open and tell the user.
    While the bar of the fallback holds, wait for the next word of the user before the write.
 
-4. Start the new orchestrator, and then close your own tab, as
-   [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says.
+5. After step 4 wrote the file, start the new orchestrator, as
+   [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says. That section also covers a failed
+   start.
+6. Close your own tab, as [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says. That section
+   also covers a failed close.
 
-The handoff ends after step 4. The operator has no part in it. Until the end, the old orchestrator starts no new ticket,
-also after step 4. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new
+The handoff ends after step 6. The operator has no part in it. Until the end, the old orchestrator starts no new ticket,
+also after step 6. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new
 ticket without the word of the user.
 
 ## The handoff file of the orchestrator
@@ -148,8 +154,9 @@ of that question as a report in its tab.
 
 ## The start of the new orchestrator
 
-After step 3 of [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator), the old orchestrator does these
-steps:
+After step 4 of [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator), the old orchestrator does the
+steps below. Steps 1 to 5 and 8 below are step 5 of The steps of the old orchestrator. Steps 6 and 7 below are step 6 of
+The steps of the old orchestrator. The steps are:
 
 1. The old orchestrator reads the configuration, as steps 1 to 3 of
    [The steps of the user](../orchestrator.md#the-steps-of-the-user) say.

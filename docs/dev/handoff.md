@@ -209,7 +209,7 @@ file of 09:09 for the same role existed. Most issues of the table of the old fil
 
 ## The end of a handoff
 
-In a handoff of an orchestrator, the handoff ends after step 4 of
+In a handoff of an orchestrator, the handoff ends after step 6 of
 [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator). The operator has no part
 in it.
 
