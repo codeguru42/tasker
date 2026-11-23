@@ -169,9 +169,12 @@ as a [question file](question-pane.md#the-question-file) does.
 
 When fewer than 3 planner subagents run, the orchestrator lists `proposals/`. It starts the planner subagent of the next
 request that waits, in the order of arrival, lowest number first. It does this at the arrival of a request, after a
-result and at the end of its start steps. It starts planner subagents until 3 run or no request waits. A request that
-waits is a proposal file whose planner subagent does not run. While the bar of the fallback holds, a request that waits
-is a request that waits in the session. These files are not requests that wait:
+result and at the end of its start steps. It starts planner subagents until 3 run or no request waits. A planner
+subagent that runs can have the draft file path of a request in its prompt. Then the orchestrator starts no planner
+subagent for that request, as [The count of planner subagents](#the-count-of-planner-subagents) says. That request keeps
+its proposal file and waits for the result of that planner subagent. The orchestrator takes the next request that waits.
+A request that waits is a proposal file whose planner subagent does not run. While the bar of the fallback holds, a
+request that waits is a request that waits in the session. These files are not requests that wait:
 
 - A file that stays after a failed delete at a result.
 - A file whose write of the name failed, until the next word of the user.
