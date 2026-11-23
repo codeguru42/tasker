@@ -355,9 +355,12 @@ The result numbers its questions in this order:
 These numbers are not the numbers of the list of kinds above. A comment is kind 5 and order 6. Two questions of one
 number keep the alphabetic order of the names of their draft files. The reasons for the order:
 
-- The user decides the questions that change the most first.
-- An answer to an early question can make a later question moot.
-- The remaining findings come last, because they depend on the answers to the other questions.
+- The report of an issue-draft subagent gives a security gap first. The paragraph of
+  [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) that starts "The paragraph before
+  this one" says so.
+- Items 2 to 5 of the order keep the order of the list of The escape hatch. That order starts at its item of a new
+  feature and ends at its item of a measure.
+- Items 6 to 8 are not on that list, so they come last.
 
 A security gap also goes in the result as a report, with the time that the gap starts.
 [Core features first](working-with-the-user.md#core-features-first) says to tell the user about a security gap at once.
@@ -377,10 +380,9 @@ The orchestrator handles the questions of one result in these ways:
   plans, drafts, reviews or posts an issue". The other is the sentences that start "A planner subagent is never the
   sender of a question of a pane".
 - For a draft with two or more questions, it starts the new planner subagent only after the answer to the last open
-  question of the draft. It finds the questions of one draft by the path of the draft file in their text. The proposal
-  file and the prompt give each question and each answer word for word. For such a draft, this rule wins over step 4.
-  The reason: the sentence of The escape hatch that starts "A planner posts nothing for such a draft" bans each post
-  before the answer to each question.
+  question of the draft. The proposal file and the prompt give each question and each answer word for word. For such a
+  draft, this rule wins over step 4. The reason: the sentence of The escape hatch that starts "A planner posts nothing
+  for such a draft" bans each post before the answer to each question.
 - An answer that rejects or drops a draft ends the draft. The orchestrator asks no other open question of that draft. It
   drops each such question as moot work, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user)
   says. Then it starts the new planner subagent with that answer, and that planner subagent reports the drop.
@@ -660,9 +662,9 @@ The work on the draft can leave a finding of one of the six kinds of
 still sends the draft to the escape hatch, also for an approved draft. Keep 1 and keep 5 give this step.
 
 A draft of a comment that the reviews approve waits for the approval of the user. The result gives the path of its draft
-file. It also gives a question of the kind "comment" with the exact text of the comment. Change 9 and the paragraph
-after "The changed rules" that starts "For a planner subagent, change 9 wins over two sentences" give this approval.
-Change 6 and change 9 give the post after the approval of the user.
+file. It also gives a question of the kind "a comment on an issue" with the exact text of the comment. Change 9 and the
+paragraph after "The changed rules" that starts "For a planner subagent, change 9 wins over two sentences" give this
+approval. Change 6 and change 9 give the post after the approval of the user.
 
 ### The new-finding rule
 
