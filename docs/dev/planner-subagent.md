@@ -563,80 +563,144 @@ review and no issue-post subagent for the draft. Its result says so, and the dra
 
 ### The start of an issue subagent
 
-The planner subagent starts each issue subagent with these values:
+The planner subagent starts each subagent of the three kinds with the Agent tool. The type is not `fork`, because a fork
+gets the context of its parent.
 
-- The subagent type is `general-purpose`. It never passes the type `fork`. [The start](#the-start) gives the reason.
-- The name is `<planner subagent name>-<kind>-<file>-<count>`. `<kind>` is `draft`, `review` or `post`. `<file>` is the
-  draft file name without `.md`. `<count>` counts the starts of that kind for that draft file in that planner subagent,
-  from 1. A second start after an end with no report also counts. An example is `plan-4-review-plan-4-terms-1`.
-- The `model` and the `effort` come from the entries of the prompt. The key is `issue-draft`, `issue-review` or
-  `issue-post`. If the prompt says that the key has no entry, the planner subagent passes no `model` and no `effort`.
-- The map of [The model of the start](#the-model-of-the-start) also covers these three keys. The planner subagent maps a
-  `model` value as that subsection says.
+The type holds the tools of the kind: the Write tool for an issue-draft subagent and an issue-post subagent, and Bash
+and the Read tool for each kind. Step 2 of [the doc-read rule](doc-reads.md#the-doc-read-rule) reads each doc with the
+Read tool. The type is `general-purpose`. On 2026-11-19, with Claude Code 2.1.329, the list of the subagent types gave
+"Tools: \*" for `general-purpose`.
 
-With a count below 100, a name has at most 47 characters. The Agent tool refuses a name of more than 64 characters.
+The planner subagent gives each subagent a name with the `name` option of the Agent tool. Each name is new in the
+session of the orchestrator, with at most 64 characters. The form is `<planner subagent name>-<kind>-<file>-<count>`.
+`<kind>` is `draft`, `review` or `post`. `<file>` is the draft file name without `.md`. `<count>` counts the starts of
+that kind for that draft file in that planner subagent, from 1. An example is `plan-4-review-plan-4-terms-1`.
 
-The planner subagent starts at most one issue subagent for one draft at a time. It can run the work of different drafts
-at the same time.
+With a count below 100, a name has at most 47 characters. A planner subagent name has at most 12 characters, as
+[The name](#the-name) says. A draft file name has at most 24, as "The ticket subagent" of [planner.md](planner.md) says.
 
-The start of a subagent below a subagent rests on these records. The chain of
-[The chain of subagents](#the-chain-of-subagents) shows that a subagent can start a subagent.
-[The ticket subagent](planner.md#the-ticket-subagent) and [run-one-ticket.md](run-one-ticket.md) give the earlier start
-rules for a review agent. [The doc-read rule](doc-reads.md#the-doc-read-rule) and its
-[Step 1: pull the local clone](doc-reads.md#step-1-pull-the-local-clone) give the read of a doc.
+The orchestrator reads the entries `issue-draft`, `issue-review` and `issue-post` under `sessions.models` in step 1 of
+[The start](#the-start). The prompt of the planner subagent gives the three entries. The reason: the row of the planner
+subagent in [the table](permissions.md#the-table) says "never runs" for K1, so it runs no `tasker show-config`.
 
-A failed start counts as an end with no report. If the start fails, the planner subagent puts the failure in its result.
+After a failed read, the orchestrator follows step 2 of The start. Then, and for a key with no entry, the prompt says
+that the key has no entry. Before each start, the planner subagent takes the entry of the kind from its prompt. For no
+entry, it passes no `model` and no `effort`. For an entry, it passes the `effort` of the entry and the `model` of the
+map of [The model of the start](#the-model-of-the-start). That map also covers these three keys.
+
+The chain of a planner subagent has two layers below the orchestrator: the planner subagent and one subagent of the
+three kinds. No chain needs a third layer. These records show chains of two layers:
+
+- The paragraph of "The ticket subagent" that starts "The ticket subagent passes the name". On 2026-11-04, a ticket
+  subagent of planner-m16 started a review agent, and its report came back.
+- The paragraph of [run-one-ticket.md](run-one-ticket.md) that starts "If the proof shows no changed word", with the
+  paragraph "A split read of this form". On #506, a task subagent ran six parallel subagents.
+- [The chain of subagents](#the-chain-of-subagents) of this page. On 2026-11-21, Claude Code 2.1.330 ran it once.
+
+On 2026-11-21, no record of the docs gave a test of a third layer.
+
+One planner subagent runs at most one subagent of the three kinds at a time. The next step of each draft waits for the
+result of the subagent that runs. These are the reasons:
+
+- No record of the docs gives a tested limit of Claude Code on the count of subagents in one session.
+- With at most 3 planner subagents, at most 3 subagents of the three kinds run in the session of the orchestrator. Each
+  planner subagent that a late report starts again can add one more. So the count stays known and small.
+- Each subagent of the three kinds pulls the local clone at its start, as The read rule says. So fewer pulls start at
+  the same moment, and fewer reads are slow.
+
+On 2026-11-21, with git 2.47.3, two pulls ran at the same moment in one clone 11 times.
+[Step 1: pull the local clone](doc-reads.md#step-1-pull-the-local-clone) records the result. A clash costs a slower read
+and a note of the failure, and no draft is lost.
+
+The cost: a planning request with more than one draft works on its drafts one after the other, so the request takes
+longer.
 
 ### The prompt of an issue subagent
 
-The prompt of an issue subagent gives these facts:
+Each prompt gives these facts:
 
-1. The kind of the subagent, and the document of its kind: [issue-draft.md](issue-draft.md),
-   [issue-review.md](issue-review.md) or [issue-post.md](issue-post.md).
-2. The path of the draft file, and of the record file where the kind needs it.
-3. The source of the draft word for word, with its sender and its date. The prompt names the source of each fact.
-4. The milestone of the draft and each decision of the user on the draft.
-5. For an issue-review subagent, the tests of [the tests of a draft](issue-review.md#the-tests-of-a-draft) and the bans
-   of [The bans of a review agent](planner.md#the-bans-of-a-review-agent), word for word. The prompt gives it no opinion
-   of the planner subagent about the draft.
-6. The ask for the result through the tool `SubagentHandback`.
-7. The own name of the subagent, as [The start of an issue subagent](#the-start-of-an-issue-subagent) gives it.
+1. The path of the document of its kind and the path of [issue-subagents.md](issue-subagents.md).
+2. The path of the draft file, in the folder of [The prompt](#the-prompt).
+3. The name of the subagent.
+4. The ask for the result through `SubagentHandback`.
+5. The facts of a start prompt, as [The start prompts](doc-reads.md#the-start-prompts) says.
 
-An issue subagent reads only the documents of [The read rule](issue-subagents.md#the-read-rule) at its start. It loads a
-doc that a link names only on demand, for a specific task that needs the doc.
+The prompt of an issue-draft subagent also gives these facts:
+
+- The source of the draft word for word, with its sender, its date and the source of each fact.
+- The milestone of the draft and each decision of the user on the draft.
+- For a change of an open issue, the issue key and the start hash, or the fact that no start hash exists.
+- For a comment, the key of the issue that gets the comment.
+- For a draft after a review, the new findings of that review. The planner subagent judged them. The prompt names no
+  record file, and the issue-draft subagent does not judge whether a finding is new.
+- The simple-english skill, for the self-check of the document of its kind.
+
+The prompt of an issue-review subagent also gives the source of the draft word for word. It gives the list of
+[The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent), word for word, as keep 1
+says. It gives no opinion of the planner subagent about the draft, no earlier finding and no dismissal.
+
+The prompt of an issue-post subagent also gives these facts:
+
+- The repo key and the kind of the post. The kind is a new issue, a new title or body of an open issue, or the end of
+  the post of an existing issue.
+- For a new issue, its milestone and each label.
+- For a change of an open issue, the issue key and the start hash.
+- Each blocked-by link of the draft, with the blocked issue, the blocker and the reason.
+- For the end of the post of an existing issue, the key of that issue.
+
+The model and the effort go in the Agent call, not in the prompt.
 
 ### The wait for an issue subagent
 
-The planner subagent follows [The wait for a report](planner.md#the-wait-for-a-report) for each issue subagent. It is
-the starter of that wait.
+The planner subagent is the starter of each subagent of the three kinds, as
+[The wait for a report](planner.md#the-wait-for-a-report) defines a starter. It judges the end of each one by the kinds
+of notification of that subsection. It ends its turn during the wait.
 
-1. A wait notification does not end the wait. The result of the subagent ends it.
-2. If the issue subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies.
-3. The planner subagent then starts one new subagent of the same kind for the same draft. The new start counts in
-   `<count>`.
-4. If that one also ends with no report, the planner subagent puts the failure in its result. It posts nothing for that
-   draft.
-5. The planner subagent starts the next subagent of a draft only after the result of the earlier one.
-6. Before the post of an issue-post subagent, the planner subagent makes sure that the result of the last review is in
-   the record file.
-7. An issue-post subagent posts the body of the draft. Right after the post, it compares the body on GitHub with the
-   body of the draft, as [Before a post](issues.md#before-a-post) and [issues.md](issues.md) say. Its result gives the
-   compare.
-8. The planner subagent reads the result of the issue-post subagent. It adds each fact for the user to its own result.
-9. A result that names a tool block follows [the tool-block rule](tasker-commands.md#the-tool-block-rule).
-10. A late report of an issue subagent can start an ended planner subagent again.
-    [The life of a planner subagent](#the-life-of-a-planner-subagent) gives the steps. The second result deletes no
-    proposal file.
-11. The planner subagent ends only after the result of each issue subagent that it started.
+If a subagent of the three kinds ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the
+planner subagent. It starts one new subagent of the same kind for the same step. A refused Agent call is an end with no
+report. If the second subagent also ends with no report, the planner subagent posts nothing for the draft. Its result
+says so, with the kind and the step, and the draft waits for a decision of the user.
+
+A second issue-post subagent runs the duplicate search before its post, as [issue-post.md](issue-post.md) says. For a
+match, it posts nothing, and its result follows item 2 of
+[The result of an issue-post subagent](issue-post.md#the-result-of-an-issue-post-subagent).
+
+The planner subagent judges each match from that result. A match with the same body as the draft is the first post. For
+the first post, the planner subagent does no step of a match, and the draft does not change. It starts one issue-post
+subagent for the compare and the links of that issue, with the prompt above. The rule for the end of such a post is in
+[The steps of a post](issue-post.md#the-steps-of-a-post). If the compare of a match failed, the planner subagent posts
+nothing for the draft. Its result says so, and the draft waits for a decision of the user.
+
+An extra report is a report of the first issue-review subagent of a review after the start of the second one. Its
+findings join that review, and they add no review to the count. An extra report can come after the judgment of the
+findings of its review. Its findings then go to the next judgment of the draft, with the findings of the next review.
+"The wait for a report" gives the same step today for a ticket subagent. If no next review of the draft runs, the
+planner subagent judges its findings before its result.
+
+A late report is a report of a subagent of the three kinds after the result of the planner subagent. It starts the
+planner subagent again, as [The life of a planner subagent](#the-life-of-a-planner-subagent) says. No one tested this
+start for a subagent of the three kinds. The planner subagent handles a late report by its kind:
+
+- An issue-review subagent: apply [The new-finding rule](#the-new-finding-rule) to each finding. With no new finding,
+  change nothing, and the second result says so. For a new finding, the late-report list of "The wait for a report"
+  holds, with change 4. In that list, a new issue-draft subagent and the reviews of
+  [The count of reviews](#the-count-of-reviews) take the place of "a new ticket subagent".
+- An issue-draft subagent: start no review and no post for that report. If the draft waits for a decision of the user,
+  the second result gives the path of the draft file and the report, and the draft keeps its wait. For a posted draft,
+  the second result names the report and changes nothing. For a dropped draft, the planner subagent drops the report
+  too.
+- An issue-post subagent: the issue of the report exists. The second result gives its key and its URL, and says whether
+  the post is complete. If the first result named no post, the second result also says so. The planner subagent starts
+  no new post for the draft.
 
 ### The other sessions
 
-No other session changes because of this section. The follow-up planner keeps its ticket subagent and its review agent.
-The task subagent, the operator and the question session start no issue subagent.
+An orchestrator of a kind other than `claude` starts no planner subagent, as "The kind of the orchestrator" says. So a
+Codex orchestrator and a pi orchestrator start no subagent of the three kinds. Their planning requests go to
+`planner-<slug>`.
 
-The ad hoc post subagent of the main session keeps its own start, as
-[The starter of an issue subagent](#the-starter-of-an-issue-subagent) says. The orchestrator starts only the planner
-subagent, as [The start](#the-start) says.
+The follow-up planner, the initial planner and an ad hoc planner keep the ticket subagent, the review agent and the
+review loop of today. After loop 3, they post the draft as "The review loop of a draft" says today.
 
 ## The life of a planner subagent
 
