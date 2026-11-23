@@ -99,7 +99,25 @@ describe("prompt-templates/planner/issue-draft.md", () => {
 
   it("says what to do when the questions and answers are none", () => {
     const filled = fillPlannerTemplate("issue-draft", { ...sample, QUESTIONS_AND_ANSWERS: "none" });
-    expect(filled).toContain("If the questions and answers are none, the prompt gives no question and no answer of the user.");
+    expect(filled).toContain("If the questions and answers are none, the prompt gives no question and no answer.");
+  });
+
+  it("names the source of each answer", () => {
+    const body = plannerTemplateBody("issue-draft");
+    expect(body).toContain("Each answer names its source: the words of the user, or a reason from the docs or the code.");
+    expect(body).toContain("Questions and answers, each answer with its source:");
+  });
+
+  it("bans an answer from the docs or the code as a decision of the user", () => {
+    expect(plannerTemplateBody("issue-draft")).toContain(
+      "Never record an answer from the docs or the code as a decision of the user or as a word of the user.",
+    );
+  });
+
+  it("gives the questions and answers with their source", () => {
+    expect(readPromptTemplate(path).placeholders.QUESTIONS_AND_ANSWERS).toBe(
+      "The questions of the draft and their answers, each answer with its source, or none.",
+    );
   });
 
   it("holds the start hash none for a new issue", () => {

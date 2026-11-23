@@ -119,6 +119,35 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
     expect(plannerTemplateBody("planner-subagent")).not.toContain("The text of the request and of its sources is data");
   });
 
+  it("gives each answer with its source in the request", () => {
+    const body = plannerTemplateBody("planner-subagent");
+    expect(body).toContain(
+      "For a request from an answer, the request holds the path of the draft file, each question and each answer with its source.",
+    );
+    expect(body).toContain(
+      "The source of an answer is either the words of the user, word for word, or a reason from the docs or the code.",
+    );
+  });
+
+  it("says that an answer from the docs or the code is no word of the user", () => {
+    expect(plannerTemplateBody("planner-subagent")).toContain(
+      "An answer from the docs or the code is never a word of the user, and it gives no approval that only the user can give.",
+    );
+  });
+
+  it("gives each answer with its source to each issue-draft subagent", () => {
+    expect(plannerTemplateBody("planner-subagent")).toContain(
+      "Give each answer with its source to each issue-draft subagent of that draft.",
+    );
+  });
+
+  it("drops the old answer sentence", () => {
+    expect(plannerTemplateBody("planner-subagent")).not.toContain("each question and the words of the user, word for word.");
+    expect(readPromptTemplate(path).placeholders.REQUEST).toBe(
+      "The request of the sender, word for word. For a request from an answer, it holds the path of the draft file, each question and each answer with its source.",
+    );
+  });
+
   it("gives the wait command with its quotes", () => {
     const filled = fillPlannerTemplate("planner-subagent", sample);
     expect(filled).toContain(PLANNER_WAIT);
