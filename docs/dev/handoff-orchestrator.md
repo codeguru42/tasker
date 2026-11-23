@@ -323,9 +323,12 @@ handoff file:
   file says so. The close of step 6 of [The start of the new orchestrator](#the-start-of-the-new-orchestrator) uses the
   same ids. The file gives no session ref of the old orchestrator.
 - In the stopping-point case, [the task list](#the-task-list).
-- For each question that has a question file and got a pane handoff, the link to the pane handoff file. The link stands
-  next to the question id. It is relative, and its target is only the name of the file. If the write of the pane handoff
-  file failed, the handoff file holds the pane handoff itself in place of the link.
+- For each question that got a pane handoff, the link to the pane handoff file next to the question id. The link is
+  relative, and its target is only the name of the file. If the write of the pane handoff file failed, the handoff file
+  holds the pane handoff itself in place of the link. Each write action and metadata request of a pane handoff that did
+  not run stands in the handoff file with the mark "not run", as a decision of the user that still applies. A question
+  with a question file stays in its question file. A question with no file keeps its full text in the handoff file, as
+  [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says.
 
 The handoff file holds no text and no list of the open questions that have a
 [question file](question-pane.md#the-question-file). It holds no list of the requests that have a
@@ -339,21 +342,31 @@ of that question as a report in its tab.
 
 ### The task list
 
-The task list is a part of the handoff file in the stopping-point case. It has one entry for each task in flight that is
-not a parked task. A task that landed has no entry.
+The task list is a part of the handoff file in the stopping-point case only. In the wait case, the handoff file holds no
+task list. It has one entry for each task in flight that is not a parked task, at the write of the handoff file. A task
+that landed has no entry.
 
 An entry gives these items:
 
-- The issue key, the title and the branch of the ticket
-- The start base of the task, if the task is stacked
-- The state of the work, as the stopping-point report gives it
-- Each answer of the user after the stopping-point message, with the words of the user
-- Each dismissed finding, each edge case, each false claim and each `tasker retry` of the verify-failure rule that the
-  task subagent reported
+- The issue key
+- The state of the task from its stopping-point report
+- Each item of the stopping-point report apart from the lessons, because the lessons already went to the send: each
+  dismissed finding, each edge case, each claim of the issue that was no longer true and each `tasker retry` of the
+  verify-failure rule
+- Each task worktree or local task branch that stays, with its path
+- For a stacked task, the start base of the last read, or the words that the task subagent held no start base
+- Each answer of [The wait and the reports](#the-wait-and-the-reports), also a task change of
+  [The panes and the write subagents](#the-panes-and-the-write-subagents), with the words of the user
+- The files that the work of the task changed so far
 
-The entry gives the files that the work changed so far. If the report gives no files, the entry gives the words that the
-diff of the task branch gives. If the task subagent ended with no report, the entry says "no report". The entry gives no
-session name of the old task subagent.
+If the report gives no list of files, the entry says that the diff of the task branch gives the files, as
+[The overlap rule](land-the-work.md#the-overlap-rule) reads the files of a task. The reason: the new task subagent and
+the user see the scope of the work so far. If an entry has no stopping-point report, it says "no report", as
+[The end with no report](#the-end-with-no-report) says.
+
+The new orchestrator sends no message to a task subagent of the old orchestrator. Each task subagent of an entry ended
+before the write, or the user told the old orchestrator to go on. An entry names no session. A path of a task worktree
+in an entry is a place in the file system, not a name of a session.
 
 ## The start of the new orchestrator
 
@@ -428,28 +441,52 @@ not the tab id of the handoff file. Then, before the pick of the first ticket, i
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
 record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
 
-If the handoff file holds [the task list](#the-task-list), the new orchestrator starts the new task subagents after the
-read of `tasker status` and before the pick of the first ticket. It starts one task subagent for each entry. It asks the
-user nothing about the entry. The steps are:
+If the handoff file holds [the task list](#the-task-list), the new orchestrator starts one new task subagent for each
+entry. It does this after its start steps and before the pick of its first new ticket. The reason: an orchestrator has
+three slots, as [The delay of each task subagent](quota.md#the-delay-of-each-task-subagent) says. A task of the list
+already holds work, so a new ticket does not take its slot. The new orchestrator asks the user nothing about the entry,
+as the exception of "The In progress case" in [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The steps
+are:
 
-1. Read `tasker show <issue>` for the ticket of the entry.
-2. Start the task subagent as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
-   The prompt gives the entry, the state from `tasker show <issue>` and each answer of the entry.
-3. Give the task subagent the session name of the entry with a new suffix. The suffix is `-h<date><time>`. The digits
-   come from the date and the time in the name of the handoff file. An example is `codeguru42-tasker-108-h202611221505`.
-4. Compare the new task worktree path with each path of an entry. If two paths are the same, add `-2` to the suffix.
-5. Do not move the quota jobs of the old session. The old jobs and the old slot ended with the old orchestrator. The new
-   task subagent gets its own jobs and its own slot, as
-   [Schedule a job when a task subagent starts](quota.md#schedule-a-job-when-a-task-subagent-starts) says.
+1. If `tasker status` does not list the task of an entry in flight, start no task subagent for it, and tell the user in
+   one line in the tab.
+2. Read `tasker show <issue>` for the ticket of the entry.
+3. Make the session name from the issue key, as the naming bullet "One task subagent runs one ticket" of
+   [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) gives it. An example is
+   `codeguru42-tasker-108` for `codeguru42/tasker#108`. Then add the suffix `-h<date><time>`. The digits come from the
+   date and the time in the name of the handoff file. An example is `codeguru42-tasker-108-h202611221505`. The prompt
+   says that the name has a suffix.
+4. The task worktree of the new name is `../tasker-worktrees/<session name>`, as the folder bullet of
+   [Limits](limits.md#limits) says. Compare it with each path of a task worktree that the entry gives. If two paths are
+   the same, add `-2` to the suffix. The new suffix gives a new name and so a new path. The comeback rule finds a task
+   worktree that stays through the branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule).
+5. Start the task subagent. The prompt gives the context of the first bullet of "The prompt of a task subagent", the
+   state from `tasker show <issue>`, the entry and each answer of the entry. The task subagent follows
+   [the comeback rule](run-one-ticket.md#the-comeback-rule). If the base holds a template file for the prompt of a
+   second task subagent for the same ticket, the entry reaches the prompt through that template.
+6. Give the new task subagent the free slot with the lowest number, as "The delay of each task subagent" says. Schedule
+   its jobs as [Schedule a job when a task subagent starts](quota.md#schedule-a-job-when-a-task-subagent-starts) says. A
+   rule that passes the slot and the jobs of an old session to a second session does not apply across a handoff, for
+   example the second-session bullet of [Delete the job](quota.md#delete-the-job) and the sentence of the naming bullet
+   that moves the quota jobs. The old jobs and the old slot end with the old orchestrator, because a job lives only in
+   the session of the orchestrator ([Terms](quota.md#terms)).
 
-If the entry says "no report", the new task subagent starts from the state that `tasker show <issue>` gives. If that
-read fails, the new orchestrator does not start that task subagent and tells the user. If the start of a task subagent
-fails, the new orchestrator tells the user and goes on with the next entry.
+An open question of a task subagent that came to a stopping point stays open in the handoff file, or in its question
+file. The new orchestrator sends its answer to the new task subagent of the same ticket. If that task subagent did not
+start yet, its prompt gives the answer.
 
-If the handoff file links a pane handoff file next to a question id, the new orchestrator reads that file before it
-starts the pane of that question, as [The pane handoff](question-pane.md#the-pane-handoff) says. The pane then asks the
-question again, with the words of the pane handoff file in its first reply. If the read of the file fails, the new
-orchestrator tells the user and asks the question from its question file in the usual way.
+If the entry says "no report", the new task subagent starts from the state that `tasker show <issue>` gives. If the read
+of `tasker status` or of `tasker show <issue>` for an entry fails, the new orchestrator starts no task subagent for that
+entry. It asks the user in its pane whether it starts it, as an open question of [Start](question-pane.md#start). If the
+start of a new task subagent fails, for example a refused Agent call, the task stays in flight with no task subagent.
+The new orchestrator asks the user in its pane whether it starts it again, in the same way.
+
+If the handoff file links a pane handoff file next to a question id, the question of the pane stays open in its question
+file, or in the handoff file for a question with no file. During the handoff, it gets no automatic start. The new
+orchestrator asks the question in its own pane under the rules of [Start](question-pane.md#start). Before the pane
+start, it reads the pane handoff file. [The pane handoff](question-pane.md#the-pane-handoff) gives the first-reply text.
+If it cannot read the pane handoff file, it starts the pane with the full text from the question file or the handoff
+file. The first-reply text then says that the talk of the old pane is not known.
 
 An answer can name the id of a question of the old session, as [The last item id](handoff.md#the-last-item-id) says.
 Then the new orchestrator takes the question from its [question file](question-pane.md#the-question-file). A question
