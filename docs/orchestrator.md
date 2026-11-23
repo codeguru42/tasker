@@ -467,8 +467,9 @@ The states of the job:
 
 A job can end with no CronDelete, for example by the expiry. The orchestrator learns of the end only from a CronList, at
 the delete of this subsection or at the renewal bullet. Then it drops the id and the time. After a read with a ticket
-that waits, it makes no job. At a renewal, it makes a new job with CronCreate, with no second CronList. No row makes a
-job during the steps of the old orchestrator.
+that waits, it makes no job. At a renewal whose CronList does not hold the kept id, it makes a new job with CronCreate,
+with no second CronList. After a CronDelete that works, the new make runs CronList first, as the renewal bullet says. No
+row makes a job during the steps of the old orchestrator.
 
 ## Peer messages
 
