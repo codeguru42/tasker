@@ -121,12 +121,15 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 ## The planner subagent
 
 Sources: [Sessions](../config.md#sessions), [the doc-read rule](doc-reads.md#the-doc-read-rule) and
-[The result](planner-subagent.md#the-result). The section Sessions says that the planner subagent starts the draft,
-review and post subagents.
+[The result](planner-subagent.md#the-result) and [The record file](planner-subagent.md#the-record-file). The section
+Sessions says that the planner subagent starts the draft, review and post subagents. The planner subagent keeps the
+record of the findings of each draft in the record file.
 
 - K3: `git -C <local clone> show origin/main:<path>`, for each doc that it reads.
 - K4: `git -C <local clone> fetch origin`, before its first doc read.
-- Named other commands: a Read call on a saved output of its own tool call, and `timeout 20 bash -c 'sleep 5'`.
+- K12: the record file `<file>.findings.md` of each draft, in the folder of the draft files.
+- Named other commands: a Read call on a saved output of its own tool call, a Read call on the record file, and
+  `timeout 20 bash -c 'sleep 5'`.
 - K10: `SendMessage` to `main` only, after a refused `SubagentHandback` call.
 - K11: the start of an issue-draft subagent, an issue-review subagent and an issue-post subagent.
 - Each other kind: no list.

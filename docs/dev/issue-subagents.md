@@ -58,6 +58,8 @@ Each of the three kinds follows these bans:
   edit nothing and write no file" of
   [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent) and
   [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-issue-post-subagent). Each ban stays.
+- Start no subagent. Only a [planner subagent](planner-subagent.md#the-starter-of-an-issue-subagent) starts a subagent
+  of the three kinds.
 - Only an issue-post subagent writes to GitHub. An issue-draft subagent and an issue-review subagent post nothing. They
   change no issue, no card, no label and no milestone.
 

@@ -136,6 +136,10 @@ and result that a rule of the planner pages gives to the user. It also gives eac
 gives the start hash of [Before a post](issues.md#before-a-post). It also gives the counts, the removals and a failed
 count of [The size of a draft](#the-size-of-a-draft).
 
+For an issue-draft subagent of a [planner subagent](planner-subagent.md), the result through `SubagentHandback` gives
+each dismissal with its reason. The planner subagent adds each one to its
+[record file](planner-subagent.md#the-record-file). The result gives no other fact of the report.
+
 ## The findings and the edge cases
 
 The prompt of an issue-draft subagent can give the findings of a review. The issue-draft subagent decides on each

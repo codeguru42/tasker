@@ -53,6 +53,10 @@ These bullets of [The blocked-by links](issue-subagents.md#the-blocked-by-links)
 
 For an issue-post subagent, "the session" and "the planner" in these rules name the issue-post subagent.
 
+The issue-post subagent only reports each match of the duplicate search. It does not judge whether a match covers the
+change. The starter judges that, as item 2 of
+[The result of an issue-post subagent](#the-result-of-an-issue-post-subagent) says.
+
 ## The count of the body
 
 GitHub refuses an issue body of more than 65536 characters.
@@ -129,8 +133,9 @@ An issue-post subagent gives its facts in its result, as
    the fact or the choice goes in its result. Examples are a skipped write of The reads before the write and a second
    failed compare of Before a post.
 2. For each match of the duplicate search, the subagent posts nothing. Its result gives the key, the state and the title
-   of each match. The starter then does the steps of a match of
-   [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
+   of each match. It also gives a compare of the body of the match with the body of the draft, for example
+   `diff <(gh issue view <number> --json body -q .body) <body of the draft>`. The starter then does the steps of a match
+   of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
 3. The result gives the key and the URL of a posted issue, each blocked-by link that the subagent added, each skipped
    link with its reason, and whether the post is complete.
 4. The result gives each issue as its plain key, as [the issue-link rule](working-with-the-user.md#the-issue-link-rule)
