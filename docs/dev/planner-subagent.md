@@ -411,42 +411,64 @@ The planner subagent drops these rules:
 ## The issue subagents
 
 These terms apply in this section. The three kinds are the issue-draft subagent, the issue-review subagent and the
-issue-post subagent. A review is one run of an issue-review subagent over one version of a draft. A finding is one point
-of a review that asks for a change. A dismissal is a decision to make no change for a finding, with a one-line reason.
-The record file is the file of [The record file](#the-record-file). The remaining findings of the draft are the findings
-that the planner subagent neither changed in the draft nor dismissed.
+issue-post subagent. A review is one report of an issue-review subagent on one draft. A finding is one item of a review.
+It gives a place in the draft, the rule or the fact behind it, and a recommendation. A dismissal is a decision to keep
+the draft as it is for one finding, with a one-line reason. The record file is the file of
+[The record file](#the-record-file). The remaining findings of the draft are the new findings of review 3 of a draft.
+[The count of reviews](#the-count-of-reviews) gives their steps.
 
 ### The starter of an issue subagent
 
-Only a planner subagent starts a subagent of the three kinds. It starts each one with the Agent tool, as the work on a
-draft needs. No other session starts such a subagent. This holds for the orchestrator, the operator, a task subagent, a
-question session, a planner and each issue subagent.
+Only a planner subagent starts a subagent of the three kinds. The orchestrator, a task subagent, a question session, a
+planner session and a write subagent start none.
 
-The planner subagent is the starter of each issue subagent that it starts. So it does each step of the kept rules that
-names the starter of an agent. These steps include the wait for a report and the decision on each finding.
+The subagent of the main session that posts a reviewed ad hoc draft is the ad hoc post subagent. It is not an issue-post
+subagent. Its start in the bullet of [working-with-the-user.md](working-with-the-user.md) that starts "A subagent of the
+main session posts a reviewed ad hoc draft" stays.
 
-Change 9 names the actors of a comment on an issue. The planner subagent starts the issue-draft subagent, the
-issue-review subagent and the issue-post subagent for such a comment. It posts no comment itself.
+The planner subagent runs no write to GitHub. An issue-post subagent runs each write of a post. These are a new issue, a
+new title or body of an open issue, and each add or removal of a blocked-by link. The planner subagent posts no comment.
+Change 9 gives the actors of a comment. No metadata already gives each write of a post to the issue-post subagent. The
+row of the planner subagent in [the table](permissions.md#the-table) gives it no `gh` write.
 
-The subagent of the main session that posts a reviewed ad hoc draft is not an issue-post subagent of this page. The
-bullet "A subagent of the main session posts a reviewed ad hoc draft" of
-[working-with-the-user.md](working-with-the-user.md) gives its start. That start does not change.
+The reason: among the three kinds, only an issue-post subagent writes to GitHub, as
+[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says. So the work of the planner subagent has the
+same single writer for an issue and its links.
+
+The planner subagent runs only the kinds of command of its row in the table and of its list in
+[allowed-commands.md](allowed-commands.md#the-planner-subagent). These are K3, K4, K10 (`SendMessage` to `main` only),
+K11, the K12 write of the record file, and the named other commands with a Read call on the record file. It runs no
+other kind. For example, it runs no `tasker` command (K1) and no `gh` read (K5).
 
 ### The order of the work on a draft
 
-The planner subagent does these steps for each draft:
+The planner subagent makes the drop judgment of keep 1 before it starts the first issue-draft subagent of a planning
+request.
 
-1. Start an issue-draft subagent. It writes the draft file and its report file.
-2. Run `git fetch origin` in the local clone. Then start an issue-review subagent for the review of the draft.
-3. Add each finding of the review to the record file, with its judgment, as [The record file](#the-record-file) says.
-4. Decide on each finding. Change the draft with a new issue-draft subagent, or dismiss the finding with a one-line
-   reason.
-5. If the draft changed and [The count of reviews](#the-count-of-reviews) permits it, go to step 2.
-6. Start an issue-post subagent. It posts the draft as it stands after the decisions on the last review.
-7. Put the result of each step in the result of the planner subagent, as [The result](#the-result) says.
+For one draft, the planner subagent does these steps:
 
-The planner subagent starts the next subagent of a draft only after the result of the earlier one. It reads no draft
-file and no report file in its own context. It reads the record file.
+1. Start an issue-draft subagent. It writes the draft file and its report.
+2. Start an issue-review subagent for the draft. The issue-review subagent does step 1 of
+   [the doc-read rule](doc-reads.md#the-doc-read-rule) itself, as [The read rule](issue-subagents.md#the-read-rule)
+   says. The planner subagent runs no `git fetch origin` before this start, because its list gives K4 only before its
+   first doc read.
+3. Judge each finding of the review under [The new-finding rule](#the-new-finding-rule), and add it to the record file.
+4. Follow [The count of reviews](#the-count-of-reviews) for the next step. The next step is an approval, a new
+   issue-draft subagent with the findings, or the user.
+5. After the approval of a draft of an issue, start one issue-post subagent for the draft. For a draft of a comment,
+   [The count of reviews](#the-count-of-reviews) gives the step after its approval.
+
+For one draft, at most one subagent of the three kinds runs at a time. The reason: each step reads the draft file that
+the step before it wrote.
+
+A planner subagent runs at most one issue-post subagent at a time. The reason: a later post of one chain needs the issue
+key of the earlier post for its blocked-by link.
+
+Before it starts an issue-post subagent, the planner subagent decides each blocked-by link of the draft. The links
+between drafts that are not posted yet come from its table of the needs and the likely files, as today.
+
+The planner subagent starts no issue-post subagent for a draft that is not approved or that waits for a decision of the
+user.
 
 ### The count of reviews
 
