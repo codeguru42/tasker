@@ -276,6 +276,10 @@ The rule has three failure cases:
 
 ### When the job fires
 
+A job of a task subagent that got the stopping-point message of
+[the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) sends no resume message and schedules no next
+job. If such a job fires, the orchestrator tells the user in one line.
+
 When a seven-day job fires, the orchestrator first runs CronList. The orchestrator deletes with CronDelete each job of
 the ticket whose time is in the past. After the delete, the ticket has no job of that kind, as
 [Schedule a job when a task subagent starts](#schedule-a-job-when-a-task-subagent-starts) says for a deleted id. Then
@@ -584,7 +588,9 @@ only on the word of the user. Say this in the report of the capture.
 - When the orchestrator cancels a task subagent, the orchestrator must delete each job of that task subagent whose id
   still lives with CronDelete.
 - If a task subagent stops for another reason and the orchestrator does not start it again, the orchestrator must delete
-  each job of that task subagent whose id still lives with CronDelete.
+  each job of that task subagent whose id still lives with CronDelete. This includes a task subagent after its
+  stopping-point report, and a task subagent that ended with no report in
+  [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) of a handoff.
 - When the user defers a ticket that has a task in flight (see [the defer rule](pick-the-tickets.md#the-defer-rule)),
   the orchestrator must delete each job of that task subagent whose id still lives with CronDelete.
 - In each of these cases, the orchestrator frees the slot of the task subagent. This also applies when the task subagent
@@ -603,6 +609,9 @@ only on the word of the user. Say this in the report of the capture.
   [Schedule a job when a task subagent starts](#schedule-a-job-when-a-task-subagent-starts) says. The reason: a job
   lives in the session of the orchestrator, and its prompt names the old task subagent. On 2026-10-24, the jobs survived
   a resume of that session.
+- The bullet before this one does not apply to a new task subagent of an entry of
+  [the task list](handoff-orchestrator.md#the-task-list). The old jobs and the old slot end with the old orchestrator.
+  The new task subagent gets its own jobs and its own slot at its start.
 - If CronDelete fails, [the failure rule](limits.md#the-failure-rule) applies. The job stays. When the job fires, the
   case of "When the job fires" for its state applies. An example is the case of a finished task, which schedules
   nothing.
