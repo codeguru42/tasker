@@ -284,7 +284,10 @@ The planner subagent keeps these rules:
    judgment of a drop of a lesson or a proposed issue. Also
    [The bans of a review agent](planner.md#the-bans-of-a-review-agent). Each issue-review subagent gets these bans, and
    [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives its prompt. Change 3, change 5, change 6,
-   change 7 and drop 8 leave out parts of these rules. Change 8 gives their actors.
+   change 7 and drop 8 leave out parts of these rules. Change 8 gives their actors. For the planner subagent, the text
+   of The ticket subagent and The review loop of a draft holds only with the actors of change 8. Step 6 of The review
+   loop of a draft and the paragraph after the steps do not hold. [The count of reviews](#the-count-of-reviews) takes
+   their place.
 2. [The wait for a report](planner.md#the-wait-for-a-report). The planner subagent is the starter of each of its issue
    subagents. [The wait for an issue subagent](#the-wait-for-an-issue-subagent) gives its steps. Change 4 changes one
    bullet of a late report.
@@ -311,8 +314,9 @@ The planner subagent keeps these rules:
    [The reads before the write](issues.md#the-reads-before-the-write) and the commands of
    [The blocked-by links](issues.md#the-blocked-by-links). Also the reads of
    [The project board](issues.md#the-project-board), and [A recurrence](issues.md#a-recurrence) except its change of
-   metadata. Change 9 gives the actors of the recurrence comment. The reviews before each post follow
-   [The count of reviews](#the-count-of-reviews).
+   metadata. Change 9 gives the actors of the recurrence comment. The second paragraph of the first bullet of Before a
+   post starts "Each planner posts a reviewed draft". For the planner subagent,
+   [The count of reviews](#the-count-of-reviews) gives the approval of a draft.
 10. The paragraph after the bullets of
     [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) that
     starts "The reason for the folder". Change 7 gives the folder.
@@ -366,9 +370,11 @@ The planner subagent changes these rules:
    and the issue-post subagent with the Agent tool, as the work needs. It starts no ticket subagent and no review agent.
    Each start of an agent and each wait for a report in the kept rules is a step of the planner subagent.
    [The issue subagents](#the-issue-subagents) gives the start rules of the issue subagents and the actor of each other
-   step of the kept rules. The same section changes the count of loops of step 6 of The review loop of a draft to
-   [The count of reviews](#the-count-of-reviews). It gives the review loop of the planner subagent in
-   [The order of the work on a draft](#the-order-of-the-work-on-a-draft).
+   step of the kept rules. In each kept rule, the work of a ticket subagent on its draft is the work of an issue-draft
+   subagent. The work of a review agent is the work of an issue-review subagent. No metadata already gives a post and
+   each blocked-by link of a post to an issue-post subagent. In each kept rule, the start of "a new ticket subagent" for
+   a draft starts a new issue-draft subagent. The reviews of [The count of reviews](#the-count-of-reviews) then follow
+   it. Examples are The state of the user, The escape hatch and the match with an open issue.
 9. The actors of a comment on an issue. This change covers the comment of the comment rule of keep 7 and the recurrence
    comment of A recurrence. An issue-draft subagent drafts the comment, and an issue-review subagent reviews it. An
    issue-post subagent posts it after the review passes and the user approves it. The planner subagent posts no comment
