@@ -276,9 +276,10 @@ The rule has three failure cases:
 
 ### When the job fires
 
-A job of a task subagent that got the stopping-point message of
-[the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) sends no resume message and schedules no next
-job. If such a job fires, the orchestrator tells the user in one line.
+From the send of the stopping-point message of
+[the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) on, no job of that task subagent sends a
+resume message, and no job schedules a next job for it. This also holds for a job that stays after a failed CronDelete.
+When such a job fires, the orchestrator tells the user in one line. That section gives the reason.
 
 When a seven-day job fires, the orchestrator first runs CronList. The orchestrator deletes with CronDelete each job of
 the ticket whose time is in the past. After the delete, the ticket has no job of that kind, as
