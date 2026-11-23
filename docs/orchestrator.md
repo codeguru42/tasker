@@ -347,10 +347,10 @@ The board watch rule has these parts:
   makes the job, it lists its jobs with CronList. CronList also comes before each CronDelete of
   [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot). If the list holds the kept id, it makes no second
   job. A quota job has another id, so it is not a board watch job.
-- The id and the time live from the CronCreate of the job until the orchestrator deletes the job with CronDelete or the
-  job expires or the orchestrator deletes the job with a CronDelete that works. Before the first CronCreate, the
-  orchestrator keeps no id and no time. When the list of CronList does not hold the kept id, the job ended, and the
-  orchestrator drops the id and the time before it makes a new job.
+- The id and the time live from the CronCreate of the job until the orchestrator deletes the job with a CronDelete that
+  works, or until the job ends and a CronList shows the end. An example of such an end is the expiry of the job. After a
+  failed CronDelete, the id and the time stay. Before the first CronCreate, the orchestrator keeps no id and no time.
+  When the list of CronList does not hold the kept id, the job ended, and the orchestrator drops the id and the time.
 - If CronList or CronCreate fails, [the failure rule](dev/limits.md#the-failure-rule) applies, and the orchestrator has
   no board watch job. At each later read of the board after which no ticket waits, and at each failed read of the board,
   it tries again, CronList and then CronCreate, until it has a board watch job. The read of the board after a landing is
@@ -459,14 +459,16 @@ purpose. Each change between "a ticket waits" and "no ticket waits" costs a Cron
 
 The states of the job:
 
-| State of the job        | Read after which a ticket waits | Read after which no ticket waits | Failed read of the board       |
-| ----------------------- | ------------------------------- | -------------------------------- | ------------------------------ |
-| The orchestrator has it | CronList, then CronDelete       | Keeps it, or renews it at 6 days | Keeps it, or renews it         |
-| It has no job, no id    | Does nothing with the job       | CronList, then CronCreate        | CronList, then CronCreate      |
-| The job ended           | Drops the id and the time       | Drops the id, then makes a job   | Drops the id, then makes a job |
+| State of the id                       | Read with a ticket that waits | Read with no ticket that waits | Failed read of the board or of another read of the judgment |
+| ------------------------------------- | ----------------------------- | ------------------------------ | ----------------------------------------------------------- |
+| No job, no id kept                    | Nothing                       | CronList, then CronCreate      | CronList, then CronCreate                                   |
+| Id kept, kept time under 6 days old   | CronList, then CronDelete     | Keep the job                   | Keep the job                                                |
+| Id kept, kept time 6 days or more old | CronList, then CronDelete     | The renewal bullet             | The renewal bullet                                          |
 
-After the job ended, the orchestrator finds it only through a CronList. No row makes a job during the steps of the old
-orchestrator.
+A job can end with no CronDelete, for example by the expiry. The orchestrator learns of the end only from a CronList, at
+the delete of this subsection or at the renewal bullet. Then it drops the id and the time. After a read with a ticket
+that waits, it makes no job. At a renewal, it makes a new job with CronCreate, with no second CronList. No row makes a
+job during the steps of the old orchestrator.
 
 ## Peer messages
 
