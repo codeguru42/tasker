@@ -1,0 +1,86 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { packagePath } from "../../../src/package-path.js";
+import { fillTemplate } from "../../../src/prompts/template.js";
+import { checkPromptTemplate, readPromptTemplate } from "../../../src/prompts/template-file.js";
+import { docPaths, markdownSection, sharedWordRuns } from "../../helpers/doc-text.js";
+
+const path = packagePath("prompt-templates/planner/issue-review.md");
+
+const RESULT_ASK = "Return your result to the session that started you with the tool SubagentHandback.";
+const RULE_DOCS = "docs/dev/issue-subagents.md\ndocs/dev/issue-review.md";
+const BANS_FIXTURE = "The issue-review subagent keeps these bans:\n\n- Ban one.\n- Ban two.";
+
+const sample = {
+  RULE_DOCS,
+  DRAFT_FILE: "/tmp/drafts/planner-1-draft.md",
+  SUBAGENT_NAME: "issue-review-1",
+  SOURCE: "Add a retry to the sync.\nSender: user\nDate: 2026-11-23",
+  REVIEW_BANS: BANS_FIXTURE,
+};
+
+function body(): string {
+  return readPromptTemplate(path).body;
+}
+
+function fill(values: Record<string, string>): string {
+  return fillTemplate("planner/issue-review", body(), values);
+}
+
+describe("prompt-templates/planner/issue-review.md", () => {
+  it("is a valid prompt template", () => {
+    expect(checkPromptTemplate(path)).toEqual([]);
+  });
+
+  it("has exactly the placeholders of the issue", () => {
+    expect(Object.keys(readPromptTemplate(path).placeholders)).toEqual([
+      "RULE_DOCS",
+      "DRAFT_FILE",
+      "SUBAGENT_NAME",
+      "SOURCE",
+      "REVIEW_BANS",
+    ]);
+  });
+
+  it("leaves no {{ after a fill and holds the result ask and the rule documents", () => {
+    const filled = fill(sample);
+    expect(filled).not.toContain("{{");
+    expect(filled).toContain(RESULT_ASK);
+    for (const line of RULE_DOCS.split("\n")) expect(filled).toContain(line);
+  });
+
+  it("has no docs/ path in the body", () => {
+    expect(docPaths(body())).toEqual([]);
+  });
+
+  it("names only the two rule documents in a filled prompt, apart from the bans", () => {
+    const filled = fill({ ...sample, REVIEW_BANS: "none" });
+    expect(docPaths(filled)).toEqual(["docs/dev/issue-subagents.md", "docs/dev/issue-review.md"]);
+  });
+
+  it("shares no 8-word run with docs/dev/planner-subagent.md", () => {
+    const doc = readFileSync(packagePath("docs/dev/planner-subagent.md"), "utf8");
+    expect(sharedWordRuns(body(), doc)).toEqual([]);
+  });
+
+  it("says what to do when the rule documents are none", () => {
+    const filled = fill({ ...sample, RULE_DOCS: "none" });
+    expect(filled).toContain("If the rule documents are none, the prompt names no rule document.");
+  });
+
+  it("fills the bans with a fixture word for word", () => {
+    const filled = fill(sample);
+    expect(filled).toContain(BANS_FIXTURE);
+    expect(filled).not.toContain("{{");
+  });
+
+  it("fills the bans with the real section of docs/dev/issue-review.md", () => {
+    const doc = readFileSync(packagePath("docs/dev/issue-review.md"), "utf8");
+    const section = markdownSection(doc, "The bans of an issue-review subagent");
+    expect(section).toBeDefined();
+    expect(section?.trim()).not.toBe("");
+    const filled = fill({ ...sample, REVIEW_BANS: section ?? "" });
+    expect(filled).toContain(section);
+    expect(filled).not.toContain("{{");
+  });
+});
