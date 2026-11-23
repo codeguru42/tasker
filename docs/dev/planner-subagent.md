@@ -15,6 +15,8 @@ as the work needs. An issue subagent on this page is one of these subagents. A p
 - The result of a planner subagent is the text of its `SubagentHandback` call.
 - The metadata of an issue is its milestone, its labels, its state, its board column and its priority. A blocked-by link
   is not metadata on this page.
+- A settled question is a question of a result that a rule of the docs or a fact of the code on `origin/main` answers.
+  [A settled question](#a-settled-question) gives the rules. A settled answer is its answer, with its reason.
 - A kept rule is a rule of the docs that the planner subagent follows. [The kept rules](#the-kept-rules) gives them.
 - On this page, keep N is item N of The kept rules. Change N is item N of [The changed rules](#the-changed-rules). Drop
   N is item N of [The dropped rules](#the-dropped-rules).
@@ -87,10 +89,10 @@ with no report, as [The life of a planner subagent](#the-life-of-a-planner-subag
 starts an ended planner subagent again is not a start of the orchestrator, so that planner subagent does not count.
 
 Two planner subagents that run at the same time never get the same draft file in their prompts. If the prompt of a
-running planner subagent gives the same draft file path as a request of an answer of the user, the request waits for the
-result of that planner subagent. The orchestrator then takes the next request that waits. The reason: two planner
-subagents on one draft file overwrite the draft file and the record file of each other. This rule does not cover a
-planner subagent that a late report starts again.
+running planner subagent gives the same draft file path as a request of an answer of the user or of a settled answer,
+the request waits for the result of that planner subagent. The orchestrator then takes the next request that waits. The
+reason: two planner subagents on one draft file overwrite the draft file and the record file of each other. This rule
+does not cover a planner subagent that a late report starts again.
 
 In one session of the orchestrator, two planner subagents never give two drafts one file name in the folder of
 [The prompt](#the-prompt). This also covers the draft of an ended planner subagent that waits for a decision of the
@@ -163,9 +165,10 @@ For example, `proposals/` holds no file, and the orchestrator gave the number 4 
 request gets `proposals/5.md`.
 
 The proposal file holds each fact of [The prompt](#the-prompt) that comes from the request. These facts are the request
-word for word, its sender, its date and the source of each fact. A request can come from an answer of the user. Then the
-file also holds the path of the draft file, the question and the words of the user word for word. The file stands alone,
-as a [question file](question-pane.md#the-question-file) does.
+word for word, its sender, its date and the source of each fact. A request can come from an answer of the user or from a
+settled answer. Then the file also holds the draft path, the questions and the answers, each with its source. The source
+is the words of the user word for word, or the reason of [A settled question](#a-settled-question). The file stands
+alone, as a [question file](question-pane.md#the-question-file) does.
 
 When fewer than 3 planner subagents run, the orchestrator lists `proposals/`. It starts the planner subagent of the next
 request that waits, in the order of arrival, lowest number first. It does this at the arrival of a request, after a
@@ -238,14 +241,15 @@ The words of this prompt stand in the file
 reads that file as [the doc-read rule](doc-reads.md#the-doc-read-rule) says, and fills each placeholder. An absent fact
 has the value `none`, for example a key with no entry. The file holds the list of the planner subagent in the allowed
 commands as fixed words, so a change of [that list](allowed-commands.md#the-planner-subagent) also changes the file. The
-facts of an answer of the user go in the request.
+facts of each answer go in the request.
 
 The reason for the folder: the follow-up planner of the slug writes its drafts to `/tmp/tasker/<slug>/drafts/`. A shared
 folder can give two drafts one file name.
 
-For a planning request of an answer of the user, the prompt also gives the path of the draft file and the question. It
-gives the words of the user word for word. For a draft with two or more questions, the prompt gives each question and
-each answer word for word, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
+For a planning request of an answer, the prompt also gives the path of the draft file and the question. It gives the
+answer and its source: the words of the user word for word, or the reason of a settled answer. For a draft with two or
+more questions, the prompt gives each question with its answer and source, as
+[A draft that needs the user](#a-draft-that-needs-the-user) says.
 
 ## The result
 
@@ -277,13 +281,86 @@ The orchestrator handles a result in this way:
    [A draft that needs the user](#a-draft-that-needs-the-user) says. The intro of [orchestrator.md](../orchestrator.md)
    gives this form for each report.
 2. Handle each lesson of the result as a lesson of a final report.
-3. Ask each question of the result in the own [question pane](question-pane.md#a-question-pane), as an open question of
-   the orchestrator. Each such question gets a [question file](question-pane.md#the-question-file). The text of the
-   question names its kind and the path of its draft file. The question ids follow the order of the result.
-4. Take each answer of the user to such a question as a new planning request. A draft with two or more questions and an
-   answer that drops a draft are exceptions, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
+3. Ask each question of the result that is not settled in the own [question pane](question-pane.md#a-question-pane), as
+   an open question of the orchestrator. For each other question, follow [A settled question](#a-settled-question). Each
+   asked question gets a [question file](question-pane.md#the-question-file). The text of the question names its kind
+   and the path of its draft file. The question ids follow the order of the result.
+4. Take each answer of the user and each settled answer as a new planning request. A draft with two or more questions
+   and an answer that drops a draft are exceptions, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
 The new planner subagent of such an answer follows change 6.
+
+### A settled question
+
+The user gets a question only for a choice that the docs and the code do not settle. A rule of the docs or a fact of the
+code on `origin/main` can answer a question of a result. Then the orchestrator answers it and does not ask the user.
+
+Before the orchestrator asks a question of a result in its pane, it reads the docs and the code on `origin/main` that
+the answer depends on. It reads them as the bullet of
+[A question of the user](working-with-the-user.md#a-question-of-the-user) that starts "Before the session answers a
+question" says. The orchestrator chooses the files. The two bullets of
+[A decision of the user](working-with-the-user.md#a-decision-of-the-user) that start "A rule of the docs on
+`origin/main` can answer a question" and "Before a decision of the user or a recommendation" still hold.
+
+The orchestrator judges if a rule or a fact settles the question. Each limit of the first bullet holds, also for a fact
+of the code. In doubt, the question is not settled. For a planner question, the limit on a change of a rule of the docs
+reads in this way: a settled answer changes no rule of the docs itself. It only chooses among the choices of a draft.
+The planner subagent reviews and posts that draft under its own rules.
+
+The orchestrator does not ask the user a settled question and starts no question pane for it. A settled question is not
+an open question of the orchestrator in the meaning of [Terms](question-pane.md#terms) of question-pane.md.
+
+The settled answer goes to the planner subagent with its reason:
+
+- For a rule of the docs, the reason quotes the rule and names its doc and its section.
+- For a fact of the code, the reason names the file path, the fact and the commit hash of the read. After a passed
+  [step 1](doc-reads.md#step-1-pull-the-local-clone) of the doc-read rule, the hash is `<head>` of step 1. After
+  [the old read](doc-reads.md#the-old-read), the hash is the hash of `origin/main` after the fetch, as
+  [the re-read rule](doc-reads.md#the-re-read-rule) reads it.
+
+The text says that the answer comes from a rule of the docs or a fact of the code and not from the user. It does not
+start with `From the user:`.
+
+For each settled question, the orchestrator shows a progress report in its own tab. The report gives the question, the
+answer and the reason, in the form of step 1 of [The result](#the-result).
+
+A settled answer is a new planning request, as step 4 of The result says for an answer of the user. The start follows
+[The start](#the-start). For a draft with two or more questions, the settled answer joins the answers of the other
+questions. The new planner subagent starts after the last answer, as
+[A draft that needs the user](#a-draft-that-needs-the-user) says. The prompt gives the draft path, the questions and the
+answers, each with its source.
+
+A settled answer can drop a draft only if a rule or a fact already holds the whole change of the draft. Keep 4 permits a
+drop with no approval of the user. Then the drop bullet of A draft that needs the user holds for the settled answer: the
+answer ends the draft, and the orchestrator asks no other question of that draft. In each other case, a settled answer
+drops no draft.
+
+The new planner subagent handles a settled answer with the steps that the planner docs give for an answer of the user to
+that question. Examples are the bullets of [The escape hatch](planner.md#the-escape-hatch) that start "If the answer",
+and change 6. It passes the answers and their reasons on to each issue-draft subagent that it starts for the draft. A
+draft never records a settled answer as a decision or as a word of the user.
+
+These questions are never settled. The orchestrator still asks each of them in its question pane:
+
+- A question for an approval that a rule keeps for the user, for example the question about the remaining findings and
+  the approval of a comment in [Before a post](issues.md#before-a-post).
+- A question of a kind of choice that still goes to the user first. The bullet of A decision of the user that starts
+  "The user can let the session decide" lists these kinds, for example a security gap and a change of scope.
+- The approval of a measure that changes [the state of the user](plan-review.md#the-state-of-the-user).
+
+A question about a choice between two or more designs is settled if a rule of the docs or a fact of the code picks one
+design. Otherwise the orchestrator asks the user. A settled answer that leaves the draft unchanged does not approve the
+draft. It only removes that reason for the wait of the draft. If the answers of the other questions of the draft also
+permit the post, the new planner subagent posts the draft, as keep 4 permits.
+
+An answer that does not come from the user never gives an approval or a choice that a rule keeps for the user. Examples
+are [The rules for the user alone](planner.md#the-rules-for-the-user-alone) and the approval of a comment in Before a
+post.
+
+If the read fails, the question is not settled. The orchestrator follows [the failure rule](limits.md#the-failure-rule)
+and then asks the question in its question pane, as before.
+
+A failed start of the new planner subagent follows [The start](#the-start), as for an answer of the user.
 
 ### A draft that needs the user
 
@@ -387,12 +464,13 @@ The orchestrator handles the questions of one result in these ways:
   plans, drafts, reviews or posts an issue". The other is the sentences that start "A planner subagent is never the
   sender of a question of a pane".
 - For a draft with two or more questions, it starts the new planner subagent only after the answer to the last open
-  question of the draft. The proposal file and the prompt give each question and each answer word for word. For such a
-  draft, this rule wins over step 4. The reason: the sentence of The escape hatch that starts "A planner posts nothing
-  for such a draft" bans each post before the answer to each question.
-- An answer that rejects or drops a draft ends the draft. The orchestrator asks no other open question of that draft. It
-  drops each such question as moot work, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user)
-  says. Then it starts the new planner subagent with that answer, and that planner subagent reports the drop.
+  question of the draft. The proposal file and the prompt give each question with its answer and source. A settled
+  answer joins this rule. For such a draft, this rule wins over step 4. The reason: the sentence of The escape hatch
+  that starts "A planner posts nothing for such a draft" bans each post before the answer to each question.
+- An answer that rejects or drops a draft ends the draft. A settled answer that drops a draft does the same, as
+  [A settled question](#a-settled-question) says. The orchestrator asks no other open question of that draft. It drops
+  each such question as moot work, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
+  Then it starts the new planner subagent with that answer, and that planner subagent reports the drop.
 
 The steps with each answer are the steps of change 6. For the remaining findings, the answer "post the draft as it
 stands" accepts the draft with no change. The bullet of The escape hatch that starts "If the answer accepts the draft
@@ -507,12 +585,13 @@ The planner subagent changes these rules:
    [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives the prompt of each issue subagent. At its
    start, an issue subagent reads only the documents of [The read rule](issue-subagents.md#the-read-rule).
 6. The steps with an answer of the user. They hold for the new planner subagent that gets the answer, as The result
-   says. One such step is in the bullet of The initial planner and the follow-up planner. That bullet starts "For a
-   draft that waits for a decision of the user". So do the outcome bullets of The state of the user, after "The answer
-   of the user has one of these outcomes". So do the bullets of The escape hatch that start "If the answer", and its
-   bullet that starts "The user can say". The paragraph of The ticket subagent that starts "A change of the draft after
-   a report" also gives such a step. The post of a comment after the approval of the user is such a step too, and change
-   9 gives its actor.
+   says. They also hold for a settled answer, as [A settled question](#a-settled-question) says. A settled answer gives
+   no approval and no choice that a rule keeps for the user. One such step is in the bullet of The initial planner and
+   the follow-up planner. That bullet starts "For a draft that waits for a decision of the user". So do the outcome
+   bullets of The state of the user, after "The answer of the user has one of these outcomes". So do the bullets of The
+   escape hatch that start "If the answer", and its bullet that starts "The user can say". The paragraph of The ticket
+   subagent that starts "A change of the draft after a report" also gives such a step. The post of a comment after the
+   approval of the user is such a step too, and change 9 gives its actor.
 7. The folder of the draft files is the folder of [The prompt](#the-prompt). The bullet that starts "The ticket subagent
    of each planner writes each draft" gives the folder of the slug. Step 1 of The review loop of a draft also gives it.
    Neither folder holds for the planner subagent. The draft file, the report file and the record file stand in this
@@ -631,16 +710,19 @@ user.
 
 A draft gets at most 3 reviews. The count starts at 1 for the first review of the draft.
 
-The count starts at 1 again for a change of the draft from an answer of the user. It also starts at 1 again for the
-change of a draft into a change of an open issue after the duplicate search. A new ticket subagent of today starts its
-count in the same way, as the paragraph of "The ticket subagent" in [planner.md](planner.md) that starts "A change of
-the draft after a report" says. The planner subagent adds a line `Count starts again: <reason>` to the record file.
+The count starts at 1 again for a change of the draft from an answer of the user or from a settled answer. It also
+starts at 1 again for the change of a draft into a change of an open issue after the duplicate search. A new ticket
+subagent of today starts its count in the same way, as the paragraph of "The ticket subagent" in
+[planner.md](planner.md) that starts "A change of the draft after a report" says. The planner subagent adds a line
+`Count starts again: <reason>` to the record file.
 
 A review counts only with a report. A second issue-review subagent for the same review adds no review to the count.
 
 A review with no new finding approves the draft. An answer of the user that accepts the draft with no change also
 approves it, as the bullet of [the escape hatch](planner.md#the-escape-hatch) that starts "If the answer accepts the
-draft with no change" says. A draft of a comment also needs the approval of the user. No other event approves a draft.
+draft with no change" says. A draft of a comment also needs the approval of the user. No other event approves a draft. A
+settled answer never approves a draft. A settled answer that leaves the draft unchanged only removes that reason for the
+wait.
 
 A review 1 or 2 with a new finding leads to a new issue-draft subagent. Its prompt gives the new findings of the review.
 Then the next review runs. This also holds for an issue-draft subagent that dismissed each new finding and changed
@@ -687,10 +769,10 @@ subagent. The cost: the full text of each review and of the record file fills th
 
 An issue-review subagent does not judge whether a finding is new. Its prompt gives no earlier finding.
 
-After a change of the draft from an answer of the user, each review and each dismissal of the draft before the change
-still counts. The record file keeps them. The reason: the result of the planner subagent already showed the user each
-dismissed finding, as The result says. The cost: a finding that the change of the user makes true again is not new, so
-no later review stops the post for it.
+After a change of the draft from an answer of the user or from a settled answer, each review and each dismissal of the
+draft before the change still counts. The record file keeps them. The reason: the result of the planner subagent already
+showed the user each dismissed finding, as The result says. The cost: a finding that the change of the user makes true
+again is not new, so no later review stops the post for it.
 
 ### The record file
 
@@ -789,6 +871,8 @@ The prompt of an issue-draft subagent also gives these facts:
 
 - The source of the draft word for word, with its sender, its date and the source of each fact.
 - The milestone of the draft and each decision of the user on the draft.
+- Each question of the draft and each answer and its source. The source is the words of the user or the reason of a
+  settled answer. The draft never records a settled answer as a decision or as a word of the user.
 - For a change of an open issue, the issue key and the start hash, or the fact that no start hash exists.
 - For a comment, the key of the issue that gets the comment.
 - For a draft after a review, the new findings of that review. The planner subagent judged them. The prompt names no
