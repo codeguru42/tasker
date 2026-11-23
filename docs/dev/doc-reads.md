@@ -270,7 +270,40 @@ with a lock error takes the same wait.
 On 2026-11-21, with git 2.47.3, two pulls ran at the same moment 11 times. One pull printed "error: cannot lock ref
 'refs/remotes/origin/main': is at <hash> but expected <hash>" and exited with 1. In some tries, the other pull printed
 "fatal: Cannot fast-forward to multiple branches." and exited with 128. In 7 of 11 tries, `HEAD` and `origin/main`
-differed after both pulls ended. No one measured other forms.
+differed after both pulls ended. These tries are the case of requirement 3.3 of #1008, in a scratch clone of a local
+bare repo. No text names the pull form of these tries.
+
+On 2026-11-22, the allowed pull of item 3 failed two times in the local clone, in real use. In real use means in a
+session at work in the local clone, not in a scratch clone of a measure. Each time, the pull printed "fatal: Cannot
+fast-forward to multiple branches." and exited with 128. Each time, the session followed item 7, and its work went on.
+
+In case A, a question session reported that `HEAD` and `origin/main` were both at `aa0477b5` at its start. After the
+failed pull, it reported that both were at `34c18ae3`. On 2026-11-22, after both cases, with git 2.47.3,
+`git -C <local clone> reflog show --date=iso HEAD` gave `aa0477b5` at 13:32:38, `b7cdf121` at 13:59:04, `13c8a01c` at
+14:37:20 and `34c18ae3` at 15:32:13, all times -0700. The next entry was `21dabc46` at 15:42:51. Each entry has the
+message "pull --ff-only origin main: Fast-forward", which names no session. So three fast-forward pulls of the allowed
+form moved `HEAD` from `aa0477b5` to `34c18ae3`, and the failed pull did not.
+
+The same day, `git -C <local clone> reflog show --date=iso refs/remotes/origin/main` gave `34c18ae3` at 15:29:30 and the
+next entry `21dabc46` at 15:42:35. This is an inference, not a measure: if the session read its hashes just after the
+failed pull, that pull ran between 15:32:13 and 15:42:35.
+
+In case B, later the same day, a question session in the same question pane ran the allowed pull at the start of its
+`/session-review` rounds. After the failed pull, the session reported that `origin/main` was "still" at `491dbd2f`. It
+did not say which earlier read the word "still" compares with, and no session reported the value before the pull. It
+reported no value of `HEAD`. In the reflog of `refs/remotes/origin/main` above, `origin/main` was at `491dbd2f` from
+15:48:14 to 20:17:38, with no entry between. So the session read `491dbd2f` in that window. This is an inference, not a
+measure: if the failed pull also started in that window, `origin/main` was at `491dbd2f` before it too.
+
+No one measured these facts of cases A and B:
+
+- The cause. No one saw another git command that fetches in the same clone at the same moment, for example a pull or a
+  fetch. Such a command is a guess.
+- Which session ran each pull of the reflog of `HEAD` above.
+- The exact time of each failed pull. The reflog of `HEAD` holds no entry of a failed pull.
+- The git version at the time of each case. On 2026-11-22, after both cases, `git --version` on the machine of the local
+  clone printed `git version 2.47.3`.
+- The value of `HEAD` after the failed pull of case B.
 
 `--ff-only` changes nothing when it cannot fast-forward. `.claude/settings.json` has no rule for the pull, so the
 classifier of auto mode decides each call that no rule matches. The commands of this rule stand in the lists of
