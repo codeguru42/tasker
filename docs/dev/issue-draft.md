@@ -34,7 +34,7 @@ An issue-draft subagent also follows [The result of a subagent](issue-subagents.
 
 The issue-draft subagent writes its draft to the path of the draft file that its prompt gives. Line 1 of the file is the
 title, line 2 is blank, and the body follows. The body file of [Before a post](issues.md#before-a-post) takes out these
-two lines.
+two lines. A comment draft has no title line, as [A comment draft](#a-comment-draft) says.
 
 It edits only its draft file, its report file and the files of a [scratch folder](plan-review.md#the-state-of-the-user).
 It makes each scratch folder under `/tmp`. These rules come from step 1 of
@@ -43,6 +43,26 @@ It makes each scratch folder under `/tmp`. These rules come from step 1 of
 
 The pull of step 1 of the doc-read rule is no write of a file, as
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+
+## A comment draft
+
+A comment draft is the draft of a comment of a planner subagent on an issue. The prompt names it with the kind of the
+draft, and it names the kind of the comment: the comment rule or a recurrence comment. The rules of this section are for
+a comment draft. Each other rule of this page holds for it as well, unless this section changes it.
+
+- The draft file holds only the words of the comment. It has no title line and no blank line after a title. This is the
+  one exception to the rule of [The draft file](#the-draft-file) that line 1 is the title.
+- The kind of the comment gives the rule of the draft. For the comment rule, the rule is the fourth bullet of
+  [The order of the work](planner.md#the-order-of-the-work) of planner.md. For a recurrence comment, the rule is
+  [A recurrence](issues.md#a-recurrence) of issues.md.
+- The source of the prompt gives the facts of the comment, each with its source. The draft states no fact that the
+  source does not give.
+- The count of [The size of a draft](#the-size-of-a-draft) runs, so the report gives the number of characters. No cut
+  runs, because the size target does not bind a comment. A count over the limit of
+  [The count of the body](issue-post.md#the-count-of-the-body) still stops the post.
+- [The self-check](#the-self-check), [The fresh base](#the-fresh-base) and
+  [The steps before a post](#the-steps-before-a-post) hold for each claim of the comment, as for an issue.
+- The report gives no blocked-by link, because a comment has none.
 
 ## The fresh base
 

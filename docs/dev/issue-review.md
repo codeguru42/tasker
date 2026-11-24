@@ -36,7 +36,10 @@ says.
 
 ## The tests of a draft
 
-The issue-review subagent tests the draft against these items:
+This section is for an issue draft. [The tests of a comment draft](#the-tests-of-a-comment-draft) gives the tests of a
+comment draft.
+
+The issue-review subagent tests an issue draft against these items:
 
 - [The body of an issue](issue-subagents.md#the-body-of-an-issue),
   [What goes in a ticket](planner.md#what-goes-in-a-ticket),
@@ -48,6 +51,32 @@ The issue-review subagent tests the draft against these items:
   [the doc-read rule](doc-reads.md#the-doc-read-rule) says.
 - Each open and closed issue that covers the same change, and each open issue that edits the same place of a file.
 - Each part of the source that the draft leaves out, and each part that the draft adds.
+
+For each finding, the issue-review subagent gives the place in the draft, the rule or the fact behind it, and a
+recommendation.
+
+## The tests of a comment draft
+
+The prompt gives the kind of the draft. If the kind is a comment, the issue-review subagent tests the draft against
+these items:
+
+- The rule of the kind of the comment. For the comment rule, the rule is the fourth bullet of
+  [The order of the work](planner.md#the-order-of-the-work) of planner.md. For a recurrence comment, the rule is
+  [A recurrence](issues.md#a-recurrence) of issues.md.
+- The simple-english skill.
+- Each claim of the draft about the docs or the code. The issue-review subagent reads each file as
+  [the doc-read rule](doc-reads.md#the-doc-read-rule) says.
+- The issue that gets the comment. The subagent reads that issue and its comments, and looks for a comment that already
+  holds the same facts.
+- Each part of the source that the draft leaves out, and each part that the draft adds.
+
+The tests of an issue draft that need a title, a body, a milestone or a blocked-by link do not apply to a comment. These
+are [The body of an issue](issue-subagents.md#the-body-of-an-issue),
+[The scope of a ticket](issue-subagents.md#the-scope-of-a-ticket),
+[The blocked-by links](issue-subagents.md#the-blocked-by-links),
+[The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) and
+[What goes in a ticket](planner.md#what-goes-in-a-ticket). The reason: a comment has no title, no body sections, no
+milestone and no link.
 
 For each finding, the issue-review subagent gives the place in the draft, the rule or the fact behind it, and a
 recommendation.
