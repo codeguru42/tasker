@@ -148,11 +148,10 @@ these changes:
 3. The result gives no blocked-by link and no column read.
 4. A stop before the post, for example a failed count or a failed read of the body file, says that the post is not
    complete. It gives the command and the error.
-5. After a denied `gh issue comment`, the subagent follows
-   [the tool-block rule](tasker-commands.md#the-tool-block-rule). It runs the call in no other form. Its result gives
-   the exact command, the folder and the exact text of the denial. On 2026-10-30, the classifier of auto mode denied
-   `gh issue comment` of planner-m26, as the paragraph that starts "The classifier of auto mode can deny a `gh` write"
-   says.
+5. Item 5 of [The result of an issue-post subagent](#the-result-of-an-issue-post-subagent) also covers a denied
+   `gh issue comment` call. On 2026-10-30, the classifier of auto mode denied `gh issue comment` of planner-m26, as the
+   paragraph of [the tool-block rule](tasker-commands.md#the-tool-block-rule) that starts "The classifier of auto mode
+   can deny a `gh` write" says.
 
 ## The count of the body
 
