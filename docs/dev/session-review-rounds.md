@@ -2,7 +2,8 @@
 
 This page gives the rounds of `/session-review` that a session runs before it stops. An orchestrator runs them before
 its end reads and the close, as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says.
-[The close of a milestone](operator-start.md#the-close-of-a-milestone) gives the order of the rounds of each session at
+[The close of a milestone](milestone-close.md) and the steps of the operator in
+[The close of a milestone](operator-start.md#the-close-of-a-milestone) give the order of the rounds of each session at
 the end of a milestone. The orchestrator runs its rounds first. The operator runs its rounds after the end of the
 orchestrator. The planner runs its rounds after the end of the role of the operator. This page covers only an
 orchestrator, a planner, an operator and a [question session](question-pane.md#a-question-pane). A task subagent runs no
@@ -39,7 +40,7 @@ the next review round". This is the reason for the start at once in step 3.
 
 If a round or a send of a finding fails, [the failure rule](limits.md#the-failure-rule) applies to that session, and its
 rounds end. A failed round is not a round that finds nothing new. In the close, the close then stops at this stage, as
-[The close of a milestone](operator-start.md#the-close-of-a-milestone) says.
+[The questions and the rounds of the close](milestone-close.md#the-questions-and-the-rounds-of-the-close) says.
 
 A waiting decision is the term of step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md).
 Its wait ends as step 8 of the skill says. A pause or a silence of the user ends no wait. The hold of step 2 of the list
@@ -67,7 +68,8 @@ the end by the user and over steps 3 and 4 of the list, as far as it says. While
 that finds nothing new does not end them. A word of the user ends such rounds only as the hold rule permits. Steps 1 and
 2 of the list still hold under a hold rule. These places give a hold rule:
 
-- Steps 7 and 11 of [The steps that end each role](operator-start.md#the-steps-that-end-each-role)
+- Step 7 of [The steps that end each role](operator-start.md#the-steps-that-end-each-role) and step 11 of
+  [The steps that end each role](milestone-close.md#the-steps-that-end-each-role)
 - [The rounds before the close](question-pane.md#the-rounds-before-the-close), for a question session
 
 A finding is handled when it is posted as an issue or added to an open issue. It is also handled when the user decided
@@ -90,9 +92,10 @@ An orchestrator of a set scope has no operator. So its report of the rounds is a
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says for its last report.
 
 In the close of a milestone, the operator and the planner each resolve each open question and each open decision first.
-Steps 6, 7, 10 and 11 of [The steps that end each role](operator-start.md#the-steps-that-end-each-role) give this rule.
-It also covers an open decision about work outside the milestone. Open work with no answer still does not keep the
-rounds running, as step 7 (e) of [the session-review skill](../../.claude/skills/session-review/SKILL.md) says.
+Steps 6 and 7 of [The steps that end each role](operator-start.md#the-steps-that-end-each-role) and steps 10 and 11 of
+[The steps that end each role](milestone-close.md#the-steps-that-end-each-role) give this rule. It also covers an open
+decision about work outside the milestone. Open work with no answer still does not keep the rounds running, as step 7
+(e) of [the session-review skill](../../.claude/skills/session-review/SKILL.md) says.
 
 The rounds of an orchestrator end only after each open question and each waiting decision of the rounds is settled.
 After the last answer, the orchestrator runs one more round, and that round must find nothing new. It runs that round

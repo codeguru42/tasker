@@ -70,10 +70,12 @@ handoff still works, and a handoff that already started goes on.
 From the start of the close of a milestone, each session of its slug suggests no handoff, starts no handoff and writes
 no handoff file. The reason: the session stops soon after the close, so a handoff file only costs tokens.
 
-[The close of a milestone](operator-start.md#the-close-of-a-milestone) gives the start for each session. For the
-orchestrator and the operator, it is the report of the orchestrator that the close started. With no orchestrator, it is
-the word of the user that starts the close for the operator. For the follow-up planner, it is the word that the close
-started, from the operator or, with no operator, from the user. The rule lasts until the session ends.
+[The start and the authority](milestone-close.md#the-start-and-the-authority) and the two parts of Missing roles, in
+[operator-start.md](operator-start.md#missing-roles) and [milestone-close.md](milestone-close.md#missing-roles), give
+the start for each session. For the orchestrator and the operator, it is the report of the orchestrator that the close
+started. With no orchestrator, it is the word of the user that starts the close for the operator. For the follow-up
+planner, it is the word that the close started, from the operator or, with no operator, from the user. The rule lasts
+until the session ends.
 
 For the orchestrator, the report that the close started comes only after end reads that find no open issue.
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule. A wait or a return to work

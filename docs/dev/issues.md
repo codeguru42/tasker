@@ -245,9 +245,9 @@ The commands below work with gh 2.101.0:
 ## Milestones
 
 [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) of issue-subagents.md gives the milestone of
-each issue. The start of [The close of a milestone](operator-start.md#the-close-of-a-milestone) is the authority for the
-GitHub milestone closure of a milestone with no work left. The session that closes the milestone needs no other word of
-the user for it. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) of pick-the-tickets.md
+each issue. The start of [The close of a milestone](milestone-close.md#the-start-and-the-authority) is the authority for
+the GitHub milestone closure of a milestone with no work left. The session that closes the milestone needs no other word
+of the user for it. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) of pick-the-tickets.md
 gives the report of an orchestrator when its milestone is done. This section gives the reads and the write of the
 session that closes a milestone. That session is the orchestrator of the kind `claude` at its end, or the planner after
 its rounds.
@@ -283,5 +283,5 @@ The session does not run the command again after a write that worked. If the wri
 session tells the user about the failure. It does not end its role, and it keeps the work for a later recovery. After
 the read shows the state `closed`, the planner deletes only each memory note whose delete condition is the close of that
 milestone. Then the planner gives the result in its close report, as step 14 of
-[The steps that end each role](operator-start.md#the-steps-that-end-each-role) says. The orchestrator gives the result
+[The steps that end each role](milestone-close.md#the-steps-that-end-each-role) says. The orchestrator gives the result
 in its report that the milestone is done.

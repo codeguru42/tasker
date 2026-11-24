@@ -545,7 +545,7 @@ The orchestrator does all the steps of this section.
   [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator)). The review rounds and the
   list of the findings of this bullet cover a long-running orchestrator at the empty Todo column. So does the report
   that the milestone is done. A long-running orchestrator sends the report that the close started only after the word of
-  the user that starts the close. See [The start and the authority](operator-start.md#the-start-and-the-authority).
+  the user that starts the close. See [The start and the authority](milestone-close.md#the-start-and-the-authority).
 
 ### The stacking rule
 
@@ -1194,7 +1194,7 @@ what this report changes for a handoff.
 
 Only an orchestrator of a milestone scope and of the kind `claude` closes the GitHub milestone. It does the reads and
 the write of [Milestones](issues.md#milestones). The start of the close is the authority for this write, as
-[The start and the authority](operator-start.md#the-start-and-the-authority) says. The orchestrator asks the user no
+[The start and the authority](milestone-close.md#the-start-and-the-authority) says. The orchestrator asks the user no
 question and opens no question pane for the close. If the write or the read after it fails,
 [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator keeps its role and does no own close. At
 its next read of the board, it reads the milestone again and goes on from that state.
@@ -1205,7 +1205,7 @@ orchestrator sends this report before the own close. The row "The survival of a 
 [codex-sessions.md](codex-sessions.md) found no reply after the close of a tab.
 
 Before the report, the orchestrator runs the environment and agent-list checks of
-[The own-session closure](operator-start.md#the-own-session-closure). If both pass, the report gives the `pane_id` of
+[The own-session closure](milestone-close.md#the-own-session-closure). If both pass, the report gives the `pane_id` of
 its row, and otherwise it says that it gives no pane id.
 
 An orchestrator of a set scope closes no milestone and has no operator. Its last report is a progress report in its own
@@ -1222,8 +1222,8 @@ The own close has these steps:
    [Close and continue](question-pane.md#close-and-continue) says. The pane splits from the pane of the orchestrator, so
    it is in the tab of the orchestrator.
 2. The orchestrator waits until no subagent of it runs and no hold before an install holds it.
-3. The orchestrator runs the checks of [The own-session closure](operator-start.md#the-own-session-closure). These cover
-   `HERDR_TAB_ID`, `HERDR_PANE_ID`, the row of its own name and the count of the panes of its tab.
+3. The orchestrator runs the checks of [The own-session closure](milestone-close.md#the-own-session-closure). These
+   cover `HERDR_TAB_ID`, `HERDR_PANE_ID`, the row of its own name and the count of the panes of its tab.
 4. The orchestrator runs `herdr tab close <tab id>` as its last tool call.
 
 If a check or a command fails, the orchestrator closes nothing. It tells the user in its own tab, with the command and
@@ -1232,11 +1232,12 @@ its output. The user then closes the tab, and the milestone keeps its state.
 A pi orchestrator runs the rounds, the end reads and the wait of this subsection. It sends each finding to its planner,
 as the planner bullet of [The prompt of a task subagent](#the-prompt-of-a-task-subagent) says. It does no own close,
 because no one tested the closure of a pi session, as
-[The own-session closure of a pi session](operator-start.md#the-own-session-closure-of-a-pi-session) says.
+[The own-session closure of a pi session](milestone-close.md#the-own-session-closure-of-a-pi-session) says.
 
 A pi orchestrator of a milestone scope closes no milestone. After end reads that find no open issue, it sends the report
 that the close started and the report that the milestone is done. Then the operator stops it, and the follow-up planner
-closes the milestone, as [The close of a milestone](operator-start.md#the-close-of-a-milestone) says.
+closes the milestone, as [The close of a milestone](operator-start.md#the-close-of-a-milestone) and
+[The steps that end each role](milestone-close.md#the-steps-that-end-each-role) say.
 
 A pi orchestrator of a set scope sends no report that the close started and no report that the milestone is done. After
 end reads that find no open issue of the set, it shows its last report as a progress report in its own tab. That report

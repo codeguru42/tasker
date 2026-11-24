@@ -36,7 +36,7 @@ own name of the session. [The hold of the items](dev/handoff.md#the-hold-of-the-
 The tab list is the list of the tabs that an operator can close. Each entry gives the tab id and the session name of one
 tab. In a handoff of the operator, the old operator also closes its own tab, as
 [Stop a session](dev/operator-start.md#stop-a-session) says. In the close of a milestone, the operator also closes its
-own tab on the approval of the user. [The own-session closure](dev/operator-start.md#the-own-session-closure) gives the
+own tab on the approval of the user. [The own-session closure](dev/milestone-close.md#the-own-session-closure) gives the
 steps.
 
 The operator runs only these `tasker` commands: `show-config`, `show-quota`, `show`, `show-bootstrap`, `show-plan`,

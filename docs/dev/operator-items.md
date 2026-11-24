@@ -259,8 +259,8 @@ arrival line alone. It keeps each approval for the user alone.
 Before the terminal delegation of [The close of a milestone](operator-start.md#the-close-of-a-milestone), the operator
 finds each open question that it holds. This includes a question about work outside the milestone. A question of an open
 question pane is also an open question. It also finds each open decision, as
-[The close of a milestone](operator-start.md#the-close-of-a-milestone) defines it. An answer of the operator does not
-resolve a waiting decision of the session-review skill.
+[The close of a milestone](milestone-close.md) defines it. An answer of the operator does not resolve a waiting decision
+of the session-review skill.
 
 If a question is still open, the operator gives the user the full text of each open question. Then it waits for the
 answer. During this wait, the operator does not end its role and sends no terminal delegation.

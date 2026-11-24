@@ -56,11 +56,11 @@ The operator starts the follow-up planner after the initial planning.
   `orchestrator-<slug>`, which asks it in its [question pane](question-pane.md#a-question-pane). It sends each report to
   `orchestrator-<slug>`, which shows it as text in its tab. [The review loop of a draft](#the-review-loop-of-a-draft)
   says which drafts wait.
-- At the end of a milestone, the follow-up planner works in the order of
-  [The close of a milestone](operator-start.md#the-close-of-a-milestone).
-  [The close duties of the follow-up planner](#the-close-duties-of-the-follow-up-planner) give its work. After the end
-  of the role of the operator, it talks to the user directly, as [The operator](working-with-the-user.md#the-operator)
-  of working-with-the-user.md says.
+- At the end of a milestone, the follow-up planner works in the order of [The close of a milestone](milestone-close.md),
+  with the steps of the operator in [The close of a milestone](operator-start.md#the-close-of-a-milestone) of
+  operator-start.md. [The close duties of the follow-up planner](#the-close-duties-of-the-follow-up-planner) give its
+  work. After the end of the role of the operator, it talks to the user directly, as
+  [The operator](working-with-the-user.md#the-operator) of working-with-the-user.md says.
 - The ticket subagent of each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner
   puts the path in the question, not the draft.
 - For a draft that waits for a decision of the user, [The escape hatch](#the-escape-hatch) says what the answer of the
@@ -94,7 +94,7 @@ You are the planner of <milestone>. This is not the initial planning. Run git br
 
 ### The close duties of the follow-up planner
 
-The planner does steps 10 to 14 of [The steps that end each role](operator-start.md#the-steps-that-end-each-role). It
+The planner does steps 10 to 14 of [The steps that end each role](milestone-close.md#the-steps-that-end-each-role). It
 starts step 10 only after the end of the role of the operator. It waits for the report of the ticket subagent of each
 draft before step 11 ends. It handles each finding as the docs say: a reviewed post, a change of an open issue or a
 drop. It gets each decision for the user alone before the action that needs it.
@@ -111,7 +111,7 @@ it makes sure that the session of the operator closed, as step 13 says.
 Then the planner gives the user its close report and asks for the approval to close, as step 14 says. The close report
 says that the last round found nothing new. It also gives the URL of the milestone and the result of the read after the
 write. The close report ends the role of the planner. On the approval, the planner closes its own session, as
-[The own-session closure](operator-start.md#the-own-session-closure) says.
+[The own-session closure](milestone-close.md#the-own-session-closure) says.
 
 If a round of the planner or a send of a finding fails, the rounds of the planner end. The close then stops at this
 stage. The planner tells the user about the failure directly. It keeps the drafts and the state of the milestone for a
@@ -563,8 +563,8 @@ Each planner goes on with the other drafts.
 The post of a draft by each planner with no approval of the user does not cover these rules:
 
 - The close of a milestone, in [Milestones](issues.md#milestones). The start of
-  [The close of a milestone](operator-start.md#the-close-of-a-milestone) gives the authority for the GitHub milestone
-  closure. The escape hatch does not cover it.
+  [The start and the authority](milestone-close.md#the-start-and-the-authority) gives the authority for the GitHub
+  milestone closure. The escape hatch does not cover it.
 - The start of a milestone and the question about the kinds of GitHub objects, in
   [The order of the work](#the-order-of-the-work). The escape hatch does not cover them. They stay with the user.
 - A comment on an issue. It is not a draft of this section, so it still needs the approval of the user.

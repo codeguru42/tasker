@@ -28,13 +28,13 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   During a handoff of the orchestrator, each such text of
   [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) goes in the tab, as that section says. This
   rule holds for each kind of orchestrator, `claude` and `pi`. The reports of the close in
-  [The start and the authority](operator-start.md#the-start-and-the-authority) and
+  [The start and the authority](milestone-close.md#the-start-and-the-authority) and
   [The orchestrator ends](operator-start.md#the-orchestrator-ends), and the reports of
   [the hold before an install](release.md#the-hold-before-an-install), keep their own rules.
-- After the terminal delegation of [The close of a milestone](operator-start.md#the-close-of-a-milestone), the follow-up
-  planner talks to the user directly, in its own conversation. This covers each report, each question, each draft that
-  waits for a decision and each request for a permission. It also covers each other rule that sends a report, a question
-  or a draft of the follow-up planner to the operator as an item. Examples are
+- After the terminal delegation of [The close of a milestone](milestone-close.md), the follow-up planner talks to the
+  user directly, in its own conversation. This covers each report, each question, each draft that waits for a decision
+  and each request for a permission. It also covers each other rule that sends a report, a question or a draft of the
+  follow-up planner to the operator as an item. Examples are
   [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) and
   [The escape hatch](planner.md#the-escape-hatch) of planner.md, and the paragraph of
   [tasker-commands.md](tasker-commands.md) that starts "If the classifier denies `scan` or `store`". These places stay

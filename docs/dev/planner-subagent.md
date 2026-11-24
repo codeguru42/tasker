@@ -634,7 +634,7 @@ The planner subagent drops these rules:
 
 1. [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner), the bullet that
    starts "At the end of a milestone, the follow-up planner", and [Milestones](issues.md#milestones). This includes the
-   milestone guard of [The steps that end each role](operator-start.md#the-steps-that-end-each-role).
+   milestone guard of [The steps that end each role](milestone-close.md#the-steps-that-end-each-role).
 2. The handoff: each rule of [handoff-planner.md](handoff-planner.md), with the post count, and the handoff bullet of
    Working with the user.
 3. The name `planner-<slug>` and the start by the operator. The bullet of Working with the user that starts "The
