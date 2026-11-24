@@ -89,22 +89,32 @@ An issue-post subagent does these steps in this order. Each read and each write 
 1. Write the body file as a full copy of the comment draft, at the path that
    [The writes of an issue-post subagent](#the-writes-of-an-issue-post-subagent) gives.
 2. Read the body file with a Read call on the body file. Compare it with the approved text of the prompt. Ignore blank
-   lines at the end of both texts. If the texts differ, post nothing. If the read of the body file fails, post nothing.
-3. Run the count of [The count of the body](#the-count-of-the-body) on the body file.
-4. Run the search `gh issue view <number> -R <repo> --json comments`. Match the `body` of each comment with the body
-   file. If a comment has the same body, post nothing. The result gives the `url` of the match. An issue with no
-   comments gives no match, and that is not a failed read.
-5. Run `gh issue comment <number> -R <repo> --body-file <absolute path of the body file>` alone in a plain call. Use no
-   `--attach`, because `--attach` rewrites a reference in the body.
-6. Read the comments again with the command of step 4. Compare the `body` of the comments that are new since step 4 with
-   the approved text. Ignore blank lines at the end. Give the `url` of the matching comment in the result. If none
-   matches, the post is not complete.
+   lines at the end of both texts. If the texts differ, post nothing. The result gives the difference and says that the
+   post is not complete. If the read of the body file fails, post nothing. The result gives the command and the error
+   and says that the post is not complete.
+3. Run the count of [The count of the body](#the-count-of-the-body) on the body file. The outcomes of that count hold
+   for a count over the limit and for a failed count.
+4. Run the search `gh issue view <number> -R <repo> --json comments`. It reads all the comments of the target issue. A
+   match is a comment whose `body` is the approved text, with blank lines at the end of both texts ignored, as in
+   step 2. An issue with no comments gives no match, and that is not a failed read. For a match, post nothing. The
+   result gives the `url` of each match and says that the comment already exists. A failed read is a read with an exit
+   code other than 0, a denied call, or an output that is not a list of comments. After a failed read, post nothing. The
+   result gives the command and the error and says that the post is not complete.
+5. Run `gh issue comment <number> -R <repo> --body-file <absolute path of the body file>` alone in a
+   [plain call](issues.md#the-reads-before-the-write). One call posts one comment. Use no `--attach`, because `--attach`
+   rewrites a reference in the body.
+6. Read the comments again with the command of step 4. Find each comment that the search of step 4 did not list. If one
+   of them has the text of the body file, with blank lines at the end ignored, the compare passes and the post is
+   complete. If none has it, or if the read fails, the compare fails. A failed compare makes no second write: no edit,
+   no delete and no second post. The result gives the `url` and the `body` of each new comment, or the command and the
+   error of the read, and says that the post is not complete.
 7. Add no blocked-by link and read no column of a card. A comment is no new issue.
 
-A comment post runs no `tasker status`, no state read and no hash read. A comment on an issue of a task changes no task
-state, and the planner subagent of a comment holds no start hash.
-[The change-of-scope comment](plan-review.md#the-change-of-scope-comment) of plan-review.md gives a comment that the
-orchestrator posts on an issue for the same reason.
+A comment post changes no title, no body and no link. So it runs no `tasker status`, no read of the state and no read of
+the hash for its write. The search of step 4 is its read before the write. The reason comes from
+[The change-of-scope comment](plan-review.md#the-change-of-scope-comment). The plan session reads only the issue body
+and the repo. A task subagent copies a comment into its feedback only after the orchestrator sends the link of that
+comment. So a comment changes no input of the plan session of a task in flight.
 
 ### The gh facts of a comment post
 
@@ -129,8 +139,8 @@ The task subagent of #1054 measured these facts on 2026-11-24, on the local mach
 The result of a comment post follows [The result of an issue-post subagent](#the-result-of-an-issue-post-subagent) with
 these changes:
 
-1. For a match of the search, the subagent posts nothing. The result gives the `url` of the match and says whether its
-   body is the same as the approved text.
+1. For a match of the search, the subagent posts nothing. The result gives the `url` of each match and says that the
+   comment already exists.
 2. After a post, the result gives the `url` of the comment and says whether the compare of step 6 matched.
 3. The result gives no blocked-by link and no column read.
 4. A stop before the post, for example a failed count or a failed read of the body file, says that the post is not
