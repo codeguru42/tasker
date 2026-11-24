@@ -631,7 +631,7 @@ The rules of a milestone hold:
     handles each message of that send as the third bullet of item 6 of this section says, in one report.
 11. If the write of item 3 of this section or a send of item 9 of this section fails, the failure rule applies. The
     session tells the user. A denied write follows [the tool-block rule](tasker-commands.md#the-tool-block-rule). For
-    the operator, it follows [A denied command of the operator](operator-start.md#a-denied-command-of-the-operator).
+    the operator, it follows [A denied command of the operator](tasker-commands.md#a-denied-command-of-the-operator).
 
 ## The issue-link rule
 

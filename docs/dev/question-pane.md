@@ -1274,7 +1274,7 @@ A call of the write subagent can get a [tool block](tasker-commands.md#the-tool-
 that rule, the write subagent first runs the same call again one time, in the same form. After each other tool block,
 and after a second check failure, the write subagent stops. It reports the exact call, the exact text of the denial, the
 folder of the call and the purpose. The orchestrator then follows
-[A denied command of the operator](operator-start.md#a-denied-command-of-the-operator) for that call.
+[A denied command of the operator](tasker-commands.md#a-denied-command-of-the-operator) for that call.
 
 The commands after the denied call wait for the answer of the user. If the denied call ran in any choice of that
 section, the orchestrator starts a new write subagent. It runs the commands after the denied call, under the same
