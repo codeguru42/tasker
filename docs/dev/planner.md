@@ -546,15 +546,15 @@ draft until each question has an answer.
 
 - If the answer rejects the draft or says to drop it, the planner drops the draft and reports the drop, as
   [The post of the follow-up planner](#the-post-of-the-follow-up-planner) says. A
-  [partial answer](operator-items.md#the-open-items) that rejects the draft or says to drop it also ends the draft.
+  [partial answer](items.md#the-open-items) that rejects the draft or says to drop it also ends the draft.
 - If the answer accepts the draft with no change, the planner posts the draft.
 - If the answer changes the draft, the planner starts a new ticket subagent with the change. That ticket subagent runs
   the review loops for the changed draft. Then the planner posts it with no approval of the user. The escape hatch still
   applies to the changed draft.
-- The user can say that the sender decides the open part of a question, as [The answer](operator-items.md#the-answer)
-  says. Then the planner decides the open part by its recommendation. If that decision changes the draft, the bullet "If
-  the answer changes the draft" applies. Otherwise the bullet "If the answer accepts the draft" applies. If the words of
-  the user say to reject or drop the draft, the first bullet of this list applies.
+- The user can say that the sender decides the open part of a question, as [The answer](items.md#the-answer) says. Then
+  the planner decides the open part by its recommendation. If that decision changes the draft, the bullet "If the answer
+  changes the draft" applies. Otherwise the bullet "If the answer accepts the draft" applies. If the words of the user
+  say to reject or drop the draft, the first bullet of this list applies.
 
 Each planner goes on with the other drafts.
 

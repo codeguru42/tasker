@@ -43,7 +43,7 @@ After the start, the old planner does these steps:
 3. Write the handoff file, with the name and the time of [The handoff file](handoff.md#the-handoff-file). An example is
    `2026-10-24-1530-docs-planner.md`.
 4. Send the path of the handoff file to [the operator of the session](../operator.md) as an item, as
-   [The form of an item](operator-items.md#the-form-of-an-item) of operator-items.md says.
+   [The form of an item](items.md#the-form-of-an-item) of items.md says.
 
 Until the end of the handoff ([The end of a handoff](handoff.md#the-end-of-a-handoff)), the old planner does step 1 of
 these steps, also after step 4.

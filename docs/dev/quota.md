@@ -487,8 +487,8 @@ An answer of the user to the question of a task has one of these outcomes:
 - Resume: the orchestrator sends the resume message, as [A pi stop](#a-pi-stop) says. The task leaves the pi wait.
 - Another step, for example a defer: the rule of that step applies, for example
   [the defer rule](pick-the-tickets.md#the-defer-rule) with its delete of the jobs. The task leaves the pi wait.
-- Words that pick no choice: the question stays open, as [The answer](operator-items.md#the-answer) says. The task stays
-  in the pi wait.
+- Words that pick no choice: the question stays open, as [The answer](items.md#the-answer) says. The task stays in the
+  pi wait.
 
 ### A Codex limit
 

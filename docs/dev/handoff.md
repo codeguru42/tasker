@@ -124,7 +124,7 @@ to the measured facts, because its entries give the facts of the stopping-point 
     The old session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`.
     This sub-bullet wins over the sentences "The prompt holds only the facts of this handoff" and "The old session puts
     no rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
-- Each open item with its id, as [The form of an item](operator-items.md#the-form-of-an-item) gives the id.
+- Each open item with its id, as [The form of an item](items.md#the-form-of-an-item) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. For an orchestrator, this bullet
   covers only a question with no question file, as
@@ -304,9 +304,9 @@ also names [the operator of the old session](../operator.md) as the operator tha
 of an orchestrator names no operator.
 
 An old session that is not an orchestrator or the operator sends the path of the file to [its operator](../operator.md)
-as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says. The operator gives the path of the
-file to the user. When the user asks for the start, the operator starts the new session with the prompt of the file as
-its first message, as [Start a session](operator-start.md#start-a-session), with
+as an item, as [The form of an item](items.md#the-form-of-an-item) says. The operator gives the path of the file to the
+user. When the user asks for the start, the operator starts the new session with the prompt of the file as its first
+message, as [Start a session](operator-start.md#start-a-session), with
 [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) and
 [The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session) say. The operator does not stop the old
 session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and
@@ -366,7 +366,7 @@ or when the user ends it.
 ### During the hold
 
 During the hold, a sender of the slug sends no message to `operator-<slug>`. This covers each item, also each report
-([The open items](operator-items.md#the-open-items)). An orchestrator shows each progress report of
+([The form of an item](items.md#the-form-of-an-item)). An orchestrator shows each progress report of
 [The operator](working-with-the-user.md#the-operator) in its own tab at once and holds no message for it, because a
 progress report sends no message to `operator-<slug>`. For `planner-<slug>`, the hold covers each item and each report.
 The sender of the slug keeps each message as a held item, with its id. The sender of the slug continues its other work.

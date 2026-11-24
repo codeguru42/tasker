@@ -1350,8 +1350,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   #166, each fix drew a new case, and the work took 4 loops.
 - If a ticket changes how a session numbers the questions of an [item](../sessions.md), ask the plan in the first refine
   for a list. The list names each place that reads those numbers or an answer to them. Examples of such a place are the
-  send and the close of an item in [The answer](operator-items.md#the-answer) of `docs/dev/operator-items.md`. The plan
-  searches the changed pages, and each page that links to a changed section, with `git grep`. The search follows
+  send and the close of an item in [The answer](items.md#the-answer) of `docs/dev/items.md`. The plan searches the
+  changed pages, and each page that links to a changed section, with `git grep`. The search follows
   [the doc-search rule](rules.md#docs). For each place, the plan says whether it changes or why it stays. If a place
   stays, the plan names each old gap of that place that stays outside the issue. See
   [the hint that starts "If a requirement adds a case to an existing condition"](#a-ticket-that-changes-a-procedure-doc).

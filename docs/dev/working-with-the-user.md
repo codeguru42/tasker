@@ -116,9 +116,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   the words of a rule answer a question is a judgment of the session, open on purpose.
 
   A rule can keep a choice or an approval for the user. Examples are a
-  [question for the user alone](operator-items.md#the-open-items) and "Only the user changes a landing order of the
-  overlap rule" (see [Land the work](land-the-work.md#land-the-work)). Then the session still asks the user, because
-  that rule gives the answer. This bullet does not cover an open question of an issue, which
+  [question for the user alone](items.md#the-open-items) and "Only the user changes a landing order of the overlap rule"
+  (see [Land the work](land-the-work.md#land-the-work)). Then the session still asks the user, because that rule gives
+  the answer. This bullet does not cover an open question of an issue, which
   [the open-question rule](pick-the-tickets.md#the-open-question-rule) covers. It does not cover a change of a rule of
   the docs. A session that wants such a change still asks the user or drafts an issue.
 
@@ -138,13 +138,13 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   recommendation is clear and whether a cleanup is harmless are judgments of the session, open on purpose.
 
   A decision of a kind of [the escape hatch](planner.md#the-escape-hatch) still goes to the user. So does a choice or an
-  approval that a rule keeps for the user. Examples are a
-  [question for the user alone](operator-items.md#the-open-items) and the approval of a comment on an issue in
-  [Before a post](issues.md#before-a-post). If the session is in doubt whether a cleanup is harmless, it asks the user.
+  approval that a rule keeps for the user. Examples are a [question for the user alone](items.md#the-open-items) and the
+  approval of a comment on an issue in [Before a post](issues.md#before-a-post). If the session is in doubt whether a
+  cleanup is harmless, it asks the user.
 
   The ban of [The state of the user](plan-review.md#the-state-of-the-user) still applies to each session that it covers.
   For a question of this bullet in an item of another session, the operator sends an answer of the operator, as
-  [The answer](operator-items.md#the-answer) says.
+  [The answer](items.md#the-answer) says.
 
   On 2026-11-13, the description of the GitHub milestone M24 held two hold texts. The hold record of rule 2 of
   [A milestone hold](#a-milestone-hold) stood at its start, and an older hold text stood after it. planner-docs named
@@ -245,12 +245,12 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   each of them. Whether an answer is unclear is a judgment of the session, open on purpose.
 
   The meaning of an unclear answer is a kind of choice that still goes to the user first in the recommendation mode. It
-  is also a [question for the user alone](operator-items.md#the-open-items), and the operator does not answer it with an
-  [answer of the operator](operator-items.md#the-open-items). The reason: only the user knows what the user meant.
+  is also a [question for the user alone](items.md#the-open-items), and the operator does not answer it with an
+  [answer of the operator](items.md#the-open-items). The reason: only the user knows what the user meant.
 
   This bullet covers the session that acts on an answer of the user, also after the operator relays the answer. It does
   not cover an answer of the operator. For an answer of the user to an item, the rules of the operator still win for the
-  operator. These rules are in [The answer](operator-items.md#the-answer) and in
+  operator. These rules are in [The answer](items.md#the-answer) and in
   [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision).
 
   A rule of a narrower case also keeps its own steps. Examples are
@@ -374,8 +374,8 @@ These rules hold for each list of the decisions that the user must make, and for
   can answer a question itself. [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) gives the rule and
   the reason for a handoff file.
 
-  In the operator chat, each [open question](operator-items.md#the-open-items) is short, also question 1. Each rule of
-  the paragraph that starts "Each later question can be short" then also holds for question 1. The first reply of each
+  In the operator chat, each [open question](items.md#the-open-items) is short, also question 1. Each rule of the
+  paragraph that starts "Each later question can be short" then also holds for question 1. The first reply of each
   [question pane](question-pane.md#a-question-pane) gives the details of its question within the limit that
   [The question session](question-pane.md#the-question-session) gives. In the operator chat, this paragraph wins over
   each rule of this section that asks for the full details of question 1. So a reminder of the operator also gives

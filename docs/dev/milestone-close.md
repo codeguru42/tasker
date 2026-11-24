@@ -15,8 +15,8 @@ These terms apply on this page:
 - A session closure ends the session on its host, for example with the close of its herdr tab.
 - A GitHub milestone closure changes the state of the milestone on GitHub to `closed`.
 - An own-session closure is a session closure that a session runs on its own herdr tab.
-- In the close, an open question is an open question of [The open items](operator-items.md#the-open-items). It is also
-  an open question of step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md).
+- In the close, an open question is an open question of [The open items](items.md#the-open-items). It is also an open
+  question of step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md).
 - An open decision is a decision that waits for the user. It is a waiting decision of step 7 of
   [the session-review skill](../../.claude/skills/session-review/SKILL.md) whose wait did not end. It is also a proposal
   or a draft that waits for a decision of the user.

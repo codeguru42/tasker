@@ -114,7 +114,7 @@ Only a word of the user approves the command. An answer of the operator and the 
 session carries an approval only with the word of the user and the command and its undo step word for word. An accept at
 a permission prompt of Claude Code also does not approve it. Words of the user that let the sender decide count as a
 decline. This sentence wins over the bullets that start "If the user says that the sender decides" in
-[The answer](operator-items.md#the-answer) and "The user can say that the sender decides" in
+[The answer](items.md#the-answer) and "The user can say that the sender decides" in
 [the escape hatch](planner.md#the-escape-hatch).
 
 An approval covers one run of the command and of its undo step, word for word. If the user approves a changed command or
@@ -458,10 +458,10 @@ the link of the comment to the task subagent. The task subagent copies the full 
 of [the change-of-scope comment](#the-change-of-scope-comment). As a result, the plan session and the review see the
 answer in the issue.
 
-The user can change the answer before `tasker approve`, also an [answer of the operator](operator-items.md#the-answer).
-In that case, the orchestrator posts a new `## Design gap` comment and sends its link. The new comment gives the gap and
-the new answer, and it says that it replaces the earlier answer for that gap. The task subagent copies the new comment,
-and it does not copy the earlier comment again.
+The user can change the answer before `tasker approve`, also an [answer of the operator](items.md#the-answer). In that
+case, the orchestrator posts a new `## Design gap` comment and sends its link. The new comment gives the gap and the new
+answer, and it says that it replaces the earlier answer for that gap. The task subagent copies the new comment, and it
+does not copy the earlier comment again.
 
 A `## Design gap` comment is not a change of scope. As a result, the fifth case of [the stop rule](#the-stop-rule), the
 security report of ["Review findings"](review-findings.md#review-findings) and the open-question note of
