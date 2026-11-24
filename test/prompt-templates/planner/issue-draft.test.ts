@@ -28,6 +28,9 @@ const sample: Record<string, string> = {
   START_HASH: "none",
   FINDINGS: "none",
   QUESTIONS_AND_ANSWERS: "none",
+  DRAFT_KIND: "an issue",
+  REPO_KEY: "codeguru42/tasker",
+  COMMENT_KIND: "none",
 };
 
 describe("prompt-templates/planner/issue-draft.md", () => {
@@ -48,6 +51,9 @@ describe("prompt-templates/planner/issue-draft.md", () => {
       "START_HASH",
       "FINDINGS",
       "QUESTIONS_AND_ANSWERS",
+      "DRAFT_KIND",
+      "REPO_KEY",
+      "COMMENT_KIND",
     ]);
     expect(names).not.toContain("RECORD_FILE");
   });
@@ -155,5 +161,25 @@ describe("prompt-templates/planner/issue-draft.md", () => {
     const filled = fillPlannerTemplate("issue-draft", sample);
     expect(filled).toContain(PLANNER_WAIT);
     expect(filled).not.toContain("bash -c sleep 5");
+  });
+
+  it("holds each fact of a comment draft", () => {
+    const source = "Recurrence of the failure.\nSender: user\nDate: 2026-11-24";
+    const filled = fillPlannerTemplate("issue-draft", {
+      ...sample,
+      DRAFT_KIND: "a comment",
+      COMMENT_KIND: "a recurrence comment",
+      ISSUE_KEY: "codeguru42/tasker#968",
+      SOURCE: source,
+    });
+    expect(filled).toContain("Kind of the draft: a comment");
+    expect(filled).toContain("Repo key: codeguru42/tasker");
+    expect(filled).toContain("Issue key: codeguru42/tasker#968");
+    expect(filled).toContain("Kind of the comment: a recurrence comment");
+    expect(filled).toContain(source);
+    expect(filled).toContain(
+      "If the kind of the draft is a comment, the draft file holds only the words of the comment. It has no title line and no blank line after a title.",
+    );
+    expect(filled).not.toContain("{{");
   });
 });

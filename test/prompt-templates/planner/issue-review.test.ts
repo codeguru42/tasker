@@ -25,6 +25,9 @@ const sample = {
   SUBAGENT_NAME: "issue-review-1",
   SOURCE: "Add a retry to the sync.\nSender: user\nDate: 2026-11-23",
   REVIEW_BANS: BANS_FIXTURE,
+  DRAFT_KIND: "an issue",
+  REPO_KEY: "codeguru42/tasker",
+  ISSUE_KEY: "none",
 };
 
 describe("prompt-templates/planner/issue-review.md", () => {
@@ -39,6 +42,9 @@ describe("prompt-templates/planner/issue-review.md", () => {
       "SUBAGENT_NAME",
       "SOURCE",
       "REVIEW_BANS",
+      "DRAFT_KIND",
+      "REPO_KEY",
+      "ISSUE_KEY",
     ]);
   });
 
@@ -106,5 +112,24 @@ describe("prompt-templates/planner/issue-review.md", () => {
     const filled = fillPlannerTemplate("issue-review", sample);
     expect(filled).toContain(PLANNER_WAIT);
     expect(filled).not.toContain("bash -c sleep 5");
+  });
+
+  it("holds each fact of a comment review", () => {
+    const filled = fillPlannerTemplate("issue-review", {
+      ...sample,
+      DRAFT_KIND: "a comment",
+      ISSUE_KEY: "codeguru42/tasker#968",
+    });
+    expect(filled).toContain("Kind of the draft: a comment");
+    expect(filled).toContain("Repo key: codeguru42/tasker");
+    expect(filled).toContain("Issue key: codeguru42/tasker#968");
+    expect(filled).toContain(
+      "If the kind of the draft is a comment, the issue key names the issue that gets the comment, and the rule documents give the tests of a comment.",
+    );
+    expect(filled).toContain("If the issue key is none, the draft names no existing issue.");
+    expect(filled).toContain("Add a retry to the sync.");
+    expect(filled).toContain(BANS_FIXTURE);
+    expect(filled).not.toContain("{{");
+    expect(plannerTemplateBody("issue-review").trimEnd().endsWith(`${SOURCE_LEAD}\n{{SOURCE}}`)).toBe(true);
   });
 });
