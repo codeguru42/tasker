@@ -908,14 +908,14 @@ finding and no dismissal.
 
 The prompt of an issue-post subagent also gives these facts:
 
-- The repo key and the kind of the post. The kind is a new issue, a new title or body of an open issue, or the end of
-  the post of an existing issue.
+- The repo key and the kind of the post. The kind is a new issue, a new title or body of an open issue, the end of the
+  post of an existing issue, or a comment.
 - For a new issue, its milestone and each label.
 - For a change of an open issue, the issue key and the start hash.
 - Each blocked-by link of the draft, with the blocked issue, the blocker and the reason.
 - For the end of the post of an existing issue, the key of that issue.
-- For a comment post, the kind is a comment. The prompt also gives the issue key, the approval of the user and the
-  approved text, in the placeholders `APPROVAL` and `APPROVED_TEXT`. The milestone, the labels and the links are `none`.
+- For a comment post, the prompt also gives the issue key, the approval of the user and the approved text, in the
+  placeholders `APPROVAL` and `APPROVED_TEXT`. The milestone, the labels and the links are `none`.
 
 The words of these prompts stand in three files: [`issue-draft.md`](../../prompt-templates/planner/issue-draft.md),
 [`issue-review.md`](../../prompt-templates/planner/issue-review.md) and
