@@ -169,21 +169,25 @@ Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-i
 ## The issue-post subagent
 
 Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-issue-post-subagent),
-[The count of the body](issue-post.md#the-count-of-the-body) and [the doc-read rule](doc-reads.md#the-doc-read-rule).
+[The count of the body](issue-post.md#the-count-of-the-body), [A comment post](issue-post.md#a-comment-post) and
+[the doc-read rule](doc-reads.md#the-doc-read-rule).
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor` and `git show origin/main:<path>`.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
-- K5: the `gh` reads of [Before a post](issues.md#before-a-post).
-- K6: `gh issue create` and `gh issue edit` of the title and the body.
+- K5: the `gh` reads of [Before a post](issues.md#before-a-post), and
+  `gh issue view <number> -R <repo> --json comments`, the read of the comments of the target issue for the search and
+  the compare of a comment post.
+- K6: `gh issue create` and `gh issue edit` of the title and the body, and
+  `gh issue comment <number> -R <repo> --body-file <absolute path of the body file>`, which asks the user.
 - K7: the `gh issue edit` calls that add or remove a blocked-by link, with the milestone and the labels of the draft in
   `gh issue create`.
 - K12: the body file of the post, next to its draft file: the absolute path of the draft file, with `.body.md` in place
   of the `.md` at its end.
-- Named other commands: a Read call on a file of the local clone, `wc -l <path>`,
-  `wc -m <absolute path of the body file>`, `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its
-  own tool call.
+- Named other commands: a Read call on a file of the local clone, a Read call on the body file of a comment post,
+  `wc -l <path>`, `wc -m <absolute path of the body file>`, `timeout 20 bash -c 'sleep 5'` and a Read call on the saved
+  output of its own tool call.
 - Each other kind: no list.
 
 ## The write subagent of the orchestrator

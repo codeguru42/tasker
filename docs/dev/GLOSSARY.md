@@ -5,17 +5,17 @@ name the operator.
 
 ## Language
 
-**Issue-draft subagent**: A subagent that writes one draft of an issue. It follows
-[issue-subagents.md](issue-subagents.md) and [issue-draft.md](issue-draft.md). Only a
+**Issue-draft subagent**: A subagent that writes one draft of an issue, or one draft of a comment of a planner subagent.
+It follows [issue-subagents.md](issue-subagents.md) and [issue-draft.md](issue-draft.md). Only a
 [planner subagent](planner-subagent.md) starts it.
 
-**Issue-post subagent**: A subagent that posts one approved issue on GitHub. It follows
-[issue-subagents.md](issue-subagents.md) and [issue-post.md](issue-post.md). Only a
+**Issue-post subagent**: A subagent that posts one approved issue, or one approved comment of a planner subagent, on
+GitHub. It follows [issue-subagents.md](issue-subagents.md) and [issue-post.md](issue-post.md). Only a
 [planner subagent](planner-subagent.md) starts it. The subagent of the main session that posts a reviewed ad hoc draft
 is not an issue-post subagent. It keeps its own start.
 
-**Issue-review subagent**: A subagent that reviews one draft of an issue. It follows
-[issue-subagents.md](issue-subagents.md) and [issue-review.md](issue-review.md). Only a
+**Issue-review subagent**: A subagent that reviews one draft of an issue, or one draft of a comment of a planner
+subagent. It follows [issue-subagents.md](issue-subagents.md) and [issue-review.md](issue-review.md). Only a
 [planner subagent](planner-subagent.md) starts it. A review agent of a ticket subagent is not an issue-review subagent.
 
 **Orchestrator**: A top-level session that runs one scope. It picks tickets and starts task subagents.
