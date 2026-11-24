@@ -37,7 +37,6 @@ Repo key: {{REPO_KEY}}
 Kind of the comment: {{COMMENT_KIND}}
 The kind of the draft has two values: an issue, or a comment. The kind of the comment has two values: the comment rule, or a recurrence comment.
 If the kind of the draft is a comment, the draft file holds only the words of the comment. It has no title line and no blank line after a title.
-If the kind of the comment is none, the draft is an issue.
 The issue key is the key of the open issue that the draft changes, or of the issue that gets a comment.
 Every value above is one value, and an absent fact has the value none. Where a list is none, no item stands in it.
 If the rule documents are none, this sentence wins over the start steps. Read no document, do no other work, and end with a result that says that the prompt named no rule document.
