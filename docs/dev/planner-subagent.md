@@ -703,9 +703,12 @@ For one draft, the planner subagent does these steps:
 3. Judge each finding of the review under [The new-finding rule](#the-new-finding-rule), and add it to the record file.
 4. Follow [The count of reviews](#the-count-of-reviews) for the next step. The next step is an approval, a new
    issue-draft subagent with the findings, or the user.
-5. After the approval of a draft of an issue, start one issue-post subagent for the draft. For a draft of a comment,
-   wait for the approval of the user. After that approval, start one issue-post subagent with the facts of a comment
-   post, as [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives them.
+5. After the approval of a draft of an issue, start one issue-post subagent for the draft. For a draft of a comment, do
+   not wait. The draft goes in the result with a question of the kind "a comment on an issue", as
+   [The count of reviews](#the-count-of-reviews) says. The new planner subagent that gets the approval of the user as
+   its answer, as change 6 says, starts one issue-post subagent with the facts of a comment post, as
+   [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives them. It fills `APPROVAL` and
+   `APPROVED_TEXT`.
 
 For one draft, at most one subagent of the three kinds runs at a time. The reason: each step reads the draft file that
 the step before it wrote.
@@ -766,10 +769,10 @@ still sends the draft to the escape hatch, also for an approved draft. Keep 1 an
 A draft of a comment that the reviews approve waits for the approval of the user. The result gives the path of its draft
 file. It also gives a question of the kind "a comment on an issue" with the exact text of the comment. Change 9 and the
 paragraph after "The changed rules" that starts "For a planner subagent, change 9 wins over two sentences" give this
-approval. After the approval of the user, the planner subagent starts one issue-post subagent for the comment. The
-prompt holds the words of the approval of the user with its date and source, and the approved text. The approval of the
-planner subagent never counts as the word of the user. Change 6 and change 9 give the post after the approval of the
-user.
+approval. The new planner subagent that gets the answer starts the issue-post subagent for the comment, not the planner
+subagent that wrote the result. The prompt of the new planner subagent gives the words of the approval of the user with
+its date and source, and the approved text, as [The result](#the-result) says for an answer. The approval of the planner
+subagent never counts as the word of the user. Change 6 and change 9 give the post after the approval of the user.
 
 ### The new-finding rule
 
