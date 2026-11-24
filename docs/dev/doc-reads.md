@@ -273,12 +273,13 @@ On 2026-11-21, with git 2.47.3, two pulls ran at the same moment 11 times. One p
 differed after both pulls ended. These tries are the case of requirement 3.3 of #1008, in a scratch clone of a local
 bare repo. No text names the pull form of these tries.
 
-On 2026-11-22, the allowed pull of item 3 failed two times in the local clone, in real use. In real use means in a
-session at work in the local clone, not in a scratch clone of a measure. Each time, the pull printed "fatal: Cannot
-fast-forward to multiple branches." and exited with 128. Each time, the session followed item 7, and its work went on.
+On 2026-11-22, the allowed pull of item 3 failed in the local clone, in real use, in two cases: case A and case B. In
+real use means in a session at work in the local clone, not in a scratch clone of a measure. In each of cases A and B,
+the pull printed "fatal: Cannot fast-forward to multiple branches." and exited with 128. In each of cases A and B, the
+session followed item 7, and its work went on.
 
 In case A, a question session reported that `HEAD` and `origin/main` were both at `aa0477b5` at its start. After the
-failed pull, it reported that both were at `34c18ae3`. On 2026-11-22, after both cases, with git 2.47.3,
+failed pull, it reported that both were at `34c18ae3`. On 2026-11-22, after cases A and B, with git 2.47.3,
 `git -C <local clone> reflog show --date=iso HEAD` gave `aa0477b5` at 13:32:38, `b7cdf121` at 13:59:04, `13c8a01c` at
 14:37:20 and `34c18ae3` at 15:32:13, all times -0700. The next entry was `21dabc46` at 15:42:51. Each entry has the
 message "pull --ff-only origin main: Fast-forward", which names no session. So three fast-forward pulls of the allowed
@@ -293,7 +294,7 @@ In case B, later the same day, a question session in the same question pane ran 
 did not say which earlier read the word "still" compares with, and no session reported the value before the pull. It
 reported no value of `HEAD`.
 
-On 2026-11-22, after both cases, with git 2.47.3, a read of
+On 2026-11-22, after cases A and B, with git 2.47.3, a read of
 `git -C <local clone> reflog show --date=iso refs/remotes/origin/main` gave the entry `491dbd2f` at 15:48:14, all times
 -0700. The next entry after `491dbd2f` was `39677208` at 20:17:38. No entry lies between these two times. This is an
 inference, not a measure: the session read `491dbd2f` in that window. If the failed pull also started in that window,
@@ -305,9 +306,32 @@ No one measured these facts of cases A and B:
   fetch. Such a command is a guess.
 - Which session ran each pull of the reflog of `HEAD` above.
 - The exact time of each failed pull. The reflog of `HEAD` holds no entry of a failed pull.
-- The git version at the time of each case. On 2026-11-22, after both cases, `git --version` on the machine of the local
-  clone printed `git version 2.47.3`.
+- The git version at the time of each case. On 2026-11-22, after cases A and B, `git --version` on the machine of the
+  local clone printed `git version 2.47.3`.
 - The value of `HEAD` after the failed pull of case B.
+
+Case C is one more failed pull. The source of each fact of case C is the report of the question session, as the
+orchestrator tasker-48 relayed it. No one else measured case C.
+
+In case C, the question session of the question pane `question-1024-comment`, for the question id `tasker-48-7`, ran
+`git -C <local clone> pull --ff-only origin main`. This is the allowed pull of item 3. The session ran the pull at the
+start of its `/session-review` rounds. It reported git 2.47.3. The pull printed "fatal: Cannot fast-forward to multiple
+branches." and exited with 128. After the failed pull, the session ran `git fetch origin`. After that fetch, it reported
+that `HEAD` and `origin/main` were both at `33e26733`. Then it went on with its rounds and proposed a change to the
+user.
+
+The session gave the date 2026-11-22 and the time 03:34 UTC on 2026-11-23. The date and the time name different days. No
+one made sure of the date or the time zone, and no one reconciled the two. So case C stands apart from the count of
+2026-11-22 above, and no count of this section includes or excludes it.
+
+No one measured these facts of case C:
+
+- The cause. No one saw another git command that fetches in the same clone at the same moment.
+- The reflog of the local clone for case C. No one read it, so this section gives no reflog entry for case C.
+- The values of `HEAD` and `origin/main` before the failed pull. No report gives such a value.
+- The exact date, time and time zone of the failed pull, as the paragraph above says.
+- Each part of item 7 other than the fetch. The report names only the fetch. For example, it does not say whether the
+  session made the old read.
 
 `--ff-only` changes nothing when it cannot fast-forward. `.claude/settings.json` has no rule for the pull, so the
 classifier of auto mode decides each call that no rule matches. The commands of this rule stand in the lists of
