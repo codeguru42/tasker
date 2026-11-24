@@ -182,4 +182,19 @@ describe("prompt-templates/planner/issue-draft.md", () => {
     );
     expect(filled).not.toContain("{{");
   });
+
+  it("gives the kind of the draft only through DRAFT_KIND", () => {
+    const filled = fillPlannerTemplate("issue-draft", {
+      ...sample,
+      DRAFT_KIND: "a comment",
+      COMMENT_KIND: "none",
+      ISSUE_KEY: "codeguru42/tasker#968",
+    });
+    expect(filled).not.toContain("If the kind of the comment is none, the draft is an issue.");
+    expect(plannerTemplateBody("issue-draft")).not.toContain("the draft is an issue.");
+    expect(filled).toContain("Kind of the draft: a comment");
+    expect(filled).toContain(
+      "If the kind of the draft is a comment, the draft file holds only the words of the comment. It has no title line and no blank line after a title.",
+    );
+  });
 });
