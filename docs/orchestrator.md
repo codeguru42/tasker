@@ -246,6 +246,59 @@ the orchestrator does no role work. It tells the user in its own tab, with the e
 In these steps, "stop" means: do no role work, and tell the user in your own tab. A pi orchestrator does not do steps 2
 and 3. For a pi orchestrator, the user alone keeps the slugs apart.
 
+Now take a first prompt that names a handoff file, and a step of the start checks that fails. The session after that
+step is "the failed session". This holds for the kinds `claude` and `pi`, and it holds if the old orchestrator or the
+user started the session. If the first prompt names no handoff file, the message stays as it is.
+
+The failed session does no role work. It tells the user in its own tab, with the error if one exists. The message also
+gives two more things:
+
+- The path of the handoff file that the first prompt names.
+- The way on: close this session, fix the cause of the failure, then start a new orchestrator with the prompt of the
+  handoff file.
+
+The user judges the cause and its fix. These docs give no list of causes or fixes. The message is a report of a failure.
+It waits for no word of the user, and it gets no question pane. So the gate of
+[The operator](dev/working-with-the-user.md#the-operator) does not apply. The failed session does not wait after the
+message, and it does not run the start checks again.
+
+The failed session does none of these steps:
+
+- The check of the handoff folder of [The check of the handoff folder](dev/handoff.md#the-check-of-the-handoff-folder).
+  A run of that check before the failed step stays valid.
+- The read of the tasks in flight with `tasker status`.
+- The read of the other sessions with `ListAgents` in the start after a handoff. Steps 2 and 3 of the start checks are
+  not this read.
+- The board watch job. [The board watch rule](#the-board-watch-job) gives the rule.
+- The read of the record of the outside-Todo find, and the run of that find.
+- The pick of a ticket.
+- An open question of the handoff file, and each question pane.
+
+The failed session changes or deletes no handoff file and no [question file](dev/question-pane.md#the-question-file).
+
+The message gives the path and the way on for these reasons:
+
+- The old orchestrator does not wait for the start checks of the new orchestrator, and it does not act on their result.
+  See [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator).
+- The handoff file and the question files are the only source of the open questions and the other state of the old
+  session.
+- A new start with no handoff file loses that state, as [A stop with no handoff](#a-stop-with-no-handoff) says.
+- The first prompt already names the path. The message gives it too, so that the message holds the whole way on in one
+  place.
+
+The way on asks for the close of the failed session for these reasons:
+
+- For the kind `claude`, step 3 stops a new start while the failed session runs. The failed session has the own name,
+  and its tab id is not the tab id of the old orchestrator in the handoff file. After the close, if no other session
+  with the own name runs, step 3 of the new start finds no other row with the own name. So step 3 passes.
+- The check of the handoff folder then picks the newest handoff file of the role. That is the same file, unless a newer
+  file of the role exists.
+- For the kind `pi`, the reason is in [The slug](#the-slug). No two orchestrators that run at the same time have the
+  same slug, and the user alone keeps the slugs apart.
+
+The way on adds no step for the new orchestrator. It does the start checks and the start after a handoff from the prompt
+of the handoff file.
+
 After these steps, the orchestrator lists its folders `questions/` and `proposals/`, as
 [The orchestrator folder](dev/limits.md#the-orchestrator-folder) says for the end of the start steps.
 
