@@ -3,7 +3,8 @@
 The readers of this page are the task subagent of a ticket, and the orchestrator for the plain-form rule, the
 orchestrator-command rule and the tool-block rule. Each other actor of [the table](permissions.md#the-table) also reads
 the tool-block rule: the planner subagent, the issue-draft, issue-review and issue-post subagents, the write subagent,
-the opener subagent, the reuse subagent and a question session. The planner and the operator also read it.
+the opener subagent, the reuse subagent and a question session. The planner and the operator also read it. The operator
+and the orchestrator also read [A denied command of the operator](#a-denied-command-of-the-operator).
 
 ## The plain-form rule
 
