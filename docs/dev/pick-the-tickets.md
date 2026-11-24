@@ -1248,7 +1248,8 @@ The orchestrator writes the prompt of each task subagent.
 
 A Codex orchestrator starts each task subagent with the native subagent tools of its own session. It does not start a
 ticket driver as a top-level Codex session through herdr. The operator still starts top-level role sessions through
-[Start a session](operator-start.md#start-a-session).
+[Start a session](operator-start.md#start-a-session), with
+[The start of a herdr session](../sessions.md#the-start-of-a-herdr-session).
 
 The Codex orchestrator uses its native tools to send task instructions and receive task reports. It keeps the native
 identifier of each task subagent with the issue key. The native tools and their exposed arguments govern Codex starts

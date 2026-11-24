@@ -129,7 +129,7 @@ sessions, as the column "Messages" of the seam gives it. So for a pi orchestrato
 ### The steps of the user
 
 The user starts each orchestrator in these steps. They take the form of step 2 of
-[The order of a milestone](dev/operator-start.md#the-order-of-a-milestone).
+[The start of a session by the user](sessions.md#the-start-of-a-session-by-the-user).
 
 1. Run `tasker show-config --repo <key>`. `<key>` is the repo key of the local clone, for example `codeguru42/tasker`.
 2. If the command fails, start no orchestrator.

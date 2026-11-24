@@ -25,7 +25,9 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 ## The initial planner and the follow-up planner
 
 The planner is one role. The operator starts each session of the planner, as
-[Start a session](operator-start.md#start-a-session) of operator-start.md says.
+[Start a session](operator-start.md#start-a-session) of operator-start.md, with
+[The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) and
+[The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session), says.
 
 The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab. The
 follow-up planner is the planner that files the follow-ups of the milestone while the orchestrator runs the milestone.
@@ -581,10 +583,10 @@ chat under that subsection.
   one row for each milestone, and "Future" last. The description in each row is the description of the milestone on
   GitHub. Notes go below the table.
 - The operator names each planner `planner-<slug>` with the flag `-n` of `claude`, for example `planner-m7`. This is the
-  form of `claude`. A pi planner gets its name as [Start a session](operator-start.md#start-a-session) says.
-  [GLOSSARY.md](GLOSSARY.md) defines the slug. The name of a session is a noun for its role, not a verb. Examples are
-  `orchestrator-<slug>` and `planner-<slug>`. The name tells the user which session is the planner and which session is
-  an orchestrator. For example, on 2026-10-15, the user confused a planner with the orchestrator.
+  form of `claude`. A pi planner gets its name as [The read of the own name](../sessions.md#the-read-of-the-own-name)
+  says. [GLOSSARY.md](GLOSSARY.md) defines the slug. The name of a session is a noun for its role, not a verb. Examples
+  are `orchestrator-<slug>` and `planner-<slug>`. The name tells the user which session is the planner and which session
+  is an orchestrator. For example, on 2026-10-15, the user confused a planner with the orchestrator.
   [The notice rule](doc-reads.md#the-notice-rule) says which sessions get a notice.
 - The follow-up planner suggests a handoff to the user and does the steps of the handoff, as
   [docs/dev/handoff-planner.md](handoff-planner.md) says.

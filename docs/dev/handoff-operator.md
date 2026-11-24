@@ -186,10 +186,9 @@ The new operator starts in these steps:
    of these errors, the operator first looks for the new session in `ListAgents`".
 
    If the kind is `pi`, the old operator runs the reads of
-   [The start gate of a pi session](operator-start.md#the-start-gate-of-a-pi-session) after the `herdr pane read`,
-   because it holds the pane id. While the state is Pending, the old operator closes nothing. The old and the new
-   operator hold the same own name, and pi allows this. So the name alone is never Done. Only the tie to the new pane id
-   gives Done.
+   [The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session) after the `herdr pane read`, because
+   it holds the pane id. While the state is Pending, the old operator closes nothing. The old and the new operator hold
+   the same own name, and pi allows this. So the name alone is never Done. Only the tie to the new pane id gives Done.
 
 4. If the new operator runs, the old operator runs `herdr tab get "$HERDR_TAB_ID"` in its shell. If
    `.result.tab.pane_count` is 1, it runs `herdr tab close "$HERDR_TAB_ID"`. If the count is more than 1, it closes only

@@ -440,7 +440,7 @@ No one measured that a pi orchestrator can start an opener subagent, a reuse sub
 write subagent, the action does not run.
 
 The pane name starts with `question-` and is unique. See the
-[`agent_name_taken` fact](operator-start.md#start-a-session).
+[`agent_name_taken` fact](../sessions.md#the-facts-of-a-herdr-start).
 
 If the report of the opener subagent says that no pane opened, the orchestrator tells the user the command and the error
 in its tab. The orchestrator stops the run.
@@ -677,10 +677,11 @@ the order of the steps of a test back to the session and asked whether it was ri
 that the definitions and the order of the steps stay past five sentences, as operator-docs relayed it. The words of the
 user were: "keep it short as possible but going over 5 sentences is allowed".
 
-[Start a session](operator-start.md#start-a-session) holds the measured fact that herdr 0.9.3 refuses a prompt with a
-newline. So the opener subagent and the reuse subagent put the word `LINE-BREAK` in place of each newline of the
-first-reply text. Step 3 of the opener prompt and step 6 of the reuse prompt of [The prompts](#the-prompts) give this
-step. Each has one space on each side of the word. The question session puts each newline back.
+[The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) holds the measured fact that herdr 0.9.3
+refuses a prompt with a newline. So the opener subagent and the reuse subagent put the word `LINE-BREAK` in place of
+each newline of the first-reply text. Step 3 of the opener prompt and step 6 of the reuse prompt of
+[The prompts](#the-prompts) give this step. Each has one space on each side of the word. The question session puts each
+newline back.
 
 The question session shows that text as its first reply and changes no word, apart from each word `LINE-BREAK`. It puts
 a newline in place of each such word, as the session prompt says. Before that reply, the session shows only the start
@@ -853,7 +854,7 @@ keeps it. Step 7 of the reuse prompt keeps each single quote. The send command t
 a shell.
 
 The three files are the only place of the words of the three prompts. The rules of "A question pane" stay the home of
-each rule that the files state. Step 3 of [Start a session](operator-start.md#start-a-session),
+each rule that the files state. Step 3 of [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session),
 [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind), [`sessions`](../config.md#sessions),
 [the doc-read rule](doc-reads.md#the-doc-read-rule) and `AGENTS.md` are also such homes. An issue that changes such a
 rule also changes the file that states it. The files are the exception that
@@ -1938,7 +1939,7 @@ them again.
   and the maximum is 300000 milliseconds.
 - 2026-11-11: a `herdr agent start` with no `--timeout` exited with the error code `timeout` ("timed out waiting for
   agent startup"). The session still ran, and `herdr pane read <pane id>` showed it. See the
-  [timeout fact](operator-start.md#start-a-session).
+  [timeout fact](../sessions.md#the-start-of-a-herdr-session).
 - 2026-11-11: a prompt let the question session show the question with the AskUserQuestion tool. Then
   `herdr agent start` exited with 1 and the error code `agent_not_ready`. The text was "agent ... is blocked during
   startup and is not ready for prompts". The session ran with the question open. The planner did not record the full

@@ -295,16 +295,18 @@ as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session does
 [The check of the handoff folder](#the-check-of-the-handoff-folder).
 
 The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. Under
-`pi`, the new session gets this name from `-n`, as [Start a session](operator-start.md#start-a-session) says.
-[docs/dev/GLOSSARY.md](GLOSSARY.md) gives the form of the own name of a session. The old session puts this name in the
-prompt of the handoff file, and in the item when it sends one. If the old session is not an orchestrator, the prompt
+`pi`, the new session gets this name from `-n`, as [The read of the own name](../sessions.md#the-read-of-the-own-name)
+says. [docs/dev/GLOSSARY.md](GLOSSARY.md) gives the form of the own name of a session. The old session puts this name in
+the prompt of the handoff file, and in the item when it sends one. If the old session is not an orchestrator, the prompt
 also names [the operator of the old session](../operator.md) as the operator that the new session works with. The prompt
 of an orchestrator names no operator.
 
 An old session that is not an orchestrator or the operator sends the path of the file to [its operator](../operator.md)
 as an item, as [The form of an item](operator-items.md#the-form-of-an-item) says. The operator gives the path of the
 file to the user. When the user asks for the start, the operator starts the new session with the prompt of the file as
-its first message, as [Start a session](operator-start.md#start-a-session) says. The operator does not stop the old
+its first message, as [Start a session](operator-start.md#start-a-session), with
+[The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) and
+[The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session) say. The operator does not stop the old
 session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and
 [The stop and the start](#the-stop-and-the-start) do not apply.
 
@@ -315,7 +317,9 @@ the role page, [The end of a handoff](#the-end-of-a-handoff) and [The stop and t
 not apply.
 
 When the old session is the operator, it sends no item. It gives the path of the file to the user. When the user asks
-for the start, it starts the new session itself, as [Start a session](operator-start.md#start-a-session) says.
+for the start, it starts the new session itself, as [Start a session](operator-start.md#start-a-session), with
+[The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) and
+[The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session) say.
 
 On 2026-10-25, the user asked orchestrator-m21 for "a handoff for a new session to plan publishing to NPM". The session
 first wrote the full orchestrator handoff. The user said: "we don't need to handoff this entire session. Just include

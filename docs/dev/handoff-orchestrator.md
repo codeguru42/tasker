@@ -403,17 +403,17 @@ The steps of the old orchestrator. The steps are:
 
 1. The old orchestrator reads the configuration, as steps 1 to 3 of
    [The steps of the user](../orchestrator.md#the-steps-of-the-user) say.
-2. It opens a new herdr tab with `herdr tab create`, as step 2 of [Start a session](operator-start.md#start-a-session)
-   says. The label is `orchestrator-<slug>`.
+2. It opens a new herdr tab with `herdr tab create`, as step 2 of
+   [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) says. The label is `orchestrator-<slug>`.
 3. It keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. They are the tab id and the pane id of
    the new orchestrator.
-4. It starts the new orchestrator in the new pane with `herdr agent start`, as step 3 of "Start a session" says.
+4. It starts the new orchestrator in the new pane with `herdr agent start`, as step 3 of
+   [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) says.
 5. The old orchestrator makes sure that the new orchestrator runs. It runs `herdr pane read <pane id>` with the pane id
    of step 3.
 
-   If the kind is `pi`, run the reads of
-   [The start gate of a pi session](operator-start.md#the-start-gate-of-a-pi-session) after the `herdr pane read`. While
-   the state is Pending, the old orchestrator closes nothing.
+   If the kind is `pi`, run the reads of [The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session)
+   after the `herdr pane read`. While the state is Pending, the old orchestrator closes nothing.
 
 6. If the new orchestrator runs, the old orchestrator runs `herdr tab get "$HERDR_TAB_ID"` in its shell. If
    `.result.tab.pane_count` is 1, it runs `herdr tab close "$HERDR_TAB_ID"`. If the count is more than 1, it closes only
