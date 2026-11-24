@@ -57,11 +57,15 @@ milestone" or a denied removal of the label "on hold", the operator follows
 
 The operator pages are `docs/operator.md` and the pages of this list, "The pages":
 
-- [docs/dev/operator-start.md](dev/operator-start.md): "The order of a milestone", "Start a session", "The start gate of
-  a pi session", "The start prompts", "Stop a session", "The close of a milestone", "A handoff", "A denied command of
-  the operator" and "A blocked session".
-- [docs/dev/operator-items.md](dev/operator-items.md): "The form of an item", "The open items", "The answer" and "The
+- [docs/dev/operator-start.md](dev/operator-start.md): "The order of a milestone", "Start a session", "The start
+  prompts", "Stop a session", "The close of a milestone" and "A handoff".
+- [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
+  own-session closure.
+- [docs/dev/operator-items.md](dev/operator-items.md): "The open items", "The question gate of the close" and "The
   states of an item".
+- [docs/dev/items.md](dev/items.md): "The form of an item", "The open items" and "The answer".
+- [docs/dev/tasker-commands.md](dev/tasker-commands.md): "A denied command of the operator".
+- [docs/dev/planner.md](dev/planner.md): "The read of the milestones" and "The start prompts".
 - [docs/dev/operator-conversations.md](dev/operator-conversations.md): "A side conversation" and "The word of the user".
 - [docs/dev/question-pane.md](dev/question-pane.md): "A question pane".
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff

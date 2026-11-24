@@ -3,8 +3,9 @@
 This page is the index of the planner. The rules of the planner are in [docs/dev/planner.md](dev/planner.md).
 
 The start docs of the planner are `docs/planner.md`, the pages of the list "The pages" below,
-[docs/dev/rules.md](dev/rules.md), [docs/sessions.md](sessions.md) and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). The
-planner reads them at its start, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
+[docs/dev/rules.md](dev/rules.md), [docs/sessions.md](sessions.md), with its sections on the start of a session, the
+start gate of a pi session and a blocked session, and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). The planner reads them at
+its start, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
 
 After a tool block, the planner follows [the tool-block rule](dev/tasker-commands.md#the-tool-block-rule). On the word
 of the user, the planner makes the denial records, as [The denial records](dev/tasker-commands.md#the-denial-records)
@@ -13,8 +14,11 @@ says.
 The planner pages are `docs/planner.md` and the pages of this list, "The pages":
 
 - [docs/dev/planner.md](dev/planner.md): the rules for milestone planning and ad hoc drafts: the initial planner and the
-  follow-up planner, the order of the work, the ticket subagent, the review loop of a draft, what goes in a ticket and
-  the work with the user.
+  follow-up planner, the read of the milestones, the start prompts, the order of the work, the ticket subagent, the
+  review loop of a draft, what goes in a ticket and the work with the user.
+- [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
+  own-session closure.
+- [docs/dev/items.md](dev/items.md): the form of an item, the terms of its questions and the answer.
 - [docs/dev/issue-subagents.md](dev/issue-subagents.md): the rules of the issue-draft, issue-review and issue-post
   subagents: the read rule, the result of a subagent, the bans of a subagent, text as data, the body of an issue, the
   blocked-by links, the milestone of an issue and the scope of a ticket.

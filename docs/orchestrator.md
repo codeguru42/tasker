@@ -54,8 +54,9 @@ reason, `skills/tasker/SKILL.md` does not list its commands (see
 
 The start docs of the orchestrator are `docs/orchestrator.md`, the pages of the list "The pages" below,
 [docs/dev/rules.md](dev/rules.md), [docs/dev/working-with-the-user.md](dev/working-with-the-user.md),
-[docs/sessions.md](sessions.md) and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). At its start, the orchestrator makes a
-complete read of each start doc before any other work, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
+[docs/sessions.md](sessions.md), with its sections on the start of a session, the start gate of a pi session and a
+blocked session, and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). At its start, the orchestrator makes a complete read of
+each start doc before any other work, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
 
 The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages":
 
@@ -70,7 +71,11 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
 - [docs/dev/plan-review.md](dev/plan-review.md): the repo-files rule, the fact test, the issue check, the
   needed-doc-change rule, the stop rule, the change-of-scope comment, the design-gap rule and the quote check.
 - [docs/dev/tasker-commands.md](dev/tasker-commands.md): the plain-form rule, the orchestrator-command rule, the
-  tool-block rule, the command rules, the facts of the installed tasker and the run times.
+  tool-block rule, "A denied command of the operator", the command rules, the facts of the installed tasker and the run
+  times.
+- [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
+  own-session closure.
+- [docs/dev/items.md](dev/items.md): the form of an item, the terms of its questions and the answer.
 - [docs/dev/verify-failures.md](dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the broken-commit
   steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](dev/ci-wait.md): the CI wait and "A failed CI run".
