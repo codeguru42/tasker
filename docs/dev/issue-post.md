@@ -8,7 +8,10 @@ description: Load this document when an issue-post subagent starts, when a plann
 This page gives the rules that each [issue-post subagent](GLOSSARY.md) follows for its post of one approved issue or one
 approved comment. An issue post is a new issue, or a change of the title or the body of an open issue. A comment post is
 the post of an approved comment of a planner subagent. [A comment post](#a-comment-post) gives its rules. Each rule
-outside that section is for an issue post. The readers of this page are these:
+outside that section is for an issue post, except a rule that names a comment post. A comment post also follows
+[The count of the body](#the-count-of-the-body),
+[The writes of an issue-post subagent](#the-writes-of-an-issue-post-subagent) and
+[The result of an issue-post subagent](#the-result-of-an-issue-post-subagent). The readers of this page are these:
 
 - Each issue-post subagent, as [the read rule](issue-subagents.md#the-read-rule) says.
 - Each planner, for each issue post that it makes. A planner follows each rule of an issue post, as an issue-post
