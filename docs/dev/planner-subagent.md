@@ -393,9 +393,9 @@ For a planner subagent, these six kinds take the place of the list of decisions 
 5. A comment on an issue. The sources are three places. The first is the term of The review loop of a draft that starts
    "A comment on an issue is not a draft". The second is the bullet of
    [The rules for the user alone](planner.md#the-rules-for-the-user-alone) that starts "A comment on an issue". The
-   third is the first bullet of [Before a post](issues.md#before-a-post). Change 9 gives its actors. "The writes of an
-   issue-post subagent" of [issue-post.md](issue-post.md#the-writes-of-an-issue-post-subagent) still says that an
-   issue-post subagent posts no comment. This page does not change that rule.
+   third is the first bullet of [Before a post](issues.md#before-a-post). Change 9 gives its actors.
+   [A comment post](issue-post.md#a-comment-post) of [issue-post.md](issue-post.md) gives the post of the approved
+   comment.
 6. A measure that needs a change of [the state of the user](plan-review.md#the-state-of-the-user). The source is the
    item of The escape hatch that starts "A measure that needs a change". Keep 3 keeps the measure as an open question of
    the report. Change 2 puts it in the result. Keep 6 leaves its approval to the user. The question gives the command of
@@ -673,9 +673,11 @@ subagent. Its start in the bullet of [working-with-the-user.md](working-with-the
 main session posts a reviewed ad hoc draft" stays.
 
 The planner subagent runs no write to GitHub. An issue-post subagent runs each write of a post. These are a new issue, a
-new title or body of an open issue, and each add or removal of a blocked-by link. The planner subagent posts no comment.
-Change 9 gives the actors of a comment. No metadata already gives each write of a post to the issue-post subagent. The
-row of the planner subagent in [the table](permissions.md#the-table) gives it no `gh` write.
+new title or body of an open issue, each add or removal of a blocked-by link, and each approved comment. The planner
+subagent posts no comment itself. Change 9 gives the actors of a comment. Only a planner subagent starts an issue-post
+subagent for a comment post. A planner session keeps its own comments, as the rules of the planner say. No metadata
+already gives each write of a post to the issue-post subagent. The row of the planner subagent in
+[the table](permissions.md#the-table) gives it no `gh` write.
 
 The reason: among the three kinds, only an issue-post subagent writes to GitHub, as
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says. So the work of the planner subagent has the
@@ -702,7 +704,8 @@ For one draft, the planner subagent does these steps:
 4. Follow [The count of reviews](#the-count-of-reviews) for the next step. The next step is an approval, a new
    issue-draft subagent with the findings, or the user.
 5. After the approval of a draft of an issue, start one issue-post subagent for the draft. For a draft of a comment,
-   [The count of reviews](#the-count-of-reviews) gives the step after its approval.
+   wait for the approval of the user. After that approval, start one issue-post subagent with the facts of a comment
+   post, as [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives them.
 
 For one draft, at most one subagent of the three kinds runs at a time. The reason: each step reads the draft file that
 the step before it wrote.
@@ -763,7 +766,10 @@ still sends the draft to the escape hatch, also for an approved draft. Keep 1 an
 A draft of a comment that the reviews approve waits for the approval of the user. The result gives the path of its draft
 file. It also gives a question of the kind "a comment on an issue" with the exact text of the comment. Change 9 and the
 paragraph after "The changed rules" that starts "For a planner subagent, change 9 wins over two sentences" give this
-approval. Change 6 and change 9 give the post after the approval of the user.
+approval. After the approval of the user, the planner subagent starts one issue-post subagent for the comment. The
+prompt holds the words of the approval of the user with its date and source, and the approved text. The approval of the
+planner subagent never counts as the word of the user. Change 6 and change 9 give the post after the approval of the
+user.
 
 ### The new-finding rule
 
@@ -884,14 +890,18 @@ The prompt of an issue-draft subagent also gives these facts:
 - Each question of the draft and each answer and its source. The source is the words of the user or the reason of a
   settled answer. The draft never records a settled answer as a decision or as a word of the user.
 - For a change of an open issue, the issue key and the start hash, or the fact that no start hash exists.
-- For a comment, the key of the issue that gets the comment.
+- For a comment, the key of the repo, the key of the issue that gets the comment, the kind of the draft and the kind of
+  the comment. Each fact of the comment stands in the source, with its own source. The placeholders are `DRAFT_KIND`,
+  `REPO_KEY` and `COMMENT_KIND`.
 - For a draft after a review, the new findings of that review. The planner subagent judged them. The prompt names no
   record file, and the issue-draft subagent does not judge whether a finding is new.
 - The simple-english skill, for the self-check of the document of its kind.
 
 The prompt of an issue-review subagent also gives the source of the draft word for word. It gives the list of
 [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent), word for word, as keep 1
-says. It gives no opinion of the planner subagent about the draft, no earlier finding and no dismissal.
+says. For a comment, it also gives the repo key, the issue key and the kind of the draft, in the placeholders
+`DRAFT_KIND`, `REPO_KEY` and `ISSUE_KEY`. It gives no opinion of the planner subagent about the draft, no earlier
+finding and no dismissal.
 
 The prompt of an issue-post subagent also gives these facts:
 
@@ -901,6 +911,8 @@ The prompt of an issue-post subagent also gives these facts:
 - For a change of an open issue, the issue key and the start hash.
 - Each blocked-by link of the draft, with the blocked issue, the blocker and the reason.
 - For the end of the post of an existing issue, the key of that issue.
+- For a comment post, the kind is a comment. The prompt also gives the issue key, the approval of the user and the
+  approved text, in the placeholders `APPROVAL` and `APPROVED_TEXT`. The milestone, the labels and the links are `none`.
 
 The words of these prompts stand in three files: [`issue-draft.md`](../../prompt-templates/planner/issue-draft.md),
 [`issue-review.md`](../../prompt-templates/planner/issue-review.md) and
@@ -933,6 +945,9 @@ the first post, the planner subagent does no step of a match, and the draft does
 subagent for the compare and the links of that issue, with the prompt above. The rule for the end of such a post is in
 [The steps of a post](issue-post.md#the-steps-of-a-post). If the compare of a match failed, the planner subagent posts
 nothing for the draft. Its result says so, and the draft waits for a decision of the user.
+
+For a match of a comment post, the planner subagent gives the match in its own result, with the `url` that the
+issue-post subagent gave. It starts no new comment post, because the same comment is already on the issue.
 
 An extra report is a report of the first issue-review subagent of a review after the start of the second one. Its
 findings join that review, and they add no review to the count. An extra report can come after the judgment of the
