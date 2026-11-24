@@ -1685,7 +1685,7 @@ the same. The clear changes no model and no effort.
 A step of a reuse can fail or can find a session that is not ready. Then the outcome is one of these:
 
 - The session is in `blocked`. The reuse subagent sends no input to the pane. The orchestrator tells the user the name
-  of the session and its pane id. The other rules of [A blocked session](operator-start.md#a-blocked-session) hold. The
+  of the session and its pane id. The other rules of [A blocked session](../sessions.md#a-blocked-session) hold. The
   pane stays open, and the run stops until the user speaks.
 - The wait fails or reaches its time limit. The reuse subagent sends no input to the pane. The pane owner closes the
   pane. The next question gets a new pane with an opener subagent, as [Start](#start) says.

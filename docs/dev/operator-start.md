@@ -176,9 +176,9 @@ only after this report arrives. The wait of step 2 does not replace the report.
 
 After step 1, the operator tells the user one time that it waits for the report of the session. While it waits, it
 continues its other work and does not wait in a loop. If the user asks before the report arrives, the operator reads the
-state of the session and tells the user, as [A blocked session](#a-blocked-session) says. The word of the user then
-closes the pane with no report, keeps the wait, or ends the stop. After an end of the stop, the entry stays in the tab
-list.
+state of the session and tells the user, as [A blocked session](../sessions.md#a-blocked-session) says. The word of the
+user then closes the pane with no report, keeps the wait, or ends the stop. After an end of the stop, the entry stays in
+the tab list.
 
 In steps 1 and 2 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), the old operator
 waits for each such report before its hold messages. That report is the report again, because the old sender ran its
@@ -200,11 +200,11 @@ After the hold messages, the old operator starts no stop of a sender of the slug
    `herdr pane close`, the tab stays open.
 
 A session at its input prompt runs no turn and is ready for the next input at its prompt, in the state `idle` or `done`.
-A session in `blocked` is not such a session, and [A blocked session](#a-blocked-session) covers it. The operator does
-step 2 only after the report of the rounds, so the session already read "stop". For a session at its input prompt, the
-wait of step 2 then ends at once, and the operator does step 3. For such a session, a wait right after the send of
-"stop" ends before the session reads it. The measures in the next paragraphs show this, and it is the reason for the
-wait for the report.
+A session in `blocked` is not such a session, and [A blocked session](../sessions.md#a-blocked-session) covers it. The
+operator does step 2 only after the report of the rounds, so the session already read "stop". For a session at its input
+prompt, the wait of step 2 then ends at once, and the operator does step 3. For such a session, a wait right after the
+send of "stop" ends before the session reads it. The measures in the next paragraphs show this, and it is the reason for
+the wait for the report.
 
 On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, the task subagent of #519 sent "stop" to a test session of its
 own in the state `done`. `herdr agent wait <pane id> --timeout 600000` returned `done` at once. About 0.5 seconds later,
@@ -636,8 +636,8 @@ way for an operator of each kind.
 #### A question or a refusal of pi
 
 If pi asks a question before a tool call of the closure or of the operator check, the question is a permission prompt.
-The pi operator or the pi planner that pi asked is then `blocked`, as [A blocked session](#a-blocked-session) says. Only
-the user answers the question.
+The pi operator or the pi planner that pi asked is then `blocked`, as
+[A blocked session](../sessions.md#a-blocked-session) says. Only the user answers the question.
 
 If pi or an extension of pi refuses a command of the closure, the refusal is a failed command of the closure. If pi or
 an extension of pi refuses the command of the operator check, the refusal is a failed operator check.
@@ -733,11 +733,13 @@ If a handoff of a follow-up planner is in progress at the start of a handoff of 
 
 If step 4 does not close the pane of the old session, the operator does not do step 5. It tells the user, as
 [the failure rule](limits.md#the-failure-rule) says. In the case of more than one row, the message of
-[Stop a session](#stop-a-session) is the one message. Two sessions with one name break each `SendMessage` to that name.
+[Stop a session](#stop-a-session) is the one message.
+[Two sessions with one name](../sessions.md#two-sessions-with-one-name) gives the fact of two sessions with one name.
 
 In a handoff, these rules stay with the user:
 
-- Only the user answers a prompt of a session in `blocked`, as [A blocked session](#a-blocked-session) says.
+- Only the user answers a prompt of a session in `blocked`, as [A blocked session](../sessions.md#a-blocked-session)
+  says.
 - After a failed `herdr agent start`, the operator does not close the new tab without the user, as
   [Start a session](#start-a-session) says.
 
@@ -836,8 +838,4 @@ milestone", such a word is not a new word of the user to go on.
 
 ## A blocked session
 
-- When an item arrives, and when the user asks, the operator runs `herdr agent list` in its shell. If the command fails,
-  [the failure rule](limits.md#the-failure-rule) applies.
-- A session in `blocked` waits at a permission prompt or a question prompt in its own tab. The operator tells the user
-  the name of the session and the label of its tab.
-- The operator does not answer the prompt. Only the user answers it, in that tab.
+The rules of this section are in [A blocked session](../sessions.md#a-blocked-session).

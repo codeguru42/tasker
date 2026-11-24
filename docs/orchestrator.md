@@ -11,10 +11,10 @@ only one `tasker` command of a task. The user is the person who works with the s
 [The start of an orchestrator](#the-start-of-an-orchestrator) says. The user can type in the session of the
 orchestrator, but most words of the user reach it through its question pane. No one measured how a session queues a text
 that arrives during a turn. The user answers a permission prompt in the tab of the orchestrator, as
-[A blocked session](dev/operator-start.md#a-blocked-session) says. The orchestrator of the kind `claude` reads its own
-name and its slug from the first line of the output of `ListAgents`, as [sessions.md](sessions.md) says. A pi
-orchestrator uses the read of [sessions.md](sessions.md) that names `PI_SESSION_FILE`. A task is the record that tasker
-keeps for one ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
+[A blocked session](sessions.md#a-blocked-session) says. The orchestrator of the kind `claude` reads its own name and
+its slug from the first line of the output of `ListAgents`, as [sessions.md](sessions.md) says. A pi orchestrator uses
+the read of [sessions.md](sessions.md) that names `PI_SESSION_FILE`. A task is the record that tasker keeps for one
+ticket. tasker moves the task from state to state, for example from `awaiting_plan_review` to `approved`.
 
 Memory is the files where an assistant keeps notes between sessions. Memory is not in the repo. The files of the
 [orchestrator folder](dev/limits.md#the-orchestrator-folder) are not memory. The docs define these files, and they hold
@@ -123,8 +123,9 @@ slug keeps the role. For example, `orchestrator-docs-fix` has the role `orchestr
 of the docs that finds the orchestrator of a milestone uses the slug of that milestone.
 
 No two orchestrators that run at the same time have the same slug. The reason: two sessions with one name break each
-`SendMessage` to that name, as [A handoff](dev/operator-start.md#a-handoff) says. The kind `pi` has no tool that lists
-sessions, as the column "Messages" of the seam gives it. So for a pi orchestrator, the user alone keeps the slugs apart.
+`SendMessage` to that name, as [Two sessions with one name](sessions.md#two-sessions-with-one-name) says. The kind `pi`
+has no tool that lists sessions, as the column "Messages" of the seam gives it. So for a pi orchestrator, the user alone
+keeps the slugs apart.
 
 ### The steps of the user
 

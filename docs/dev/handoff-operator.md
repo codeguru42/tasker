@@ -170,15 +170,7 @@ The new operator starts in these steps:
    `operator`. The label of the tab and the session name are `operator-<slug>`. The first message is the prompt of the
    handoff file. Step 2 of "Start a session" runs `herdr tab create` with no `--no-focus`, so that the user sees the new
    operator.
-2. The herdr agent name is `operator-<slug>-<time>`. `<time>` is the time part of the name of the handoff file, for
-   example `1530`. So the command of step 3 of "Start a session" is:
-
-   ```sh
-   herdr agent start operator-<slug>-<time> --kind <kind> --pane <pane id> -- -n operator-<slug> <model flags> "<prompt>"
-   ```
-
-   The error text of that step names the herdr agent name. Under `pi`, the `<model flags>` are the pi cells of
-   [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind).
+2. [The herdr agent name of a new operator](../sessions.md#the-herdr-agent-name-of-a-new-operator) gives this step.
 
 3. The old operator makes sure that the new operator runs. It runs `herdr pane read <pane id>` with the pane id that
    step 2 of "Start a session" kept. It does not look in `ListAgents` by the name, because two sessions have the name.
@@ -233,8 +225,8 @@ the notice of the hold that step 2 of [the steps of the old operator](#the-steps
 operator. It also tells the user about each failed handoff of a sender that the handoff file names. The reason: the last
 reply of the old operator shows only in its closed tab.
 
-`herdr agent start` refuses a herdr agent name that already runs. With no suffix `-<time>`, the start of the third
-operator fails, because the second operator still runs.
+[The herdr agent name of a new operator](../sessions.md#the-herdr-agent-name-of-a-new-operator) gives the reason for the
+suffix `-<time>`.
 
 On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, a test session in tab `wB:tG` ran
 `herdr tab close "$HERDR_TAB_ID"`, and `herdr tab get wB:tG` then returned `tab_not_found`. In a first test (tab

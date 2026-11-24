@@ -133,6 +133,24 @@ The facts that follow are facts of the kind `claude`. They were measured on 2026
 - The model flag and the effort flag of [the seam of an agent kind](config.md#the-seam-of-an-agent-kind) reach the new
   session. The new session runs with the model and the effort of these flags.
 
+## The herdr agent name of a new operator
+
+This section gives step 2 of [The start of the new operator](dev/handoff-operator.md#the-start-of-the-new-operator),
+which other sessions also use.
+
+2. The herdr agent name is `operator-<slug>-<time>`. `<time>` is the time part of the name of the handoff file, for
+   example `1530`. So the command of step 3 of "Start a session" is:
+
+   ```sh
+   herdr agent start operator-<slug>-<time> --kind <kind> --pane <pane id> -- -n operator-<slug> <model flags> "<prompt>"
+   ```
+
+   The error text of that step names the herdr agent name. Under `pi`, the `<model flags>` are the pi cells of
+   [the seam of an agent kind](config.md#the-seam-of-an-agent-kind).
+
+`herdr agent start` refuses a herdr agent name that already runs. With no suffix `-<time>`, the start of the third
+operator fails, because the second operator still runs.
+
 ## The start gate of a pi session
 
 The gate applies to a pi session that the operator starts with `herdr agent start`. It makes sure that the new session
@@ -179,3 +197,19 @@ Failed, the state stays Failed.
 
 In a handoff of the operator, the old and the new operator hold the same own name, and pi allows this. Only the tie to
 the new pane id gives Done. The name alone is never Done.
+
+## Two sessions with one name
+
+This section gives a fact of [A handoff](dev/operator-start.md#a-handoff), which other sessions also use.
+
+Two sessions with one name break each `SendMessage` to that name.
+
+## A blocked session
+
+This section gives the rules for a session in `blocked`, which other sessions also use.
+
+- When an item arrives, and when the user asks, the operator runs `herdr agent list` in its shell. If the command fails,
+  [the failure rule](dev/limits.md#the-failure-rule) applies.
+- A session in `blocked` waits at a permission prompt or a question prompt in its own tab. The operator tells the user
+  the name of the session and the label of its tab.
+- The operator does not answer the prompt. Only the user answers it, in that tab.
