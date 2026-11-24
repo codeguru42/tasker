@@ -9,8 +9,8 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 2. Step 2 of [The start of a session by the user](../sessions.md#the-start-of-a-session-by-the-user) gives this step.
 
 3. The operator finds the milestone of its slug, the milestone whose title gives the slug, as
-   [docs/dev/GLOSSARY.md](GLOSSARY.md) defines the slug. To read the milestones, the operator runs
-   `gh api --paginate 'repos/codeguru42/tasker/milestones?state=all&per_page=100'`. If the read fails,
+   [docs/dev/GLOSSARY.md](GLOSSARY.md) defines the slug. To read the milestones, the operator runs the command of
+   [The read of the milestones](planner.md#the-read-of-the-milestones). If the read fails,
    [the failure rule](limits.md#the-failure-rule) applies. Then the operator creates no milestone and starts no initial
    planner.
 
@@ -103,17 +103,7 @@ The operator puts the milestone title in place of `<milestone>`. Each prompt is 
 `herdr agent start`. Under `pi`, the name comes from `-n` at the start, and the session reads it, as
 [docs/sessions.md](../sessions.md) says, before its role work. So no prompt holds a name step.
 
-The initial planner:
-
-```text
-You are the planner of <milestone>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>. This is the initial planning: the user works with you in this tab. After the start reads, read the title and the description of the milestone. Then start the drafts of its issues.
-```
-
-The follow-up planner:
-
-```text
-You are the planner of <milestone>. This is not the initial planning. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>.
-```
+[The start prompts](planner.md#the-start-prompts) gives the prompts of the initial planner and the follow-up planner.
 
 The orchestrator: the user starts it with the first prompt of a milestone scope, as
 [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says.

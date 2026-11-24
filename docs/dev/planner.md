@@ -36,9 +36,9 @@ The operator starts the follow-up planner after the initial planning.
 - The initial planner works with the user directly, as [The operator](working-with-the-user.md#the-operator) of
   working-with-the-user.md says. It sends no item to the operator.
 - After its start reads, the initial planner reads the title and the description of its milestone, with the read command
-  of step 3 of [The order of a milestone](operator-start.md#the-order-of-a-milestone). Then it starts the drafts of the
-  issues at once. The prompt names no kinds of GitHub objects to make, so the initial planner still asks the user before
-  a post, as [The order of the work](#the-order-of-the-work) says.
+  of [The read of the milestones](#the-read-of-the-milestones). Then it starts the drafts of the issues at once. The
+  prompt names no kinds of GitHub objects to make, so the initial planner still asks the user before a post, as
+  [The order of the work](#the-order-of-the-work) says.
 - When the user says that the initial planning is done, the initial planner waits for the report of each ticket subagent
   that still runs. It posts each such draft after its loops, under
   [The post of the follow-up planner](#the-post-of-the-follow-up-planner). Then it runs the rounds of
@@ -69,6 +69,28 @@ The operator starts the follow-up planner after the initial planning.
 The reason for the folder: the drafts go in `/tmp`, so they do not fill the `Documents` folder of the user, and the
 system deletes them. The limit: a reboot deletes the open drafts, and the follow-up planner then starts a new ticket
 subagent for each of them.
+
+### The read of the milestones
+
+To read the milestones, the operator runs
+`gh api --paginate 'repos/codeguru42/tasker/milestones?state=all&per_page=100'`.
+
+### The start prompts
+
+This subsection gives the prompts that the operator uses for the initial planner and the follow-up planner. The operator
+passes each prompt as the last argument of `herdr agent start`.
+
+The initial planner:
+
+```text
+You are the planner of <milestone>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>. This is the initial planning: the user works with you in this tab. After the start reads, read the title and the description of the milestone. Then start the drafts of its issues.
+```
+
+The follow-up planner:
+
+```text
+You are the planner of <milestone>. This is not the initial planning. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>.
+```
 
 ### The close duties of the follow-up planner
 
