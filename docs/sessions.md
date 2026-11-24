@@ -1,7 +1,9 @@
 # Sessions
 
-This page gives the terms that name the operator, and the steps with which a session reads its own name.
-[The glossary](dev/GLOSSARY.md) gives the other terms that the sessions use.
+This page gives the terms that name the operator, and the steps with which a session reads its own name. It also gives
+the sections "The start of a session by the user", "The start of a herdr session" with "The facts of a herdr start",
+"The herdr agent name of a new operator", "The start gate of a pi session", "Two sessions with one name" and "A blocked
+session". [The glossary](dev/GLOSSARY.md) gives the other terms that the sessions use.
 
 The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator-<slug>`. The slug of a set scope names
 only `orchestrator-<slug>`, as [The start of an orchestrator](orchestrator.md#the-start-of-an-orchestrator) says.
