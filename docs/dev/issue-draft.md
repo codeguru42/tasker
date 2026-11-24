@@ -55,13 +55,12 @@ a comment draft. Each other rule of this page holds for it as well, unless this 
 - The kind of the comment gives the rule of the draft. For the comment rule, the rule is the fourth bullet of
   [The order of the work](planner.md#the-order-of-the-work) of planner.md. For a recurrence comment, the rule is
   [A recurrence](issues.md#a-recurrence) of issues.md.
-- The source of the prompt gives the facts of the comment, each with its source. The draft states no fact that the
-  source does not give.
 - The count of [The size of a draft](#the-size-of-a-draft) runs, so the report gives the number of characters. No cut
   runs, because the size target does not bind a comment. A count over the limit of
   [The count of the body](issue-post.md#the-count-of-the-body) still stops the post.
 - [The self-check](#the-self-check), [The fresh base](#the-fresh-base) and
-  [The steps before a post](#the-steps-before-a-post) hold for each claim of the comment, as for an issue.
+  [The steps before a post](#the-steps-before-a-post) hold for each claim of the comment, as for an issue. A bullet
+  about a part that a comment does not have, for example a Docs item, has no case.
 - The report gives no blocked-by link, because a comment has none.
 
 ## The fresh base
