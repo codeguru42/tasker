@@ -320,14 +320,18 @@ more about this refusal.
 
 ## `sessions`
 
-The user starts the first operator of a slug. In a handoff of the operator, the old operator starts the new operator.
-The user starts the planner of a milestone, as [The start prompts](dev/planner.md#the-start-prompts) says. The user
-starts each orchestrator, as [The start of an orchestrator](orchestrator.md#the-start-of-an-orchestrator) says. In a
-handoff, the old orchestrator starts the new orchestrator. The key `sessions` gives the agent kind of these sessions,
-the model and the effort of each role, and the highest counts of planner subagents and task subagents that run at the
-same time. It is separate from `assistant`, because `assistant` configures the runs that tasker starts.
+The key `sessions` gives the agent kind of these sessions, the model and the effort of each role, and the highest counts
+of planner subagents and task subagents that run at the same time. It is separate from `assistant`, because `assistant`
+configures the runs that tasker starts.
 
-A session role is one of `operator`, `planner`, `orchestrator` and `question`. The session role `question` is for a
+The user starts each orchestrator by hand, as
+[The start of an orchestrator](orchestrator.md#the-start-of-an-orchestrator) says. In a handoff, the old orchestrator
+starts the new orchestrator. The user starts the initial planner by hand, as
+[The start prompts](dev/planner.md#the-start-prompts) says. The orchestrator starts each planner subagent with the
+`Agent` tool. A planner subagent is not a session of the key `sessions`, so this section names it only for its key
+`planner`. The orchestrator starts each question session, as [Start](dev/question-pane.md#start) says.
+
+A session role is one of `planner`, `orchestrator` and `question`. The session role `question` is for a
 [question session](dev/GLOSSARY.md). A question session has no role in the terms of
 [docs/dev/GLOSSARY.md](dev/GLOSSARY.md), so `question` names only a key of `models`. The agent kind is the program of a
 session, in the form that herdr names it in `herdr agent start --kind`.
@@ -342,12 +346,12 @@ The planner subagent starts the draft subagent, the review subagent and the post
 draft and post an approved issue. The orchestrator starts the write subagent to run an approved change of the metadata
 of an issue or of a user-level file, as [the actor table](dev/question-pane.md#the-actor-of-each-write-action) says.
 
-| Key                   | Type                 | Default    | Notes                                                                                                                             |
-| --------------------- | -------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `kind`                | `"claude"` or `"pi"` | `"claude"` | The agent kind of each session role and each subagent role.                                                                       |
-| `models`              | object               | `{}`       | Has the optional keys `operator`, `planner`, `orchestrator`, `question`, `issue-draft`, `issue-review`, `issue-post` and `write`. |
-| `maxPlannerSubagents` | whole number above 0 | `3`        | The highest count of planner subagents of one orchestrator that run at the same time.                                             |
-| `maxTaskSubagents`    | whole number above 0 | `3`        | The highest count of task subagents of one orchestrator that run at the same time.                                                |
+| Key                   | Type                 | Default    | Notes                                                                                                                 |
+| --------------------- | -------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| `kind`                | `"claude"` or `"pi"` | `"claude"` | The agent kind of each session role and each subagent role.                                                           |
+| `models`              | object               | `{}`       | Has the optional keys `planner`, `orchestrator`, `question`, `issue-draft`, `issue-review`, `issue-post` and `write`. |
+| `maxPlannerSubagents` | whole number above 0 | `3`        | The highest count of planner subagents of one orchestrator that run at the same time.                                 |
+| `maxTaskSubagents`    | whole number above 0 | `3`        | The highest count of task subagents of one orchestrator that run at the same time.                                    |
 
 The keys `maxPlannerSubagents` and `maxTaskSubagents` are not session roles, so `tasker model` does not set them. The
 names say what they limit: the planner subagents and the task subagents that run at the same time. The default 3 is the
@@ -362,7 +366,6 @@ Each key of `models` sets the model and the effort of one role:
 
 | Key            | What it sets                                                               |
 | -------------- | -------------------------------------------------------------------------- |
-| `operator`     | The model and the effort of an operator session.                           |
 | `planner`      | The model and the effort of the planner subagent and of a planner session. |
 | `orchestrator` | The model and the effort of an orchestrator session.                       |
 | `question`     | The model and the effort of a question session.                            |
@@ -488,6 +491,13 @@ Invalid configuration:
 
 The message of a built-in check can differ from this example. The path always names the bad key. A problem with no key
 uses `(config)` as its path.
+
+The key `repos.<key>.sessions.models.operator` does not exist. tasker reports it as
+`repos.<key>.sessions.models.operator: unrecognized key`. Then each tasker command that loads the configuration fails.
+This includes `tasker install-skills`, the last step of `npm run install:global`. To fix it, follow these steps:
+
+1. Remove the entry `operator` from `sessions.models` in the configuration file.
+2. Run `tasker install-skills`.
 
 ## Example
 

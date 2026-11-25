@@ -55,7 +55,6 @@ The orchestrator runs the tickets with the installed `tasker`, as [docs/orchestr
      },
      "sessions": {
        "models": {
-         "operator": { "model": "claude-sonnet-5-5", "effort": "medium" },
          "planner": { "model": "claude-opus-5-5", "effort": "high" },
          "orchestrator": { "model": "claude-sonnet-5-5", "effort": "medium" }
        }
