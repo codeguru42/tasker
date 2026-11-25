@@ -15,6 +15,15 @@ A round is one run of `/session-review`. A memory change, a new proposal and new
 each count as something new. A round can find a lesson that an earlier round missed, or a new fact from the answers of
 the user.
 
+A round ran only after a call of the session-review skill for it. The report of the rounds names only the rounds that
+ran, and its count of rounds is the count of the rounds that ran. It names no round that the session plans or did not
+start. This rule holds for each session that this page covers. The user and the pane owner can then trust the count.
+
+The reason: on 2026-11-21, a question session sent its report after round 1, before round 2 ran, and its report said
+that 2 rounds ran, as [The rounds before the close](question-pane.md#the-rounds-before-the-close) says. On 2026-11-22,
+in the question panes of the questions orchestrator-m31-157 and orchestrator-m31-161, a report of the rounds again named
+rounds that did not run. The user made sure of each count.
+
 Each session that this page covers does these steps for its rounds:
 
 1. Run one round.
@@ -22,7 +31,9 @@ Each session that this page covers does these steps for its rounds:
    the session give for a question to the user. Before the next round, settle with the user each waiting decision of the
    round whose wait did not end.
 3. Do steps 1 and 2 again until a round finds nothing new. After step 2 ends, start the next round at once, in the same
-   turn. Do not wait for a word of the user.
+   turn. Do not wait for a word of the user. For an orchestrator,
+   [The gate of the rounds of an orchestrator](question-pane.md#the-gate-of-the-rounds-of-an-orchestrator) holds the
+   next round and wins over this start at once.
 4. Send the report of the rounds to the target that this page gives for the session.
 
 The user asked for these steps, word for word: "Run a session review round", "Resolve all findings with the user",
@@ -77,7 +88,7 @@ A question session first gives each proposal to the user, as
 
 After the rounds, the initial planner gives the report of the rounds to the user in its own tab. An orchestrator gives
 its report of the rounds in the report that the milestone is done, a progress report in its own tab. The report gives
-how many rounds ran, what each round found, and the state of each finding.
+how many rounds ran, as the rule of a round that ran says, what each round found, and the state of each finding.
 
 The report of the rounds of an orchestrator of a set scope is a progress report in its own tab, as
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says for its last report.
