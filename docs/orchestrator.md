@@ -252,9 +252,39 @@ the orchestrator does no role work. It tells the user in its own tab, with the e
 In these steps, "stop" means: do no role work, and tell the user in your own tab. A pi orchestrator does not do steps 2
 and 3. For a pi orchestrator, the user alone keeps the slugs apart.
 
-Now take a first prompt that names a handoff file, and a step of the start checks that fails. The session after that
-step is "the failed session". This holds for the kinds `claude` and `pi`, and it holds if the old orchestrator or the
-user started the session. If the first prompt names no handoff file, the message stays as it is.
+After all these steps pass, the orchestrator lists its folders `questions/` and `proposals/`, as
+[The orchestrator folder](dev/limits.md#the-orchestrator-folder) says for the end of the start steps.
+
+If the first prompt names a handoff file, a row of `ListAgents` with the own name can be the old orchestrator. Then the
+orchestrator runs `herdr agent list` and reads each row whose `terminal_title_stripped` is the own name. Its own row is
+the row whose `pane_id` is `HERDR_PANE_ID`. Each other such row must have the `tab_id` that the handoff file gives as
+the tab id of the old orchestrator.
+
+If each other row has that tab id, the orchestrator tells the user in its own tab that the old orchestrator still runs.
+Then it goes on with step 4. If a row has another tab id, step 3 stops the orchestrator. If `HERDR_PANE_ID` is not set,
+or the handoff file gives no tab id, step 3 stops it. If `herdr agent list` fails, step 3 stops it, and it tells the
+user the command and the error.
+
+The first line of the output of `ListAgents` names the own session, as [docs/sessions.md](sessions.md) says. The rows
+after it name the other sessions. The task subagent of #961 measured steps 2 and 3 on 2026-11-19, with Claude Code
+2.1.329 and herdr 0.9.3, in one herdr workspace. It ran
+`claude -n test-dup-961 "Run ListAgents and print its output, then stop."` in two tabs with `herdr agent start`.
+`claude -n` did not refuse the second start, and both sessions ran with different session refs.
+
+Each session did not list itself in `ListAgents`. Each session listed the other session as a row with the name
+`test-dup-961`. The facts hold only with herdr as the start tool.
+
+The measure had four possible outcomes:
+
+- `claude -n` refuses the second start: the user sees the error, and no second session runs. Step 3 stays.
+- Both sessions start, and `ListAgents` lists both: step 3 stops the new orchestrator. This outcome happened.
+- Both sessions start, and `ListAgents` lists only one: step 3 cannot see the second session. The user alone then keeps
+  the slugs apart, as for pi.
+- No measure: the user alone keeps the slugs apart, as for pi, and the docs say that no one measured the case.
+
+Suppose that the first prompt names a handoff file, and a step of the start checks fails. The session after that step is
+"the failed session". This holds for the kinds `claude` and `pi`, and it holds if the old orchestrator or the user
+started the session. If the first prompt names no handoff file, the message stays as it is.
 
 The failed session does no role work. It tells the user in its own tab, with the error if one exists. The message also
 gives two more things:
@@ -304,36 +334,6 @@ The way on asks for the close of the failed session for these reasons:
 
 The way on adds no step for the new orchestrator. It does the start checks and the start after a handoff from the prompt
 of the handoff file.
-
-After these steps, the orchestrator lists its folders `questions/` and `proposals/`, as
-[The orchestrator folder](dev/limits.md#the-orchestrator-folder) says for the end of the start steps.
-
-If the first prompt names a handoff file, a row of `ListAgents` with the own name can be the old orchestrator. Then the
-orchestrator runs `herdr agent list` and reads each row whose `terminal_title_stripped` is the own name. Its own row is
-the row whose `pane_id` is `HERDR_PANE_ID`. Each other such row must have the `tab_id` that the handoff file gives as
-the tab id of the old orchestrator.
-
-If each other row has that tab id, the orchestrator tells the user in its own tab that the old orchestrator still runs.
-Then it goes on with step 4. If a row has another tab id, step 3 stops the orchestrator. If `HERDR_PANE_ID` is not set,
-or the handoff file gives no tab id, step 3 stops it. If `herdr agent list` fails, step 3 stops it, and it tells the
-user the command and the error.
-
-The first line of the output of `ListAgents` names the own session, as [docs/sessions.md](sessions.md) says. The rows
-after it name the other sessions. The task subagent of #961 measured steps 2 and 3 on 2026-11-19, with Claude Code
-2.1.329 and herdr 0.9.3, in one herdr workspace. It ran
-`claude -n test-dup-961 "Run ListAgents and print its output, then stop."` in two tabs with `herdr agent start`.
-`claude -n` did not refuse the second start, and both sessions ran with different session refs.
-
-Each session did not list itself in `ListAgents`. Each session listed the other session as a row with the name
-`test-dup-961`. The facts hold only with herdr as the start tool.
-
-The measure had four possible outcomes:
-
-- `claude -n` refuses the second start: the user sees the error, and no second session runs. Step 3 stays.
-- Both sessions start, and `ListAgents` lists both: step 3 stops the new orchestrator. This outcome happened.
-- Both sessions start, and `ListAgents` lists only one: step 3 cannot see the second session. The user alone then keeps
-  the slugs apart, as for pi.
-- No measure: the user alone keeps the slugs apart, as for pi, and the docs say that no one measured the case.
 
 ### The states of a start
 
