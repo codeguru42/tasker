@@ -25,10 +25,10 @@ name relate in this way:
 - The first operator has no herdr agent name.
 
 If `PI_SESSION_FILE` is not set, the read fails, or the name is not the expected form, the pi session does no role work.
-It tells the user in its own tab. An orchestrator can have a first prompt that names a handoff file. Then the message
-also gives the path of the handoff file and the way on, as [The start checks](orchestrator.md#the-start-checks) say.
-This holds also for the first operator. The read uses the file form of pi 1.1.0 and was measured with a bash tool.
-[docs/dev/pi-sessions.md](dev/pi-sessions.md) gives the limits.
+It tells the user in its own tab. This holds also for the first operator. An orchestrator can have a first prompt that
+names a handoff file. Then the message also gives the path of the handoff file and the way on, as
+[The start checks](orchestrator.md#the-start-checks) say. The read uses the file form of pi 1.1.0 and was measured with
+a bash tool. [docs/dev/pi-sessions.md](dev/pi-sessions.md) gives the limits.
 
 ## The start of a session by the user
 
