@@ -111,8 +111,9 @@ starts with step 3. Each step has one purpose and its own number, so that other 
    [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. Before the send, wait as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then, for an orchestrator of the kind
    `claude`, do the steps of [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Before the
-   write, wait until no subagent runs and no planning request waits, as that subsection says. Then write the handoff
-   file in your own handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
+   write, wait until no subagent runs and no planning request waits, as
+   [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then write the handoff file in your own
+   handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
 
    Before the write, read the data root and run `mkdir -p` on the folder, as
    [The orchestrator folder](limits.md#the-orchestrator-folder) says. If one of these calls or the write fails, follow
@@ -144,12 +145,12 @@ handoff file. In both cases, the new orchestrator never gets it.
 - The start of the handoff is the start of step 3 of
   [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator).
 - A subagent of the old orchestrator is a task subagent for a whole ticket or for one task change, a planner subagent, a
-  write subagent, an opener subagent, a reuse subagent or an ad hoc subagent. An ad hoc subagent is a subagent that the
-  old orchestrator starts for one job that no kind covers.
+  write subagent, an opener subagent, a reuse subagent or an ad hoc subagent. Each other subagent is an ad hoc subagent.
 - A subagent has one of three states: not started, running or ended. A message that starts an ended subagent again makes
-  it running.
-- A report is the `SubagentHandback` text of a subagent, the `SendMessage` after a refused `SubagentHandback`, or an
-  interim report of [the answer-wait rule](limits.md#the-answer-wait-rule).
+  it running. The wait waits for nothing for a subagent that did not start.
+- A report is the `SubagentHandback` text of a subagent, or an interim report of
+  [the answer-wait rule](limits.md#the-answer-wait-rule). After a refused `SubagentHandback` call, the message of the
+  subagent with the same report is the report.
 - The wait notification and the end notification are the notifications that
   [The wait for a report](planner.md#the-wait-for-a-report) defines. Neither is a report.
 - The send is the send of each fact and each lesson, as the paragraph that starts "An old orchestrator of the kind
@@ -163,7 +164,7 @@ After the go, the old orchestrator waits until no subagent of its own runs. Then
 subagent that is not ended, also a subagent that starts during the wait.
 
 From the go to the end of the handoff, the old orchestrator starts no new ticket. This is the only new ban. The reason:
-a new ticket starts a task subagent, and that subagent delays the wait.
+a new ticket starts a new task subagent, so the wait has no end.
 
 The wait for each task in flight is a part of this wait. Its rules stay, as step 2 of
 [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) and
@@ -176,23 +177,34 @@ with no report.
 Each rule for a due handoff still holds. Each other event gets its usual steps. A subagent that starts during the wait
 joins the wait. These are examples:
 
-- A write subagent that starts for a decision message of a pane
-- An opener subagent or a reuse subagent that starts for a pane
-- A task subagent for one task change
+- A write subagent of a decision message
+- An opener subagent of a pane that a word of the user starts
+- An ended subagent that a message starts again
 
-The rules for an open pane stay, also the pane handoff of the stopping-point case. The new wait starts no subagent. It
-adds no ban on a pane and no ban on a subagent.
+The rules that limit the start of a handoff, of a ticket and of a pane stay:
 
-The gates of the old orchestrator stay:
+- Until the end of a handoff, the old session starts no new work and no new ticket, as
+  [The end of a handoff](handoff.md#the-end-of-a-handoff) says.
+- While a handoff of the orchestrator is due or runs, no question pane gets an automatic start or a reuse. A word of the
+  user still starts a pane, as [Start](question-pane.md#start) says.
+- While a pane is open or a write subagent runs, the orchestrator starts no handoff, as
+  [Close and continue](question-pane.md#close-and-continue) says. The stopping-point case is the exception for an open
+  pane.
 
-- The bar of the fallback of step 4
-- The wait for each open pane before step 3
-- The wait for each write subagent before step 3
+The ban on a new ticket from the go is the only new ban. The wait adds no ban on the start of a pane or of a subagent.
+The wait starts no subagent. A subagent that a rule starts during the wait or during the handoff joins the wait.
+
+The rules for an open pane stay, also the pane handoff of the stopping-point case.
 
 ### The wait before the handoff file
 
-These subagents can start after the start of the handoff: a planner subagent, a write subagent, an opener subagent, a
-reuse subagent, a task subagent for one task change and an ad hoc subagent.
+These subagents can start after the start of the handoff:
+
+- The planner subagent of the send
+- The planner subagents of the planner wait
+- A write subagent of a decision message
+- An opener subagent of a pane that a word of the user starts
+- An ended subagent that a message or a late report starts again
 
 Before the send, each subagent that is not a planner subagent and that started before the send must end. After the send,
 the planner wait waits for each planner subagent, also the planner subagent of the send.
@@ -201,32 +213,44 @@ A fact or a lesson in a report after the send becomes a planning request that wa
 subagent for it, or runs again for it.
 
 Before the write of the handoff file, wait until no subagent runs and no planning request waits. The planner wait keeps
-its rule. The exception of [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
+its rule. This section copies none of its steps. The exception of
+[The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
 
 ### The end of the wait for one subagent
 
-A report ends the wait for one subagent. A wait notification does not end it.
+The old orchestrator judges the end of a subagent by its report and by the kinds of notification. No one tested the
+kinds of notification for a subagent of an orchestrator.
 
-An end notification ends the wait. For the end, the no-report rule of the kind of subagent holds, and so does its
-failure rule. For a task subagent for one task change and for an ad hoc subagent, tell the user the name of the subagent
-in your own tab. Say that the result is not known. Start nothing in its place.
+The report of a subagent ends the wait for it. A wait notification does not end it. This holds for each subagent outside
+the wait for a task in flight. For a task subagent of a task in flight, step 2 and
+[The stopping-point case](#the-stopping-point-case) give the ends of the wait. There, an interim report ends the wait
+only as [The wait and the reports](#the-wait-and-the-reports) says.
 
-An interim report ends the wait for a subagent outside the wait for a task in flight.
+An interim report ends the wait for a task subagent outside the wait for a task in flight. An example is a task subagent
+for one task change. With the interim report, the task subagent ended its turn. It runs nothing until a message starts
+it again.
 
-If no report and no end notification comes, only a word of the user ends the wait. Then the old orchestrator does these
-steps:
+An end notification with no report ends the wait. Then the rule of that kind for an end with no report holds, and the
+failure rule holds. A task subagent for one task change and an ad hoc subagent have no such rule. For such a subagent,
+the old orchestrator tells the user the name of the subagent in its own tab. It says that the result is not known. It
+starts no new subagent in its place.
 
-- It tells the user that the subagent can still run a command.
-- It treats the result of the subagent as not known.
-- It starts nothing in place of the subagent.
-- It goes on with the wait for each other subagent.
+A subagent can send no report and get no end notification. Then only a word of the user ends the wait for it. This holds
+for each subagent outside the wait for a task in flight, a task subagent included. Examples are a task subagent for one
+task change, a task subagent of a deferred ticket, a planner subagent and an ad hoc subagent. A task subagent of a task
+in flight keeps the rules of [The end with no report](#the-end-with-no-report) and of step 2. At the word of the user:
 
-The known limit: the subagent can still change files or send a message after the end of the wait.
+- The old orchestrator tells the user in its own tab the name of the subagent. It says that the result is not known and
+  that the subagent can still run.
+- The wait for that subagent ends, and the handoff goes on.
+- The old orchestrator starts no new subagent in its place before the write of the handoff file. The reason: the
+  subagent can still run.
+- A report of that subagent before the write gets the steps of
+  [The reports during the handoff](#the-reports-during-the-handoff). A report after the write reaches only the tab of
+  the old orchestrator. This is a known limit.
 
-For a planner subagent whose wait the user ended, the steps of
-[The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) hold.
-
-No one tested the kinds of notification for a subagent of an orchestrator.
+For a planner subagent whose wait a word of the user ended,
+[The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) gives the other steps.
 
 ### The reports during the handoff
 
