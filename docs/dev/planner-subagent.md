@@ -26,12 +26,9 @@ as the work needs. An issue subagent on this page is one of these subagents. A p
 
 ## The kind of the orchestrator
 
-Only an orchestrator of the kind `claude` starts a planner subagent. An orchestrator of another kind sends each planning
-request to `planner-<slug>`, as the planner bullet of
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. For the kind `pi`, the reason
-is that the measured pi sessions had only the tool `bash`. See
-[The seam of an agent kind](../config.md#the-seam-of-an-agent-kind). A Codex orchestrator has native subagent tools, but
-no one measured its start of a planner subagent.
+Only an orchestrator of the kind `claude` starts a planner subagent. For the kind `pi`, the reason is that the measured
+pi sessions had only the tool `bash`. See [The seam of an agent kind](../config.md#the-seam-of-an-agent-kind). A Codex
+orchestrator has native subagent tools, but no one measured its start of a planner subagent.
 
 ## The planning requests
 
@@ -977,8 +974,7 @@ start for a subagent of the three kinds. The planner subagent handles a late rep
 ### The other sessions
 
 An orchestrator of a kind other than `claude` starts no planner subagent, as "The kind of the orchestrator" says. So a
-Codex orchestrator and a pi orchestrator start no subagent of the three kinds. Their planning requests go to
-`planner-<slug>`.
+Codex orchestrator and a pi orchestrator start no subagent of the three kinds.
 
 The follow-up planner, the initial planner and an ad hoc planner keep the ticket subagent, the review agent and the
 review loop of today. After loop 3, they post the draft as "The review loop of a draft" says today.

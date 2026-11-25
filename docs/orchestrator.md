@@ -29,10 +29,10 @@ same split: a progress report shows in the tab, and a question goes to the pane.
 answer of the question that the rule waits for ends the wait. The orchestrator gives each lesson, each finding of a
 session review, each recurrence and each proposed issue to its planner. The planner bullet of
 [The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the steps. For an
-orchestrator of the kind `claude`, the planner is a new [planner subagent](dev/planner-subagent.md) for each one. For
-another kind, the planner is `planner-<slug>` of its own slug. An orchestrator sends a peer only the seven kinds of
-[The kinds of peer message](#the-kinds-of-peer-message). [The request rule](#the-request-rule) gives the seventh kind,
-the request for a decision of the user that needs a peer to act.
+orchestrator of the kind `claude`, the planner is a new [planner subagent](dev/planner-subagent.md) for each one. An
+orchestrator sends a peer only the seven kinds of [The kinds of peer message](#the-kinds-of-peer-message).
+[The request rule](#the-request-rule) gives the seventh kind, the request for a decision of the user that needs a peer
+to act.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
 not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).
