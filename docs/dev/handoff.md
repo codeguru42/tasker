@@ -112,8 +112,9 @@ to the measured facts, because its entries give the facts of the stopping-point 
     step.
   - The prompt holds only the facts of this handoff, for example the path of the file, the session name and the first
     free item id. The first message of the new session always names the path of the handoff file.
-  - If the old session is not the operator and not an orchestrator, the prompt also names the operator of the old
-    session by its name only. The prompt of an orchestrator names no operator.
+  - If the old session is not the operator, not an orchestrator and not the initial planner, the prompt also names the
+    operator of the old session by its name only. The prompt of an orchestrator or of the initial planner names no
+    operator.
   - The first step of the prompt is the prompt read, in these words:
     `Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and <role index> as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and <role index> with git show origin/main:<path>.`
     The old session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`.
@@ -278,14 +279,14 @@ as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session does
 The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. Under
 `pi`, the new session gets this name from `-n`, as [The read of the own name](../sessions.md#the-read-of-the-own-name)
 says. [docs/dev/GLOSSARY.md](GLOSSARY.md) gives the form of the own name of a session. The old session puts this name in
-the prompt of the handoff file, and in the item when it sends one. If the old session is not an orchestrator, the prompt
-also names [the operator of the old session](../operator.md) as the operator that the new session works with. The prompt
-of an orchestrator names no operator.
+the prompt of the handoff file, and in the item when it sends one. If the old session is not an orchestrator and not the
+initial planner, the prompt also names [the operator of the old session](../operator.md) as the operator that the new
+session works with. The prompt of an orchestrator or of the initial planner names no operator.
 
-An old session that is not an orchestrator or the operator sends the path of the file to [its operator](../operator.md)
-as an item, as [The form of an item](items.md#the-form-of-an-item) says. The operator gives the path of the file to the
-user. When the user asks for the start, the operator starts the new session with the prompt of the file as its first
-message, as [Start a session](operator-start.md#start-a-session), with
+An old session that is not an orchestrator, not the initial planner and not the operator sends the path of the file to
+[its operator](../operator.md) as an item, as [The form of an item](items.md#the-form-of-an-item) says. The operator
+gives the path of the file to the user. When the user asks for the start, the operator starts the new session with the
+prompt of the file as its first message, as [Start a session](operator-start.md#start-a-session), with
 [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) and
 [The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session) say. The operator does not stop the old
 session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and
@@ -294,6 +295,14 @@ session. The steps of the role page, [The end of a handoff](#the-end-of-a-handof
 When the old session is an orchestrator, it sends no item. It gives the path of the file and the prompt to the user as a
 progress report of [The operator](working-with-the-user.md#the-operator), in its own tab. The user starts the new
 session in a new tab, with the prompt of the file as its first message. The old orchestrator keeps running. The steps of
+the role page, [The end of a handoff](#the-end-of-a-handoff) and [The stop and the start](#the-stop-and-the-start) do
+not apply.
+
+When the old session is the initial planner, it sends no item. It gives the path of the file and the prompt to the user
+in its own tab. The prompt names no operator. The user starts the new session with the start steps of the role of the
+new session. The user takes the name of the new session from the handoff file, and the prompt of the file is the first
+prompt. For a planner, the steps are [The start prompts](planner.md#the-start-prompts). For an orchestrator, they are
+[The steps of the user](../orchestrator.md#the-steps-of-the-user). The old initial planner keeps running. The steps of
 the role page, [The end of a handoff](#the-end-of-a-handoff) and [The stop and the start](#the-stop-and-the-start) do
 not apply.
 
