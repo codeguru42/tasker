@@ -35,8 +35,8 @@ rule.
 ## The result of a subagent
 
 - A subagent returns its result to the session that started it, with the tool `SubagentHandback`.
-- A subagent asks the user nothing and sends no item and no message to the user. If a step needs a decision of the user,
-  the subagent ends, and its result gives the question.
+- A subagent asks the user nothing and sends no message to the user. If a step needs a decision of the user, the
+  subagent ends, and its result gives the question.
 - A rule of this page can say that the planner tells, asks or reports to the user, or gives a fact in the chat with the
   user. For a subagent, the fact or the question goes in its result. An example is the bullet of
   [The blocked-by links](#the-blocked-by-links) that starts "The planner gives the reasons for the links in the chat
@@ -286,15 +286,12 @@ planner links two issues when one issue needs", which names the planner.
   code.
 - A docs-only issue goes in the milestone that it is about while that milestone is open, unless its orchestrator ran and
   then stopped. If the milestone is closed, or its orchestrator ran and then stopped, the issue goes in the milestone
-  "Docs" (number 21). An issue about the operator goes in "M22 — Operator" while that milestone is open. This also holds
-  when the planner of another milestone plans and posts the issue, for example planner-docs. While "M22 — Operator" is
-  open, the rule for an issue about the operator wins over the case "its orchestrator ran and then stopped". If a
-  docs-only issue is about no milestone, it also goes in "Docs". For example, on 2026-10-25, the user moved #436 from
-  the open milestone "M21 — Release" to "Docs", because orchestrator-m21 ran and then stopped. Also on 2026-10-25,
-  planner-docs posted #490 and #493 in "M22 — Operator". The reason of the user was: "Note: issues involving operators
-  belong in M22, not docs. They can be planned here, but they go to that milestone." In the plan and in the landing, the
-  tickets of "Docs" have no order with the numbered milestones. The start order of the tickets that can start comes from
-  [the priority rule](pick-the-tickets.md#pick-the-tickets), and a milestone does not change it.
+  "Docs" (number 21). If a docs-only issue is about no milestone, it also goes in "Docs". For example, on 2026-10-25,
+  the user moved #436 from the open milestone "M21 — Release" to "Docs", because orchestrator-m21 ran and then stopped.
+  Also on 2026-10-25, planner-docs posted #490 and #493 in "M22 — Operator". The reason of the user was: "Note: issues
+  involving operators belong in M22, not docs. They can be planned here, but they go to that milestone." In the plan and
+  in the landing, the tickets of "Docs" have no order with the numbered milestones. The start order of the tickets that
+  can start comes from [the priority rule](pick-the-tickets.md#pick-the-tickets), and a milestone does not change it.
 - GitHub holds the state of each issue and each piece of pending work. If the planner defers a fix, it writes the fix as
   an issue in its later milestone at once.
 

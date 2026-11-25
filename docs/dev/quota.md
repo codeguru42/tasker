@@ -457,8 +457,8 @@ orchestrator frees it, as [The delay of each task subagent](#the-delay-of-each-t
 
 A task of a timed stop leaves the pi wait at its resume message from the case of a pi stop in
 [When the job fires](#when-the-job-fires). A task of a full stop leaves the pi wait on
-[the word of the user](operator-conversations.md#the-word-of-the-user). The word of the user can also end the pi wait of
-a task of a timed stop before its reset. A task also leaves the pi wait in each case of
+[the word of the user](working-with-the-user.md#reports-and-questions-of-a-session). The word of the user can also end
+the pi wait of a task of a timed stop before its reset. A task also leaves the pi wait in each case of
 [Delete the job](#delete-the-job). After the last task leaves the pi wait, the pi wait ends. Then the orchestrator does
 the steps of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) again.
 

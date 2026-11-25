@@ -38,8 +38,6 @@ Each send of the docs to the planner of the orchestrator is a planning request. 
   rule that sends work to the planner as that bullet says.
 - [The capture and the next step](quota.md#the-capture-and-the-next-step) of quota.md.
 - The paragraph of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) about an old orchestrator.
-- Step 1 of [The steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), for the findings of the
-  orchestrator.
 - Each relay, request, open finding, accepted proposal and recurrence that a
   [question pane](question-pane.md#a-question-pane) sends to the planner of the orchestrator.
 
@@ -47,8 +45,8 @@ For each planning request, the orchestrator of the kind `claude` starts a planne
 
 ## The start
 
-Only the orchestrator starts a planner subagent. A task subagent, a question session, an operator, a planner and a
-planner subagent start none.
+Only the orchestrator starts a planner subagent. A task subagent, a question session, a planner and a planner subagent
+start none.
 
 The orchestrator starts a new planner subagent for each planning request. It sends no planning request to a planner
 subagent that runs or that ended. The reason: a message to an ended subagent starts it again, as
@@ -253,12 +251,11 @@ more questions, the prompt gives each question with its answer and source, as
 
 ## The result
 
-The planner subagent asks the user nothing and tells the user nothing. It sends no item and no message to an operator.
-This rule wins over each kept rule that sends a question of the planner to an operator.
+The planner subagent asks the user nothing and tells the user nothing.
 
 The planner subagent returns one result to the orchestrator that started it, with `SubagentHandback`. It reports as a
 task subagent reports to the orchestrator. A kept rule can say that the planner tells, asks or reports to the user, or
-that it sends an item. For the planner subagent, the fact or the question goes in its result. An example is the report
+that it sends a message. For the planner subagent, the fact or the question goes in its result. An example is the report
 after each post or drop of [The post of a draft](planner.md#the-post-of-a-draft).
 
 The result names each complete post. For a draft that waits for a decision of the user, the result gives the path of the
@@ -574,10 +571,10 @@ The planner subagent keeps these rules:
 The planner subagent changes these rules:
 
 1. The source of the work. The planner subagent takes only the planning request of its prompt.
-2. Each report, question, item and draft for the user goes in the result, as [The result](#the-result) says. One such
-   place is the third paragraph of [The state of the user](planner.md#the-state-of-the-user). Another is the paragraph
-   of [The escape hatch](planner.md#the-escape-hatch) that starts "For a draft that waits for such a decision". Others
-   are the report after each post or drop in The post of a draft. The bullets of
+2. Each report, question and draft for the user goes in the result, as [The result](#the-result) says. One such place is
+   the third paragraph of [The state of the user](planner.md#the-state-of-the-user). Another is the paragraph of
+   [The escape hatch](planner.md#the-escape-hatch) that starts "For a draft that waits for such a decision". Others are
+   the report after each post or drop in The post of a draft. The bullets of
    [The blocked-by links](issue-subagents.md#the-blocked-by-links) that name the chat with the user are also such
    places.
 3. The names. The names of a ticket subagent and of a review agent in The ticket subagent do not hold for the planner

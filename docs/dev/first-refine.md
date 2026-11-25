@@ -682,7 +682,7 @@ orchestrator.
   dismissal says that the move breaks the pointer. On #488 (2026-10-25), the end of the hint that starts "The agent of a
   stacked task runs" kept the pointer "both cases" true. Review 1 asked to move the text, and the task subagent
   dismissed the finding.
-- A doc can give the lines of an item in order with "Then" bullets. Before a ticket adds a rule to such a list, the
+- A doc can give the lines of a message in order with "Then" bullets. Before a ticket adds a rule to such a list, the
   first refine asks the plan to keep each new rule out of the middle of that order, for example after the last line of
   the order, as #468 did. On #468 (2026-10-25), the diff read caught new bullets in the middle of "The form of an item"
   of `docs/dev/operator-items.md`, and review 1 did not.
@@ -1348,9 +1348,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule changes how a task subagent ends its turn, ask the plan to list each place on the page where the task
   subagent ends its turn or gives a report. Also ask for each place where the orchestrator reads the last report. On
   #166, each fix drew a new case, and the work took 4 loops.
-- If a ticket changes how a session numbers the questions of an [item](../sessions.md), ask the plan in the first refine
-  for a list. The list names each place that reads those numbers or an answer to them. Examples of such a place are the
-  send and the close of an item in [The answer](items.md#the-answer) of `docs/dev/items.md`. The plan searches the
+- If a ticket changes how a session numbers the questions of a message, ask the plan in the first refine for a list. The
+  list names each place that reads those numbers or an answer to them. Examples of such a place are the send of an
+  answer and the close of a question in [The answer](items.md#the-answer) of `docs/dev/items.md`. The plan searches the
   changed pages, and each page that links to a changed section, with `git grep`. The search follows
   [the doc-search rule](rules.md#docs). For each place, the plan says whether it changes or why it stays. If a place
   stays, the plan names each old gap of that place that stays outside the issue. See
@@ -1496,10 +1496,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   (2026-10-25), plan v1 searched the files on disk, and the fix cost a design-gap answer in a stop before
   `tasker approve`. The hint gives no exit codes of the example commands. They are out of scope.
 - If a ticket adds a new kind of handoff, for example [a topic handoff](handoff.md#a-topic-handoff), ask the plan in the
-  first refine for four things. First, the plan gives the session name of the new session. Second, it names the operator
-  that the new session works with. Third, it names the session that starts the new session. Fourth, it covers the case
-  where the old session is the operator. On #438 (2026-10-25), plan v1 left open who starts the new session, and review
-  1 found the other three gaps.
+  first refine for two things. First, the plan gives the session name of the new session. Second, it names the session
+  that starts the new session. On #438 (2026-10-25), plan v1 left open who starts the new session, and review 1 found
+  the other three gaps.
 
 ## A ticket that moves or trims a doc
 

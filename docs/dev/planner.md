@@ -25,14 +25,12 @@ A blocked-by link is the GitHub link that says that one issue waits for another 
 ## The start of the initial planner
 
 The planner is one role. The user starts the initial planner by hand, as [The start prompts](#the-start-prompts) says.
-The operator starts no planner session.
 
 The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab.
 
 - The initial planner works with the user directly, as
   [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) of
-  working-with-the-user.md says. It tells and asks the user in its own tab. It sends no message to an operator. This
-  rule wins over each rule of the docs that sends a message of the initial planner to the operator.
+  working-with-the-user.md says. It tells and asks the user in its own tab.
 - After its start reads, the initial planner reads the title and the description of its milestone, with the read command
   of [The read of the milestones](#the-read-of-the-milestones). Then it starts the drafts of the issues at once. The
   prompt names no kinds of GitHub objects to make, so the initial planner still asks the user before a post, as
@@ -54,7 +52,7 @@ The initial planner is the planner that writes the first issues of a milestone w
   - (c) The user closes the tab.
 - The ticket subagent of each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`.
 - For a draft that waits for a decision of the user, [The escape hatch](#the-escape-hatch) says what the answer of the
-  item does.
+  user does.
 
 The reason for the folder: the drafts go in `/tmp`, so they do not fill the `Documents` folder of the user, and the
 system deletes them. The limit: a reboot deletes the open drafts, and the planner then starts a new ticket subagent for
@@ -62,7 +60,7 @@ each of them.
 
 ### The read of the milestones
 
-To read the milestones, the operator runs
+To read the milestones, the planner runs
 `gh api --paginate 'repos/codeguru42/tasker/milestones?state=all&per_page=100'`.
 
 ### The start prompts
@@ -538,9 +536,8 @@ When a draft needs one of these decisions, each planner asks the user before the
   feature or the behavior change is in the source of the draft, the draft needs no such decision. The source is a
   request of the user or the description of a milestone that the user approved.
 
-  A request that another session passes on with the words of the user is a request of the user. An example is a request
-  through the operator. A lesson or proposed issue from another session, without those words, does not supply such a
-  request.
+  A request that another session passes on with the words of the user is a request of the user. A lesson or proposed
+  issue from another session, without those words, does not supply such a request.
 
 - A choice between two or more designs, where each one has a real cost. A choice of the place or words of a doc change
   is a choice of the implementation. The ticket plan makes it.

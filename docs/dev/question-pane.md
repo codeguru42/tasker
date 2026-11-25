@@ -5,15 +5,14 @@ The orchestrator reads it as a start doc, as [docs/orchestrator.md](../orchestra
 it before its first reply, as [The question session](#the-question-session) says. The reason for this page: on
 2026-11-13, the user said "pull out the rules for the question pane from the rules for the operator into its own doc".
 
-The orchestrator is the only top-level role of this page. No session sends an open question to an operator, and no
-session gives an answer of an operator.
+The orchestrator is the only top-level role of this page.
 
 ## A question pane
 
 ### Terms
 
 A [question pane](#a-question-pane) is a herdr pane that an opener subagent opens next to the pane of its pane owner. It
-holds one [open question](items.md#the-terms-of-the-questions) at a time, even when questions belong to one item or
+holds one [open question](items.md#the-terms-of-the-questions) at a time, even when questions belong to one message or
 concern one action. After a reuse, it holds the next open question.
 
 The rows of the opener subagent, the reuse subagent and the write subagent in [the table](permissions.md#the-table) give
@@ -186,23 +185,23 @@ comment and a measure. The sender does that step.
 
 These kinds are requests, not write actions: a change of the title or the body of an issue, a comment on an issue, a
 change of a blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. A change of the text
-of an issue and a comment count as requests only when the item of the sender did not propose them. A step that the item
-proposes stays a step of the sender. [The actor of each write action](#the-actor-of-each-write-action) gives the actor
-of each kind and of each request.
+of an issue and a comment count as requests only when the message of the sender did not propose them. A step that the
+message proposes stays a step of the sender. [The actor of each write action](#the-actor-of-each-write-action) gives the
+actor of each kind and of each request.
 
 The metadata of an issue is its milestone, its labels, its state (open or closed) and the column of its card on the
 project board. The blocked-by links and the field `Priority` are not metadata in these rules.
 
 A metadata request is a set of words of the user in a question pane. The words ask for a change of the metadata of one
-or more issues. They name the issue and the new value, for example "move #12 to M31" or "close #40". The item of the
+or more issues. They name the issue and the new value, for example "move #12 to M31" or "close #40". The message of the
 sender did not propose the change. A question, a maybe or a thought is not a metadata request, for example "should we
 move #12 to M31?" or "maybe close #40". Words that only let the sender decide are not a metadata request.
 
-The question session judges whether the item proposed the change. This judgment is open on purpose. If the session is
-not sure whether the item proposed the change, it treats the words as a metadata request. It also adds its guess that
-they can be a choice of the item. The confirm question of [Send a decision](#send-a-decision) then covers that guess, as
-it does for each guess. If the session is not sure that the words ask for a change, it treats them as a discussion and
-sends nothing.
+The question session judges whether the message proposed the change. This judgment is open on purpose. If the session is
+not sure whether the message proposed the change, it treats the words as a metadata request. It also adds its guess that
+they can be a choice of the message. The confirm question of [Send a decision](#send-a-decision) then covers that guess,
+as it does for each guess. If the session is not sure that the words ask for a change, it treats them as a discussion
+and sends nothing.
 
 A metadata request covers only a change of the metadata of an issue. It covers no change of a milestone itself, for
 example its description, its hold record or its close. It covers no change of the title, the body or a comment of an
@@ -213,7 +212,7 @@ of the issue, as the "Future" bullet of [The blocked-by links](issue-subagents.m
 blocked-by link is not metadata, so no new metadata request can undo that removal.
 
 A metadata request is a write action, not a request of the paragraph that starts "These kinds are requests". A metadata
-change that the item of the sender proposes is a proposed step of the sender, not a metadata request.
+change that the message of the sender proposes is a proposed step of the sender, not a metadata request.
 
 A look-first word is a word of the user that asks to see or to approve the command of a metadata request before it runs.
 Examples are "show me the command first", "ask me before you do it" and "let me approve it". The question session judges
@@ -242,7 +241,7 @@ not propose these issues. Such a request is about the question of the pane. A re
 request outside the question. A request for a new issue is not a write action.
 
 A title or body request is words of the user in a question pane. The words ask for a change of the title or the body of
-an issue. The item of the sender did not propose the change. A title or body request takes the form and the path of a
+an issue. The message of the sender did not propose the change. A title or body request takes the form and the path of a
 request for a new issue. The issue reading is the reading of the question session that names the issue of the words. The
 issue reading is a guess. It goes through the confirm question of [Send a decision](#send-a-decision), as each other
 guess does.
@@ -1112,7 +1111,7 @@ and the body, as [Before a post](issues.md#before-a-post) gives the read. It kee
 message gives the exact text that the user approved and the start hash of that read. The question session runs the
 self-check of Before a post over the text that it shows, with no file.
 
-These rules cover only a change or a comment that the item did not propose. A requested change of the draft of the
+These rules cover only a change or a comment that the message did not propose. A requested change of the draft of the
 sender stays with the sender.
 
 The decision message also gives each [request for a new issue](#terms), with the words of the user word for word. The
@@ -1192,21 +1191,21 @@ order of the actors says.
 
 Each kind of write or request of [Terms](#terms) has one actor.
 
-| Kind of write or request                                                    | Actor                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A new issue                                                                 | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
-| A change of the title or the body of an issue that the item did not propose | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
-| A comment on an issue that the item did not propose                         | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
-| A change of a blocked-by link or of the field `Priority`                    | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
-| A change of the metadata of an issue                                        | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| A write of a user-level file                                                | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| A change of a tracked file of the repo                                      | The planner of the orchestrator, as a request for a new issue                                                                                                                                                                                                                                                                                                                                                                                      |
-| A permission rule of an actor in `$HOME/.claude/settings.json`              | The planner of the orchestrator, as a request for a new issue. No write subagent starts. See [A change of the rules](permissions.md#a-change-of-the-rules)                                                                                                                                                                                                                                                                                         |
-| A `tasker` command, also `tasker model`                                     | A read-only command: the orchestrator. A task change: the task subagent of the task, after the orchestrator sends it. A task change of a task of a peer goes to the peer as a request of [the request rule](../orchestrator.md#the-request-rule). `tasker model` with a new model or `--effort`: the orchestrator, only on the words of the settled message. See [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) |
-| A message to another session                                                | The orchestrator. A message to a peer is a request of [the request rule](../orchestrator.md#the-request-rule)                                                                                                                                                                                                                                                                                                                                      |
-| A `herdr` command                                                           | The orchestrator                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| A git write                                                                 | No actor. The fetch and the pull of the doc-read rule are not write actions.                                                                                                                                                                                                                                                                                                                                                                       |
-| Each other write                                                            | No actor                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Kind of write or request                                                       | Actor                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A new issue                                                                    | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A change of the title or the body of an issue that the message did not propose | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A comment on an issue that the message did not propose                         | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A change of a blocked-by link or of the field `Priority`                       | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A change of the metadata of an issue                                           | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| A write of a user-level file                                                   | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| A change of a tracked file of the repo                                         | The planner of the orchestrator, as a request for a new issue                                                                                                                                                                                                                                                                                                                                                                                      |
+| A permission rule of an actor in `$HOME/.claude/settings.json`                 | The planner of the orchestrator, as a request for a new issue. No write subagent starts. See [A change of the rules](permissions.md#a-change-of-the-rules)                                                                                                                                                                                                                                                                                         |
+| A `tasker` command, also `tasker model`                                        | A read-only command: the orchestrator. A task change: the task subagent of the task, after the orchestrator sends it. A task change of a task of a peer goes to the peer as a request of [the request rule](../orchestrator.md#the-request-rule). `tasker model` with a new model or `--effort`: the orchestrator, only on the words of the settled message. See [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) |
+| A message to another session                                                   | The orchestrator. A message to a peer is a request of [the request rule](../orchestrator.md#the-request-rule)                                                                                                                                                                                                                                                                                                                                      |
+| A `herdr` command                                                              | The orchestrator                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| A git write                                                                    | No actor. The fetch and the pull of the doc-read rule are not write actions.                                                                                                                                                                                                                                                                                                                                                                       |
+| Each other write                                                               | No actor                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 The order rule below covers only the rows with the write subagent or the orchestrator as the actor. The send of a task
 change is an action of the orchestrator. The next actor starts only after the report of the task subagent.
@@ -1711,16 +1710,8 @@ A step of a reuse can fail or can find a session that is not ready. Then the out
 - A message for an earlier question of the pane arrives after the context clear, for example a late decision message.
   Then the pane owner refuses it, as [The pane owner handles a decision](#the-pane-owner-handles-a-decision) says.
 
-This pane close has no tab-list entry, stop message or [Stop a session](operator-start.md#stop-a-session) procedure. Its
-rounds of `/session-review` are the rounds of [The rounds before the close](#the-rounds-before-the-close). For a
-question pane, this section wins over the sentence "The operator stops a session only on a request of the user" of
-[Stop a session](operator-start.md#stop-a-session). The word of the user that starts the pane counts as that request.
-For a pane of an automatic start, the rule of the user in the reason of [Start](#start) counts as that request. A
-context clear is no stop of [Stop a session](operator-start.md#stop-a-session), and the same word counts as the request
-for each context clear of that pane.
-
-The close of a question pane closes a pane, not a tab. So the sentence of [the operator page](../operator.md) that
-starts "The tab list is the list of the tabs" does not limit it.
+This pane close has no stop message. Its rounds of `/session-review` are the rounds of
+[The rounds before the close](#the-rounds-before-the-close). The close of a question pane closes a pane, not a tab.
 
 If herdr reports `pane_not_found`, the pane is already gone and the pane owner proceeds. For another close failure, the
 orchestrator tells the user and stops the run until the user speaks.

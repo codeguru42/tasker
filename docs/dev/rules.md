@@ -172,7 +172,7 @@ task.
 - The short-exception rule: a tracked doc holds no short exception. A short exception is a decision of the user that
   ends soon and that makes an exception to a rule, for example "M26 lands first". A rule or a hint can still name an
   issue or a milestone as evidence or as a reason. The reason: such an exception soon becomes wrong. A short exception
-  stays in an [item](../sessions.md), in the word of the user or in an open issue that it is about. A
+  stays in a message to the user, in the word of the user or in an open issue that it is about. A
   [handoff file](handoff.md#the-items-of-a-handoff-file) carries it as a decision of the user that still applies.
 
   Whether an exception ends soon is a judgment, open on purpose. The session that drafts the doc change makes it. For a

@@ -3,8 +3,8 @@
 The readers of this page are the task subagent of a ticket, and the orchestrator for the plain-form rule, the
 orchestrator-command rule and the tool-block rule. Each other actor of [the table](permissions.md#the-table) also reads
 the tool-block rule: the planner subagent, the issue-draft, issue-review and issue-post subagents, the write subagent,
-the opener subagent, the reuse subagent and a question session. The planner and the operator also read it. The
-orchestrator also reads [A denied command](#a-denied-command).
+the opener subagent, the reuse subagent and a question session. The planner also reads it. The orchestrator also reads
+[A denied command](#a-denied-command).
 
 ## The plain-form rule
 
@@ -197,11 +197,11 @@ denied call as made. This also applies to each other report of a denial, as the 
 denial quotes" lists them.
 
 Each report of a denial quotes the exact denied call word for word, as the transcript of the session that ran the call
-holds it. A short form or a description of the call does not take its place. This also applies to an item, a later
+holds it. A short form or a description of the call does not take its place. This also applies to a message, a later
 correction of a report, a summary of past denials and a short question to the user. If a report of a denial gives no
 exact call, the session that gets the report asks the sender for the exact call. It asks before it states or changes a
-conclusion that rests on the call, for example before the operator tells the user such a conclusion. In the quote, a
-token, a key or a password becomes `[redacted]`, and on GitHub, `$HOME` replaces the path of the home folder.
+conclusion that rests on the call. In the quote, a token, a key or a password becomes `[redacted]`, and on GitHub,
+`$HOME` replaces the path of the home folder.
 
 On 2026-11-07, planner-m16 first gave a denied call to operator-m16 as "a plain comment with no guard". The exact call
 was
