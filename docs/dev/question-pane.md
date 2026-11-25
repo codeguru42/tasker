@@ -61,6 +61,9 @@ belongs to [the stopping-point case](handoff-orchestrator.md#the-stopping-point-
 pane handoff is the word `PANE-HANDOFF.` right after the header. An example is
 `QUESTION-PANE w1:p2 orchestrator-m31-7 m4: PANE-HANDOFF.`
 
+The check request and the check answer of [The check of the pane owner](#the-check-of-the-pane-owner) carry the markers
+`CHECK-REQUEST.` and `CHECK-ANSWER m<n>.`, right after the header.
+
 The pane handoff request is a message of the pane owner, not a word of the user. It goes with the herdr path and the
 header of a message of the pane owner. It has this form:
 `PANE-OWNER <owner name> <question id>: pane handoff. Send the pane handoff of docs/dev/question-pane.md with the marker PANE-HANDOFF. Send no decision message after it.`
@@ -114,6 +117,7 @@ message. Each new message gets the next number. Each kind of message of the ques
 - A request outside the question
 - A message after the close request with a word of the user about the pane or the run
 - Each report of a round and the final report
+- A check request
 
 A message whose first send failed keeps its number. A later send is a send of a message again, after its first send. A
 later send keeps the number of that message, so an ack answers that message, whichever copy arrived. After a reuse, the
@@ -228,8 +232,9 @@ waits for a later decision.
 
 For an orchestrator of the kind `claude`, the planner of the orchestrator is a new
 [planner subagent](planner-subagent.md) for each [item of planning work](planner-subagent.md#the-start). A request,
-relay, open finding, accepted proposal or recurrence is such an item. On this page, a send to such a planner is the
-start of a planner subagent. After a failed start, the orchestrator asks the user in its question pane, as
+relay, open finding, accepted proposal or recurrence is such an item. So is the planning request of late matches of
+[The check of the pane owner](#the-check-of-the-pane-owner). On this page, a send to such a planner is the start of a
+planner subagent. After a failed start, the orchestrator asks the user in its question pane, as
 [The start](planner-subagent.md#the-start) says.
 
 An input file is a file under `/tmp/tasker/<slug>/drafts/`, with the slug of the pane owner.
@@ -760,6 +765,8 @@ After its first reply, the question session follows these rules. Each item names
 - It starts no subagent that plans, drafts, reviews or posts an issue, as the paragraph of this section that starts "A
   question session starts no subagent" says.
 - It runs the rounds after a close request, as [The rounds before the close](#the-rounds-before-the-close) says.
+- It sends a check request for each proposal of step 6 in the rounds, as
+  [The check of the pane owner](#the-check-of-the-pane-owner) says.
 - It sends the pane handoff after a pane handoff request, as [The pane handoff](#the-pane-handoff) says.
 
 The question session sends each [write action](#terms) and each request of [Terms](#terms) back to the pane owner with
@@ -1179,6 +1186,8 @@ A message with the marker `PANE-HANDOFF.` is a pane handoff, not a decision mess
 it as [The pane handoff](#the-pane-handoff) says. A decision message that arrives before the pane handoff gets the usual
 steps of this section, as [The pane handoff](#the-pane-handoff) says.
 
+A check request is not a decision message. [The check of the pane owner](#the-check-of-the-pane-owner) gives its accept.
+
 A settled decision for a question of a task subagent after its stopping-point message goes into the entry of the task
 list, not to the task subagent, as [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) says.
 
@@ -1447,9 +1456,10 @@ rounds end. [Close and continue](#close-and-continue) reads the final report. In
 other word names each report of a round and the final report. So the paragraph that starts "The report leaves out"
 covers each report.
 
-The first target of each proposal of step 6 is the user in the pane. So each such proposal is a waiting decision of step
-7 of `/session-review`. The user accepts, changes or drops it in the pane. The question session still drafts no issue
-and posts nothing.
+The first target of each proposal of step 6 is the user in the pane, after the search of step 6 of `/session-review` and
+after the check of [The check of the pane owner](#the-check-of-the-pane-owner). So each such proposal is a waiting
+decision of step 7 of `/session-review`. The user accepts, changes or drops it in the pane. The question session still
+drafts no issue and posts nothing.
 
 A proposal of step 6 is not a doc proposal of [Send a decision](#send-a-decision), and it already names the file and the
 change. If such a proposal rests on words of the user, it gives those words word for word, beside the file and the
@@ -1462,6 +1472,12 @@ proposal of step 6. The reason: step 6 of `/session-review` sends the session to
 report of its round names the open issue. It also gives the ticket, the date and the facts of the new case, as a
 recurrence comment does. It gives the words of the user word for word, as for each accepted proposal. After an end by
 the user, the final report gives it.
+
+See step 6 of [`/session-review`](../../.claude/skills/session-review/SKILL.md#steps) for the search of the open issues.
+If the search finds a recurrence, it goes to the user in the pane first, after the check, and the report of its round
+names the open issue. A proposal after a denied search goes to the user in the pane with its note. A later result of the
+search goes to the user in the pane. After a failed search, the report of the round gives the command, the error and the
+note with the proposal. A failed search is not a failed round, so the rounds go on.
 
 For a question session, step 2 of the list also holds the next round for each new open question, until its wait ends. A
 new open question is an open question that no earlier round of the same rounds listed. As
@@ -1483,7 +1499,8 @@ For a question session, step 2 of the list ends with the send of the report of t
 after the wait of each finding of the round that needs a word of the user ends. If the report holds a guess, it first
 asks the confirm question in the pane. After the send, it waits at its prompt for the ack, as [Terms](#terms) says, so
 its turn ends. In the turn of the ack, it starts the next round at once, which wins over the words "in the same turn" of
-step 3 of the list. A round that finds nothing new has no report of a round.
+step 3 of the list. Only the ack of a report of a round starts the next round, and the ack of a check request does not.
+A round that finds nothing new has no report of a round.
 
 In a question session, this hold rule wins over the rule that other open work holds no round. It wins over the start at
 once after a round with no waiting decision. So a round with a new open question and no waiting decision does not start
@@ -1521,6 +1538,7 @@ kinds:
 - A waiting decision whose wait did not end
 - An open question of step 7 that has no answer and no drop
 - Unfinished work of step 7 that the question session did not finish or drop
+- A proposal of step 6 that waits for its check answer, with the note that no check answer came
 
 The final report names each open finding. A report of a round also names each finding of its round that stays open, for
 example a question that the user said stays open. An accepted proposal is a proposal that the user accepted or changed
@@ -1553,13 +1571,15 @@ of the final report fails, the question session tells the user in the pane.
 
 The pane owner accepts a report only with the header of its open pane id and its current question id, after its close
 request. It then sends the ack. For each other report, the pane owner tells the user in one line, sends nothing and
-keeps the state of the question.
+keeps the state of the question. A check request is not a report. See
+[The check of the pane owner](#the-check-of-the-pane-owner).
 
 After it accepts a report of a round, the orchestrator sends each accepted proposal and recurrence of that report to the
 planner of the orchestrator. It sends no open finding then. After the final report that it accepts, it sends each open
 finding, and each accepted proposal and recurrence that only the final report gives. It gives the words of the user for
-each one. So the orchestrator sends each finding one time. After each report that it accepts, the orchestrator tells the
-user in one line how many findings it sent.
+each one. So the orchestrator sends each finding one time. The late matches of a check go to the planner as
+[The check of the pane owner](#the-check-of-the-pane-owner) says. After each report that it accepts, the orchestrator
+tells the user in one line how many findings it sent.
 
 The paragraph of [The pane owner handles a decision](#the-pane-owner-handles-a-decision) that starts "The pane owner
 relays each doc proposal" gives each such send and its failure. The pane owner decides between a reuse and a close only
@@ -1599,6 +1619,132 @@ list of open findings.
 
 The reason: on 2026-11-13, the user said to operator-docs: "file an issue to run `/session-review` in question panes
 before closing". No one measured the tokens of the rounds in a question pane.
+
+### The check of the pane owner
+
+The folder of the draft files is each folder in which the planner subagents of the orchestrator write new draft files.
+Today that is the folder of [The prompt](planner-subagent.md#the-prompt). A draft of the check is one of these files: a
+file in the folder of the draft files whose name starts with the name of a planner subagent that a proposal file names,
+and `-`; a file whose path a proposal file names; or a file whose path an open question of the orchestrator names. The
+record file, the report file and the body file of a draft are not drafts of the check. Their draft file is the match.
+
+A check request is a message of the question session to its pane owner in the rounds. It asks whether a proposal file,
+an [item of planning work that waits](planner-subagent.md#the-proposal-file), or a draft of the check already covers the
+change of a proposal of step 6. The check is the work of the pane owner for one check request. The check answer is the
+reply of the pane owner.
+
+The question session sends a check request for each proposal of step 6, also for a recurrence. The search of step 6 runs
+first, and the request names each open issue that the search found. The request names the file and the change of each
+proposal that it covers. One request can cover each proposal of one round, and the question session judges this. This
+judgment is open on purpose. The request asks for facts, not for a decision.
+
+The reason: the pane owner holds the proposal files, the question files and its session, and the question session reads
+none of these files. The check does not replace the search.
+
+The form of the check request is the header with the next message number of [Terms](#terms). The marker `CHECK-REQUEST.`
+stands right after the header, as the marker `PANE-HANDOFF.` stands. An example is
+`QUESTION-PANE w1:p2 orchestrator-m31-7 m5: CHECK-REQUEST.` A check request is not a report of a round, not the final
+report and not a decision message. The question session can send it after the close request. A message with the header
+and no marker keeps its meaning.
+
+The pane owner accepts a check request only with the header of its open pane id and its current question id. It accepts
+it only after its close request and before it accepts the final report. For each accepted check request, it sends the
+ack of [Terms](#terms) word for word, also "The report arrived.". These fixed words do not make a check request a
+report. For each other message with the marker, the pane owner tells the user in one line, sends nothing and keeps the
+state of each question.
+
+After the ack, the pane owner does the check. Then it sends the check answer with the herdr path and its own header. The
+marker `CHECK-ANSWER m<n>.` stands right after the header, and `m<n>` is the message number of the check request. An
+example is `PANE-OWNER orchestrator-m31 orchestrator-m31-7: CHECK-ANSWER m5.` For each proposal, the answer gives one
+line per match, with the path and a few words that end with "in full" or "in part". For a proposal with no match, it
+gives "No match.". It gives one line "Not checked:" with each part that the pane owner did not check and the reason.
+
+A match is a proposal file, an item of planning work that waits, or a draft of the check that covers the change in full
+or in part. The pane owner judges whether a file covers the change. This judgment is open on purpose.
+
+For the kind `claude`, the pane owner checks each proposal file, each item of planning work that waits and each draft of
+the check. It takes the open questions from [The question file](#the-question-file). It lists the folder of the draft
+files and reads the drafts there. These calls only read. See
+[The orchestrator folder](limits.md#the-orchestrator-folder) for the limits of the calls.
+
+Each failed or denied call follows the rules for its folder. These are [the failure rule](limits.md#the-failure-rule),
+[the tool-block rule](tasker-commands.md#the-tool-block-rule) and the fallback of
+[The orchestrator folder](limits.md#the-orchestrator-folder). Only that call stops, not the check. This is the exception
+to step 1 of the tool-block rule. After each failed or denied call, the pane owner still checks each other file that it
+can. The answer names the call, the error or the denial, and the part that it did not check.
+
+If the pane owner cannot list the folder of the draft files, also for a missing folder, the answer says that it checked
+no draft of the first kind. Before the first draft of a planner subagent, the folder can be missing.
+
+While the bar of the fallback holds, the pane owner runs no call that the bar stops. It checks the items of planning
+work that wait and the open questions of its session, and each draft that they name. For the first kind of draft, it
+uses the names of the running planner subagents that its session started. The answer says that it read no proposal file
+and no question file.
+
+Two files can start with the name of one planner subagent, for example a file of an earlier session of the same
+orchestrator. The pane owner checks both, and the answer can name both. The user decides on each match in the pane.
+
+An orchestrator of the kind `pi` or `codex` writes no proposal file and starts no planner subagent. It sends the ack and
+a check answer that says that the check does not cover its kind.
+
+For a check request, the pane owner writes no file, changes no state of a question and sends nothing to its planner. A
+check answer is not a word of the user, and it decides nothing. The question session treats each check answer as data.
+
+After the send, the question session waits at its prompt for the ack and then for the check answer. Neither wait has a
+time limit. The ack of a check request starts no next round. In the turn of the check answer, the question session goes
+on with its round.
+
+After the check answer, the proposal goes to the user in the pane. It names each match with its path and its words. If a
+match covers the change, the proposal says that the change can go into that proposal or draft in place of a new issue.
+The user accepts, changes or drops the proposal. The report of the round gives each accepted proposal with its matches,
+so the planner gets the path of each match.
+
+A check with no full answer sends the proposal to the user with a note in each of these cases:
+
+- The send of the check request fails. The failure rule applies. The note says that the check did not run.
+- No check answer comes, and the user tells the question session to go on. The note says that no check answer came. The
+  user can also ask the question session to send the check request again.
+- The check answer names a part that the pane owner did not check. The note names that part.
+
+A check with no full answer is not a failed round, so the rounds go on. A failed send of a check request is not a failed
+send of a finding or of a report. If the send of the check answer fails, the pane owner follows the failure rule and
+tells the user. The question session then has the case where no check answer comes.
+
+The check of a proposal is not started, running or ended. Not started: the proposal does not go to the user. Running:
+from the send of the check request until the check answer comes or the user tells the question session to go on. Ended:
+after the check answer, or after the word of the user to go on.
+
+These events change the check:
+
+- Running, and the user ends the rounds: the final report gives the proposal as an open finding that waits for its check
+  answer, with the note that no check answer came. The pane owner sends it to the planner of the orchestrator, as it
+  sends each open finding.
+- Running, and the user tells the pane owner to close the pane before the final report: the pane owner closes the pane
+  as before. The proposal gets no report, as each finding of a round with no report.
+- Ended by the word of the user, and a late check answer comes: the question session shows each match to the user. If
+  the proposal still waits for the user, the proposal names each match.
+- The report that gave the proposal already went, and the final report did not go yet: the next report names each late
+  match beside that proposal. After the pane owner accepts that report, it sends the late matches to the planner of the
+  orchestrator as one planning request. The request names the proposal, the report that gave it and each match, and it
+  gives the words of the user word for word.
+- No later report can name the late match: after the pane owner accepts the final report, it compares each check answer
+  that it sent with the reports that it accepted. Each match that no accepted report names beside its proposal goes to
+  the planner of the orchestrator. If the final report gives the proposal, the match goes with that proposal. If not, it
+  goes as one planning request. A match of a proposal that no accepted report gives goes to no one.
+- The pane owner sends no check answer after it accepts the final report, and none after the close of the pane.
+
+In a handoff, the old orchestrator answers each check request as usual until its pane closes. See
+[The pane handoff](#the-pane-handoff) for the close of the pane before the handoff goes on.
+
+The known limit: the check writes no file, so only the session of the pane owner holds the check answers that it sent.
+After a compaction of the context of the orchestrator during the rounds, the pane owner can miss a late match that no
+accepted report names. That match then goes to no one. A handoff does not cause this limit.
+
+The reason for the check: the user said, in the pane of question orchestrator-m31-323, "check if this is already
+filed.". Then the user said "ask the orchestrator...you didn't look in the correct directory for proposals". Then the
+user said "I think this already has a proposal or draft, too". Last, the user said "this should be added to the existing
+proposal/draft". Report m5 of that question session gave these words, and orchestrator-m31 relayed them on 2026-11-24.
+The report gives no date for the words and does not say which folder the session looked in.
 
 ### The pane handoff
 
@@ -1885,6 +2031,17 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | A round of the question session fails                                                                                                                    | Rounds end. Sends the final report      | Waits for the final report                                                                                                                                                                                                                                                                                                                        |                      | The question session tells the user                              |
 | The send of a report of a round fails                                                                                                                    | Rounds end. Sends the final report      | Waits for the final report                                                                                                                                                                                                                                                                                                                        |                      | The question session tells the user                              |
 | The send of the final report fails                                                                                                                       | Waits at its prompt                     | Waits for the final report. The pane stays open                                                                                                                                                                                                                                                                                                   |                      | The question session tells the user                              |
+| A check request arrives with the right header after the close request                                                                                    | Waits for the ack, then for the answer  | Sends the ack. Does the check. Sends the check answer. Writes no file and sends nothing to the planner                                                                                                                                                                                                                                            |                      | The question session tells the pane owner                        |
+| A message with the marker `CHECK-REQUEST.` that the pane owner refuses                                                                                   | Any                                     | Sends nothing. Tells the user in one line. Each question keeps its state                                                                                                                                                                                                                                                                          |                      | The pane owner tells the user                                    |
+| An orchestrator of the kind `pi` or `codex` gets a check request                                                                                         | Waits for the ack, then for the answer  | Sends the ack and a check answer that says that the check does not cover its kind                                                                                                                                                                                                                                                                 |                      | The pane owner tells the question session                        |
+| The check answer arrives                                                                                                                                 | Shows the proposal with each match      | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The question session tells the user                              |
+| The send of a check request fails                                                                                                                        | Shows the proposal with a note          | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The question session tells the user                              |
+| The send of a check answer fails                                                                                                                         | Waits for the check answer              | The failure rule applies                                                                                                                                                                                                                                                                                                                          |                      | The pane owner tells the user                                    |
+| No check answer comes, and the user tells the question session to go on                                                                                  | Shows the proposal with a note          | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The user tells the question session                              |
+| A late check answer comes after the word of the user to go on                                                                                            | Shows each match to the user            | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The question session tells the user                              |
+| The user ends the rounds while a check runs                                                                                                              | Gives the proposal as an open finding   | Waits for the final report. The pane stays open                                                                                                                                                                                                                                                                                                   |                      | The user tells the question session                              |
+| A report of a round names a late match                                                                                                                   | Starts the next round after the ack     | Sends the ack. Sends the late matches to the planner of the orchestrator as one planning request                                                                                                                                                                                                                                                  |                      | The question session tells the pane owner                        |
+| The final report arrives, and no accepted report names a match of a check answer                                                                         | Waits at its prompt                     | Sends each such match to the planner of the orchestrator, with its proposal or as one planning request. Sends no check answer after this point                                                                                                                                                                                                    |                      | The pane owner tells the planner                                 |
 | The report of the rounds arrives, and each condition of a reuse holds                                                                                    | Waits at its prompt until the reuse     | Sends the ack. Sends findings to the planner of the orchestrator. Starts the reuse subagent                                                                                                                                                                                                                                                       |                      | The question session tells the pane owner                        |
 | The report of the rounds arrives, and a condition of a reuse fails                                                                                       | Waits at its prompt until the close     | Sends the ack. Sends findings to the planner of the orchestrator. Closes the pane. A run goes on                                                                                                                                                                                                                                                  |                      | The question session tells the pane owner                        |
 | The kind of the pane owner is not `claude`, and a reuse is due                                                                                           | Waits at its prompt until the close     | Closes the pane. The next question gets a new pane                                                                                                                                                                                                                                                                                                |                      |                                                                  |
@@ -1951,6 +2108,14 @@ If two rows match, the rows of one bullet below follow its rule:
 - The row "A report of a round arrives" wins over the row "A message arrives with the header of the open pane and the
   current question".
 - The row "A report that the pane owner refuses" wins over the row "A report of a round arrives".
+- The row "A check request arrives with the right header after the close request" wins over the rows "A message arrives
+  with the header of the open pane and the current question" and "A report of a round arrives".
+- The row "A message with the marker `CHECK-REQUEST.` that the pane owner refuses" wins over the row "A check request
+  arrives with the right header after the close request".
+- The row "An orchestrator of the kind `pi` or `codex` gets a check request" wins over the row "A check request arrives
+  with the right header after the close request".
+- The row "A report of a round names a late match" and the row "A report of a round arrives" both apply. The first row
+  adds the send of the late matches.
 - The row "The user tells the pane owner to close the pane, or that it is closed, before the final report" wins over the
   row "A report of a round arrives". The pane owner still sends the accepted proposals and recurrences of that report to
   the planner of the orchestrator.
@@ -2125,3 +2290,8 @@ Claude Code that asked for a status. These are two separate observations of the 
 
 No one measured how often Claude Code sends this note, or after how long a wait. No one measured whether the start line,
 shown again, satisfies the note, for example whether Claude Code sends the note again after the start line.
+
+No one measured the search of the open issues in a question pane. Two question sessions reported searches of the issues
+in their panes on 2026-11-23, and no one else measured these runs. No one measured a check request or a check answer
+through `herdr`. No one measured a permission prompt or a denial for a list or a read of the folder of the draft files
+by the orchestrator.
