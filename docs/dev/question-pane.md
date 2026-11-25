@@ -722,6 +722,18 @@ Before its start reads, the question session shows the start line, word for word
 show the question." The start line tells the user that the question follows. In the rules of this page, the start line
 is not the first reply.
 
+Each time that Claude Code asks the question session for a status before its first reply, the session shows the start
+line again, word for word, with no other text, and then continues its start steps. A status is a short text about what
+the session does now. This rule wins over the request of the note, and it holds at a pane start and after each reuse,
+because each session prompt has its own first reply. The start line shown again is not the first reply and is not a
+fourth start step. It is a repeat of step 1 of the session prompt, so the order of the steps stays. The session prompt
+states this rule in step 1, because the session reads this page only in its third start step.
+
+The reason: during the start reads, Claude Code can add a note that asks the session for a status. On 2026-11-22, two
+question sessions each showed an extra line before their first reply after such a note, as
+[Measured facts](#measured-facts) gives. The question session judges whether a note of Claude Code asks for a status.
+This judgment is open on purpose, because the words of the note can change in a later version of Claude Code.
+
 The reason: on 2026-11-13, the user said to operator-docs: "question pane should fetch its instructions first then show
 the question". These words reverse the words of the user of 2026-11-11 in [Measured facts](#measured-facts). On the same
 day, a question session reported that the user waited for its first reply while it read its docs. The start line tells
@@ -2092,3 +2104,24 @@ measured a send into a pi pane in either direction. No one measured a newline in
 ack. No one measured the header or the ack with the message number through `herdr pane send-text`. No one measured a
 context clear in a pi session. No one measured that a pi orchestrator can start an opener subagent, a reuse subagent or
 a write subagent.
+
+On 2026-11-22, two question sessions showed an extra line before their first reply. Each line came after a note of
+Claude Code that asked for a status. These are two separate observations of the sessions, and no one else measured them.
+
+- 2026-11-22: the question session of the question pane `question-planner-page`, with the question id
+  `orchestrator-m31-235`, read its start docs. At that time, `docs/dev/question-pane.md` had 1728 lines by `wc -l`. Its
+  report of round 1 gives Claude Code 2.1.330 for this run, and no one recorded how the session read this version.
+  During the reads, Claude Code added a note that said, word for word:
+  `The user hasn't heard from you in a while — say in a few words what you're doing, then continue.` The session then
+  showed the extra line "I am still reading my rules. The question follows after the reads." After the report of round
+  1, `claude --version` printed `2.1.330 (Claude Code)`. This is the installed version at that time, not a measure
+  inside the question session.
+- 2026-11-22: the question session of the question pane `question-1024-comment`, with the question id `tasker-48-6`,
+  read its start docs. At that time, `docs/dev/question-pane.md` had 1790 lines, and the proposal gives no method of the
+  count. During the reads, Claude Code told the session that the user had not heard from it in a while and asked for a
+  short status line. These are the words of the proposal of the session, not the words of the note. The words of the
+  note and the Claude Code version of this run are not known. The session then showed the extra line "Still reading my
+  rules, then I show the question."
+
+No one measured how often Claude Code sends this note, or after how long a wait. No one measured whether the start line,
+shown again, satisfies the note, for example whether Claude Code sends the note again after the start line.
