@@ -28,6 +28,13 @@ Each entry is the entry as the read gave it, or none.
 The allowed commands of your kind are these:
 - git -C <local clone> show origin/main:<path>, for each doc that you read.
 - git -C <local clone> fetch origin, before your first doc read.
+- tasker status, before a question of your result about a write that the reads before the write can skip.
+- gh issue view <number> --json state -q .state, and gh issue view <number> -R <repo> --json title,body,state for a closed issue of a match.
+- git -C <local clone> log origin/main and git -C <local clone> show <commit>, for what a closed issue of a match landed.
+- gh issue list --milestone "<milestone>" --state open --limit 1000 --json number and gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocked_by, for the blocked-by links of both milestones.
+- The reads of the project board: gh project item-list 3 --owner codeguru42 --limit 1000 --format json with its --jq filter, and gh issue view <number> --json projectItems.
+- git -C <local clone> grep -n -E '<pattern>' origin/main -- <paths>, and git -C <local clone> show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>', for a search of doc words.
+- A Read call on a draft file, and a Read call on the report file of an issue-draft subagent, in the folder of the draft files.
 - The record file named <file>.findings.md of each draft, in the folder of the draft files.
 - A Read call on a saved output of your own tool call, a Read call on the record file, and timeout 20 bash -c 'sleep 5'.
 - SendMessage to main only, after a refused SubagentHandback call.
