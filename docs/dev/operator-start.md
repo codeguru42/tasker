@@ -170,9 +170,6 @@ state of the session and tells the user, as [A blocked session](../sessions.md#a
 user then closes the pane with no report, keeps the wait, or ends the stop. After an end of the stop, the entry stays in
 the tab list.
 
-In steps 1 and 2 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), the old operator
-waits for each such report before its hold messages. That report is the report again, because the old sender ran its
-rounds before its handoff file. If no report arrives, the old operator tells the user, and the word of the user decides.
 After the hold messages, the old operator starts no stop of a sender of the slug.
 [The hold of the items](handoff.md#the-hold-of-the-items) defines the hold messages and a sender of the slug.
 

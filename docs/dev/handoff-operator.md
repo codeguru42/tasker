@@ -6,7 +6,7 @@ operator.
 ## The handoff of the operator
 
 In a handoff of the operator, the old operator gives its work to a new operator in a new session. The reason: only the
-operator knows the step of the milestone, the kind of each planner and its open items.
+operator knows the step of the milestone and its open items.
 
 ## The close count
 
@@ -33,73 +33,22 @@ the count of a suggestion. The old operator judges when the topic ends, and this
 
 After the start, the old operator does these steps:
 
-1. Run the rounds of [Session-review rounds](session-review-rounds.md). Send each finding to `planner-<slug>` with
-   `SendMessage`. The orchestrator gives each finding of its rounds to its planner, as the planner bullet of
-   [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. Then wait until each finding
-   is handled or waits for an answer of the user. Do not wait in a loop.
-
-   If a send fails, or the user asks during the wait, tell the user the state of each finding. The word of the user then
-   decides. After the wait, give the user the report of the rounds in a reply.
+1. Run the rounds of [Session-review rounds](session-review-rounds.md). Give the user the report of the rounds in a
+   reply.
 
    Until the [hold messages](handoff.md#the-hold-of-the-items) of step 2, handle each item of a
    [sender of the slug](handoff.md#the-hold-of-the-items) as usual. This also covers a report or an item about a finding
    of the rounds. The words "as usual" do not cover an automatic start or a reuse of a question pane. The condition "No
-   handoff of the operator is due or running" of [Start](question-pane.md#start) stops them. Do each handoff of an
-   orchestrator or a follow-up planner in this step as A handoff says. If a step of "A handoff" fails in this step, the
-   paragraph of step 2 about a failed step of "A handoff" applies. After the wait, run no new round in this handoff,
-   also after the items until the hold messages. The send of the facts and the lessons of
-   [The handoff file](handoff.md#the-handoff-file) covers the lessons of these items.
-
-2. Before the hold messages, complete each handoff of a sender whose path item arrived. A sender is
-   `orchestrator-<slug>` or `planner-<slug>`, as [The hold of the items](handoff.md#the-hold-of-the-items) says. A
-   handoff of a sender is a handoff of an orchestrator or a follow-up planner, as A handoff gives it. The old sender is
-   the sender that hands off, and the new sender takes its work. A path item is the item of step 2 of "A handoff". It
-   gives the path of the handoff file of the old sender.
-
-   For each such handoff, do "A handoff" from step 3 to step 5. This includes the read of `docs/dev/operator-start.md`
-   at the start of that section. This rule covers a path item that arrived before this step. It also covers a path item
-   that arrives while you do these handoffs.
-
-   If a step of "A handoff" fails, the failure cases of "A handoff" apply as they are. Then do the rest of these steps
-   of the old operator. Name the failure in the handoff file, as
-   [The handoff file of the operator](#the-handoff-file-of-the-operator) says.
-
-   This step covers only a handoff of an orchestrator or a follow-up planner. It does not cover a handoff of a sender
-   that starts after the hold messages, or [a topic handoff](handoff.md#a-topic-handoff). It does not change the failure
-   cases of "A handoff" and of "Stop a session".
-
-   Do not wait for a path item that did not arrive. Each other handoff of a sender follows these rules:
-
-   - The go of step 1 of "A handoff" goes out at once. This also holds for a recommendation that arrives before the hold
-     messages, also in the reply that starts the handoff of the operator. After the hold messages, a sender holds a
-     recommendation, as [The hold of the items](handoff.md#the-hold-of-the-items) says, and the new operator sends the
-     go. A recommendation that arrives after the write of the file follows
-     [the paragraph "No wait follows the write of the file"](#the-steps-of-the-old-operator).
-   - A handoff of a sender can start with no path item before the hold messages. Then the sender holds its path item, as
-     [The hold of the items](handoff.md#the-hold-of-the-items) says. After the ready message, the new operator does "A
-     handoff" from step 3 to step 5.
-
-   This table gives each state of a handoff of a sender at the hold messages. The rows do not overlap.
-
-   | State at the hold messages                                          | Old operator                                                                                                        | Sender of the slug                                                                                                                                                                                  | New sender                    | New operator                                                   | User                                                            | Who tells whom                                                                                                                               |
-   | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-   | The handoff of the sender did not start, or it ended                | Sends the hold messages                                                                                             | Holds its items                                                                                                                                                                                     |                               | If a recommendation arrives later, sends the go                |                                                                 | The old operator tells each sender of the slug                                                                                               |
-   | The path item arrived, and "A handoff" works                        | Does "A handoff" from step 3 to step 5, then sends the hold messages                                                | Sends the report of the rounds, and its pane closes                                                                                                                                                 | Runs, and gets a hold message |                                                                |                                                                 | The old operator tells the old sender "stop" and starts the new sender. The old sender tells the old operator, with the report of the rounds |
-   | The path item arrived, and a step of "A handoff" fails              | The failure cases of "A handoff" apply. It names the failure in its handoff file and does the rest of its own steps | As the failure case leaves it                                                                                                                                                                       | As the failure case leaves it | Tells the user in its first reply                              | Decides on the failure, as the failure case of "A handoff" says | The old operator and then the new operator tell the user                                                                                     |
-   | The handoff of the sender started, and the path item did not arrive | Sends the hold messages                                                                                             | Holds its path item, as [The hold of the items](handoff.md#the-hold-of-the-items) says, or sends it as [the paragraph "No wait follows the write of the file"](#the-steps-of-the-old-operator) says |                               | Does "A handoff" from step 3 to step 5 after the ready message |                                                                 | The old sender tells the new operator, with the path item                                                                                    |
+   handoff of the operator is due or running" of [Start](question-pane.md#start) stops them. After the rounds, run no
+   new round in this handoff, also after the items until the hold messages.
 
    On 2026-10-25, the close count reached 15 at planner-m22-67, orchestrator-m22-46 gave a path right after it, and
    planner-m22-68 gave a path later. The old operator first stopped and started orchestrator-m22 and planner-m22.
 
-   The reasons: An old sender with a path item already wrote its handoff file and waits. A wait for the new operator
-   leaves the slug with no orchestrator or no planner that works. A wait for a path item that did not arrive can hold
-   the handoff of the operator for hours. An orchestrator first finishes its current tasks.
-
-   After the last start of the handoffs above, send each sender of the slug a hold message with `SendMessage`, as
-   [The hold of the items](handoff.md#the-hold-of-the-items) says. Read the senders from `ListAgents` after the last
-   start. As a result, each new sender is in the list and gets a hold message. Then tell the user one time that the hold
-   stops the items. Name each sender of the slug that holds. Say that the hold ends when the new operator is ready or
-   when the user [ends the hold](handoff.md#the-end-of-the-hold-by-the-user).
+2. Send each sender of the slug a hold message with `SendMessage`, as
+   [The hold of the items](handoff.md#the-hold-of-the-items) says. Read the senders from `ListAgents`. Then tell the
+   user one time that the hold stops the items. Name each sender of the slug that holds. Say that the hold ends when the
+   new operator is ready or when the user [ends the hold](handoff.md#the-end-of-the-hold-by-the-user).
 
    Then write the handoff file, as [The handoff file](handoff.md#the-handoff-file) says. Put each finding that waits for
    the user in the file, as [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. If the write or
@@ -108,8 +57,8 @@ After the start, the old operator does these steps:
 3. Do the steps of the old operator in [The start of the new operator](#the-start-of-the-new-operator).
 
 The reason for the order of steps 1 and 2: the hold stops each item of a sender of the slug. This also covers a question
-that a task subagent waits for. The rounds and the wait of step 1 can take a long time. So the hold starts only right
-before the write of the file.
+that a task subagent waits for. The rounds of step 1 can take a long time. So the hold starts only right before the
+write of the file.
 
 On 2026-11-07, operator-m16 sent the hold messages first and then ran its rounds. The rounds waited for the posts of the
 planner. Meanwhile, the hold stopped the item with the question of the task subagent of #724 about its measures 10
@@ -139,7 +88,6 @@ handoff file:
   reads. The second step of the prompt is steps 7 to 10 of
   [The start of the new operator](#the-start-of-the-new-operator).
 - The step of the milestone in [The order of a milestone](operator-start.md#the-order-of-a-milestone).
-- The kind of each planner, initial or follow-up.
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)). The
   file marks each question of the item as open, answered, sent or moved. The operator can keep a question open because
   the words of the user do not fully settle it, as [The answer](items.md#the-answer) says. For such a question, the file
@@ -150,8 +98,6 @@ handoff file:
 - Each sender of the slug that got the hold message, as [The hold of the items](handoff.md#the-hold-of-the-items) says.
   The new operator sends the ready message to each of these senders in step 10 of
   [The start of the new operator](#the-start-of-the-new-operator).
-- Each handoff of a sender that failed in step 1 or step 2 of
-  [the steps of the old operator](#the-steps-of-the-old-operator), with its step and its error.
 - Each entry of [the tab list](../operator.md) of the old operator. So the file holds the tabs that the old operator
   started and the tabs that it took over.
 - The name, the tab id and the pane id of the old operator. The tab id is `$HERDR_TAB_ID`, and the pane id is

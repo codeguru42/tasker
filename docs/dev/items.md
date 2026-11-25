@@ -106,11 +106,10 @@ This page uses these terms for the questions of an item that needs an answer:
   separate question in a comment on #723. That question had its own choices a and b, and it had no answer of the user.
   planner-m16 named this step in its report, and the user later chose a for that question too.
 
-- An item that needs an answer can arrive from `planner-<slug>` or `orchestrator-<slug>`. Then the operator sends an
-  answer of the operator for each question that is not a question for the user alone. The operator judges whether a
-  question is a question for the user alone. The operator sends the answer at once with `SendMessage`. An item with no
-  question gets no answer of the operator, for example the item with the path of a handoff file, and it keeps its own
-  steps.
+- An item that needs an answer can arrive from `orchestrator-<slug>`. Then the operator sends an answer of the operator
+  for each question that is not a question for the user alone. The operator judges whether a question is a question for
+  the user alone. The operator sends the answer at once with `SendMessage`. An item with no question gets no answer of
+  the operator, for example the item with the path of a handoff file, and it keeps its own steps.
 - The message names the id of the item. It starts with "Answer of the operator:", not with "From the user:". For each
   question, it gives the number that the sender gave, the choice of the operator and one line with the reason. The
   message also names each open question of the item by the number of the sender.
