@@ -13,8 +13,8 @@ as the work needs. An issue subagent on this page is one of these subagents. A p
 - A planning request is one send of work to the planner of the orchestrator.
   [The planning requests](#the-planning-requests) gives the sends. A planning request holds one or more items of
   planning work.
-- An item of planning work is the unit of a start, a proposal file and a wait. [The start](#the-start) gives how a
-  planning request splits into items. [The glossary](GLOSSARY.md) gives the kinds.
+- An item of planning work has the meaning that [the glossary](GLOSSARY.md) gives. [The start](#the-start) gives how a
+  planning request splits into items of planning work.
 - The result of a planner subagent is the text of its `SubagentHandback` call.
 - The metadata of an issue is its milestone, its labels, its state, its board column and its priority. A blocked-by link
   is not metadata on this page.
@@ -212,8 +212,8 @@ that file until the next word of the user.
 At a result, the orchestrator deletes only the proposal file that names the sender of the result. A result whose sender
 no file names deletes nothing, for example a second result of the same planner subagent. A result through `SendMessage`
 after a refused `SubagentHandback` call is also a result. If the delete fails, the file stays, and the orchestrator
-tells the user the path of the file. It does not count that file as a waiting request in its session, and the fallback
-also applies.
+tells the user the path of the file. It does not count that file as a waiting item of planning work in its session, and
+the fallback also applies.
 
 These two cases stop the queue:
 
@@ -230,8 +230,8 @@ a file stays in the folder, and the new orchestrator finds it at the end of its 
 
 These known limits hold:
 
-- After a compaction or a handoff, a request that a stop of the queue held can get a planner subagent again. This also
-  holds for a request whose proposal file stayed after a failed delete.
+- After a compaction or a handoff, an item of planning work that a stop of the queue held can get a planner subagent
+  again. This also holds for an item of planning work whose proposal file stayed after a failed delete.
 - A planner subagent that runs again for a kept proposal file can post a duplicate issue on GitHub. Right before each
   post, the search of [Before a post](issues.md#before-a-post) looks for the same change in all the issues of the repo,
   open and closed. This search lowers the risk.
@@ -350,9 +350,9 @@ other questions. The new planner subagent starts after the last answer, as
 [A draft that needs the user](#a-draft-that-needs-the-user) says. The prompt gives the draft path, the questions and the
 answers, each with its source. A draft can still have an open question when its settled answer comes. Then the
 orchestrator writes the proposal file of the settled answer at once, as [The proposal file](#the-proposal-file) says for
-a request at its arrival. The file holds the draft path, the questions and each answer so far, each with its source. The
-orchestrator starts no planner subagent from that file until the answer to the last open question of the draft. Each
-later answer of that draft joins the same file.
+an item of planning work at its arrival. The file holds the draft path, the questions and each answer so far, each with
+its source. The orchestrator starts no planner subagent from that file until the answer to the last open question of the
+draft. Each later answer of that draft joins the same file.
 
 A settled answer can drop a draft only if a rule or a fact already holds the whole change of the draft. Keep 4 permits a
 drop with no approval of the user. Then the drop bullet of A draft that needs the user holds for the settled answer: the

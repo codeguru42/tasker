@@ -349,9 +349,10 @@ entries of [The open peer requests](#the-open-peer-requests). Each entry of a re
 its question and no text of that question. The entry does not copy the question. Its other items, for example the
 requested change, stay as [The open peer requests](#the-open-peer-requests) lists them. The reason: the question stays
 in its question file through the handoff, as [The orchestrator folder](limits.md#the-orchestrator-folder) says. The
-handoff file holds no list of the requests that have a [proposal file](planner-subagent.md#the-proposal-file). It holds
-the full text of each question with no file. It gives no path of the three folders. The new orchestrator makes that path
-itself from the data root, the repo key and its own slug.
+handoff file holds no list of the items of planning work that have a
+[proposal file](planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It gives
+no path of the three folders. The new orchestrator makes that path itself from the data root, the repo key and its own
+slug.
 
 After the write of its handoff file, the old orchestrator writes no new file in the three folders and gives no new
 question id. A question that reaches it after the write gets no question file. The old orchestrator shows the full text
