@@ -161,8 +161,8 @@ flag. An example is `claude -n orchestrator-m31 "<first prompt>"`.
 
 The user stops an orchestrator that the user starts. The user asks the orchestrator in its pane to run its rounds. The
 user waits for the report of the rounds in the tab, and then closes the tab. If the user closes the tab with no rounds,
-the open findings of the session are lost. [A stop with no handoff](#a-stop-with-no-handoff) says the same for a stop.
-In a handoff, the old orchestrator closes its own tab, as
+the open findings of the session are lost. [A stop with no handoff](#a-stop-with-no-handoff) gives the other results of
+a stop. In a handoff, the old orchestrator closes its own tab, as
 [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
 
 In a handoff, the old orchestrator starts the new orchestrator, as
