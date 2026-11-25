@@ -309,7 +309,12 @@ describe("parseConfig repos", () => {
 interface Repo {
   issueTracker: Record<string, unknown>;
   assistant: Record<string, unknown>;
-  sessions: { kind: string; models: Record<string, unknown> };
+  sessions: {
+    kind: string;
+    models: Record<string, unknown>;
+    maxPlannerSubagents: number;
+    maxTaskSubagents: number;
+  };
 }
 
 function parsedRepo(raw: unknown): Repo {
@@ -656,13 +661,69 @@ describe("parseConfig sessions", () => {
   const sessionRoles = ["operator", "planner", "orchestrator", "question"];
 
   it("fills in the defaults when sessions is missing", () => {
-    expect(parsedRepo(validConfig()).sessions).toEqual({ kind: "claude", models: {} });
+    expect(parsedRepo(validConfig()).sessions).toEqual({
+      kind: "claude",
+      models: {},
+      maxPlannerSubagents: 3,
+      maxTaskSubagents: 3,
+    });
   });
 
   it("fills in kind and models when sessions is empty", () => {
     const raw = validConfig();
     raw.repos.tasker.sessions = {};
-    expect(parsedRepo(raw).sessions).toEqual({ kind: "claude", models: {} });
+    expect(parsedRepo(raw).sessions).toEqual({
+      kind: "claude",
+      models: {},
+      maxPlannerSubagents: 3,
+      maxTaskSubagents: 3,
+    });
+  });
+
+  it("fills in both counts when sessions has only kind", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { kind: "claude" };
+    const sessions = parsedRepo(raw).sessions;
+    expect(sessions.maxPlannerSubagents).toBe(3);
+    expect(sessions.maxTaskSubagents).toBe(3);
+  });
+
+  it("keeps both counts that the file sets", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { maxPlannerSubagents: 1, maxTaskSubagents: 5 };
+    expect(parsedRepo(raw).sessions).toEqual({
+      kind: "claude",
+      models: {},
+      maxPlannerSubagents: 1,
+      maxTaskSubagents: 5,
+    });
+  });
+
+  it("fills in both counts next to a models entry", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { planner: { model: "opus", effort: "high" } } };
+    expect(parsedRepo(raw).sessions).toEqual({
+      kind: "claude",
+      models: { planner: { model: "opus", effort: "high" } },
+      maxPlannerSubagents: 3,
+      maxTaskSubagents: 3,
+    });
+  });
+
+  describe.each(["maxPlannerSubagents", "maxTaskSubagents"])("%s", (key) => {
+    it.each([0, -1, 2.5, "3"])("rejects the value %j", (value) => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { [key]: value };
+      expectIssueAt(issuesOf(raw), `repos.tasker.sessions.${key}`);
+    });
+  });
+
+  it("reports a bad value at both keys in one run", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { maxPlannerSubagents: 0, maxTaskSubagents: "3" };
+    const issues = issuesOf(raw);
+    expectIssueAt(issues, "repos.tasker.sessions.maxPlannerSubagents");
+    expectIssueAt(issues, "repos.tasker.sessions.maxTaskSubagents");
   });
 
   it("keeps the model and the effort of each role", () => {
@@ -827,7 +888,12 @@ describe("parseConfig sessions", () => {
     it("accepts the kind pi with no models", () => {
       const raw = validConfig();
       raw.repos.tasker.sessions = { kind: "pi" };
-      expect(parsedRepo(raw).sessions).toEqual({ kind: "pi", models: {} });
+      expect(parsedRepo(raw).sessions).toEqual({
+        kind: "pi",
+        models: {},
+        maxPlannerSubagents: 3,
+        maxTaskSubagents: 3,
+      });
     });
 
     it.each(sessionRoles)("accepts a pi model in %s under the kind pi", (role) => {

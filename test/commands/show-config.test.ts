@@ -25,7 +25,12 @@ describe("show-config", () => {
     expect(printed.limits.planTimeoutMin).toBe(30);
     expect(printed.repos.tasker.vcs).toEqual({ provider: "git", config: {} });
     expect(printed.repos.tasker.issueTracker.assignee).toBe("@me");
-    expect(printed.repos.tasker.sessions).toEqual({ kind: "claude", models: {} });
+    expect(printed.repos.tasker.sessions).toEqual({
+      kind: "claude",
+      models: {},
+      maxPlannerSubagents: 3,
+      maxTaskSubagents: 3,
+    });
   });
 
   it("prints the sessions of the repo that --repo names with the defaults filled in", async () => {
@@ -40,7 +45,40 @@ describe("show-config", () => {
     expect(JSON.parse(io.out.join("")).sessions).toEqual({
       kind: "claude",
       models: { planner: { model: "opus", effort: "high" } },
+      maxPlannerSubagents: 3,
+      maxTaskSubagents: 3,
     });
+  });
+
+  it("prints the counts that the file sets for the repo that --repo names", async () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { maxPlannerSubagents: 1, maxTaskSubagents: 5 };
+    useConfigFile(() => JSON.stringify(raw));
+    const io = captureIo();
+
+    const code = await run(["show-config", "--repo", "tasker"], { commands: [showConfig], io });
+
+    expect(code).toBe(0);
+    expect(JSON.parse(io.out.join("")).sessions).toEqual({
+      kind: "claude",
+      models: {},
+      maxPlannerSubagents: 1,
+      maxTaskSubagents: 5,
+    });
+  });
+
+  it("prints the error for a count of 0", async () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { maxTaskSubagents: 0 };
+    useConfigFile(() => JSON.stringify(raw));
+    const io = captureIo();
+
+    const code = await run(["show-config", "--repo", "tasker"], { commands: [showConfig], io });
+
+    expect(code).toBe(1);
+    expect(io.out).toEqual([]);
+    expect(io.err.join("")).toContain("Invalid configuration:");
+    expect(io.err.join("")).toContain("repos.tasker.sessions.maxTaskSubagents");
   });
 
   it("prints only the repo that --repo names", async () => {

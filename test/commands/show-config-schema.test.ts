@@ -95,6 +95,17 @@ describe("show-config-schema", () => {
     ]);
   });
 
+  it("prints the counts of planner subagents and task subagents", async () => {
+    const entries = entriesOf((await showConfigSchemaRun("repos.<key>.sessions")).out);
+    const byPath = new Map(entries.map((entry) => [entry.path, entry]));
+
+    expect(byPath.get("repos.<key>.sessions.maxPlannerSubagents")).toMatchObject({ default: 3 });
+    expect(byPath.get("repos.<key>.sessions.maxTaskSubagents")).toMatchObject({ default: 3 });
+    expect(byPath.get("repos.<key>.sessions.maxPlannerSubagents")?.description).toMatch(/planner subagents/i);
+    expect(byPath.get("repos.<key>.sessions.maxTaskSubagents")?.description).toMatch(/task subagents/i);
+    expect(byPath.get("repos.<key>.sessions")?.description).toMatch(/planner subagents.*task subagents/i);
+  });
+
   it("prints tracker provider metadata and field defaults", async () => {
     const entries = entriesOf((await showConfigSchemaRun()).out);
     const byPath = new Map(entries.map((entry) => [entry.path, entry]));
