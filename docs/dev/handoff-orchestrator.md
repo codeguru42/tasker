@@ -483,9 +483,8 @@ because two sessions have the name.
 
 The old orchestrator keeps two tab ids: its own tab id, `$HERDR_TAB_ID`, and the tab id of the new orchestrator from
 step 3. It closes itself by its own tab id. It does not use
-[The own-session closure](milestone-close.md#the-own-session-closure) or
-[the pi row check](milestone-close.md#the-pi-row-check) for this close. During a handoff, two rows have the own name, so
-the row check of that section cannot pass.
+[The own-session closure](milestone-close.md#the-own-session-closure) for this close. During a handoff, two rows have
+the own name, so the row check of that section cannot pass.
 
 In a handoff of an orchestrator, this rule wins over the bullet of "The own-session closure" about a session that the
 user opened in a pane. That bullet says that such a session cannot close itself. So the old orchestrator that the user
