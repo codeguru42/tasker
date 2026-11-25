@@ -159,6 +159,14 @@ The row of the kind in [the seam of an agent kind](config.md#the-seam-of-an-agen
 the first prompt. If `sessions.models.orchestrator` has no entry, the user leaves out the model flags and the effort
 flag. An example is `claude -n orchestrator-m31 "<first prompt>"`.
 
+The user makes the first prompt of step 5 in these steps:
+
+1. Pick the template file of the scope, as [The first prompt](#the-first-prompt) names it.
+2. Read the file from `origin/main` with [the old read](dev/doc-reads.md#the-old-read).
+3. Take the text after the second `---` line.
+4. Replace each `{{NAME}}` with its value.
+5. Type the result in one line as the first prompt.
+
 The user stops an orchestrator that the user starts. The user asks the orchestrator in its pane to run its rounds. The
 user waits for the report of the rounds in the tab, and then closes the tab. If the user closes the tab with no rounds,
 the open findings of the session are lost. [A stop with no handoff](#a-stop-with-no-handoff) gives the other results of
@@ -205,32 +213,18 @@ the user has to deal with the mess."
 The first prompt names the own name and the scope. It also names the branch check, step 1 and the start read of
 `docs/dev/doc-reads.md`, `AGENTS.md` and `docs/orchestrator.md`, as
 [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) gives them. It also asks for a complete read of each start doc
-before any other work.
+before any other work. [The start prompts](dev/doc-reads.md#the-start-prompts) says more.
 
-The first prompt of a milestone scope has this form. `<milestone>` is the title of the milestone.
+The first prompt of a milestone scope is the template
+[`prompt-templates/start/orchestrator-milestone.md`](../prompt-templates/start/orchestrator-milestone.md).
+`{{MILESTONE}}` is the title of the milestone.
 
-```text
-You are orchestrator-<slug>. Your scope is the milestone <milestone>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/orchestrator.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/orchestrator.md with git show origin/main:<path>. Read each start doc in full before any other work. Then start.
-```
+The first prompt of a set scope is the template
+[`prompt-templates/start/orchestrator-set.md`](../prompt-templates/start/orchestrator-set.md). `{{ISSUE_KEYS}}` is a
+list of issue keys in a form of [docs/dev/issue-keys.md](dev/issue-keys.md).
 
-The first prompt of a set scope has this form. Each `<key>` is an issue key in a form of
-[docs/dev/issue-keys.md](dev/issue-keys.md).
-
-```text
-You are orchestrator-<slug>. Your scope is the issues <key>, <key> and <key>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/orchestrator.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/orchestrator.md with git show origin/main:<path>. Read each start doc in full before any other work. Then start.
-```
-
-For example, the first prompt for the milestone `M31 — Orchestrator` is:
-
-```text
-You are orchestrator-m31. Your scope is the milestone M31 — Orchestrator. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/orchestrator.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/orchestrator.md with git show origin/main:<path>. Read each start doc in full before any other work. Then start.
-```
-
-An example of the scope part of a set scope is:
-
-```text
-Your scope is the issues codeguru42/tasker#756, codeguru42/tasker#522 and codeguru42/tasker#748.
-```
+For example, the slug is `m31` and the milestone title is `M31 — Orchestrator`. For a set scope, an example value of
+`{{ISSUE_KEYS}}` is `codeguru42/tasker#756, codeguru42/tasker#522 and codeguru42/tasker#748`.
 
 ### The start checks
 
