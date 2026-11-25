@@ -270,7 +270,8 @@ The reasons for this path:
 - Two planner subagents of one orchestrator share a draft folder. In one session they never give two drafts one file
   name, as [The count of planner subagents](planner-subagent.md#the-count-of-planner-subagents) says. A later session
   with the same own name starts only after the old session waits for each planner subagent.
-  [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says this.
+  [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says this. The exception is a wait that a
+  word of the user ended. The known limit: such a planner subagent can still write one draft file and its record file.
 - Inside one folder, two drafts already have different names, so their body files differ.
 - Each poster has the path of its draft file, and the rule needs no name of a planner subagent.
 - The end `.body.md` differs from `-body.md`. A draft name has only lowercase letters, digits and `-`, as

@@ -101,7 +101,10 @@ gives a tested limit of Claude Code.
 
 The count covers each planner subagent that the orchestrator started and that runs. A new planner subagent after an end
 with no report, as [The life of a planner subagent](#the-life-of-a-planner-subagent) says, counts. A late report that
-starts an ended planner subagent again is not a start of the orchestrator, so that planner subagent does not count.
+starts an ended planner subagent again is not a start of the orchestrator, so that planner subagent does not count. A
+planner subagent whose wait a word of the user ended, as [The wait before a handoff](#the-wait-before-a-handoff) says,
+holds no place in the count. The reason: the old orchestrator treats its result as not known and does not wait for it,
+so it must not block the start of another planner subagent.
 
 Two planner subagents that run at the same time never get the same draft file in their prompts. If the prompt of a
 running planner subagent gives the same draft file path as an item of an answer of the user or of a settled answer, the
@@ -199,6 +202,8 @@ an item that waits in the session. These files are not items that wait:
 - A file that stays after a failed delete at a result.
 - A file whose write of the name failed, until the next word of the user.
 - For step 2 of [The wait before a handoff](#the-wait-before-a-handoff), a file that a stop of the queue holds.
+- For [The wait before a handoff](#the-wait-before-a-handoff), the file of a planner subagent whose wait a word of the
+  user ended. A result of that planner subagent after the write of the handoff file deletes no proposal file.
 - At a start with no handoff file, each file that `proposals/` holds at the end of the start steps, until the word of
   the user. [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) gives the steps.
 - A file of a draft that still has an open question, until the answer to the last open question of the draft, or until
@@ -993,7 +998,8 @@ loop 3, they post the draft as "The review loop of a draft" says today.
 
 A planner subagent ends after its result. The orchestrator is the starter of
 [The wait for a report](planner.md#the-wait-for-a-report) for it. The orchestrator judges the end by the kinds of
-notification of that subsection. A wait notification does not end the wait. The result ends it.
+notification of that subsection. A wait notification does not end the wait. The result ends it. In a handoff, a word of
+the user can also end it, as [The wait before a handoff](#the-wait-before-a-handoff) says.
 
 If a planner subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the orchestrator.
 The orchestrator then starts one new planner subagent for the same item of planning work. If that one also ends with no
@@ -1006,8 +1012,9 @@ a result. The second result deletes no proposal file, because no file names its 
 
 ### The wait before a handoff
 
-A planner subagent runs inside the session of the orchestrator. So an old orchestrator does these steps before it writes
-its handoff file:
+A planner subagent runs inside the session of the orchestrator. This wait is step 4 after the send, as
+[The wait before the handoff file](handoff-orchestrator.md#the-wait-before-the-handoff-file) says. So an old
+orchestrator does these steps before it writes its handoff file:
 
 1. Wait for the result of each planner subagent that runs. This includes the planner subagents of the items of planning
    work of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file).
@@ -1016,7 +1023,23 @@ its handoff file:
    items of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). Wait for the
    result of each one.
 
-The old orchestrator writes its handoff file only after the result of the last planner subagent.
+A planning request can arrive after step 2 started each request that waited, for example a fact or a lesson of a late
+report. Then the wait runs again for that request.
+
+The old orchestrator writes its handoff file only after the result of the last planner subagent. The end of the wait by
+a word of the user, as the next paragraphs say, is the only other end.
+
+If a planner subagent sends no report and the old orchestrator gets no end notification, only a word of the user ends
+the wait for it. Then the old orchestrator does these steps:
+
+- It tells the user that the planner subagent can still run a command.
+- It treats the result of the planner subagent as not known.
+- It starts no planner subagent in its place.
+- It goes on with the wait for each other planner subagent.
+
+This end has two known limits. A planner subagent that still runs can write its draft file and its record file after the
+handoff file. A later session with the same own name can then meet one draft file and its record file that this planner
+subagent wrote.
 
 A file that a stop of the queue holds stays in `proposals/`. Step 2 starts no planner subagent from it. The new
 orchestrator finds it at the end of its start steps.
