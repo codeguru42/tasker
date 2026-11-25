@@ -255,16 +255,32 @@ Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-i
 ## The issue-post subagent
 
 Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-issue-post-subagent),
-[The count of the body](issue-post.md#the-count-of-the-body), [A comment post](issue-post.md#a-comment-post) and
-[the doc-read rule](doc-reads.md#the-doc-read-rule).
+[The count of the body](issue-post.md#the-count-of-the-body), [A comment post](issue-post.md#a-comment-post),
+[the doc-read rule](doc-reads.md#the-doc-read-rule), [The steps of a post](issue-post.md#the-steps-of-a-post),
+[Before a post](issues.md#before-a-post), [The reads before the write](issues.md#the-reads-before-the-write),
+[The blocked-by links](issues.md#the-blocked-by-links), [The blocked-by links](issue-subagents.md#the-blocked-by-links),
+[The last steps of a post](issue-post.md#the-last-steps-of-a-post),
+[The result of an issue-post subagent](issue-post.md#the-result-of-an-issue-post-subagent) and
+[the defer rule](pick-the-tickets.md#the-defer-rule).
 
+- K1: `tasker status`, in the reads before the write and in the in-flight check.
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor` and `git show origin/main:<path>`.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 - K5: the `gh` reads of [Before a post](issues.md#before-a-post), and
   `gh issue view <number> -R <repo> --json comments`, the read of the comments of the target issue for the search and
-  the compare of a comment post.
+  the compare of a comment post. It also has these reads, each named by its source:
+  - The duplicate search `gh issue list --state all --search "<words> in:title,body" --limit 1000`
+  - The state read `gh issue view <number> --json state -q .state`
+  - The hash read `gh issue view <number> --json title,body`
+  - The body read `gh issue view <number> --json body -q .body`, for the compare after a post and for the compare of
+    each match
+  - The walk with `--paginate` and the links read `gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocked_by`
+  - The label read of a blocker, `gh issue view <blocker> -R <repo> --json labels -q '.labels[].name'`
+  - The read of the links of both milestones after the post,
+    `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number` and the links read
+  - The column read of the defer rule, `gh issue view <number> --json projectItems -q '.projectItems[].status.name'`
 - K6: `gh issue create` and `gh issue edit` of the title and the body, and
   `gh issue comment <number> -R <repo> --body-file <absolute path of the body file>`, which asks the user.
 - K7: the `gh issue edit` calls that add or remove a blocked-by link, with the milestone and the labels of the draft in
@@ -272,8 +288,9 @@ Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-i
 - K12: the body file of the post, next to its draft file: the absolute path of the draft file, with `.body.md` in place
   of the `.md` at its end.
 - Named other commands: a Read call on a file of the local clone, a Read call on the body file of a comment post,
-  `wc -l <path>`, `wc -m <absolute path of the body file>`, `timeout 20 bash -c 'sleep 5'` and a Read call on the saved
-  output of its own tool call.
+  `wc -l <path>`, `wc -m <absolute path of the body file>`, `timeout 20 bash -c 'sleep 5'`, a Read call on the saved
+  output of its own tool call, `printf '%s\n' "$json"` and `sha256sum` in the hash read, `diff` in the compare after a
+  post and in the compare of a match, `timeout 60 tail -f /dev/null`, and a Read call on the draft file of its post.
 - Each other kind: no list.
 
 ## The write subagent of the orchestrator
