@@ -40,7 +40,6 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/quota.md](docs/dev/quota.md): the steps when a quota stops a task subagent.
 - [docs/dev/handoff.md](docs/dev/handoff.md): the handoff of a session.
 - [docs/dev/handoff-orchestrator.md](docs/dev/handoff-orchestrator.md): the handoff of the orchestrator.
-- [docs/dev/handoff-planner.md](docs/dev/handoff-planner.md): the handoff of the planner.
 - [docs/dev/handoff-operator.md](docs/dev/handoff-operator.md): the handoff of the operator.
 - [docs/dev/limits.md](docs/dev/limits.md): the limits of the orchestrator and the task subagents.
 - [docs/dev/planner.md](docs/dev/planner.md): the rules of a planner.

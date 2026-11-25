@@ -13,9 +13,9 @@ says.
 
 The planner pages are `docs/planner.md` and the pages of this list, "The pages":
 
-- [docs/dev/planner.md](dev/planner.md): the rules for milestone planning and ad hoc drafts: the initial planner and the
-  follow-up planner, the read of the milestones, the start prompts, the order of the work, the ticket subagent, the
-  review loop of a draft, what goes in a ticket and the work with the user.
+- [docs/dev/planner.md](dev/planner.md): the rules for milestone planning and ad hoc drafts: the start of the initial
+  planner, the read of the milestones, the start prompts, the order of the work, the ticket subagent, the review loop of
+  a draft, what goes in a ticket and the work with the user.
 - [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
   own-session closure.
 - [docs/dev/items.md](dev/items.md): the form of an item, the terms of its questions and the answer.
@@ -37,5 +37,3 @@ The planner pages are `docs/planner.md` and the pages of this list, "The pages":
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
   topic handoff" and "The hold of the items".
-- [docs/dev/handoff-planner.md](dev/handoff-planner.md): "The follow-up planner", "An open draft", "The post count",
-  "The steps of the old planner", "The handoff file of the planner" and "The start of the new planner".

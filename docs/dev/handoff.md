@@ -1,33 +1,30 @@
 # Handoff
 
-The readers of this page are a long-running orchestrator, the follow-up planner, the operator and the session of
+The readers of this page are a long-running orchestrator, the operator and the session of
 [a topic handoff](#a-topic-handoff), which can be a session of any role. Each sender of the slug of any kind, for
 example an initial planner or the orchestrator of a numbered milestone, also reads
 [The hold of the items](#the-hold-of-the-items). Each role has its own page:
 
 - [The orchestrator](handoff-orchestrator.md)
-- [The planner](handoff-planner.md)
 - [The operator](handoff-operator.md)
 
 ## The suggestion of a handoff
 
-A suggestion of a handoff of an orchestrator or of a follow-up planner is a question in the pane of the orchestrator, as
-[Start](question-pane.md#start) says. An orchestrator asks it in its own pane. A follow-up planner sends its suggestion
-to `orchestrator-<slug>`, which asks it in its pane. The handoff starts after the close of the pane that holds the go
-question. The orchestrator accepts the decision message with the go of the user and sends the ack. Then the rounds
-before the close run, and the pane closes, as [Close and continue](question-pane.md#close-and-continue) says. Then the
-handoff starts. The user can also ask the old session for a handoff at any time. A request of the user for a handoff
-needs no go, and no pane holds it. The start of a handoff is the close of the pane of the go question, the suggestion of
-the old operator or the request of the user. After the start, the old session does the steps of its role page:
-[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
-[the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and
+A suggestion of a handoff of an orchestrator is a question in the pane of the orchestrator, as
+[Start](question-pane.md#start) says. An orchestrator asks it in its own pane. The handoff starts after the close of the
+pane that holds the go question. The orchestrator accepts the decision message with the go of the user and sends the
+ack. Then the rounds before the close run, and the pane closes, as
+[Close and continue](question-pane.md#close-and-continue) says. Then the handoff starts. The user can also ask the old
+session for a handoff at any time. A request of the user for a handoff needs no go, and no pane holds it. The start of a
+handoff is the close of the pane of the go question, the suggestion of the old operator or the request of the user.
+After the start, the old session does the steps of its role page:
+[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) and
 [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its
 current tasks, or their stopping point in [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case).
 Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
 
 The old session can suggest a handoff to the user. The old session counts the events that its role page names:
-[the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count),
-[the post count of the planner](handoff-planner.md#the-post-count) and
+[the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count) and
 [the close count of the operator](handoff-operator.md#the-close-count). Each role page gives the count at which the old
 session suggests a handoff, the count of a suggestion. The role page says in which reply or at which event.
 
@@ -47,11 +44,10 @@ recommendation. [The form of a reply](working-with-the-user.md#the-form-of-a-rep
 [The open items](operator-items.md#the-open-items) give the form of these lists. The recommendation says "hand off now"
 or "not yet", with its reason. The reason gives the count of the session and the count of a suggestion of the role page
 of the session. The count of the session is [the landing count](handoff-orchestrator.md#the-landing-count) of the
-orchestrator, [the post count](handoff-planner.md#the-post-count) of the planner or
-[the close count](handoff-operator.md#the-close-count) of the operator. For an orchestrator, a list of open questions or
-open items that it shows in its own tab is a progress report of [The operator](working-with-the-user.md#the-operator),
-and it carries no handoff recommendation. The go question in its question pane carries the recommendation, as
-[the landing count](handoff-orchestrator.md#the-landing-count) says.
+orchestrator or [the close count](handoff-operator.md#the-close-count) of the operator. For an orchestrator, a list of
+open questions or open items that it shows in its own tab is a progress report of
+[The operator](working-with-the-user.md#the-operator), and it carries no handoff recommendation. The go question in its
+question pane carries the recommendation, as [the landing count](handoff-orchestrator.md#the-landing-count) says.
 
 When the count of the session reaches the count of a suggestion, the recommendation is "hand off now", also in an answer
 to [a question of the user](working-with-the-user.md#a-question-of-the-user). For an orchestrator, the recommendation
@@ -73,9 +69,8 @@ no handoff file. The reason: the session stops soon after the close, so a handof
 [The start and the authority](milestone-close.md#the-start-and-the-authority) and the two parts of Missing roles, in
 [operator-start.md](operator-start.md#missing-roles) and [milestone-close.md](milestone-close.md#missing-roles), give
 the start for each session. For the orchestrator and the operator, it is the report of the orchestrator that the close
-started. With no orchestrator, it is the word of the user that starts the close for the operator. For the follow-up
-planner, it is the word that the close started, from the operator or, with no operator, from the user. The rule lasts
-until the session ends.
+started. With no orchestrator, it is the word of the user that starts the close for the operator. The rule lasts until
+the session ends.
 
 For the orchestrator, the report that the close started comes only after end reads that find no open issue.
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule. A wait or a return to work
@@ -145,15 +140,7 @@ source for it. For an orchestrator, this reason does not hold for a question wit
 
 The old session puts no rule in the handoff file. The rules stay in the docs, and the prompt points to them.
 
-Before it writes the file, a session other than an orchestrator sends each fact that it measured and each lesson to
-`planner-<slug>` with `SendMessage`. The slug comes from the own name of the old session. The planner sends a fact to a
-doc of the repo through a ticket, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) says. The old planner
-sends nothing, because [its role page](handoff-planner.md#the-handoff-file-of-the-planner) keeps these facts and
-lessons. If the send of a follow-up planner fails, also because no session has that name, the follow-up planner sends
-them to `orchestrator-<slug>`. The old operator has no operator, so [the failure rule](limits.md#the-failure-rule)
-applies to it. An old orchestrator sends nothing to `planner-<slug>`.
-
-An old orchestrator of the kind `claude` starts a [planner subagent](planner-subagent.md) for these facts and lessons.
+An old orchestrator of the kind `claude` starts a [planner subagent](planner-subagent.md) for its facts and lessons.
 After a failed start of its planner subagent, an old orchestrator asks the user, as the planner bullet of
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The old orchestrator waits for
 the result, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says.
@@ -232,10 +219,6 @@ In a handoff of an orchestrator, the handoff ends after step 6 of
 [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator). The operator has no part
 in it.
 
-In a handoff of a follow-up planner, the handoff ends when the operator stops the old session and starts the new
-session, as steps 4 and 5 of [A handoff](operator-start.md#a-handoff) say. This also covers an old session that the user
-started.
-
 The rule of the user of 2026-10-25 is the request of the user for these steps: "Then stop the orchestrator and start a
 new one."
 
@@ -246,8 +229,7 @@ hold messages, the user can also end the handoff with a word to the old operator
 message, because no sender of the slug holds. The old operator is the operator again, with no handoff.
 
 Until the end, the old session starts no new work. The role page names that work:
-[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
-[the steps of the old planner](handoff-planner.md#the-steps-of-the-old-planner) and
+[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) and
 [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator).
 
 In a handoff of the operator, the go and the handoffs of a sender in steps 1 and 2 of
@@ -257,19 +239,9 @@ start and no reuse of a question pane, as [Start](question-pane.md#start) says.
 
 ## The stop and the start
 
-In a handoff of a follow-up planner, the operator stops the old session and starts the new session, as
-[A handoff](operator-start.md#a-handoff) says. This step covers each old follow-up planner, also one that the user
-started. The first message of the new session is the prompt of the handoff file. The first message names the path of the
-handoff file.
-
 In a handoff of an orchestrator, the old orchestrator starts the new orchestrator and closes its own tab, as
 [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The first message
 of the new orchestrator is the prompt of the handoff file, and it names the path of the handoff file.
-
-In a handoff of a follow-up planner, the item with the path of the handoff file starts the stop and the start by the
-operator, with no answer of the user. If this item arrives in a handoff of the operator before the hold messages, the
-old operator does the stop and the start, and steps 1 and 2 of
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) give the rest.
 
 In a handoff of the operator, [the start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives
 the end of the handoff. [The end of the hold by the user](#the-end-of-the-hold-by-the-user) gives a second end.
@@ -383,9 +355,9 @@ A held item can ask for a choice that only the user makes, while a task subagent
 slug also holds such an item. On 2026-10-25, during a handoff of operator-docs, the task subagent of #443 stopped for
 such a choice, and orchestrator-docs asked the user in its own tab.
 
-As [The operator](working-with-the-user.md#the-operator) says, an orchestrator asks the user in its question pane. A
-follow-up planner asks through `orchestrator-<slug>`. So a hold of the items holds no open question of either, and
-neither asks the user in its own tab. An initial planner still works with the user in its tab, as that section says.
+As [The operator](working-with-the-user.md#the-operator) says, an orchestrator asks the user in its question pane. So a
+hold of the items holds no open question of an orchestrator, and it does not ask the user in its own tab. An initial
+planner still works with the user in its tab, as that section says.
 
 If the user answers before the write of the handoff file, the old operator sends that answer. The new operator sends
 each other answer.
