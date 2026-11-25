@@ -566,6 +566,8 @@ The planner subagent keeps these rules:
 14. The terms of the intro of [planner.md](planner.md): the planner and the blocked-by link.
 15. The source bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent). The prompt
     of a planner subagent names the source of each fact, as [The prompt](#the-prompt) says.
+16. [Wrong text of an open issue](planner.md#wrong-text-of-an-open-issue): the change of the body of an open issue with
+    wrong text and no task. Change 8 gives the actor of the post and of its reads.
 
 ## The changed rules
 
