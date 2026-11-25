@@ -117,8 +117,7 @@ Each time that the operator does this section, it first reads `docs/dev/operator
 
 The operator stops a session only on a request of the user. [A question pane](question-pane.md#a-question-pane) gives
 the close of a question pane. The operator closes only a tab that it opened in its own session, or a tab that an earlier
-operator of its slug opened. In a handoff, the operator also stops a session in a tab that it did not open, for example
-a tab that the user opened.
+operator of its slug opened.
 
 In a handoff of the operator, the old operator closes its own tab with no request of the user. This sentence wins over
 two rules for the own tab of the old operator. The first rule is "The operator closes only a tab that it opened in its
@@ -132,15 +131,14 @@ In the close of a milestone, the operator closes its own tab on the approval of 
 paragraph before. It also wins over each rule of this section that limits a close to the tab list. The same holds for a
 rule that limits a close to a tab that the operator opened.
 
-Outside a handoff, the operator takes the tab id of each session from [the tab list](../operator.md), also of its own
-sessions. If the tab list gives no tab id for the session, the operator tells the user and closes nothing. In a handoff,
-the operator takes the tab id from the row of the session.
+The operator takes the tab id of each session from [the tab list](../operator.md), also of its own sessions. If the tab
+list gives no tab id for the session, the operator tells the user and closes nothing.
 
 A missing tab id has two reports: the tab list gives none, or the row gives a tab id outside the tab list. After either
 report, the user can tell the operator to close the session. On that word, the operator takes the tab id from the row of
-the session, as in a handoff. That word covers a tab that the operator did not open. It wins over each sentence here
-that limits a stop to a tab of the tab list, or to a tab that the operator opened. It also wins over the sentence on the
-tab list in [docs/operator.md](../operator.md).
+the session. That word covers a tab that the operator did not open. It wins over each sentence here that limits a stop
+to a tab of the tab list, or to a tab that the operator opened. It also wins over the sentence on the tab list in
+[docs/operator.md](../operator.md).
 
 On 2026-10-30, the user opened the initial planner, so its tab was not in the tab list. The user said: "You close the
 initial planner".
@@ -151,14 +149,14 @@ gives `pane_id` and `tab_id`. Before step 1, the operator runs `herdr agent list
 the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says, and closes nothing. If no row has
 the name of the session, the operator tells the user and closes nothing.
 
-Each time that the operator reads the row of a session, in a handoff or in each other stop, it counts the rows with the
-name of the session. If more than one row has the name, the operator does not do steps 1 to 3, sends no "stop" and
-closes no pane and no tab. It tells the user one time. The message names the session, and the pane id and the tab id of
-each row with that name, and it gives no other items. This stop did not close the pane of the session, and the operator
-sends no second message for the failed close. A close of the wrong pane stops the other session.
+Each time that the operator reads the row of a session, it counts the rows with the name of the session. If more than
+one row has the name, the operator does not do steps 1 to 3, sends no "stop" and closes no pane and no tab. It tells the
+user one time. The message names the session, and the pane id and the tab id of each row with that name, and it gives no
+other items. This stop did not close the pane of the session, and the operator sends no second message for the failed
+close. A close of the wrong pane stops the other session.
 
-Outside a handoff, if the tab id of the row is not a tab id of the tab list, the operator tells the user and closes
-nothing. Steps 2 and 3 use the pane id and the tab id of the row.
+If the tab id of the row is not a tab id of the tab list, the operator tells the user and closes nothing. Steps 2 and 3
+use the pane id and the tab id of the row.
 
 Before the operator closes the pane of a session, the session runs the rounds of
 [Session-review rounds](session-review-rounds.md) and sends the report of the rounds. The operator does steps 2 and 3

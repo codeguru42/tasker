@@ -167,8 +167,7 @@ The new operator starts in these steps:
 In its first reply, the new operator gives the user the path of the handoff file. It also shows each answered item of
 the file that the old operator did not show, as [The open items](operator-items.md#the-open-items) says. It also gives
 the notice of the hold that step 2 of [the steps of the old operator](#the-steps-of-the-old-operator) gives the old
-operator. It also tells the user about each failed handoff of a sender that the handoff file names. The reason: the last
-reply of the old operator shows only in its closed tab.
+operator. The reason: the last reply of the old operator shows only in its closed tab.
 
 [The herdr agent name of a new operator](../sessions.md#the-herdr-agent-name-of-a-new-operator) gives the reason for the
 suffix `-<time>`.
