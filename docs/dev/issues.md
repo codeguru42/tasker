@@ -248,8 +248,7 @@ each issue. The start of [The close of a milestone](milestone-close.md#the-start
 the GitHub milestone closure of a milestone with no work left. The session that closes the milestone needs no other word
 of the user for it. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) of pick-the-tickets.md
 gives the report of an orchestrator when its milestone is done. This section gives the reads and the write of the
-session that closes a milestone. That session is the orchestrator of the kind `claude` at its end, or the planner after
-its rounds.
+session that closes a milestone. That session is the orchestrator of the kind `claude` at its end.
 
 First, the session reads the milestone with `gh api repos/codeguru42/tasker/milestones/<number>`. The read gives the
 title, the state and the description of the milestone. If the state is `closed`, the session reports that state. It does
@@ -267,9 +266,7 @@ task, the session takes the issue number from the issue key of the task. It read
 milestone of the close.
 
 If new work belongs to the milestone, the milestone stays open. For the orchestrator,
-[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the next step. The planner tells the
-user about that work directly. It starts no new orchestrator and does not report the close of the milestone as done. The
-planner keeps its role, and the word of the user decides the next step, for example the start of an operator.
+[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the next step.
 
 If the reads work and no work is left, the session runs
 `gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`. If a read, the match or the command
@@ -279,8 +276,5 @@ read. After the command, the session reads the milestone again with
 read shows the number of the milestone and the state `closed`.
 
 The session does not run the command again after a write that worked. If the write or the read after it fails, the
-session tells the user about the failure. It does not end its role, and it keeps the work for a later recovery. After
-the read shows the state `closed`, the planner deletes only each memory note whose delete condition is the close of that
-milestone. Then the planner gives the result in its close report, as step 14 of
-[The steps that end each role](milestone-close.md#the-steps-that-end-each-role) says. The orchestrator gives the result
-in its report that the milestone is done.
+session tells the user about the failure. It does not end its role, and it keeps the work for a later recovery. The
+orchestrator gives the result in its report that the milestone is done.

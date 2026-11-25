@@ -135,14 +135,14 @@ question. In this section, each rule for an open question also covers an open de
 This gate wins over the bullet of [The open items](#the-open-items) that starts "When an item arrives", the rule of the
 arrival line alone. It keeps each approval for the user alone.
 
-Before the terminal delegation of [The close of a milestone](operator-start.md#the-close-of-a-milestone), the operator
-finds each open question that it holds. This includes a question about work outside the milestone. A question of an open
+Before its close report in [The close of a milestone](operator-start.md#the-close-of-a-milestone), the operator finds
+each open question that it holds. This includes a question about work outside the milestone. A question of an open
 question pane is also an open question. It also finds each open decision, as
 [The close of a milestone](milestone-close.md) defines it. An answer of the operator does not resolve a waiting decision
 of the session-review skill.
 
 If a question is still open, the operator gives the user the full text of each open question. Then it waits for the
-answer. During this wait, the operator does not end its role and sends no terminal delegation.
+answer. During this wait, the operator does not end its role.
 
 A question stays open until one of these events:
 
@@ -156,14 +156,14 @@ The authority that the rules of this section already give for a question that th
 rule covers only a question that is not a question for the user alone. A recommendation of the operator never answers a
 question for the user alone.
 
-A missing answer of the user, a deferral, a send of the question to the planner and another round each leave the
-question open. A moved question of [The open items](items.md#the-open-items) is not an open question.
+A missing answer of the user, a deferral and another round each leave the question open. A moved question of
+[The open items](items.md#the-open-items) is not an open question.
 
 If an answer asks for more work, the operator finishes that work before it goes on with the close. Then step 7 of
 [The steps that end each role](operator-start.md#the-steps-that-end-each-role) applies.
 
-Before the terminal delegation, each answered question is a sent question, as this section says. No question and no
-decision of the operator is open.
+Before its close report, each answered question is a sent question, as this section says. No question and no decision of
+the operator is open.
 
 ## The states of an item
 

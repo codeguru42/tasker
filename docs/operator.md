@@ -19,11 +19,8 @@ Messages of the other sessions break into the conversation of the user, and open
 sends no item that needs the user to the operator, and an orchestrator sends none either. Each such question goes to a
 question pane of an orchestrator, as [question-pane.md](dev/question-pane.md) says.
 
-In the close of a milestone, the operator settles each open question and each open decision before its terminal
-delegation. It uses [the question gate of the close](dev/operator-items.md#the-question-gate-of-the-close).
-[The terminal delegation](dev/operator-start.md#the-terminal-delegation) is the last message of the operator to the
-planner. After the end of the role of the operator, the planner talks to the user directly, as
-[The operator](dev/working-with-the-user.md#the-operator) says.
+In the close of a milestone, the operator settles each open question and each open decision before its close report. It
+uses [the question gate of the close](dev/operator-items.md#the-question-gate-of-the-close).
 
 [docs/dev/GLOSSARY.md](dev/GLOSSARY.md) defines the user, the slug, the own name of a session, the session ref and the
 socket address. [docs/sessions.md](sessions.md) defines the sessions of a slug and an item. The operator is named
@@ -58,7 +55,7 @@ milestone", the operator follows
 The operator pages are `docs/operator.md` and the pages of this list, "The pages":
 
 - [docs/dev/operator-start.md](dev/operator-start.md): "The order of a milestone", "Start a session", "The start
-  prompts", "Stop a session", "The close of a milestone" and "A handoff".
+  prompts", "Stop a session" and "The close of a milestone".
 - [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
   own-session closure.
 - [docs/dev/operator-items.md](dev/operator-items.md): "The open items", "The question gate of the close" and "The

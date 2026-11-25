@@ -61,8 +61,8 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 6. The message of the initial planner is the one signal that ends the initial planning. The operator does this step only
    after this message. The word of the user to the initial planner in step 5 is the request of the user for this stop.
    Then the operator closes the tab of the initial planner, as "Stop a session" says.
-7. The operator starts the follow-up planner, as "Start a session" says. Then it tells the user to start the
-   orchestrator, as [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says.
+7. The operator tells the user to start the orchestrator, as
+   [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says.
 8. At the end of the milestone, [The close of a milestone](#the-close-of-a-milestone) applies.
 
 If a stop or a start fails, the failure cases of "Stop a session" and "Start a session" apply.
@@ -104,7 +104,7 @@ The operator puts the milestone title in place of `<milestone>`. Each prompt is 
 `herdr agent start`. Under `pi`, the name comes from `-n` at the start, and the session reads it, as
 [docs/sessions.md](../sessions.md) says, before its role work. So no prompt holds a name step.
 
-[The start prompts](planner.md#the-start-prompts) gives the prompts of the initial planner and the follow-up planner.
+[The start prompts](planner.md#the-start-prompts) gives the prompt of the initial planner.
 
 The orchestrator: the user starts it with the first prompt of a milestone scope, as
 [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says.
@@ -116,10 +116,9 @@ Each time that the operator does this section, it first reads `docs/dev/operator
 [Start a session](#start-a-session) gives the reason and the rule of the new text.
 
 The operator stops a session only on a request of the user. [A question pane](question-pane.md#a-question-pane) gives
-the close of a question pane. In a handoff of an orchestrator or a follow-up planner, the rule of the user of 2026-10-25
-in [The end of a handoff](handoff.md#the-end-of-a-handoff) is that request, for step 4 of [A handoff](#a-handoff). The
-operator closes only a tab that it opened in its own session, or a tab that an earlier operator of its slug opened. In a
-handoff, the operator also stops a session in a tab that it did not open, for example a tab that the user opened.
+the close of a question pane. The operator closes only a tab that it opened in its own session, or a tab that an earlier
+operator of its slug opened. In a handoff, the operator also stops a session in a tab that it did not open, for example
+a tab that the user opened.
 
 In a handoff of the operator, the old operator closes its own tab with no request of the user. This sentence wins over
 two rules for the own tab of the old operator. The first rule is "The operator closes only a tab that it opened in its
@@ -229,36 +228,13 @@ milestone is done.
 
 ### The rounds of the operator
 
-The operator runs its rounds of [Session-review rounds](session-review-rounds.md) until a round finds nothing new. It
-sends each finding to the planner, under the rules for a draft and its review in
-[The review loop of a draft](planner.md#the-review-loop-of-a-draft). A round does not list again the open work that an
-earlier round listed, as step 7 of [the session-review skill](../../.claude/skills/session-review/SKILL.md) says.
+The operator runs its rounds of [Session-review rounds](session-review-rounds.md) until a round finds nothing new. A
+round does not list again the open work that an earlier round listed, as step 7 of
+[the session-review skill](../../.claude/skills/session-review/SKILL.md) says.
 
-If a round of the operator or a send of a finding fails, the rounds of the operator end. The close then stops at this
-stage. The operator tells the user about the failure directly. It keeps the findings and the state of the terminal
-delegation for a later recovery. It does not end its role after a failed round.
-
-### The terminal delegation
-
-Before the terminal delegation, the operator does steps 6 and 7 of
-[The steps that end each role](#the-steps-that-end-each-role). Step 6 follows
-[the question gate of the close](operator-items.md#the-question-gate-of-the-close). With an open question or an open
-decision, the operator sends no terminal delegation and does not end its role. It also sends none before a round of step
-7 finds nothing new. It also sends none while a [write subagent](question-pane.md#terms) runs.
-
-The terminal delegation gives the milestone, the report of the rounds of the operator, the state of each finding and the
-remaining close duties. It also gives the id of each item with a settled question and the decision of that question. It
-also gives the pane id of the operator, or says that it gives none, as
-[The own-session closure](milestone-close.md#the-own-session-closure) says. It says that the planner talks to the user
-directly after the end of the role of the operator. The operator sends it to the planner with `SendMessage`. If the send
-fails, [the failure rule](limits.md#the-failure-rule) applies, and the operator keeps its role.
-
-The terminal delegation is the last message of the operator to another session and the last action of its role. The
-operator waits for no result of the rounds of the planner and for no result of the GitHub milestone closure.
-
-### The work of the planner
-
-The rules of this subsection are in [The work of the planner](milestone-close.md#the-work-of-the-planner).
+If a round of the operator fails, the rounds of the operator end. The close then stops at this stage. The operator tells
+the user about the failure directly. It keeps the findings for a later recovery. It does not end its role after a failed
+round.
 
 ### Missing roles
 
@@ -275,40 +251,26 @@ The rest of this subsection is in [Missing roles](milestone-close.md#missing-rol
    "Docs", the close starts only on the word of the user.
    [The start and the authority](milestone-close.md#the-start-and-the-authority) gives the details.
 2. The end reads of the orchestrator find no open issue of the milestone. Then the orchestrator shows the report that
-   the close started in its own tab, and the user tells the operator and the planner.
+   the close started in its own tab, and the user tells the operator.
    [The start and the authority](milestone-close.md#the-start-and-the-authority) gives the details.
 3. The orchestrator of the kind `claude` closes the GitHub milestone. Then it reports that the milestone is done and
    closes its own tab. A pi orchestrator only reports that the milestone is done.
    [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the details.
 4. The orchestrator ends, as [The orchestrator ends](#the-orchestrator-ends) says. The operator does not make sure that
    it ended.
-5. The operator runs its rounds until a round finds nothing new. It sends each finding to the planner as a proposal.
+5. The operator runs its rounds until a round finds nothing new.
    [The rounds of the operator](#the-rounds-of-the-operator) gives the details.
 6. The operator keeps working until each open question and each open decision is resolved.
    [The question gate of the close](operator-items.md#the-question-gate-of-the-close) gives the details.
-   [The questions and the rounds of the close](milestone-close.md#the-questions-and-the-rounds-of-the-close) also
-   applies.
-7. The operator runs a round. If the round finds something new, the operator sends it to the planner, as step 5 says.
-   Then the operator goes back to step 6 and runs a round again. The operator goes to step 8 only after each open
-   question and each open decision is resolved and a round finds nothing new.
-   [The questions and the rounds of the close](milestone-close.md#the-questions-and-the-rounds-of-the-close) gives the
-   details.
-8. The operator sends the [terminal delegation](#the-terminal-delegation) to the planner. A send that works ends the
-   role of the operator. The planner takes the arrival of the terminal delegation as the end of the role of the
-   operator.
-9. The operator gives the user its close report and asks for the approval to close. The report says that the last round
-   found nothing new, and that the planner is now the contact of the user. On the approval, the operator closes its own
-   session, as [The own-session closure](milestone-close.md#the-own-session-closure) says.
+7. The operator runs a round. If the round finds something new, the operator goes back to step 6 and runs a round again.
+   The operator goes to step 8 only after each open question and each open decision is resolved and a round finds
+   nothing new.
+8. The operator gives the user its close report and asks for the approval to close. The report says that the last round
+   found nothing new. On the approval, the operator closes its own session, as
+   [The own-session closure](milestone-close.md#the-own-session-closure) says.
 
-Steps 10 to 14 are in [The steps that end each role](milestone-close.md#the-steps-that-end-each-role).
-
-The operator and the planner close their own sessions in the close, each on the approval of the user. The orchestrator
-of the kind `claude` closes its own session with no approval.
-
-### The questions and the rounds of the close
-
-The rules of this subsection are in
-[The questions and the rounds of the close](milestone-close.md#the-questions-and-the-rounds-of-the-close).
+The operator closes its own session in the close, on the approval of the user. The orchestrator of the kind `claude`
+closes its own session with no approval.
 
 ### The own-session closure
 
@@ -321,78 +283,19 @@ The rules of this subsection are in
 
 ### The table of the close
 
-Each actor keeps its own report of the rounds and its own state in the close. The operator also keeps the name of the
-planner and the state of its terminal delegation. The planner keeps the terminal delegation and the end of the role of
-the operator. The GitHub milestone keeps its own state, open or closed.
+Each actor keeps its own report of the rounds and its own state in the close. The GitHub milestone keeps its own state,
+open or closed.
 
 | Stage                         | Session that acts       | Change of state                                                                                                                                                       | Who tells whom                                                                                                              | Outcome of a failure                                                                                                                       |
 | ----------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | The orchestrator ends         | Orchestrator, then user | The orchestrator of the kind `claude` closes the milestone and its own tab. For a pi orchestrator, with no pane id, or after a failed close, the user closes the tab. | The orchestrator shows the report that the milestone is done in its own tab. The user tells the operator.                   | The user closes the tab. The operator starts no round of step 5 before the user tells it that the milestone is done.                       |
-| The rounds of the operator    | Operator                | A round finds nothing new.                                                                                                                                            | The operator sends each finding to the planner.                                                                             | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                   |
+| The rounds of the operator    | Operator                | A round finds nothing new.                                                                                                                                            |                                                                                                                             | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                   |
 | The questions of the operator | Operator                | Each open question and each open decision is resolved, as the question gate of the close says.                                                                        | The operator gives the user the full text of each open question and each open decision. It sends each answer to its sender. | The operator keeps working until each open question and each open decision is resolved.                                                    |
-| The review of the operator    | Operator                | After the questions, a round finds nothing new. After a round that finds something, the stage "The questions of the operator" runs again.                             | The operator sends each finding to the planner.                                                                             | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                   |
+| The review of the operator    | Operator                | After the questions, a round finds nothing new. After a round that finds something, the stage "The questions of the operator" runs again.                             |                                                                                                                             | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                   |
 | The operator closes           | Operator                | On the approval to close, the operator closes its own session.                                                                                                        | The operator gives the user its close report and asks for the approval to close.                                            | If the close report fails, the failure rule applies. If the operator cannot close itself, it tells the user, and the user closes its pane. |
-
-The rows of the stages that the planner acts in are in
-[The table of the close](milestone-close.md#the-table-of-the-close).
 
 The operator does not wait in a loop for a report. If a report does not come, the operator tells the user, and the word
 of the user decides.
-
-## A handoff
-
-Each time that the operator does this section, it first reads `docs/dev/operator-start.md` again, as
-[the doc-read rule](doc-reads.md#the-doc-read-rule) says. Then it does the steps of the text that it read.
-[Start a session](#start-a-session) gives the reason and the rule of the new text. In steps 4 and 5, "Stop a session"
-and "Start a session" each read the file again, because these steps can run hours after step 1.
-
-The operator does these steps for each handoff of a follow-up planner. This also covers a session that the user started
-in a tab of the user. The old session is the follow-up planner that hands off its work. The new session takes the work,
-with the same name as the old session.
-
-The operator has no part in a handoff of an orchestrator. The old orchestrator starts the new orchestrator and closes
-its own tab, as [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
-
-If a handoff of a follow-up planner is in progress at the start of a handoff of the operator, steps 1 and 2 of
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) say what each operator does.
-
-1. A recommendation "hand off now" of the old session arrives. This recommendation is a suggestion of a handoff, as
-   [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. The operator sends the go to the session
-   at once with `SendMessage`, with no question to the user. The go is a word of the operator, not a word of the user,
-   so it does not start with "From the user:". The session finishes its current tasks and then does the steps of its
-   handoff. If `SendMessage` fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says.
-2. The old session sends the operator the path of its handoff file as an item. The item can also give the prompt for the
-   new session.
-3. The operator reads the handoff file. It takes the prompt for the new session from the code block of the file. If the
-   read fails, the operator tells the user, as the failure rule says, and does not do steps 4 and 5.
-4. The operator stops the old session, as [Stop a session](#stop-a-session) says.
-5. The operator starts the new session, as [Start a session](#start-a-session) says. The prompt is the prompt of step 3.
-
-If step 4 does not close the pane of the old session, the operator does not do step 5. It tells the user, as
-[the failure rule](limits.md#the-failure-rule) says. In the case of more than one row, the message of
-[Stop a session](#stop-a-session) is the one message.
-[Two sessions with one name](../sessions.md#two-sessions-with-one-name) gives the fact of two sessions with one name.
-
-In a handoff, these rules stay with the user:
-
-- Only the user answers a prompt of a session in `blocked`, as [A blocked session](../sessions.md#a-blocked-session)
-  says.
-- After a failed `herdr agent start`, the operator does not close the new tab without the user, as
-  [Start a session](#start-a-session) says.
-
-The table gives each change of a handoff. An empty cell means that the page gives no state for that actor. For the case
-of more than one row, the row "More than one row has the name" wins over the row "A close or a start fails".
-
-| Change                         | Old session                                                                                                                                                     | Operator                                                              | New session                               | Who tells whom                                                                                               |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| The recommendation arrives     | Waits for the go                                                                                                                                                | Sends the go                                                          |                                           | The old session tells the operator                                                                           |
-| The go arrives                 | Finishes its tasks, writes the handoff file                                                                                                                     |                                                                       |                                           | The operator tells the old session                                                                           |
-| The path arrives               | Waits                                                                                                                                                           | Reads the handoff file                                                |                                           | The old session tells the operator, with an item                                                             |
-| The stop                       | It runs the rounds or gives the report again, as [Session-review rounds](session-review-rounds.md) says. It sends the report of the rounds, and its pane closes | Waits for the report, then for `idle` or `done`, then closes the pane |                                           | The operator tells the old session "stop". The old session tells the operator, with the report of the rounds |
-| The start                      |                                                                                                                                                                 | Starts the new session                                                | Runs, from the prompt                     | The operator starts it with `herdr agent start`                                                              |
-| A close or a start fails       |                                                                                                                                                                 | Tells the user                                                        |                                           | The operator tells the user                                                                                  |
-| More than one row has the name | Runs                                                                                                                                                            | Closes nothing, tells the user                                        | Not started                               | The operator tells the user                                                                                  |
-| A handoff of an orchestrator   | Starts the new orchestrator, then closes its own tab by its tab id                                                                                              | Has no part                                                           | Runs, from the prompt of the handoff file | The old orchestrator starts the new orchestrator with `herdr agent start`                                    |
 
 ## A denied command of the operator
 

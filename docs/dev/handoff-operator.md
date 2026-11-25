@@ -45,17 +45,16 @@ After the start, the old operator does these steps:
    [sender of the slug](handoff.md#the-hold-of-the-items) as usual. This also covers a report or an item about a finding
    of the rounds. The words "as usual" do not cover an automatic start or a reuse of a question pane. The condition "No
    handoff of the operator is due or running" of [Start](question-pane.md#start) stops them. Do each handoff of an
-   orchestrator or a follow-up planner in this step as [A handoff](operator-start.md#a-handoff) says. If a step of "A
-   handoff" fails in this step, the paragraph of step 2 about a failed step of "A handoff" applies. After the wait, run
-   no new round in this handoff, also after the items until the hold messages. The send of the facts and the lessons of
+   orchestrator or a follow-up planner in this step as A handoff says. If a step of "A handoff" fails in this step, the
+   paragraph of step 2 about a failed step of "A handoff" applies. After the wait, run no new round in this handoff,
+   also after the items until the hold messages. The send of the facts and the lessons of
    [The handoff file](handoff.md#the-handoff-file) covers the lessons of these items.
 
 2. Before the hold messages, complete each handoff of a sender whose path item arrived. A sender is
    `orchestrator-<slug>` or `planner-<slug>`, as [The hold of the items](handoff.md#the-hold-of-the-items) says. A
-   handoff of a sender is a handoff of an orchestrator or a follow-up planner, as
-   [A handoff](operator-start.md#a-handoff) gives it. The old sender is the sender that hands off, and the new sender
-   takes its work. A path item is the item of step 2 of "A handoff". It gives the path of the handoff file of the old
-   sender.
+   handoff of a sender is a handoff of an orchestrator or a follow-up planner, as A handoff gives it. The old sender is
+   the sender that hands off, and the new sender takes its work. A path item is the item of step 2 of "A handoff". It
+   gives the path of the handoff file of the old sender.
 
    For each such handoff, do "A handoff" from step 3 to step 5. This includes the read of `docs/dev/operator-start.md`
    at the start of that section. This rule covers a path item that arrived before this step. It also covers a path item

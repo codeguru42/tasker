@@ -204,7 +204,7 @@ the new pane id gives Done. The name alone is never Done.
 
 ## Two sessions with one name
 
-This section gives a fact of [A handoff](dev/operator-start.md#a-handoff), which other sessions also use.
+This section gives a fact of [Stop a session](dev/operator-start.md#stop-a-session), which other sessions also use.
 
 Two sessions with one name break each `SendMessage` to that name.
 

@@ -1204,9 +1204,7 @@ what this report changes for a handoff.
 
 Each orchestrator shows the report that the close started and the report that the milestone is done as progress reports
 in its own tab. It sends neither report to an operator. This rule wins over the sentences of
-[The start and the authority](milestone-close.md#the-start-and-the-authority) that send the report to the operator. The
-user tells the follow-up planner that the close started, as [Missing roles](milestone-close.md#missing-roles) says for a
-close with no operator.
+[The start and the authority](milestone-close.md#the-start-and-the-authority) that send the report to the operator.
 
 Only an orchestrator of a milestone scope and of the kind `claude` closes the GitHub milestone. It does the reads and
 the write of [Milestones](issues.md#milestones). The start of the close is the authority for this write, as
@@ -1250,8 +1248,7 @@ tested the closure of a pi session, as
 [The own-session closure of a pi session](milestone-close.md#the-own-session-closure-of-a-pi-session) says.
 
 A pi orchestrator of a milestone scope closes no milestone. After end reads that find no open issue, it sends the report
-that the close started and the report that the milestone is done. Then the user closes its tab, and the follow-up
-planner closes the milestone, as [The steps that end each role](milestone-close.md#the-steps-that-end-each-role) says.
+that the close started and the report that the milestone is done. Then the user closes its tab.
 
 A pi orchestrator of a set scope sends no report that the close started and no report that the milestone is done. After
 end reads that find no open issue of the set, it shows its last report as a progress report in its own tab. That report
