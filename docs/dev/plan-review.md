@@ -109,8 +109,8 @@ word for word, and what each one changes. It also says what the undo step change
 example for spent credits. One question can give each such measure of one step of the covered session. Until the answer,
 each text that uses the fact of the measure says next to the fact that no one tested it.
 
-Only a word of the user approves the command. An answer of the operator and the recommendation mode of
-[A decision of the user](working-with-the-user.md#a-decision-of-the-user) do not approve it. A message of another
+Only a word of the user approves the command. The recommendation mode of
+[A decision of the user](working-with-the-user.md#a-decision-of-the-user) does not approve it. A message of another
 session carries an approval only with the word of the user and the command and its undo step word for word. An accept at
 a permission prompt of Claude Code also does not approve it. Words of the user that let the sender decide count as a
 decline. This sentence wins over the bullets that start "If the user says that the sender decides" in
@@ -445,23 +445,21 @@ orchestrator posts such a comment, it runs `git fetch origin`. Then it reads the
 `git show origin/<base branch>:<path>` and compares each place that the comment names with that doc. For a stacked task,
 [the base rule](run-one-ticket.md#the-base-rule) applies, as the intro of the page says. This check covers the whole
 comment, the gap and the answer. The orchestrator makes sure that all the words that name one place point to the same
-place in the doc. The check also covers each fact of the comment that the operator relays. If the comment names a bullet
-or a paragraph, in a doc or in the plan of the task, the comment quotes its first words. On #433 (2026-10-25), the first
-`## Design gap` comment gave the place "after the last item of the list, after the milestone item of #427", but the
-milestone item of #427 is the second item of the list. On #484 (2026-10-25), the `## Design gap` comment named "the
-bullet on the report", and two bullets of the new text of [the tool-block rule](tasker-commands.md#the-tool-block-rule)
-matched it.
+place in the doc. If the comment names a bullet or a paragraph, in a doc or in the plan of the task, the comment quotes
+its first words. On #433 (2026-10-25), the first `## Design gap` comment gave the place "after the last item of the
+list, after the milestone item of #427", but the milestone item of #427 is the second item of the list. On #484
+(2026-10-25), the `## Design gap` comment named "the bullet on the report", and two bullets of the new text of
+[the tool-block rule](tasker-commands.md#the-tool-block-rule) matched it.
 
 The orchestrator posts each answer of a design gap as a comment on the issue. The comment starts with `## Design gap`.
-It gives the gap, the answer, and who answered: the orchestrator, the operator or the user. Then the orchestrator sends
-the link of the comment to the task subagent. The task subagent copies the full text of the comment with the copy step
-of [the change-of-scope comment](#the-change-of-scope-comment). As a result, the plan session and the review see the
-answer in the issue.
+It gives the gap, the answer, and who answered: the orchestrator or the user. Then the orchestrator sends the link of
+the comment to the task subagent. The task subagent copies the full text of the comment with the copy step of
+[the change-of-scope comment](#the-change-of-scope-comment). As a result, the plan session and the review see the answer
+in the issue.
 
-The user can change the answer before `tasker approve`, also an [answer of the operator](items.md#the-answer). In that
-case, the orchestrator posts a new `## Design gap` comment and sends its link. The new comment gives the gap and the new
-answer, and it says that it replaces the earlier answer for that gap. The task subagent copies the new comment, and it
-does not copy the earlier comment again.
+The user can change the answer before `tasker approve`. In that case, the orchestrator posts a new `## Design gap`
+comment and sends its link. The new comment gives the gap and the new answer, and it says that it replaces the earlier
+answer for that gap. The task subagent copies the new comment, and it does not copy the earlier comment again.
 
 A `## Design gap` comment is not a change of scope. As a result, the fifth case of [the stop rule](#the-stop-rule), the
 security report of ["Review findings"](review-findings.md#review-findings) and the open-question note of
