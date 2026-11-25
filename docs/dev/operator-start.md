@@ -51,8 +51,8 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 4. The user works with the initial planner in its tab.
    [The start of the initial planner](planner.md#the-start-of-the-initial-planner) of planner.md gives the rules of the
    initial planner.
-5. When the initial planning ends, the user tells the initial planner in its tab. The initial planner gives the report
-   of its rounds in its tab and ends its work, as
+5. When the initial planning ends, the user tells the initial planner in its tab that the initial planning ends. The
+   initial planner gives the report of its rounds in its tab and ends its work, as
    [The start of the initial planner](planner.md#the-start-of-the-initial-planner) says.
 6. The user closes the tab of the initial planner.
 7. The operator tells the user to start the orchestrator, as
