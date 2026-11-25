@@ -448,6 +448,22 @@ The new orchestrator is `orchestrator-<slug>`. Under `pi`, the name comes from `
 role work, so the prompt holds no name step. The new orchestrator does
 [the start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff file.
 
+The new orchestrator does its start in this order:
+
+1. The start reads. The prompt read of the handoff prompt is their first part. The prompt read does step 1 of
+   [the doc-read rule](doc-reads.md#the-doc-read-rule). Then the new orchestrator makes a complete read of each doc of
+   the orchestrator, as the start part of [the re-read rule](doc-reads.md#the-re-read-rule) says. Then the start reads
+   end. The new orchestrator does the start reads one time. It does not do them again after the start checks.
+2. [The start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff file.
+3. [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder), only after all start checks pass.
+4. The steps of this section that follow the check of the handoff folder.
+
+This is the order of a first start: the complete start reads, then the start checks, then the role work. The start
+checks need the start docs. For example, step 1 of the start checks reads the own name as
+[docs/sessions.md](../sessions.md) says, and the prompt read does not read `docs/sessions.md`. The start checks decide
+whether the session does role work. The check of the handoff folder picks the handoff file of the work, and it can tell
+the user about a newer file. So a check before all start checks pass gives work and a message with no use.
+
 If a step of the start checks fails, the new orchestrator is a failed session. An example is a stop by step 3 for a row
 of `herdr agent list` with the own name and a tab id that is not the tab id of the handoff file. The failed session
 gives the message of [the start checks](../orchestrator.md#the-start-checks). After that message, it does none of the
@@ -457,10 +473,10 @@ no handoff file and no question file. The old orchestrator does not wait for thi
 The start checks can read the handoff file of the first message with a Read call. This read can come before the read of
 the data root, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
 
-The new orchestrator then starts with the re-read rule. Right after the first doc read of the re-read rule, the new
-orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). Right
-after that check, at the end of its start steps, it lists `questions/` and `proposals/`, as
-[The orchestrator folder](limits.md#the-orchestrator-folder) says. It reads no question file at its start.
+After all [the start checks](../orchestrator.md#the-start-checks) pass, the new orchestrator does the check of
+[The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). Right after that check, at the end of its
+start steps, it lists `questions/` and `proposals/`, as [The orchestrator folder](limits.md#the-orchestrator-folder)
+says. A session whose start check failed does not list these folders. It reads no question file at its start.
 
 After these lists, it reads the tasks in flight with `tasker status`, also
 [the parked tasks](pick-the-tickets.md#the-defer-rule). It reads the other sessions with `ListAgents`. Then, if all
@@ -473,9 +489,10 @@ and runs that find.
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
 record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
 
-If the handoff file holds [the task list](#the-task-list), the new orchestrator starts one new task subagent for each
-entry. It does this after its start steps and before the pick of its first new ticket. The reason: an orchestrator has
-three slots, as [The delay of each task subagent](quota.md#the-delay-of-each-task-subagent) says. A task of the list
+If the handoff file holds [the task list](#the-task-list), and all
+[the start checks](../orchestrator.md#the-start-checks) passed, the new orchestrator starts one new task subagent for
+each entry. It does this after its start steps and before the pick of its first new ticket. The reason: an orchestrator
+has three slots, as [The delay of each task subagent](quota.md#the-delay-of-each-task-subagent) says. A task of the list
 already holds work, so a new ticket does not take its slot. The new orchestrator asks the user nothing about the entry,
 as the exception of "The In progress case" in [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The steps
 are:
