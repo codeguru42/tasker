@@ -29,8 +29,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) goes in the tab, as that section says. This
   rule holds for each kind of orchestrator, `claude` and `pi`. The reports of the close in
   [The start and the authority](milestone-close.md#the-start-and-the-authority) and
-  [The orchestrator ends](operator-start.md#the-orchestrator-ends), and the reports of
-  [the hold before an install](release.md#the-hold-before-an-install), keep their own rules.
+  [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) are progress reports of this bullet. The
+  reports of [the hold before an install](release.md#the-hold-before-an-install) are peer messages of kind 6.
 - After the terminal delegation of [The close of a milestone](milestone-close.md), the follow-up planner talks to the
   user directly, in its own conversation. This covers each report, each question, each draft that waits for a decision
   and each request for a permission. It also covers each other rule that sends a report, a question or a draft of the

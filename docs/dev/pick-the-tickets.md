@@ -1192,6 +1192,12 @@ issue of the scope. A ticket on hold counts as an open issue. An orchestrator of
 because no close of a milestone follows. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) gives
 what this report changes for a handoff.
 
+Each orchestrator shows the report that the close started and the report that the milestone is done as progress reports
+in its own tab. It sends neither report to an operator. This rule wins over the sentences of
+[The start and the authority](milestone-close.md#the-start-and-the-authority) that send the report to the operator. The
+user tells the follow-up planner that the close started, as [Missing roles](milestone-close.md#missing-roles) says for a
+close with no operator.
+
 Only an orchestrator of a milestone scope and of the kind `claude` closes the GitHub milestone. It does the reads and
 the write of [Milestones](issues.md#milestones). The start of the close is the authority for this write, as
 [The start and the authority](milestone-close.md#the-start-and-the-authority) says. The orchestrator asks the user no
@@ -1199,10 +1205,10 @@ question and opens no question pane for the close. If the write or the read afte
 [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator keeps its role and does no own close. At
 its next read of the board, it reads the milestone again and goes on from that state.
 
-After the close, the orchestrator of a milestone scope sends the report that the milestone is done. The report keeps its
-form and its target. It also gives the URL of the milestone and the result of the last read of the milestone. The
-orchestrator sends this report before the own close. The row "The survival of a final report" of
-[codex-sessions.md](codex-sessions.md) found no reply after the close of a tab.
+After the close, the orchestrator of a milestone scope sends the report that the milestone is done. The report is a
+progress report in its own tab, and no operator gets it. It also gives the URL of the milestone and the result of the
+last read of the milestone. The orchestrator sends this report before the own close. The row "The survival of a final
+report" of [codex-sessions.md](codex-sessions.md) found no reply after the close of a tab.
 
 Before the report, the orchestrator runs the environment and agent-list checks of
 [The own-session closure](milestone-close.md#the-own-session-closure). If both pass, the report gives the `pane_id` of
@@ -1235,9 +1241,8 @@ because no one tested the closure of a pi session, as
 [The own-session closure of a pi session](milestone-close.md#the-own-session-closure-of-a-pi-session) says.
 
 A pi orchestrator of a milestone scope closes no milestone. After end reads that find no open issue, it sends the report
-that the close started and the report that the milestone is done. Then the operator stops it, and the follow-up planner
-closes the milestone, as [The close of a milestone](operator-start.md#the-close-of-a-milestone) and
-[The steps that end each role](milestone-close.md#the-steps-that-end-each-role) say.
+that the close started and the report that the milestone is done. Then the user closes its tab, and the follow-up
+planner closes the milestone, as [The steps that end each role](milestone-close.md#the-steps-that-end-each-role) says.
 
 A pi orchestrator of a set scope sends no report that the close started and no report that the milestone is done. After
 end reads that find no open issue of the set, it shows its last report as a progress report in its own tab. That report

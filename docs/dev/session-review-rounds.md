@@ -81,12 +81,12 @@ open until the planner handles it. A finding that is not handled is open.
 A question session first gives each proposal to the user, as
 [The rounds before the close](question-pane.md#the-rounds-before-the-close) says.
 
-After the rounds, each planner and each orchestrator of a milestone scope sends the report of the rounds to
-[its operator](../operator.md). After the end of the role of its operator, a planner gives the report of its rounds to
-the user directly, as [The operator](working-with-the-user.md#the-operator) says. The report gives how many rounds ran,
-what each round found, and the state of each finding. An initial planner sends it with `SendMessage`. Each other
-orchestrator or planner sends it as a report, as [The form of an item](items.md#the-form-of-an-item) says. An operator
-gives it to the user in a reply.
+After the rounds, each planner sends the report of the rounds to [its operator](../operator.md). An orchestrator gives
+its report of the rounds in the report that the milestone is done, a progress report in its own tab. After the end of
+the role of its operator, a planner gives the report of its rounds to the user directly, as
+[The operator](working-with-the-user.md#the-operator) says. The report gives how many rounds ran, what each round found,
+and the state of each finding. An initial planner sends it with `SendMessage`. A planner sends it as a report, as
+[The form of an item](items.md#the-form-of-an-item) says. An operator gives it to the user in a reply.
 
 An orchestrator of a set scope has no operator. So its report of the rounds is a progress report in its own tab, as
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says for its last report.
@@ -118,11 +118,7 @@ For an orchestrator, [The end of an orchestrator](pick-the-tickets.md#the-end-of
 for a new round. This condition holds in place of the rule and the judgment of work after the rounds.
 
 For an orchestrator, the report that the milestone is done holds the report of the rounds. At each start of its end, the
-orchestrator runs a round by the rule of [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator). A
-pi orchestrator of a milestone scope stops at the stop of the operator in
-[The close of a milestone](operator-start.md#the-close-of-a-milestone). If its transcript has nothing new after its
-rounds, it runs no new round there and only gives the report again. The report again is not a second report that the
-milestone is done.
+orchestrator runs a round by the rule of [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator).
 
 A start of the end whose transcript has nothing new since the last rounds runs no new round and sends no second report
 of the rounds. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule.

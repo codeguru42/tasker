@@ -222,21 +222,10 @@ The rules of this subsection are in [The start and the authority](milestone-clos
 
 ### The orchestrator ends
 
-After the report of the orchestrator that the milestone is done arrives, the operator makes sure that the orchestrator
-ended. An orchestrator of the kind `claude` closes its own tab after that report. The report gives the pane id of the
-orchestrator, or it says that it gives none. The operator runs `herdr pane get <pane id>` with that pane id. Exit code 1
-with JSON stderr `.error.code` equal to `pane_not_found` means that the orchestrator ended. Exit code 0 means that the
-pane is still open.
-
-With the pane still open, the operator tells the user and closes nothing. After the next word of the user, it runs the
-read again. The report comes before the own close, so the first read can give exit code 0. For any other exit, code or
-result, [the failure rule](limits.md#the-failure-rule) applies.
-
-With no pane id, or for a pi orchestrator, the operator stops the orchestrator as [Stop a session](#stop-a-session)
-says. The operator keeps each check of that section. Examples are the report of the rounds, the row of the session, the
-wait, the tab list and the shared tab. The gate of that section starts "The operator stops a session only on a request
-of the user". The start of the close is that request for this stop. The operator starts its rounds of step 5 only after
-the orchestrator ended.
+The orchestrator ends as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says. The operator
+reads no pane of an orchestrator and stops no orchestrator. With no pane id, after a failed close, or for a pi
+orchestrator, the user closes its tab. The operator starts its rounds of step 5 after the report that the milestone is
+done.
 
 ### The rounds of the operator
 
@@ -275,9 +264,8 @@ The rules of this subsection are in [The work of the planner](milestone-close.md
 
 If no orchestrator runs, the operator makes sure of that before it starts its rounds. The close then starts on the word
 of the user. The operator takes an orchestrator that already ended as done only with proof of its role and its
-milestone. An example of proof is the report of the orchestrator that the milestone is done. The pane check of
-[The orchestrator ends](#the-orchestrator-ends) then shows that its pane is gone. The judgment of the proof is open on
-purpose, and the operator makes it.
+milestone. An example of proof is the report of the orchestrator that the milestone is done. The judgment of the proof
+is open on purpose, and the operator makes it.
 
 The rest of this subsection is in [Missing roles](milestone-close.md#missing-roles).
 
@@ -286,13 +274,14 @@ The rest of this subsection is in [Missing roles](milestone-close.md#missing-rol
 1. The end of the orchestrator starts, and the orchestrator runs its rounds. For a long-running milestone, for example
    "Docs", the close starts only on the word of the user.
    [The start and the authority](milestone-close.md#the-start-and-the-authority) gives the details.
-2. The end reads of the orchestrator find no open issue of the milestone. Then the orchestrator tells the operator that
-   the close started, and the operator tells the planner.
+2. The end reads of the orchestrator find no open issue of the milestone. Then the orchestrator shows the report that
+   the close started in its own tab, and the user tells the operator and the planner.
    [The start and the authority](milestone-close.md#the-start-and-the-authority) gives the details.
 3. The orchestrator of the kind `claude` closes the GitHub milestone. Then it reports that the milestone is done and
    closes its own tab. A pi orchestrator only reports that the milestone is done.
    [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the details.
-4. The operator makes sure that the orchestrator ended, as [The orchestrator ends](#the-orchestrator-ends) says.
+4. The orchestrator ends, as [The orchestrator ends](#the-orchestrator-ends) says. The operator does not make sure that
+   it ended.
 5. The operator runs its rounds until a round finds nothing new. It sends each finding to the planner as a proposal.
    [The rounds of the operator](#the-rounds-of-the-operator) gives the details.
 6. The operator keeps working until each open question and each open decision is resolved.
@@ -336,13 +325,13 @@ Each actor keeps its own report of the rounds and its own state in the close. Th
 planner and the state of its terminal delegation. The planner keeps the terminal delegation and the end of the role of
 the operator. The GitHub milestone keeps its own state, open or closed.
 
-| Stage                         | Session that acts           | Change of state                                                                                                                                                                                                                                  | Who tells whom                                                                                                                                | Outcome of a failure                                                                                                                       |
-| ----------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| The orchestrator ends         | Orchestrator, then operator | The orchestrator of the kind `claude` closes the milestone and its own tab, and the pane check shows that its pane is gone. For a pi orchestrator or with no pane id, the operator closes the tab or the pane of the orchestrator with the stop. | The orchestrator gives the operator the report that the milestone is done, with its pane id. For a stop, the operator sends the stop message. | The operator tells the user about the open pane or the failed stop. It starts no round of step 5.                                          |
-| The rounds of the operator    | Operator                    | A round finds nothing new.                                                                                                                                                                                                                       | The operator sends each finding to the planner.                                                                                               | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                   |
-| The questions of the operator | Operator                    | Each open question and each open decision is resolved, as the question gate of the close says.                                                                                                                                                   | The operator gives the user the full text of each open question and each open decision. It sends each answer to its sender.                   | The operator keeps working until each open question and each open decision is resolved.                                                    |
-| The review of the operator    | Operator                    | After the questions, a round finds nothing new. After a round that finds something, the stage "The questions of the operator" runs again.                                                                                                        | The operator sends each finding to the planner.                                                                                               | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                   |
-| The operator closes           | Operator                    | On the approval to close, the operator closes its own session.                                                                                                                                                                                   | The operator gives the user its close report and asks for the approval to close.                                                              | If the close report fails, the failure rule applies. If the operator cannot close itself, it tells the user, and the user closes its pane. |
+| Stage                         | Session that acts       | Change of state                                                                                                                                                       | Who tells whom                                                                                                              | Outcome of a failure                                                                                                                       |
+| ----------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| The orchestrator ends         | Orchestrator, then user | The orchestrator of the kind `claude` closes the milestone and its own tab. For a pi orchestrator, with no pane id, or after a failed close, the user closes the tab. | The orchestrator shows the report that the milestone is done in its own tab. The user tells the operator.                   | The user closes the tab. The operator starts no round of step 5 before the report.                                                         |
+| The rounds of the operator    | Operator                | A round finds nothing new.                                                                                                                                            | The operator sends each finding to the planner.                                                                             | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                   |
+| The questions of the operator | Operator                | Each open question and each open decision is resolved, as the question gate of the close says.                                                                        | The operator gives the user the full text of each open question and each open decision. It sends each answer to its sender. | The operator keeps working until each open question and each open decision is resolved.                                                    |
+| The review of the operator    | Operator                | After the questions, a round finds nothing new. After a round that finds something, the stage "The questions of the operator" runs again.                             | The operator sends each finding to the planner.                                                                             | The rounds end, and the close stops at this stage. The operator tells the user directly.                                                   |
+| The operator closes           | Operator                | On the approval to close, the operator closes its own session.                                                                                                        | The operator gives the user its close report and asks for the approval to close.                                            | If the close report fails, the failure rule applies. If the operator cannot close itself, it tells the user, and the user closes its pane. |
 
 The rows of the stages that the planner acts in are in
 [The table of the close](milestone-close.md#the-table-of-the-close).
