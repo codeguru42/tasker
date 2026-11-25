@@ -193,7 +193,8 @@ planner links two issues when one issue needs", which names the planner.
   to let the orchestrator set the landing order.
 
   A same-file link that an open issue already has keeps its effect until a session removes it. No rule removes such
-  links, apart from the link removal of a hold and a word of the user.
+  links, apart from three cases: the link removal of a hold, a word of the user, and the move of the issue into
+  "Future", as the bullet that starts "An issue of the milestone "Future"" says.
 
   The cost: a clash of meaning between two tickets shows late, and two edits next to each other can give a conflict at
   `tasker update-branch`. [docs/dev/rebase-conflicts.md](rebase-conflicts.md) gives the steps for such a conflict.
@@ -253,9 +254,8 @@ planner links two issues when one issue needs", which names the planner.
   session adds no such link. At the start of a hold, the orchestrator removes each same-file link of the ticket. At the
   end of the hold, no session adds the link again.
 
-- A ticket that closes a live security gap gets no blocked-by link that puts it behind a ticket that it does not need.
-  This bullet adds no link. The order of a live security gap in [Pick the tickets](pick-the-tickets.md#pick-the-tickets)
-  decides when such a ticket starts.
+- A ticket that closes a live security gap starts as the order of a live security gap in
+  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. This bullet adds no link and removes no link.
 - Before the planner starts the ticket subagents of a milestone, it makes a table of the needs and the likely files of
   each issue. It adds the links from the table when it posts the issues. The bullet of a real need, the bullet of the
   form and the bullet of a rename use the likely files of the table.
