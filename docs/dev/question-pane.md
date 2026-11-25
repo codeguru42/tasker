@@ -1399,7 +1399,7 @@ The rules of this page that give no close request, or that stop it, win over thi
 
 - A decision message that does not settle the question gets no close request.
 - A message that the pane owner refuses gets no close request.
-- The pane owner sends at most one close request for each question of a pane.
+- The limit of the close requests for each question, which the paragraph of the close request below gives.
 - A close that the user asks for before the close request has no rounds.
 - A word of the user to close the pane after the close request keeps its rules.
 - A failed send of the close request keeps its failure rule.
