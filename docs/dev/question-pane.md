@@ -317,9 +317,9 @@ pane start at a word of the user.
 it wins over this section.
 
 The question that asks the user for the go of a suggested handoff of the orchestrator can get an automatic start,
-although the handoff is due. It is the only such question. After the go, during the wait before the start and during the
-handoff, the condition holds for each question. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff)
-says how the suggestion works.
+although the handoff is due. It is the only such question. After the go, until the close of its pane, during the wait
+before the start and during the handoff, the condition holds for each question.
+[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says how the suggestion works.
 
 On 2026-11-15, operator-m16 reported this case. It came from a handoff of operator-m16. The old operator opened and
 reused question panes for about ten questions during the wait of step 1 of its handoff. The handoff took a long time.
