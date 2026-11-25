@@ -12,10 +12,9 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 
 - [docs/orchestrator.md](docs/orchestrator.md): the role index of the orchestrator.
 - [docs/planner.md](docs/planner.md): the role index of the planner.
-- [docs/operator.md](docs/operator.md): the role index of the operator.
-- [docs/sessions.md](docs/sessions.md): the terms that name the operator, the read of the own name, the start of a
-  session by the user, the start of a herdr session, the herdr agent name in a handoff, the start gate of a pi session,
-  two sessions with one name and a blocked session.
+- [docs/sessions.md](docs/sessions.md): the terms that name the sessions of a slug, the read of the own name, the start
+  of a session by the user, the start of a herdr session, the herdr agent name in a handoff, the start gate of a pi
+  session, two sessions with one name and a blocked session.
 - [docs/dev/GLOSSARY.md](docs/dev/GLOSSARY.md): the terms that the sessions use.
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo.
 - [CONTRIBUTING.md](CONTRIBUTING.md): how a contributor starts work.
@@ -40,7 +39,6 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/quota.md](docs/dev/quota.md): the steps when a quota stops a task subagent.
 - [docs/dev/handoff.md](docs/dev/handoff.md): the handoff of a session.
 - [docs/dev/handoff-orchestrator.md](docs/dev/handoff-orchestrator.md): the handoff of the orchestrator.
-- [docs/dev/handoff-operator.md](docs/dev/handoff-operator.md): the handoff of the operator.
 - [docs/dev/limits.md](docs/dev/limits.md): the limits of the orchestrator and the task subagents.
 - [docs/dev/planner.md](docs/dev/planner.md): the rules of a planner.
 - [docs/dev/planner-subagent.md](docs/dev/planner-subagent.md): the rules of a planner subagent of the orchestrator.
@@ -51,12 +49,9 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/issue-post.md](docs/dev/issue-post.md): the rules of an issue-post subagent and of each post of a planner.
 - [docs/dev/issues.md](docs/dev/issues.md): the steps to file issues on GitHub.
 - [docs/dev/working-with-the-user.md](docs/dev/working-with-the-user.md): how a session works with the user.
-- [docs/dev/operator-start.md](docs/dev/operator-start.md): how the operator starts and stops sessions.
 - [docs/dev/milestone-close.md](docs/dev/milestone-close.md): the shared parts of the close of a milestone and the
   own-session closure.
-- [docs/dev/operator-items.md](docs/dev/operator-items.md): the items of the operator.
 - [docs/dev/items.md](docs/dev/items.md): the form of a message, the terms of the questions and the answer.
-- [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): the side conversations of the operator.
 - [docs/dev/question-pane.md](docs/dev/question-pane.md): a question pane.
 - [docs/dev/session-review-rounds.md](docs/dev/session-review-rounds.md): the rounds of `/session-review`.
 - [docs/dev/first-refine.md](docs/dev/first-refine.md): the hints for the first refine of a ticket.
