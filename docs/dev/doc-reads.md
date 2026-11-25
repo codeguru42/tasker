@@ -1,8 +1,8 @@
 # Doc reads
 
-The readers of this page are the orchestrator, the task subagents, the operator, each planner, each question session,
-the issue subagents and each session with no role. The operator reads the notice rule and the doc-read rule. Each
-planner, each question session, each issue subagent and each session with no role read the doc-read rule.
+The readers of this page are the orchestrator, the task subagents, each planner, each question session, the issue
+subagents and each session with no role. Each planner, each question session, each issue subagent and each session with
+no role read the doc-read rule.
 
 ## The re-read rule
 
@@ -50,28 +50,26 @@ the user says that `main` is back.
 
 This rule covers each ticket, whatever its milestone, also a ticket with no milestone. It applies when the landing of
 the ticket changes a doc of the orchestrator of the ticket (see [the re-read rule](#the-re-read-rule)), for example
-`docs/orchestrator.md`, or a start doc of the operator. [docs/operator.md](../operator.md) names the start docs of the
-operator. A notice is a message about such a landing from the orchestrator of the ticket. For a change of a doc of the
-orchestrator, the notice goes to the other orchestrators. For a change of a start doc of the operator, the notice goes
-to each session whose name starts with `operator-`. Each orchestrator has a name of the form `orchestrator-<slug>`, with
-the slug of its scope, as [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says. For
-example, `orchestrator-m6`, `orchestrator-m7`, `orchestrator-docs` and `orchestrator-docs-fix` are such names. For a
-milestone scope, the part after `orchestrator-` is the first word of the milestone title in lowercase. Examples are
-`orchestrator-m9` for "M9 — Pauses and recovery" and `orchestrator-docs` for "Docs". For a set scope, the part after
-`orchestrator-` is the slug that the user gives. The other orchestrators are all the sessions with such a name except
-the session of the orchestrator of the ticket. On 2026-10-25, before #561, #495 (M22 — Operator) changed
-`docs/dev/handoff-operator.md`, and operator-docs got no notice. Before #565, a change of
-`docs/dev/working-with-the-user.md`, a start doc of the operator, sent no notice to the operator.
+`docs/orchestrator.md`. A notice is a message about such a landing from the orchestrator of the ticket. For a change of
+a doc of the orchestrator, the notice goes to the other orchestrators. Each orchestrator has a name of the form
+`orchestrator-<slug>`, with the slug of its scope, as
+[The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says. For example, `orchestrator-m6`,
+`orchestrator-m7`, `orchestrator-docs` and `orchestrator-docs-fix` are such names. For a milestone scope, the part after
+`orchestrator-` is the first word of the milestone title in lowercase. Examples are `orchestrator-m9` for "M9 — Pauses
+and recovery" and `orchestrator-docs` for "Docs". For a set scope, the part after `orchestrator-` is the slug that the
+user gives. The other orchestrators are all the sessions with such a name except the session of the orchestrator of the
+ticket. On 2026-10-25, before #561, #495 (M22 — Operator) changed `docs/dev/handoff-operator.md`, and operator-docs got
+no notice. Before #565, a change of `docs/dev/working-with-the-user.md`, a start doc of the operator, sent no notice to
+the operator.
 
 The orchestrator of the ticket does these steps:
 
 1. When the final report of the task subagent of the ticket arrives, read the files that landed in that report.
-2. If no file of the report is a doc of the orchestrator of the ticket or a start doc of the operator, send no notice.
+2. If no file of the report is a doc of the orchestrator of the ticket, send no notice.
 3. Read your own name from the first line of the output of `ListAgents`, as [sessions.md](../sessions.md) says. If a doc
    of the orchestrator changed, each session whose name starts with `orchestrator-`, except your own session, is another
-   orchestrator. If a start doc of the operator changed, each session whose name starts with `operator-` also gets the
-   notice. A session with another name, for example `planner-m7`, gets no notice. A milestone hold can stop this notice,
-   as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
+   orchestrator. A session with another name, for example `planner-m7`, gets no notice. A milestone hold can stop this
+   notice, as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
 4. Send one notice to each session of step 3 with `SendMessage`. Take the landed commit and the sections that changed
    from the same report. The notice names them in one or two lines.
 
@@ -86,10 +84,9 @@ session that does not answer gets no second notice. The re-read rule covers such
 The notice is information. When the other orchestrator gets a notice, the other orchestrator does the steps of the
 re-read rule before its next step. The other orchestrator takes the rule from the doc, not from the notice. The other
 orchestrator also sends a task subagent notice to its own task subagents in flight, as
-[the task subagent notice](#the-task-subagent-notice) says. When the operator gets a notice, the operator does
-[the doc-read rule](#the-doc-read-rule) and then reads each changed start doc of the operator again. A covered session
-that gets a notice does step 1 again before its read. If the branch check fails, a planner session or the operator reads
-no doc and tells the user. It repeats the check at its next notice, or when the user says that `main` is back.
+[the task subagent notice](#the-task-subagent-notice) says. A covered session that gets a notice does step 1 again
+before its read. If the branch check fails, a planner session reads no doc and tells the user. It repeats the check at
+its next notice, or when the user says that `main` is back.
 
 Each orchestrator has its own docs of the orchestrator, because each prompt names its own docs. `AGENTS.md`,
 `docs/orchestrator.md`, the pages of its list "The pages", `docs/sessions.md`, `docs/dev/GLOSSARY.md`,
@@ -211,7 +208,7 @@ lists of [the allowed commands](allowed-commands.md).
 
 Only a session of the kind `claude` is covered. The covered sessions are:
 
-- The orchestrator, the operator, each planner session and the [question session](question-pane.md#a-question-pane).
+- The orchestrator, each planner session and the [question session](question-pane.md#a-question-pane).
 - Each session that works with the user and has no role.
 - A session that runs `/session-review`.
 - The issue subagents (issue-draft, issue-review and issue-post), whatever session starts them.

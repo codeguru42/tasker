@@ -1,7 +1,7 @@
 # Glossary
 
 This page gives the terms that the sessions of this repo use. [docs/sessions.md](../sessions.md) keeps the terms that
-name the operator.
+name the sessions of a slug.
 
 ## Language
 
@@ -56,9 +56,9 @@ After a handoff of the session, its session ref is stale.
 
 **Slug**: The slug of an orchestrator is the slug of its scope, as
 [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says. The slug of a milestone is the
-first word of the milestone title in lowercase. For example, the slug of the milestone M9 is `m9`. `operator-<slug>` and
-`planner-<slug>` use the slug of a milestone. The slug is not the path slug or the title slug of the code, for example
-in `src/issue-key/path-slug.ts` and `src/vcs/git/worktree.ts`.
+first word of the milestone title in lowercase. For example, the slug of the milestone M9 is `m9`. `planner-<slug>` uses
+the slug of a milestone. The slug is not the path slug or the title slug of the code, for example in
+`src/issue-key/path-slug.ts` and `src/vcs/git/worktree.ts`.
 
 **Socket address**: The `uds:` value in the `from` field of a message from a session, for example
 `uds:/run/user/30033/cc-socks/2406691.sock`. After a handoff of the session, its socket address is stale.

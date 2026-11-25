@@ -1,14 +1,12 @@
 # Sessions
 
-This page gives the terms that name the operator, and the steps with which a session reads its own name. It also gives
-the sections "The start of a session by the user", "The start of a herdr session" with "The facts of a herdr start",
-"The herdr agent name in a handoff", "The start gate of a pi session", "Two sessions with one name" and "A blocked
-session". [The glossary](dev/GLOSSARY.md) gives the other terms that the sessions use.
+This page gives the terms that name the sessions of a slug, and the steps with which a session reads its own name. It
+also gives the sections "The start of a session by the user", "The start of a herdr session" with "The facts of a herdr
+start", "The herdr agent name in a handoff", "The start gate of a pi session", "Two sessions with one name" and "A
+blocked session". [The glossary](dev/GLOSSARY.md) gives the other terms that the sessions use.
 
-The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator-<slug>`. The slug of a set scope names
-only `orchestrator-<slug>`, as [The start of an orchestrator](orchestrator.md#the-start-of-an-orchestrator) says.
-
-An item is a message from a planner or an orchestrator to the operator about something that needs the user.
+The sessions of a slug are `planner-<slug>` and `orchestrator-<slug>`. The slug of a set scope names only
+`orchestrator-<slug>`, as [The start of an orchestrator](orchestrator.md#the-start-of-an-orchestrator) says.
 
 ## The read of the own name
 
@@ -21,14 +19,12 @@ that name, in the form that [the glossary](dev/GLOSSARY.md) gives for the own na
 name relate in this way:
 
 - A planner, an orchestrator and a session of a topic handoff have the same text for both.
-- A new operator in a handoff has the herdr agent name `operator-<slug>-<time>` and the own name `operator-<slug>`.
-- The first operator has no herdr agent name.
 
 If `PI_SESSION_FILE` is not set, the read fails, or the name is not the expected form, the pi session does no role work.
-It tells the user in its own tab. This holds also for the first operator. An orchestrator can have a first prompt that
-names a handoff file. Then the message also gives the path of the handoff file and the way on, as
-[The start checks](orchestrator.md#the-start-checks) say. The read uses the file form of pi 1.1.0 and was measured with
-a bash tool. [docs/dev/pi-sessions.md](dev/pi-sessions.md) gives the limits.
+It tells the user in its own tab. An orchestrator can have a first prompt that names a handoff file. Then the message
+also gives the path of the handoff file and the way on, as [The start checks](orchestrator.md#the-start-checks) say. The
+read uses the file form of pi 1.1.0 and was measured with a bash tool. [docs/dev/pi-sessions.md](dev/pi-sessions.md)
+gives the limits.
 
 ## The start of a session by the user
 
