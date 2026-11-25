@@ -17,7 +17,8 @@ holds one [open question](items.md#the-open-items) at a time, even when question
 action. After a reuse, it holds the next open question.
 
 The rows of the opener subagent, the reuse subagent and the write subagent in [the table](permissions.md#the-table) give
-the kinds of command that each of them runs.
+the kinds of command of the list of each of them. A read at a gap follows
+[the rules for the lists](allowed-commands.md#the-rules-for-the-lists).
 
 The pane owner (short form: owner) is the session that starts a question pane. An orchestrator of each kind is a pane
 owner. Each pane owner has at most one open pane.

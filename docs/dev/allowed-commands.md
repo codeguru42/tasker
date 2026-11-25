@@ -1,6 +1,7 @@
 # The allowed commands
 
-The reader of this page is the orchestrator. An actor does not read it.
+The reader of this page is the orchestrator. The plan session of a task that changes a list also reads it. An actor does
+not read it.
 
 For each actor of [the table](permissions.md#the-table), this page lists the commands that the orchestrator sends to
 that actor. The orchestrator looks the list up here. It sends the list in the prompt or in the message that starts the
@@ -20,6 +21,54 @@ The form of the send is open. A later ticket decides it. Until then, the lists a
 - A command that a step of a source names, but that no kind names, goes in the list "Named other commands". This list is
   the K16 list of the actor, as [K16](permissions.md#the-kinds-of-command) says.
 - A list names each Read call that a source names as a step. A list with no Read call bans no Read call.
+
+The command rule has four parts. The user gave its reason: "the whole purpose for allowed-commands.md is to explicate
+which commands each agent can perform. It should not restrict those commands in any other way."
+
+1. This page states only which commands each actor can run. It sets no other limit.
+2. A rule page of an actor never gives a list as the reason that the actor skips a step or a read. A row of
+   [the table](permissions.md#the-table) counts as a list. A rule page can still state part 4.
+3. If a job needs a read-only command, the list of each actor that does the job names that command. This also holds when
+   another actor already runs that command. For this part, the rule text of the first bullet is the step of the doc that
+   needs the read.
+
+   Until the issue "Test each list of allowed-commands.md against the read-only rule" of the milestone M31 lands, this
+   interim rule wins over part 3. It is docs only. The reason: no one tested the lists against part 3 before this issue.
+   Each list stays as it stands. Part 3 adds no command to a list by itself. A ticket can still add a command under the
+   first bullet. Part 2 still holds. At a gap, part 4 and the other bullets of this section hold. The issue lands when
+   someone closes it as completed. The interim rule holds while the issue is not posted, is open, or is closed in
+   another way. That issue removes the interim rule. If it gives another meaning of a read-only command, its meaning
+   wins.
+
+4. A gap is a job of an actor that needs a command that the list of the actor does not name. A job outside the limit
+   words of a command of the list is a gap too. Only an actor with a section on this page has a gap.
+   - At a gap of a read-only command, the actor runs the read and reports the gap in its result, so that a ticket adds
+     the command to its list. The reason: a gap does not stop a step that only reads, and the report lets a ticket add
+     the command to the list.
+   - At a gap of each other command, the list and its limit words win. The actor runs nothing that the list does not
+     permit, and it reports the gap.
+   - Each ban and each limit of a rule page wins over part 4. For example, a question session runs no `herdr` read (K8)
+     at a gap, because [The question session](question-pane.md#the-question-session) gives it only the read-only
+     commands other than `herdr` commands.
+   - The orchestrator has no result, so it reports a gap to the user in its question pane, as
+     [the report chain](permissions.md#the-report-chain) says.
+   - A read at a gap keeps the failed-read case of its step. Part 4 adds no write.
+
+These terms hold for the rule:
+
+- A job is a step or a read that the rules of the actor give to it.
+- A read-only command: a command of the kinds K1, K3, K5 or K8 of
+  "[The kinds of command](permissions.md#the-kinds-of-command)" of docs/dev/permissions.md. A Read call that is not of
+  the kind K15 is also a read-only command. A named other command that only reads is one too, for example
+  `wc -l <path>`. A `git fetch` and a `git pull` are of the kind K4, so they are not read-only commands. This meaning is
+  not the meaning of "read-only command" in
+  [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule).
+- Each other command is a command that is not a read-only command, for example a write, a `git fetch` or a read of the
+  kind K15.
+- A limit word is a word of a list that limits a command, for example "only", "asks the user", "for each doc that it
+  reads" and "on its own three folders".
+- A rule page of an actor is a page that the line "Sources:" or "Source:" of the section of the actor names. A prompt
+  template is not a rule page.
 
 ## The orchestrator
 

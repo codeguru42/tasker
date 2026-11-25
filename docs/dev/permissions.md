@@ -1,8 +1,9 @@
 # The permission model
 
 This page gives the permission model of the actors of the orchestration. An actor is a session or a subagent that runs
-commands for the orchestration. The page has one table. The table says which kind of command each actor runs. The page
-also gives the place of the rules, the report chain and the facts of a measure.
+commands for the orchestration. The page has one table. The table gives the kinds of command of the list or of the
+limits of each actor. A read at a gap follows [the rules for the lists](allowed-commands.md#the-rules-for-the-lists).
+The page also gives the place of the rules, the report chain and the facts of a measure.
 
 The reader of this page is the orchestrator. It reads the table and the lists of
 [the allowed commands](allowed-commands.md). Each actor reads its own row when a step needs it.
@@ -22,6 +23,9 @@ A cell of the table has one of three values:
 - "runs": the list of the actor for that kind holds a command that runs with no word of the user.
 - "asks the user": each command of the list for that kind runs only after a word of the user for that call.
 - "never runs": the actor has no list for that kind.
+
+A read at a gap is in no list and changes no cell. At a gap of a read-only command,
+[the rules for the lists](allowed-commands.md#the-rules-for-the-lists) win over a "never runs" cell.
 
 ## The kinds of command
 

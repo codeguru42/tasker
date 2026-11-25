@@ -7,7 +7,8 @@ The readers of this page are the orchestrator and the task subagents.
 These limits apply to the orchestrator and to the task subagents, except where a bullet or a rule names one actor.
 
 The row of the orchestrator and the rows of the task subagents in [the table](permissions.md#the-table) give the kinds
-of command that each of them runs.
+of command of the list of each of them. A read at a gap follows
+[the rules for the lists](allowed-commands.md#the-rules-for-the-lists).
 
 - The task subagent reads the output of a task with the `tasker show` commands, for example `tasker show`,
   `tasker show-plan`, `tasker show-verify` and `tasker show-review`. [The own-worktree rule](#the-own-worktree-rule)
