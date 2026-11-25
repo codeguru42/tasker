@@ -90,7 +90,8 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   topic handoff" and "The hold of the items".
 - [docs/dev/handoff-orchestrator.md](dev/handoff-orchestrator.md): "The long-running orchestrator", "The landing count",
   "The steps of the old orchestrator", "The stopping-point case", "The handoff file of the orchestrator", "The task
-  list" and "The start of the new orchestrator".
+  list", "The open peer requests", "The start of the new orchestrator", "The report of the questions with no automatic
+  start" and "The steps for the open peer requests".
 - [docs/dev/limits.md](dev/limits.md): "Limits", the own-worktree rule, "The orchestrator folder", the update rule, the
   local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
 - [docs/dev/planner-subagent.md](dev/planner-subagent.md): "The kind of the orchestrator", "The planning requests", "The
@@ -316,6 +317,8 @@ The failed session does none of these steps:
 - The read of the record of the outside-Todo find, and the run of that find.
 - The pick of a ticket.
 - An open question of the handoff file, and each question pane.
+- The steps for an open peer request of the handoff file. See
+  [The steps for the open peer requests](dev/handoff-orchestrator.md#the-steps-for-the-open-peer-requests).
 
 The failed session changes or deletes no handoff file and no [question file](dev/question-pane.md#the-question-file).
 
@@ -605,7 +608,9 @@ order of the overlap rule, the requester bullet of [Land the work](dev/land-the-
 The find fails in three cases. The read of the milestone fails, the issue has no milestone, or `ListAgents` shows no
 running session of that name. After a failed find, [the failure rule](dev/limits.md#the-failure-rule) applies. The
 sender sends no message of that rule for that task, and it tells the user. Each answer and each report goes back to the
-session of the sender.
+session of the sender. After a handoff of the sending orchestrator, the decision of
+[the request rule](#the-request-rule) goes to the name of the sender. That name is the name of the new orchestrator,
+because the new orchestrator has the same name as the old one.
 
 The find has these costs:
 
@@ -679,17 +684,38 @@ The rules:
 - When the sending orchestrator sends a request that needs a decision of the user, it also shows one report for that
   request as text in its own tab. The same holds for each relayed change of a landing order under the bullet "Only the
   user changes a landing order of the overlap rule" of [Land the work](dev/land-the-work.md#land-the-work).
+- At a handoff of either side, the old orchestrator records each open request in its handoff file, as
+  [The open peer requests](dev/handoff-orchestrator.md#the-open-peer-requests) says. The new orchestrator follows
+  [The steps for the open peer requests](dev/handoff-orchestrator.md#the-steps-for-the-open-peer-requests). The matching
+  step of the sending orchestrator follows this rule:
+  - A matching step that sends a message to a task subagent of the old orchestrator no longer applies after a handoff.
+    This covers a task that landed before the write, a parked task, and in the stopping-point case a task of
+    [the task list](dev/handoff-orchestrator.md#the-task-list). The new orchestrator does not send the step to the new
+    task subagent of the same ticket either. Such a step needs its own context and its own rule, and this page gives
+    none.
+  - A parked task still exists. So a matching step for a parked task that sends no message to its task subagent can
+    still apply. In each other case, whether a step still applies is a judgment of the new orchestrator. This judgment
+    is open on purpose.
+  - If the step no longer applies, the new orchestrator tells its own user in its own tab and names the step.
+  - The reason: step 2 of
+    [the steps of the old orchestrator](dev/handoff-orchestrator.md#the-steps-of-the-old-orchestrator) waits until each
+    task in flight lands, a parked task ended at [the defer rule](dev/pick-the-tickets.md#the-defer-rule), and
+    [the task list](dev/handoff-orchestrator.md#the-task-list) bans a message to a task subagent of the old
+    orchestrator.
+  - The cost: an accepted step is lost, and the user does it again by hand.
 
 This table gives each change of a request of this rule:
 
-| Change                | Sending orchestrator                                       | Receiving orchestrator                                     | Question pane                                                | Who tells whom                                                                |
-| --------------------- | ---------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| The request goes out  | Waits for the decision. Shows its report in its tab        | Does not do the requested change                           |                                                              | The sending orchestrator tells the receiving orchestrator and its own user    |
-| The question goes out | Waits for the decision                                     | Waits for the answer                                       | The receiving orchestrator asks the question in its own pane | The receiving orchestrator tells its own user                                 |
-| The user accepts      | Waits for the decision                                     | Does the requested change                                  | The pane closes by its rules                                 | The user tells the receiving orchestrator in the pane                         |
-| The user rejects      | Waits for the decision                                     | Changes nothing                                            | The pane closes by its rules                                 | The user tells the receiving orchestrator in the pane                         |
-| The decision goes out | Does its matching step only after an accept                |                                                            |                                                              | The receiving orchestrator tells the sending orchestrator, with `SendMessage` |
-| A message fails       | The failure rule applies to the orchestrator that sends it | The failure rule applies to the orchestrator that sends it |                                                              | The orchestrator that sends it tells its own user                             |
+| Change                                                            | Sending orchestrator                                                                                                                                  | Receiving orchestrator                                                                                                                                                                                                                                        | Question pane                                                                                                                                     | Who tells whom                                                                                                                                                                                                                                                                   |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The request goes out                                              | Waits for the decision. Shows its report in its tab                                                                                                   | Does not do the requested change                                                                                                                                                                                                                              |                                                                                                                                                   | The sending orchestrator tells the receiving orchestrator and its own user                                                                                                                                                                                                       |
+| The question goes out                                             | Waits for the decision                                                                                                                                | Waits for the answer                                                                                                                                                                                                                                          | The receiving orchestrator asks the question in its own pane                                                                                      | The receiving orchestrator tells its own user                                                                                                                                                                                                                                    |
+| The user accepts                                                  | Waits for the decision                                                                                                                                | Does the requested change                                                                                                                                                                                                                                     | The pane closes by its rules                                                                                                                      | The user tells the receiving orchestrator in the pane                                                                                                                                                                                                                            |
+| The user rejects                                                  | Waits for the decision                                                                                                                                | Changes nothing                                                                                                                                                                                                                                               | The pane closes by its rules                                                                                                                      | The user tells the receiving orchestrator in the pane                                                                                                                                                                                                                            |
+| The decision goes out                                             | Does its matching step only after an accept                                                                                                           |                                                                                                                                                                                                                                                               |                                                                                                                                                   | The receiving orchestrator tells the sending orchestrator, with `SendMessage`                                                                                                                                                                                                    |
+| The sending orchestrator hands off while it waits                 | The old one records the request in its handoff file. The new one takes it, waits, and after an accept does the matching step only if it still applies | Sends the decision to the name of the sending orchestrator                                                                                                                                                                                                    | No change                                                                                                                                         | The new sending orchestrator tells its own user in its tab about the request, and about a step that no longer applies. The receiving orchestrator gets no report of the handoff                                                                                                  |
+| The receiving orchestrator hands off before it sends the decision | Waits for the decision                                                                                                                                | The old one records the request, the question id and the state. The new one finds and asks the question only if the entry gives no decision. It does the change after an accept unless the entry says that the change is done, and then it sends the decision | The new receiving orchestrator asks in its own pane only for the state "no decision of the user yet". An entry with a decision gets no pane start | The new receiving orchestrator tells its own user in its tab, the user tells it the decision in the pane, and it tells the sending orchestrator with `SendMessage`. If the find finds no question, it tells its own user. The sending orchestrator gets no report of the handoff |
+| A message fails                                                   | The failure rule applies to the orchestrator that sends it                                                                                            | The failure rule applies to the orchestrator that sends it                                                                                                                                                                                                    |                                                                                                                                                   | The orchestrator that sends it tells its own user                                                                                                                                                                                                                                |
 
 The reasons for this rule:
 
@@ -699,3 +725,4 @@ The reasons for this rule:
 - The relay sentences of a landing order show their report in the tab of the orchestrator and ask the user in a pane.
 - A change to an issue in flight keeps its own bullet, because the requester of that bullet asks its own user before the
   [change-of-scope comment](dev/plan-review.md#the-change-of-scope-comment).
+- The new orchestrator has no other source for an open request than its handoff file.
