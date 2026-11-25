@@ -513,7 +513,9 @@ If a step of the start checks fails, the new orchestrator is a failed session. A
 of `herdr agent list` with the own name and a tab id that is not the tab id of the handoff file. The failed session
 gives the message of [the start checks](../orchestrator.md#the-start-checks). After that message, it does none of the
 steps that [the start checks](../orchestrator.md#the-start-checks) list for a failed session. The failed session changes
-no handoff file and no question file. The old orchestrator does not wait for this result.
+no handoff file and no question file. It does none of
+[The steps for the open peer requests](#the-steps-for-the-open-peer-requests). The old orchestrator does not wait for
+this result.
 
 The start checks can read the handoff file of the first message with a Read call. This read can come before the read of
 the data root, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
@@ -567,7 +569,8 @@ are:
 
 An open question of a task subagent that came to a stopping point stays open in the handoff file, or in its question
 file. The new orchestrator sends its answer to the new task subagent of the same ticket. If that task subagent did not
-start yet, its prompt gives the answer.
+start yet, its prompt gives the answer. A matching step of an open peer request is not such an answer.
+[The steps for the open peer requests](#the-steps-for-the-open-peer-requests) give its rule.
 
 If the entry says "no report", the new task subagent starts from the state that `tasker show <issue>` gives. If the read
 of `tasker status` or of `tasker show <issue>` for an entry fails, the new orchestrator starts no task subagent for that
@@ -608,7 +611,9 @@ holds the start of a ticket, the report names that [held ticket](question-pane.m
 word of the user that names the question starts its pane. A start word for the held ticket also starts it.
 
 The report is a progress report, as [The operator](working-with-the-user.md#the-operator) says. The report starts no
-pane and no wait. It does not lift the rule of no automatic start of a question.
+pane and no wait. It does not lift the rule of no automatic start of a question. The report does not name the question
+of a receiving entry that gives a decision of the user, as step 6 of
+[The steps for the open peer requests](#the-steps-for-the-open-peer-requests) says.
 
 For the report, the new orchestrator lists `questions/` and reads the question file of each question of the report.
 These reads come after its start steps. So they are no exception to the sentence "It reads no question file at its
@@ -625,3 +630,47 @@ case. The case also needs this report and the start-word rule of [Start](questio
 
 The user said: "oh, I didn't know there was an open question about 973". The user also said: "and you didn't open that
 question first after the handoff...".
+
+### The steps for the open peer requests
+
+The new orchestrator does these steps only if all [the start checks](../orchestrator.md#the-start-checks) passed. They
+are part of item 4 of the start order above. They come after the check of the handoff folder and after the list of
+`questions/` and `proposals/`. A failed session does none of them and changes no handoff file and no question file. The
+ask in a pane comes after
+[the report of the questions with no automatic start](#the-report-of-the-questions-with-no-automatic-start), because
+that report comes before the first pane start.
+
+The steps are:
+
+1. The report. Tell the own user in the own tab about each open request that came from the handoff file. This is a
+   progress report, as [The operator](working-with-the-user.md#the-operator) says.
+2. A sending entry. Wait for the decision of the request. The decision comes to the own name, because the new
+   orchestrator has the name of the old orchestrator. Take it as the answer to the entry. After a reject, do no matching
+   step. After an accept, do the matching step only if it still applies, as
+   [The request rule](../orchestrator.md#the-request-rule) says. If it no longer applies, tell the own user in the own
+   tab and name the step.
+3. The find, for a receiving entry with the state "no decision of the user yet". Find the open question of the question
+   id, as the paragraph "An answer can name the id" above says. Keep the link between the entry and the question. If no
+   open question has that id, make no change, send nothing for the request, and tell the own user in the own tab. A
+   failed or denied list of `questions/` or read of a question file is not a find with no question. Under that failure,
+   the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) and the rule for a failed list of
+   [The question file](question-pane.md#the-question-file) apply. Run the find again after the next list that works.
+4. The ask. Ask that question in the own question pane. The usual rules of [Start](question-pane.md#start) apply.
+5. An entry with a decision needs no find. A missing question file or a failed list of `questions/` stops neither its
+   change nor its send.
+6. No pane start. The question of an entry with an accept or a reject gets no automatic start, no reuse and no pane
+   start at a word of the user that names it. This step wins over each of them in [Start](question-pane.md#start). Such
+   a question is not a question with no automatic start of [Terms](question-pane.md#terms). So the list of those
+   questions does not hold it, and the report of those questions does not name it. The reason: under the order of the
+   request rule, the pane can close before the send, so the question file stays until the send.
+7. The change. If the entry says that the change is done, do not do it again. Else, after an accept, do the requested
+   change. After a reject, change nothing.
+8. The send. Send the decision to the sending orchestrator with `SendMessage`. The stop points and the delete of
+   [The question file](question-pane.md#the-question-file) apply. For an entry with a decision, delete the question file
+   right after the send. If `questions/` no longer holds the file, no delete runs. A failed send is also a stop point,
+   and [the failure rule](limits.md#the-failure-rule) applies. The delete follows the calls and the fallback of The
+   orchestrator folder.
+
+The old orchestrator tells no peer about its handoff. The new orchestrator tells no peer that it took a request. Each
+message is the request or the answer of the seventh kind of
+[The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message). The peer gets no report of the handoff.
