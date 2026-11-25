@@ -91,8 +91,7 @@ handoff file:
 - Each open item with its id, its sender and its full text ([The open items](operator-items.md#the-open-items)). The
   file marks each question of the item as open, answered, sent or moved. The operator can keep a question open because
   the words of the user do not fully settle it, as [The answer](items.md#the-answer) says. For such a question, the file
-  gives what stays open and whether the ask to the user waits. For an answered question with an answer of the operator,
-  the file gives that answer.
+  gives what stays open and whether the ask to the user waits.
 - Each item that the operator answered and did not yet show, with its id, its sender and the first line of the item. For
   each question, the file gives the answer that the operator sent and the number of the sender.
 - Each sender of the slug that got the hold message, as [The hold of the items](handoff.md#the-hold-of-the-items) says.

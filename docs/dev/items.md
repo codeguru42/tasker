@@ -83,9 +83,9 @@ This page uses these terms for the questions to the user.
   sender. The sender continues its other work and does not act on the open question.
 - An answer of the user covers only each question that its message answers. The sender applies the answer to no other
   question that waits for an answer. This rule also holds for a planner or an orchestrator that gets the answer from
-  another session. A question of another item waits for the answer of its own item. A planner that wants to apply the
-  answer to a question outside an item asks that question first in a new item. An orchestrator asks it in its question
-  pane at the time that the rules of that question give, for example
+  another session. A question of another message waits for the answer of its own message. A planner that wants to apply
+  the answer to a question that no message asked asks that question first in a new message. An orchestrator asks it in
+  its question pane at the time that the rules of that question give, for example
   [the open-question rule](pick-the-tickets.md#the-open-question-rule).
 
   On 2026-11-07, the user answered "a" to a question of item orchestrator-m16-5. planner-m16 also applied that "a" to a
