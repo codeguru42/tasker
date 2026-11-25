@@ -67,31 +67,10 @@ To read the milestones, the operator runs
 ### The start prompts
 
 This subsection gives the start of the initial planner by the user and its first prompt. The user starts the initial
-planner in these steps. They take the form of [The steps of the user](../orchestrator.md#the-steps-of-the-user) of
-orchestrator.md.
-
-1. Run `tasker show-config --repo <key>`. `<key>` is the repo key of the local clone, for example `codeguru42/tasker`.
-2. If the command fails, start no initial planner.
-3. Read `sessions.kind` and the entry of `sessions.models.planner` in the output.
-4. Open a new herdr tab. The folder of the tab is the local clone.
-5. In that tab, run the start command of the kind, with the own name `planner-<slug>` and the prompt below as the first
-   prompt. Put the milestone title in place of `<milestone>`.
-
-For the kind `claude`, the start command is:
-
-```sh
-claude -n planner-<slug> --model <model> --effort <effort> "<first prompt>"
-```
-
-For the kind `pi`, the start command is:
-
-```sh
-pi -n planner-<slug> --provider <upstream> --model <model> --thinking <effort> "<first prompt>"
-```
-
-The row of the kind in [the seam of an agent kind](../config.md#the-seam-of-an-agent-kind) gives each flag. If
-`sessions.models.planner` has no entry, the user leaves out the model flags and the effort flag.
-[GLOSSARY.md](GLOSSARY.md) defines the slug.
+planner in the steps of [The steps of the user](../orchestrator.md#the-steps-of-the-user) of orchestrator.md, with the
+role `planner` in place of the role `orchestrator`. The user reads the entry `sessions.models.planner`, gives the own
+name `planner-<slug>` and passes the prompt below as the first prompt. The user puts the milestone title in place of
+`<milestone>`. [GLOSSARY.md](GLOSSARY.md) defines the slug.
 
 ```text
 You are the planner of <milestone>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>. This is the initial planning: the user works with you in this tab. After the start reads, read the title and the description of the milestone. Then start the drafts of its issues.
