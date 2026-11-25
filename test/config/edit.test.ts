@@ -81,9 +81,9 @@ describe("setRoleModel", () => {
 describe("setSessionRoleModel", () => {
   it("adds the keys sessions and models when the repo has no sessions key", () => {
     const expected = rawConfig();
-    expected.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "xhigh" } } };
+    expected.repos.tasker.sessions = { models: { orchestrator: { model: "opus", effort: "xhigh" } } };
 
-    const result = setSessionRoleModel(pretty(rawConfig()), "tasker", "operator", {
+    const result = setSessionRoleModel(pretty(rawConfig()), "tasker", "orchestrator", {
       model: "opus",
       effort: "xhigh",
     });
@@ -118,14 +118,14 @@ describe("setSessionRoleModel", () => {
 
   it("does not change the other repos", () => {
     const result = JSON.parse(
-      setSessionRoleModel(pretty(rawConfig()), "tasker", "operator", { model: "opus", effort: "high" }),
+      setSessionRoleModel(pretty(rawConfig()), "tasker", "orchestrator", { model: "opus", effort: "high" }),
     );
 
     expect(result.repos.other).toEqual(rawConfig().repos.other);
   });
 
   it("keeps a final line end of \\r\\n", () => {
-    const result = setSessionRoleModel(pretty(rawConfig(), "\r\n"), "tasker", "operator", {
+    const result = setSessionRoleModel(pretty(rawConfig(), "\r\n"), "tasker", "orchestrator", {
       model: "opus",
       effort: "high",
     });
@@ -135,7 +135,7 @@ describe("setSessionRoleModel", () => {
 
   it("throws for a repo key that has no repo", () => {
     expect(() =>
-      setSessionRoleModel(pretty(rawConfig()), "missing", "operator", { model: "opus", effort: "high" }),
+      setSessionRoleModel(pretty(rawConfig()), "missing", "orchestrator", { model: "opus", effort: "high" }),
     ).toThrow("the configuration has no object at");
   });
 });

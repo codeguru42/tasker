@@ -658,7 +658,7 @@ describe("parseConfig assistant", () => {
 });
 
 describe("parseConfig sessions", () => {
-  const sessionRoles = ["operator", "planner", "orchestrator", "question"];
+  const sessionRoles = ["planner", "orchestrator", "question"];
 
   it("fills in the defaults when sessions is missing", () => {
     expect(parsedRepo(validConfig()).sessions).toEqual({
@@ -729,7 +729,6 @@ describe("parseConfig sessions", () => {
   it("keeps the model and the effort of each role", () => {
     const raw = validConfig();
     const models = {
-      operator: { model: "opus", effort: "max" },
       planner: { model: "claude-opus-5-5", effort: "xhigh" },
       orchestrator: { model: "sonnet[1m]", effort: "low" },
       question: { model: "opus", effort: "max" },
@@ -795,6 +794,12 @@ describe("parseConfig sessions", () => {
     expect(Object.keys(parsedRepo(raw).sessions.models)).toEqual(["planner"]);
   });
 
+  it("rejects the key operator as an unknown key", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "high" } } };
+    expect(issuesOf(raw)).toEqual(["repos.tasker.sessions.models.operator: unrecognized key"]);
+  });
+
   it("rejects an unknown kind", () => {
     const raw = validConfig();
     raw.repos.tasker.sessions = { kind: "codex" };
@@ -807,35 +812,35 @@ describe("parseConfig sessions", () => {
       bogus: 1,
       models: {
         reviewer: { model: "opus", effort: "high" },
-        operator: { model: "opus", effort: "high", extra: 1 },
+        planner: { model: "opus", effort: "high", extra: 1 },
       },
     };
     const issues = issuesOf(raw);
     expect(issues).toContain("repos.tasker.sessions.bogus: unrecognized key");
     expect(issues).toContain("repos.tasker.sessions.models.reviewer: unrecognized key");
-    expect(issues).toContain("repos.tasker.sessions.models.operator.extra: unrecognized key");
+    expect(issues).toContain("repos.tasker.sessions.models.planner.extra: unrecognized key");
   });
 
   it("rejects a missing model and a missing effort", () => {
     const raw = validConfig();
-    raw.repos.tasker.sessions = { models: { operator: {} } };
+    raw.repos.tasker.sessions = { models: { planner: {} } };
     const issues = issuesOf(raw);
-    expectIssueAt(issues, "repos.tasker.sessions.models.operator.model");
-    expectIssueAt(issues, "repos.tasker.sessions.models.operator.effort");
+    expectIssueAt(issues, "repos.tasker.sessions.models.planner.model");
+    expectIssueAt(issues, "repos.tasker.sessions.models.planner.effort");
   });
 
   it("rejects an empty model", () => {
     const raw = validConfig();
-    raw.repos.tasker.sessions = { models: { operator: { model: "", effort: "high" } } };
+    raw.repos.tasker.sessions = { models: { planner: { model: "", effort: "high" } } };
     expect(issuesOf(raw)).toEqual([
-      "repos.tasker.sessions.models.operator.model: Too small: expected string to have >=1 characters",
+      "repos.tasker.sessions.models.planner.model: Too small: expected string to have >=1 characters",
     ]);
   });
 
   it("rejects an unknown effort", () => {
     const raw = validConfig();
-    raw.repos.tasker.sessions = { models: { operator: { model: "opus", effort: "extreme" } } };
-    expectIssueAt(issuesOf(raw), "repos.tasker.sessions.models.operator.effort");
+    raw.repos.tasker.sessions = { models: { planner: { model: "opus", effort: "extreme" } } };
+    expectIssueAt(issuesOf(raw), "repos.tasker.sessions.models.planner.effort");
   });
 
   it("reports question model entry faults at their paths", () => {
@@ -967,7 +972,7 @@ describe("parseConfig sessions", () => {
     delete raw.repos.tasker.verify;
     raw.repos.tasker.sessions = {
       models: {
-        operator: { model: "opus", effort: "huge" },
+        orchestrator: { model: "opus", effort: "huge" },
         planner: { model: "gpt-5", effort: "high" },
         question: { model: "gpt-5", effort: "high" },
       },
@@ -975,7 +980,7 @@ describe("parseConfig sessions", () => {
     raw.bogus = 1;
     const issues = issuesOf(raw);
     expectIssueAt(issues, "repos.tasker.verify");
-    expectIssueAt(issues, "repos.tasker.sessions.models.operator.effort");
+    expectIssueAt(issues, "repos.tasker.sessions.models.orchestrator.effort");
     expect(issues).toContain("repos.tasker.sessions.models.planner.model: is not a claude-code model: gpt-5");
     expect(issues).toContain("repos.tasker.sessions.models.question.model: is not a claude-code model: gpt-5");
     expect(issues).toContain("bogus: unrecognized key");
@@ -991,10 +996,10 @@ describe("parseConfig sessions", () => {
   it("reports a bad assistant model and a bad session model together", () => {
     const raw = validConfig();
     raw.repos.tasker.assistant.models.plan.model = "gpt-5";
-    raw.repos.tasker.sessions = { models: { operator: { model: "gpt-5", effort: "high" } } };
+    raw.repos.tasker.sessions = { models: { orchestrator: { model: "gpt-5", effort: "high" } } };
     const issues = issuesOf(raw);
     expect(issues).toContain("repos.tasker.assistant.models.plan.model: is not a claude-code model: gpt-5");
-    expect(issues).toContain("repos.tasker.sessions.models.operator.model: is not a claude-code model: gpt-5");
+    expect(issues).toContain("repos.tasker.sessions.models.orchestrator.model: is not a claude-code model: gpt-5");
   });
 });
 

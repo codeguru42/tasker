@@ -172,7 +172,7 @@ describe("show-config-schema", () => {
     expect(byPath.get("repos.<key>.issueTracker.site")?.description).toMatch(/ASCII.*uppercase.*lowercase/i);
     expect(byPath.get("repos.<key>.issueTracker.provider")?.description).toMatch(/^The kind of tracker\./);
     expect(byPath.get("repos.<key>.issueTracker.project")?.description).toMatch(/If it is absent.*repo key/i);
-    expect(byPath.get("repos.<key>.sessions.models.operator.model")?.description).toMatch(/model of the agent kind/i);
+    expect(byPath.get("repos.<key>.sessions.models.planner.model")?.description).toMatch(/model of the agent kind/i);
     expect(byPath.has("repos.<key>.sessions.models.question.model")).toBe(true);
     expect(byPath.has("repos.<key>.sessions.models.question.effort")).toBe(true);
     expect(byPath.get("repos.<key>.sessions.models.question")?.description).toMatch(/question sessions/i);
@@ -195,17 +195,24 @@ describe("show-config-schema", () => {
     for (const path of [
       "repos.<key>.sessions.kind",
       "repos.<key>.sessions.models",
-      "repos.<key>.sessions.models.operator.model",
-      "repos.<key>.sessions.models.operator.effort",
+      "repos.<key>.sessions.models.planner.model",
+      "repos.<key>.sessions.models.planner.effort",
     ]) {
       expect(byPath.get(path)?.description).toMatch(/subagent role/i);
     }
     expect(byPath.get("repos.<key>.assistant.trustedExtensions")?.description).toMatch(/only pi/i);
     expect(byPath.get("repos.<key>.assistant.models.plan.model")?.description).toMatch(/provider/i);
     expect(byPath.get("repos.<key>.sessions")?.description).toMatch(
-      /operator.*planner.*orchestrator.*models of question sessions/i,
+      /planner.*orchestrator.*models of question sessions/i,
     );
-    expect(byPath.get("repos.<key>.sessions.models.operator.model")?.description).toMatch(/provider/i);
+    expect(byPath.get("repos.<key>.sessions.models.planner.model")?.description).toMatch(/provider/i);
+    expect(
+      [...byPath.keys()].filter((path) => String(path).startsWith("repos.<key>.sessions.models.operator")),
+    ).toEqual([]);
+    expect(byPath.get("repos.<key>.sessions")?.description).not.toMatch(/operator/i);
+    expect(
+      [...byPath.keys()].filter((path) => /operator session/i.test(String(byPath.get(path)?.description))),
+    ).toEqual([]);
     expect(byPath.get("repos.<key>.issueTracker.site")?.description).toMatch(/site of the tracker/i);
     expect(byPath.get("repos.<key>.issueTracker.abortStatus")?.provider).toBe("jira");
     expect(byPath.get("repos.<key>.assistant.trustedExtensions")?.provider).toBe("pi");
