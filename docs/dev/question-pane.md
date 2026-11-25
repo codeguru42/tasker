@@ -342,9 +342,10 @@ nothing.
 The next open question is the first open question in the list order that can get an automatic start. The list order has
 three keys, and a key breaks the tie of the key before it:
 
-1. The priority: `P0`, `P1`, none, then `P2`. The read of the priority is the read of
-   [The open items](operator-items.md#the-open-items). If the read fails, each question counts as a question with no
-   priority.
+1. The priority: `P0`, `P1`, none, then `P2`. The priority is the value of the field `Priority` of the issue on the
+   project board. The orchestrator reads it with
+   `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .priority != null) | "\(.content.number) \(.priority)"'`.
+   If the read fails, each question counts as a question with no priority.
 2. The issue number: the lower number first. A question with no issue comes last within its priority.
 3. The arrival: the earlier first. In one message, the lower question number of the asking session comes first.
 
