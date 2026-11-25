@@ -16,7 +16,8 @@ This page gives the form of a message, the terms of the questions to the user an
   says what the content is.
 - A message about a draft gives a summary of the draft and the path of the draft file, not the draft. The path is
   `/tmp/tasker/<slug>/drafts/<file>.md`.
-- A progress report starts with the mark `Report:`, as [The operator](working-with-the-user.md#the-operator) says.
+- A progress report starts with the mark `Report:`, as
+  [the rule of a progress report](working-with-the-user.md#the-operator) says.
 
 ## The terms of the questions
 
