@@ -1024,8 +1024,8 @@ orchestrator does these steps before it writes its handoff file:
    items of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). Wait for the
    result of each one.
 
-A planning request can arrive after step 2 started each request that waited, for example a fact or a lesson of a late
-report. Then the wait runs again for that request.
+A planning request can arrive after step 2 started each item of planning work that waited, for example a fact or a
+lesson of a late report. Then the wait runs again for the items of that request.
 
 The old orchestrator writes its handoff file only after the result of the last planner subagent. The wait for one
 planner subagent can also end in the other ways that
@@ -1036,7 +1036,7 @@ steps of [The end of the wait for one subagent](handoff-orchestrator.md#the-end-
 a planner subagent, these rules also hold:
 
 - Its proposal file stays. The planner wait starts no planner subagent from that file. The new orchestrator finds the
-  file at its start and can start a planner subagent for the same request.
+  file at its start and can start a planner subagent for the same item of planning work.
 - Its state for the wait is ended, as [The terms of the wait](handoff-orchestrator.md#the-terms-of-the-wait) say. It
   holds no place in the count of [The count of planner subagents](#the-count-of-planner-subagents). The reason: its
   report can never come, so a place that it holds can stop the planner wait for good.

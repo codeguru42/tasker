@@ -113,7 +113,7 @@ after the close of that pane. Each step has one purpose and its own number, so t
    [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. Before the send, wait as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then, for an orchestrator of the kind
    `claude`, do the steps of [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Before the
-   write, wait until no subagent is in the state running and no planning request waits, as
+   write, wait until no subagent is in the state running and no item of planning work waits, as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then write the handoff file in your own
    handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
 
@@ -212,20 +212,20 @@ The rules that limit the start of a handoff, of a ticket and of a pane stay:
 
 These subagents can start after the start of the handoff:
 
-- The planner subagent of the send
+- The planner subagents of the send
 - The planner subagents of the planner wait
 - A write subagent of a decision message
 - An opener subagent of a pane that a word of the user starts
 - An ended subagent that a message or a late report starts again
 
 Before the send, the wait for each subagent that is not a planner subagent and that started before the send must end.
-After the send, the planner wait waits for each planner subagent, also the planner subagent of the send.
+After the send, the planner wait waits for each planner subagent, also the planner subagents of the send.
 
-A fact or a lesson in a report after the send becomes a planning request that waits. The planner wait starts a planner
-subagent for it, or runs again for it.
+A fact or a lesson in a report after the send becomes a planning request. Its items of planning work wait. The planner
+wait starts a planner subagent for each item, or runs again for it.
 
-Before the write of the handoff file, wait until no subagent is in the state running and no planning request waits. The
-planner wait keeps its rule. This section copies none of its steps. The exception of
+Before the write of the handoff file, wait until no subagent is in the state running and no item of planning work waits.
+The planner wait keeps its rule. This section copies none of its steps. The exception of
 [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
 
 ### The end of the wait for one subagent
@@ -269,7 +269,8 @@ For a planner subagent whose wait a word of the user ended,
 This subsection covers the time from the start of the handoff to the write of the handoff file. Before the start, a
 report gets its usual steps.
 
-A fact or a lesson before the send goes into the send. After the send, it becomes a planning request that waits.
+A fact or a lesson before the send goes into the send. After the send, it becomes a planning request, and its items of
+planning work wait.
 
 An open question gets its question file. If it has no question file, it goes into the handoff file with its full text
 and its choices. No pane starts by itself for it. A word of the user can still start a pane.

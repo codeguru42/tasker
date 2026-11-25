@@ -10,7 +10,8 @@ A suggestion of a handoff of an orchestrator is a question in the pane of the or
 message of the go question. The orchestrator accepts the decision message with the go of the user and sends the ack.
 Then the rounds before the close run, and the pane closes, as [Close and continue](question-pane.md#close-and-continue)
 says. Then the wait of step 2 of the steps of the old orchestrator runs, and the handoff starts after it. The user can
-also ask the old session for a handoff at any time. A request of the user for a handoff needs no go question, and no pane holds it.
+also ask the old session for a handoff at any time. A request of the user for a handoff needs no go question, and no
+pane holds it.
 
 For an orchestrator, the go is the word of the user that starts a handoff: the go in the decision message of the go
 question, or a request of the user for a handoff. Step 1 of the steps of the old orchestrator holds from the go, also
@@ -142,8 +143,8 @@ each lesson. Each one is one [item of planning work](planner-subagent.md#the-sta
 failed start of any one of these planner subagents, an old orchestrator asks the user, as the planner bullet of
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The old orchestrator waits for
 the result of each one, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says. A fact or a
-lesson that reaches the old orchestrator after the send becomes a planning request that waits, as
-[The reports during the handoff](handoff-orchestrator.md#the-reports-during-the-handoff) says.
+lesson that reaches the old orchestrator after the send becomes a planning request, and its items of planning work wait,
+as [The reports during the handoff](handoff-orchestrator.md#the-reports-during-the-handoff) says.
 
 The handoff file names each session other than the new session by its name, also in the prompt. It gives no
 [session ref and no socket address](GLOSSARY.md) of such a session. `ListAgents` gives the current name and session ref
