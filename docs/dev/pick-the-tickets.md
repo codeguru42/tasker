@@ -1422,9 +1422,9 @@ landing rules still apply.
 - The planner bullet: the orchestrator gives each lesson of a final report, each finding of a session review, each
   recurrence and each proposed issue only to its planner. For an orchestrator of the kind `claude`, the planner is a new
   [planner subagent](planner-subagent.md) for each one, as [The start](planner-subagent.md#the-start) of
-  planner-subagent.md says. The message or the prompt gives the lesson, the ticket, the date, and the doc and the
-  section that the lesson fits. For a recurrence, it also names the open issue. The planner drafts and posts the issue,
-  as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
+  planner-subagent.md says. The prompt gives the lesson, the ticket, the date, and the doc and the section that the
+  lesson fits. For a recurrence, it also names the open issue. The planner drafts and posts the issue, as
+  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
   files no issue itself. The one exception is the issue of step 1 of [A failed CI run](ci-wait.md#a-failed-ci-run),
   which the orchestrator files itself. After a failed start of a planner subagent, the orchestrator asks the user in its
   question pane, as [Start](question-pane.md#start) says. A refused Agent call is a failed start. The question gives the
@@ -1436,10 +1436,10 @@ landing rules still apply.
 
   A request of [the user](GLOSSARY.md) to draft an issue, or to change the title or the body of an issue, is a proposed
   issue of this bullet. [The orchestrator](../orchestrator.md) gives it to its planner with no question to the user, and
-  [tells the user](working-with-the-user.md#the-operator) that it did. The message or the prompt gives the words of the
-  user and the date, and [the ticket](../orchestrator.md) when one exists. On 2026-10-26, the user asked the
-  orchestrator of #391 to draft the issues of a new milestone. The orchestrator drafted and posted 8 issues and 4
-  changes itself, with no review loop. Review loop 1 later found from 9 to 14 findings in each draft.
+  [tells the user](working-with-the-user.md#the-operator) that it did. The prompt gives the words of the user and the
+  date, and [the ticket](../orchestrator.md) when one exists. On 2026-10-26, the user asked the orchestrator of #391 to
+  draft the issues of a new milestone. The orchestrator drafted and posted 8 issues and 4 changes itself, with no review
+  loop. Review loop 1 later found from 9 to 14 findings in each draft.
 
 - The source bullet: a message of the planner bullet, and the prompt of a planner subagent, names the source of each
   fact of the message or the prompt. Examples of a source are the final report, a comment, a command and its output, a
