@@ -5,7 +5,7 @@ on GitHub. The [user](GLOSSARY.md) works with the planner. The readers of this p
 session that [Before a post](issues.md#before-a-post) of issues.md sends to
 [The blocked-by links](issue-subagents.md#the-blocked-by-links) of issue-subagents.md also reads that section.
 
-An ad hoc planner is a session that drafts issues for the user outside initial or follow-up milestone planning. For each
+An ad hoc planner is a session that drafts issues for the user outside the initial planning of a milestone. For each
 draft, it follows [The ticket subagent](#the-ticket-subagent) and
 [The review loop of a draft](#the-review-loop-of-a-draft). It follows [Before a post](issues.md#before-a-post) and posts
 each draft after its loops under [The post of a draft](#the-post-of-a-draft). The post rules and
@@ -29,9 +29,7 @@ The planner is one role. The operator starts each session of the planner, as
 [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) and
 [The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session), says.
 
-The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab. The
-follow-up planner is the planner that files the follow-ups of the milestone while the orchestrator runs the milestone.
-The operator starts the follow-up planner after the initial planning.
+The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab.
 
 - The initial planner works with the user directly, as [The operator](working-with-the-user.md#the-operator) of
   working-with-the-user.md says. It sends no item to the operator.
@@ -50,24 +48,13 @@ The operator starts the follow-up planner after the initial planning.
   For the initial planner, a finding of a round that the user wants posted is a draft of
   [The initial planner](#the-initial-planner).
 
-- The follow-up planner takes lessons, session review findings and proposed issues from `orchestrator-<slug>`.
-- The follow-up planner sends each question and each draft that waits for a decision of the user to
-  `orchestrator-<slug>`, which asks it in its [question pane](question-pane.md#a-question-pane). It sends each report to
-  `orchestrator-<slug>`, which shows it as text in its tab. [The review loop of a draft](#the-review-loop-of-a-draft)
-  says which drafts wait.
-- At the end of a milestone, the follow-up planner works in the order of [The close of a milestone](milestone-close.md),
-  with the steps of the operator in [The close of a milestone](operator-start.md#the-close-of-a-milestone) of
-  operator-start.md. [The close duties of the follow-up planner](#the-close-duties-of-the-follow-up-planner) give its
-  work. After the end of the role of the operator, it talks to the user directly, as
-  [The operator](working-with-the-user.md#the-operator) of working-with-the-user.md says.
-- The ticket subagent of each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`. The follow-up planner
-  puts the path in the question, not the draft.
+- The ticket subagent of each planner writes each draft to `/tmp/tasker/<slug>/drafts/<file>.md`.
 - For a draft that waits for a decision of the user, [The escape hatch](#the-escape-hatch) says what the answer of the
   item does.
 
 The reason for the folder: the drafts go in `/tmp`, so they do not fill the `Documents` folder of the user, and the
-system deletes them. The limit: a reboot deletes the open drafts, and the follow-up planner then starts a new ticket
-subagent for each of them.
+system deletes them. The limit: a reboot deletes the open drafts, and the planner then starts a new ticket subagent for
+each of them.
 
 ### The read of the milestones
 
@@ -76,56 +63,12 @@ To read the milestones, the operator runs
 
 ### The start prompts
 
-This subsection gives the prompts that the operator uses for the initial planner and the follow-up planner. The operator
-passes each prompt as the last argument of `herdr agent start`.
-
-The initial planner:
+This subsection gives the prompt that the operator uses for the initial planner. The operator passes the prompt as the
+last argument of `herdr agent start`.
 
 ```text
 You are the planner of <milestone>. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>. This is the initial planning: the user works with you in this tab. After the start reads, read the title and the description of the milestone. Then start the drafts of its issues.
 ```
-
-The follow-up planner:
-
-```text
-You are the planner of <milestone>. This is not the initial planning. Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and docs/planner.md as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and docs/planner.md with git show origin/main:<path>.
-```
-
-### The close duties of the follow-up planner
-
-The planner does steps 10 to 14 of [The steps that end each role](milestone-close.md#the-steps-that-end-each-role). It
-starts step 10 only after the end of the role of the operator. It waits for the report of the ticket subagent of each
-draft before step 11 ends. It handles each finding as the docs say: a reviewed post, a change of an open issue or a
-drop. It gets each decision for the user alone before the action that needs it.
-
-Each open question and each open decision holds step 11, also one about work outside the milestone. No session remains
-after the planner to take it. The planner asks the user directly, as step 10 says. To resolve an open question or an
-open decision, the planner makes no post and no change of scope without authority. Before step 12, the planner posts or
-drops each draft that it holds. A draft that waits for a decision of the user gets that decision in step 10, before
-step 11.
-
-After step 11, the planner does the reads and the GitHub milestone closure of [Milestones](issues.md#milestones). Then
-it makes sure that the session of the operator closed, as step 13 says.
-
-Then the planner gives the user its close report and asks for the approval to close, as step 14 says. The close report
-says that the last round found nothing new. It also gives the URL of the milestone and the result of the read after the
-write. The close report ends the role of the planner. On the approval, the planner closes its own session, as
-[The own-session closure](milestone-close.md#the-own-session-closure) says.
-
-If a round of the planner or a send of a finding fails, the rounds of the planner end. The close then stops at this
-stage. The planner tells the user about the failure directly. It keeps the drafts and the state of the milestone for a
-later recovery. A failed round is not a round that finds nothing new.
-
-The planner handles a proposal that it gets in the close in this way:
-
-- An accepted proposal follows its post rules.
-- A changed proposal goes again through the review of a draft or a refine that it needs.
-- A rejected or dropped proposal gets its outcome with no post.
-- A proposal about later work can still have no answer after the end of the role of the operator. Such a proposal is an
-  open decision of step 10, and it holds step 11.
-- This rule of the planner never lets the operator move its own open question to the planner. The operator still passes
-  its question gate.
-- New work of the milestone still holds the GitHub milestone closure, as [Milestones](issues.md#milestones) says.
 
 ## The order of the work
 
@@ -152,24 +95,23 @@ and ends with a report. For the work on its draft, a ticket subagent follows eac
 file and the files of a [scratch folder](plan-review.md#the-state-of-the-user), and it posts nothing. The reason: the
 text of the draft and of its reviews stays out of the context of the planner.
 
-Before the follow-up planner starts the first ticket subagent for a lesson or a proposed issue, it decides on a drop, as
+Before a planner subagent starts the first ticket subagent for a lesson or a proposed issue, it decides on a drop, as
 [The post of a draft](#the-post-of-a-draft) permits. First, it reads the docs for the rule that the lesson or the
 proposed issue asks for. Then it judges whether a case with a cost is on record, for example a stop or a change of
-scope. If neither such a case nor a real gap of the docs exists, the follow-up planner can drop the lesson or the
-proposed issue. The judgment is open on purpose, and the follow-up planner makes it.
+scope. If neither such a case nor a real gap of the docs exists, the planner subagent can drop the lesson or the
+proposed issue. The judgment is open on purpose, and the planner subagent makes it.
 
 The reason: each review loop costs at least one review agent. On 2026-11-04, the review agents of drafts held a median
 of about 120,000 tokens of context.
 
 The prompt of a ticket subagent gives the source of the draft word for word, the milestone and the path of the draft
-file. It says whether the planner is the initial planner, the follow-up planner, or an ad hoc planner. It gives each
-decision of the user on the draft. It tells the ticket subagent to read this page,
-[docs/dev/issue-subagents.md](issue-subagents.md), [docs/dev/issue-draft.md](issue-draft.md),
-[docs/dev/issue-review.md](issue-review.md), [Before a post](issues.md#before-a-post) and the simple-english skill. It
-bans each command that reads the login of the user, each write to GitHub and each change of
-[the state of the user](plan-review.md#the-state-of-the-user). It asks for the report through the tool
-`SubagentHandback`. The ticket subagent loads a doc that a link of these pages names only on demand, for a specific task
-that needs the doc, and not at its start.
+file. It says whether the planner is the initial planner or an ad hoc planner. It gives each decision of the user on the
+draft. It tells the ticket subagent to read this page, [docs/dev/issue-subagents.md](issue-subagents.md),
+[docs/dev/issue-draft.md](issue-draft.md), [docs/dev/issue-review.md](issue-review.md),
+[Before a post](issues.md#before-a-post) and the simple-english skill. It bans each command that reads the login of the
+user, each write to GitHub and each change of [the state of the user](plan-review.md#the-state-of-the-user). It asks for
+the report through the tool `SubagentHandback`. The ticket subagent loads a doc that a link of these pages names only on
+demand, for a specific task that needs the doc, and not at its start.
 
 A rule of the planner pages that names a finding that the planner dismissed means a finding of the report of the ticket
 subagent. A rule of the planner pages that gives the planner a step before the post of a draft gives that step to the
@@ -270,10 +212,10 @@ needs the measure, the ticket subagent makes the question an open question in it
 planner tests each outside-tool fact it writes" gives the words that no one tested the fact. This subsection wins over
 that bullet and over the bullet that starts "An issue can name a read of an outside tool".
 
-The initial planner and the ad hoc planner ask the user in their chat. The follow-up planner sends the question to
-`orchestrator-<slug>`. The draft waits for the answer, as a draft of [the escape hatch](#the-escape-hatch) does.
-Paragraphs 5 and 6 of the subsection of plan-review.md also hold for the planner when it handles the answer. The answer
-of the user has one of these outcomes:
+The initial planner and the ad hoc planner ask the user in their chat. A planner subagent gives the question in its
+result, as [The result](planner-subagent.md#the-result) says. The draft waits for the answer, as a draft of
+[the escape hatch](#the-escape-hatch) does. Paragraphs 5 and 6 of the subsection of plan-review.md also hold for the
+planner when it handles the answer. The answer of the user has one of these outcomes:
 
 - The user approves the command. Then the planner starts a new ticket subagent with the draft file, the approved command
   and its undo step, word for word. That ticket subagent first runs them, as
@@ -393,10 +335,10 @@ For a late report, the planner uses the first bullet of this list that matches:
 
 - If a ticket subagent of the draft runs, the late report waits for its report. Then the planner uses this list again
   for the late report.
-- If the draft waits for a decision of the user, the late report waits for that answer. This includes a question to
-  `orchestrator-<slug>` and a question in the chat of the initial planner or the ad hoc planner. Then the planner uses
-  this list again for the late report. An answer that accepts the draft with no change makes the planner post the draft,
-  so the bullet "If the planner posted the draft" then applies.
+- If the draft waits for a decision of the user, the late report waits for that answer. This includes a question in the
+  result of a planner subagent and a question in the chat of the initial planner or the ad hoc planner. Then the planner
+  uses this list again for the late report. An answer that accepts the draft with no change makes the planner post the
+  draft, so the bullet "If the planner posted the draft" then applies.
 - If the planner dropped the draft, the planner drops the late report too.
 - If the planner did not post the draft, the planner starts a new ticket subagent with the draft file and the report
   file. The new ticket subagent starts at step 5 of [The review loop of a draft](#the-review-loop-of-a-draft). The
@@ -472,11 +414,11 @@ If the match right before the post is a closed issue, each planner compares the 
   match.
 - If the draft asks for more than the closed issue landed, the planner posts a new follow-up issue that names the closed
   issue, with no approval of the user. The escape hatch still applies.
-- If the planner cannot tell which case applies, the draft waits for a decision of the user. The follow-up planner sends
-  the question to `orchestrator-<slug>`; the initial planner and the ad hoc planner ask in their chat. The planner posts
-  nothing for that draft.
+- If the planner cannot tell which case applies, the draft waits for a decision of the user. A planner subagent gives
+  the question in its result. The initial planner and the ad hoc planner ask in their chat. The planner posts nothing
+  for that draft.
 
-The follow-up planner can also drop a lesson or a proposed issue with no approval of the user. A drop needs no review.
+A planner subagent can also drop a lesson or a proposed issue with no approval of the user. A drop needs no review.
 
 After each post or drop, each planner tells the user in a short report. The report gives the link or the drop, the
 source, and each finding that the planner dismissed, with its reason. It gives each blocked-by link with its reason and
@@ -484,36 +426,7 @@ the list of edge cases of [The findings and the edge cases](issue-draft.md#the-f
 issue-draft.md. It also gives the command and result of each test of a fact about an outside tool, as
 [The body of an issue](issue-subagents.md#the-body-of-an-issue) says.
 
-The follow-up planner sends this report to `orchestrator-<slug>`. The initial planner and the ad hoc planner give it in
-their chat. The follow-up planner also tells the session that sent the lesson or the proposed issue, if that session is
-not `orchestrator-<slug>`.
-
-These posts also give a message to an orchestrator:
-
-- A post that adds an issue.
-- A post that changes the blocked-by links of an open issue.
-- A post that moves an issue into a milestone.
-
-The follow-up planner sends the message after the post is complete.
-[The last steps of a post](issue-post.md#the-last-steps-of-a-post) of issue-post.md make a post complete.
-
-If the post does not complete, as [The last steps of a post](issue-post.md#the-last-steps-of-a-post) of issue-post.md
-says, [the failure rule](limits.md#the-failure-rule) applies to the follow-up planner, and it sends no message. The
-orchestrator finds the change at its next read of the board.
-
-After a complete post, as [The last steps of a post](issue-post.md#the-last-steps-of-a-post) of issue-post.md says, the
-follow-up planner tells `orchestrator-<milestone>` of the milestone of the issue after the post, with `SendMessage`.
-[The notice rule](doc-reads.md#the-notice-rule) gives the form of the name. The message names the issue and the change.
-A move from one milestone to another gives one message, only to the orchestrator of the target milestone. The
-orchestrator then reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
-
-Before the message, the follow-up planner makes sure that the session list of the tools, for example `ListAgents`, has
-`orchestrator-<milestone>`. If the list has no such session, the follow-up planner sends nothing. No such session is an
-answer, not a failure. If the list or the send fails, [the failure rule](limits.md#the-failure-rule) applies to the
-follow-up planner. Then the orchestrator finds the change at its next read of the board. A milestone hold can stop this
-message, as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
-
-If the session that sent the lesson or the proposed issue is that `orchestrator-<milestone>`, one message covers both.
+A planner subagent gives this report in its result. The initial planner and the ad hoc planner give it in their chat.
 
 ### The escape hatch
 
@@ -538,10 +451,11 @@ When a draft needs one of these decisions, each planner asks the user before the
 An edge case that a ticket subagent decided as "later" needs none of these decisions, as
 [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of issue-draft.md says.
 
-For a draft that waits for such a decision, each planner posts nothing. The follow-up planner sends the draft to
-`orchestrator-<slug>`, with each finding that it dismissed. The answer is the decision of the user. The initial planner
-and the ad hoc planner ask in their chat, with each finding that they dismissed. A planner posts nothing for such a
-draft until each question has an answer.
+For a draft that waits for such a decision, each planner posts nothing. A planner subagent gives the draft, its
+questions and each finding that it dismissed in its result, as
+[A draft that needs the user](planner-subagent.md#a-draft-that-needs-the-user) says. The answer is the decision of the
+user. The initial planner and the ad hoc planner ask in their chat, with each finding that they dismissed. A planner
+posts nothing for such a draft until each question has an answer.
 
 - If the answer rejects the draft or says to drop it, the planner drops the draft and reports the drop, as
   [The post of a draft](#the-post-of-a-draft) says. A [partial answer](items.md#the-open-items) that rejects the draft
@@ -608,5 +522,3 @@ loops under [The post of a draft](#the-post-of-a-draft). Then it reports the pos
   are `orchestrator-<slug>` and `planner-<slug>`. The name tells the user which session is the planner and which session
   is an orchestrator. For example, on 2026-10-15, the user confused a planner with the orchestrator.
   [The notice rule](doc-reads.md#the-notice-rule) says which sessions get a notice.
-- The follow-up planner suggests a handoff to the user and does the steps of the handoff, as
-  [docs/dev/handoff-planner.md](handoff-planner.md) says.

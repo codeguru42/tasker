@@ -72,9 +72,9 @@ close.
 ## The work of the planner
 
 The planner starts step 10 of [The steps that end each role](#the-steps-that-end-each-role) only after the end of the
-role of the operator. [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner)
-give its work. [Milestones](issues.md#milestones) gives the GitHub milestone closure. After the end of the role of the
-operator, the planner talks to the user directly, as [The operator](working-with-the-user.md#the-operator) says.
+role of the operator. The close duties of the follow-up planner give its work. [Milestones](issues.md#milestones) gives
+the GitHub milestone closure. After the end of the role of the operator, the planner talks to the user directly, as
+[The operator](working-with-the-user.md#the-operator) says.
 
 ## Missing roles
 
@@ -131,10 +131,9 @@ decisions and review rounds.
 - In step 10, the planner asks the user directly because the operator's role ended.
 - If an answer asks for more work, the session does that work first. Then it goes on with step 7 or step 11. The
   operator follows [The question gate of the close](operator-items.md#the-question-gate-of-the-close). The planner
-  follows [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner).
-- For authority and drafts, follow
-  [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner). The planner
-  finishes each held draft before step 12.
+  follows The close duties of the follow-up planner.
+- For authority and drafts, follow The close duties of the follow-up planner. The planner finishes each held draft
+  before step 12.
 - A running [write subagent](question-pane.md#terms) holds the operator at step 8. If none started, or each one ended,
   this hold ends. If one ends without a report, follow [the failure rule](limits.md#the-failure-rule). A write subagent
   can run after its question pane closes. Step 9 ends the operator's session.
@@ -145,8 +144,7 @@ decisions and review rounds.
   [Session-review rounds](session-review-rounds.md) says. That finding is not a step 6 question or decision, so the
   operator does not wait for it. A planner draft that needs a user decision returns to the operator as an item. That
   item is an open question of step 6.
-- The planner handles findings as
-  [The close duties of the follow-up planner](planner.md#the-close-duties-of-the-follow-up-planner) says.
+- The planner handles findings as The close duties of the follow-up planner says.
 - A failed round or a failed send ends the session's rounds. The close stops at that stage. A failed round is not a
   round that found nothing new.
 
