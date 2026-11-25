@@ -34,11 +34,10 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    applies, and the operator does not tell the user to start the initial planner. A change of the description of a held
    milestone keeps its hold record, as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
 
-   For a denied create or change command, the operator follows
-   [A denied command of the operator](tasker-commands.md#a-denied-command-of-the-operator). If the command ran, the
-   operator goes on as after its own command. If the command did not run, the operator does not tell the user to start
-   the initial planner and waits for a new word of the user. On a new word of the user to go on, the operator does step
-   3 again from its first paragraph.
+   For a denied create or change command, the operator follows [A denied command](tasker-commands.md#a-denied-command).
+   If the command ran, the operator goes on as after its own command. If the command did not run, the operator does not
+   tell the user to start the initial planner and waits for a new word of the user. On a new word of the user to go on,
+   the operator does step 3 again from its first paragraph.
 
    After the post, the operator tells the user to start the initial planner, as
    [The start prompts](planner.md#the-start-prompts) says. If the user approves the existing title and description with
@@ -288,8 +287,7 @@ of the user decides.
 
 ## A denied command of the operator
 
-The rules of this section are in
-[A denied command of the operator](tasker-commands.md#a-denied-command-of-the-operator).
+The rules of this section are in [A denied command](tasker-commands.md#a-denied-command).
 
 ## A blocked session
 

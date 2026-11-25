@@ -969,8 +969,8 @@ When the ticket comes back to the current milestone, the orchestrator starts a n
 A ticket on hold is an open ticket with the label `on hold`. Only a word of the user puts a ticket on hold or ends the
 hold. The orchestrator adds the label with `gh issue edit <number> --add-label "on hold"`, and it removes the label with
 `gh issue edit <number> --remove-label "on hold"`. If a removal of the label is denied, the orchestrator gives the user
-the choices of [A denied command of the operator](tasker-commands.md#a-denied-command-of-the-operator), in the place of
-the operator. The issue stays in its milestone. At each read of the board and before each start, the orchestrator runs
+the choices of [A denied command](tasker-commands.md#a-denied-command). The issue stays in its milestone. At each read
+of the board and before each start, the orchestrator runs
 `gh issue list --state open --label "on hold" --limit 1000 --json number`. If the read fails,
 [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket and makes no offer until
 the read works.

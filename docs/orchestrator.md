@@ -71,8 +71,7 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
 - [docs/dev/plan-review.md](dev/plan-review.md): the repo-files rule, the fact test, the issue check, the
   needed-doc-change rule, the stop rule, the change-of-scope comment, the design-gap rule and the quote check.
 - [docs/dev/tasker-commands.md](dev/tasker-commands.md): the plain-form rule, the orchestrator-command rule, the
-  tool-block rule, "A denied command of the operator", the command rules, the facts of the installed tasker and the run
-  times.
+  tool-block rule, "A denied command", the command rules, the facts of the installed tasker and the run times.
 - [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
   own-session closure.
 - [docs/dev/items.md](dev/items.md): the form of a message, the terms of the questions and the answer.

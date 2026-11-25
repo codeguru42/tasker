@@ -47,9 +47,8 @@ When a step of the operator pages applies [the failure rule](dev/limits.md#the-f
 operator in the place of the orchestrator. When the operator gets a notice, the operator follows
 [the notice rule](dev/doc-reads.md#the-notice-rule). For an item with a denied command, the operator follows
 [the tool-block rule](dev/tasker-commands.md#the-tool-block-rule). For a denied command of step 3 of "The order of a
-milestone", the operator follows
-[A denied command of the operator](dev/tasker-commands.md#a-denied-command-of-the-operator). The operator also follows
-[A denied command of the operator](dev/tasker-commands.md#a-denied-command-of-the-operator) for a denied call of a
+milestone", the operator follows [A denied command](dev/tasker-commands.md#a-denied-command). The operator also follows
+[A denied command](dev/tasker-commands.md#a-denied-command) for a denied call of a
 [write subagent](dev/question-pane.md#terms).
 
 The operator pages are `docs/operator.md` and the pages of this list, "The pages":
@@ -61,7 +60,7 @@ The operator pages are `docs/operator.md` and the pages of this list, "The pages
 - [docs/dev/operator-items.md](dev/operator-items.md): "The open items", "The question gate of the close" and "The
   states of an item".
 - [docs/dev/items.md](dev/items.md): "The form of a message", "The terms of the questions" and "The answer".
-- [docs/dev/tasker-commands.md](dev/tasker-commands.md): "A denied command of the operator".
+- [docs/dev/tasker-commands.md](dev/tasker-commands.md): "A denied command".
 - [docs/dev/planner.md](dev/planner.md): "The read of the milestones" and "The start prompts".
 - [docs/dev/operator-conversations.md](dev/operator-conversations.md): "A side conversation" and "The word of the user".
 - [docs/dev/question-pane.md](dev/question-pane.md): "A question pane".
