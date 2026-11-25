@@ -49,13 +49,6 @@ its own. A word of the user can still start one.
 
 A session that starts the close ends its role. It does not keep its role for the next milestone.
 
-The milestone of a long-running orchestrator, for example "Docs", stays open after its last ticket closes. At the empty
-Todo column, the long-running orchestrator runs its rounds and gives its report that the milestone is done, as
-[Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The close of that milestone starts only on the word of
-the user. That word starts the report of the long-running orchestrator that the close started. Then the close runs in
-the order of this page. Until that word, the long-running orchestrator keeps its role and its other rules outside the
-close.
-
 ## Missing roles
 
 The user stops a running pi orchestrator, and an orchestrator of the kind `claude` closes its own tab.
