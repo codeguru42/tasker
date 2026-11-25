@@ -138,7 +138,7 @@ The rule gives a different result in each state of the issue:
 - Running: the issue is open, and `tasker status` lists a task for it, so the issue is in flight. The reads skip the
   write, and the planner tells the user. The rule does not apply. The bullet for an issue in flight of
   [land-the-work.md](land-the-work.md) and the case "A change of scope of an issue in flight" of the escape hatch stay.
-- Ended and closed: the reads skip the write, and the planner tells the user. The rule does not apply. The the bullet of
+- Ended and closed: the reads skip the write, and the planner tells the user. The rule does not apply. The bullet of
   [The order of the work](#the-order-of-the-work) that starts "If a ticket that landed needs a change" applies: a
   comment with the approval of the user, and no change of the body.
 - Ended and open, with a `finished` or `cancelled` task: `tasker status` lists no such task, so the test gives "no
@@ -146,7 +146,7 @@ The rule gives a different result in each state of the issue:
 
 An open issue can have a `finished` task. If `issueTracker.updateOnFinish` is not `true`, `tasker finish` does not mark
 the issue done. If the write to the tracker fails, the task still goes to `finished`. A task can also go to `cancelled`
-after `landed`, because `landed` is not terminal, as [docs/statemachine.md](../statemachine.md) shows. The the bullet of
+after `landed`, because `landed` is not terminal, as [docs/statemachine.md](../statemachine.md) shows. The bullet of
 [The order of the work](#the-order-of-the-work) that starts "If a ticket that landed needs a change" wins over the rule.
 If the planner knows that the work landed, it writes a new follow-up issue and does not change the body. It knows this
 from the source of the change or from a read that it already has. The rule adds no read for this case. The test does not
