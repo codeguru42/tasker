@@ -17,7 +17,7 @@ outside that section is for an issue post, except a rule that names a comment po
 - Each planner, for each issue post that it makes. A planner follows each rule of an issue post, as an issue-post
   subagent does. A planner makes no comment post. One exception: a planner does the steps of
   [The last steps of a post](#the-last-steps-of-a-post) only before its message to an orchestrator.
-  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) gives that message.
+  [The post of a draft](planner.md#the-post-of-a-draft) gives that message.
 - A subagent of the main session that posts a reviewed ad hoc draft. The bullet of `docs/dev/working-with-the-user.md`
   that starts "A subagent of the main session posts a reviewed ad hoc draft" gives that post. Such a subagent follows
   each rule of an issue post, as an issue-post subagent does. It makes no comment post.
@@ -237,7 +237,7 @@ An issue-post subagent gives its facts in its result, as
    of the bullet of [Before a post](issues.md#before-a-post) that starts "Right after each post of the body". The result
    says for each match whether the two bodies are the same. If the read of the body of a match fails, the result says
    that the compare of that match failed. The starter then does the steps of a match of
-   [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
+   [The post of a draft](planner.md#the-post-of-a-draft).
 3. The result gives the key and the URL of a posted issue, each blocked-by link that the subagent added, each skipped
    link with its reason, and whether the post is complete.
 4. The result gives each issue as its plain key, as [the issue-link rule](working-with-the-user.md#the-issue-link-rule)

@@ -17,7 +17,7 @@ are these:
 These steps name a part of this page:
 
 - The paragraph of [The ticket subagent](planner.md#the-ticket-subagent) about a question of a report.
-- The report paragraph of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
+- The report paragraph of [The post of a draft](planner.md#the-post-of-a-draft).
 - The edge-case sentence of [The escape hatch](planner.md#the-escape-hatch).
 - The sentence of [The review loop of a draft](planner.md#the-review-loop-of-a-draft) that starts "The draft that each
   planner posts after the last loop".

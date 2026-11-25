@@ -8,8 +8,8 @@ session that [Before a post](issues.md#before-a-post) of issues.md sends to
 An ad hoc planner is a session that drafts issues for the user outside initial or follow-up milestone planning. For each
 draft, it follows [The ticket subagent](#the-ticket-subagent) and
 [The review loop of a draft](#the-review-loop-of-a-draft). It follows [Before a post](issues.md#before-a-post) and posts
-each draft after its loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner). The post rules
-and [The escape hatch](#the-escape-hatch) apply to each planner.
+each draft after its loops under [The post of a draft](#the-post-of-a-draft). The post rules and
+[The escape hatch](#the-escape-hatch) apply to each planner.
 
 The page does not cover the work of the orchestrator and of the task subagents of the tickets.
 [The orchestration pages](../orchestrator.md) hold that work, and [orchestrator.md](../orchestrator.md) defines
@@ -22,7 +22,7 @@ A planner is not the orchestrator. It is also not one of the sessions that taske
 
 A blocked-by link is the GitHub link that says that one issue waits for another issue.
 
-## The initial planner and the follow-up planner
+## The start of the initial planner
 
 The planner is one role. The operator starts each session of the planner, as
 [Start a session](operator-start.md#start-a-session) of operator-start.md, with
@@ -40,9 +40,8 @@ The operator starts the follow-up planner after the initial planning.
   prompt names no kinds of GitHub objects to make, so the initial planner still asks the user before a post, as
   [The order of the work](#the-order-of-the-work) says.
 - When the user says that the initial planning is done, the initial planner waits for the report of each ticket subagent
-  that still runs. It posts each such draft after its loops, under
-  [The post of the follow-up planner](#the-post-of-the-follow-up-planner). Then it runs the rounds of
-  [Session-review rounds](session-review-rounds.md).
+  that still runs. It posts each such draft after its loops, under [The post of a draft](#the-post-of-a-draft). Then it
+  runs the rounds of [Session-review rounds](session-review-rounds.md).
 
   It posts each draft of a finding of its rounds after that draft's loops. Only then does it tell
   [its operator](../operator.md) with `SendMessage` that the initial planning is done. The message holds the report of
@@ -133,7 +132,7 @@ The planner handles a proposal that it gets in the close in this way:
 - The user decides when a milestone starts. The planner plans one milestone at a time. If the user asks, the planner
   writes the issues of the next milestone before the current milestone ends.
 - The initial planner first starts one ticket subagent for each issue of the milestone. It posts each draft after its
-  loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner).
+  loops under [The post of a draft](#the-post-of-a-draft).
 - If the request does not say which kinds of GitHub objects to make (milestones, issues, project items), the planner
   asks the user before a post. In one case, "post everything" meant milestones only, and the session made more than 100
   unwanted issues.
@@ -154,10 +153,10 @@ file and the files of a [scratch folder](plan-review.md#the-state-of-the-user), 
 text of the draft and of its reviews stays out of the context of the planner.
 
 Before the follow-up planner starts the first ticket subagent for a lesson or a proposed issue, it decides on a drop, as
-[The post of the follow-up planner](#the-post-of-the-follow-up-planner) permits. First, it reads the docs for the rule
-that the lesson or the proposed issue asks for. Then it judges whether a case with a cost is on record, for example a
-stop or a change of scope. If neither such a case nor a real gap of the docs exists, the follow-up planner can drop the
-lesson or the proposed issue. The judgment is open on purpose, and the follow-up planner makes it.
+[The post of a draft](#the-post-of-a-draft) permits. First, it reads the docs for the rule that the lesson or the
+proposed issue asks for. Then it judges whether a case with a cost is on record, for example a stop or a change of
+scope. If neither such a case nor a real gap of the docs exists, the follow-up planner can drop the lesson or the
+proposed issue. The judgment is open on purpose, and the follow-up planner makes it.
 
 The reason: each review loop costs at least one review agent. On 2026-11-04, the review agents of drafts held a median
 of about 120,000 tokens of context.
@@ -453,7 +452,7 @@ The ticket subagent gives each review agent the bans of
 for one draft after the list. It does not change or remove a ban of the list. The list covers a review agent of a Claude
 Code session.
 
-### The post of the follow-up planner
+### The post of a draft
 
 After the loops, each planner posts the issue, or posts the change to the open issue, with no approval of the user. For
 each post, the planner follows [docs/dev/issue-post.md](issue-post.md). These rules still apply to the post:
@@ -545,8 +544,8 @@ and the ad hoc planner ask in their chat, with each finding that they dismissed.
 draft until each question has an answer.
 
 - If the answer rejects the draft or says to drop it, the planner drops the draft and reports the drop, as
-  [The post of the follow-up planner](#the-post-of-the-follow-up-planner) says. A
-  [partial answer](items.md#the-open-items) that rejects the draft or says to drop it also ends the draft.
+  [The post of a draft](#the-post-of-a-draft) says. A [partial answer](items.md#the-open-items) that rejects the draft
+  or says to drop it also ends the draft.
 - If the answer accepts the draft with no change, the planner posts the draft.
 - If the answer changes the draft, the planner starts a new ticket subagent with the change. That ticket subagent runs
   the review loops for the changed draft. Then the planner posts it with no approval of the user. The escape hatch still
@@ -575,8 +574,7 @@ The post of a draft by each planner with no approval of the user does not cover 
 ### The initial planner
 
 The ticket subagent of the initial planner runs the same review loops. The initial planner posts each draft after its
-loops under [The post of the follow-up planner](#the-post-of-the-follow-up-planner). Then it reports the post in its
-chat under that subsection.
+loops under [The post of a draft](#the-post-of-a-draft). Then it reports the post in its chat under that subsection.
 
 ## What goes in a ticket
 

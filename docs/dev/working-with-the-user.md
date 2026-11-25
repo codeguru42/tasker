@@ -34,8 +34,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 - After the terminal delegation of [The close of a milestone](milestone-close.md), the follow-up planner talks to the
   user directly, in its own conversation. This covers each report, each question, each draft that waits for a decision
   and each request for a permission. It also covers each other rule that sends a report, a question or a draft of the
-  follow-up planner to the operator as an item. Examples are
-  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) and
+  follow-up planner to the operator as an item. Examples are [The post of a draft](planner.md#the-post-of-a-draft) and
   [The escape hatch](planner.md#the-escape-hatch) of planner.md, and the paragraph of
   [tasker-commands.md](tasker-commands.md) that starts "If the classifier denies `scan` or `store`". These places stay
   as they are. After the end of the roles of the operator and the orchestrator, the planner sends no item and no report
@@ -592,7 +591,7 @@ The rules of a milestone hold:
    `SendMessage`, for example these messages:
    - The doc notice of [The notice rule](doc-reads.md#the-notice-rule).
    - The message of the follow-up planner after a complete post, in
-     [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
+     [The post of a draft](planner.md#the-post-of-a-draft).
    - Each other peer message of [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message).
 5. These messages still go to a held session, with no read of item 7 of this section. Item 5 of this section wins over
    item 4 of this section.
@@ -802,9 +801,9 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   For an ad hoc draft, it follows [The ticket subagent](planner.md#the-ticket-subagent).
 
   A subagent of the main session posts a reviewed ad hoc draft under
-  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner), because the main session runs no
-  `gh` command. After the post, the main session gives the user the report of the post. The report gives the issue link,
-  the full path of the draft file and a short summary of each section.
+  [The post of a draft](planner.md#the-post-of-a-draft), because the main session runs no `gh` command. After the post,
+  the main session gives the user the report of the post. The report gives the issue link, the full path of the draft
+  file and a short summary of each section.
 
   If the draft waits for a decision under [The escape hatch](planner.md#the-escape-hatch), the main session gives the
   user the full path of the draft file. It shows a draft of a comment for approval with the full path of the draft file.

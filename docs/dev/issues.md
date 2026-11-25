@@ -67,8 +67,7 @@ how to do it on GitHub.
   [The blocked-by links](#the-blocked-by-links) and [The reads before the write](#the-reads-before-the-write).
 
   For a draft of its ticket subagent, the ad hoc planner adds the links in that subagent's report with no approval of
-  the user. It gives each link and its reason in the report of
-  [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
+  the user. It gives each link and its reason in the report of [The post of a draft](planner.md#the-post-of-a-draft).
 
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md. Before a session shows a
   draft to the user, the session runs the self-check of the simple-english skill over the file of the draft. The ticket

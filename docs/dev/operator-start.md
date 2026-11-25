@@ -47,8 +47,8 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    new word of the user. On a new word of the user to go on, the operator does step 3 again from its first paragraph.
 
 4. The user works with the initial planner in its tab.
-   [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) of
-   planner.md gives the rules of the initial planner.
+   [The start of the initial planner](planner.md#the-start-of-the-initial-planner) of planner.md gives the rules of the
+   initial planner.
 5. When the initial planning ends, the user tells the initial planner that the initial planning ends. If the user tells
    the operator first, the operator tells `planner-<slug>` with `SendMessage`, as
    [The word of the user](operator-conversations.md#the-word-of-the-user) says. The message of the operator starts with

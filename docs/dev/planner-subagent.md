@@ -44,8 +44,8 @@ Each send of the docs to the planner of the orchestrator is a planning request. 
   [question pane](question-pane.md#a-question-pane) sends to the planner of the orchestrator.
 
 For each planning request, the orchestrator of the kind `claude` starts a planner subagent, in place of a message to
-`planner-<slug>`. The [follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) gets no planning
-request of such an orchestrator. Each other rule of the follow-up planner stays.
+`planner-<slug>`. The [initial planner](planner.md#the-start-of-the-initial-planner) gets no planning request of such an
+orchestrator. Each other rule of the follow-up planner stays.
 
 ## The start
 
@@ -261,7 +261,7 @@ This rule wins over each kept rule that sends a question of the planner to an op
 The planner subagent returns one result to the orchestrator that started it, with `SubagentHandback`. It reports as a
 task subagent reports to the orchestrator. A kept rule can say that the planner tells, asks or reports to the user, or
 that it sends an item. For the planner subagent, the fact or the question goes in its result. An example is the report
-after each post or drop of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner).
+after each post or drop of [The post of a draft](planner.md#the-post-of-a-draft).
 
 The result names each complete post. For a draft that waits for a decision of the user, the result gives the path of the
 draft file and each question. [A draft that needs the user](#a-draft-that-needs-the-user) gives the kinds and the order
@@ -411,8 +411,8 @@ The source is the last item of the list of The escape hatch, which starts "A fin
 
 A question of another kept rule keeps the path of [The result](#the-result) and is not one of the six kinds. Examples:
 
-- The bullet of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner) that starts "If the
-  planner cannot tell which case applies".
+- The bullet of [The post of a draft](planner.md#the-post-of-a-draft) that starts "If the planner cannot tell which case
+  applies".
 - A tool block.
 - An issue subagent that ends twice with no report, as [The wait for an issue subagent](#the-wait-for-an-issue-subagent)
   and the paragraph of The ticket subagent that starts "A ticket subagent waits for the report" say.
@@ -528,10 +528,10 @@ The planner subagent keeps these rules:
    bullet of a late report.
 3. The first two paragraphs of [The state of the user](planner.md#the-state-of-the-user): the ban, and the measure as an
    open question of the report.
-4. These parts of [The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner): the post with no
-   approval of the user, the duplicate search and the match of a closed issue. Also the drop with no approval of the
-   user and the steps of a complete post. After a complete post, the planner subagent sends no message to an
-   orchestrator. An orchestrator of another scope finds the change at its next read of the board.
+4. These parts of [The post of a draft](planner.md#the-post-of-a-draft): the post with no approval of the user, the
+   duplicate search and the match of a closed issue. Also the drop with no approval of the user and the steps of a
+   complete post. After a complete post, the planner subagent sends no message to an orchestrator. An orchestrator of
+   another scope finds the change at its next read of the board.
 5. The list of decisions of [The escape hatch](planner.md#the-escape-hatch), and its last sentence "Each planner goes on
    with the other drafts". Also its sentence that starts "An edge case that a ticket subagent decided as "later"". The
    planner subagent posts nothing for a draft that waits for a decision of the user. For a planner subagent, the six
@@ -553,9 +553,8 @@ The planner subagent keeps these rules:
    metadata. Change 9 gives the actors of the recurrence comment. The second paragraph of the first bullet of Before a
    post starts "Each planner posts a reviewed draft". For the planner subagent,
    [The count of reviews](#the-count-of-reviews) gives the approval of a draft.
-10. The paragraph after the bullets of
-    [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) that
-    starts "The reason for the folder". Change 7 gives the folder.
+10. The paragraph after the bullets of [The start of the initial planner](planner.md#the-start-of-the-initial-planner)
+    that starts "The reason for the folder". Change 7 gives the folder.
 11. [The doc-read rule](doc-reads.md#the-doc-read-rule), [the failure rule](limits.md#the-failure-rule), the rules of
     [rules.md](rules.md) and [the tool-block rule](tasker-commands.md#the-tool-block-rule).
 12. These sections of working-with-the-user.md:
@@ -575,8 +574,8 @@ The planner subagent keeps these rules:
 The planner subagent changes these rules:
 
 1. The source of the work. The planner subagent takes only the planning request of its prompt. The bullet of
-   [The initial planner and the follow-up planner](planner.md#the-initial-planner-and-the-follow-up-planner) that starts
-   "The follow-up planner takes lessons" does not hold for it.
+   [The start of the initial planner](planner.md#the-start-of-the-initial-planner) that starts "The follow-up planner
+   takes lessons" does not hold for it.
 2. Each report, question, item and draft for the user goes in the result, as [The result](#the-result) says. One such
    place is the bullet that starts "The follow-up planner sends each question". Another is the third paragraph of
    [The state of the user](planner.md#the-state-of-the-user). Another is the paragraph of
