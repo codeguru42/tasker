@@ -206,32 +206,50 @@ findings of each draft in the record file.
 ## The issue-draft subagent
 
 Sources: [The draft file](issue-draft.md#the-draft-file), [The size of a draft](issue-draft.md#the-size-of-a-draft),
-[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) and
-[the doc-read rule](doc-reads.md#the-doc-read-rule).
+[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent),
+[the doc-read rule](doc-reads.md#the-doc-read-rule), [The self-check](issue-draft.md#the-self-check),
+[The steps before a post](issue-draft.md#the-steps-before-a-post),
+[The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases),
+[A change of an open issue](issue-draft.md#a-change-of-an-open-issue), [Before a post](issues.md#before-a-post),
+[The blocked-by links](issues.md#the-blocked-by-links), [The body of an issue](issue-subagents.md#the-body-of-an-issue),
+[The blocked-by links](issue-subagents.md#the-blocked-by-links) and [Docs](rules.md#docs).
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
-  `git merge-base --is-ancestor` and `git show origin/main:<path>`.
+  `git merge-base --is-ancestor`, `git show origin/main:<path>`, `git grep -n -E '<pattern>' -- <paths>` in the local
+  clone, and `git grep -n -E '<pattern>' origin/main -- <paths>` after the old read.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+- K5: the start read `gh issue view <number> --json title,body`, `gh issue list` and `gh issue view` of the open issues,
+  the links read `gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocked_by` and the label read
+  `gh issue view <blocker> -R <repo> --json labels -q '.labels[].name'`.
 - K12: its draft file, its report file and the files of a scratch folder under `/tmp`.
 - Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `wc -m <draft file>`,
-  `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call.
+  `timeout 20 bash -c 'sleep 5'`, a Read call on the saved output of its own tool call, `printf '%s\n' "$json"`,
+  `sha256sum` and `jq -r '.title, .body'` in the start read, the join form
+  `tr '\n' ' ' < <path> | grep -o -E '<pattern>'` or
+  `git show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>'` after the old read, and a Read call on its draft
+  file.
 - Each other kind: no list.
 
 ## The issue-review subagent
 
-Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent) and
-[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) and
-[the doc-read rule](doc-reads.md#the-doc-read-rule).
+Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent),
+[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent),
+[the doc-read rule](doc-reads.md#the-doc-read-rule), [The context of a review](issue-review.md#the-context-of-a-review),
+[The tests of a draft](issue-review.md#the-tests-of-a-draft),
+[The body of an issue](issue-subagents.md#the-body-of-an-issue) and [Docs](rules.md#docs).
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
-  `git merge-base --is-ancestor` and `git show origin/main:<path>`.
+  `git merge-base --is-ancestor`, `git show origin/main:<path>`, `git grep -n -E '<pattern>' -- <paths>` in the local
+  clone, and `git grep -n -E '<pattern>' origin/main -- <paths>` after the old read.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 - K5: `gh issue list ... | jq ...` and the other `gh` reads of the open and closed issues. It writes no file.
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) gives the one case of the pull.
-- Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'` and a
-  Read call on the saved output of its own tool call.
+- Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'`, a Read
+  call on the saved output of its own tool call, the join forms `tr '\n' ' ' < <path> | grep -o -E '<pattern>'` and
+  `git show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>'`, and a Read call on the draft file of its review,
+  in the folder of the draft files.
 - Each other kind: no list.
 
 ## The issue-post subagent
