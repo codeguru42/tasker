@@ -149,9 +149,11 @@ Before it writes the file, the old session sends each fact that it measured and 
 `SendMessage`. The slug comes from the own name of the old session. The planner sends a fact to a doc of the repo
 through a ticket, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) says. The old planner sends nothing,
 because [its role page](handoff-planner.md#the-handoff-file-of-the-planner) keeps these facts and lessons. If the send
-fails, also because no session has that name, an orchestrator shows them as a report in its own tab. A follow-up planner
-sends them to `orchestrator-<slug>`. The old operator has no operator, so [the failure rule](limits.md#the-failure-rule)
-applies to it.
+fails, also because no session has that name, an old orchestrator sends nothing to `planner-<slug>`. After a failed
+start of its planner subagent, it asks the user, as the planner bullet of
+[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. A follow-up planner sends them
+to `orchestrator-<slug>`. The old operator has no operator, so [the failure rule](limits.md#the-failure-rule) applies to
+it.
 
 An old orchestrator of the kind `claude` starts a [planner subagent](planner-subagent.md) for these facts and lessons,
 in place of the send to `planner-<slug>`. A failed start counts as a failed send. The old orchestrator waits for the

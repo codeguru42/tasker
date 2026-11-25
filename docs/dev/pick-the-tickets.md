@@ -1420,20 +1420,17 @@ slot and landing rules still apply.
 - The planner bullet: the orchestrator gives each lesson of a final report, each finding of a session review, each
   recurrence and each proposed issue only to its planner. For an orchestrator of the kind `claude`, the planner is a new
   [planner subagent](planner-subagent.md) for each one, as [The start](planner-subagent.md#the-start) of
-  planner-subagent.md says. For an orchestrator of another kind, the planner is `planner-<slug>` of its own slug, and
-  the orchestrator sends the work with `SendMessage`. [Working with the user](planner.md#working-with-the-user) of
-  planner.md names that session, and [GLOSSARY.md](GLOSSARY.md) defines the slug. The message or the prompt gives the
-  lesson, the ticket, the date, and the doc and the section that the lesson fits. For a recurrence, it also names the
-  open issue. The planner drafts and posts the issue, as
-  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
+  planner-subagent.md says. The message or the prompt gives the lesson, the ticket, the date, and the doc and the
+  section that the lesson fits. For a recurrence, it also names the open issue. The planner drafts and posts the issue,
+  as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
   files no issue itself. The one exception is the issue of step 1 of [A failed CI run](ci-wait.md#a-failed-ci-run),
-  which the orchestrator files itself. If `SendMessage` fails, for example because no planner runs, the orchestrator
-  shows the lesson as a report in its own tab. A refused message counts as a failed `SendMessage`. A failed start of a
-  planner subagent also counts as a failed `SendMessage`, and a refused Agent call is a failed start. The orchestrator
-  waits for no answer from `planner-<slug>`. A missing answer is out of scope.
-  [The life of a planner subagent](planner-subagent.md#the-life-of-a-planner-subagent) gives the wait for a planner
-  subagent. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue draft to the
-  planner.
+  which the orchestrator files itself. After a failed start of a planner subagent, the orchestrator asks the user in its
+  question pane, as [Start](question-pane.md#start) says. A refused Agent call is a failed start. The question gives the
+  full text of the lesson, the finding, the recurrence or the proposed issue. It has two choices: a new planner subagent
+  for it, or a drop. A progress report starts no step, so a lesson in a report is lost. A question keeps the lesson
+  until the decision of the user. [The life of a planner subagent](planner-subagent.md#the-life-of-a-planner-subagent)
+  gives the wait for a planner subagent. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate
+  each issue draft to the planner.
 
   A request of [the user](GLOSSARY.md) to draft an issue, or to change the title or the body of an issue, is a proposed
   issue of this bullet. [The orchestrator](../orchestrator.md) gives it to its planner with no question to the user, and
