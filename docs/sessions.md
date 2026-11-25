@@ -212,8 +212,5 @@ Two sessions with one name break each `SendMessage` to that name.
 
 This section gives the rules for a session in `blocked`, which other sessions also use.
 
-- When an item arrives, and when the user asks, the operator runs `herdr agent list` in its shell. If the command fails,
-  [the failure rule](dev/limits.md#the-failure-rule) applies.
-- A session in `blocked` waits at a permission prompt or a question prompt in its own tab. The operator tells the user
-  the name of the session and the label of its tab.
-- The operator does not answer the prompt. Only the user answers it, in that tab.
+- A session in `blocked` waits at a permission prompt or a question prompt in its own tab. Only the user answers the
+  prompt, in that tab.
