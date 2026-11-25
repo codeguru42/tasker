@@ -186,11 +186,14 @@ file. [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-t
 
 ## The check of the handoff folder
 
-The new session does this check right after the prompt read, before each other step of the prompt.
-[The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the order of that
-session. The new session lists the shared handoff folder `$HOME/Documents/tasker/handoff/` with `ls`. A new orchestrator
-lists its own handoff folder in its place, as [The handoff file](#the-handoff-file) says. Before that list, it reads the
-data root and runs `mkdir -p`, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
+The new session does this check right after the prompt read, before each other step of the prompt. A new orchestrator
+after a handoff is the one exception. It does this check after all its
+[start checks](../orchestrator.md#the-start-checks) pass, as
+[The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The new session of
+a topic handoff is not a new orchestrator after a handoff, also for the role orchestrator. The new session lists the
+shared handoff folder `$HOME/Documents/tasker/handoff/` with `ls`. A new orchestrator lists its own handoff folder in
+its place, as [The handoff file](#the-handoff-file) says. Before that list, it reads the data root and runs `mkdir -p`,
+as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
 
 The files of its role are the files whose names [The handoff file](#the-handoff-file) gives for that role. A file with a
 later date and time in its name is newer.
@@ -213,8 +216,10 @@ The new session then does the case of this list that applies:
 A new orchestrator lists its own handoff folder. The first message can name a file in the shared handoff folder. If the
 own handoff folder holds no newer file, or no file, the new orchestrator works from the file of the first message. If
 the own handoff folder holds a newer file, the new orchestrator tells the user. Then it works from the newest file. A
-new orchestrator whose [start check](../orchestrator.md#the-start-checks) failed does not do this check after the failed
-step. A run of the check before the failed step stays valid.
+new orchestrator after a handoff whose [start check](../orchestrator.md#the-start-checks) failed does not do this check.
+The new session of a topic handoff of the role orchestrator does this check right after the prompt read. If a start
+check of that session fails, it does not do the check again after the failed step. A run of the check before the failed
+step stays valid.
 
 [The failure rule](limits.md#the-failure-rule) covers each role in this check.
 
