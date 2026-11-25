@@ -58,10 +58,6 @@ work of step 7 of the skill. A finding that goes to another target holds no roun
 example is a proposal to the planner, which stays open until the planner handles it, as this page says. A round can find
 something new with no waiting decision. Then the session also starts the next round at once.
 
-Step 7 (e) of the skill says: "Open work with no answer does not keep the rounds running." That sentence keeps its
-meaning for such open work. For a waiting decision, step 2 of the list wins over it. The reason: the hold of step 2 of
-the list delays only a next round that step 3 of the list already starts.
-
 The user can end the rounds before each wait ends, with a word to the session. Then the session runs no next round and
 sends the report of the rounds at once. The report gives each open finding. A close of a question pane by the user keeps
 the rules of [The rounds before the close](question-pane.md#the-rounds-before-the-close).
