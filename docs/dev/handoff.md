@@ -6,13 +6,18 @@ can be a session of any role. The role page of the orchestrator is [The orchestr
 ## The suggestion of a handoff
 
 A suggestion of a handoff of an orchestrator is a question in the pane of the orchestrator, as
-[Start](question-pane.md#start) says. An orchestrator asks it in its own pane. The handoff starts after the close of the
-pane that holds the go question. The orchestrator accepts the decision message with the go of the user and sends the
-ack. Then the rounds before the close run, and the pane closes, as
-[Close and continue](question-pane.md#close-and-continue) says. Then the handoff starts. The user can also ask the old
-session for a handoff at any time. A request of the user for a handoff needs no go, and no pane holds it. The start of a
-handoff is the close of the pane of the go question or the request of the user. After the start, the old session does
-the steps of its role page:
+[Start](question-pane.md#start) says. An orchestrator asks it in its own pane. The go of the user comes in the decision
+message of the go question. The orchestrator accepts the decision message with the go of the user and sends the ack.
+Then the rounds before the close run, and the pane closes, as [Close and continue](question-pane.md#close-and-continue)
+says. Then the wait of step 2 of the steps of the old orchestrator runs, and the handoff starts after it. The user can
+also ask the old session for a handoff at any time. A request of the user for a handoff needs no go question, and no pane holds it.
+
+For an orchestrator, the go is the word of the user that starts a handoff: the go in the decision message of the go
+question, or a request of the user for a handoff. Step 1 of the steps of the old orchestrator holds from the go, also
+during the rounds before the close of the go pane. The handoff starts after step 2, as
+[The wait before the start](handoff-orchestrator.md#the-wait-before-the-start) says.
+
+After the go, the old orchestrator does
 [the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator). These steps hold the
 finish of its current tasks, or their stopping point in
 [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case). Then the stop and the start of
@@ -136,7 +141,9 @@ An old orchestrator of the kind `claude` starts a [planner subagent](planner-sub
 each lesson. Each one is one [item of planning work](planner-subagent.md#the-start), with its own proposal file. After a
 failed start of any one of these planner subagents, an old orchestrator asks the user, as the planner bullet of
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The old orchestrator waits for
-the result of each one, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says.
+the result of each one, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says. A fact or a
+lesson that reaches the old orchestrator after the send becomes a planning request that waits, as
+[The reports during the handoff](handoff-orchestrator.md#the-reports-during-the-handoff) says.
 
 The handoff file names each session other than the new session by its name, also in the prompt. It gives no
 [session ref and no socket address](GLOSSARY.md) of such a session. `ListAgents` gives the current name and session ref

@@ -89,9 +89,11 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start" and "A
   topic handoff".
 - [docs/dev/handoff-orchestrator.md](dev/handoff-orchestrator.md): "The long-running orchestrator", "The landing count",
-  "The steps of the old orchestrator", "The stopping-point case", "The handoff file of the orchestrator", "The task
-  list", "The open peer requests", "The start of the new orchestrator", "The report of the questions with no automatic
-  start" and "The steps for the open peer requests".
+  "The steps of the old orchestrator", "The wait for the subagents", "The terms of the wait", "The wait before the
+  start", "The wait before the handoff file", "The end of the wait for one subagent", "The reports during the handoff",
+  "The kinds of orchestrator", "The stopping-point case", "The handoff file of the orchestrator", "The task list", "The
+  open peer requests", "The start of the new orchestrator", "The report of the questions with no automatic start" and
+  "The steps for the open peer requests".
 - [docs/dev/limits.md](dev/limits.md): "Limits", the own-worktree rule, "The orchestrator folder", the update rule, the
   local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
 - [docs/dev/planner-subagent.md](dev/planner-subagent.md): "The kind of the orchestrator", "The planning requests", "The
@@ -456,7 +458,7 @@ The board watch rule has these parts:
   the two figures, 7 days and 30 days. Under 30 days, the cost is one extra CronDelete and CronCreate each 6 days. At a
   fire 6 days or more after the kept time with a ticket that waits for a slot, the orchestrator deletes the job and
   makes no new job. The handoff bullet wins over the renewal.
-- At the start of a handoff, as [The suggestion of a handoff](dev/handoff.md#the-suggestion-of-a-handoff) says, the
+- At the go of a handoff, as [The suggestion of a handoff](dev/handoff.md#the-suggestion-of-a-handoff) says, the
   orchestrator deletes the job with CronDelete, before step 1 of The steps of the old orchestrator. If CronDelete fails,
   the failure rule applies. While the steps of the old orchestrator hold, the orchestrator makes no board watch job at
   any read of the board, also in a renewal. The reason: step 1 holds back each ticket, so no ticket waits, and the make
