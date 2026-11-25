@@ -159,10 +159,10 @@ The row of the kind in [the seam of an agent kind](config.md#the-seam-of-an-agen
 the first prompt. If `sessions.models.orchestrator` has no entry, the user leaves out the model flags and the effort
 flag. An example is `claude -n orchestrator-m31 "<first prompt>"`.
 
-The tab list of the operator does not hold the tab of an orchestrator that the user starts.
-[Stop a session](dev/operator-start.md#stop-a-session) covers such a tab. The operator tells the user, and it closes the
-tab only on the word of the user. The user closes the tab of an orchestrator that the user starts. In a handoff, the old
-orchestrator closes its own tab, as
+The user stops an orchestrator that the user starts. The user asks the orchestrator in its pane to run its rounds. The
+user waits for the report of the rounds in the tab, and then closes the tab. If the user closes the tab with no rounds,
+the open findings of the session are lost. [A stop with no handoff](#a-stop-with-no-handoff) says the same for a stop.
+In a handoff, the old orchestrator closes its own tab, as
 [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
 
 In a handoff, the old orchestrator starts the new orchestrator, as
