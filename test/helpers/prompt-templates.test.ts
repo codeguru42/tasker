@@ -1,7 +1,12 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { packagePath } from "../../src/package-path.js";
+import { readPromptTemplate } from "../../src/prompts/template-file.js";
 import {
+  fillFamilyTemplate,
+  familyTemplateBody,
+  familyTemplatePath,
   fragmentProblems,
   promptFileProblems,
   promptTemplateTestProblems,
@@ -187,6 +192,38 @@ describe("sessionReadProblems", () => {
   it("reports a fence line", () => {
     expect(sessionReadProblems(questionPaneFile(["LOCAL_CLONE"], `${read}\n\`\`\`text\nx\n\`\`\`\n`))).toContain(
       "the body has a line that starts with three backticks",
+    );
+  });
+});
+
+describe("familyTemplatePath", () => {
+  it("gives the path of the template of a family", () => {
+    expect(familyTemplatePath("planner", "issue-review")).toBe(packagePath("prompt-templates/planner/issue-review.md"));
+  });
+});
+
+describe("familyTemplateBody", () => {
+  it("gives the body of the template of a family", () => {
+    expect(familyTemplateBody("subagents", "task-restart")).toBe(
+      readPromptTemplate(packagePath("prompt-templates/subagents/task-restart.md")).body,
+    );
+  });
+});
+
+describe("fillFamilyTemplate", () => {
+  it("fills each placeholder with its value", () => {
+    const names = Object.keys(
+      readPromptTemplate(packagePath("prompt-templates/subagents/task-restart.md")).placeholders,
+    );
+    const values = Object.fromEntries(names.map((name) => [name, `value-of-${name}`]));
+    const text = fillFamilyTemplate("subagents", "task-restart", values);
+    expect(text).not.toContain("{{");
+    for (const name of names) expect(text).toContain(`value-of-${name}`);
+  });
+
+  it("names the family and the template in the error for a missing value", () => {
+    expect(() => fillFamilyTemplate("subagents", "task-restart", {})).toThrow(
+      "prompt subagents/task-restart needs a value",
     );
   });
 });
