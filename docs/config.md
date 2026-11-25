@@ -320,16 +320,16 @@ more about this refusal.
 
 ## `sessions`
 
-The key `sessions` gives the agent kind of these sessions, the model and the effort of each role, and the highest counts
-of planner subagents and task subagents that run at the same time. It is separate from `assistant`, because `assistant`
-configures the runs that tasker starts.
-
 The user starts each orchestrator by hand, as
 [The start of an orchestrator](orchestrator.md#the-start-of-an-orchestrator) says. In a handoff, the old orchestrator
 starts the new orchestrator. The user starts the initial planner by hand, as
 [The start prompts](dev/planner.md#the-start-prompts) says. The orchestrator starts each planner subagent with the
 `Agent` tool. A planner subagent is not a session of the key `sessions`, so this section names it only for its key
 `planner`. The orchestrator starts each question session, as [Start](dev/question-pane.md#start) says.
+
+The key `sessions` gives the agent kind of these sessions, the model and the effort of each role, and the highest counts
+of planner subagents and task subagents that run at the same time. It is separate from `assistant`, because `assistant`
+configures the runs that tasker starts.
 
 A session role is one of `planner`, `orchestrator` and `question`. The session role `question` is for a
 [question session](dev/GLOSSARY.md). A question session has no role in the terms of
