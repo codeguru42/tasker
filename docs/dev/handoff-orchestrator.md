@@ -83,7 +83,8 @@ brings the count to 12" carries the suggestion. A landing report is not such an 
 ## The steps of the old orchestrator
 
 After the go, the old orchestrator does these steps. Steps 1 and 2 come before the start of the handoff. The handoff
-starts with step 3. Each step has one purpose and its own number, so that other docs can name the step:
+starts with step 3. Step 1 holds from the go. If the go comes in a decision message of the go question, step 2 starts
+after the close of that pane. Each step has one purpose and its own number, so that other docs can name the step:
 
 1. Start no new ticket. This step holds from the go.
 2. Wait until no subagent of yours runs, as [The wait before the start](#the-wait-before-the-start) says. This wait
@@ -132,22 +133,26 @@ of the user.
 
 ## The wait for the subagents
 
-The handoff starts only after each subagent of the old orchestrator ended. A subagent that starts during the handoff
-ends before the write of the handoff file. A report or an end notification ends the wait for one subagent. With neither,
-only a word of the user ends it.
+The handoff starts only after the wait for each subagent of the old orchestrator ended. The wait for a subagent that
+starts during the handoff ends before the write of the handoff file.
+[The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) gives the ends of the wait: a report, an
+end notification or a word of the user. An interim report of a task subagent of a task in flight does not end its wait.
 
 The reason: a report that comes after the send misses the send. An open question that comes after the write misses the
 handoff file. In both cases, the new orchestrator never gets it.
 
 ### The terms of the wait
 
-- The go is the request of the user for a handoff, or the go of the user to the go question.
+- The go is the request of the user for a handoff, or the go of the user to the go question. If the go comes in a
+  decision message, step 2 starts after the close of its pane, as
+  [Close and continue](question-pane.md#close-and-continue) says.
 - The start of the handoff is the start of step 3 of
   [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator).
 - A subagent of the old orchestrator is a task subagent for a whole ticket or for one task change, a planner subagent, a
   write subagent, an opener subagent, a reuse subagent or an ad hoc subagent. Each other subagent is an ad hoc subagent.
 - A subagent has one of three states: not started, running or ended. A message that starts an ended subagent again makes
-  it running. The wait waits for nothing for a subagent that did not start.
+  it running. The wait waits for nothing for a subagent that did not start. At the end of its wait, a subagent is in the
+  state ended, as [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) says.
 - A report is the `SubagentHandback` text of a subagent, or an interim report of
   [the answer-wait rule](limits.md#the-answer-wait-rule). After a refused `SubagentHandback` call, the message of the
   subagent with the same report is the report.
@@ -160,8 +165,9 @@ handoff file. In both cases, the new orchestrator never gets it.
 
 ### The wait before the start
 
-After the go, the old orchestrator waits until no subagent of its own runs. Then step 3 starts. The wait covers each
-subagent that is not ended, also a subagent that starts during the wait.
+After the go, the old orchestrator waits until no subagent of its own runs. If the go comes in a decision message, this
+wait starts after the close of its pane. Then step 3 starts. The wait covers each subagent that is not ended, also a
+subagent that starts during the wait.
 
 From the go to the end of the handoff, the old orchestrator starts no new ticket. This is the only new ban. The reason:
 a new ticket starts a new task subagent, so the wait has no end.
@@ -171,8 +177,9 @@ The wait for each task in flight is a part of this wait. Its rules stay, as step
 [The stopping-point case](#the-stopping-point-case) say. This covers the wait case, the stopping-point case, a failed
 stopping-point message and the judgment of a word for a stopping point from the go to the start.
 
-A task subagent of a deferred ticket stays a subagent of the wait. The wait for it ends with its report or with its end
-with no report.
+A task subagent of a deferred ticket stays a subagent of the wait. The wait for it ends with its report, with its end
+with no report or with a word of the user, as
+[The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) says.
 
 Each rule for a due handoff still holds. Each other event gets its usual steps. A subagent that starts during the wait
 joins the wait. These are examples:
@@ -206,8 +213,8 @@ These subagents can start after the start of the handoff:
 - An opener subagent of a pane that a word of the user starts
 - An ended subagent that a message or a late report starts again
 
-Before the send, each subagent that is not a planner subagent and that started before the send must end. After the send,
-the planner wait waits for each planner subagent, also the planner subagent of the send.
+Before the send, the wait for each subagent that is not a planner subagent and that started before the send must end.
+After the send, the planner wait waits for each planner subagent, also the planner subagent of the send.
 
 A fact or a lesson in a report after the send becomes a planning request that waits. The planner wait starts a planner
 subagent for it, or runs again for it.
