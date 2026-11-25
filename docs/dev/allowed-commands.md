@@ -171,15 +171,34 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 ## The planner subagent
 
 Sources: [Sessions](../config.md#sessions), [the doc-read rule](doc-reads.md#the-doc-read-rule),
-[The result](planner-subagent.md#the-result) and [The record file](planner-subagent.md#the-record-file). The section
-Sessions says that the planner subagent starts the draft, review and post subagents. The planner subagent keeps the
-record of the findings of each draft in the record file.
+[The result](planner-subagent.md#the-result), [The record file](planner-subagent.md#the-record-file),
+[No metadata](planner-subagent.md#no-metadata), [The reads before the write](issues.md#the-reads-before-the-write),
+[The project board](issues.md#the-project-board), [The blocked-by links](issues.md#the-blocked-by-links),
+[The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner),
+[The body of an issue](issue-subagents.md#the-body-of-an-issue),
+[The blocked-by links](issue-subagents.md#the-blocked-by-links) and [Docs](rules.md#docs). The section Sessions says
+that the planner subagent starts the draft, review and post subagents. The planner subagent keeps the record of the
+findings of each draft in the record file.
 
-- K3: `git -C <local clone> show origin/main:<path>`, for each doc that it reads.
+- K1: `tasker status`, before a question of its result about a write that the reads before the write can skip.
+- K3: `git -C <local clone> show origin/main:<path>`, for each doc that it reads. Also
+  `git -C <local clone> grep -n -E '<pattern>' origin/main -- <paths>` for a search of doc words, and
+  `git -C <local clone> log origin/main` and `git -C <local clone> show <commit>` for what a closed issue of a match
+  landed.
 - K4: `git -C <local clone> fetch origin`, before its first doc read.
+- K5: these reads:
+  - The state read `gh issue view <number> --json state -q .state`
+  - The read of a closed issue of a match, `gh issue view <number> -R <repo> --json title,body,state`
+  - `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number` and
+    `gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocked_by`, for the blocked-by links of both milestones
+  - The reads of [The project board](issues.md#the-project-board):
+    `gh project item-list 3 --owner codeguru42 --limit 1000 --format json` with its `--jq` filter, and
+    `gh issue view <number> --json projectItems`
 - K12: the record file `<file>.findings.md` of each draft, in the folder of the draft files.
-- Named other commands: a Read call on a saved output of its own tool call, a Read call on the record file, and
-  `timeout 20 bash -c 'sleep 5'`.
+- Named other commands: a Read call on a saved output of its own tool call, a Read call on the record file,
+  `timeout 20 bash -c 'sleep 5'`, the join form
+  `git -C <local clone> show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>'`, a Read call on a draft file and
+  a Read call on the report file of an issue-draft subagent, in the folder of the draft files.
 - K10: `SendMessage` to `main` only, after a refused `SubagentHandback` call.
 - K11: the start of an issue-draft subagent, an issue-review subagent and an issue-post subagent.
 - Each other kind: no list.

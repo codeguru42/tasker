@@ -63,10 +63,9 @@ The orchestrator does these steps for each start:
 1. Run `tasker show-config --repo <key>` and read the entries `sessions.models.planner`, `sessions.models.issue-draft`,
    `sessions.models.issue-review` and `sessions.models.issue-post`. See [`sessions`](../config.md#sessions).
 2. If the read fails, follow [the failure rule](limits.md#the-failure-rule). Then pass no `model` and no `effort`. The
-   prompt then gives the fact that each of the three issue keys has no entry. The planner subagent cannot read them,
-   because the row of the planner subagent in [permissions.md](permissions.md) says `never runs` for K1.
+   prompt then gives the fact that each of the three issue keys has no entry.
 3. If the read gives no entry, pass no `model` and no `effort`. If the read gives no entry for one of the three issue
-   keys, the prompt gives the fact that the key has no entry. The reason is the same as in step 2.
+   keys, the prompt gives the fact that the key has no entry.
 4. If the read gives an entry, pass the `effort` of the entry. Pass the `model` of
    [The model of the start](#the-model-of-the-start).
 5. Pass the subagent type `general-purpose`. Never pass the type `fork`.
@@ -681,10 +680,8 @@ The reason: among the three kinds, only an issue-post subagent writes to GitHub,
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says. So the work of the planner subagent has the
 same single writer for an issue and its links.
 
-The planner subagent runs only the kinds of command of its row in the table and of its list in
-[allowed-commands.md](allowed-commands.md#the-planner-subagent). These are K3, K4, K10 (`SendMessage` to `main` only),
-K11, the K12 write of the record file, and the named other commands with a Read call on the record file. It runs no
-other kind. For example, it runs no `tasker` command (K1) and no `gh` read (K5).
+The list of the planner subagent in [allowed-commands.md](allowed-commands.md#the-planner-subagent) gives the commands
+that it can run.
 
 ### The order of the work on a draft
 
@@ -696,8 +693,7 @@ For one draft, the planner subagent does these steps:
 1. Start an issue-draft subagent. It writes the draft file and its report.
 2. Start an issue-review subagent for the draft. The issue-review subagent does step 1 of
    [the doc-read rule](doc-reads.md#the-doc-read-rule) itself, as [The read rule](issue-subagents.md#the-read-rule)
-   says. The planner subagent runs no `git fetch origin` before this start, because its list gives K4 only before its
-   first doc read.
+   says. So the planner subagent runs no `git fetch origin` before this start.
 3. Judge each finding of the review under [The new-finding rule](#the-new-finding-rule), and add it to the record file.
 4. Follow [The count of reviews](#the-count-of-reviews) for the next step. The next step is an approval, a new
    issue-draft subagent with the findings, or the user.
@@ -744,9 +740,7 @@ nothing.
 
 The issue-draft subagent changes the draft or dismisses each finding of its prompt with a one-line reason, as
 [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) says. Its result through
-`SubagentHandback` gives each dismissal with its reason. The planner subagent reads no report file, because its list
-names a Read call only on a saved output of its own tool call and on the record file. It adds each such dismissal to the
-record file.
+`SubagentHandback` gives each dismissal with its reason. It adds each such dismissal to the record file.
 
 Before an answer of the user, only a review with no new finding approves a draft. Today step 6 of "The review loop of a
 draft" ends the loops after a loop that changed nothing. So the rule can cost up to two more reviews than today. "The
@@ -839,8 +833,7 @@ With a count below 100, a name has at most 47 characters. A planner subagent nam
 [The name](#the-name) says. A draft file name has at most 24, as "The ticket subagent" of [planner.md](planner.md) says.
 
 The orchestrator reads the entries `issue-draft`, `issue-review` and `issue-post` under `sessions.models` in step 1 of
-[The start](#the-start). The prompt of the planner subagent gives the three entries. The reason: the row of the planner
-subagent in [the table](permissions.md#the-table) says "never runs" for K1, so it runs no `tasker show-config`.
+[The start](#the-start). The prompt of the planner subagent gives the three entries.
 
 After a failed read, the orchestrator follows step 2 of The start. Then, and for a key with no entry, the prompt says
 that the key has no entry. Before each start, the planner subagent takes the entry of the kind from its prompt. For no
