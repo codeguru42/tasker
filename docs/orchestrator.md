@@ -693,7 +693,8 @@ The rules:
     [the task list](dev/handoff-orchestrator.md#the-task-list). The new orchestrator does not send the step to the new
     task subagent of the same ticket either. Such a step needs its own context and its own rule, and this page gives
     none.
-  - A parked task still exists. So a matching step for a parked task that sends no message to its task subagent can
+  - A [parked task](dev/pick-the-tickets.md#the-defer-rule) still exists after the handoff, and the new orchestrator
+    reads it with `tasker status`. So a matching step for a parked task that sends no message to its task subagent can
     still apply. In each other case, whether a step still applies is a judgment of the new orchestrator. This judgment
     is open on purpose.
   - If the step no longer applies, the new orchestrator tells its own user in its own tab and names the step.
