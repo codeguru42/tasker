@@ -96,6 +96,94 @@ description of the milestone.
   so it shows the draft to the user first. On #160, the Summary still named the latest review after the user removed the
   review from the requirements, and a comment recorded the fix.
 
+### Wrong text of an open issue
+
+Wrong text is text in the body of an issue that states a wrong fact, rule or requirement, when the planner knows the
+right fact. An open issue has no task when `tasker status` lists no task for the full key of the issue. With no option,
+`tasker status` lists only the active tasks. These are the tasks that are not `finished` and not `cancelled`. In this
+subsection, "the planner" includes the planner subagent of an orchestrator.
+
+If an open issue has wrong text and no task, the planner changes the body of the issue. The planner drafts the changed
+body and runs [The review loop of a draft](#the-review-loop-of-a-draft). Then it posts the reviewed body under
+[The post of a draft](#the-post-of-a-draft). The planner adds no comment about the wrong text. A blocked-by link is no
+condition of the rule. A blocked issue and an issue with no blocker get the same rule.
+
+The body is the text that a later task reads. The plan session of a task reads only the issue body and the repo, as
+[The change-of-scope comment](plan-review.md#the-change-of-scope-comment) says. The task subagent copies no comment that
+starts with a heading other than `## Change of scope` or `## Design gap`. As a result, a comment with a correction does
+not reach the plan of a later task.
+
+The rule adds no read and no command. Its test is the `tasker status` read and the read of the issue state of
+[The reads before the write](issues.md#the-reads-before-the-write). Each change of a body already runs these reads right
+before its write. The actor of the reads is the actor of the write. A planner that posts the change runs the reads
+itself. For a planner subagent, the issue-post subagent runs them, in step 3 of
+[The steps of a post](issue-post.md#the-steps-of-a-post).
+
+The change passes each gate of a change of the body of an open issue:
+
+- The start read and the start hash of [Before a post](issues.md#before-a-post).
+- [A change of an open issue](issue-draft.md#a-change-of-an-open-issue).
+- [The reads before the write](issues.md#the-reads-before-the-write), with the write alone in a plain call.
+- The post with no approval of the user, under [The post of a draft](#the-post-of-a-draft).
+- [The escape hatch](#the-escape-hatch). For example, a change of a behavior that a user sees waits for a decision of
+  the user, unless the source of the change holds the behavior.
+- The lists of the issue-post subagent and of the planner subagent in [allowed-commands.md](allowed-commands.md) and
+  their rows in [permissions.md](permissions.md).
+
+The rule adds no item to a list of allowed commands.
+
+The rule gives a different result in each state of the issue:
+
+- Not started: the issue is open, and `tasker status` lists no task for it. The rule applies.
+- Running: the issue is open, and `tasker status` lists a task for it, so the issue is in flight. The reads skip the
+  write, and the planner tells the user. The rule does not apply. The bullet for an issue in flight of
+  [land-the-work.md](land-the-work.md) and the case "A change of scope of an issue in flight" of the escape hatch stay.
+- Ended and closed: the reads skip the write, and the planner tells the user. The rule does not apply. The fourth bullet
+  of this section applies: a comment with the approval of the user, and no change of the body.
+- Ended and open, with a `finished` or `cancelled` task: `tasker status` lists no such task, so the test gives "no
+  task". The test alone cannot tell this state from "Not started". This is a known limit of the test.
+
+An open issue can have a `finished` task. If `issueTracker.updateOnFinish` is not `true`, `tasker finish` does not mark
+the issue done. If the write to the tracker fails, the task still goes to `finished`. A task can also go to `cancelled`
+after `landed`, because `landed` is not terminal, as [docs/statemachine.md](../statemachine.md) shows. The fourth bullet
+of this section wins over the rule. If the planner knows that the work landed, it writes a new follow-up issue and does
+not change the body. It knows this from the source of the change or from a read that it already has. The rule adds no
+read for this case. The test does not use `tasker status --state finished` or `--state cancelled`, because the proposal
+that the user accepted gives the test with `tasker status`.
+
+The reads run right before the write. A task that starts, or an issue that closes, before the reads gives its state of
+the list above. If the reads skip the write, the planner posts no comment under this rule, and the rule of the new state
+applies. If a read fails, the write does not run, the planner tells the user, and the planner posts no comment. A failed
+read gives no answer, so it never counts as "no task". A task can still start between the last read and the write, and
+[The reads before the write](issues.md#the-reads-before-the-write) already accepts this race.
+
+These rules stay for their own cases:
+
+- The open-question note of [The change-of-scope comment](plan-review.md#the-change-of-scope-comment). It asks an open
+  question and gives no known right fact, so the note rule wins for its case.
+- The recurrence comment of [A recurrence](issues.md#a-recurrence). It records a new case, not wrong text.
+- The bullet "A comment on an issue" of [The rules for the user alone](#the-rules-for-the-user-alone). The rule makes no
+  comment, so this limit does not stop the change of the body.
+- The paragraph of [question-pane.md](question-pane.md) that starts "For a title or body request". A request of the user
+  in a question pane keeps that path.
+- The bullet of [What goes in a ticket](#what-goes-in-a-ticket) that starts "If the user states a design fact".
+- Item 2 of the missed-finding rule of [review-findings.md](review-findings.md). The orchestrator is not a planner, so
+  it keeps this rule.
+
+The planner judges whether a text is wrong text or a new requirement. The judgment is open on purpose. A new requirement
+keeps the rules for a change of an open issue. A new design fact or rule of the user also keeps the bullet "If the user
+states a design fact".
+
+On 2026-11-22, the user said, word for word: "edit the body of 10123 since no task has started it yet and it is
+currently blocked." In this quote, "10123" names #1023. The same day, the user confirmed with "yes" a proposal with this
+rule: "when an open issue with wrong text has no task in `tasker status`, a planner changes its body with its review
+loops and posts the reviewed body, and does not add a comment." The user accepted two guesses about the quote, and they
+stay guesses:
+
+- Guess 1: the words give a general rule for each open issue, not a choice for #1023 only.
+- Guess 2: the condition is "no task exists for the issue", and "it is currently blocked" gives a reason for the case of
+  #1023, not a second condition.
+
 ## The ticket subagent
 
 The planner gives the work on each draft to a ticket subagent, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it. A
