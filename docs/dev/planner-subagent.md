@@ -219,8 +219,8 @@ These known limits hold:
 
 The prompt of a planner subagent gives these facts:
 
-- The planning request word for word, with its sender and its date. The prompt names the source of each fact, as the
-  source bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+- The item of planning work word for word, with its sender and its date. The prompt names the source of each fact, as
+  the source bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 - The own name and the scope of the orchestrator.
 - The folder of the draft files, `/tmp/tasker/<own name>/drafts/`, with the own name of the orchestrator. An example is
   `/tmp/tasker/orchestrator-m31/drafts/`. Each new draft file name of the planner subagent starts with its own name and
@@ -239,14 +239,14 @@ The words of this prompt stand in the file
 reads that file as [the doc-read rule](doc-reads.md#the-doc-read-rule) says, and fills each placeholder. An absent fact
 has the value `none`, for example a key with no entry. The file holds the list of the planner subagent in the allowed
 commands as fixed words, so a change of [that list](allowed-commands.md#the-planner-subagent) also changes the file. The
-facts of each answer go in the request.
+facts of each answer go in the item of planning work.
 
 The reason for the folder: the initial planner of the slug writes its drafts to `/tmp/tasker/<slug>/drafts/`. A shared
 folder can give two drafts one file name.
 
-For a planning request of an answer, the prompt also gives the path of the draft file and the question. It gives the
-answer and its source: the words of the user word for word, or the reason of a settled answer. For a draft with two or
-more questions, the prompt gives each question with its answer and source, as
+For an item of planning work of an answer, the prompt also gives the path of the draft file and the question. It gives
+the answer and its source: the words of the user word for word, or the reason of a settled answer. For a draft with two
+or more questions, the prompt gives each question with its answer and source, as
 [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
 ## The result
