@@ -159,9 +159,10 @@ The row of the kind in [the seam of an agent kind](config.md#the-seam-of-an-agen
 the first prompt. If `sessions.models.orchestrator` has no entry, the user leaves out the model flags and the effort
 flag. An example is `claude -n orchestrator-m31 "<first prompt>"`.
 
-The user makes the first prompt of step 5 in these steps:
+If the first prompt is not the prompt of a handoff file, the user makes the first prompt of step 5 in these steps:
 
-1. Pick the template file of the scope, as [The first prompt](#the-first-prompt) names it.
+1. Pick the template file that the doc of the role names. For an orchestrator, [The first prompt](#the-first-prompt)
+   names it.
 2. Read the file from `origin/main` with [the old read](dev/doc-reads.md#the-old-read).
 3. Take the text after the second `---` line.
 4. Replace each `{{NAME}}` with its value.
