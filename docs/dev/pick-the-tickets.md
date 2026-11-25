@@ -1274,11 +1274,11 @@ ticket driver as a top-level Codex session through herdr.
 The Codex orchestrator uses its native tools to send task instructions and receive task reports. It keeps the native
 identifier of each task subagent with the issue key. The native tools and their exposed arguments govern Codex starts
 and messages, including the naming argument. The Claude Code `Agent` and `SendMessage` argument forms below do not
-define Codex tool arguments.
+define Codex tool arguments. The template files above give the prompt of a Codex task subagent too.
 
 If a required native subagent tool is unavailable or fails, the Codex orchestrator tells the user in its own tab. It
 starts no replacement ticket driver in a herdr tab. The existing ticket selection, task prompt, worktree, slot and
-landing rules still apply. The same template files below give the prompt of a Codex task subagent.
+landing rules still apply.
 
 - The prompt of a task subagent gives only the context of its ticket. The context is the issue key, the milestone of its
   ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)), the milestones that are off limits for
