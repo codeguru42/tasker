@@ -1009,8 +1009,8 @@ a result. The second result deletes no proposal file, because no file names its 
 A planner subagent runs inside the session of the orchestrator. So an old orchestrator does these steps before it writes
 its handoff file:
 
-1. Wait for the result of each planner subagent that runs. This includes the planner subagent of the facts and lessons
-   of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file).
+1. Wait for the result of each planner subagent that runs. This includes the planner subagents of the items of planning
+   work of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file).
 2. Start the planner subagents of the items of planning work that wait, as [The proposal file](#the-proposal-file) says.
    Up to `maxPlannerSubagents` run at the same time, and they start in the order of their numbers. This includes the
    items of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). Wait for the

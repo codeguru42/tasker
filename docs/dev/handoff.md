@@ -134,9 +134,9 @@ The old session puts no rule in the handoff file. The rules stay in the docs, an
 
 An old orchestrator of the kind `claude` starts a [planner subagent](planner-subagent.md) for each measured fact and
 each lesson. Each one is one [item of planning work](planner-subagent.md#the-start), with its own proposal file. After a
-failed start of its planner subagent, an old orchestrator asks the user, as the planner bullet of
+failed start of any one of these planner subagents, an old orchestrator asks the user, as the planner bullet of
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The old orchestrator waits for
-the result, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says.
+the result of each one, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says.
 
 The handoff file names each session other than the new session by its name, also in the prompt. It gives no
 [session ref and no socket address](GLOSSARY.md) of such a session. `ListAgents` gives the current name and session ref
