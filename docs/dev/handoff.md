@@ -1,12 +1,7 @@
 # Handoff
 
-The readers of this page are a long-running orchestrator, the operator and the session of
-[a topic handoff](#a-topic-handoff), which can be a session of any role. Each sender of the slug of any kind, for
-example an initial planner or the orchestrator of a numbered milestone, also reads
-[The hold of the items](#the-hold-of-the-items). Each role has its own page:
-
-- [The orchestrator](handoff-orchestrator.md)
-- [The operator](handoff-operator.md)
+The readers of this page are a long-running orchestrator and the session of [a topic handoff](#a-topic-handoff), which
+can be a session of any role. The role page of the orchestrator is [The orchestrator](handoff-orchestrator.md).
 
 ## The suggestion of a handoff
 
@@ -16,17 +11,17 @@ pane that holds the go question. The orchestrator accepts the decision message w
 ack. Then the rounds before the close run, and the pane closes, as
 [Close and continue](question-pane.md#close-and-continue) says. Then the handoff starts. The user can also ask the old
 session for a handoff at any time. A request of the user for a handoff needs no go, and no pane holds it. The start of a
-handoff is the close of the pane of the go question, the suggestion of the old operator or the request of the user.
-After the start, the old session does the steps of its role page:
-[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) and
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator). These steps hold the finish of its
-current tasks, or their stopping point in [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case).
-Then the stop and the start of [The stop and the start](#the-stop-and-the-start) follow.
+handoff is the close of the pane of the go question or the request of the user. After the start, the old session does
+the steps of its role page:
+[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator). These steps hold the
+finish of its current tasks, or their stopping point in
+[the stopping-point case](handoff-orchestrator.md#the-stopping-point-case). Then the stop and the start of
+[The stop and the start](#the-stop-and-the-start) follow.
 
 The old session can suggest a handoff to the user. The old session counts the events that its role page names:
-[the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count) and
-[the close count of the operator](handoff-operator.md#the-close-count). Each role page gives the count at which the old
-session suggests a handoff, the count of a suggestion. The role page says in which reply or at which event.
+[the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count). Each role page gives the count at
+which the old session suggests a handoff, the count of a suggestion. The role page says in which reply or at which
+event.
 
 The reason: the old session does not see its own status line, and no rule tells it to read its context use. The count of
 the role page stands in for that read.
@@ -39,13 +34,12 @@ used 6%.
 
 The count starts at 0 at the start of the session. The count lives until the session ends.
 
-In each list of open questions or open items that the old session gives the user, the old session also gives a handoff
-recommendation. [The form of a reply](working-with-the-user.md#the-form-of-a-reply) and
-[The open items](operator-items.md#the-open-items) give the form of these lists. The recommendation says "hand off now"
-or "not yet", with its reason. The reason gives the count of the session and the count of a suggestion of the role page
-of the session. The count of the session is [the landing count](handoff-orchestrator.md#the-landing-count) of the
-orchestrator or [the close count](handoff-operator.md#the-close-count) of the operator. For an orchestrator, a list of
-open questions or open items that it shows in its own tab is a progress report of
+In each list of open questions that the old session gives the user, the old session also gives a handoff recommendation.
+[The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives the form of these lists. The recommendation
+says "hand off now" or "not yet", with its reason. The reason gives the count of the session and the count of a
+suggestion of the role page of the session. The count of the session is
+[the landing count](handoff-orchestrator.md#the-landing-count) of the orchestrator. For an orchestrator, a list of open
+questions that it shows in its own tab is a progress report of
 [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session), and it carries no
 handoff recommendation. The go question in its question pane carries the recommendation, as
 [the landing count](handoff-orchestrator.md#the-landing-count) says.
@@ -67,11 +61,9 @@ handoff still works, and a handoff that already started goes on.
 From the start of the close of a milestone, each session of its slug suggests no handoff, starts no handoff and writes
 no handoff file. The reason: the session stops soon after the close, so a handoff file only costs tokens.
 
-[The start and the authority](milestone-close.md#the-start-and-the-authority) and the two parts of Missing roles, in
-[operator-start.md](operator-start.md#missing-roles) and [milestone-close.md](milestone-close.md#missing-roles), give
-the start for each session. For the orchestrator and the operator, it is the report of the orchestrator that the close
-started. With no orchestrator, it is the word of the user that starts the close for the operator. The rule lasts until
-the session ends.
+[The start and the authority](milestone-close.md#the-start-and-the-authority) and the part Missing roles, in
+[milestone-close.md](milestone-close.md#missing-roles), give the start for each session. For the orchestrator, it is the
+report of the orchestrator that the close started. The rule lasts until the session ends.
 
 For the orchestrator, the report that the close started comes only after end reads that find no open issue.
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule. A wait or a return to work
@@ -101,8 +93,8 @@ folder. No file of the shared handoff folder moves.
 ## The items of a handoff file
 
 The handoff file holds only the parts of this list and the parts of the role page. It holds no other part, for example a
-history of the session, the closed items or the measured facts. The task list of the orchestrator is the one exception
-to the measured facts, because its entries give the facts of the stopping-point reports, as
+history of the session, the closed questions or the measured facts. The task list of the orchestrator is the one
+exception to the measured facts, because its entries give the facts of the stopping-point reports, as
 [The task list](handoff-orchestrator.md#the-task-list) says. The rule is the list, not these examples:
 
 - The prompt for the new session, in a code block.
@@ -113,15 +105,13 @@ to the measured facts, because its entries give the facts of the stopping-point 
     step.
   - The prompt holds only the facts of this handoff, for example the path of the file, the session name and the first
     free item id. The first message of the new session always names the path of the handoff file.
-  - If the old session is not the operator, not an orchestrator and not the initial planner, the prompt also names the
-    operator of the old session by its name only. The prompt of an orchestrator or of the initial planner names no
-    operator.
   - The first step of the prompt is the prompt read, in these words:
     `Run git branch --show-current. If it does not print main, read nothing and tell me. If git status --porcelain --untracked-files=no prints nothing and you have the Read tool, run git pull --ff-only origin main. After a pull that worked, read docs/dev/doc-reads.md with the Read tool, in pieces to the end. Then read AGENTS.md and <role index> as its doc-read rule says. If status printed a line, the pull failed or was denied, or you have no Read tool, run git fetch origin. Then read docs/dev/doc-reads.md, AGENTS.md and <role index> with git show origin/main:<path>.`
     The old session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`.
     This sub-bullet wins over the sentences "The prompt holds only the facts of this handoff" and "The old session puts
     no rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
-- Each open item with its id, as [The form of a message](items.md#the-form-of-a-message) gives the id.
+- Each open question or progress report with its id, as [The form of a message](items.md#the-form-of-a-message) gives
+  the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. For an orchestrator, this bullet
   covers only a question with no question file, as
@@ -150,28 +140,23 @@ After a failed start of its planner subagent, an old orchestrator asks the user,
 the result, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says.
 
 The handoff file names each session other than the new session by its name, also in the prompt. It gives no
-[session ref and no socket address](GLOSSARY.md) of such a session. The tab list of the file of the operator keeps the
-tab id of each entry. In a handoff of the operator, the file names the old operator by its name, its tab id and its pane
-id, as [the role page](handoff-operator.md#the-handoff-file-of-the-operator) says. `ListAgents` gives the current name
-and session ref of each session. For example, the prompt of `2026-10-25-1713-m22-planner.md` named
-`orchestrator-m22 [bc2d80]` and `operator-m22 [8e3ea5]`, each with its socket address, but both sessions handed off, so
-these values were stale.
+[session ref and no socket address](GLOSSARY.md) of such a session. `ListAgents` gives the current name and session ref
+of each session. For example, the prompt of `2026-10-25-1713-m22-planner.md` named `orchestrator-m22 [bc2d80]` and
+`operator-m22 [8e3ea5]`, each with its socket address, but both sessions handed off, so these values were stale.
 
 The reason for the rules of this section: each part of the file costs tokens at the write, at the read and at each later
 turn of the new session.
 
 ## The last item id
 
-The handoff file and the prompt for the new session name the first free item id. The first free item id is the number
-after the last item id that the old session used. For an orchestrator, the count also covers each question of
-[Terms](question-pane.md#terms) and each progress report of
-[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session). So the first free
-item id is the number after the last id of an item, a question or a progress report. If the old session sends an item
-with the path of the handoff file, that item has the last item id. An old orchestrator sends no such item. The old
-session knows that id when it writes the file, because the item gets the next number of its count. An example is "Your
-first item id is planner-docs-6." The new session counts its item ids from that id. When an answer names an id of the
-old session, the new session takes the item of that id from the handoff file. The reason: "Count your item ids on from
-planner-docs-5" can read as "start at planner-docs-5".
+The handoff file and the prompt for the new session name the first free item id. The item id is the id of a question or
+a progress report of an orchestrator. The first free item id is the number after the last item id that the old session
+used. For an orchestrator, the count also covers each question of [Terms](question-pane.md#terms) and each progress
+report of [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session). So the
+first free item id is the number after the last id of a question or a progress report. An example is "Your first item id
+is planner-docs-6." The new session counts its item ids from that id. When an answer names an id of the old session, the
+new session takes the question or progress report of that id from the handoff file. The reason: "Count your item ids on
+from planner-docs-5" can read as "start at planner-docs-5".
 
 When an answer names an id of the old session, a new orchestrator first takes a question of that id from its question
 file. [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the steps.
@@ -221,34 +206,19 @@ file of 09:09 for the same role existed. Most issues of the table of the old fil
 ## The end of a handoff
 
 In a handoff of an orchestrator, the handoff ends after step 6 of
-[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator). The operator has no part
-in it.
+[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator).
 
 The rule of the user of 2026-10-25 is the request of the user for these steps: "Then stop the orchestrator and start a
 new one."
 
-In a handoff of the operator, the old operator ends the handoff with its close, as
-[The start of the new operator](handoff-operator.md#the-start-of-the-new-operator) says. The user can also end the
-handoff at the old operator, as [The end of the hold by the user](#the-end-of-the-hold-by-the-user) says. Before the
-hold messages, the user can also end the handoff with a word to the old operator. The old operator then sends no end
-message, because no sender of the slug holds. The old operator is the operator again, with no handoff.
-
 Until the end, the old session starts no new work. The role page names that work:
-[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) and
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator).
-
-In a handoff of the operator, each item that the old operator handles before the hold messages is not new work. In that
-time, the old operator makes no automatic start and no reuse of a question pane, as [Start](question-pane.md#start)
-says.
+[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator).
 
 ## The stop and the start
 
 In a handoff of an orchestrator, the old orchestrator starts the new orchestrator and closes its own tab, as
 [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The first message
 of the new orchestrator is the prompt of the handoff file, and it names the path of the handoff file.
-
-In a handoff of the operator, [the start of the new operator](handoff-operator.md#the-start-of-the-new-operator) gives
-the end of the handoff. [The end of the hold by the user](#the-end-of-the-hold-by-the-user) gives a second end.
 
 ## A topic handoff
 
@@ -283,37 +253,21 @@ as its slug, for example `2026-10-25-1430-npm-planner.md`. The new session does
 The new session has the name `<role>-<topic>`, for example `planner-npm`. The topic is the topic of the file name. Under
 `pi`, the new session gets this name from `-n`, as [The read of the own name](../sessions.md#the-read-of-the-own-name)
 says. [docs/dev/GLOSSARY.md](GLOSSARY.md) gives the form of the own name of a session. The old session puts this name in
-the prompt of the handoff file, and in the item when it sends one. If the old session is not an orchestrator and not the
-initial planner, the prompt also names [the operator of the old session](../operator.md) as the operator that the new
-session works with. The prompt of an orchestrator or of the initial planner names no operator.
+the prompt of the handoff file.
 
-An old session that is not an orchestrator, not the initial planner and not the operator sends the path of the file to
-[its operator](../operator.md) as an item, as [The form of a message](items.md#the-form-of-a-message) says. The operator
-gives the path of the file to the user. When the user asks for the start, the operator starts the new session with the
-prompt of the file as its first message, as [Start a session](operator-start.md#start-a-session), with
-[The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) and
-[The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session) say. The operator does not stop the old
-session. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and
+When the old session is an orchestrator, it gives the path of the file and the prompt to the user as a progress report
+of [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session), in its own tab.
+The user starts the new session in a new tab, with the prompt of the file as its first message. The old orchestrator
+keeps running. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and
 [The stop and the start](#the-stop-and-the-start) do not apply.
 
-When the old session is an orchestrator, it sends no item. It gives the path of the file and the prompt to the user as a
-progress report of [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session), in
-its own tab. The user starts the new session in a new tab, with the prompt of the file as its first message. The old
-orchestrator keeps running. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and
-[The stop and the start](#the-stop-and-the-start) do not apply.
-
-When the old session is the initial planner, it sends no item. It gives the path of the file and the prompt to the user
-in its own tab. The prompt names no operator. The user starts the new session with the start steps of the role of the
-new session. The user takes the name of the new session from the handoff file, and the prompt of the file is the first
-prompt. For a planner, the steps are [The start prompts](planner.md#the-start-prompts). For an orchestrator, they are
+When the old session is the initial planner, it gives the path of the file and the prompt to the user in its own tab.
+The user starts the new session with the start steps of the role of the new session. The user takes the name of the new
+session from the handoff file, and the prompt of the file is the first prompt. For a planner, the steps are
+[The start prompts](planner.md#the-start-prompts). For an orchestrator, they are
 [The steps of the user](../orchestrator.md#the-steps-of-the-user). The old initial planner keeps running. The steps of
 the role page, [The end of a handoff](#the-end-of-a-handoff) and [The stop and the start](#the-stop-and-the-start) do
 not apply.
-
-When the old session is the operator, it sends no item. It gives the path of the file to the user. When the user asks
-for the start, it starts the new session itself, as [Start a session](operator-start.md#start-a-session), with
-[The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) and
-[The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session) say.
 
 On 2026-10-25, the user asked orchestrator-m21 for "a handoff for a new session to plan publishing to NPM". The session
 first wrote the full orchestrator handoff. The user said: "we don't need to handoff this entire session. Just include
@@ -322,110 +276,3 @@ what is necessary to continue a session for planning NPM publish."
 On 2026-10-25, the user asked operator-docs about the store of messages and items, and called it "a larger planning
 session". Then the user said "yes, write a handoff". operator-docs wrote the file and started planner-messages at once.
 The user said: "I said "write a handoff". That does not imply "start a new session with the handoff you wrote"".
-
-## The hold of the items
-
-These terms apply in this section:
-
-- A sender of the slug is `orchestrator-<slug>` or `planner-<slug>`, each one that runs, as `ListAgents` shows.
-- The hold message is the message of the old operator that starts the hold.
-- The ready message is the message of the new operator that ends the hold.
-- The end message is the message of the old operator that ends the hold on the word of the user.
-- A held item is an item that a sender of the slug keeps and does not send during the hold.
-
-On 2026-10-25, the user said: "when the operator starts a handoff, it should notify its planner and orchestrator to hold
-all messages until the handoff finishes. Then the new operator session notifies them to send when it is ready." Without
-the hold, each sender of the slug sends items during the handoff.
-
-On 2026-11-07, the user moved the start of the hold to right before the write of the handoff file, as step 2 of
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator) says.
-
-### The start of the hold
-
-In step 2 of [the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), the old operator sends
-each sender of the slug a hold message with `SendMessage`. Step 2 comes after the rounds of step 1, and the write of the
-handoff file follows the hold messages in the same step. As a result, the hold starts right before the write, and each
-sender of the slug sends items as usual during the rounds. The hold message names this section. The old operator sends
-no hold message to a session that does not run.
-
-Right after the hold messages, the old operator tells the user one time that the hold stops the items. The old operator
-names each sender of the slug that holds. The old operator also says that the hold ends when the new operator is ready
-or when the user ends it.
-
-### During the hold
-
-During the hold, a sender of the slug sends no message to `operator-<slug>`. This covers each item, also each report
-([The form of a message](items.md#the-form-of-a-message)). An orchestrator shows each progress report of
-[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) in its own tab at once
-and holds no message for it, because a progress report sends no message to `operator-<slug>`. For `planner-<slug>`, the
-hold covers each item and each report. The sender of the slug keeps each message as a held item, with its id. The sender
-of the slug continues its other work.
-
-A held item can ask for a choice that only the user makes, while a task subagent waits for the answer. A sender of the
-slug also holds such an item. On 2026-10-25, during a handoff of operator-docs, the task subagent of #443 stopped for
-such a choice, and orchestrator-docs asked the user in its own tab.
-
-As [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says, an
-orchestrator asks the user in its question pane. So a hold of the items holds no open question of an orchestrator, and
-it does not ask the user in its own tab. An initial planner still works with the user in its tab, as that section says.
-
-If the user answers before the write of the handoff file, the old operator sends that answer. The new operator sends
-each other answer.
-
-### The ready message
-
-In step 10 of [The start of the new operator](handoff-operator.md#the-start-of-the-new-operator), the new operator sends
-a ready message with `SendMessage` to each sender of the slug that the handoff file names. The ready message gives the
-own session ref of the new operator. After the ready message, each sender of the slug sends its held items to
-`operator-<slug> [<session ref>]`, in the order of their ids.
-
-### The end of the hold by the user
-
-The word of the user to the old operator to end the hold also ends the hold. Then the old operator sends an end message
-with `SendMessage` to each sender of the slug that got the hold message. The end message has the effect of a ready
-message. Each sender of the slug sends its held items to the old operator, in the order of their ids.
-
-The end of the hold by the user also ends the handoff of the operator. The old operator is then the operator again, with
-no handoff. A later handoff starts again at step 1 of
-[the steps of the old operator](handoff-operator.md#the-steps-of-the-old-operator), with a new hold message.
-
-On 2026-10-25, operator-docs started its handoff at 10:42 and sent the hold message to planner-docs and
-orchestrator-docs. The user started no new operator, and both sessions held all items for hours, until the user said
-"yes, end the hold on the operator".
-
-### A failed message of the hold
-
-[The failure rule](limits.md#the-failure-rule) applies to each failed message of the hold:
-
-- If a hold message fails, the failure rule applies to the old operator. The sender of the slug that got no hold message
-  keeps sending items.
-- If a ready message fails, the failure rule applies to the new operator. The sender of the slug keeps its held items
-  until a ready message or an end message arrives. When the user tells it to, the new operator sends the ready message
-  again.
-- If an end message fails, the failure rule applies to the old operator. The sender of the slug keeps its held items
-  until an end message or a ready message arrives. When the user tells it to, the old operator sends the end message
-  again.
-
-### The table of the hold
-
-This table gives each change of the hold:
-
-| Change                                                              | Old operator                                                                                                                                     | New operator                                                             | User                           | Sender of the slug                                                           | Who tells whom                                                                                |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| The handoff of the operator starts                                  | Runs the rounds of step 1, and handles each item as usual, with no automatic start or reuse of a question pane ([Start](question-pane.md#start)) |                                                                          |                                | Sends items as usual, also a report or an item about a finding of the rounds | Each sender of the slug tells the old operator                                                |
-| The user ends the handoff before the hold messages                  | Is the operator again, with no handoff, and sends no end message                                                                                 |                                                                          | Ends the handoff               | Sends items as usual                                                         | The user tells the old operator                                                               |
-| The rounds of step 1 of the old operator end                        | Sends the hold message in step 2, tells the user, then writes the file                                                                           |                                                                          |                                | Sends items as usual                                                         | The old operator tells each sender of the slug and the user                                   |
-| The hold message arrives                                            |                                                                                                                                                  |                                                                          |                                | Holds its items, also an item that a task subagent waits for                 |                                                                                               |
-| The start works                                                     | Reads the pane of the new operator                                                                                                               | Starts with the prompt of the file                                       |                                | Holds its items                                                              |                                                                                               |
-| The new operator runs                                               | Closes its own tab or pane                                                                                                                       | Does the check of the handoff folder                                     |                                | Holds its items                                                              |                                                                                               |
-| The start fails, or the new operator does not run                   | Closes nothing                                                                                                                                   |                                                                          | Decides                        | Holds its items                                                              | The old operator tells the user                                                               |
-| The close fails                                                     | Stays open                                                                                                                                       | Runs                                                                     | Decides                        | Holds its items                                                              | The old operator tells the user                                                               |
-| The pane of the old operator is gone at the check of the close      | Ended                                                                                                                                            | Says nothing about it, continues with its next steps                     |                                | Holds its items                                                              |                                                                                               |
-| The read fails, or the handoff file gives no pane id                | Unknown                                                                                                                                          | Closes nothing, tells the user, continues with its next steps            | Decides on the old tab or pane | Holds its items                                                              | The new operator tells the user                                                               |
-| The pane of the old operator still exists at the check of the close | Can still run its last steps, or its close failed                                                                                                | Closes nothing, tells the user, continues with its next steps            | Decides on the old tab or pane | Holds its items                                                              | The new operator tells the user                                                               |
-| An item arrives at the old operator after the write                 | Sends no answer, asks the sender to send the item again later                                                                                    |                                                                          |                                | Holds the item                                                               | The old operator tells the sender                                                             |
-| The new operator is ready                                           |                                                                                                                                                  | Sends the ready message with its session ref, gives the path of the file |                                | Holds its items                                                              | The new operator tells each sender and the user                                               |
-| The ready message arrives                                           |                                                                                                                                                  | Gets the held items                                                      |                                | Sends its held items to the session ref                                      | Each sender of the slug tells the new operator                                                |
-| The user ends the hold at the old operator                          | Sends the end message. The handoff ends                                                                                                          |                                                                          |                                | Holds its items                                                              | The user tells the old operator. The old operator tells each sender that got the hold message |
-| The end message arrives                                             | Gets the held items                                                                                                                              |                                                                          |                                | Sends its held items to the old operator                                     | Each sender of the slug tells the old operator                                                |
-| A hold message, a ready message or an end message fails             | The failure rule applies, for a hold message or an end message                                                                                   | The failure rule applies, for a ready message                            |                                | Keeps sending, or keeps holding                                              | The operator that sends it tells the user                                                     |

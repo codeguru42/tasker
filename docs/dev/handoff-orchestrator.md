@@ -10,9 +10,9 @@ for example "Docs" (see [docs/dev/issue-subagents.md](issue-subagents.md)). In a
 work to a new orchestrator in a new session.
 
 The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone stops at the stop
-of the orchestrator in [The close of a milestone](operator-start.md#the-close-of-a-milestone). The rules of this page do
-not cover it. A long-running orchestrator stops there too, after its close starts on the word of the user. A stop with
-no handoff is not a handoff, and the rules of this page do not cover it, as
+of the orchestrator in [The close of a milestone](milestone-close.md). The rules of this page do not cover it. A
+long-running orchestrator stops there too, after its close starts on the word of the user. A stop with no handoff is not
+a handoff, and the rules of this page do not cover it, as
 [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) says.
 
 The rules of this page also cover an orchestrator of a set scope, with the same landing count.
@@ -123,9 +123,9 @@ can name the step:
 6. Close your own tab, as [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says. That section
    also covers a failed close.
 
-The handoff ends after step 6. The operator has no part in it. Until the end, the old orchestrator starts no new ticket,
-also after step 6. On 2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new
-ticket without the word of the user.
+The handoff ends after step 6. Until the end, the old orchestrator starts no new ticket, also after step 6. On
+2026-10-17, the Docs orchestrator saw that its handoff started too early. It then started a new ticket without the word
+of the user.
 
 ## The stopping-point case
 
