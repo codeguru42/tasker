@@ -407,9 +407,10 @@ The orchestrator does all the steps of this section.
   orchestrator reads it with `tasker show-config --repo <key>` and takes `.sessions.maxTaskSubagents` from the output.
   It reads it at each pass of the fill rule, at each check for a free slot before a hold of
   [the parent-hold rule](#the-parent-hold-rule), and at each pick of a slot. One read serves the decisions of one pass.
-  A read fails when the exit code is not 0, when the output is not JSON, or when the value is not a whole number
-  above 0. After a failed read, [the failure rule](limits.md#the-failure-rule) applies. Then the count for that decision
-  is 3. A tasker that is older than the key prints no such value. Then the count is 3. A lower count stops no task
+  A read fails when the exit code is not 0 or when the output is not JSON. It also fails when the output gives a value
+  of `.sessions.maxTaskSubagents` that is not a whole number above 0. After a failed read,
+  [the failure rule](limits.md#the-failure-rule) applies. Then the count for that decision is 3. A tasker that is older
+  than the key prints no such value. A missing value is no failed read, and the count is 3. A lower count stops no task
   subagent that runs. The orchestrator starts no new task subagent until the count of task subagents that hold a slot is
   under the new count.
 

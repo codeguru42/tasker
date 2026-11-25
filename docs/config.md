@@ -200,12 +200,6 @@ A repo uses a definition when `issueTracker.tracker` names it. Then tasker merge
 | `account`           | non-empty string                                  | optional | The account to use.                                                                                                                                                                                                                                                                                                  |
 | `correctiveTurns`   | integer, 0 or more                                | `1`      | The most corrective turns that the `pi` provider starts in one run for an answer that tasker refuses. The other providers ignore it.                                                                                                                                                                                 |
 
-The keys `maxPlannerSubagents` and `maxTaskSubagents` are not session roles, so `tasker model` does not set them. The
-names say what they limit: the planner subagents and the task subagents that run at the same time. The default 3 is the
-count that the orchestrator used before these keys existed. A value of 0, a negative number, a fraction or a string
-fails with an error at the path of the key. A tasker that does not know these keys rejects them with `unrecognized key`.
-Remove them before you use such a tasker.
-
 Each entry of `models` is an object with two required keys: `model` (non-empty string) and `effort` (`"low"`, `"medium"`
 or `"high"`).
 
@@ -354,6 +348,12 @@ of an issue or of a user-level file, as [the actor table](dev/question-pane.md#t
 | `models`              | object               | `{}`       | Has the optional keys `operator`, `planner`, `orchestrator`, `question`, `issue-draft`, `issue-review`, `issue-post` and `write`. |
 | `maxPlannerSubagents` | whole number above 0 | `3`        | The highest count of planner subagents of one orchestrator that run at the same time.                                             |
 | `maxTaskSubagents`    | whole number above 0 | `3`        | The highest count of task subagents of one orchestrator that run at the same time.                                                |
+
+The keys `maxPlannerSubagents` and `maxTaskSubagents` are not session roles, so `tasker model` does not set them. The
+names say what they limit: the planner subagents and the task subagents that run at the same time. The default 3 is the
+count that the orchestrator used before these keys existed. A value of 0, a negative number, a fraction or a string
+fails with an error at the path of the key. A tasker that does not know these keys rejects them with `unrecognized key`.
+Remove them before you use such a tasker.
 
 Each entry of `models` is an object with the required keys `model` (non-empty string) and `effort` (`"low"`, `"medium"`,
 `"high"`, `"xhigh"` or `"max"`).

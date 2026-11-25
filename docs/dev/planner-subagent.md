@@ -90,9 +90,10 @@ At most `maxPlannerSubagents` planner subagents of an orchestrator run at the sa
 
 Before each decision whether a waiting item of planning work starts, the orchestrator reads the count. It runs
 `tasker show-config --repo <key>` and takes `.sessions.maxPlannerSubagents` from the output. One run can also serve step
-1 of [The start](#the-start). A read fails when the exit code is not 0, when the output is not JSON, or when the value
-is not a whole number above 0. After a failed read, [the failure rule](limits.md#the-failure-rule) applies. Then the
-count for that decision is 3. A tasker that is older than the key prints no such value. Then the count is 3.
+1 of [The start](#the-start). A read fails when the exit code is not 0 or when the output is not JSON. It also fails
+when the output gives a value of `.sessions.maxPlannerSubagents` that is not a whole number above 0. After a failed
+read, [the failure rule](limits.md#the-failure-rule) applies. Then the count for that decision is 3. A tasker that is
+older than the key prints no such value. A missing value is no failed read, and the count is 3.
 
 A lower count stops no planner subagent that runs. The orchestrator starts no new one until the count of the running
 ones is under the new count. The default 3 is the count that the orchestrator used before the key existed, and no doc
