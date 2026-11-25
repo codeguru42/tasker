@@ -327,6 +327,7 @@ handoff file:
   file says so. The close of step 6 of [The start of the new orchestrator](#the-start-of-the-new-orchestrator) uses the
   same ids. The file gives no session ref of the old orchestrator.
 - In the stopping-point case, [the task list](#the-task-list).
+- Each open peer request, as [The open peer requests](#the-open-peer-requests) says.
 - For each question that got a pane handoff, the link to the pane handoff file next to the question id. The link is
   relative, and its target is only the name of the file. If the write of the pane handoff file failed, the handoff file
   holds the pane handoff itself in place of the link. Each write action and metadata request of a pane handoff that did
@@ -341,8 +342,11 @@ handoff file:
   reason.
 
 The handoff file holds no text and no list of the open questions that have a
-[question file](question-pane.md#the-question-file), apart from one list. That list holds only the question id and the
-reason of each question with no automatic start. It holds no list of the requests that have a
+[question file](question-pane.md#the-question-file), apart from two exceptions. The first exception is one list. That
+list holds only the question id and the reason of each question with no automatic start. The second exception is the
+entries of [The open peer requests](#the-open-peer-requests). Each entry of a receiving side gives only the question id
+of its question and no text. The reason: the question stays in its question file through the handoff, as
+[The orchestrator folder](limits.md#the-orchestrator-folder) says. It holds no list of the requests that have a
 [proposal file](planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It gives
 no path of the three folders. The new orchestrator makes that path itself from the data root, the repo key and its own
 slug.
@@ -393,7 +397,48 @@ the user see the scope of the work so far. If an entry has no stopping-point rep
 
 The new orchestrator sends no message to a task subagent of the old orchestrator. Each task subagent of an entry ended
 before the write, or the user told the old orchestrator to go on. An entry names no session. A path of a task worktree
-in an entry is a place in the file system, not a name of a session.
+in an entry is a place in the file system, not a name of a session. A matching step of an open peer request does not go
+to the new task subagent of the same ticket either, as [The request rule](../orchestrator.md#the-request-rule) says.
+
+### The open peer requests
+
+An open request of a sending orchestrator is a request that it sent and for which no decision came back yet. An open
+request of a receiving orchestrator is a request whose decision it did not send yet. A request whose send of the
+decision failed is not open, because the first stop point of [The question file](question-pane.md#the-question-file)
+counts that failure. The failure rule then applies, and nobody sends the decision a second time. The terms sending
+orchestrator, receiving orchestrator, requested change and matching step are the terms of
+[The request rule](../orchestrator.md#the-request-rule).
+
+At the write of the handoff file, the old orchestrator records each request that is still open. It tells no one else.
+
+The entry of a sending side gives these items:
+
+- The name of the receiving orchestrator
+- The requested change
+- For a request about a task, the issue number
+- The matching step, or the words "no matching step"
+
+The entry also stands for the accept of the own user that let the request go out. The file gives that decision only in
+this entry.
+
+The entry of a receiving side gives these items:
+
+- The name of the sending orchestrator
+- The requested change
+- For a request about a task, the issue number
+- The question id, with no text
+- The state: "no decision of the user yet", "accept, the change is done", "accept, the change is not done" or "reject"
+
+A decision that the entry gives appears only in this entry.
+
+The entry is needed although the question file names the asking session and the ticket. First, the question file gives
+no state of the request. Second, the question file goes at a stop point, for example at the send of the decision or at
+an answer of the user in the tab.
+
+If no request is open, the handoff file has no part for open peer requests. It has no "none" line.
+
+The reason: the new orchestrator has no other source for an open request. Each step of the new orchestrator is in
+[The steps for the open peer requests](#the-steps-for-the-open-peer-requests).
 
 ## The start of the new orchestrator
 
