@@ -1,9 +1,8 @@
 /** Helpers that the tests of the planner prompt templates share. */
 import { readFileSync } from "node:fs";
 import { packagePath } from "../../src/package-path.js";
-import { fillTemplate } from "../../src/prompts/template.js";
-import { readPromptTemplate } from "../../src/prompts/template-file.js";
 import { sharedWordRuns, startBlock } from "./doc-text.js";
+import { fillFamilyTemplate, familyTemplateBody } from "./prompt-templates.js";
 
 export const PLANNER_WAIT = "timeout 20 bash -c 'sleep 5'";
 
@@ -20,12 +19,12 @@ export const START_LINE =
 
 /** Give the body of the template `prompt-templates/planner/<name>.md`. */
 export function plannerTemplateBody(name: string): string {
-  return readPromptTemplate(packagePath(`prompt-templates/planner/${name}.md`)).body;
+  return familyTemplateBody("planner", name);
 }
 
 /** Fill the template `prompt-templates/planner/<name>.md` with the values. */
 export function fillPlannerTemplate(name: string, values: Record<string, string>): string {
-  return fillTemplate(`planner/${name}`, plannerTemplateBody(name), values);
+  return fillFamilyTemplate("planner", name, values);
 }
 
 /** Give each run of 8 words that the body shares with `docs/dev/planner-subagent.md`. */

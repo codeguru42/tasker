@@ -10,6 +10,21 @@ import {
   readPromptTemplate,
 } from "../../src/prompts/template-file.js";
 
+/** Give the path of the template `prompt-templates/<family>/<name>.md`. */
+export function familyTemplatePath(family: string, name: string): string {
+  return packagePath(`prompt-templates/${family}/${name}.md`);
+}
+
+/** Give the body of the template `prompt-templates/<family>/<name>.md`. */
+export function familyTemplateBody(family: string, name: string): string {
+  return readPromptTemplate(familyTemplatePath(family, name)).body;
+}
+
+/** Fill the template `prompt-templates/<family>/<name>.md` with the values. */
+export function fillFamilyTemplate(family: string, name: string, values: Record<string, string>): string {
+  return fillTemplate(`${family}/${name}`, familyTemplateBody(family, name), values);
+}
+
 // The problems of the template folder: a .md file with a wrong path form, and a template with no test file
 // <testDir>/<family>/<name>.test.ts. The problems come sorted by the path of the template. A missing folder has none.
 export function promptTemplateTestProblems(templateDir: string, testDir: string): string[] {
