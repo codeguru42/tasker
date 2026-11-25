@@ -319,10 +319,9 @@ name a list `form.kinds` or a write key. It names no write key of a record with 
 
 ## A denied command of the operator
 
-This section covers a [tool block](#the-tool-block-rule) of three kinds of call. Two of them are commands that the
-operator runs itself. They are the create or change command of step 3 of
-[The order of a milestone](operator-start.md#the-order-of-a-milestone) and the removal of the label "on hold" in
-[The close of a milestone](operator-start.md#the-close-of-a-milestone). The third is a call of a
+This section covers a [tool block](#the-tool-block-rule) of two kinds of call. One of them is a command that the
+operator runs itself. It is the create or change command of step 3 of
+[The order of a milestone](operator-start.md#the-order-of-a-milestone). The other is a call of a
 [write subagent](question-pane.md#terms), as
 [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision) says. A denied command of an
 item of another session stays with the tool-block rule, apart from the item of the last paragraph of this section.
