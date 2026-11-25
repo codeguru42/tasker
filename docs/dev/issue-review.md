@@ -52,6 +52,11 @@ The issue-review subagent tests an issue draft against these items:
 - Each open and closed issue that covers the same change, and each open issue that edits the same place of a file.
 - Each part of the source that the draft leaves out, and each part that the draft adds.
 
+An open issue can edit the same file or the same place of a doc. For such an issue, the subagent gives a finding only
+for a duplicate, a clash of meaning between the two issues, or a real need. It gives no finding that asks for a
+blocked-by link only for a shared file or a shared place.
+[The blocked-by links](issue-subagents.md#the-blocked-by-links) says this.
+
 For each finding, the issue-review subagent gives the place in the draft, the rule or the fact behind it, and a
 recommendation.
 
