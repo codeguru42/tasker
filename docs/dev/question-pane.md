@@ -722,22 +722,22 @@ Before its start reads, the question session shows the start line, word for word
 show the question." The start line tells the user that the question follows. In the rules of this page, the start line
 is not the first reply.
 
+The reason: on 2026-11-13, the user said to operator-docs: "question pane should fetch its instructions first then show
+the question". These words reverse the words of the user of 2026-11-11 in [Measured facts](#measured-facts). On the same
+day, a question session reported that the user waited for its first reply while it read its docs. The start line tells
+the user the cause of that wait.
+
 Each time that Claude Code asks the question session for a status before its first reply, the session shows the start
 line again, word for word, with no other text, and then continues its start steps. A status is a short text about what
-the session does now. This rule wins over the request of the note, and it holds at a pane start and after each reuse,
-because each session prompt has its own first reply. The start line shown again is not the first reply and is not a
-fourth start step. It is a repeat of step 1 of the session prompt, so the order of the steps stays. The session prompt
-states this rule in step 1, because the session reads this page only in its third start step.
+the session does now. This rule wins over a note that asks for a short status, and it holds at a pane start and after
+each reuse, because each session prompt has its own first reply. The start line shown again is not the first reply and
+is not a fourth start step. It is a repeat of step 1 of the session prompt, so the order of the steps stays. The session
+prompt states this rule in step 1, because the session reads this page only in its third start step.
 
 The reason: during the start reads, Claude Code can add a note that asks the session for a status. On 2026-11-22, two
 question sessions each showed an extra line before their first reply after such a note, as
 [Measured facts](#measured-facts) gives. The question session judges whether a note of Claude Code asks for a status.
 This judgment is open on purpose, because the words of the note can change in a later version of Claude Code.
-
-The reason: on 2026-11-13, the user said to operator-docs: "question pane should fetch its instructions first then show
-the question". These words reverse the words of the user of 2026-11-11 in [Measured facts](#measured-facts). On the same
-day, a question session reported that the user waited for its first reply while it read its docs. The start line tells
-the user the cause of that wait.
 
 The question session follows the general user-facing, simple-English, [memory](rules.md#docs), and
 [doc-read](doc-reads.md#the-doc-read-rule) rules from its start.
