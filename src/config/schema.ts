@@ -351,6 +351,22 @@ const SessionsSchema = z
     models: SessionModelsSchema.default({}).describe(
       "The optional models and effort levels for session roles and subagent roles.",
     ),
+    maxPlannerSubagents: z
+      .number()
+      .int()
+      .positive()
+      .default(3)
+      .describe(
+        "The highest count of planner subagents of one orchestrator that run at the same time. A whole number above 0.",
+      ),
+    maxTaskSubagents: z
+      .number()
+      .int()
+      .positive()
+      .default(3)
+      .describe(
+        "The highest count of task subagents of one orchestrator that run at the same time. A whole number above 0.",
+      ),
   })
   .superRefine(checkSessionModels, { when: () => true });
 
@@ -359,8 +375,13 @@ const RepoSchema = z
     remote: nonEmpty.describe("The remote address of the repo."),
     issueTracker: IssueTrackerSchema.describe("The issue tracker for this repo."),
     assistant: AssistantSchema.describe("The assistant and role models for this repo."),
-    sessions: SessionsSchema.default({ kind: "claude", models: {} }).describe(
-      "The agent kind and models of operator, planner, and orchestrator sessions, the models of question sessions, and the models of the planner, draft, review, post and write subagents.",
+    sessions: SessionsSchema.default({
+      kind: "claude",
+      models: {},
+      maxPlannerSubagents: 3,
+      maxTaskSubagents: 3,
+    }).describe(
+      "The agent kind and models of operator, planner, and orchestrator sessions, the models of question sessions, and the models of the planner, draft, review, post and write subagents. Also the highest counts of planner subagents and task subagents that run at the same time.",
     ),
     verify: VerifySchema.describe("The commands and environment for the verify phase."),
     bootstrap: BootstrapSchema.default({ commands: [], env: [] }).describe(
