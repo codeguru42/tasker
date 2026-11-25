@@ -43,9 +43,7 @@ Each send of the docs to the planner of the orchestrator is a planning request. 
 - Each relay, request, open finding, accepted proposal and recurrence that a
   [question pane](question-pane.md#a-question-pane) sends to the planner of the orchestrator.
 
-For each planning request, the orchestrator of the kind `claude` starts a planner subagent, in place of a message to
-`planner-<slug>`. The [initial planner](planner.md#the-start-of-the-initial-planner) gets no planning request of such an
-orchestrator. Each other rule of the follow-up planner stays.
+For each planning request, the orchestrator of the kind `claude` starts a planner subagent.
 
 ## The start
 
@@ -245,7 +243,7 @@ has the value `none`, for example a key with no entry. The file holds the list o
 commands as fixed words, so a change of [that list](allowed-commands.md#the-planner-subagent) also changes the file. The
 facts of each answer go in the request.
 
-The reason for the folder: the follow-up planner of the slug writes its drafts to `/tmp/tasker/<slug>/drafts/`. A shared
+The reason for the folder: the initial planner of the slug writes its drafts to `/tmp/tasker/<slug>/drafts/`. A shared
 folder can give two drafts one file name.
 
 For a planning request of an answer, the prompt also gives the path of the draft file and the question. It gives the
@@ -403,8 +401,8 @@ Each kept rule that names a kind of The escape hatch names one of these six kind
 follow. The first is the paragraph of [The ticket subagent](planner.md#the-ticket-subagent) that starts "Before the
 planner sends a question of a report to the user". The second is each place of issue-draft.md that names a kind of The
 escape hatch, for example its paragraph that starts "The report gives a question for the user". The reason: the
-issue-draft subagents of a planner subagent follow issue-draft.md. The follow-up planner, the initial planner and the ad
-hoc planner keep the list of The escape hatch.
+issue-draft subagents of a planner subagent follow issue-draft.md. The initial planner and the ad hoc planner keep the
+list of The escape hatch.
 
 Sometimes the reviews end and a finding of one of the six kinds is still open. Then the draft is a draft of that kind.
 The source is the last item of the list of The escape hatch, which starts "A finding of one of these kinds".
@@ -507,10 +505,10 @@ and its reason.
 
 ## The kept rules
 
-In each kept rule, "the planner", "each planner" and "the follow-up planner" also name the planner subagent. The lists
-of this section, of The changed rules and of The dropped rules win over each rule that they name. If two items name one
-rule, the drop list wins, and then the change list. A named section means only its text before its first subsection.
-Each subsection has its own item.
+In each kept rule, "the planner" and "each planner" also name the planner subagent. The lists of this section, of The
+changed rules and of The dropped rules win over each rule that they name. If two items name one rule, the drop list
+wins, and then the change list. A named section means only its text before its first subsection. Each subsection has its
+own item.
 
 The planner subagent keeps these rules:
 
@@ -519,7 +517,7 @@ The planner subagent keeps these rules:
    judgment of a drop of a lesson or a proposed issue. Also
    [The bans of a review agent](planner.md#the-bans-of-a-review-agent). Each issue-review subagent gets these bans, and
    [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives its prompt. Change 3, change 5, change 6,
-   change 7 and drop 8 leave out parts of these rules. Change 8 gives their actors. For the planner subagent, the text
+   change 7 and drop 7 leave out parts of these rules. Change 8 gives their actors. For the planner subagent, the text
    of The ticket subagent and The review loop of a draft holds only with the actors of change 8. Step 6 of The review
    loop of a draft and the paragraph after the steps do not hold. [The count of reviews](#the-count-of-reviews) takes
    their place.
@@ -573,14 +571,11 @@ The planner subagent keeps these rules:
 
 The planner subagent changes these rules:
 
-1. The source of the work. The planner subagent takes only the planning request of its prompt. The bullet of
-   [The start of the initial planner](planner.md#the-start-of-the-initial-planner) that starts "The follow-up planner
-   takes lessons" does not hold for it.
+1. The source of the work. The planner subagent takes only the planning request of its prompt.
 2. Each report, question, item and draft for the user goes in the result, as [The result](#the-result) says. One such
-   place is the bullet that starts "The follow-up planner sends each question". Another is the third paragraph of
-   [The state of the user](planner.md#the-state-of-the-user). Another is the paragraph of
-   [The escape hatch](planner.md#the-escape-hatch) that starts "For a draft that waits for such a decision". Others are
-   the report after each post or drop and the tell of the sender in The post of the follow-up planner. The bullets of
+   place is the third paragraph of [The state of the user](planner.md#the-state-of-the-user). Another is the paragraph
+   of [The escape hatch](planner.md#the-escape-hatch) that starts "For a draft that waits for such a decision". Others
+   are the report after each post or drop in The post of a draft. The bullets of
    [The blocked-by links](issue-subagents.md#the-blocked-by-links) that name the chat with the user are also such
    places.
 3. The names. The names of a ticket subagent and of a review agent in The ticket subagent do not hold for the planner
@@ -592,12 +587,11 @@ The planner subagent changes these rules:
    start, an issue subagent reads only the documents of [The read rule](issue-subagents.md#the-read-rule).
 6. The steps with an answer of the user. They hold for the new planner subagent that gets the answer, as The result
    says. They also hold for a settled answer, as [A settled question](#a-settled-question) says. A settled answer gives
-   no approval and no choice that a rule keeps for the user. One such step is in the bullet of The initial planner and
-   the follow-up planner. That bullet starts "For a draft that waits for a decision of the user". So do the outcome
-   bullets of The state of the user, after "The answer of the user has one of these outcomes". So do the bullets of The
-   escape hatch that start "If the answer", and its bullet that starts "The user can say". The paragraph of The ticket
-   subagent that starts "A change of the draft after a report" also gives such a step. The post of a comment after the
-   approval of the user is such a step too, and change 9 gives its actor.
+   no approval and no choice that a rule keeps for the user. One such step is in the outcome bullets of The state of the
+   user, after "The answer of the user has one of these outcomes". So do the bullets of The escape hatch that start "If
+   the answer", and its bullet that starts "The user can say". The paragraph of The ticket subagent that starts "A
+   change of the draft after a report" also gives such a step. The post of a comment after the approval of the user is
+   such a step too, and change 9 gives its actor.
 7. The folder of the draft files is the folder of [The prompt](#the-prompt). The bullet that starts "The ticket subagent
    of each planner writes each draft" gives the folder of the slug. Step 1 of The review loop of a draft also gives it.
    Neither folder holds for the planner subagent. The draft file, the report file and the record file stand in this
@@ -628,26 +622,21 @@ subagent gives these facts in its own result.
 
 The planner subagent drops these rules:
 
-1. The close duties of the follow-up planner, the bullet that starts "At the end of a milestone, the follow-up planner",
-   and [Milestones](issues.md#milestones). This includes the milestone guard of
-   [The steps that end each role](milestone-close.md#the-steps-that-end-each-role).
-2. The handoff: each rule of [handoff-planner.md](handoff-planner.md), with the post count, and the handoff bullet of
-   Working with the user.
-3. The name `planner-<slug>` and the start by the operator. The bullet of Working with the user that starts "The
-   operator names each planner" gives them. The first two paragraphs of The initial planner and the follow-up planner
-   also give them.
-4. The table of milestones of Working with the user, and the first bullet of The order of the work.
-5. The question about the kinds of GitHub objects, in the third bullet of The order of the work. The planner subagent
+1. [Milestones](issues.md#milestones).
+2. The name `planner-<slug>` and the start by the operator. The bullet of Working with the user that starts "The
+   operator names each planner" gives them. The first two paragraphs of The start of the initial planner also give them.
+3. The table of milestones of Working with the user, and the first bullet of The order of the work.
+4. The question about the kinds of GitHub objects, in the third bullet of The order of the work. The planner subagent
    writes only the text of issues, as [No metadata](#no-metadata) says.
-6. The rounds of `/session-review`, as The result says.
-7. The denial records of [planner.md](../planner.md) and [The denial records](tasker-commands.md#the-denial-records).
+5. The rounds of `/session-review`, as The result says.
+6. The denial records of [planner.md](../planner.md) and [The denial records](tasker-commands.md#the-denial-records).
    They need a word of the user.
-8. Each rule only for the initial planner or the ad hoc planner. Examples are
+7. Each rule only for the initial planner or the ad hoc planner. Examples are
    [The initial planner](planner.md#the-initial-planner), the bullet that starts "A milestone can need manual steps" and
    the ad hoc name.
-9. Each change of metadata, as No metadata says.
-10. The start docs of [planner.md](../planner.md). The prompt names the reads, as The prompt says.
-11. A wait for an answer of the user. The planner subagent ends with its result. Change 6 gives the steps with the
+8. Each change of metadata, as No metadata says.
+9. The start docs of [planner.md](../planner.md). The prompt names the reads, as The prompt says.
+10. A wait for an answer of the user. The planner subagent ends with its result. Change 6 gives the steps with the
     answer.
 
 ## The issue subagents
@@ -970,8 +959,8 @@ start for a subagent of the three kinds. The planner subagent handles a late rep
 An orchestrator of a kind other than `claude` starts no planner subagent, as "The kind of the orchestrator" says. So a
 Codex orchestrator and a pi orchestrator start no subagent of the three kinds.
 
-The follow-up planner, the initial planner and an ad hoc planner keep the ticket subagent, the review agent and the
-review loop of today. After loop 3, they post the draft as "The review loop of a draft" says today.
+The initial planner and an ad hoc planner keep the ticket subagent, the review agent and the review loop of today. After
+loop 3, they post the draft as "The review loop of a draft" says today.
 
 ## The life of a planner subagent
 
