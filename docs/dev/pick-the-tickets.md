@@ -1194,8 +1194,8 @@ the answer comment and the moved question keep their words.
 The orchestrator closes no held milestone. The hold record is the start of the description, as item 2 of
 [A milestone hold](working-with-the-user.md#a-milestone-hold) says. For a held milestone, the orchestrator tells the
 user one time in its own tab that it waits for the end of the hold. The milestone and the tab stay open. At the end
-message of item 9 of A milestone hold, the orchestrator reads the board. After that read with no start, no live task and
-no ready ticket, the end starts again.
+message of item 9 of A milestone hold, or at the word of the user to end the hold that it gets itself, the orchestrator
+reads the board. After that read with no start, no live task and no ready ticket, the end starts again.
 
 An orchestrator of a milestone scope sends the report that the close started only after end reads that find no open
 issue of the scope. A ticket on hold counts as an open issue. An orchestrator of a set scope sends no such report,

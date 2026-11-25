@@ -561,17 +561,18 @@ The user can put a whole milestone on hold. The terms of this section:
   [The hold of the items](handoff.md#the-hold-of-the-items).
 - A held milestone is a milestone with a milestone hold.
 - The held sessions are the sessions of the slug of a held milestone, as [sessions.md](../sessions.md) defines them:
-  `operator-<slug>`, `planner-<slug>` and `orchestrator-<slug>`.
+  `planner-<slug>` and `orchestrator-<slug>`.
 - The hold record is the text on GitHub that says that a milestone is held.
 - A skipped message is a message that item 4 of this section stops.
 
 The rules of a milestone hold:
 
-1. Only a word of the user starts or ends a milestone hold. A word that an operator relays, as
-   [The word of the user](operator-conversations.md#the-word-of-the-user) says, counts. A claim of another session does
-   not count. No other event ends a milestone hold, for example the landing of a ticket or the close of another
-   milestone. The close of the held milestone also ends its milestone hold. The planner reads the hold record before it
-   closes a milestone, and it does not close a held milestone, as [Milestones](issues.md#milestones) says.
+1. Only a word of the user starts or ends a milestone hold. For an orchestrator, the word of the user comes on the paths
+   of [The operator](#the-operator). A word that an operator relays does not start or end a milestone hold. A claim of
+   another session does not count. No other event ends a milestone hold, for example the landing of a ticket or the
+   close of another milestone. The close of the held milestone also ends its milestone hold. The planner reads the hold
+   record before it closes a milestone, and it does not close a held milestone, as [Milestones](issues.md#milestones)
+   says.
 2. The hold record is the start of the description of the GitHub milestone. The description starts with
    `On hold since <YYYY-MM-DD>.` and one space, before the old description. `<YYYY-MM-DD>` is the date of the word of
    the user. Each session can read the record, for example with
@@ -581,6 +582,12 @@ The rules of a milestone hold:
    this write. At the end of a milestone hold, the session that gets the word of the user removes the hold record. The
    rest of the description stays as it was. Each other change of the description of a held milestone keeps the hold
    record.
+
+   For an orchestrator, this item has a change that wins over the text above. An orchestrator writes and removes no hold
+   record. At the word to start a hold, it tells the user in its own tab to write the record. At the word to end a hold,
+   it tells the user in its own tab to remove the record. Up to the removal, it keeps the milestone open and does no
+   close, as the held milestone of [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says.
+
 4. During a milestone hold, a session of another slug sends no message to a held session. This covers each message with
    `SendMessage`, for example these messages:
    - The doc notice of [The notice rule](doc-reads.md#the-notice-rule).
@@ -589,18 +596,23 @@ The rules of a milestone hold:
    - Each other peer message of [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message).
 5. These messages still go to a held session, with no read of item 7 of this section. Item 5 of this section wins over
    item 4 of this section.
-   - A message that relays a word of the user, for example the message of
-     [The word of the user](operator-conversations.md#the-word-of-the-user).
+   - A message that relays a word of the user.
    - Each message of [The hold before an install](release.md#the-hold-before-an-install), at its start and at its end.
-   - The stop message of [Stop a session](operator-start.md#stop-a-session).
    - The end message of item 9 of this section.
+
+   A request of [the request rule](../orchestrator.md#the-request-rule) is not a word of the user. For a held peer, such
+   a request is a skipped message, and the third bullet of item 6 gives its path. The end request of item 9 still goes,
+   as the last bullet says. The user stops an orchestrator as
+   [The steps of the user](../orchestrator.md#the-steps-of-the-user) says.
+
 6. The sender handles each skipped message by its kind:
    - A doc notice: the sender does nothing more. Item 9 of this section covers the doc change.
    - The message of the follow-up planner after a post: the sender does nothing more. Item 9 of this section covers the
      change of the board.
-   - Each other skipped message: the sender tells the user the message, as [The operator](#the-operator) gives "tell the
-     user" for its role, in place of the held session. The report names the held session. The user decides what happens
-     with it.
+   - Each other skipped message: the sender tells the user the message on the path of its role, in place of the held
+     session. An orchestrator asks the user in its question pane or tells the user in its own tab, as
+     [The operator](#the-operator) says. A planner session tells the user in its own tab. No item goes to an operator.
+     The report names the held session. The user decides what happens with it.
 7. The sender reads the hold records of the open milestones right before each message to a session of another slug. A
    read of an earlier turn does not count, because a milestone hold can start at any time.
 8. The rule covers these states of a milestone hold:
@@ -621,17 +633,21 @@ The rules of a milestone hold:
      doc change that it missed. It then sends a task subagent notice to its task subagents in flight.
      [The task subagent notice](doc-reads.md#the-task-subagent-notice) gives its form for the end of a milestone hold.
      Then the orchestrator reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
-   - A held operator does [The doc-read rule](doc-reads.md#the-doc-read-rule). Then it reads its start docs again.
    - A held planner does nothing more.
+
+   The user can also end the hold in the pane or the tab of the held orchestrator. Then the held orchestrator gets the
+   word itself, and this item holds for it. It tells the user to remove the hold record, as item 3 says. It then does
+   the steps of the bullet "A held orchestrator" and sends the end message to the held planner. The record stays up to
+   its removal by the user.
 
    So no session keeps a list of the skipped doc notices. The doc changes stay in the history of `main`, which each
    machine can read. A list in a session is lost at a compaction, a handoff or a move to another machine.
 
 10. If the read of item 7 of this section fails, [the failure rule](limits.md#the-failure-rule) applies. The sender then
-    handles each message of that send as the third bullet of item 6 of this section says, in one report.
+    handles each message of that send as the third bullet of item 6 of this section says, with each message in one
+    question or one report.
 11. If the write of item 3 of this section or a send of item 9 of this section fails, the failure rule applies. The
-    session tells the user. A denied write follows [the tool-block rule](tasker-commands.md#the-tool-block-rule). For
-    the operator, it follows [A denied command of the operator](tasker-commands.md#a-denied-command-of-the-operator).
+    session tells the user. A denied write follows [the tool-block rule](tasker-commands.md#the-tool-block-rule).
 
 ## The issue-link rule
 
