@@ -16,8 +16,9 @@ These terms apply on this page:
   [the session-review skill](../../.claude/skills/session-review/SKILL.md).
 - An open decision is a decision that waits for the user. It is a waiting decision of step 7 of
   [the session-review skill](../../.claude/skills/session-review/SKILL.md) whose wait did not end. It is also a proposal
-  or a draft that waits for a decision of the user. The end of a role, a session closure and a GitHub milestone closure
-  are separate outcomes.
+  or a draft that waits for a decision of the user.
+
+The end of a role, a session closure and a GitHub milestone closure are separate outcomes.
 
 ## The start and the authority
 
@@ -91,7 +92,7 @@ The own-session closure has these states.
 
 | State                    | What the session does                                                                | Who tells whom                                        |
 | ------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| Not started              | Its end up to its last report for the orchestrator                                   | None                                                  |
+| Not started              | The orchestrator runs its end up to its last report                                  | None                                                  |
 | Running                  | Does the checks above, then runs `herdr tab close` as its last call                  | None                                                  |
 | Ended: the tab is closed | No session runs                                                                      | None. The last report came before closure.            |
 | Ended: no closure        | Stays open when the session cannot close itself, or when a check or a command fails. | The session tells the user. The user closes its pane. |

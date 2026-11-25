@@ -110,8 +110,7 @@ exception to the measured facts, because its entries give the facts of the stopp
     The old session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`.
     This sub-bullet wins over the sentences "The prompt holds only the facts of this handoff" and "The old session puts
     no rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
-- Each open question or progress report with its id, as [The form of a message](items.md#the-form-of-a-message) gives
-  the id.
+- Each open question with its id, as [The form of a message](items.md#the-form-of-a-message) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. For an orchestrator, this bullet
   covers only a question with no question file, as
@@ -149,14 +148,15 @@ turn of the new session.
 
 ## The last item id
 
-The handoff file and the prompt for the new session name the first free item id. The item id is the id of a question or
-a progress report of an orchestrator. The first free item id is the number after the last item id that the old session
-used. For an orchestrator, the count also covers each question of [Terms](question-pane.md#terms) and each progress
-report of [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session). So the
-first free item id is the number after the last id of a question or a progress report. An example is "Your first item id
-is planner-docs-6." The new session counts its item ids from that id. When an answer names an id of the old session, the
-new session takes the question or progress report of that id from the handoff file. The reason: "Count your item ids on
-from planner-docs-5" can read as "start at planner-docs-5".
+The handoff file and the prompt for the new session name the first free item id. The item id is the id of a message, in
+the form that [The form of a message](items.md#the-form-of-a-message) gives. The first free item id is the number after
+the last item id that the old session used. For an orchestrator, the count also covers each question of
+[Terms](question-pane.md#terms) and each progress report of
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session). So the first free
+item id of an orchestrator is the number after the last id of a question or a progress report. An example is "Your first
+item id is planner-docs-6." The new session counts its item ids from that id. When an answer names an id of the old
+session, the new session takes the message of that id from the handoff file. The reason: "Count your item ids on from
+planner-docs-5" can read as "start at planner-docs-5".
 
 When an answer names an id of the old session, a new orchestrator first takes a question of that id from its question
 file. [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the steps.

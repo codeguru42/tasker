@@ -345,7 +345,8 @@ three keys, and a key breaks the tie of the key before it:
 1. The priority: `P0`, `P1`, none, then `P2`. The priority is the value of the field `Priority` of the issue on the
    project board. The orchestrator reads it with
    `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .priority != null) | "\(.content.number) \(.priority)"'`.
-   If the read fails, each question counts as a question with no priority.
+   If the read fails, [the failure rule](limits.md#the-failure-rule) applies, and each question counts as a question
+   with no priority.
 2. The issue number: the lower number first. A question with no issue comes last within its priority.
 3. The arrival: the earlier first. In one message, the lower question number of the asking session comes first.
 
