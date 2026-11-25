@@ -175,7 +175,13 @@ its tab by the user and a crash of the session. The end of a session after its s
 of a milestone, is not a stop. A resume of the same session keeps its context, so it is not a stop. An example is a
 resume at a `/rename`. A `/clear` is also not a stop of this subsection, and no doc gives what a `/clear` keeps.
 
-An orchestrator runs until its milestone is complete or it drafts a handoff. So the docs expect no stop with no handoff.
+An orchestrator runs until its milestone is complete or it drafts a handoff. So the docs expect no stop with no handoff,
+except the close of a failed session that [the start checks](#the-start-checks) give.
+
+The close of a failed session is a stop that the docs expect, because the way on asks for it. This applies to a failed
+start check with a first prompt that names a handoff file. The next start with the prompt of the handoff file is a start
+after a handoff. It is not a start outside a handoff, so the next paragraph does not apply to it. The new orchestrator
+takes the open questions and the other state from the handoff file and the question files.
 
 Suppose that the user starts a new orchestrator with the slug of a stopped orchestrator outside a handoff. The docs give
 no steps for it, except for the files of its orchestrator folder. The new orchestrator runs
