@@ -11,15 +11,15 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
 3. The operator finds the milestone of its slug, the milestone whose title gives the slug, as
    [docs/dev/GLOSSARY.md](GLOSSARY.md) defines the slug. To read the milestones, the operator runs the command of
    [The read of the milestones](planner.md#the-read-of-the-milestones). If the read fails,
-   [the failure rule](limits.md#the-failure-rule) applies. Then the operator creates no milestone and starts no initial
-   planner.
+   [the failure rule](limits.md#the-failure-rule) applies. Then the operator creates no milestone and does not tell the
+   user to start the initial planner.
 
    If the repo has no milestone of the slug, the operator drafts a title and a description with the user. The title
    gives the slug, for example `M29 — <name>` for the slug `m29`. If an open milestone of the slug exists, the operator
    shows its title and its description to the user and asks whether they are still right. The reason: a decision after
    the first draft of the description can change it. Then the operator drafts each change of the title or the
-   description that the user asks for. If the milestone of the slug is closed, the operator tells the user and starts no
-   initial planner.
+   description that the user asks for. If the milestone of the slug is closed, the operator tells the user and does not
+   tell the user to start the initial planner.
 
    The operator writes the description to `/tmp/tasker/<slug>/drafts/milestone.md`, and the file holds nothing else.
    Before it shows the draft, it runs the self-check of the simple-english skill over the file, as
@@ -31,36 +31,30 @@ The operator runs each `herdr` command in its own shell, in a Bash call. See [Op
    `gh api -X POST repos/codeguru42/tasker/milestones -f title='<title>' -F description=@<file>`. To change a milestone,
    it runs `gh api -X PATCH repos/codeguru42/tasker/milestones/<number>` with `-f title='<title>'`,
    `-F description=@<file>` or both. `<file>` is the path of the draft file. If the command fails, the failure rule
-   applies, and the operator starts no initial planner. A change of the description of a held milestone keeps its hold
-   record, as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
+   applies, and the operator does not tell the user to start the initial planner. A change of the description of a held
+   milestone keeps its hold record, as [A milestone hold](working-with-the-user.md#a-milestone-hold) says.
 
    For a denied create or change command, the operator follows
    [A denied command of the operator](tasker-commands.md#a-denied-command-of-the-operator). If the command ran, the
-   operator goes on as after its own command. If the command did not run, the operator starts no initial planner and
-   waits for a new word of the user. On a new word of the user to go on, the operator does step 3 again from its first
-   paragraph.
+   operator goes on as after its own command. If the command did not run, the operator does not tell the user to start
+   the initial planner and waits for a new word of the user. On a new word of the user to go on, the operator does step
+   3 again from its first paragraph.
 
-   After the post, the operator starts the initial planner, as "Start a session" says. If the user approves the existing
-   title and description with no change, the operator also starts the initial planner. The approval is the decision of
-   the user that the milestone starts, and the operator needs no other request of the user. If the user rejects the
-   draft or says that the milestone waits, the operator posts nothing and starts no initial planner. Then it waits for a
-   new word of the user. On a new word of the user to go on, the operator does step 3 again from its first paragraph.
+   After the post, the operator tells the user to start the initial planner, as
+   [The start prompts](planner.md#the-start-prompts) says. If the user approves the existing title and description with
+   no change, the operator also tells the user to start it. The operator starts no planner session. The approval is the
+   decision of the user that the milestone starts, and the operator needs no other request of the user. If the user
+   rejects the draft or says that the milestone waits, the operator posts nothing and does not tell the user to start
+   the initial planner. Then it waits for a new word of the user. On a new word of the user to go on, the operator does
+   step 3 again from its first paragraph.
 
 4. The user works with the initial planner in its tab.
    [The start of the initial planner](planner.md#the-start-of-the-initial-planner) of planner.md gives the rules of the
    initial planner.
-5. When the initial planning ends, the user tells the initial planner that the initial planning ends. If the user tells
-   the operator first, the operator tells `planner-<slug>` with `SendMessage`, as
-   [The word of the user](operator-conversations.md#the-word-of-the-user) says. The message of the operator starts with
-   "From the user:" and says that the initial planning ends. Then the operator waits for the message of the initial
-   planner that the initial planning is done. This message ends the wait. While it waits, the operator continues its
-   other work. It does not wait in a loop, as [the answer-wait rule](limits.md#the-answer-wait-rule) says for a task
-   subagent. If the send fails, the operator tells the user, as [the failure rule](limits.md#the-failure-rule) says.
-   Then the operator asks the user to tell the initial planner in its tab that the initial planning ends. The tab of the
-   initial planner stays open, and the operator still waits for the message of the initial planner.
-6. The message of the initial planner is the one signal that ends the initial planning. The operator does this step only
-   after this message. The word of the user to the initial planner in step 5 is the request of the user for this stop.
-   Then the operator closes the tab of the initial planner, as "Stop a session" says.
+5. When the initial planning ends, the user tells the initial planner in its tab. The initial planner gives the report
+   of its rounds in its tab and ends its work, as
+   [The start of the initial planner](planner.md#the-start-of-the-initial-planner) says.
+6. The user closes the tab of the initial planner.
 7. The operator tells the user to start the orchestrator, as
    [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says.
 8. At the end of the milestone, [The close of a milestone](#the-close-of-a-milestone) applies.
@@ -83,10 +77,10 @@ this text also when a notice arrives in the middle of it, and the notice applies
    ```
 
    The operator keeps `.sessions.kind` and the entry of `.sessions.models.<role>` of the output. `<role>` is the role of
-   the new session: `planner`, `orchestrator` or, in a handoff of the operator, `operator`. As a result, the new
-   operator starts with the model and the effort of `sessions.models.operator`. If the command fails, the operator tells
-   the user the command and the error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do
-   steps 2 and 3. No tab exists, so no entry goes into [the tab list](../operator.md).
+   the new session: `orchestrator` or, in a handoff of the operator, `operator`. As a result, the new operator starts
+   with the model and the effort of `sessions.models.operator`. If the command fails, the operator tells the user the
+   command and the error, as [the failure rule](limits.md#the-failure-rule) says. The operator does not do steps 2
+   and 3. No tab exists, so no entry goes into [the tab list](../operator.md).
 
 2. Step 2 of [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) gives this step.
 
@@ -100,11 +94,11 @@ The rules of this section are in [The start gate of a pi session](../sessions.md
 
 ## The start prompts
 
-The operator puts the milestone title in place of `<milestone>`. Each prompt is the last argument of
-`herdr agent start`. Under `pi`, the name comes from `-n` at the start, and the session reads it, as
-[docs/sessions.md](../sessions.md) says, before its role work. So no prompt holds a name step.
+Under `pi`, the name comes from `-n` at the start, and the session reads it, as [docs/sessions.md](../sessions.md) says,
+before its role work. So no prompt holds a name step.
 
-[The start prompts](planner.md#the-start-prompts) gives the prompt of the initial planner.
+The user starts the initial planner with the prompt of [The start prompts](planner.md#the-start-prompts). The user puts
+the milestone title in place of `<milestone>`.
 
 The orchestrator: the user starts it with the first prompt of a milestone scope, as
 [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) says.
