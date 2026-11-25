@@ -448,6 +448,20 @@ The new orchestrator is `orchestrator-<slug>`. Under `pi`, the name comes from `
 role work, so the prompt holds no name step. The new orchestrator does
 [the start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff file.
 
+If a step of the start checks fails, the new orchestrator is a failed session. It gives the message of
+[the start checks](../orchestrator.md#the-start-checks). After that message, it does none of these steps of this
+section:
+
+- The check of the handoff folder. A run of that check before the failed step stays valid.
+- The read of `tasker status`.
+- The read of `ListAgents`.
+- The board watch job.
+- The read of the record of the outside-Todo find, and the run of that find.
+- The pick of a ticket.
+- The open questions of the handoff file, and the question panes.
+
+The failed session changes no handoff file and no question file. The old orchestrator does not wait for this result.
+
 The start checks can read the handoff file of the first message with a Read call. This read can come before the read of
 the data root, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
 
