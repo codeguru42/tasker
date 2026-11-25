@@ -88,11 +88,12 @@ after the close of that pane. Each step has one purpose and its own number, so t
 
 1. Start no new ticket. This step holds from the go.
 2. Wait until no subagent of yours is in the state running, as [The wait before the start](#the-wait-before-the-start)
-   says. This wait includes the wait until each task in flight lands. This step leaves out a parked task. For each
-   landing, do the usual steps: delete the jobs (see [Delete the job](quota.md#delete-the-job)), do
-   [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step of the bullet "When the final report of the
-   task subagent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work), do
-   [the notice rule](doc-reads.md#the-notice-rule) and do
+   says. This wait includes the wait until each task in flight lands. The wait for a landing leaves out a parked task,
+   because a parked task is not a task in flight. The task subagent of a parked task still stays a subagent of the wait,
+   as [The wait before the start](#the-wait-before-the-start) says. For each landing, do the usual steps: delete the
+   jobs (see [Delete the job](quota.md#delete-the-job)), do [the re-read rule](doc-reads.md#the-re-read-rule), do the
+   memory step of the bullet "When the final report of the task subagent of a ticket says that the ticket landed" of
+   [Land the work](land-the-work.md#land-the-work), do [the notice rule](doc-reads.md#the-notice-rule) and do
    [the task subagent notice](doc-reads.md#the-task-subagent-notice). The reason: a job lives only in the session of the
    orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task is still in flight at the handoff,
    nobody resumes it after a quota stop.
@@ -172,23 +173,24 @@ handoff file. In both cases, the new orchestrator never gets it.
 
 After the go, the old orchestrator waits until no subagent of its own is in the state running, as
 [The terms of the wait](#the-terms-of-the-wait) give the states. If the go comes in a decision message, this wait starts
-after the close of its pane. Then step 3 starts. The wait covers each subagent that is not ended, also a subagent that
-starts during the wait.
+after the close of its pane. Then step 3 starts. The wait covers each subagent in the state running. The wait starts no
+subagent. A subagent that a rule starts during the wait or during the handoff becomes running and joins the wait.
 
 From the go to the end of the handoff, the old orchestrator starts no new ticket. This is the only new ban. The reason:
-a new ticket starts a new task subagent, so the wait has no end.
+a new ticket starts a new task subagent, so the wait has no end. The wait adds no ban on the start of a pane or of a
+subagent.
 
 The wait for each task in flight is a part of this wait. Its rules stay, as step 2 of
 [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) and
 [The stopping-point case](#the-stopping-point-case) say. This covers the wait case, the stopping-point case, a failed
 stopping-point message and the judgment of a word for a stopping point from the go to the start.
 
-A task subagent of a deferred ticket stays a subagent of the wait. The wait for it ends with its report, with its end
-with no report or with a word of the user, as
-[The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) says.
+A task subagent can still run while its task is not a task in flight, for example after a defer of its ticket. Such a
+task subagent stays a subagent of the wait. The wait for it ends with its report, with its end with no report or with a
+word of the user, as [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) says.
 
-Each rule for a due handoff still holds. Each other event gets its usual steps. A subagent that starts during the wait
-joins the wait. These are examples:
+Each rule for a due handoff still holds. Each other event gets its usual steps. These are examples of a subagent that
+joins the wait:
 
 - A write subagent of a decision message
 - An opener subagent of a pane that a word of the user starts
@@ -202,12 +204,7 @@ The rules that limit the start of a handoff, of a ticket and of a pane stay:
   user still starts a pane, as [Start](question-pane.md#start) says.
 - While a pane is open or a write subagent runs, the orchestrator starts no handoff, as
   [Close and continue](question-pane.md#close-and-continue) says. The stopping-point case is the exception for an open
-  pane.
-
-The ban on a new ticket from the go is the only new ban. The wait adds no ban on the start of a pane or of a subagent.
-The wait starts no subagent. A subagent that a rule starts during the wait or during the handoff joins the wait.
-
-The rules for an open pane stay, also the pane handoff of the stopping-point case.
+  pane, with the pane handoff of [The panes and the write subagents](#the-panes-and-the-write-subagents).
 
 ### The wait before the handoff file
 
@@ -267,7 +264,8 @@ For a planner subagent whose wait a word of the user ended,
 
 ### The reports during the handoff
 
-This subsection covers the time from the start of the handoff to the write of the handoff file.
+This subsection covers the time from the start of the handoff to the write of the handoff file. Before the start, a
+report gets its usual steps.
 
 A fact or a lesson before the send goes into the send. After the send, it becomes a planning request that waits.
 

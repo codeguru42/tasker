@@ -1027,8 +1027,9 @@ orchestrator does these steps before it writes its handoff file:
 A planning request can arrive after step 2 started each request that waited, for example a fact or a lesson of a late
 report. Then the wait runs again for that request.
 
-The old orchestrator writes its handoff file only after the result of the last planner subagent. The end of the wait by
-a word of the user, as the next paragraphs say, is the only other end.
+The old orchestrator writes its handoff file only after the result of the last planner subagent. The wait for one
+planner subagent can also end in the other ways that
+[The end of the wait for one subagent](handoff-orchestrator.md#the-end-of-the-wait-for-one-subagent) gives.
 
 If a planner subagent sends no report and gets no end notification, only a word of the user ends the wait for it. The
 steps of [The end of the wait for one subagent](handoff-orchestrator.md#the-end-of-the-wait-for-one-subagent) hold. For
