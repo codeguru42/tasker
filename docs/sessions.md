@@ -2,7 +2,7 @@
 
 This page gives the terms that name the operator, and the steps with which a session reads its own name. It also gives
 the sections "The start of a session by the user", "The start of a herdr session" with "The facts of a herdr start",
-"The herdr agent name of a new operator", "The start gate of a pi session", "Two sessions with one name" and "A blocked
+"The herdr agent name in a handoff", "The start gate of a pi session", "Two sessions with one name" and "A blocked
 session". [The glossary](dev/GLOSSARY.md) gives the other terms that the sessions use.
 
 The sessions of a slug are `operator-<slug>`, `planner-<slug>` and `orchestrator-<slug>`. The slug of a set scope names
@@ -32,71 +32,63 @@ a bash tool. [docs/dev/pi-sessions.md](dev/pi-sessions.md) gives the limits.
 
 ## The start of a session by the user
 
-This section gives step 2 of [The order of a milestone](dev/operator-start.md#the-order-of-a-milestone), which other
-sessions also use.
+This section gives the step with which the user opens a session.
 
-2. The user runs `tasker show-config --repo <key>` and reads `sessions.models.operator`. `<key>` is the repo key of the
-   repo of the local clone, for example `codeguru42/tasker`. If the command fails, the user does not open the operator.
-   Then the user opens the operator in `claude` and names it `operator-<slug>`. The user passes the model and the effort
-   of `sessions.models.operator` with the flags of [the seam of an agent kind](config.md#the-seam-of-an-agent-kind), for
-   example `claude -n operator-m9 --model opus --effort high`. If `sessions.models.operator` has no entry, the user
-   passes neither flag.
+2. The user runs `tasker show-config --repo <key>` and reads the entry of the role in `sessions.models`. `<key>` is the
+   repo key of the repo of the local clone, for example `codeguru42/tasker`. If the command fails, the user does not
+   open the session. Then the user opens the session in `claude` and names it `<role>-<slug>`. The user passes the model
+   and the effort of the entry with the flags of [the seam of an agent kind](config.md#the-seam-of-an-agent-kind), for
+   example `claude -n orchestrator-m9 --model opus --effort high`. If `sessions.models` has no entry for the role, the
+   user passes neither flag.
 
-   If `sessions.kind` is `pi`, the user opens the operator with
-   `pi -n operator-<slug> --provider <upstream> --model <model> --thinking <effort>`. If `sessions.models.operator` has
-   no entry, the user passes only `-n operator-<slug>`. The user does the naming step with `-n`. The session reads its
-   name before its role work, as [docs/sessions.md](#the-read-of-the-own-name) says. The first operator has no herdr
-   agent name.
+   If `sessions.kind` is `pi`, the user opens the session with
+   `pi -n <role>-<slug> --provider <upstream> --model <model> --thinking <effort>`. If `sessions.models` has no entry
+   for the role, the user passes only `-n <role>-<slug>`. The user does the naming step with `-n`. The session reads its
+   name before its role work, as [docs/sessions.md](#the-read-of-the-own-name) says.
 
 ## The start of a herdr session
 
-This section gives steps 2 and 3 of [Start a session](dev/operator-start.md#start-a-session), which other sessions also
-use.
+This section gives the steps with which a starting session starts another session in a new herdr tab. The starting
+session is the session that runs these steps.
 
-2. The operator runs `herdr tab create` in its shell. The folder of `--cwd` is the local clone.
+2. The starting session runs `herdr tab create` in its shell. The folder of `--cwd` is the local clone.
 
    ```sh
    herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd <local clone> --label <name> --no-focus
    ```
 
-   In a handoff of the operator, the operator leaves out `--no-focus`, as
-   [The start of the new operator](dev/handoff-operator.md#the-start-of-the-new-operator) says.
+   The starting session keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. If the command fails,
+   the starting session tells the user the command and the error, as [the failure rule](dev/limits.md#the-failure-rule)
+   says. It does not do step 3.
 
-   The operator keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. If the command works, the
-   operator puts the tab id and the session name into the tab list. If the command fails, the operator tells the user
-   the command and the error, as [the failure rule](dev/limits.md#the-failure-rule) says. The operator does not do
-   step 3. No tab exists, so no entry goes into the tab list.
-
-3. Before the command, the operator joins the lines of the prompt into one line, with one space between two lines. herdr
-   0.9.3 refuses a prompt with a newline, with the error "agent arguments cannot be encoded safely for the target
-   shell". operator-docs measured this on 2026-10-24, in the handoff of planner-docs. Then the operator runs
-   `herdr agent start` in its shell. The command starts the agent of the kind in the new pane.
+3. Before the command, the starting session joins the lines of the prompt into one line, with one space between two
+   lines. herdr 0.9.3 refuses a prompt with a newline, with the error "agent arguments cannot be encoded safely for the
+   target shell". operator-docs measured this on 2026-10-24, in the handoff of planner-docs. Then the starting session
+   runs `herdr agent start` in its shell. The command starts the agent of the kind in the new pane.
 
    ```sh
    herdr agent start <name> --kind <kind> --pane <pane id> -- -n <name> <model flags> "<prompt>"
    ```
 
-   In a handoff of the operator, the herdr agent name and the session name differ. The herdr agent name is
-   `operator-<slug>-<time>`, and `-n` takes the session name `operator-<slug>`.
-   [The herdr agent name of a new operator](#the-herdr-agent-name-of-a-new-operator) gives the command.
+   In a handoff, the herdr agent name and the session name differ, as
+   [The herdr agent name in a handoff](#the-herdr-agent-name-in-a-handoff) says.
 
    `<kind>` is `sessions.kind`. `<model flags>` is the model flag and the effort flag of the kind in
    [the seam of an agent kind](config.md#the-seam-of-an-agent-kind), with the model and the effort of the entry of the
-   role. If `sessions.models` has no entry for the role, the operator leaves out `<model flags>`. Under `pi`, the
-   `<model flags>` are the pi cells of the seam. A planner and an orchestrator have the same text for the herdr agent
-   name and the own name.
+   role. If `sessions.models` has no entry for the role, the starting session leaves out `<model flags>`. Under `pi`,
+   the `<model flags>` are the pi cells of the seam. A planner and an orchestrator have the same text for the herdr
+   agent name and the own name.
 
    `herdr agent start` can fail while the new session still starts. The known errors are "timed out waiting for agent
    startup", and "named agent `<name>` no longer owns the target terminal" with the code `agent_name_not_found`.
    `<name>` is the name of the session.
 
-   After one of these errors, the operator first looks for the new session in `ListAgents`, or it runs
+   After one of these errors, the starting session first looks for the new session in `ListAgents`, or it runs
    `herdr pane read <pane id>` in its shell. The pane id is the one that step 2 kept. If the session runs, the start
    worked. If `ListAgents` does not list the new session, or `herdr pane read` fails or shows no running session, the
-   failure case that follows applies. In a handoff of the operator, step 3 of "The start of the new operator" wins over
-   the first sentence of this paragraph.
+   failure case that follows applies.
 
-   For a pi session, the operator does not use `ListAgents` after one of these errors. It runs
+   For a pi session, the starting session does not use `ListAgents` after one of these errors. It runs
    `herdr pane read <pane id>` in its shell. If the pane shows a running session, the gate of
    [The start gate of a pi session](#the-start-gate-of-a-pi-session) applies. Otherwise the failure case that follows
    applies.
@@ -105,11 +97,10 @@ use.
    the error "named agent orchestrator-docs no longer owns the target terminal" (`agent_name_not_found`) on 2026-10-24,
    at the start of the new orchestrator-docs, and the session ran.
 
-   If the command fails in another way, or the new session does not run, the operator tells the user the command and the
-   error. The new tab stays open, and its entry stays in the tab list. The operator does not close the tab without the
-   user. If the user closes that tab, or tells the operator to close it, the entry leaves the tab list.
+   If the command fails in another way, or the new session does not run, the starting session tells the user the command
+   and the error. The new tab stays open. The starting session does not close the tab without the user.
 
-   If the kind is `pi` and the start returned, the operator goes on to
+   If the kind is `pi` and the start returned, the starting session goes on to
    [The start gate of a pi session](#the-start-gate-of-a-pi-session).
 
 ### The facts of a herdr start
@@ -118,7 +109,7 @@ The facts that follow are facts of the kind `claude`. They were measured on 2026
 2.1.310. [docs/dev/pi-sessions.md](dev/pi-sessions.md) records the facts of the kind `pi`.
 
 - Herdr sets `HERDR_WORKSPACE_ID` in each pane that it manages. As a result, the new tab opens in the workspace of the
-  operator.
+  starting session.
 - The flag `-n` sets the session name, and the last argument is the first prompt of the session.
   [The seam of an agent kind](config.md#the-seam-of-an-agent-kind) is the home of these flags.
 - In the fact tests of #503 and #516, the row of a test session had the field `name`, with the herdr agent name. Each
@@ -132,54 +123,56 @@ The facts that follow are facts of the kind `claude`. They were measured on 2026
   2026-10-25.
 - `herdr agent start` refuses a herdr agent name that already runs. It exits with code 1 and prints the error code
   `agent_name_taken`. The task subagent of #503 measured this with herdr 0.9.3 on 2026-10-25.
-- The new session is a top-level session, not a subagent of the operator.
+- The new session is a top-level session, not a subagent of the starting session.
 - The tool `SendMessage` works in both directions, and `ListAgents` lists the session.
 - The model flag and the effort flag of [the seam of an agent kind](config.md#the-seam-of-an-agent-kind) reach the new
   session. The new session runs with the model and the effort of these flags.
 
-## The herdr agent name of a new operator
+## The herdr agent name in a handoff
 
-This section gives step 2 of [The start of the new operator](dev/handoff-operator.md#the-start-of-the-new-operator),
-which other sessions also use.
+This section gives the herdr agent name of the new session in a handoff.
 
-2. The herdr agent name is `operator-<slug>-<time>`. `<time>` is the time part of the name of the handoff file, for
-   example `1530`. So the command of step 3 of "Start a session" is:
+2. The herdr agent name is `<own name>-<time>`. `<time>` is the time part of the name of the handoff file, for example
+   `1530`. So the command of step 3 of [The start of a herdr session](#the-start-of-a-herdr-session) is:
 
    ```sh
-   herdr agent start operator-<slug>-<time> --kind <kind> --pane <pane id> -- -n operator-<slug> <model flags> "<prompt>"
+   herdr agent start <own name>-<time> --kind <kind> --pane <pane id> -- -n <own name> <model flags> "<prompt>"
    ```
 
-   The error text of that step names the herdr agent name. Under `pi`, the `<model flags>` are the pi cells of
+   The error text of step 3 names the herdr agent name. Under `pi`, the `<model flags>` are the pi cells of
    [the seam of an agent kind](config.md#the-seam-of-an-agent-kind).
 
 `herdr agent start` refuses a herdr agent name that already runs. With no suffix `-<time>`, the start of the third
-operator fails, because the second operator still runs.
+session of the name fails, because the second session still runs.
 
 ## The start gate of a pi session
 
-The gate applies to a pi session that the operator starts with `herdr agent start`. It makes sure that the new session
-runs with the expected own name before the operator goes on. The facts are in
-[docs/dev/pi-sessions.md](dev/pi-sessions.md).
+The gate applies to a pi session that a starting session starts with `herdr agent start`. It makes sure that the new
+session runs with the expected own name before the starting session goes on. The starting session is the actor of each
+step and each read. The facts are in [docs/dev/pi-sessions.md](dev/pi-sessions.md).
 
 - Pending: the time from `herdr agent start` until the read gives a result, or until the limit ends. The flag `-n` makes
-  the name exist right after the start. So the operator starts to read as soon as `herdr agent start` returns. The state
-  stays Pending after each read that gives a wait case, until a read gives Done or Failed, or until the limit ends.
-- Done: the row has the new pane id, and the name in the session file equals the expected own name. Then the operator
-  goes on as after a `claude` start that worked.
+  the name exist right after the start. So the starting session starts to read as soon as `herdr agent start` returns.
+  The state stays Pending after each read that gives a wait case, until a read gives Done or Failed, or until the limit
+  ends.
+- Done: the row has the new pane id, and the name in the session file equals the expected own name. Then the starting
+  session goes on as after a `claude` start that worked.
 - Failed: any case of the list "The gate gives Failed at once", or the end of the limit while the state is Pending. The
-  list "The operator reads again" does not give Failed.
+  list "The starting session reads again" does not give Failed.
 
 The read has three steps:
 
-1. The operator runs `herdr agent list`. It takes the row whose `pane_id` is the pane id that step 2 of "Start a
-   session" kept. It does not look up the row by the herdr agent name, because the field `name` can be missing.
-2. The operator runs `test -e <agent_session.value>`. If the file does not exist yet, the command exits with 1.
-3. If the file exists, the operator runs `grep -m1 session_info <agent_session.value>` and takes the value of `"name"`.
+1. The starting session runs `herdr agent list`. It takes the row whose `pane_id` is the pane id that step 2 of
+   [The start of a herdr session](#the-start-of-a-herdr-session) kept. It does not look up the row by the herdr agent
+   name, because the field `name` can be missing.
+2. The starting session runs `test -e <agent_session.value>`. If the file does not exist yet, the command exits with 1.
+3. If the file exists, the starting session runs `grep -m1 session_info <agent_session.value>` and takes the value of
+   `"name"`.
 
-The operator reads every 15 seconds, up to 300 seconds after the start returns. 300000 ms is the maximum `--timeout` of
-`herdr agent start`.
+The starting session reads every 15 seconds, up to 300 seconds after the start returns. 300000 ms is the maximum
+`--timeout` of `herdr agent start`.
 
-The operator reads again after 15 seconds in each of these cases. The state stays Pending:
+The starting session reads again after 15 seconds in each of these cases. The state stays Pending:
 
 - No row of `herdr agent list` has the new pane id yet.
 - The row has no `agent_session` path yet.
@@ -195,16 +188,16 @@ The gate gives Failed at once in each of these cases:
 
 Such a name does not change, so another read does not help.
 
-After Failed, the operator tells the user the command and the error. The tab and its entry in the tab list stay. The
-operator starts no second session and renames no other session. The user closes the tab. If the name shows up after
-Failed, the state stays Failed.
+After Failed, the starting session tells the user the command and the error. The tab stays. The starting session starts
+no second session and renames no other session. The user closes the tab. If the name shows up after Failed, the state
+stays Failed.
 
-In a handoff of the operator, the old and the new operator hold the same own name, and pi allows this. Only the tie to
-the new pane id gives Done. The name alone is never Done.
+In a handoff, the old and the new session hold the same own name, and pi allows this. Only the tie to the new pane id
+gives Done. The name alone is never Done.
 
 ## Two sessions with one name
 
-This section gives a fact of [Stop a session](dev/operator-start.md#stop-a-session), which other sessions also use.
+This section gives a fact that the sessions use.
 
 Two sessions with one name break each `SendMessage` to that name.
 

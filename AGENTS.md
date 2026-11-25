@@ -14,8 +14,8 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/planner.md](docs/planner.md): the role index of the planner.
 - [docs/operator.md](docs/operator.md): the role index of the operator.
 - [docs/sessions.md](docs/sessions.md): the terms that name the operator, the read of the own name, the start of a
-  session by the user, the start of a herdr session, the herdr agent name of a new operator, the start gate of a pi
-  session, two sessions with one name and a blocked session.
+  session by the user, the start of a herdr session, the herdr agent name in a handoff, the start gate of a pi session,
+  two sessions with one name and a blocked session.
 - [docs/dev/GLOSSARY.md](docs/dev/GLOSSARY.md): the terms that the sessions use.
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo.
 - [CONTRIBUTING.md](CONTRIBUTING.md): how a contributor starts work.

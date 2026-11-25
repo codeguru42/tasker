@@ -476,9 +476,9 @@ The steps of the old orchestrator. The steps are:
 
 In step 4, the herdr agent name is `orchestrator-<slug>-<time>`, and `-n` takes `orchestrator-<slug>`. `<time>` is the
 time part of the name of the handoff file.
-[The herdr agent name of a new operator](../sessions.md#the-herdr-agent-name-of-a-new-operator) gives this form and its
-reason. The first prompt is the prompt of the handoff file, in one line. Step 5 uses `herdr pane read` and not
-`ListAgents`, because two sessions have the name.
+[The herdr agent name in a handoff](../sessions.md#the-herdr-agent-name-in-a-handoff) gives this form and its reason.
+The first prompt is the prompt of the handoff file, in one line. Step 5 uses `herdr pane read` and not `ListAgents`,
+because two sessions have the name.
 
 The old orchestrator keeps two tab ids: its own tab id, `$HERDR_TAB_ID`, and the tab id of the new orchestrator from
 step 3. It closes itself by its own tab id. It does not use

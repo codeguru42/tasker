@@ -115,7 +115,7 @@ The new operator starts in these steps:
    `operator`. The label of the tab and the session name are `operator-<slug>`. The first message is the prompt of the
    handoff file. Step 2 of "Start a session" runs `herdr tab create` with no `--no-focus`, so that the user sees the new
    operator.
-2. [The herdr agent name of a new operator](../sessions.md#the-herdr-agent-name-of-a-new-operator) gives this step.
+2. [The herdr agent name in a handoff](../sessions.md#the-herdr-agent-name-in-a-handoff) gives this step.
 
 3. The old operator makes sure that the new operator runs. It runs `herdr pane read <pane id>` with the pane id that
    step 2 of "Start a session" kept. It does not look in `ListAgents` by the name, because two sessions have the name.
@@ -169,8 +169,8 @@ the file that the old operator did not show, as [The open items](operator-items.
 the notice of the hold that step 2 of [the steps of the old operator](#the-steps-of-the-old-operator) gives the old
 operator. The reason: the last reply of the old operator shows only in its closed tab.
 
-[The herdr agent name of a new operator](../sessions.md#the-herdr-agent-name-of-a-new-operator) gives the reason for the
-suffix `-<time>`.
+[The herdr agent name in a handoff](../sessions.md#the-herdr-agent-name-in-a-handoff) gives the reason for the suffix
+`-<time>`.
 
 On 2026-10-25, with herdr 0.9.3 and Claude Code 2.1.310, a test session in tab `wB:tG` ran
 `herdr tab close "$HERDR_TAB_ID"`, and `herdr tab get wB:tG` then returned `tab_not_found`. In a first test (tab
