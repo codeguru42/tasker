@@ -88,7 +88,7 @@ At most `maxPlannerSubagents` planner subagents of an orchestrator run at the sa
 `sessions.maxPlannerSubagents` of the repo, a whole number above 0 with the default 3. Only an orchestrator of the kind
 `claude` starts a planner subagent, so the key has no effect for another kind.
 
-Before each decision whether a waiting request starts, the orchestrator reads the count. It runs
+Before each decision whether a waiting item of planning work starts, the orchestrator reads the count. It runs
 `tasker show-config --repo <key>` and takes `.sessions.maxPlannerSubagents` from the output. One run can also serve step
 1 of [The start](#the-start). A read fails when the exit code is not 0, when the output is not JSON, or when the value
 is not a whole number above 0. After a failed read, [the failure rule](limits.md#the-failure-rule) applies. Then the
@@ -176,7 +176,7 @@ Before the write, the orchestrator lists `proposals/` with `ls`. `<number>` is 1
 `proposals/` holds or that the orchestrator gave in its session. If neither holds a number, `<number>` is 1. So the
 orchestrator never uses a proposal number again in one session, and the order of the numbers is the order of arrival.
 For example, `proposals/` holds no file, and the orchestrator gave the number 4 earlier in its session. Then the next
-request gets `proposals/5.md`.
+item gets `proposals/5.md`.
 
 The proposal file holds each fact of [The prompt](#the-prompt) that comes from the item. These facts are the words of
 the planning request that belong to the item, word for word, its sender, its date and the source of each fact. An item
@@ -200,13 +200,13 @@ an item that waits in the session. These files are not items that wait:
 - For step 2 of [The wait before a handoff](#the-wait-before-a-handoff), a file that a stop of the queue holds.
 - At a start with no handoff file, each file that `proposals/` holds at the end of the start steps, until the word of
   the user. [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) gives the steps.
-- A file of a draft that still has an open question, until the answer to the last open question of the draft. See
-  [A settled question](#a-settled-question).
+- A file of a draft that still has an open question, until the answer to the last open question of the draft, or until
+  an answer drops the draft. See [A settled question](#a-settled-question).
 
 Before the start of a planner subagent, the orchestrator writes the name of that planner subagent into its proposal
-file. The name is `plan-<count>` of [The name](#the-name). The file holds the tie of the request and the planner
-subagent, so the tie stays through a compaction. If the write of the name fails, the orchestrator starts no planner
-subagent from that file until the next word of the user.
+file. The name is `plan-<count>` of [The name](#the-name). The file holds the tie of the item and the planner subagent,
+so the tie stays through a compaction. If the write of the name fails, the orchestrator starts no planner subagent from
+that file until the next word of the user.
 
 At a result, the orchestrator deletes only the proposal file that names the sender of the result. A result whose sender
 no file names deletes nothing, for example a second result of the same planner subagent. A result through `SendMessage`
