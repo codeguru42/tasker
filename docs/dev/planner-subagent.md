@@ -76,8 +76,9 @@ The orchestrator does these steps for each start:
 A subagent of the type `fork` gets the context of the orchestrator. On 2026-11-19, with Claude Code 2.1.329, the list of
 the subagent types gave "Tools: \*" for `general-purpose`. So its tool list holds the Agent tool.
 
-If the Agent call fails, the start failed. A refused Agent call is also a failed start. A failed start counts as a
-failed `SendMessage` of the planner bullet, and the step of that bullet for a failed send holds.
+If the Agent call fails, the start failed. A refused Agent call is also a failed start. After a failed start, the
+orchestrator asks the user in its question pane, as the planner bullet of
+[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 ### The count of planner subagents
 
@@ -200,8 +201,8 @@ also applies.
 
 These two cases stop the queue:
 
-- The start fails. [The failure rule](limits.md#the-failure-rule) applies, and the orchestrator keeps the file. A failed
-  start still counts as a failed send of the planner bullet, as [The start](#the-start) says.
+- The start fails. [The failure rule](limits.md#the-failure-rule) applies, and the orchestrator keeps the file. The
+  orchestrator also asks the user in its question pane, as [The start](#the-start) says.
 - The planner subagent and its one restart both end with no report. The orchestrator tells the user and keeps the file.
 
 After such a case, the orchestrator starts no new planner subagent until the next word of the user. Each planner

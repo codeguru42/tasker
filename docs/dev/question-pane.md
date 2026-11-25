@@ -225,8 +225,8 @@ waits for a later decision.
 
 For an orchestrator of the kind `claude`, the planner of the orchestrator is a new
 [planner subagent](planner-subagent.md) for each request, relay or open finding. This also holds for an accepted
-proposal and a recurrence. On this page, a send to such a planner is the start of a planner subagent. A failed start
-counts as a failed send, as [The start](planner-subagent.md#the-start) says.
+proposal and a recurrence. On this page, a send to such a planner is the start of a planner subagent. After a failed
+start, the orchestrator asks the user in its question pane, as [The start](planner-subagent.md#the-start) says.
 
 An input file is a file under `/tmp/tasker/<slug>/drafts/`, with the slug of the pane owner.
 
