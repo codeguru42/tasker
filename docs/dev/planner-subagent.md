@@ -623,8 +623,8 @@ subagent gives these facts in its own result.
 The planner subagent drops these rules:
 
 1. [Milestones](issues.md#milestones).
-2. The name `planner-<slug>` and the start by the operator. The bullet of Working with the user that starts "The
-   operator names each planner" gives them. The first two paragraphs of The start of the initial planner also give them.
+2. The name `planner-<slug>` and the start by the user. The bullet of Working with the user that starts "The user names
+   the initial planner" gives them. The first two paragraphs of The start of the initial planner also give them.
 3. The table of milestones of Working with the user, and the first bullet of The order of the work.
 4. The question about the kinds of GitHub objects, in the third bullet of The order of the work. The planner subagent
    writes only the text of issues, as [No metadata](#no-metadata) says.
