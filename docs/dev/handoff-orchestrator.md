@@ -451,9 +451,8 @@ role work, so the prompt holds no name step. The new orchestrator does
 If a step of the start checks fails, the new orchestrator is a failed session. An example is a stop by step 3 for a row
 of `herdr agent list` with the own name and a tab id that is not the tab id of the handoff file. The failed session
 gives the message of [the start checks](../orchestrator.md#the-start-checks). After that message, it does none of the
-steps that [the start checks](../orchestrator.md#the-start-checks) list for a failed session. It also does none of the
-steps of this section that follow the start checks. The failed session changes no handoff file and no question file. The
-old orchestrator does not wait for this result.
+steps that [the start checks](../orchestrator.md#the-start-checks) list for a failed session. The failed session changes
+no handoff file and no question file. The old orchestrator does not wait for this result.
 
 The start checks can read the handoff file of the first message with a Read call. This read can come before the read of
 the data root, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
@@ -467,10 +466,9 @@ After these lists, it reads the tasks in flight with `tasker status`, also
 [the parked tasks](pick-the-tickets.md#the-defer-rule). It reads the other sessions with `ListAgents`. Then, if all
 [the start checks](../orchestrator.md#the-start-checks) passed, it makes its board watch job, as
 [the board watch rule](../orchestrator.md#the-board-watch-job) says. The first read of the board can delete the job, as
-[A ticket that waits for a slot](../orchestrator.md#a-ticket-that-waits-for-a-slot) says. If a start check stopped it,
-it makes no job. An example is a stop by step 3 for a row of `herdr agent list` with the own name and a tab id that is
-not the tab id of the handoff file. Then, before the pick of the first ticket, it reads the record of
-[the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file and runs that find.
+[A ticket that waits for a slot](../orchestrator.md#a-ticket-that-waits-for-a-slot) says. Then, before the pick of the
+first ticket, it reads the record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file
+and runs that find.
 
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
 record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
