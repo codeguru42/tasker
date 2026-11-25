@@ -174,8 +174,7 @@ Sources: [Sessions](../config.md#sessions), [the doc-read rule](doc-reads.md#the
 [The result](planner-subagent.md#the-result), [The record file](planner-subagent.md#the-record-file),
 [No metadata](planner-subagent.md#no-metadata), [The reads before the write](issues.md#the-reads-before-the-write),
 [The project board](issues.md#the-project-board), [The blocked-by links](issues.md#the-blocked-by-links),
-[The post of the follow-up planner](planner.md#the-post-of-the-follow-up-planner),
-[The body of an issue](issue-subagents.md#the-body-of-an-issue),
+[The post of a draft](planner.md#the-post-of-a-draft), [The body of an issue](issue-subagents.md#the-body-of-an-issue),
 [The blocked-by links](issue-subagents.md#the-blocked-by-links) and [Docs](rules.md#docs). The section Sessions says
 that the planner subagent starts the draft, review and post subagents. The planner subagent keeps the record of the
 findings of each draft in the record file.
