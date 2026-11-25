@@ -253,8 +253,9 @@ planner links two issues when one issue needs", which names the planner.
   session adds no such link. At the start of a hold, the orchestrator removes each same-file link of the ticket. At the
   end of the hold, no session adds the link again.
 
-- A ticket that closes a live security gap goes first in its chain, ahead of each ticket that it does not need, as
-  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
+- A ticket that closes a live security gap gets no blocked-by link that puts it behind a ticket that it does not need.
+  This bullet adds no link. The order of a live security gap in [Pick the tickets](pick-the-tickets.md#pick-the-tickets)
+  decides when such a ticket starts.
 - Before the planner starts the ticket subagents of a milestone, it makes a table of the needs and the likely files of
   each issue. It adds the links from the table when it posts the issues. The bullet of a real need, the bullet of the
   form and the bullet of a rename use the likely files of the table.
