@@ -467,9 +467,10 @@ After these lists, it reads the tasks in flight with `tasker status`, also
 board watch job, as [the board watch rule](../orchestrator.md#the-board-watch-job) says. The first read of the board can
 delete the job, as [A ticket that waits for a slot](../orchestrator.md#a-ticket-that-waits-for-a-slot) says. Then,
 before the pick of the first ticket, it reads the record of
-[the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file and runs that find. A session whose
-start check failed is the failed session of [the start checks](../orchestrator.md#the-start-checks), and it does none of
-the steps of this paragraph.
+[the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file and runs that find.
+
+A session whose start check failed is the failed session of [the start checks](../orchestrator.md#the-start-checks). It
+does none of the steps that the start checks list for it.
 
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
 record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.

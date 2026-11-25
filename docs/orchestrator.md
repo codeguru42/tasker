@@ -252,7 +252,7 @@ the orchestrator does no role work. It tells the user in its own tab, with the e
 In these steps, "stop" means: do no role work, and tell the user in your own tab. A pi orchestrator does not do steps 2
 and 3. For a pi orchestrator, the user alone keeps the slugs apart.
 
-After all these steps pass, the orchestrator lists its folders `questions/` and `proposals/`, as
+After these steps, the orchestrator lists its folders `questions/` and `proposals/`, as
 [The orchestrator folder](dev/limits.md#the-orchestrator-folder) says for the end of the start steps.
 
 If the first prompt names a handoff file, a row of `ListAgents` with the own name can be the old orchestrator. Then the
