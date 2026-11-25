@@ -1136,8 +1136,9 @@ it started do not count, for example a task subagent or a question session. A st
 no second report of the rounds and no second report that the milestone is done.
 
 The orchestrator runs the rounds of [Session-review rounds](session-review-rounds.md) first. While a question pane of
-the orchestrator is open or its write subagent runs, the rounds do not start, as [Start](question-pane.md#start) says.
-Each finding of the rounds that needs a decision of the user is an open question of the orchestrator, as
+the orchestrator is open or its write subagent runs, no round of the rounds runs, as
+[The gate of the rounds of an orchestrator](question-pane.md#the-gate-of-the-rounds-of-an-orchestrator) says. Each
+finding of the rounds that needs a decision of the user is an open question of the orchestrator, as
 [Terms](question-pane.md#terms) says. So each orchestrator, of a milestone scope or of a set scope, opens a question
 pane for each such finding. It sends each proposed issue of the rounds to its planner, as the planner bullet of
 [The prompt of a task subagent](#the-prompt-of-a-task-subagent) says. No orchestrator closes until each finding of its
