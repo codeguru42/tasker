@@ -331,13 +331,24 @@ The measure had four possible outcomes:
 
 ### The states of a start
 
-| State                         | User                         | Orchestrator                                                                            | Who tells whom                                 |
-| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| The read of the configuration | Runs `tasker show-config`    |                                                                                         |                                                |
-| The read fails                | Starts no orchestrator       |                                                                                         | The command tells the user                     |
-| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                           |                                                |
-| A start check fails           |                              | Does no role work and makes no board watch job                                          | The orchestrator tells the user in its own tab |
-| The start checks pass         |                              | Lists `questions/` and `proposals/`, makes the board watch job and starts its role work |                                                |
+| State                         | User                         | Orchestrator                                                                                                                            | Who tells whom                                 |
+| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| The read of the configuration | Runs `tasker show-config`    |                                                                                                                                         |                                                |
+| The read fails                | Starts no orchestrator       |                                                                                                                                         | The command tells the user                     |
+| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                                                                           |                                                |
+| A start check fails           |                              | Does no role work and makes no board watch job. With a handoff file in the first prompt, the message also gives the path and the way on | The orchestrator tells the user in its own tab |
+| The start checks pass         |                              | Lists `questions/` and `proposals/`, makes the board watch job and starts its role work                                                 |                                                |
+
+With a first prompt that names a handoff file, the message of a failed start check also gives the path and the way on of
+[the start checks](#the-start-checks). These states follow that failed start check:
+
+| State                 | User                                          | Failed session    | New orchestrator               | Who tells whom                                       |
+| --------------------- | --------------------------------------------- | ----------------- | ------------------------------ | ---------------------------------------------------- |
+| A start check fails   |                                               | Does no role work |                                | The failed session tells the user the message        |
+| The close             | Closes the failed session, fixes the cause    | Ends              |                                | Nobody tells                                         |
+| The new start         | Starts it with the prompt of the handoff file |                   | Does the start checks          |                                                      |
+| The checks pass       |                                               |                   | Does the start after a handoff | As for each start after a handoff                    |
+| The checks fail again |                                               |                   | Is a failed session            | The new orchestrator tells the user the same message |
 
 ## The board watch job
 
