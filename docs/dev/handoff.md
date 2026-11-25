@@ -129,7 +129,9 @@ to the measured facts, because its entries give the facts of the stopping-point 
 - Each note for later that a message carried and that the session still keeps, with its trigger, as
   [A note for later](working-with-the-user.md#a-note-for-later) says.
 - Each decision of the user that still applies and that no doc and no open issue holds. This covers the old session and
-  the earlier handoff file of the role. As a result, such a decision survives more than one handoff.
+  the earlier handoff file of the role. As a result, such a decision survives more than one handoff. A decision that an
+  entry of [The open peer requests](handoff-orchestrator.md#the-open-peer-requests) gives stands only in that entry, so
+  the file holds no second record of it.
 - For a decision that an open issue holds, the file gives only the number of that issue. After the issue lands, the
   decision leaves the next handoff file. The bullet of a relayed decision in
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses the decisions of this entry and of the

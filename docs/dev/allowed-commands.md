@@ -83,6 +83,7 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder),
 [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
 [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator),
+[The steps for the open peer requests](handoff-orchestrator.md#the-steps-for-the-open-peer-requests),
 [The proposal file](planner-subagent.md#the-proposal-file), [Limits](limits.md#limits),
 [the own-worktree rule](limits.md#the-own-worktree-rule) and
 [The orchestrator folder](limits.md#the-orchestrator-folder).
