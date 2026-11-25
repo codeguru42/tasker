@@ -87,9 +87,9 @@ starts with step 3. Step 1 holds from the go. If the go comes in a decision mess
 after the close of that pane. Each step has one purpose and its own number, so that other docs can name the step:
 
 1. Start no new ticket. This step holds from the go.
-2. Wait until no subagent of yours runs, as [The wait before the start](#the-wait-before-the-start) says. This wait
-   includes the wait until each task in flight lands. This step leaves out a parked task. For each landing, do the usual
-   steps: delete the jobs (see [Delete the job](quota.md#delete-the-job)), do
+2. Wait until no subagent of yours is in the state running, as [The wait before the start](#the-wait-before-the-start)
+   says. This wait includes the wait until each task in flight lands. This step leaves out a parked task. For each
+   landing, do the usual steps: delete the jobs (see [Delete the job](quota.md#delete-the-job)), do
    [the re-read rule](doc-reads.md#the-re-read-rule), do the memory step of the bullet "When the final report of the
    task subagent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work), do
    [the notice rule](doc-reads.md#the-notice-rule) and do
@@ -112,7 +112,7 @@ after the close of that pane. Each step has one purpose and its own number, so t
    [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. Before the send, wait as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then, for an orchestrator of the kind
    `claude`, do the steps of [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Before the
-   write, wait until no subagent runs and no planning request waits, as
+   write, wait until no subagent is in the state running and no planning request waits, as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then write the handoff file in your own
    handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
 
@@ -150,9 +150,14 @@ handoff file. In both cases, the new orchestrator never gets it.
   [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator).
 - A subagent of the old orchestrator is a task subagent for a whole ticket or for one task change, a planner subagent, a
   write subagent, an opener subagent, a reuse subagent or an ad hoc subagent. Each other subagent is an ad hoc subagent.
-- A subagent has one of three states: not started, running or ended. A message that starts an ended subagent again makes
-  it running. The wait waits for nothing for a subagent that did not start. At the end of its wait, a subagent is in the
-  state ended, as [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) says.
+- A subagent has one of three states for the wait: not started, running or ended. The state is the state for the wait,
+  not a fact about the process of the subagent. In the waits of this section, "no subagent runs" means that no subagent
+  is in the state running. The wait waits for nothing for a subagent that did not start. At the end of its wait, a
+  subagent is in the state ended, also after a word of the user, as
+  [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) says. A message that starts an ended
+  subagent again makes it running again. A report of a subagent whose wait a word of the user ended is not such a
+  message. Before the write, that report gets the steps of
+  [The reports during the handoff](#the-reports-during-the-handoff).
 - A report is the `SubagentHandback` text of a subagent, or an interim report of
   [the answer-wait rule](limits.md#the-answer-wait-rule). After a refused `SubagentHandback` call, the message of the
   subagent with the same report is the report.
@@ -165,9 +170,10 @@ handoff file. In both cases, the new orchestrator never gets it.
 
 ### The wait before the start
 
-After the go, the old orchestrator waits until no subagent of its own runs. If the go comes in a decision message, this
-wait starts after the close of its pane. Then step 3 starts. The wait covers each subagent that is not ended, also a
-subagent that starts during the wait.
+After the go, the old orchestrator waits until no subagent of its own is in the state running, as
+[The terms of the wait](#the-terms-of-the-wait) give the states. If the go comes in a decision message, this wait starts
+after the close of its pane. Then step 3 starts. The wait covers each subagent that is not ended, also a subagent that
+starts during the wait.
 
 From the go to the end of the handoff, the old orchestrator starts no new ticket. This is the only new ban. The reason:
 a new ticket starts a new task subagent, so the wait has no end.
@@ -219,8 +225,8 @@ After the send, the planner wait waits for each planner subagent, also the plann
 A fact or a lesson in a report after the send becomes a planning request that waits. The planner wait starts a planner
 subagent for it, or runs again for it.
 
-Before the write of the handoff file, wait until no subagent runs and no planning request waits. The planner wait keeps
-its rule. This section copies none of its steps. The exception of
+Before the write of the handoff file, wait until no subagent is in the state running and no planning request waits. The
+planner wait keeps its rule. This section copies none of its steps. The exception of
 [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
 
 ### The end of the wait for one subagent
@@ -249,7 +255,7 @@ in flight keeps the rules of [The end with no report](#the-end-with-no-report) a
 
 - The old orchestrator tells the user in its own tab the name of the subagent. It says that the result is not known and
   that the subagent can still run.
-- The wait for that subagent ends, and the handoff goes on.
+- The wait for that subagent ends, and the subagent is in the state ended. The handoff goes on.
 - The old orchestrator starts no new subagent in its place before the write of the handoff file. The reason: the
   subagent can still run.
 - A report of that subagent before the write gets the steps of

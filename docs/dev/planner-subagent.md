@@ -1036,7 +1036,8 @@ a planner subagent, these rules also hold:
 
 - Its proposal file stays. The planner wait starts no planner subagent from that file. The new orchestrator finds the
   file at its start and can start a planner subagent for the same request.
-- It holds no place in the count of [The count of planner subagents](#the-count-of-planner-subagents). The reason: its
+- Its state for the wait is ended, as [The terms of the wait](handoff-orchestrator.md#the-terms-of-the-wait) say. It
+  holds no place in the count of [The count of planner subagents](#the-count-of-planner-subagents). The reason: its
   report can never come, so a place that it holds can stop the planner wait for good.
 - A result of it after the write of the handoff file deletes no proposal file. It reaches only the tab of the old
   orchestrator. The reason: the new orchestrator can already run a planner subagent from that file.
