@@ -1380,8 +1380,32 @@ body. It is closed as not planned, and this rule replaces its idea.
 ### The rounds before the close
 
 Before the pane owner closes or reuses a question pane, it sends the question session a close request. The rule covers a
-close and a reuse. It holds after a settled answer, a failed answer send, a **No decision** message and an answer typed
-in the tab of the orchestrator.
+close and a reuse. The pane owner sends the close request at once, in the same turn in which it handles one of these
+events:
+
+- A decision message that settles the question, also a message with the go of a suggested handoff.
+- A failed send of the settled decision to the asking session.
+- A **No decision** message.
+- An answer of the user in the tab of the orchestrator.
+
+In that turn, the close request comes after the steps that this page gives before it, for example the ack and the send
+of the settled decision to the asking session. The pane owner does not wait for a later word of the user before the
+close request, for example an approval word, a "go" or an answer to a question about the close. It asks the user no
+question about the close. The close request does not wait for a write subagent, as
+[Close and continue](#close-and-continue) says. It also does not wait for a request to the planner of the orchestrator,
+as [The pane owner handles a decision](#the-pane-owner-handles-a-decision) says.
+
+The rules of this page that give no close request, or that stop it, win over this rule:
+
+- A decision message that does not settle the question gets no close request.
+- A message that the pane owner refuses gets no close request.
+- The pane owner sends at most one close request for each question of a pane.
+- A close that the user asks for before the close request has no rounds.
+- A word of the user to close the pane after the close request keeps its rules.
+- A failed send of the close request keeps its failure rule.
+
+The reason: on 2026-11-21, the user said: "yes, you must always send the close request immediately, including the
+instructions for a session review."
 
 The close request is this message with the herdr path:
 `PANE-OWNER <owner name> <question id>: close. Run the rounds of docs/dev/session-review-rounds.md until a round finds nothing new, then report.`
@@ -1402,9 +1426,9 @@ steps of the memory notes. Steps 4 and 5 delete notes, and step 2 serves only th
 not open work of the rounds, because the pane owner already holds its state.
 
 A report of a round is a message of the question session to the pane owner, sent with the herdr path before the next
-round. Each round that finds something new has one, also a round with no decision of the user. A failed round has none,
-and the final report gives its findings. The round in which the user ends the rounds has none, and the final report
-gives its decisions.
+round. It exists only for a round that ran, as [Session-review rounds](session-review-rounds.md) says. Each round that
+finds something new has one, also a round with no decision of the user. A failed round has none, and the final report
+gives its findings. The round in which the user ends the rounds has none, and the final report gives its decisions.
 
 The final report is the report of the rounds of a question session. The question session sends it one time, after its
 rounds end. [Close and continue](#close-and-continue) reads the final report. In this subsection, "the report" with no
@@ -1469,11 +1493,11 @@ example in an accepted proposal. Then the session asks the confirm question in t
 confirm question holds the next round until the user answers it. If the user closes the pane, ends the run or ends the
 rounds with that question open, the report gives no guess. It gives the words of the user word for word.
 
-The final report gives the count of the rounds that ran. For what a round found, it names the report of that round by
-its number. It gives again only each open finding and each item that no report of a round gave. So the final report does
-not give again an accepted proposal, a drop or a recurrence that a report of a round gave. For a question session, this
-paragraph wins over the parts of the report of the rounds that [Session-review rounds](session-review-rounds.md) asks
-for.
+The final report gives the count of the rounds that ran, as [Session-review rounds](session-review-rounds.md) says. For
+what a round found, it names the report of that round by its number. It gives again only each open finding and each item
+that no report of a round gave. So the final report does not give again an accepted proposal, a drop or a recurrence
+that a report of a round gave. For a question session, this paragraph wins over the parts of the report of the rounds
+that [Session-review rounds](session-review-rounds.md) asks for.
 
 The count of the final report is 1 more than the number of reports of a round that the pane owner got. One case differs:
 the user ends the rounds after the send of a report of a round and before the next round starts. Then the count equals
