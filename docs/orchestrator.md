@@ -257,11 +257,14 @@ After these steps, the orchestrator lists its folders `questions/` and `proposal
 this list comes after [The check of the handoff folder](dev/handoff.md#the-check-of-the-handoff-folder), as The
 orchestrator folder says.
 
-A start whose first prompt names a handoff file follows the same order: the complete start reads, then these steps, then
-the role work. The prompt read of the handoff prompt is part of the start reads, and the session does the start reads
-one time. The check of the handoff folder comes only after all these steps pass.
-[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the order of a
-new orchestrator after a handoff.
+A new orchestrator after a handoff follows the same order: the complete start reads, then these steps, then the role
+work. A new orchestrator after a handoff is an orchestrator whose first prompt is the prompt of a handoff of an
+orchestrator. The prompt read of the handoff prompt is part of its start reads, and it does the start reads one time. It
+does the check of the handoff folder only after all these steps pass.
+[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives its order. The
+new session of a topic handoff is not a new orchestrator after a handoff, also for the role orchestrator.
+[The check of the handoff folder](dev/handoff.md#the-check-of-the-handoff-folder) gives the place of the check for that
+session.
 
 If the first prompt names a handoff file, a row of `ListAgents` with the own name can be the old orchestrator. Then the
 orchestrator runs `herdr agent list` and reads each row whose `terminal_title_stripped` is the own name. Its own row is
@@ -346,13 +349,13 @@ of the handoff file.
 
 ### The states of a start
 
-| State                         | User                         | Orchestrator                                                                                                                                         | Who tells whom                                 |
-| ----------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| The read of the configuration | Runs `tasker show-config`    |                                                                                                                                                      |                                                |
-| The read fails                | Starts no orchestrator       |                                                                                                                                                      | The command tells the user                     |
-| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                                                                                        |                                                |
-| A start check fails           |                              | Does no role work and makes no board watch job. With a handoff file in the first prompt, the message also gives the path and the way on              | The orchestrator tells the user in its own tab |
-| The start checks pass         |                              | After a handoff, does the check of the handoff folder first. Lists `questions/` and `proposals/`, makes the board watch job and starts its role work |                                                |
+| State                         | User                         | Orchestrator                                                                                                                                                           | Who tells whom                                 |
+| ----------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| The read of the configuration | Runs `tasker show-config`    |                                                                                                                                                                        |                                                |
+| The read fails                | Starts no orchestrator       |                                                                                                                                                                        | The command tells the user                     |
+| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                                                                                                          |                                                |
+| A start check fails           |                              | Does no role work and makes no board watch job. With a handoff file in the first prompt, the message also gives the path and the way on                                | The orchestrator tells the user in its own tab |
+| The start checks pass         |                              | A new orchestrator after a handoff does the check of the handoff folder first. Lists `questions/` and `proposals/`, makes the board watch job and starts its role work |                                                |
 
 With a first prompt that names a handoff file, the message of a failed start check also gives the path and the way on of
 [the start checks](#the-start-checks). These states follow that failed start check:
