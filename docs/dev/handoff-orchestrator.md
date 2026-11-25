@@ -200,8 +200,10 @@ The rules that limit the start of a handoff, of a ticket and of a pane stay:
 
 - Until the end of a handoff, the old session starts no new work and no new ticket, as
   [The end of a handoff](handoff.md#the-end-of-a-handoff) says.
-- While a handoff of the orchestrator is due or runs, no question pane gets an automatic start or a reuse. A word of the
-  user still starts a pane, as [Start](question-pane.md#start) says.
+- While a handoff of the orchestrator is due or runs, no question pane gets an automatic start or a reuse. The question
+  that asks the user for the go of a suggested handoff of the orchestrator can get an automatic start, although the
+  handoff is due. It is the only such question, as [Start](question-pane.md#start) says. A word of the user still starts
+  a pane.
 - While a pane is open or a write subagent runs, the orchestrator starts no handoff, as
   [Close and continue](question-pane.md#close-and-continue) says. The stopping-point case is the exception for an open
   pane, with the pane handoff of [The panes and the write subagents](#the-panes-and-the-write-subagents).
