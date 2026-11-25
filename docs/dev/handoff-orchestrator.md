@@ -114,8 +114,9 @@ after the close of that pane. Each step has one purpose and its own number, so t
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then, for an orchestrator of the kind
    `claude`, do the steps of [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Before the
    write, wait until no subagent is in the state running and no item of planning work waits, as
-   [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then write the handoff file in your own
-   handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
+   [The wait before the handoff file](#the-wait-before-the-handoff-file) says. That wait does not count an item that a
+   stop of the queue holds. It also does not count the item of a planner subagent whose wait a word of the user ended.
+   Then write the handoff file in your own handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
 
    Before the write, read the data root and run `mkdir -p` on the folder, as
    [The orchestrator folder](limits.md#the-orchestrator-folder) says. If one of these calls or the write fails, follow
@@ -225,8 +226,10 @@ A fact or a lesson in a report after the send becomes a planning request. Its it
 wait starts a planner subagent for each item, or runs again for it.
 
 Before the write of the handoff file, wait until no subagent is in the state running and no item of planning work waits.
-The planner wait keeps its rule. This section copies none of its steps. The exception of
-[The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
+Two items do not count: an item that a stop of the queue holds, and the item of a planner subagent whose wait a word of
+the user ended. Each such file stays in `proposals/` at the write, as the planner wait and
+[The proposal file](planner-subagent.md#the-proposal-file) say. The planner wait keeps its rule. This section copies
+none of its steps. The exception of [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
 
 ### The end of the wait for one subagent
 
