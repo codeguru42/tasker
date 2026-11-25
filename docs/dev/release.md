@@ -31,11 +31,12 @@ because the skills describe the commands of one version.
 
 ## The hold before an install
 
-Only the user starts an install while tasks are in flight. The installing session is the session that installs, an
-orchestrator or an [operator](../operator.md). The installing session asks each other orchestrator for a hold, as a
-relayed request of the user. If the installing session is an operator, the messages of the hold go as the paragraph that
-starts "The installing session can be an operator" says. If a message of the hold fails,
+Only the user starts an install while tasks are in flight. With tasks in flight, the installing session is an
+orchestrator. It is the session that installs. It asks each other orchestrator for a hold, as a relayed request of the
+user. Each message of the hold goes straight from one orchestrator to another, as kind 6 of
+[The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message). If a message of the hold fails,
 [the failure rule](limits.md#the-failure-rule) applies to the session that sends it. A missing answer is out of scope.
+An install with no task in flight needs no hold, so this section does not cover it.
 
 The hold covers the tasks of each orchestrator, also the tasks of an installing orchestrator. In the hold, the
 orchestrator starts no new ticket, and it tells each of its task subagents to hold. Each task subagent finishes its
@@ -70,8 +71,9 @@ installing session tells the user and keeps the hold. In that case, only the use
 An orchestrator that gets a hold that another session relays acts on the hold at once. It can still ask its own user
 about the hold. If the user says yes, or gives no answer, the hold stays until it ends as the paragraph that starts
 "After `tasker doctor` passes" says. If the user says no, the orchestrator ends the hold for its own tasks and tells the
-installing session. The hold of each other orchestrator stays. The installing session tells its own user, and that user
-decides whether to wait or to end the other holds.
+installing session. Each orchestrator sends each report of the hold, and a "no" of its user, straight to the installing
+orchestrator with `SendMessage`. It sends no other answer about the hold. The hold of each other orchestrator stays. The
+installing session tells its own user, and that user decides whether to wait or to end the other holds.
 
 In each case, the installing session installs only when no run is in progress, as the paragraph that starts "No run is
 in progress" says. The rule that an orchestrator acts on a relayed hold at once is an exception for a hold before an
@@ -85,21 +87,6 @@ command. The installing session also does this. Each orchestrator tells each of 
 It also tells each task subagent to load the tasker skill again before the next `tasker` command of the task subagent.
 The reason: the install can change the tasker skill (see
 [Why the installed tasker does not change](#why-the-installed-tasker-does-not-change)).
-
-The installing session can be an operator. An installing operator sends the request of the hold and the end of the hold
-as [the word of the user](operator-conversations.md#the-word-of-the-user): each message starts with "From the user:". It
-sends them to its own orchestrator, if one runs, and to each other operator. If an operator that gets such a message has
-an orchestrator, it relays the message to that orchestrator. The orchestrator sends each report of the hold and each
-answer of its user about the hold to its operator. The operator relays it to the installing session.
-
-If an operator has no orchestrator, it reports that to the installing session at once. The installing operator lists the
-sessions with `ListAgents`. It asks the user to examine each session that has no `operator-<slug>` of its slug and is
-not a task subagent of an orchestrator (a name of the form `<owner>-<repo>-<number>`, see
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent)). An installing operator also runs
-`git pull --ff-only origin main`, `npm run install:global`, `tasker --version` and the moves of
-[Untracked paths before an install](#untracked-paths-before-an-install). `npm run install:global` runs
-`tasker --version` and `tasker install-skills`. This is an exception to the list of the `tasker` commands of the
-operator in [docs/operator.md](../operator.md).
 
 On 2026-10-25, on the word of the user, orchestrator-m21 asked orchestrator-docs and orchestrator-m22 for a hold.
 orchestrator-docs acted on the relayed hold at once and asked its own user about the hold. Both held, and
