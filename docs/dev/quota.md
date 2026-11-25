@@ -85,11 +85,16 @@ third job, the pi job. [A pi stop](#a-pi-stop) and [The pi wait](#the-pi-wait) g
 Each running task subagent has a slot and a delay. The delay is the number of minutes between a reset time and the job
 of the task subagent for that reset. The delays prevent a resume of all the task subagents at the same time.
 
-- There are 3 slots, one for each task subagent that can run at the same time. Slot 1 has a delay of 0 minutes. Slot 2
-  has a delay of 1 minute. Slot 3 has a delay of 2 minutes.
-- If the reset time falls on :00 or :30, the delay of each slot is 1 minute longer: 1, 2 and 3 minutes. The cron
-  scheduler can fire a one-shot job on :00 or :30 up to 90 seconds early. That fire is before the reset, so it has no
-  tokens, and the job is then gone.
+- There are `maxTaskSubagents` slots, numbered 1 to `maxTaskSubagents`, one for each task subagent that can run at the
+  same time. The orchestrator reads the count as
+  [the bullet "Run at most `maxTaskSubagents` task subagents at the same time"](pick-the-tickets.md#pick-the-tickets)
+  says. Slot N has a delay of N - 1 minutes. Slot 1 has a delay of 0 minutes. Slot 2 has a delay of 1 minute. Slot 3 has
+  a delay of 2 minutes.
+- If a new count is lower, a task subagent whose slot number is above the new count keeps its slot until the
+  orchestrator frees it. No new start takes a slot above the count.
+- If the reset time falls on :00 or :30, the delay of each slot is 1 minute longer: slot N has a delay of N minutes. The
+  delays are then 1, 2 and 3 minutes for the slots 1 to 3. The cron scheduler can fire a one-shot job on :00 or :30 up
+  to 90 seconds early. That fire is before the reset, so it has no tokens, and the job is then gone.
 - The job time of a job is its reset time plus the delay of the task subagent. The reset time falls on a full 10
   minutes, for example 11:30. So the job time is a full minute.
 - If the reset time is not a full minute, the orchestrator must round the job time up to the next full minute.

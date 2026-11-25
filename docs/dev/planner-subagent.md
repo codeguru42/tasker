@@ -77,8 +77,19 @@ orchestrator asks the user in its question pane, as the planner bullet of
 
 ### The count of planner subagents
 
-At most 3 planner subagents of an orchestrator run at the same time. This holds for each orchestrator of the kind
-`claude`. The docs give 3 as a fixed count. No configuration key sets it.
+At most `maxPlannerSubagents` planner subagents of an orchestrator run at the same time. The count is the key
+`sessions.maxPlannerSubagents` of the repo, a whole number above 0 with the default 3. Only an orchestrator of the kind
+`claude` starts a planner subagent, so the key has no effect for another kind.
+
+Before each decision whether a waiting request starts, the orchestrator reads the count. It runs
+`tasker show-config --repo <key>` and takes `.sessions.maxPlannerSubagents` from the output. One run can also serve step
+1 of [The start](#the-start). A read fails when the exit code is not 0, when the output is not JSON, or when the value
+is not a whole number above 0. After a failed read, [the failure rule](limits.md#the-failure-rule) applies. Then the
+count for that decision is 3. A tasker that is older than the key prints no such value. Then the count is 3.
+
+A lower count stops no planner subagent that runs. The orchestrator starts no new one until the count of the running
+ones is under the new count. The default 3 is the count that the orchestrator used before the key existed, and no doc
+gives a tested limit of Claude Code.
 
 The count covers each planner subagent that the orchestrator started and that runs. A new planner subagent after an end
 with no report, as [The life of a planner subagent](#the-life-of-a-planner-subagent) says, counts. A late report that
@@ -96,9 +107,9 @@ user. Each new draft file name of a planner subagent starts with its own name an
 The limit of 24 characters still holds. The planner subagent chooses each draft file path in a prompt, so this needs no
 read and no new command.
 
-The cost: up to 3 planner subagents and 3 subagents of the three kinds run in the session of the orchestrator, with its
-task subagents. Each planner subagent that a late report starts again adds one to each count. No record of the docs
-gives a tested limit for these counts. More pulls of the local clone can start at the same moment.
+The cost: up to `maxPlannerSubagents` planner subagents and as many subagents of the three kinds run in the session of
+the orchestrator, with its task subagents. Each planner subagent that a late report starts again adds one to each count.
+No record of the docs gives a tested limit for these counts. More pulls of the local clone can start at the same moment.
 [Step 1: pull the local clone](doc-reads.md#step-1-pull-the-local-clone) gives the failures of such pulls and their
 recovery.
 
@@ -166,14 +177,15 @@ settled answer. Then the file also holds the draft path, the questions and the a
 is the words of the user word for word, or the reason of [A settled question](#a-settled-question). The file stands
 alone, as a [question file](question-pane.md#the-question-file) does.
 
-When fewer than 3 planner subagents run, the orchestrator lists `proposals/`. It starts the planner subagent of the next
-request that waits, in the order of arrival, lowest number first. It does this at the arrival of a request, after a
-result and at the end of its start steps. It starts planner subagents until 3 run or no request waits. A planner
-subagent that runs can have the draft file path of a request in its prompt. Then the orchestrator starts no planner
-subagent for that request, as [The count of planner subagents](#the-count-of-planner-subagents) says. That request keeps
-its proposal file and waits for the result of that planner subagent. The orchestrator takes the next request that waits.
-A request that waits is a proposal file whose planner subagent does not run. While the bar of the fallback holds, a
-request that waits is a request that waits in the session. These files are not requests that wait:
+When fewer than `maxPlannerSubagents` planner subagents run, the orchestrator lists `proposals/`. It starts the planner
+subagent of the next request that waits, in the order of arrival, lowest number first. It does this at the arrival of a
+request, after a result and at the end of its start steps. It starts planner subagents until `maxPlannerSubagents` run
+or no request waits. A planner subagent that runs can have the draft file path of a request in its prompt. Then the
+orchestrator starts no planner subagent for that request, as
+[The count of planner subagents](#the-count-of-planner-subagents) says. That request keeps its proposal file and waits
+for the result of that planner subagent. The orchestrator takes the next request that waits. A request that waits is a
+proposal file whose planner subagent does not run. While the bar of the fallback holds, a request that waits is a
+request that waits in the session. These files are not requests that wait:
 
 - A file that stays after a failed delete at a result.
 - A file whose write of the name failed, until the next word of the user.
@@ -843,8 +855,9 @@ One planner subagent runs at most one subagent of the three kinds at a time. The
 result of the subagent that runs. These are the reasons:
 
 - No record of the docs gives a tested limit of Claude Code on the count of subagents in one session.
-- With at most 3 planner subagents, at most 3 subagents of the three kinds run in the session of the orchestrator. Each
-  planner subagent that a late report starts again can add one more. So the count stays known and small.
+- With at most `maxPlannerSubagents` planner subagents, as many subagents of the three kinds run in the session of the
+  orchestrator. Each planner subagent that a late report starts again can add one more. So the count stays known and
+  small.
 - Each subagent of the three kinds pulls the local clone at its start, as The read rule says. So fewer pulls start at
   the same moment, and fewer reads are slow.
 
@@ -982,9 +995,10 @@ its handoff file:
 
 1. Wait for the result of each planner subagent that runs. This includes the planner subagent of the facts and lessons
    of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file).
-2. Start the planner subagents of the requests that wait, as [The proposal file](#the-proposal-file) says. Up to 3 run
-   at the same time, and they start in the order of their numbers. This includes the request of the facts and lessons of
-   [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). Wait for the result of each one.
+2. Start the planner subagents of the requests that wait, as [The proposal file](#the-proposal-file) says. Up to
+   `maxPlannerSubagents` run at the same time, and they start in the order of their numbers. This includes the request
+   of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). Wait for the
+   result of each one.
 
 The old orchestrator writes its handoff file only after the result of the last planner subagent.
 

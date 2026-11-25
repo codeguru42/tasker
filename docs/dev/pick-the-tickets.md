@@ -11,8 +11,8 @@ The orchestrator does all the steps of this section.
   of the milestone of a milestone scope, or an issue of the set of a set scope.
   - For a milestone scope, take tickets only from the milestone of the scope. Do not start a ticket from a later
     milestone. A new issue can join the milestone during the run. The orchestrator picks it at its next read of the
-    board, and it asks the user nothing about it. The fill rule of the bullet "Run at most 3 task subagents at the same
-    time" covers each pick.
+    board, and it asks the user nothing about it. The fill rule of the bullet "Run at most `maxTaskSubagents` task
+    subagents at the same time" covers each pick.
   - For a set scope, start only an issue of the set whose card is in Todo. The milestone of the issue does not stop its
     start. An issue with no milestone can also start. Start no issue outside the set, also an issue in the same
     milestone as an issue of the set. The sentence "Do not start a ticket from a later milestone" does not cover a set
@@ -50,19 +50,19 @@ The orchestrator does all the steps of this section.
   of the user wins over the words "only from the milestone of the scope" of the first bullet of this section. The
   sentence "Do not start a ticket from a later milestone" does not cover such a blocker, because the blocker is of an
   earlier milestone. Each other bullet of this section still applies to the start of such a blocker, for example
-  [the stacking rule](#the-stacking-rule) and the limit of 3 task subagents. If the user says no, the orchestrator makes
-  no new offer for that ticket and those blockers. The user can still ask the orchestrator to run them at any time. No
-  orchestrator runs a blocker when two facts are true. First, the output of `tasker status` lists no task for the full
-  issue key of the blocker. Second, the session list of the tools, for example `ListAgents`, has no session
-  `orchestrator-<slug>`, with the slug of the milestone of the blocker as [The slug](../orchestrator.md#the-slug) gives
-  it. [The notice rule](doc-reads.md#the-notice-rule) gives the form of the name.
-  `gh issue view <blocker> --json milestone -q '.milestone.title'` gives the milestone of the blocker. A missing match
-  is an answer and not a failure: no task for the key means "no task", and no such session means "no session". If
-  `tasker status` fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator makes no offer at
-  that moment. If the session list fails, the failure rule applies, and the orchestrator makes no offer at that moment.
-  If the read of the milestone fails, the failure rule applies, and the orchestrator makes no offer at that moment.
-  After a failure, the orchestrator does the check again at its next read of the board. On 2026-10-18, each ticket of
-  M20 waited on a ticket of M19 (#137, #61, #63, #47 and #236) that no orchestrator ran, and the user told
+  [the stacking rule](#the-stacking-rule) and the limit of the bullet "Run at most `maxTaskSubagents` task subagents at
+  the same time". If the user says no, the orchestrator makes no new offer for that ticket and those blockers. The user
+  can still ask the orchestrator to run them at any time. No orchestrator runs a blocker when two facts are true. First,
+  the output of `tasker status` lists no task for the full issue key of the blocker. Second, the session list of the
+  tools, for example `ListAgents`, has no session `orchestrator-<slug>`, with the slug of the milestone of the blocker
+  as [The slug](../orchestrator.md#the-slug) gives it. [The notice rule](doc-reads.md#the-notice-rule) gives the form of
+  the name. `gh issue view <blocker> --json milestone -q '.milestone.title'` gives the milestone of the blocker. A
+  missing match is an answer and not a failure: no task for the key means "no task", and no such session means "no
+  session". If `tasker status` fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator makes
+  no offer at that moment. If the session list fails, the failure rule applies, and the orchestrator makes no offer at
+  that moment. If the read of the milestone fails, the failure rule applies, and the orchestrator makes no offer at that
+  moment. After a failure, the orchestrator does the check again at its next read of the board. On 2026-10-18, each
+  ticket of M20 waited on a ticket of M19 (#137, #61, #63, #47 and #236) that no orchestrator ran, and the user told
   orchestrator-m20: "Go ahead and work on the issues from M19 that block M20 issues."
 - The outside-blocker offer: in a set scope, an issue of the set can wait for an open blocker outside the set that is
   not ready to stack. The set read of the board-read bullet gives the open blockers. The orchestrator does these steps
@@ -231,8 +231,8 @@ The orchestrator does all the steps of this section.
 
   The orchestrator also reads the board after a defer and after the end of a hold of
   [the parent-hold rule](#the-parent-hold-rule). It also reads the board after a stop of a task subagent whose slot it
-  frees. The fill rule applies after each of these reads and after the read at a landing. The bullet "Run at most 3 task
-  subagents at the same time" gives it.
+  frees. The fill rule applies after each of these reads and after the read at a landing. The bullet "Run at most
+  `maxTaskSubagents` task subagents at the same time" gives it.
 
 - The outside-Todo find: no issue of the scope waits out of sight of the user. The pick cannot start an issue that is
   outside Todo. So the orchestrator lists each such issue and raises it one time.
@@ -399,9 +399,19 @@ The orchestrator does all the steps of this section.
 
   Case 17: the same set. #H is a held issue, and its card is in Todo. The find raises nothing for #H.
 
-- Run at most 3 task subagents at the same time, one ticket for each task subagent. A task subagent for one task change
-  takes a free slot. So does an ended task subagent whose slot the orchestrator freed. If all 3 slots are in use, the
-  command waits for a free slot.
+- Run at most `maxTaskSubagents` task subagents at the same time, one ticket for each task subagent. A task subagent for
+  one task change takes a free slot. So does an ended task subagent whose slot the orchestrator freed. If all slots are
+  in use, the command waits for a free slot.
+
+  The count of slots is the key `sessions.maxTaskSubagents` of the repo, a whole number above 0 with the default 3. The
+  orchestrator reads it with `tasker show-config --repo <key>` and takes `.sessions.maxTaskSubagents` from the output.
+  It reads it at each pass of the fill rule, at each check for a free slot before a hold of
+  [the parent-hold rule](#the-parent-hold-rule), and at each pick of a slot. One read serves the decisions of one pass.
+  A read fails when the exit code is not 0, when the output is not JSON, or when the value is not a whole number
+  above 0. After a failed read, [the failure rule](limits.md#the-failure-rule) applies. Then the count for that decision
+  is 3. A tasker that is older than the key prints no such value. Then the count is 3. A lower count stops no task
+  subagent that runs. The orchestrator starts no new task subagent until the count of task subagents that hold a slot is
+  under the new count.
 
   The fill rule is the lower limit for the slots of the quota rules. When no task subagent holds a slot and no hold of
   [the parent-hold rule](#the-parent-hold-rule) keeps it, the slot is free. A ticket that can start is a ticket of the
@@ -707,14 +717,14 @@ parent gets the message while it waits for an answer or a next step, it keeps th
 parent ends its turn again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says.
 
 The orchestrator sends the hold only when a [slot](quota.md#the-delay-of-each-task-subagent) is free for the stacked
-ticket. If no slot is free, the orchestrator sends no hold (see the bullet "Run at most 3 task subagents at the same
-time" of [Pick the tickets](#pick-the-tickets)). The reason: a hold with no free slot stalls a fix round of the parent
-and starts nothing. On 2026-10-18, orchestrator-docs held #279 for #282 while all 3 slots were in use, and it ended the
-hold at once.
+ticket. If no slot is free, the orchestrator sends no hold (see the bullet "Run at most `maxTaskSubagents` task
+subagents at the same time" of [Pick the tickets](#pick-the-tickets)). The reason: a hold with no free slot stalls a fix
+round of the parent and starts nothing. On 2026-10-18, orchestrator-docs held #279 for #282 while all 3 slots were in
+use, and it ended the hold at once.
 
 When the orchestrator sends the hold, it keeps that free slot for the planned stacked ticket. A kept slot is not free
 for another hold or for the start of another ticket. While the hold runs, the orchestrator counts the kept slot as one
-of the 3 task subagents of the bullet "Run at most 3 task subagents at the same time" of
+of the task subagents of the bullet "Run at most `maxTaskSubagents` task subagents at the same time" of
 [Pick the tickets](#pick-the-tickets). As a result, the orchestrator sends at most one hold for one free slot. For a
 second planned stacked ticket, on the same parent or on another parent, the orchestrator needs one more free slot.
 

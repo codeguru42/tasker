@@ -540,10 +540,10 @@ record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
 If the handoff file holds [the task list](#the-task-list), and all
 [the start checks](../orchestrator.md#the-start-checks) passed, the new orchestrator starts one new task subagent for
 each entry. It does this after its start steps and before the pick of its first new ticket. The reason: an orchestrator
-has three slots, as [The delay of each task subagent](quota.md#the-delay-of-each-task-subagent) says. A task of the list
-already holds work, so a new ticket does not take its slot. The new orchestrator asks the user nothing about the entry,
-as the exception of "The In progress case" in [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The steps
-are:
+has `maxTaskSubagents` slots, as [The delay of each task subagent](quota.md#the-delay-of-each-task-subagent) says. A
+task of the list already holds work, so a new ticket does not take its slot. The new orchestrator asks the user nothing
+about the entry, as the exception of "The In progress case" in [Pick the tickets](pick-the-tickets.md#pick-the-tickets)
+says. The steps are:
 
 1. If `tasker status` does not list the task of an entry in flight, start no task subagent for it, and tell the user in
    one line in the tab.
