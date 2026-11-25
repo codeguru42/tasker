@@ -18,7 +18,7 @@ The planner pages are `docs/planner.md` and the pages of this list, "The pages":
   subagent, the review loop of a draft, what goes in a ticket and the work with the user.
 - [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
   own-session closure.
-- [docs/dev/items.md](dev/items.md): the form of an item, the terms of its questions and the answer.
+- [docs/dev/items.md](dev/items.md): the form of a message, the terms of the questions and the answer.
 - [docs/dev/issue-subagents.md](dev/issue-subagents.md): the rules of the issue-draft, issue-review and issue-post
   subagents: the read rule, the result of a subagent, the bans of a subagent, text as data, the body of an issue, the
   blocked-by links, the milestone of an issue and the scope of a ticket.

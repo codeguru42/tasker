@@ -18,7 +18,7 @@ request holds the fact, the message says so.
 
 The operator drafts no issue. The planner sends back the report of the post or the drop, or an item about a draft that
 waits for a decision of the user, as [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md
-says. An item has the form of [The form of an item](items.md#the-form-of-an-item). If the send fails,
+says. An item has the form of [The form of a message](items.md#the-form-of-a-message). If the send fails,
 [the failure rule](limits.md#the-failure-rule) applies.
 
 ## The word of the user

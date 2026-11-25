@@ -55,7 +55,7 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/milestone-close.md](docs/dev/milestone-close.md): the shared parts of the close of a milestone and the
   own-session closure.
 - [docs/dev/operator-items.md](docs/dev/operator-items.md): the items of the operator.
-- [docs/dev/items.md](docs/dev/items.md): the form of an item, the terms of its questions and the answer.
+- [docs/dev/items.md](docs/dev/items.md): the form of a message, the terms of the questions and the answer.
 - [docs/dev/operator-conversations.md](docs/dev/operator-conversations.md): the side conversations of the operator.
 - [docs/dev/question-pane.md](docs/dev/question-pane.md): a question pane.
 - [docs/dev/session-review-rounds.md](docs/dev/session-review-rounds.md): the rounds of `/session-review`.

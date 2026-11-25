@@ -4,7 +4,7 @@ The sender sends each [item](../sessions.md) to the operator with `SendMessage`.
 
 ## The form of an item
 
-The rules of this section are in [The form of an item](items.md#the-form-of-an-item).
+The rules of this section are in [The form of a message](items.md#the-form-of-a-message).
 
 ## The open items
 
@@ -109,15 +109,15 @@ The operator does these things for the open items:
 - When the user asks for a draft, the operator reads the draft file and shows its text. If the file does not exist, the
   operator tells the user that the file does not exist.
 - When the user asks for an item, the operator gives its full text. The user names the item, for example by its id. The
-  id of an item names its sender, as [The form of an item](items.md#the-form-of-an-item) says. For an item that needs an
-  answer, the full text uses the form of the bullet "When the user asks for the open items". For this request, the reply
-  also gives each sent question and each moved question. For a sent question, it also gives the words of the answer that
-  the operator still has. The bullet "When the operator shows an item to the user, it writes each issue key of the item
-  as a link" also covers the full text of an item on request. If the operator no longer has the text of the item, the
-  operator says so in its reply. The reply names the sender and the id of the item, so that the user can ask the sender.
-  An example is an item that closed before a handoff of the operator, because the handoff file of the operator keeps no
-  full text of a closed item. The reason: the user reads the full text of an item only on request, so a reply of the
-  operator holds no text that the user did not ask for.
+  id of an item names its sender, as [The form of a message](items.md#the-form-of-a-message) says. For an item that
+  needs an answer, the full text uses the form of the bullet "When the user asks for the open items". For this request,
+  the reply also gives each sent question and each moved question. For a sent question, it also gives the words of the
+  answer that the operator still has. The bullet "When the operator shows an item to the user, it writes each issue key
+  of the item as a link" also covers the full text of an item on request. If the operator no longer has the text of the
+  item, the operator says so in its reply. The reply names the sender and the id of the item, so that the user can ask
+  the sender. An example is an item that closed before a handoff of the operator, because the handoff file of the
+  operator keeps no full text of a closed item. The reason: the user reads the full text of an item only on request, so
+  a reply of the operator holds no text that the user did not ask for.
 - The operator sends no answer to a moved question. If the user answers one, the operator gives the user the link of the
   hold comment. It also says that the orchestrator asks the question again at the end of the hold. The report can name
   an answered question as moved. Then the question is a moved question, and the operator tells the user that it did not

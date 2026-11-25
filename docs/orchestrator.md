@@ -75,7 +75,7 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   times.
 - [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
   own-session closure.
-- [docs/dev/items.md](dev/items.md): the form of an item, the terms of its questions and the answer.
+- [docs/dev/items.md](dev/items.md): the form of a message, the terms of the questions and the answer.
 - [docs/dev/verify-failures.md](dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the broken-commit
   steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](dev/ci-wait.md): the CI wait and "A failed CI run".

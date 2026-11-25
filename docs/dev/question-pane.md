@@ -13,8 +13,8 @@ session gives an answer of an operator.
 ### Terms
 
 A [question pane](#a-question-pane) is a herdr pane that an opener subagent opens next to the pane of its pane owner. It
-holds one [open question](items.md#the-open-items) at a time, even when questions belong to one item or concern one
-action. After a reuse, it holds the next open question.
+holds one [open question](items.md#the-terms-of-the-questions) at a time, even when questions belong to one item or
+concern one action. After a reuse, it holds the next open question.
 
 The rows of the opener subagent, the reuse subagent and the write subagent in [the table](permissions.md#the-table) give
 the kinds of command of the list of each of them. A read at a gap follows
@@ -1721,8 +1721,8 @@ orchestrator tells the user and stops the run until the user speaks.
 
 Before a later question, the pane owner reviews decisions so far and passes the relevant ones on. It does not change the
 question of the sender or apply an earlier answer to it. The bullet of [The answer](items.md#the-answer) that starts "An
-answer of the user or an answer of the operator covers only" gives this rule. The user decides the later question in the
-pane of that question, with the decisions so far in view.
+answer of the user covers only" gives this rule. The user decides the later question in the pane of that question, with
+the decisions so far in view.
 
 The orchestrator writes the question file of the later question again with the decisions so far. It does this before the
 pane start or the reuse, as [The question file](#the-question-file) says.

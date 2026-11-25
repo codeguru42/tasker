@@ -558,8 +558,8 @@ user. The initial planner and the ad hoc planner ask in their chat, with each fi
 posts nothing for such a draft until each question has an answer.
 
 - If the answer rejects the draft or says to drop it, the planner drops the draft and reports the drop, as
-  [The post of a draft](#the-post-of-a-draft) says. A [partial answer](items.md#the-open-items) that rejects the draft
-  or says to drop it also ends the draft.
+  [The post of a draft](#the-post-of-a-draft) says. A [partial answer](items.md#the-terms-of-the-questions) that rejects
+  the draft or says to drop it also ends the draft.
 - If the answer accepts the draft with no change, the planner posts the draft.
 - If the answer changes the draft, the planner starts a new ticket subagent with the change. That ticket subagent runs
   the review loops for the changed draft. Then the planner posts it with no approval of the user. The escape hatch still
