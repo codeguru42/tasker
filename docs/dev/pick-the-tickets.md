@@ -1261,6 +1261,13 @@ names each issue of the set and its closed state. Then the user closes its tab.
 
 The orchestrator writes the prompt of each task subagent.
 
+The words of the prompt stand in template files. [`task.md`](../../prompt-templates/subagents/task.md) is for a whole
+ticket, [`task-command.md`](../../prompt-templates/subagents/task-command.md) is for one task change, and
+[`task-restart.md`](../../prompt-templates/subagents/task-restart.md) is for a second session. At the start of each task
+subagent, the orchestrator reads the file as [the doc-read rule](doc-reads.md#the-doc-read-rule) says, at that step
+only. It fills each placeholder and gives the result as the prompt. An absent fact has the value `none`. For a second
+session, the prompt is the filled `task.md` and then the filled `task-restart.md`.
+
 A Codex orchestrator starts each task subagent with the native subagent tools of its own session. It does not start a
 ticket driver as a top-level Codex session through herdr.
 
@@ -1271,7 +1278,7 @@ define Codex tool arguments.
 
 If a required native subagent tool is unavailable or fails, the Codex orchestrator tells the user in its own tab. It
 starts no replacement ticket driver in a herdr tab. The existing ticket selection, task prompt, worktree, slot and
-landing rules still apply.
+landing rules still apply. The same template files below give the prompt of a Codex task subagent.
 
 - The prompt of a task subagent gives only the context of its ticket. The context is the issue key, the milestone of its
   ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)), the milestones that are off limits for
@@ -1281,6 +1288,7 @@ landing rules still apply.
   ["Limits"](limits.md#limits)), the links of the change-of-scope and design-gap comments of its issue (see the bullet
   below that starts "If the account of the orchestrator"), the hints for its first refine, and the task worktree with
   its path, `../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
+  [`task.md`](../../prompt-templates/subagents/task.md) has one placeholder for each of these facts.
 
 - The prompt never tells the task subagent to take a path from the `worktree:` line of `tasker show`. The reason: that
   line prints the worktree of tasker, and [the own-worktree rule](limits.md#the-own-worktree-rule) bans each read and
@@ -1354,15 +1362,16 @@ landing rules still apply.
     messages and the jobs can be matched to the task.
   - One task subagent runs one ticket, so one name belongs to one task. If the orchestrator starts a second session for
     the same ticket, the orchestrator adds a suffix, for example `codeguru42-tasker-108-2`, and says so in the prompt of
-    the new task subagent. A SendMessage to a task subagent can fail with "No transcript found for agent ID". Then the
-    orchestrator cannot resume that task subagent. In that case, the orchestrator starts a second session for the
-    ticket, with the suffix of this bullet. The Claude Code `SendMessage` failure described above does not define Codex
-    message behavior. The new task subagent follows [the comeback rule](run-one-ticket.md#the-comeback-rule). The prompt
-    of the new task subagent gives the state of the task from `tasker show <issue>`. The prompt gives the task worktree
-    of the new name, as the first bullet of this section says. The comeback rule then finds the old task worktree
-    through the branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves
-    the quota jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage
-    failed in this way after a resume of the session of the orchestrator at a `/rename`.
+    the new task subagent. [`task-restart.md`](../../prompt-templates/subagents/task-restart.md) gives the words of that
+    prompt. A SendMessage to a task subagent can fail with "No transcript found for agent ID". Then the orchestrator
+    cannot resume that task subagent. In that case, the orchestrator starts a second session for the ticket, with the
+    suffix of this bullet. The Claude Code `SendMessage` failure described above does not define Codex message behavior.
+    The new task subagent follows [the comeback rule](run-one-ticket.md#the-comeback-rule). The prompt of the new task
+    subagent gives the state of the task from `tasker show <issue>`. The prompt gives the task worktree of the new name,
+    as the first bullet of this section says. The comeback rule then finds the old task worktree through the
+    branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves the quota
+    jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage failed in
+    this way after a resume of the session of the orchestrator at a `/rename`.
   - The new task subagent of an entry of [the task list](handoff-orchestrator.md#the-task-list) is also a second session
     for the ticket. Its suffix follows
     [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator). The move of the
@@ -1375,45 +1384,37 @@ landing rules still apply.
     each new task subagent.
 - A task subagent for one task change runs one `tasker` command of a task that has no task subagent of this
   orchestrator, as [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says. Its prompt
-  names the issue key, the command, and the words of the user that ask for it. It also names the base list of docs and
-  the quota slot. The task subagent runs only that command and then gives its final report. It runs no step of
-  ["Run one ticket"](run-one-ticket.md#run-one-ticket). ["Quota"](quota.md#quota) covers it as each other task subagent.
-  Its name follows the naming bullet above, with a suffix that no earlier session of the ticket used, and its prompt
-  gives that suffix.
+  names the issue key, the command, and the words of the user that ask for it.
+  [`task-command.md`](../../prompt-templates/subagents/task-command.md) gives its words. The prompt also names the base
+  list in `task.md` and the quota slot. The task subagent runs only that command and then gives its final report. It
+  runs no step of ["Run one ticket"](run-one-ticket.md#run-one-ticket). ["Quota"](quota.md#quota) covers it as each
+  other task subagent. Its name follows the naming bullet above, with a suffix that no earlier session of the ticket
+  used, and its prompt gives that suffix.
 - Before the task subagent starts, the orchestrator makes the folder of the task subagent for its files (see the folder
   bullet of ["Limits"](limits.md#limits)). In one case, a background command of a task subagent wrote into a missing
   folder and failed.
 - The orchestrator writes in the prompt that the comment of step 11 of
   ["Run one ticket"](run-one-ticket.md#run-one-ticket) is the only write of the task subagent on GitHub issues, labels
-  and the project board (see ["Limits"](limits.md#limits)). In one case, a strong "never run a gh write" line in the
-  prompt of a task subagent made the classifier of auto mode block the comment of step 11 (see
-  [the tool-block rule](tasker-commands.md#the-tool-block-rule)).
+  and the project board (see ["Limits"](limits.md#limits)). [`task.md`](../../prompt-templates/subagents/task.md) holds
+  this statement. In one case, a strong "never run a gh write" line in the prompt of a task subagent made the classifier
+  of auto mode block the comment of step 11 (see [the tool-block rule](tasker-commands.md#the-tool-block-rule)).
 - The prompt tells the task subagent to run `tasker merge` of step 9 of
   ["Run one ticket"](run-one-ticket.md#run-one-ticket) in [the plain form](tasker-commands.md#the-plain-form-rule), with
-  its issue key. An example is `tasker merge codeguru42/tasker#719`. The prompt says: no `cd`, no pipe and no `2>&1`.
-  The first bullet of this section limits the prompt to the context of its ticket, and this bullet wins over it.
-
-  The prompt also says: after a denial, the report gives the exact command and the exact text of the denial, in full.
-  [The tool-block rule](tasker-commands.md#the-tool-block-rule) gives this report and the other steps after a denial.
+  its issue key. The first bullet of this section limits the prompt to the context of its ticket, and this bullet wins
+  over it. [`task.md`](../../prompt-templates/subagents/task.md) gives the words of the instruction and the words that
+  ask for the report after a denial. [The tool-block rule](tasker-commands.md#the-tool-block-rule) gives this report and
+  the other steps after a denial.
 
   The reason: the classifier of auto mode can deny a call that is not in the plain form, as
   [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. On 2026-11-03, the report of the task subagent of
   #563 called the denied call "plain form `tasker merge codeguru42/tasker#563`". The denied call had `2>&1 | tail -6`
   after the command. The same report gave the text of the denial with "..." in place of its end.
 
-- For all the rules, the prompt names the docs of this list, "the base list". The base list is the same for the task
-  subagent of each milestone:
-
-  - `AGENTS.md`
-  - `docs/orchestrator.md` and the pages of its list "The pages". These are
-    [the orchestration pages](../orchestrator.md). The base list leaves out `docs/dev/handoff.md` and
-    `docs/dev/handoff-orchestrator.md`.
-  - `docs/sessions.md`
-  - `docs/dev/GLOSSARY.md`
-  - `docs/dev/rules.md`
-  - `docs/dev/first-refine.md`
-  - `docs/dev/rebase-conflicts.md`
-  - `docs/dev/working-with-the-user.md`
+- For all the rules, the prompt names the docs of "the base list". The base list is the list in
+  [`prompt-templates/subagents/task.md`](../../prompt-templates/subagents/task.md). It is the same for the task subagent
+  of each milestone. The list has `AGENTS.md`, `docs/orchestrator.md` with the pages of its list "The pages" (see
+  [the orchestration pages](../orchestrator.md)), and six more docs. It leaves out `docs/dev/handoff.md` and
+  `docs/dev/handoff-orchestrator.md`.
 
   The prompt also names each doc that the ticket changes, for example `docs/dev/planner.md`. These are:
 

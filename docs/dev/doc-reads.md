@@ -108,7 +108,8 @@ landed while #486 ran and changed the order of the same-patch reads before `task
 The docs of a task subagent are the docs that its prompt names for all the rules and for the change of its ticket, as
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) of `docs/dev/pick-the-tickets.md`
 says. These are the docs of "[the base list](pick-the-tickets.md#the-prompt-of-a-task-subagent)" and each file that the
-prompt names because the ticket changes it. Such a file can be under `skills/`.
+prompt names because the ticket changes it. The base list lives in
+[`prompt-templates/subagents/task.md`](../../prompt-templates/subagents/task.md). Such a file can be under `skills/`.
 
 A file that the prompt names for another reason, for example as the source of a fact of a hint, is not a doc of the task
 subagent. Each task subagent has its own docs, because each prompt names its own docs. The orchestrator takes the docs
