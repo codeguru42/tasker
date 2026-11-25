@@ -251,7 +251,8 @@ another way, the old orchestrator tells the user in its tab. It starts the new o
 that the pane is closed.
 
 During a handoff, each text of this case that waits for a word of the user goes in the tab of the old orchestrator. It
-does not go to a question pane. [The operator](working-with-the-user.md#the-operator) gives the usual rule.
+does not go to a question pane.
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) gives the usual rule.
 
 ### The steps that are not new work
 
@@ -611,9 +612,10 @@ gives. For each question, the report gives the question id, the question in a fe
 holds the start of a ticket, the report names that [held ticket](question-pane.md#terms). The report also says that a
 word of the user that names the question starts its pane. A start word for the held ticket also starts it.
 
-The report is a progress report, as [The operator](working-with-the-user.md#the-operator) says. The report starts no
-pane and no wait. It does not lift the rule of no automatic start of a question. The report does not name the question
-of a receiving entry that gives a decision of the user, as step 6 of
+The report is a progress report, as
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says. The report
+starts no pane and no wait. It does not lift the rule of no automatic start of a question. The report does not name the
+question of a receiving entry that gives a decision of the user, as step 6 of
 [The steps for the open peer requests](#the-steps-for-the-open-peer-requests) says.
 
 For the report, the new orchestrator lists `questions/` and reads the question file of each question of the report.
@@ -644,7 +646,8 @@ that report comes before the first pane start.
 The steps are:
 
 1. The report. Tell the own user in the own tab about each open request that came from the handoff file. This is a
-   progress report, as [The operator](working-with-the-user.md#the-operator) says.
+   progress report, as [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session)
+   says.
 2. A sending entry. Wait for the decision of the request. The decision comes to the own name, because the new
    orchestrator has the name of the old orchestrator. Take it as the answer to the entry. After a reject, do no matching
    step. After an accept, do the matching step only if it still applies, as

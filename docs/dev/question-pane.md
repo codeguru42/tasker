@@ -32,8 +32,9 @@ that needs a decision of the user.
 
 The question id is the name of one open question. The orchestrator gives each question the next free item id of its own
 counter, in the form `orchestrator-<slug>-<n>`. Each progress report of
-[The operator](working-with-the-user.md#the-operator) also takes the next number of that counter. The first free item id
-of the handoff file carries that counter through a handoff, as [The last item id](handoff.md#the-last-item-id) says.
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) also takes the next
+number of that counter. The first free item id of the handoff file carries that counter through a handoff, as
+[The last item id](handoff.md#the-last-item-id) says.
 
 At a start with no handoff file, the orchestrator reads the highest number at the end of a question id in `questions/`
 of its [orchestrator folder](limits.md#the-orchestrator-folder). The first free item id is 1 more than that number. If
@@ -412,9 +413,10 @@ text follows the state of the handoff:
 - A handoff runs. The text says that a handoff runs. It names the risk of a pane that opens during a handoff. After the
   close of the old orchestrator, no orchestrator accepts the decision of that pane.
 
-The text about a start word is a progress report, as [The operator](working-with-the-user.md#the-operator) says. It is
-not an open question. The start word changes no gate of [Pick the tickets](pick-the-tickets.md#pick-the-tickets). If a
-rule of that page stops the start, the ticket does not start.
+The text about a start word is a progress report, as
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says. It is not an
+open question. The start word changes no gate of [Pick the tickets](pick-the-tickets.md#pick-the-tickets). If a rule of
+that page stops the start, the ticket does not start.
 
 If the list of the open questions or the read of a question file fails at a start word, the orchestrator tells the user
 at once. The text says that the read of the open questions for that ticket failed. The fallback of
@@ -1297,8 +1299,8 @@ The reason: on 2026-11-13, operator-docs reported that the question session ques
 "Write the rule in the positive voice: All write actions are sent back to the operator, including Github, (fill in
 anything else that is appropriate). The operator spawns a subagent to perform the action." The user also approved the
 list of write actions of [Terms](#terms). A message that starts with "From the user:" is a word of the user, as
-[The operator](working-with-the-user.md#the-operator) says. So the pane owner relays a message to another session
-itself.
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says. So the pane
+owner relays a message to another session itself.
 
 The reason of issue #967: the user chose a closed list of user-level files. The user said: "A for now. Eventually I will
 have a separate repo for agent config." The user also said: "The planner should run review loops and post without my

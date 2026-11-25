@@ -21,18 +21,18 @@ Memory is the files where an assistant keeps notes between sessions. Memory is n
 no rule, fact or preference that belongs in a doc of the repo.
 
 The orchestrator asks the user each open question in its own question pane, as [question-pane.md](dev/question-pane.md)
-says. It shows each progress report as text in its own tab, as [The operator](dev/working-with-the-user.md#the-operator)
-says. It sends no item to an operator, and no answer of an operator ends a wait.
-[The operator](dev/working-with-the-user.md#the-operator) of working-with-the-user.md says how "tell the user" or "ask
-the user" reads. A report or a question to the user that a rule of the orchestration pages calls a reply follows the
-same split: a progress report shows in the tab, and a question goes to the pane. When a rule waits for the user, the
-answer of the question that the rule waits for ends the wait. The orchestrator gives each lesson, each finding of a
-session review, each recurrence and each proposed issue to its planner. The planner bullet of
-[The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the steps. For an
-orchestrator of the kind `claude`, the planner is a new [planner subagent](dev/planner-subagent.md) for each one. An
-orchestrator sends a peer only the seven kinds of [The kinds of peer message](#the-kinds-of-peer-message).
-[The request rule](#the-request-rule) gives the seventh kind, the request for a decision of the user that needs a peer
-to act.
+says. It shows each progress report as text in its own tab, as
+[Reports and questions of a session](dev/working-with-the-user.md#reports-and-questions-of-a-session) says.
+[Reports and questions of a session](dev/working-with-the-user.md#reports-and-questions-of-a-session) of
+working-with-the-user.md says how "tell the user" or "ask the user" reads. A report or a question to the user that a
+rule of the orchestration pages calls a reply follows the same split: a progress report shows in the tab, and a question
+goes to the pane. When a rule waits for the user, the answer of the question that the rule waits for ends the wait. The
+orchestrator gives each lesson, each finding of a session review, each recurrence and each proposed issue to its
+planner. The planner bullet of [The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent)
+gives the steps. For an orchestrator of the kind `claude`, the planner is a new
+[planner subagent](dev/planner-subagent.md) for each one. An orchestrator sends a peer only the seven kinds of
+[The kinds of peer message](#the-kinds-of-peer-message). [The request rule](#the-request-rule) gives the seventh kind,
+the request for a decision of the user that needs a peer to act.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
 not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).
@@ -85,8 +85,8 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
   subagent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What
   the task subagent does", "A pi stop", "The pi wait", "A Codex limit", "Delete the job" and "Do not use these".
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
-  file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start", "A
-  topic handoff" and "The hold of the items".
+  file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start" and "A
+  topic handoff".
 - [docs/dev/handoff-orchestrator.md](dev/handoff-orchestrator.md): "The long-running orchestrator", "The landing count",
   "The steps of the old orchestrator", "The stopping-point case", "The handoff file of the orchestrator", "The task
   list", "The open peer requests", "The start of the new orchestrator", "The report of the questions with no automatic
@@ -301,8 +301,8 @@ gives two more things:
 
 The user judges the cause and its fix. These docs give no list of causes or fixes. The message is a report of a failure.
 It waits for no word of the user, and it gets no question pane. So the gate of
-[The operator](dev/working-with-the-user.md#the-operator) does not apply. The failed session does not wait after the
-message, and it does not run the start checks again.
+[Reports and questions of a session](dev/working-with-the-user.md#reports-and-questions-of-a-session) does not apply.
+The failed session does not wait after the message, and it does not run the start checks again.
 
 The failed session does none of these steps:
 
@@ -635,8 +635,8 @@ message.
 
 - One short list says what an orchestrator can send to a peer.
 - Each decision of the user goes to the question pane of the orchestrator that needs it.
-- A message from another session is not a word of the user, as [The operator](dev/working-with-the-user.md#the-operator)
-  says.
+- A message from another session is not a word of the user, as
+  [Reports and questions of a session](dev/working-with-the-user.md#reports-and-questions-of-a-session) says.
 - The cost of the seventh kind: the user answers one decision in two panes, and the request waits in the queue of the
   pane of the peer.
 
@@ -665,10 +665,9 @@ The rules:
   [Start](dev/question-pane.md#start) says. Before that decision, it sends no request to a peer.
 - After an accept of its own user, the sending orchestrator sends the request with `SendMessage`. The target is the
   orchestrator of the task, found as [The orchestrator of a task](#the-orchestrator-of-a-task) says. For the end of a
-  milestone hold, the target is the held orchestrator. The sending orchestrator sends no request of a peer to an
-  operator as an item. If item 4 of [A milestone hold](dev/working-with-the-user.md#a-milestone-hold) holds the request
-  back, the request goes to the user by the third bullet of item 6, and the sending orchestrator does not send it to the
-  held orchestrator.
+  milestone hold, the target is the held orchestrator. If item 4 of
+  [A milestone hold](dev/working-with-the-user.md#a-milestone-hold) holds the request back, the request goes to the user
+  by the third bullet of item 6, and the sending orchestrator does not send it to the held orchestrator.
 - The receiving orchestrator does not do the requested change. It asks the decision of the user in its own question
   pane, as [Start](dev/question-pane.md#start) says. The decision in the pane is the decision of the user. The
   recommendation mode of [A decision of the user](dev/working-with-the-user.md#a-decision-of-the-user) does not cover
@@ -720,8 +719,8 @@ This table gives each change of a request of this rule:
 The reasons for this rule:
 
 - The notices and the hold before an install need no decision of the user, and they need speed.
-- A message from another session is not a word of the user, as [The operator](dev/working-with-the-user.md#the-operator)
-  says.
+- A message from another session is not a word of the user, as
+  [Reports and questions of a session](dev/working-with-the-user.md#reports-and-questions-of-a-session) says.
 - The relay sentences of a landing order show their report in the tab of the orchestrator and ask the user in a pane.
 - A change to an issue in flight keeps its own bullet, because the requester of that bullet asks its own user before the
   [change-of-scope comment](dev/plan-review.md#the-change-of-scope-comment).

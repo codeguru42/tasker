@@ -1083,8 +1083,10 @@ question file, as a question that arrives.
 If no orchestrator of the scope runs, the user starts one, as
 [The steps of the user](../orchestrator.md#the-steps-of-the-user) says. The label `on hold` stays on the ticket, and no
 operator takes a step. Then the user gives the word to end the hold to that orchestrator, on a path of the word of the
-user for an orchestrator, as [The operator](working-with-the-user.md#the-operator) says. At the word, the orchestrator
-removes the label and asks the question of each hold comment with no answer comment, as the paragraphs above say.
+user for an orchestrator, as
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says. At the word, the
+orchestrator removes the label and asks the question of each hold comment with no answer comment, as the paragraphs
+above say.
 
 The order matters. A new orchestrator reads the label `on hold` at its start, in the read of this section and in the
 outside-Todo find. It reads the hold comments only at the end of a hold. If the user removes the label before the start,
@@ -1222,8 +1224,8 @@ Before the report, the orchestrator runs the environment and agent-list checks o
 its row, and otherwise it says that it gives no pane id.
 
 An orchestrator of a set scope closes no milestone and has no operator. Its last report is a progress report in its own
-tab, as [The operator](working-with-the-user.md#the-operator) gives a progress report. That report names each issue of
-the set and its closed state.
+tab, as [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) gives a
+progress report. That report names each issue of the set and its closed state.
 
 After its last report, the orchestrator of the kind `claude` closes its own tab. It asks the user no question and waits
 for no approval. For a milestone scope, the start of the close is the authority for the own close. For a set scope, the
@@ -1441,10 +1443,10 @@ landing rules still apply.
 
   A request of [the user](GLOSSARY.md) to draft an issue, or to change the title or the body of an issue, is a proposed
   issue of this bullet. [The orchestrator](../orchestrator.md) gives it to its planner with no question to the user, and
-  [tells the user](working-with-the-user.md#the-operator) that it did. The prompt gives the words of the user and the
-  date, and [the ticket](../orchestrator.md) when one exists. On 2026-10-26, the user asked the orchestrator of #391 to
-  draft the issues of a new milestone. The orchestrator drafted and posted 8 issues and 4 changes itself, with no review
-  loop. Review loop 1 later found from 9 to 14 findings in each draft.
+  [tells the user](working-with-the-user.md#reports-and-questions-of-a-session) that it did. The prompt gives the words
+  of the user and the date, and [the ticket](../orchestrator.md) when one exists. On 2026-10-26, the user asked the
+  orchestrator of #391 to draft the issues of a new milestone. The orchestrator drafted and posted 8 issues and 4
+  changes itself, with no review loop. Review loop 1 later found from 9 to 14 findings in each draft.
 
 - The source bullet: a message of the planner bullet, and the prompt of a planner subagent, names the source of each
   fact of the message or the prompt. Examples of a source are the final report, a comment, a command and its output, a

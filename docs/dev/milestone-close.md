@@ -83,7 +83,7 @@ report, with no approval, as [The end of an orchestrator](pick-the-tickets.md#th
   other report of those rounds to the user in the close.
 - Approval to close must be the user's word in that session's conversation. The close-start word, a recommendation, an
   operator answer, and a relayed word do not approve closure. This rule wins over the `From the user:` rule in
-  [The operator](working-with-the-user.md#the-operator).
+  [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session).
 - An approval makes the session run its own-session closure.
 - On another answer, such as a wait, rejection or drop, the session closes nothing and stays open. The user's word
   decides the next step.

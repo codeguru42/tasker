@@ -10,7 +10,7 @@ that tasker starts for plan, execute and review.
 The work on this repo must continue on any machine, as [What goes in a ticket](planner.md#what-goes-in-a-ticket) of
 planner.md says. For this reason, these rules are in the repo and not in the notes of an assistant.
 
-## The operator
+## Reports and questions of a session
 
 - For an orchestrator, a rule that says "ask the user" means a question in its own
   [question pane](question-pane.md#a-question-pane). A rule that says "tell the user" means a report as text in its own
@@ -21,11 +21,10 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   the same counter that gives the question ids of [Terms](question-pane.md#terms). A progress report follows
   [The form of a reply](#the-form-of-a-reply) and [the issue-link rule](#the-issue-link-rule). The orchestrator writes
   each link itself. It shows the progress report at the step that the rule of the report gives. A progress report starts
-  no wait. It gets no question pane and no `herdr notification show`. It sends no message to the operator. A text that
-  waits for a word of the user is not a progress report. It is an open question, and it goes to the question pane.
-  During a handoff of the orchestrator, each such text of
-  [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) goes in the tab, as that section says. This
-  rule holds for each kind of orchestrator, `claude` and `pi`. The reports of the close in
+  no wait. It gets no question pane and no `herdr notification show`. A text that waits for a word of the user is not a
+  progress report. It is an open question, and it goes to the question pane. During a handoff of the orchestrator, each
+  such text of [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) goes in the tab, as that
+  section says. This rule holds for each kind of orchestrator, `claude` and `pi`. The reports of the close in
   [The start and the authority](milestone-close.md#the-start-and-the-authority) and
   [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) are progress reports of this bullet. The
   reports of [the hold before an install](release.md#the-hold-before-an-install) are peer messages of kind 6.
@@ -140,9 +139,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
 - Do not ask with a popup that holds only a short summary. In one case, the user rejected such a popup and wrote "I need
   more context. What is happening?".
-- When you list open items or proposed issues, give each item what happened, why it matters and a recommendation. If you
-  ask about an issue outside your milestone or topic, say why your work cares about it. If your work has no such reason,
-  say so.
+- When you list open questions or proposed issues, give each one what happened, why it matters and a recommendation. If
+  you ask about an issue outside your milestone or topic, say why your work cares about it. If your work has no such
+  reason, say so.
 - Define each term that the user did not see before, at its first use. An example is a label convention. This bullet
   covers each text that the user reads, not only a decision of the user.
 
@@ -236,11 +235,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   answer in a question pane, the rules of the pane owner win, in [The answer](items.md#the-answer) and in
   [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision).
 
-  A rule of a narrower case also keeps its own steps. Examples are
-  [The word of the user](operator-conversations.md#the-word-of-the-user) and the bullet that starts "When the user names
-  a rule". The bullet that starts "The list numbers from 1 in each reply" says only which list a short answer refers to.
-  The rule of this bullet still covers the meaning of the other words of such an answer, for example "post it" in "1
-  post it".
+  A rule of a narrower case also keeps its own steps. An example is the bullet that starts "When the user names a rule".
+  The bullet that starts "The list numbers from 1 in each reply" says only which list a short answer refers to. The rule
+  of this bullet still covers the meaning of the other words of such an answer, for example "post it" in "1 post it".
 
   A short reply of the user can refer to more than one open question. Then it is an unclear answer, and the session asks
   in one line which question the reply answers. On 2026-10-24, orchestrator-m21 had two open questions: gap A of #395
@@ -346,11 +343,11 @@ These rules hold for each list of the decisions that the user must make, and for
   Each later question can be short: the question in one or two sentences, its choices and the recommendation. The other
   bullets of this list and the bullet that starts "Define each term" still hold for a later question. For a later
   question, this bullet wins over the words "first explain in the reply what happened, what the problem is, and what
-  each choice does" of [A decision of the user](#a-decision-of-the-user). It also wins over the words "give each item
-  what happened, why it matters and a recommendation" of the bullet that starts "When you list open items or proposed
-  issues". It also wins over the words "The session gives the command and the result" of the bullet that starts "Before
-  a decision of the user". The session still measures each fact of a later question, because the recommendation rests on
-  it.
+  each choice does" of [A decision of the user](#a-decision-of-the-user). It also wins over the words "give each one
+  what happened, why it matters and a recommendation" of the bullet that starts "When you list open questions or
+  proposed issues". It also wins over the words "The session gives the command and the result" of the bullet that starts
+  "Before a decision of the user". The session still measures each fact of a later question, because the recommendation
+  rests on it.
 
   The short form of a later question holds only in a reply to the user. It does not hold for a handoff file.
   [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) gives the rule and the reason for a handoff
@@ -442,10 +439,8 @@ For this rule, the user said: "Always us numbered lists, not verbal ordinals."
   "When I ask questions, just answer. Do not anticipate what I want."
 - A process question is a question of the user about how the sessions must do their work from now on, for example "Do we
   need another session review iteration in planner?". The answer gives the recommendation and its reason first, and then
-  the facts. The answer marks each guess as a guess, as
-  [A side conversation](operator-conversations.md#a-side-conversation) also says. If the user must choose, the answer
-  ends with a numbered list of questions, as [The form of a reply](#the-form-of-a-reply) says. Otherwise it asks no
-  question.
+  the facts. The answer marks each guess as a guess. If the user must choose, the answer ends with a numbered list of
+  questions, as [The form of a reply](#the-form-of-a-reply) says. Otherwise it asks no question.
 
   The recommendation is a part of the answer, so the first bullet of this section does not ban it. A question about what
   the code or the docs say today is not a process question. Whether a question is a process question is a judgment of
@@ -527,8 +522,7 @@ The user can put a whole milestone on hold. The terms of this section:
 - A milestone hold is a hold of a whole open milestone on the word of the user. It is none of these holds:
   [The hold before an install](release.md#the-hold-before-an-install), [the hold rule](land-the-work.md#the-hold-rule),
   [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule),
-  [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) and
-  [The hold of the items](handoff.md#the-hold-of-the-items).
+  [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold).
 - A held milestone is a milestone with a milestone hold.
 - The held sessions are the sessions of the slug of a held milestone, as [sessions.md](../sessions.md) defines them:
   `planner-<slug>` and `orchestrator-<slug>`.
@@ -538,11 +532,11 @@ The user can put a whole milestone on hold. The terms of this section:
 The rules of a milestone hold:
 
 1. Only a word of the user starts or ends a milestone hold. For an orchestrator, the word of the user comes on the paths
-   of [The operator](#the-operator). A word that an operator relays does not start or end a milestone hold. A claim of
-   another session does not count. No other event ends a milestone hold, for example the landing of a ticket or the
-   close of another milestone. The close of the held milestone also ends its milestone hold. The orchestrator of the
-   kind `claude` reads the hold record before it closes a milestone, and it does not close a held milestone, as
-   [Milestones](issues.md#milestones) says.
+   of [Reports and questions of a session](#reports-and-questions-of-a-session). A claim of another session does not
+   count. No other event ends a milestone hold, for example the landing of a ticket or the close of another milestone.
+   The close of the held milestone also ends its milestone hold. The orchestrator of the kind `claude` reads the hold
+   record before it closes a milestone, and it does not close a held milestone, as [Milestones](issues.md#milestones)
+   says.
 2. The hold record is the start of the description of the GitHub milestone. The description starts with
    `On hold since <YYYY-MM-DD>.` and one space, before the old description. `<YYYY-MM-DD>` is the date of the word of
    the user. Each session can read the record, for example with
@@ -577,8 +571,8 @@ The rules of a milestone hold:
    - A doc notice: the sender does nothing more. Item 9 of this section covers the doc change.
    - Each other skipped message: the sender tells the user the message on the path of its role, in place of the held
      session. An orchestrator asks the user in its question pane or tells the user in its own tab, as
-     [The operator](#the-operator) says. A planner session tells the user in its own tab. No item goes to an operator.
-     The report names the held session. The user decides what happens with it.
+     [Reports and questions of a session](#reports-and-questions-of-a-session) says. A planner session tells the user in
+     its own tab. The report names the held session. The user decides what happens with it.
 7. The sender reads the hold records of the open milestones right before each message to a session of another slug. A
    read of an earlier turn does not count, because a milestone hold can start at any time.
 8. The rule covers these states of a milestone hold:
@@ -625,11 +619,9 @@ page of the issue in its tracker. The link text is the issue key, in this form:
 - For an issue of another repo, the text is the full key, for example
   `[owner/repo#12](https://github.com/owner/repo/issues/12)`.
 
-The rule covers each text that the user reads in a session. This includes each reply to the user and each item that the
-operator shows to the user. The text on GitHub, and the text of a draft that goes there, keeps the plain key, because
-GitHub links it. A message between two sessions keeps the plain key, because a session reads it as text. An item from a
-planner or an orchestrator to the operator is such a message. The operator writes the links when it shows the item, as
-[The open items](operator-items.md#the-open-items) says. A key inside a code span or a code block stays as it is.
+The rule covers each text that the user reads in a session. This includes each reply to the user. The text on GitHub,
+and the text of a draft that goes there, keeps the plain key, because GitHub links it. A message between two sessions
+keeps the plain key, because a session reads it as text. A key inside a code span or a code block stays as it is.
 
 The reason: the user opens the issue by hand, and in the terminal `#159` is plain text. In one case (2026-10-18), the
 planner of the Docs milestone wrote plain keys such as `#303` in each reply. The user had no link to open an issue.
@@ -639,8 +631,8 @@ content is a few words that say what the issue is about. The link text stays the
 issue in the same text gives only the link. The session that writes the text chooses the words of the content, and this
 choice is open on purpose. A key inside a code span or a code block needs no content, as it needs no link.
 
-An item also gives the content of each issue next to its plain key, at the first mention of the issue in the item.
-[The open items](operator-items.md#the-open-items) says how the operator shows that content.
+A message between two sessions also gives the content of each issue next to its plain key, at the first mention of the
+issue in the message, as [The form of a message](items.md#the-form-of-a-message) says.
 
 The reason for the content: on 2026-11-14, the first reply of the question pane question-915-milestone named #770 and
 #916 with no content. The user asked "what does 770 have to do with it? Isn't it specific to codex?".
@@ -730,8 +722,8 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   2026-10-18, the user stopped it and said: "the current use isn't even close to the original intent."
 
 - A session with no role that works with the user directly and runs tickets through subagents gives all its work to
-  subagents. This bullet does not cover an orchestrator, a planner or an operator. The main session is the top-level
-  session where the user types. It does no work of its own.
+  subagents. This bullet does not cover an orchestrator or a planner. The main session is the top-level session where
+  the user types. It does no work of its own.
 
   A read of code or docs goes to a subagent. A `gh` command, a `tasker` command, a move on the project board and a draft
   also go to a subagent. This includes a read of the quota with `tasker show-quota`.

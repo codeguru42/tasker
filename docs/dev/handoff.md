@@ -46,8 +46,9 @@ or "not yet", with its reason. The reason gives the count of the session and the
 of the session. The count of the session is [the landing count](handoff-orchestrator.md#the-landing-count) of the
 orchestrator or [the close count](handoff-operator.md#the-close-count) of the operator. For an orchestrator, a list of
 open questions or open items that it shows in its own tab is a progress report of
-[The operator](working-with-the-user.md#the-operator), and it carries no handoff recommendation. The go question in its
-question pane carries the recommendation, as [the landing count](handoff-orchestrator.md#the-landing-count) says.
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session), and it carries no
+handoff recommendation. The go question in its question pane carries the recommendation, as
+[the landing count](handoff-orchestrator.md#the-landing-count) says.
 
 When the count of the session reaches the count of a suggestion, the recommendation is "hand off now", also in an answer
 to [a question of the user](working-with-the-user.md#a-question-of-the-user). For an orchestrator, the recommendation
@@ -163,13 +164,14 @@ turn of the new session.
 
 The handoff file and the prompt for the new session name the first free item id. The first free item id is the number
 after the last item id that the old session used. For an orchestrator, the count also covers each question of
-[Terms](question-pane.md#terms) and each progress report of [The operator](working-with-the-user.md#the-operator). So
-the first free item id is the number after the last id of an item, a question or a progress report. If the old session
-sends an item with the path of the handoff file, that item has the last item id. An old orchestrator sends no such item.
-The old session knows that id when it writes the file, because the item gets the next number of its count. An example is
-"Your first item id is planner-docs-6." The new session counts its item ids from that id. When an answer names an id of
-the old session, the new session takes the item of that id from the handoff file. The reason: "Count your item ids on
-from planner-docs-5" can read as "start at planner-docs-5".
+[Terms](question-pane.md#terms) and each progress report of
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session). So the first free
+item id is the number after the last id of an item, a question or a progress report. If the old session sends an item
+with the path of the handoff file, that item has the last item id. An old orchestrator sends no such item. The old
+session knows that id when it writes the file, because the item gets the next number of its count. An example is "Your
+first item id is planner-docs-6." The new session counts its item ids from that id. When an answer names an id of the
+old session, the new session takes the item of that id from the handoff file. The reason: "Count your item ids on from
+planner-docs-5" can read as "start at planner-docs-5".
 
 When an answer names an id of the old session, a new orchestrator first takes a question of that id from its question
 file. [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the steps.
@@ -295,10 +297,10 @@ session. The steps of the role page, [The end of a handoff](#the-end-of-a-handof
 [The stop and the start](#the-stop-and-the-start) do not apply.
 
 When the old session is an orchestrator, it sends no item. It gives the path of the file and the prompt to the user as a
-progress report of [The operator](working-with-the-user.md#the-operator), in its own tab. The user starts the new
-session in a new tab, with the prompt of the file as its first message. The old orchestrator keeps running. The steps of
-the role page, [The end of a handoff](#the-end-of-a-handoff) and [The stop and the start](#the-stop-and-the-start) do
-not apply.
+progress report of [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session), in
+its own tab. The user starts the new session in a new tab, with the prompt of the file as its first message. The old
+orchestrator keeps running. The steps of the role page, [The end of a handoff](#the-end-of-a-handoff) and
+[The stop and the start](#the-stop-and-the-start) do not apply.
 
 When the old session is the initial planner, it sends no item. It gives the path of the file and the prompt to the user
 in its own tab. The prompt names no operator. The user starts the new session with the start steps of the role of the
@@ -354,17 +356,18 @@ or when the user ends it.
 
 During the hold, a sender of the slug sends no message to `operator-<slug>`. This covers each item, also each report
 ([The form of a message](items.md#the-form-of-a-message)). An orchestrator shows each progress report of
-[The operator](working-with-the-user.md#the-operator) in its own tab at once and holds no message for it, because a
-progress report sends no message to `operator-<slug>`. For `planner-<slug>`, the hold covers each item and each report.
-The sender of the slug keeps each message as a held item, with its id. The sender of the slug continues its other work.
+[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) in its own tab at once
+and holds no message for it, because a progress report sends no message to `operator-<slug>`. For `planner-<slug>`, the
+hold covers each item and each report. The sender of the slug keeps each message as a held item, with its id. The sender
+of the slug continues its other work.
 
 A held item can ask for a choice that only the user makes, while a task subagent waits for the answer. A sender of the
 slug also holds such an item. On 2026-10-25, during a handoff of operator-docs, the task subagent of #443 stopped for
 such a choice, and orchestrator-docs asked the user in its own tab.
 
-As [The operator](working-with-the-user.md#the-operator) says, an orchestrator asks the user in its question pane. So a
-hold of the items holds no open question of an orchestrator, and it does not ask the user in its own tab. An initial
-planner still works with the user in its tab, as that section says.
+As [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says, an
+orchestrator asks the user in its question pane. So a hold of the items holds no open question of an orchestrator, and
+it does not ask the user in its own tab. An initial planner still works with the user in its tab, as that section says.
 
 If the user answers before the write of the handoff file, the old operator sends that answer. The new operator sends
 each other answer.

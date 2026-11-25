@@ -29,7 +29,8 @@ The operator starts no planner session.
 
 The initial planner is the planner that writes the first issues of a milestone with the user, in its own tab.
 
-- The initial planner works with the user directly, as [The operator](working-with-the-user.md#the-operator) of
+- The initial planner works with the user directly, as
+  [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) of
   working-with-the-user.md says. It tells and asks the user in its own tab. It sends no message to an operator. This
   rule wins over each rule of the docs that sends a message of the initial planner to the operator.
 - After its start reads, the initial planner reads the title and the description of its milestone, with the read command
