@@ -31,10 +31,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   reports of [the hold before an install](release.md#the-hold-before-an-install) are peer messages of kind 6.
 - A message of the orchestrator that starts with "From the user:" is a word of the user for the rules of the docs. The
   quoted words of an accepted message of a question session are a word of the user for the orchestrator. A word that the
-  user types in the tab of the orchestrator is also a word of the user. A message that starts with "Answer of the
-  operator:" is not a word of the user. It answers no question for the user alone.
-- A message that starts with "From the user:" or with "Answer of the operator:" never approves a permission prompt of
-  Claude Code.
+  user types in the tab of the orchestrator is also a word of the user.
+- A message that starts with "From the user:" never approves a permission prompt of Claude Code.
 - The initial planner works with the user directly in its tab.
 
 ## A decision of the user
@@ -105,9 +103,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   the words of a rule answer a question is a judgment of the session, open on purpose.
 
   A rule can keep a choice or an approval for the user. Examples are a
-  [question for the user alone](items.md#the-open-items) and "Only the user changes a landing order of the overlap rule"
-  (see [Land the work](land-the-work.md#land-the-work)). Then the session still asks the user, because that rule gives
-  the answer. This bullet does not cover an open question of an issue, which
+  [question for the user alone](items.md#the-terms-of-the-questions) and "Only the user changes a landing order of the
+  overlap rule" (see [Land the work](land-the-work.md#land-the-work)). Then the session still asks the user, because
+  that rule gives the answer. This bullet does not cover an open question of an issue, which
   [the open-question rule](pick-the-tickets.md#the-open-question-rule) covers. It does not cover a change of a rule of
   the docs. A session that wants such a change still asks the user or drafts an issue.
 
@@ -127,13 +125,11 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   recommendation is clear and whether a cleanup is harmless are judgments of the session, open on purpose.
 
   A decision of a kind of [the escape hatch](planner.md#the-escape-hatch) still goes to the user. So does a choice or an
-  approval that a rule keeps for the user. Examples are a [question for the user alone](items.md#the-open-items) and the
-  approval of a comment on an issue in [Before a post](issues.md#before-a-post). If the session is in doubt whether a
-  cleanup is harmless, it asks the user.
+  approval that a rule keeps for the user. Examples are a
+  [question for the user alone](items.md#the-terms-of-the-questions) and the approval of a comment on an issue in
+  [Before a post](issues.md#before-a-post). If the session is in doubt whether a cleanup is harmless, it asks the user.
 
   The ban of [The state of the user](plan-review.md#the-state-of-the-user) still applies to each session that it covers.
-  For a question of this bullet in an item of another session, the operator sends an answer of the operator, as
-  [The answer](items.md#the-answer) says.
 
   On 2026-11-13, the description of the GitHub milestone M24 held two hold texts. The hold record of rule 2 of
   [A milestone hold](#a-milestone-hold) stood at its start, and an older hold text stood after it. planner-docs named
@@ -154,10 +150,10 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   proposed issue with no number, such as "the narrow Docs issue". Another example is a short name of a problem, such as
   "the cut start reads" (start reads of long docs that Claude Code showed only in part).
 
-  A term from an item, a report or another message between two sessions counts as a term that the user did not see
-  before. This holds until a text in the same chat or pane defines the term for the user. The session that writes the
-  text judges whether the user saw another term before. For the first reply of a question pane, the pane owner judges.
-  This judgment is open on purpose.
+  A term from a report or another message between two sessions counts as a term that the user did not see before. This
+  holds until a text in the same chat or pane defines the term for the user. The session that writes the text judges
+  whether the user saw another term before. For the first reply of a question pane, the pane owner judges. This judgment
+  is open on purpose.
 
   The definition of a term stands in the sentence of the term, for example in parentheses, or in the sentence right
   before it. For a term in the sentence of a question, the definition stands in that sentence. The reason: the order of
@@ -205,21 +201,20 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   that starts "When the session reminds the user". That sentence is "In a question or a reminder to the user, the
   session names each item by its content." For a draft, the content is its title and a few words about its change.
 
-  A reply or an item can show a draft or ask the user a question about a draft. A list of candidate drafts is such a
-  question. Then the first mention of the draft in that reply or item gives its title and a few words about its change.
-  At that first mention, the name of a draft file alone is not enough. Another short name that a session gives to a
-  draft is also not enough. This holds also after an earlier reply in the same chat or pane described the draft.
+  A reply can show a draft or ask the user a question about a draft. A list of candidate drafts is such a question. Then
+  the first mention of the draft in that reply gives its title and a few words about its change. At that first mention,
+  the name of a draft file alone is not enough. Another short name that a session gives to a draft is also not enough.
+  This holds also after an earlier reply in the same chat or pane described the draft.
 
-  A later mention of the same draft in the same reply or item can use a short name. For the name of a draft, this bullet
-  wins over the bullet that starts "Define each term". That bullet asks for a definition only at the first use of a term
-  in the chat or pane. The session that writes the reply or the item chooses the words about the change, and this choice
-  is open on purpose.
+  A later mention of the same draft in the same reply can use a short name. For the name of a draft, this bullet wins
+  over the bullet that starts "Define each term". That bullet asks for a definition only at the first use of a term in
+  the chat or pane. The session that writes the reply chooses the words about the change, and this choice is open on
+  purpose.
 
   The title and the words about the change stand inside the sentence of the mention. They add no sentence to a short
   form of a question or to a limit of sentences. Examples are later questions of
-  [The form of a reply](#the-form-of-a-reply), open questions in the operator chat and the first reply of a
-  [question pane](question-pane.md#a-question-pane). [The open items](operator-items.md#the-open-items) gives the step
-  of the operator for an item that it shows.
+  [The form of a reply](#the-form-of-a-reply) and the first reply of a
+  [question pane](question-pane.md#a-question-pane).
 
   The reason: on 2026-11-15, a session with no role worked as an ad hoc planner. At the report of each ticket subagent,
   the session described its draft once, in prose. Later replies gave the open decisions in numbered lists, and they
@@ -234,12 +229,11 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   each of them. Whether an answer is unclear is a judgment of the session, open on purpose.
 
   The meaning of an unclear answer is a kind of choice that still goes to the user first in the recommendation mode. It
-  is also a [question for the user alone](items.md#the-open-items), and the operator does not answer it with an
-  [answer of the operator](items.md#the-open-items). The reason: only the user knows what the user meant.
+  is also a [question for the user alone](items.md#the-terms-of-the-questions). The reason: only the user knows what the
+  user meant.
 
-  This bullet covers the session that acts on an answer of the user, also after the operator relays the answer. It does
-  not cover an answer of the operator. For an answer of the user to an item, the rules of the operator still win for the
-  operator. These rules are in [The answer](items.md#the-answer) and in
+  This bullet covers the session that acts on an answer of the user, also after a pane owner sends the answer. For an
+  answer in a question pane, the rules of the pane owner win, in [The answer](items.md#the-answer) and in
   [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision).
 
   A rule of a narrower case also keeps its own steps. Examples are
@@ -358,25 +352,12 @@ These rules hold for each list of the decisions that the user must make, and for
   a decision of the user". The session still measures each fact of a later question, because the recommendation rests on
   it.
 
-  The short form of a later question holds only in a reply to the user. It does not hold for an item to the operator or
-  for a handoff file. The reason: the operator gives the questions of all items in one list with its own numbers, and it
-  can answer a question itself. [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) gives the rule and
-  the reason for a handoff file.
+  The short form of a later question holds only in a reply to the user. It does not hold for a handoff file.
+  [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) gives the rule and the reason for a handoff
+  file.
 
-  In the operator chat, each [open question](items.md#the-open-items) is short, also question 1. Each rule of the
-  paragraph that starts "Each later question can be short" then also holds for question 1. The first reply of each
-  [question pane](question-pane.md#a-question-pane) gives the details of its question within the limit that
-  [The question session](question-pane.md#the-question-session) gives. In the operator chat, this paragraph wins over
-  each rule of this section that asks for the full details of question 1. So a reminder of the operator also gives
-  question 1 in short, as the bullet that starts "When the session reminds the user" says.
-
-  If the user asks to discuss a question in the operator chat, the reply gives the full details of that question. A
-  question of the operator itself, with no item, also keeps the full details. This paragraph wins over the paragraph
-  before it. A rule that asks for the full text of each open question at one step also wins over that paragraph.
-
-  The reason: on 2026-11-13, the user said to operator-docs: "Since questions are no longer being answered here, you no
-  longer need to show the full details of question 1. Instead, follow the same rules for those details in the question
-  pane."
+  The first reply of each [question pane](question-pane.md#a-question-pane) gives the details of its question within the
+  limit that [The question session](question-pane.md#the-question-session) gives.
 
 - Inside a question, only the proposed steps and the choices of the question are lists. Each of them is a nested list,
   as the bullet that starts "A nested list uses letters" says. The other details of a question are plain sentences or
@@ -462,9 +443,9 @@ For this rule, the user said: "Always us numbered lists, not verbal ordinals."
 - A process question is a question of the user about how the sessions must do their work from now on, for example "Do we
   need another session review iteration in planner?". The answer gives the recommendation and its reason first, and then
   the facts. The answer marks each guess as a guess, as
-  [A side conversation](operator-conversations.md#a-side-conversation) says for a reading of the operator. If the user
-  must choose, the answer ends with a numbered list of questions, as [The form of a reply](#the-form-of-a-reply) says.
-  Otherwise it asks no question.
+  [A side conversation](operator-conversations.md#a-side-conversation) also says. If the user must choose, the answer
+  ends with a numbered list of questions, as [The form of a reply](#the-form-of-a-reply) says. Otherwise it asks no
+  question.
 
   The recommendation is a part of the answer, so the first bullet of this section does not ban it. A question about what
   the code or the docs say today is not a process question. Whether a question is a process question is a judgment of
@@ -522,7 +503,7 @@ For this rule, the user said: "Always us numbered lists, not verbal ordinals."
 
 A note for later is a text for another session that asks for an action at a later time. A session can read a message as
 a request to act now. The trigger of a note is an event that the reader can test, for example the start of a ticket.
-Words such as "when you reach #635" give no trigger. This section does not cover an item, a peer message of
+Words such as "when you reach #635" give no trigger. This section does not cover a peer message of
 [the seven kinds](../orchestrator.md#the-kinds-of-peer-message) or another message with its own rule. Examples are a doc
 notice and a landing order. An orchestrator acts on no note for later from a peer, as
 [A message outside the kinds](../orchestrator.md#a-message-outside-the-kinds) says.
@@ -532,7 +513,7 @@ notice and a landing order. An orchestrator acts on no note for later from a pee
 - If no issue fits, a message can carry a note for later. The note goes in its own message. The message starts with "No
   action now." and names the trigger. The reader keeps the note in its handoff file until the trigger.
 - A message can name a later time with no trigger that the reader can test. The reader then asks the sender for the
-  trigger. Until the sender answers, the reader takes no action on that message and sends no item on it. If the send
+  trigger. Until the sender answers, the reader takes no action on that message and asks no question on it. If the send
   fails, or no session of that name runs, [the failure rule](limits.md#the-failure-rule) applies, and the reader still
   takes no action on the message.
 
