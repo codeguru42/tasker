@@ -271,7 +271,7 @@ The reasons for this path:
   name, as [The count of planner subagents](planner-subagent.md#the-count-of-planner-subagents) says. A later session
   with the same own name starts only after the old session waits for each planner subagent.
   [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says this. The exception is a wait that a
-  word of the user ended. The known limit: such a planner subagent can still write one draft file and its record file.
+  word of the user ended. Then the known limits of that subsection hold.
 - Inside one folder, two drafts already have different names, so their body files differ.
 - Each poster has the path of its draft file, and the rule needs no name of a planner subagent.
 - The end `.body.md` differs from `-body.md`. A draft name has only lowercase letters, digits and `-`, as
