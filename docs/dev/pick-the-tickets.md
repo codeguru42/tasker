@@ -1412,9 +1412,7 @@ landing rules still apply. The same template files below give the prompt of a Co
 
 - For all the rules, the prompt names the docs of "the base list". The base list is the list in
   [`prompt-templates/subagents/task.md`](../../prompt-templates/subagents/task.md). It is the same for the task subagent
-  of each milestone. The list has `AGENTS.md`, `docs/orchestrator.md` with the pages of its list "The pages" (see
-  [the orchestration pages](../orchestrator.md)), and six more docs. It leaves out `docs/dev/handoff.md` and
-  `docs/dev/handoff-orchestrator.md`.
+  of each milestone.
 
   The prompt also names each doc that the ticket changes, for example `docs/dev/planner.md`. These are:
 
