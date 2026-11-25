@@ -8,7 +8,7 @@ The rules of this section are in [The form of a message](items.md#the-form-of-a-
 
 ## The open items
 
-[The open items](items.md#the-terms-of-the-questions) gives the terms of the questions of an item.
+[The terms of the questions](items.md#the-terms-of-the-questions) gives the terms of the questions of an item.
 
 The operator does these things for the open items:
 
@@ -36,8 +36,8 @@ The operator does these things for the open items:
 - For each new item, the operator runs `herdr notification show "<operator name>: new item <id>" --sound request` in its
   shell. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and the item stays open. A report
   still closes when the operator shows it.
-- This bullet covers an item that needs an answer, not a report. An item with a question for the user alone keeps that
-  line and the notification.
+- This bullet covers an item that needs an answer, not a report. An item with a question for the user alone keeps the
+  arrival line and the notification.
 - In its next reply to the user, the operator shows each item that it answered in short, with the answer that it sent.
   It gives them as plain text after the list of open questions, with the id of each item, as for an answered question.
   The operator keeps a list of these items until it shows them. An item with questions of both kinds gets this show and
@@ -151,7 +151,7 @@ The authority that the rules of this section already give for a question that th
 recommendation of the operator never answers a question for the user alone.
 
 A missing answer of the user, a deferral and another round each leave the question open. A moved question of
-[The open items](items.md#the-terms-of-the-questions) is not an open question.
+[The terms of the questions](items.md#the-terms-of-the-questions) is not an open question.
 
 If an answer asks for more work, the operator finishes that work before it goes on with the close. Then step 7 of
 [The steps that end each role](operator-start.md#the-steps-that-end-each-role) applies.

@@ -65,8 +65,8 @@ This page uses these terms for the questions to the user.
   questions of the failed send stay answered questions.
 - A question can give choices, for example a, b and c. The words of the user to such a question can pick no choice and
   not fully settle the question. They can settle a part of it or none of it. The pane owner judges whether the words
-  fully settle the question. This judgment is open on purpose. The two bullets after the next one cover only a question
-  that gives choices.
+  fully settle the question. This judgment is open on purpose. The three bullets after the dated paragraph below cover
+  only a question that gives choices.
 
   On 2026-10-25, orchestrator-docs asked in item orchestrator-docs-25 (#413) which words the skill gives as a reason.
   The user gave a use case, operator-docs sent it as the answer, and the user later said "let the orchestrator figure
