@@ -339,15 +339,6 @@ The rows of the stages that the planner acts in are in
 The operator does not wait in a loop for a report. If a report does not come, the operator tells the user, and the word
 of the user decides.
 
-The user can end the hold of a ticket on hold while its milestone is open and `ListAgents` shows no session
-`orchestrator-<slug>` of its slug. Then the operator of that slug removes the label with
-`gh issue edit <number> --remove-label "on hold"`, and it starts an orchestrator of that milestone, as "Start a session"
-says. Then it sends the orchestrator the word of the user, as
-[The word of the user](operator-conversations.md#the-word-of-the-user) says. If the read of `ListAgents` or the removal
-fails, [the failure rule](limits.md#the-failure-rule) applies, and the operator starts no orchestrator. For a denied
-command, the operator follows [A denied command of the operator](tasker-commands.md#a-denied-command-of-the-operator),
-and after the command ran, it starts the orchestrator.
-
 ## A handoff
 
 Each time that the operator does this section, it first reads `docs/dev/operator-start.md` again, as

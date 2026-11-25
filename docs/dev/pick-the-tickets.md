@@ -1079,9 +1079,17 @@ the read works.
 At the end of the hold, each question that the orchestrator asks again gets a new question id. It also gets a new
 question file, as a question that arrives.
 
-If the milestone is open and no orchestrator of its slug runs, the operator removes the label and starts one, as
-[The close of a milestone](operator-start.md#the-close-of-a-milestone) says. If the label is already gone at the word of
-the user, the orchestrator skips its removal.
+If no orchestrator of the scope runs, the user starts one, as
+[The steps of the user](../orchestrator.md#the-steps-of-the-user) says. The label `on hold` stays on the ticket, and no
+operator takes a step. Then the user gives the word to end the hold to that orchestrator, on a path of the word of the
+user for an orchestrator, as [The operator](working-with-the-user.md#the-operator) says. At the word, the orchestrator
+removes the label and asks the question of each hold comment with no answer comment, as the paragraphs above say.
+
+The order matters. A new orchestrator reads the label `on hold` at its start, in the read of this section and in the
+outside-Todo find. It reads the hold comments only at the end of a hold. If the user removes the label before the start,
+the new orchestrator sees no ended hold. It then starts the ticket and asks no question of its hold comments.
+
+If the label is already gone at the word of the user, the orchestrator skips its removal.
 
 ### The end of an orchestrator
 
