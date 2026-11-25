@@ -85,8 +85,8 @@ After the rounds, each planner sends the report of the rounds to [its operator](
 its report of the rounds in the report that the milestone is done, a progress report in its own tab. After the end of
 the role of its operator, a planner gives the report of its rounds to the user directly, as
 [The operator](working-with-the-user.md#the-operator) says. The report gives how many rounds ran, what each round found,
-and the state of each finding. An initial planner sends it with `SendMessage`. A planner sends it as a report, as
-[The form of an item](items.md#the-form-of-an-item) says. An operator gives it to the user in a reply.
+and the state of each finding. An initial planner sends it with `SendMessage`. Each other planner sends it as a report,
+as [The form of an item](items.md#the-form-of-an-item) says. An operator gives it to the user in a reply.
 
 An orchestrator of a set scope has no operator. So its report of the rounds is a progress report in its own tab, as
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says for its last report.
