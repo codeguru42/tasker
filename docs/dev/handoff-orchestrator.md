@@ -457,11 +457,10 @@ no handoff file and no question file. The old orchestrator does not wait for thi
 The start checks can read the handoff file of the first message with a Read call. This read can come before the read of
 the data root, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
 
-If all the start checks passed, the new orchestrator then starts with the re-read rule. Right after the first doc read
-of the re-read rule, the new orchestrator does the check of
-[The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). Right after that check, at the end of its
-start steps, it lists `questions/` and `proposals/`, as [The orchestrator folder](limits.md#the-orchestrator-folder)
-says. It reads no question file at its start.
+The new orchestrator then starts with the re-read rule. Right after the first doc read of the re-read rule, the new
+orchestrator does the check of [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). Right
+after that check, at the end of its start steps, it lists `questions/` and `proposals/`, as
+[The orchestrator folder](limits.md#the-orchestrator-folder) says. It reads no question file at its start.
 
 After these lists, it reads the tasks in flight with `tasker status`, also
 [the parked tasks](pick-the-tickets.md#the-defer-rule). It reads the other sessions with `ListAgents`. Then it makes its
@@ -469,7 +468,8 @@ board watch job, as [the board watch rule](../orchestrator.md#the-board-watch-jo
 delete the job, as [A ticket that waits for a slot](../orchestrator.md#a-ticket-that-waits-for-a-slot) says. Then,
 before the pick of the first ticket, it reads the record of
 [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file and runs that find. A session whose
-start check failed is the failed session of the paragraph above, and it does none of these steps.
+start check failed is the failed session of [the start checks](../orchestrator.md#the-start-checks), and it does none of
+the steps of this paragraph.
 
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
 record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
