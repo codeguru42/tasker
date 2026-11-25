@@ -45,6 +45,9 @@ raises its next item id above the highest number in `questions/`.
 
 After a stop with no handoff, a new item id can still repeat an id of the stopped session. Examples are the id of a
 progress report and the id of a deleted question. The reason: the count reads only the question files.
+[A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) expects no such stop except the close of a failed
+session, and the next start after that close is a start after a handoff, so this limit covers only a start that the user
+makes outside a handoff.
 
 [The glossary](GLOSSARY.md) defines a question session.
 
