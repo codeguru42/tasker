@@ -118,8 +118,8 @@ These four known limits hold:
 - [The name](#the-name) counts `plan-<count>` from 1 in each session of the orchestrator. A later session of an
   orchestrator with the same own name has the same folder of the draft files. So a new draft can get the file name of a
   draft of an earlier session that waits for a decision of the user. The new draft and its record file then overwrite
-  the old ones. The planner subagent has no command that lists the folder. The same clash can occur today with one
-  planner subagent at a time.
+  the old ones. No step of the planner subagent lists the folder. The same clash can occur today with one planner
+  subagent at a time.
 
 ### The model of the start
 
@@ -740,7 +740,8 @@ nothing.
 
 The issue-draft subagent changes the draft or dismisses each finding of its prompt with a one-line reason, as
 [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) says. Its result through
-`SubagentHandback` gives each dismissal with its reason. It adds each such dismissal to the record file.
+`SubagentHandback` gives each dismissal with its reason. The planner subagent adds each such dismissal to the record
+file.
 
 Before an answer of the user, only a review with no new finding approves a draft. Today step 6 of "The review loop of a
 draft" ends the loops after a loop that changed nothing. So the rule can cost up to two more reviews than today. "The
