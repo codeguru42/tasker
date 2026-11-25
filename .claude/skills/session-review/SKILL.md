@@ -60,7 +60,7 @@ A question session runs this skill in the rounds of [The rounds before the close
    - (a) Do not list work that an issue already holds. Do not list the work of another session.
    - (b) Do not do the open work in this step. Do not answer a question for the user.
    - (c) The session can drop moot work, as [A decision of the user](../../../docs/dev/working-with-the-user.md#a-decision-of-the-user) says. Step 8 names the drop.
-   - (d) An orchestrator asks each new open question in its question pane, as [Reports and questions of a session](../../../docs/dev/working-with-the-user.md#reports-and-questions-of-a-session) says. For a planner, the rest of this item holds.
+   - (d) An orchestrator asks each new open question in its question pane, as [Reports and questions of a session](../../../docs/dev/working-with-the-user.md#reports-and-questions-of-a-session) says.
    - (e) A list entry that an earlier round of the same session listed is not a new finding. A round that lists only such list entries finds nothing new, so it can end the rounds. Open work with no answer does not keep the rounds running.
 
    On 2026-10-30, a session asked "Do you want me to find out why #537 closed?". Then it ran two rounds of `/session-review`, and neither round named the question. On 2026-10-31, the user asked: "Does session review include a rule for checking for unanswered open questions or unfinished work?"
