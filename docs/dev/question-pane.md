@@ -24,7 +24,7 @@ The pane owner (short form: owner) is the session that starts a question pane. A
 owner. Each pane owner has at most one open pane.
 
 An open question of the orchestrator is a question for the user that the orchestrator or one of its sessions asks. The
-sessions are, for example, a task subagent and the follow-up planner. The orchestrator asks it in its own question pane.
+sessions are, for example, a task subagent. The orchestrator asks it in its own question pane.
 
 Each waiting decision and each open question of the rounds of the orchestrator is also an open question of the
 orchestrator. An example is a finding of [the end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator)
@@ -143,8 +143,7 @@ prompt for the ack. The wait has no time limit. If no ack comes, the user can as
 one measured this wait.
 
 A report is a message that needs no answer from the user. The orchestrator shows each of its reports as text in its own
-tab. A report of the follow-up planner goes to `orchestrator-<slug>`, which shows it the same way. No pane starts for a
-report.
+tab. No pane starts for a report.
 
 A stop of a run is a case of [A question pane](#a-question-pane) that stops a run or makes it wait for the user. Two of
 these stops are the end of a run and a request for the chat of the orchestrator. These two stops hold until a new open
@@ -286,8 +285,8 @@ names the ticket. The orchestrator judges whether a word is a start word, and th
 ### Start
 
 A pane is the default place of the conversation about an open question. Each orchestrator, of each kind, starts and owns
-its own panes. It starts a pane for each open question of the orchestrator and of its sessions, the follow-up planner
-included. The orchestrator makes an automatic start each time that all of these hold:
+its own panes. It starts a pane for each open question of the orchestrator and of its sessions. The orchestrator makes
+an automatic start each time that all of these hold:
 
 - No pane of this orchestrator is open.
 - No [stop of a run](#terms) holds.
@@ -307,10 +306,10 @@ decision message only from the question session of its own open pane, as
 decision of that pane. In [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case), no automatic start
 and no reuse happens either. A word of the user can still start a pane.
 
-The question that asks the user for the go of a suggested handoff of the orchestrator or of its follow-up planner can
-get an automatic start, although the handoff is due. It is the only such question. After the go, until the close of its
-pane and during the handoff, the condition holds for each question.
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says how the suggestion works.
+The question that asks the user for the go of a suggested handoff of the orchestrator can get an automatic start,
+although the handoff is due. It is the only such question. After the go, until the close of its pane and during the
+handoff, the condition holds for each question. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff)
+says how the suggestion works.
 
 On 2026-11-15, operator-m16 reported this case. It came from a handoff of operator-m16. The old operator opened and
 reused question panes for about ten questions during the wait of step 1 of its handoff. The handoff took a long time.
@@ -460,7 +459,6 @@ Each of these kinds of open question gets a question file:
 
 - A question of the orchestrator itself
 - A question of a task subagent
-- A question of the follow-up planner
 - A question in the result of a planner subagent
 - A question of a peer request of [The request rule](../orchestrator.md#the-request-rule)
 - A question that arrives while a pane is open
@@ -580,8 +578,8 @@ The pane owner gives each part of this paragraph through the opener prompt or th
 [The prompts](#the-prompts). This also holds for the paragraphs that start "The pane owner gives all offered choices",
 "The pane owner gives relevant earlier decisions" and "The pane owner prepares first-reply text". Before the start, it
 gives the question session its own name, the name of the pane owner, the pane id of the pane owner and the question id.
-It also gives the full question. For a question of a task subagent or of the follow-up planner, the first reply names
-the ticket and the session that asks.
+It also gives the full question. For a question of a task subagent, the first reply names the ticket and the session
+that asks.
 
 The row of a question session in [the table](permissions.md#the-table) gives its kinds of command.
 
@@ -1137,12 +1135,12 @@ of that measure.
 The orchestrator sends the settled decision to the session that asked the question, at once. A question of a task
 subagent goes back to that task subagent with the message path that the orchestration pages give for a task subagent. A
 task subagent has no pane, so the herdr path does not reach it. A question of a session that tasker starts goes back
-through the task subagent of its task. A question of the follow-up planner goes back to `planner-<slug>`. A planner
-subagent is never the sender of a question of a pane. Its questions come in its result, and the orchestrator asks them
-as its own open questions. See [The result](planner-subagent.md#the-result). Each such message starts `From the user:`.
-The next line identifies question pane `<name>`. It gives the question id, the user's words, and requested draft
-changes. The sender treats that message as any other `From the user:` message. A question of the orchestrator itself has
-no sender, and the orchestrator acts on the decision.
+through the task subagent of its task. A planner subagent is never the sender of a question of a pane. Its questions
+come in its result, and the orchestrator asks them as its own open questions. See
+[The result](planner-subagent.md#the-result). Each such message starts `From the user:`. The next line identifies
+question pane `<name>`. It gives the question id, the user's words, and requested draft changes. The sender treats that
+message as any other `From the user:` message. A question of the orchestrator itself has no sender, and the orchestrator
+acts on the decision.
 
 When the pane owner accepts a decision message, it reads the [question file](#the-question-file) again. It judges from
 that text whether the message settles the question. It also reads the question file again when a word of the user in its
@@ -1324,18 +1322,15 @@ closed with a confirm question open holds no guess. For a title or body request,
 guess that the user accepted, with no exact text and no start hash. For a comment, a change of a blocked-by link or a
 change of the field `Priority`, it gives the exact text and the start hash.
 
-If the planner is the sender and the message settles the question, the request goes in the answer to the planner. In
-each other case, the request goes in a message of its own. Such a message is a relay to the planner of the orchestrator,
-not an answer to the sender. So the rule that the pane owner sends nothing to the sender for a message that does not
-settle the question does not stop it. For an orchestrator of the kind `claude`, the planner of the orchestrator is never
-the sender. So the answer to the follow-up planner holds no relay and no request.
+The request goes in a message of its own. Such a message is a relay to the planner of the orchestrator, not an answer to
+the sender. So the rule that the pane owner sends nothing to the sender for a message that does not settle the question
+does not stop it.
 
 The pane owner drafts no issue and starts no write subagent for a request. After the send, the orchestrator tells the
 user in one line in its tab that the planner of the orchestrator has the request. If the send fails,
 [the failure rule](limits.md#the-failure-rule) applies, as for the relay of a doc proposal. The planner handles the
 request as a proposed issue of the orchestrator, with its review loops and its post rules. The planner then reports the
-post or the drop to the orchestrator. For a draft that waits for a decision of the user, it sends the question to
-`orchestrator-<slug>`.
+post or the drop to the orchestrator.
 
 A planner subagent gives its report of the post or the drop and each question in its result instead, as
 [The result](planner-subagent.md#the-result) says.
@@ -1345,9 +1340,7 @@ loops and posts the reviewed text, as for a new issue. It needs no approval of t
 from a read of the issue, as [Before a post](issues.md#before-a-post) and
 [A change of an open issue](issue-draft.md#a-change-of-an-open-issue) say. The planner finds the issue from the words
 and from the issue reading, if the user accepted one. If they name no single issue, the planner posts nothing and asks
-the user first. It sends the question to `orchestrator-<slug>`, in the way that
-[The escape hatch](planner.md#the-escape-hatch) gives for a draft of the follow-up planner that waits for a decision of
-the user.
+the user first.
 
 For a comment, a change of a blocked-by link or a change of the field `Priority`, the planner runs its review loops on a
 text that the user approved in a pane. If a loop changes the text, the planner posts the changed text with no new
@@ -1771,7 +1764,7 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | No word of the user. The conditions of an automatic start hold                                             | Not started                             | Makes an automatic start for the next open question                                                                                                                                                                                                                                                                                               | Keeps working        |                                                              |
 | A word of the user starts a pane while a pane is open                                                      | Running                                 | Starts nothing                                                                                                                                                                                                                                                                                                                                    |                      | The pane owner tells the user                                |
 | A start word comes, and an open question holds the start of that ticket                                    | Not started, or running in an open pane | Shows the progress report of a start word at once. Then starts the pane of that question as for a word of the user that names it. Starts nothing while a pane is open                                                                                                                                                                             |                      | The pane owner tells the user                                |
-| A question of a task subagent or of the follow-up planner arrives                                          | Not started                             | The question waits in the list order. It gets a pane at its turn                                                                                                                                                                                                                                                                                  | Keeps working        | The sender tells the pane owner                              |
+| A question of a task subagent arrives                                                                      | Not started                             | The question waits in the list order. It gets a pane at its turn                                                                                                                                                                                                                                                                                  | Keeps working        | The sender tells the pane owner                              |
 | An open question arrives, and no bar of the fallback holds                                                 | Not started                             | Gives the question id. Writes the question file before any pane start or reuse. The question waits in the list order                                                                                                                                                                                                                              | Keeps working        | The sender tells the pane owner                              |
 | A question arrives after the old orchestrator wrote its handoff file                                       | Not started                             | Writes no question file and gives no question id. Shows the full text of the question as a report in its tab                                                                                                                                                                                                                                      | Keeps working        | The pane owner tells the user                                |
 | A second open question arrives while a pane is open                                                        | Running                                 | The question waits in the list order                                                                                                                                                                                                                                                                                                              |                      |                                                              |
@@ -1813,7 +1806,7 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | `tasker show-config` exits with code 1 after a write of the configuration file of tasker                   | Any                                     | Opens no pane. Tells the user in its tab the errors and the old text of the file. After the word of the user, runs `tasker show-config` again. Each `tasker` command fails until then                                                                                                                                                             |                      | The pane owner tells the user. The user tells the pane owner |
 | A `herdr` command of a settled message fails                                                               | Any                                     | The failure rule applies. Each later action does not run                                                                                                                                                                                                                                                                                          |                      | The pane owner tells the user                                |
 | A handoff or the rounds of the end of an orchestrator is due while a pane is open or a write subagent runs | Any                                     | Starts neither while the pane is open or the write subagent runs. In the stopping-point case, the pane handoff or the usual close comes first, as The pane handoff says                                                                                                                                                                           |                      | The pane owner tells the user                                |
-| A report arrives from the orchestrator or the follow-up planner                                            | Not started                             | Shows it as text in its tab. No pane starts                                                                                                                                                                                                                                                                                                       |                      | The pane owner tells the user                                |
+| A report arrives from the orchestrator                                                                     | Not started                             | Shows it as text in its tab. No pane starts                                                                                                                                                                                                                                                                                                       |                      | The pane owner tells the user                                |
 | The question session gets the close request                                                                | Runs rounds. Sends the final report     | Waits for the final report. The pane stays open                                                                                                                                                                                                                                                                                                   |                      | The pane owner tells the question session                    |
 | A round of the question session finds a finding that needs a word of the user                              | Holds the next round                    | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The question session tells the user                          |
 | A round finds something new and no finding needs a word of the user                                        | Sends the report of the round           | Waits for the report. The pane stays open                                                                                                                                                                                                                                                                                                         |                      | The question session tells the pane owner                    |
@@ -1896,8 +1889,8 @@ If two rows match, the rows of one bullet below follow its rule:
   the planner of the orchestrator.
 - The row "The report of a round holds a guess" wins over the row "A round finds something new and no finding needs a
   word of the user" until the user answers the confirm question.
-- The row "An open question arrives, and no bar of the fallback holds" and the row "A question of a task subagent or of
-  the follow-up planner arrives" both apply. The first row adds the write of the question file before the wait.
+- The row "An open question arrives, and no bar of the fallback holds" and the row "A question of a task subagent
+  arrives" both apply. The first row adds the write of the question file before the wait.
 - The row "A start word comes, and an open question holds the start of that ticket" and the row "A word of the user
   starts a pane while a pane is open" both apply while a pane is open. The first row adds the progress report before the
   pane owner starts nothing.

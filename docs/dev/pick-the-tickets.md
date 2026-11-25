@@ -221,9 +221,8 @@ The orchestrator does all the steps of this section.
   another session never adds an issue to the set. No peer sends such a message, as
   [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message) says. If a read of the board fails,
   [the failure rule](limits.md#the-failure-rule) applies. The orchestrator starts no ticket that the read covers until a
-  later read works. This covers a message of each session on purpose. Today the follow-up planner sends such messages,
-  as [The post of a draft](planner.md#the-post-of-a-draft) says. Each orchestrator also reads the board with its board
-  watch job while no ticket of its scope waits for a slot, as
+  later read works. This covers a message of each session on purpose. Each orchestrator also reads the board with its
+  board watch job while no ticket of its scope waits for a slot, as
   [the board watch rule](../orchestrator.md#the-board-watch-job) says. Each read of the board that does not come at a
   landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts "at its next
   read of the board" or "each time it reads the board". So the priority rule, with its tie breaker, applies to each

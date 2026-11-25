@@ -70,7 +70,7 @@ that finds nothing new does not end them. A word of the user ends such rounds on
 - [The rounds before the close](question-pane.md#the-rounds-before-the-close), for a question session
 
 A finding is handled when it is posted as an issue or added to an open issue. It is also handled when the user decided
-to drop it, or when a follow-up planner or a [planner subagent](planner-subagent.md) dropped it, as
+to drop it, or when a [planner subagent](planner-subagent.md) dropped it, as
 [The post of a draft](planner.md#the-post-of-a-draft) says. A write to memory does not handle a finding. A session that
 is not a planner sends each finding to the planner as a proposal. That finding stays open until the planner handles it.
 A finding that is not handled is open.

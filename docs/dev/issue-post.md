@@ -15,9 +15,7 @@ outside that section is for an issue post, except a rule that names a comment po
 
 - Each issue-post subagent, as [the read rule](issue-subagents.md#the-read-rule) says.
 - Each planner, for each issue post that it makes. A planner follows each rule of an issue post, as an issue-post
-  subagent does. A planner makes no comment post. One exception: a planner does the steps of
-  [The last steps of a post](#the-last-steps-of-a-post) only before its message to an orchestrator.
-  [The post of a draft](planner.md#the-post-of-a-draft) gives that message.
+  subagent does. A planner makes no comment post.
 - A subagent of the main session that posts a reviewed ad hoc draft. The bullet of `docs/dev/working-with-the-user.md`
   that starts "A subagent of the main session posts a reviewed ad hoc draft" gives that post. Such a subagent follows
   each rule of an issue post, as an issue-post subagent does. It makes no comment post.

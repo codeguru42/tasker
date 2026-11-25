@@ -14,9 +14,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
 - For an orchestrator, a rule that says "ask the user" means a question in its own
   [question pane](question-pane.md#a-question-pane). A rule that says "tell the user" means a report as text in its own
-  tab. For a follow-up planner, "ask the user" means a question to `orchestrator-<slug>`, which asks it in its pane.
-  "Tell the user" means a report to `orchestrator-<slug>`, which shows it in its tab. Each rule that sends a question, a
-  report or a draft of a follow-up planner to the operator as an item sends it to `orchestrator-<slug>` instead.
+  tab.
 - The report of an orchestrator in its own tab is a progress report. A progress report gives the user a fact, needs no
   decision of the user and starts no step of another session. The first line starts with `Report:` and names the topic.
   Then the id follows, in the form `<own name>-<n>`, for example `orchestrator-m31-7`. The id takes the next number of
@@ -582,8 +580,6 @@ The rules of a milestone hold:
 4. During a milestone hold, a session of another slug sends no message to a held session. This covers each message with
    `SendMessage`, for example these messages:
    - The doc notice of [The notice rule](doc-reads.md#the-notice-rule).
-   - The message of the follow-up planner after a complete post, in
-     [The post of a draft](planner.md#the-post-of-a-draft).
    - Each other peer message of [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message).
 5. These messages still go to a held session, with no read of item 7 of this section. Item 5 of this section wins over
    item 4 of this section.
@@ -598,8 +594,6 @@ The rules of a milestone hold:
 
 6. The sender handles each skipped message by its kind:
    - A doc notice: the sender does nothing more. Item 9 of this section covers the doc change.
-   - The message of the follow-up planner after a post: the sender does nothing more. Item 9 of this section covers the
-     change of the board.
    - Each other skipped message: the sender tells the user the message on the path of its role, in place of the held
      session. An orchestrator asks the user in its question pane or tells the user in its own tab, as
      [The operator](#the-operator) says. A planner session tells the user in its own tab. No item goes to an operator.

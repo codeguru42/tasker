@@ -210,10 +210,10 @@ was
 On that short form, operator-m16 told the user that the denials of that day did not fit the guess that a chain caused
 them. Then operator-m16 withdrew that guess. The exact call later showed that the denied call was a chain.
 
-The classifier of auto mode can deny a `gh` write of a follow-up planner. The follow-up planner sends the exact command,
-the folder and the exact text of the denial to `orchestrator-<slug>`, which asks in its
-[question pane](question-pane.md#start). The user runs the command and gives the exit code and the output to the
-question session in the pane. The question session sends them in its decision message, as
+The classifier of auto mode can deny a `gh` write of a planner subagent. The planner subagent gives the exact command,
+the folder and the exact text of the denial in its result, as [The result](planner-subagent.md#the-result) says. The
+orchestrator asks in its [question pane](question-pane.md#start). The user runs the command and gives the exit code and
+the output to the question session in the pane. The question session sends them in its decision message, as
 [Send a decision](question-pane.md#send-a-decision) says.
 
 The message to the planner gives the output of the command, or says that the command did not run. The output goes with
@@ -243,9 +243,9 @@ block, with these differences:
   the same form. If that try also fails with a check failure, the orchestrator tells the user the exact command and the
   link, so that the user can run the command with the `!` prefix.
 - A planner follows the same steps for a check failure of its own call. If the second try also fails with a check
-  failure, a follow-up planner sends the question to `orchestrator-<slug>`, which gives the user the link in its pane.
-  The paragraph that starts "The classifier of auto mode can deny" and the paragraphs after it give the steps of the
-  question. An initial planner gives the user the command and the link directly.
+  failure, a planner subagent gives the question in its result, and the orchestrator gives the user the link in its
+  pane. The paragraph that starts "The classifier of auto mode can deny" and the paragraphs after it give the steps of
+  the question. An initial planner gives the user the command and the link directly.
 - Each other actor follows the same steps for a check failure of its own call. A second check failure goes up the report
   chain to the orchestrator.
 
@@ -287,13 +287,12 @@ A planner makes the records on the word of the user, with these steps:
 2. If the scan exits with an error, tell the user the output and stop.
 3. If the scan lists no new record, tell the user so and stop.
 4. Show the user the lines of the new records and the path of `/tmp/tasker/<slug>/denials/records.jsonl`. Also show the
-   `store` command of step 5 with the id of each new record, and its undo step. A follow-up planner sends the question
-   of step 4 to `orchestrator-<slug>` with these parts.
+   `store` command of step 5 with the id of each new record, and its undo step.
 5. On the word of the user, run
    `node scripts/denial-records.ts store --store $HOME/Documents/tasker/denials/store.jsonl --out /tmp/tasker/<slug>/denials <id>...`,
    with the id of each new record that the user keeps. If the user keeps no record, run no `store`.
 6. If `store` exits with an error, tell the user the output and stop.
-7. Tell the user the output `<new> stored`. A follow-up planner sends it as a report to `orchestrator-<slug>`.
+7. Tell the user the output `<new> stored`.
 
 Before step 4, the planner runs `stat -c %s $HOME/Documents/tasker/denials/store.jsonl`. It also runs `test -d` on
 `$HOME/Documents/tasker/denials`, `$HOME/Documents/tasker` and `$HOME/Documents`. It keeps the results. If the store
@@ -310,8 +309,8 @@ user alone, as [The open items](items.md#the-open-items) says. A task subagent, 
 a review agent run no `store` on this file.
 
 If the classifier denies `scan` or `store`, the planner runs that step in no other form and in no part. It tells the
-user the exact command and the exact text of the denial, and a follow-up planner sends them to `orchestrator-<slug>`.
-The planner gives the user no command with the `!` prefix for these steps.
+user the exact command and the exact text of the denial. The planner gives the user no command with the `!` prefix for
+these steps.
 
 An issue that uses the records says that its task subagent reads the store file. A record goes to no issue, no comment
 and no doc. An issue, a comment or a doc gives only counts and conclusions from the records. A count or a conclusion can
@@ -387,12 +386,6 @@ A denial in the other session is a tool block of that session, and the step of t
 and the third choice, the user tells the operator whether the command ran. Until then, the step stays open, and the
 operator continues its other work. It does not wait in a loop, as [the answer-wait rule](limits.md#the-answer-wait-rule)
 says for a task subagent.
-
-The other session can send this operator an item about its denial, for example a follow-up planner of the slug. Then the
-result of the second choice is "did not run", and the operator tells the user that result. For such an item, this
-paragraph wins over the item steps of the tool-block rule. After the result "did not run", the operator waits for a new
-word of the user. A word that picks a choice of this section starts that choice. In step 3 of "The order of a
-milestone", such a word is not a new word of the user to go on.
 
 ## The command rules
 
