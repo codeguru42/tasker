@@ -3,15 +3,18 @@
 This page gives the rules for a [planner subagent](GLOSSARY.md). The readers of this page are the orchestrator of the
 kind `claude` and each planner subagent.
 
-A planner subagent turns one planning request into issues. For this work, it starts an
+A planner subagent turns one item of planning work into issues. For this work, it starts an
 [issue-draft subagent](GLOSSARY.md), an [issue-review subagent](GLOSSARY.md) and an [issue-post subagent](GLOSSARY.md),
 as the work needs. An issue subagent on this page is one of these subagents. A planner subagent starts no
 [ticket subagent](GLOSSARY.md) and no review agent.
 
 ## Terms
 
-- A planning request is one piece of work that the docs send to the planner of the orchestrator.
-  [The planning requests](#the-planning-requests) gives the sends.
+- A planning request is one send of work to the planner of the orchestrator.
+  [The planning requests](#the-planning-requests) gives the sends. A planning request holds one or more items of
+  planning work.
+- An item of planning work is the unit of a start, a proposal file and a wait. [The start](#the-start) gives how a
+  planning request splits into items. [The glossary](GLOSSARY.md) gives the kinds.
 - The result of a planner subagent is the text of its `SubagentHandback` call.
 - The metadata of an issue is its milestone, its labels, its state, its board column and its priority. A blocked-by link
   is not metadata on this page.
@@ -41,16 +44,20 @@ Each send of the docs to the planner of the orchestrator is a planning request. 
 - Each relay, request, open finding, accepted proposal and recurrence that a
   [question pane](question-pane.md#a-question-pane) sends to the planner of the orchestrator.
 
-For each planning request, the orchestrator of the kind `claude` starts a planner subagent.
+For each item of planning work of a planning request, the orchestrator of the kind `claude` starts a planner subagent,
+as [The start](#the-start) says.
 
 ## The start
 
 Only the orchestrator starts a planner subagent. A task subagent, a question session, a planner and a planner subagent
 start none.
 
-The orchestrator starts a new planner subagent for each planning request. It sends no planning request to a planner
-subagent that runs or that ended. The reason: a message to an ended subagent starts it again, as
-[the answer-wait rule](limits.md#the-answer-wait-rule) says. A new start gives each request a new context.
+At the arrival of a planning request, the orchestrator splits it into its items of planning work. It judges which parts
+form one item of planning work. The split never splits the answers of
+[A draft that needs the user](#a-draft-that-needs-the-user). The orchestrator starts a new planner subagent for each
+item of planning work. It sends no item of planning work to a planner subagent that runs or that ended. The reason: a
+message to an ended subagent starts it again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. A new
+start gives each item of planning work a new context.
 
 [The count of planner subagents](#the-count-of-planner-subagents) gives how many planner subagents run at the same time.
 
@@ -96,10 +103,10 @@ with no report, as [The life of a planner subagent](#the-life-of-a-planner-subag
 starts an ended planner subagent again is not a start of the orchestrator, so that planner subagent does not count.
 
 Two planner subagents that run at the same time never get the same draft file in their prompts. If the prompt of a
-running planner subagent gives the same draft file path as a request of an answer of the user or of a settled answer,
-the request waits for the result of that planner subagent. The orchestrator then takes the next request that waits. The
-reason: two planner subagents on one draft file overwrite the draft file and the record file of each other. This rule
-does not cover a planner subagent that a late report starts again.
+running planner subagent gives the same draft file path as an item of an answer of the user or of a settled answer, the
+item waits for the result of that planner subagent. The orchestrator then takes the next item that waits. The reason:
+two planner subagents on one draft file overwrite the draft file and the record file of each other. This rule does not
+cover a planner subagent that a late report starts again.
 
 In one session of the orchestrator, two planner subagents never give two drafts one file name in the folder of
 [The prompt](#the-prompt). This also covers the draft of an ended planner subagent that waits for a decision of the
@@ -157,13 +164,13 @@ says. The limit of 12 characters keeps room for the rest of each such name.
 ### The proposal file
 
 A proposal file is the file `proposals/<number>.md` in the [orchestrator folder](limits.md#the-orchestrator-folder), for
-one planning request. Only an orchestrator of the kind `claude` queues planning requests and writes proposal files. An
-orchestrator of another kind sends each request at once and writes no proposal file. The orchestrator folder gives the
-reads, the calls and the fallback for this folder.
+one item of planning work. Only an orchestrator of the kind `claude` queues items of planning work and writes proposal
+files. An orchestrator of another kind sends each item at once and writes no proposal file. The orchestrator folder
+gives the reads, the calls and the fallback for this folder.
 
-Each planning request gets a proposal file at its arrival. This also covers a request whose planner subagent starts at
-once. The reason: the file stays until the result, so a compaction during the run of the planner subagent loses no
-request.
+Each item of planning work gets a proposal file at its arrival. This also covers an item whose planner subagent starts
+at once. The reason: the file stays until the result, so a compaction during the run of the planner subagent loses no
+item of planning work.
 
 Before the write, the orchestrator lists `proposals/` with `ls`. `<number>` is 1 more than the highest number that
 `proposals/` holds or that the orchestrator gave in its session. If neither holds a number, `<number>` is 1. So the
@@ -171,21 +178,22 @@ orchestrator never uses a proposal number again in one session, and the order of
 For example, `proposals/` holds no file, and the orchestrator gave the number 4 earlier in its session. Then the next
 request gets `proposals/5.md`.
 
-The proposal file holds each fact of [The prompt](#the-prompt) that comes from the request. These facts are the request
-word for word, its sender, its date and the source of each fact. A request can come from an answer of the user or from a
-settled answer. Then the file also holds the draft path, the questions and the answers, each with its source. The source
-is the words of the user word for word, or the reason of [A settled question](#a-settled-question). The file stands
-alone, as a [question file](question-pane.md#the-question-file) does.
+The proposal file holds each fact of [The prompt](#the-prompt) that comes from the item. These facts are the words of
+the planning request that belong to the item, word for word, its sender, its date and the source of each fact. An item
+can come from an answer of the user or from a settled answer. Then the file also holds the draft path, the questions and
+the answers, each with its source. The source is the words of the user word for word, or the reason of
+[A settled question](#a-settled-question). The file stands alone, as a
+[question file](question-pane.md#the-question-file) does.
 
 When fewer than `maxPlannerSubagents` planner subagents run, the orchestrator lists `proposals/`. It starts the planner
-subagent of the next request that waits, in the order of arrival, lowest number first. It does this at the arrival of a
-request, after a result and at the end of its start steps. It starts planner subagents until `maxPlannerSubagents` run
-or no request waits. A planner subagent that runs can have the draft file path of a request in its prompt. Then the
-orchestrator starts no planner subagent for that request, as
-[The count of planner subagents](#the-count-of-planner-subagents) says. That request keeps its proposal file and waits
-for the result of that planner subagent. The orchestrator takes the next request that waits. A request that waits is a
-proposal file whose planner subagent does not run. While the bar of the fallback holds, a request that waits is a
-request that waits in the session. These files are not requests that wait:
+subagent of the next item of planning work that waits, in the order of arrival, lowest number first. It does this at the
+arrival of an item, after a result and at the end of its start steps. It starts planner subagents until
+`maxPlannerSubagents` run or no item waits. A planner subagent that runs can have the draft file path of an item in its
+prompt. Then the orchestrator starts no planner subagent for that item, as
+[The count of planner subagents](#the-count-of-planner-subagents) says. That item keeps its proposal file and waits for
+the result of that planner subagent. The orchestrator takes the next item of planning work that waits. An item that
+waits is a proposal file whose planner subagent does not run. While the bar of the fallback holds, an item that waits is
+an item that waits in the session. These files are not items that wait:
 
 - A file that stays after a failed delete at a result.
 - A file whose write of the name failed, until the next word of the user.
@@ -294,10 +302,11 @@ The orchestrator handles a result in this way:
    an open question of the orchestrator. For each other question, follow [A settled question](#a-settled-question). Each
    asked question gets a [question file](question-pane.md#the-question-file). The text of the question names its kind
    and the path of its draft file. The question ids follow the order of the result.
-4. Take each answer of the user and each settled answer as a new planning request. A draft with two or more questions
-   and an answer that drops a draft are exceptions, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
+4. Take each answer of the user and each settled answer as part of an item of planning work. A draft with two or more
+   questions and an answer that drops a draft are exceptions, as
+   [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
-The new planner subagent of such an answer follows change 6.
+The new planner subagent of such an item follows change 6.
 
 ### A settled question
 
@@ -334,9 +343,9 @@ start with `From the user:`.
 For each settled question, the orchestrator shows a progress report in its own tab. The report gives the question, the
 answer and the reason, in the form of step 1 of [The result](#the-result).
 
-A settled answer is a new planning request, as step 4 of The result says for an answer of the user. The start follows
-[The start](#the-start). For a draft with two or more questions, the settled answer joins the answers of the other
-questions. The new planner subagent starts after the last answer, as
+A settled answer is part of an item of planning work, as step 4 of The result says for an answer of the user. The start
+follows [The start](#the-start). For a draft with two or more questions, the settled answer joins the answers of the
+other questions. The new planner subagent starts after the last answer, as
 [A draft that needs the user](#a-draft-that-needs-the-user) says. The prompt gives the draft path, the questions and the
 answers, each with its source. A draft can still have an open question when its settled answer comes. Then the
 orchestrator writes the proposal file of the settled answer at once, as [The proposal file](#the-proposal-file) says for
@@ -346,8 +355,9 @@ later answer of that draft joins the same file.
 
 A settled answer can drop a draft only if a rule or a fact already holds the whole change of the draft. Keep 4 permits a
 drop with no approval of the user. Then the drop bullet of A draft that needs the user holds for the settled answer: the
-answer ends the draft, and the orchestrator asks no other question of that draft. In each other case, a settled answer
-drops no draft.
+answer ends the draft, and the orchestrator asks no other question of that draft. The item of planning work of the draft
+holds that answer and each earlier answer, in the one proposal file of the draft, and it starts at once. In each other
+case, a settled answer drops no draft.
 
 The new planner subagent handles a settled answer with the steps that the planner docs give for an answer of the user to
 that question. Examples are the bullets of [The escape hatch](planner.md#the-escape-hatch) that start "If the answer",
@@ -477,14 +487,18 @@ The orchestrator handles the questions of one result in these ways:
   [The question session](question-pane.md#the-question-session) that starts "A question session starts no subagent that
   plans, drafts, reviews or posts an issue". The other is the sentences that start "A planner subagent is never the
   sender of a question of a pane".
-- For a draft with two or more questions, it starts the new planner subagent only after the answer to the last open
-  question of the draft. The proposal file and the prompt give each question with its answer and source. A settled
-  answer joins this rule. For such a draft, this rule wins over step 4. The reason: the sentence of The escape hatch
-  that starts "A planner posts nothing for such a draft" bans each post before the answer to each question.
+- One answer is one item of planning work, except in the two cases that follow. For a draft with two or more questions,
+  all the answers of the draft form one item of planning work. A settled answer of the draft joins them. The item has
+  one proposal file, and the prompt gives each question with its answer and source. Its planner subagent starts only
+  after the answer to the last open question of the draft. For such a draft, this rule wins over step 4. The reason: the
+  sentence of The escape hatch that starts "A planner posts nothing for such a draft" bans each post before the answer
+  to each question.
 - An answer that rejects or drops a draft ends the draft. A settled answer that drops a draft does the same, as
   [A settled question](#a-settled-question) says. The orchestrator asks no other open question of that draft. It drops
   each such question as moot work, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says.
-  Then it starts the new planner subagent with that answer, and that planner subagent reports the drop.
+  The item of planning work of the draft then holds that answer and each earlier answer of the draft, in the one
+  proposal file of the draft. The item waits for no other answer of the draft. It starts at once, under
+  [the count of planner subagents](#the-count-of-planner-subagents). That planner subagent reports the drop.
 
 The steps with each answer are the steps of change 6. For the remaining findings, the answer "post the draft as it
 stands" accepts the draft with no change. The bullet of The escape hatch that starts "If the answer accepts the draft
@@ -582,7 +596,7 @@ The planner subagent keeps these rules:
 
 The planner subagent changes these rules:
 
-1. The source of the work. The planner subagent takes only the planning request of its prompt.
+1. The source of the work. The planner subagent takes only the item of planning work of its prompt.
 2. Each report, question and draft for the user goes in the result, as [The result](#the-result) says. One such place is
    the third paragraph of [The state of the user](planner.md#the-state-of-the-user). Another is the paragraph of
    [The escape hatch](planner.md#the-escape-hatch) that starts "For a draft that waits for such a decision". Others are
@@ -684,8 +698,8 @@ that it can run.
 
 ### The order of the work on a draft
 
-The planner subagent makes the drop judgment of keep 1 before it starts the first issue-draft subagent of a planning
-request.
+The planner subagent makes the drop judgment of keep 1 before it starts the first issue-draft subagent of an item of
+planning work.
 
 For one draft, the planner subagent does these steps:
 
@@ -865,7 +879,7 @@ On 2026-11-21, with git 2.47.3, two pulls ran at the same moment in one clone 11
 [Step 1: pull the local clone](doc-reads.md#step-1-pull-the-local-clone) records the result. A clash costs a slower read
 and a note of the failure, and no draft is lost.
 
-The cost: a planning request with more than one draft works on its drafts one after the other, so the request takes
+The cost: an item of planning work with more than one draft works on its drafts one after the other, so the item takes
 longer.
 
 ### The prompt of an issue subagent
@@ -981,8 +995,9 @@ A planner subagent ends after its result. The orchestrator is the starter of
 notification of that subsection. A wait notification does not end the wait. The result ends it.
 
 If a planner subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the orchestrator.
-The orchestrator then starts one new planner subagent for the same request. If that one also ends with no report, the
-orchestrator tells the user. The proposal file of the request stays, as [The proposal file](#the-proposal-file) says.
+The orchestrator then starts one new planner subagent for the same item of planning work. If that one also ends with no
+report, the orchestrator tells the user. The proposal file of the item stays, as [The proposal file](#the-proposal-file)
+says.
 
 A late report of an issue subagent can start an ended planner subagent again. The wait for a report says this for a late
 report of a review agent and its ticket subagent. The orchestrator handles the second result of the planner subagent as
@@ -995,9 +1010,9 @@ its handoff file:
 
 1. Wait for the result of each planner subagent that runs. This includes the planner subagent of the facts and lessons
    of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file).
-2. Start the planner subagents of the requests that wait, as [The proposal file](#the-proposal-file) says. Up to
-   `maxPlannerSubagents` run at the same time, and they start in the order of their numbers. This includes the request
-   of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). Wait for the
+2. Start the planner subagents of the items of planning work that wait, as [The proposal file](#the-proposal-file) says.
+   Up to `maxPlannerSubagents` run at the same time, and they start in the order of their numbers. This includes the
+   items of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). Wait for the
    result of each one.
 
 The old orchestrator writes its handoff file only after the result of the last planner subagent.

@@ -170,9 +170,9 @@ The task branch is on the `branch:` line of `tasker show <issue>`.
 ### The orchestrator folder
 
 The orchestrator folder is the folder `<data root>/<repo slug>/orchestrators/<slug>/` of one orchestrator. It holds the
-open questions, the waiting planning requests and the handoff files of that orchestrator. These files are the own state
-of the orchestrator, not files that tasker keeps. A file there stays through a compaction of the context and through a
-handoff.
+open questions, the waiting items of planning work and the handoff files of that orchestrator. These files are the own
+state of the orchestrator, not files that tasker keeps. A file there stays through a compaction of the context and
+through a handoff.
 
 The terms of this section:
 
@@ -235,12 +235,13 @@ counts as a failure of the call after it. After a denial, the step of the denied
 rule says. After a failure or a denial, the fallback holds:
 
 - The orchestrator runs no later call on the three folders until the next word of the user. This rule is the bar.
-- Until that word, the orchestrator keeps each new question and each new planning request in its session. A pane starts
-  with the text from the session.
+- Until that word, the orchestrator keeps each new question and each new item of planning work in its session. A pane
+  starts with the text from the session.
 - The rest of the work of the orchestrator goes on.
 - The next word of the user ends the bar for all calls on the three folders.
 - After that word, the orchestrator writes a question file for each open question that its session holds with no file.
-  It also writes a proposal file for each request that waits in its session with no file.
+  It also writes a proposal file for each item of planning work that waits in its session with no file. The items start
+  in the order of arrival, under the configured count of planner subagents.
 
 Step 6 of the tool-block rule stays. The orchestrator brings each denial to the user in its question pane, and that pane
 starts with the text from the session. For a denied list of `questions/`, the rule of

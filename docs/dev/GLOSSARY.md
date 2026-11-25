@@ -18,6 +18,12 @@ is not an issue-post subagent. It keeps its own start.
 subagent. It follows [issue-subagents.md](issue-subagents.md) and [issue-review.md](issue-review.md). Only a
 [planner subagent](planner-subagent.md) starts it. A review agent of a ticket subagent is not an issue-review subagent.
 
+**Item of planning work**: One unit of work that goes to the planner of an orchestrator. It is one lesson, one measured
+fact, one finding, one recurrence, or one proposed issue (also a change of the title or the body of an issue). It is
+also one relay, request, open finding or accepted proposal of a question pane, or the answers of
+[A draft that needs the user](planner-subagent.md#a-draft-that-needs-the-user). An orchestrator of the kind `claude`
+starts one [planner subagent](planner-subagent.md) for each item of planning work.
+
 **Orchestrator**: A top-level session that runs one scope. It picks tickets and starts task subagents.
 
 **Orchestrator folder**: The folder `<data root>/<repo slug>/orchestrators/<slug>/` of one orchestrator, with the
@@ -37,9 +43,9 @@ of the request rule.
 **Placeholder**: A name in double braces, for example `{{ISSUE_TEXT}}`, in the body of a prompt template. The code fills
 it with a value. [prompt-templates.md](prompt-templates.md) gives the form.
 
-**Planner subagent**: A subagent that an orchestrator of the kind `claude` starts with the Agent tool for one planning
-request. It starts the issue-draft, issue-review and issue-post subagents as its work needs, and it returns one result.
-[planner-subagent.md](planner-subagent.md) gives its rules.
+**Planner subagent**: A subagent that an orchestrator of the kind `claude` starts with the Agent tool for one item of
+planning work. It starts the issue-draft, issue-review and issue-post subagents as its work needs, and it returns one
+result. [planner-subagent.md](planner-subagent.md) gives its rules.
 
 **Prompt template**: A file `prompt-templates/<family>/<name>.md` with front matter and a body. The body is the words of
 one prompt. [prompt-templates.md](prompt-templates.md) gives the rules.

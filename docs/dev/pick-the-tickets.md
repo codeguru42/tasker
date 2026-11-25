@@ -1433,8 +1433,8 @@ landing rules still apply.
   prompt of that ticket.
 - The planner bullet: the orchestrator gives each lesson of a final report, each finding of a session review, each
   recurrence and each proposed issue only to its planner. For an orchestrator of the kind `claude`, the planner is a new
-  [planner subagent](planner-subagent.md) for each one, as [The start](planner-subagent.md#the-start) of
-  planner-subagent.md says. The prompt gives the lesson, the ticket, the date, and the doc and the section that the
+  [planner subagent](planner-subagent.md) for each item of planning work, as [The start](planner-subagent.md#the-start)
+  of planner-subagent.md says. The prompt gives the lesson, the ticket, the date, and the doc and the section that the
   lesson fits. For a recurrence, it also names the open issue. The planner drafts and posts the issue, as
   [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
   files no issue itself. The one exception is the issue of step 1 of [A failed CI run](ci-wait.md#a-failed-ci-run),

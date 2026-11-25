@@ -132,8 +132,9 @@ source for it. For an orchestrator, this reason does not hold for a question wit
 
 The old session puts no rule in the handoff file. The rules stay in the docs, and the prompt points to them.
 
-An old orchestrator of the kind `claude` starts a [planner subagent](planner-subagent.md) for its facts and lessons.
-After a failed start of its planner subagent, an old orchestrator asks the user, as the planner bullet of
+An old orchestrator of the kind `claude` starts a [planner subagent](planner-subagent.md) for each measured fact and
+each lesson. Each one is one [item of planning work](planner-subagent.md#the-start), with its own proposal file. After a
+failed start of its planner subagent, an old orchestrator asks the user, as the planner bullet of
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The old orchestrator waits for
 the result, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says.
 
