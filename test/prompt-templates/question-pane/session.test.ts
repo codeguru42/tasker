@@ -39,6 +39,12 @@ describe("prompt-templates/question-pane/session.md", () => {
     expect(body()).toContain("run git fetch origin. Then read the five files with git show origin/main: and the path.");
   });
 
+  it("shows the start line again on a status request before the first reply", () => {
+    expect(body()).toContain(
+      "Each time Claude Code asks for a status before that reply, show it again, alone, and continue.",
+    );
+  });
+
   it("holds no single quote", () => {
     expect(body().includes("'")).toBe(false);
   });
