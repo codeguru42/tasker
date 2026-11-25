@@ -1235,9 +1235,8 @@ The own close has these steps:
 If a check or a command fails, the orchestrator closes nothing. It tells the user in its own tab, with the command and
 its output. The user then closes the tab, and the milestone keeps its state.
 
-A pi orchestrator runs the rounds, the end reads and the wait of this subsection. It sends each finding to its planner,
-as the planner bullet of [The prompt of a task subagent](#the-prompt-of-a-task-subagent) says. It does no own close,
-because no one tested the closure of a pi session, as
+A pi orchestrator runs the rounds, the end reads and the wait of this subsection. It does no own close, because no one
+tested the closure of a pi session, as
 [The own-session closure of a pi session](milestone-close.md#the-own-session-closure-of-a-pi-session) says.
 
 A pi orchestrator of a milestone scope closes no milestone. After end reads that find no open issue, it sends the report
