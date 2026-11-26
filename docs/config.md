@@ -337,8 +337,8 @@ A session role is one of `planner`, `orchestrator` and `question`. The session r
 session, in the form that herdr names it in `herdr agent start --kind`.
 
 A subagent is a helper that a Claude Code session starts with its `Agent` tool. A subagent runs inside the session that
-starts it. A subagent role is one of `issue-draft`, `issue-review`, `issue-post` and `write`. Each subagent role sets
-the model and the effort of a subagent, not of a session. The orchestrator starts one planner subagent for each
+starts it. A subagent role is one of `issue-draft`, `issue-review`, `issue-post`, `write` and `task`. Each subagent role
+sets the model and the effort of a subagent, not of a session. The orchestrator starts one planner subagent for each
 [item of planning work](dev/planner-subagent.md#the-start). The key `planner` sets the model and the effort of the
 planner subagent and of a planner session.
 
@@ -350,12 +350,18 @@ or of a user-level file, as [the actor table](dev/question-pane.md#the-actor-of-
 session. For an ad hoc draft, the keys `issue-draft` and `issue-review` also set them for an issue subagent of the main
 session.
 
-| Key                   | Type                 | Default    | Notes                                                                                                                 |
-| --------------------- | -------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| `kind`                | `"claude"` or `"pi"` | `"claude"` | The agent kind of each session role and each subagent role.                                                           |
-| `models`              | object               | `{}`       | Has the optional keys `planner`, `orchestrator`, `question`, `issue-draft`, `issue-review`, `issue-post` and `write`. |
-| `maxPlannerSubagents` | whole number above 0 | `3`        | The highest count of planner subagents of one orchestrator that run at the same time.                                 |
-| `maxTaskSubagents`    | whole number above 0 | `3`        | The highest count of task subagents of one orchestrator that run at the same time.                                    |
+The orchestrator starts a task subagent for each ticket and for each task change. Only an orchestrator of the kind
+`claude` reads the key `task`. A read of the tool schema of the Claude Code `Agent` tool gives the parameters `model`
+and `effort`. [docs/dev/codex-sessions.md](dev/codex-sessions.md) records no model parameter and no effort parameter of
+a native Codex subagent start, and no one measured one. No measure shows that a pi session can start a subagent.
+[The start of a task subagent](dev/pick-the-tickets.md#the-start-of-a-task-subagent) gives the steps of the start.
+
+| Key                   | Type                 | Default    | Notes                                                                                                                         |
+| --------------------- | -------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `kind`                | `"claude"` or `"pi"` | `"claude"` | The agent kind of each session role and each subagent role.                                                                   |
+| `models`              | object               | `{}`       | Has the optional keys `planner`, `orchestrator`, `question`, `issue-draft`, `issue-review`, `issue-post`, `write` and `task`. |
+| `maxPlannerSubagents` | whole number above 0 | `3`        | The highest count of planner subagents of one orchestrator that run at the same time.                                         |
+| `maxTaskSubagents`    | whole number above 0 | `3`        | The highest count of task subagents of one orchestrator that run at the same time.                                            |
 
 The keys `maxPlannerSubagents` and `maxTaskSubagents` are not session roles, so `tasker model` does not set them. The
 names say what they limit: the planner subagents and the task subagents that run at the same time. The default 3 is the
@@ -377,6 +383,7 @@ Each key of `models` sets the model and the effort of one role:
 | `issue-review` | The model and the effort of a review subagent.                             |
 | `issue-post`   | The model and the effort of a post subagent.                               |
 | `write`        | The model and the effort of a write subagent.                              |
+| `task`         | The model and the effort of a task subagent.                               |
 
 The command `tasker model` also changes `sessions.models.<role>` in the file, with the same rules as the paragraph in
 [`assistant`](#assistant). It adds the keys `sessions` and `models` when the file has none. A role with no entry needs
@@ -398,7 +405,17 @@ provider. Any other model gives the error
 
 This check is the same for each key of `models`. The `Agent` tool lists only the models `sonnet`, `opus`, `haiku` and
 `fable`. So the loader accepts a model that the `Agent` tool does not list, for example `claude-opus-5-5` or `opusplan`.
-Then the start of the subagent can fail, and the user sees the fault only at that start.
+The write subagent start passes the `model` of the entry as it stands. So such a model can still make that start fail.
+
+The planner subagent start and the task subagent start pass only a `model` that
+[The model of the start](dev/planner-subagent.md#the-model-of-the-start) gives, or no `model`. The issue subagent starts
+of a planner subagent and of a planner session use the same map. Each `model` that the map passes is in the list of the
+tool schema of the `Agent` tool. An example of a value that the map does not name is `opusplan`. For such a value, the
+start passes no `model`.
+
+These facts come from the map and from reads of the tool schema of the `Agent` tool, not from a measure of a start. No
+one measured a start of a task subagent. No one measured a write, planner or task subagent start with a model that the
+`Agent` tool does not list. So no one measured whether such a model makes a start fail.
 
 For the kind `pi`, `model` must have the form `<provider>/<model-id>`, for example
 `openrouter/deepseek/deepseek-v4.1-flash`. It must not end in a pi thinking level, because the effort gives the level.
@@ -409,8 +426,8 @@ Two errors are possible, both at `repos.<key>.sessions.models.<role>.model`:
 
 A model with both faults gets only the first error. One kind covers each session role and each subagent role. So under
 `pi`, the role `question` must also hold a pi model, because a question session starts under the kind of the pane owner.
-For the same reason, the subagent roles `issue-draft`, `issue-review`, `issue-post` and `write` must hold a pi model
-under `pi`. No measure shows that a pi session can start a subagent.
+For the same reason, the subagent roles `issue-draft`, `issue-review`, `issue-post`, `write` and `task` must hold a pi
+model under `pi`. No measure shows that a pi session can start a subagent.
 
 The loader accepts each of the five efforts under `pi`. The efforts `xhigh` and `max` are measured. For the measured
 model, pi used the level max after `--thinking xhigh`, and no one measured the cause. The efforts `low`, `medium` and
