@@ -1578,52 +1578,6 @@ For a removal of a link-removal request, the report of the write subagent gives 
 orchestrator tells the user. A non-zero exit code is a failed command, also for a link that does not exist. Exit code 0
 counts as a removed link. This is the first-run measure, because no one measured the exit code of such a removal before.
 
-#### The read of the board after a removal
-
-After a write subagent that got a link-removal request ends, the orchestrator reads the board at once. A freed ticket
-then does not wait for the board watch job.
-
-- Not started: a failed start runs no removal, and no read follows. The orchestrator tells the user each action that did
-  not run.
-- Running: the read waits for the end of the write subagent. Each other read of the board keeps its time.
-- Ended: the orchestrator reads the board after the report. A later failed command of the same write subagent does not
-  stop the read. An end with no report also gives the read, because a removal can have run.
-
-The read is a normal read of the board of the scope, as the board-read bullet of
-[Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The fill rule applies after it. Each rule that stops a
-start still holds, for example the wait before a handoff. The read is not a write action.
-
-A failed read follows [the failure rule](limits.md#the-failure-rule). The orchestrator starts no ticket that the read
-covers until a later read works.
-
-A removed link can free an issue of another milestone. The orchestrator sends no message about it to a peer. The peer
-finds the freed issue at its next read of the board.
-
-#### The link-removal request for each kind of orchestrator
-
-The rule holds for each kind of orchestrator, as the metadata-request rule does, so that each kind has one path. No one
-measured a pi start of a write subagent, as the known pi limit above says. A failed start runs no action.
-
-The rule has these gates:
-
-- The list of the write subagent in [allowed-commands.md](allowed-commands.md) names the removal command.
-- The permission table of [permissions.md](permissions.md) does not change.
-- The rules of Claude Code: the ask rules of the setup docs name no `gh` command, and the tracked
-  `.claude/settings.json` holds only `Bash(tasker *)`. No one read `$HOME/.claude/settings.json` for this issue. The
-  classifier of auto mode decides a call that no rule matches.
-- The tool-block rule of the write subagent, which the paragraph below gives, does not change.
-
-Each other removal of a blocked-by link keeps its actor and its steps:
-
-- The removal at a move into "Future" or into another milestone.
-- The removal at the start of a hold.
-- The removal of a link of a race or of a reversed link.
-- The removal in the offer of an outside blocker.
-- The removal in an answer to a design gap.
-
-An answer in a pane to a question of one of these steps is not a link-removal request, because the item proposed the
-removal.
-
 A call of the write subagent can get a [tool block](tasker-commands.md#the-tool-block-rule). After a check failure of
 that rule, the write subagent first runs the same call again one time, in the same form. After each other tool block,
 and after a second check failure, the write subagent stops. It reports the exact call, the exact text of the denial, the
@@ -1715,6 +1669,52 @@ also wrote: "Under what scenario does an "old body" and a "new body" have anythi
 "This needs a change in design: a proposed title or body change must go to the planner to draft it." So a question pane
 has no use for an old body and a new body. Issue #987 asked a pane to show a summary and two paths for an old and a new
 body. It is closed as not planned, and this rule replaces its idea.
+
+#### The read of the board after a removal
+
+After a write subagent that got a link-removal request ends, the orchestrator reads the board at once. A freed ticket
+then does not wait for the board watch job.
+
+- Not started: a failed start runs no removal, and no read follows. The orchestrator tells the user each action that did
+  not run.
+- Running: the read waits for the end of the write subagent. Each other read of the board keeps its time.
+- Ended: the orchestrator reads the board after the report. A later failed command of the same write subagent does not
+  stop the read. An end with no report also gives the read, because a removal can have run.
+
+The read is a normal read of the board of the scope, as the board-read bullet of
+[Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The fill rule applies after it. Each rule that stops a
+start still holds, for example the wait before a handoff. The read is not a write action.
+
+A failed read follows [the failure rule](limits.md#the-failure-rule). The orchestrator starts no ticket that the read
+covers until a later read works.
+
+A removed link can free an issue of another milestone. The orchestrator sends no message about it to a peer. The peer
+finds the freed issue at its next read of the board.
+
+#### The link-removal request for each kind of orchestrator
+
+The rule holds for each kind of orchestrator, as the metadata-request rule does, so that each kind has one path. No one
+measured a pi start of a write subagent, as the known pi limit above says. A failed start runs no action.
+
+The rule has these gates:
+
+- The list of the write subagent in [allowed-commands.md](allowed-commands.md) names the removal command.
+- The permission table of [permissions.md](permissions.md) does not change.
+- The rules of Claude Code: the ask rules of the setup docs name no `gh` command, and the tracked
+  `.claude/settings.json` holds only `Bash(tasker *)`. No one read `$HOME/.claude/settings.json` for this issue. The
+  classifier of auto mode decides a call that no rule matches.
+- The tool-block rule of the write subagent, which the paragraph below gives, does not change.
+
+Each other removal of a blocked-by link keeps its actor and its steps:
+
+- The removal at a move into "Future" or into another milestone.
+- The removal at the start of a hold.
+- The removal of a link of a race or of a reversed link.
+- The removal in the offer of an outside blocker.
+- The removal in an answer to a design gap.
+
+An answer in a pane to a question of one of these steps is not a link-removal request, because the item proposed the
+removal.
 
 ### The rounds before the close
 
