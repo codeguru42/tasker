@@ -1383,12 +1383,23 @@ The write subagent first writes each input file at its path, with the slug of th
 in order. It reports the exit code and the output of each command, and the orchestrator then tells the user the result
 in one line.
 
-Before each start of a write subagent, the orchestrator runs `tasker show-config --repo <repo key>` and reads
-`.sessions.models.write`. With an entry, the `Agent` call gives its model and its effort. With no entry, the call gives
-no model and no effort, as [Sessions](../config.md#sessions) says for a subagent role with no entry. A failed read
-follows [the failure rule](limits.md#the-failure-rule). The write subagent then starts with no model and no effort,
-because the user already approved the action. A failed start runs no write action. The orchestrator tells the user each
-action that did not run.
+Right before each start of a write subagent, the orchestrator runs `tasker show-config --repo <repo key>` and reads
+`.sessions.models.write`. With an entry, the `Agent` call gives the `effort` of the entry. It gives the `model` that
+[The model of the start](planner-subagent.md#the-model-of-the-start) gives for the `model` of the entry. If the map of
+that subsection gives no model, the call gives no `model` and still gives the `effort`. With no entry, the call gives no
+model and no effort, as [Sessions](../config.md#sessions) says for a subagent role with no entry.
+
+A failed read follows [the failure rule](limits.md#the-failure-rule). The write subagent then starts with no model and
+no effort, because the user already approved the action. A failed start runs no write action. A refused `Agent` call is
+also a failed start. The orchestrator tells the user each action that did not run.
+
+Each `Agent` call that starts a write subagent gives the subagent type `general-purpose`, also after a failed read and
+with no entry. It never gives the type `fork`, and it never leaves out the type. A fork ignores `model` and `effort`,
+and it gets the context of the orchestrator. A named type does not depend on the default type of the `Agent` tool.
+
+A running write subagent keeps its `model` and its `effort`, also after a change of `.sessions.models.write`. Each new
+start reads the entry again. This also holds for the new write subagent after
+[a denied call](tasker-commands.md#a-denied-command), under the same approval.
 
 Right before it writes a user-level file, the write subagent runs `sha256sum <path>` again in its own call. A hash that
 differs from the start hash is a failed command. A file that exists when the start hash is "no file" is also a failed

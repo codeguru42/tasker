@@ -416,13 +416,12 @@ provider. Any other model gives the error
 
 This check is the same for each key of `models`. The `Agent` tool lists only the models `sonnet`, `opus`, `haiku` and
 `fable`. So the loader accepts a model that the `Agent` tool does not list, for example `claude-opus-5-5` or `opusplan`.
-The write subagent start passes the `model` of the entry as it stands. So such a model can still make that start fail.
 
 These starts use the map of [The model of the start](dev/planner-subagent.md#the-model-of-the-start): the start of a
-planner subagent, a task subagent, an opener subagent and a reuse subagent. They pass only a `model` that the map gives,
-or no `model`. The issue subagent starts of a planner subagent and of a planner session use the same map. Each `model`
-that the map passes is in the list of the tool schema of the `Agent` tool. An example of a value that the map does not
-name is `opusplan`. For such a value, the start passes no `model`.
+planner, task, opener, reuse or write subagent. They pass only a `model` that the map gives, or no `model`. The issue
+subagent starts of a planner subagent and of a planner session use the same map. Each `model` that the map passes is in
+the list of the tool schema of the `Agent` tool. An example of a value that the map does not name is `opusplan`. For
+such a value, the start passes no `model`.
 
 These facts come from the map and from reads of the tool schema of the `Agent` tool, not from a measure of a start. No
 one measured a start of a task subagent, an opener subagent or a reuse subagent. No one measured a start of a write,
