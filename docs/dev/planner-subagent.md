@@ -123,7 +123,10 @@ No record of the docs gives a tested limit for these counts. More pulls of the l
 [Step 1: pull the local clone](doc-reads.md#step-1-pull-the-local-clone) gives the failures of such pulls and their
 recovery.
 
-These four known limits hold:
+The orchestrator runs the count read of [the orchestrator folder](limits.md#the-orchestrator-folder) before each start
+of a planner subagent. [The name](#the-name) gives the count that follows from it.
+
+These known limits hold:
 
 - Each planner subagent makes its table of the needs and the likely files only from its own drafts. So two planner
   subagents that post at about the same time can miss a blocked-by link between their two issues.
@@ -133,11 +136,12 @@ These four known limits hold:
   the record file of its draft. At the same moment, a planner subagent of an answer of the user can run on the same
   draft. Then the two write one record file and can write one draft file. The orchestrator sees the start again only at
   the second result.
-- [The name](#the-name) counts `plan-<count>` from 1 in each session of the orchestrator. A later session of an
-  orchestrator with the same own name has the same folder of the draft files. So a new draft can get the file name of a
-  draft of an earlier session that waits for a decision of the user. The new draft and its record file then overwrite
-  the old ones. No step of the planner subagent lists the folder. The same clash can occur today with one planner
-  subagent at a time.
+- While the bar of [the orchestrator folder](limits.md#the-orchestrator-folder) holds, the orchestrator runs no count
+  read. A new draft goes to the old folder, so it can get the file name of an older draft there. The new draft and its
+  record file then overwrite the old ones.
+- After a compaction of the context, the orchestrator can lose the counts that it gave in its session. Then it can give
+  a name again. Two planner subagents of one session can then have one name, and their files can clash. No one measured
+  what the Agent tool does with a repeated name.
 
 ### The wait for a busy path
 
@@ -240,9 +244,15 @@ can name another version than the full id. No one measured which version a famil
 
 ### The name
 
-The orchestrator names each planner subagent `plan-<count>`. `<count>` counts the planner subagents of the session of
-the orchestrator, from 1. An example is `plan-1`. Each name is new in the session of the orchestrator. A name has at
-most 12 characters, of lowercase letters, digits and `-`.
+The orchestrator names each planner subagent `plan-<count>`. `<count>` is 1 more than the highest of two numbers: the
+number that the count read gave before this start, and each count that the orchestrator gave in its session. With
+neither, `<count>` is 1. An example is `plan-1`. A name has at most 12 characters, of lowercase letters, digits and `-`.
+`plan-` and 7 digits fit.
+
+An example: `drafts/` holds `plan-7-links.md`, `plan-7-links.findings.md` and `plan-12-terms-report.md`. The count read
+gives 12, so the next name is `plan-13`. The reason: a record file of an old draft can approve a new draft by mistake,
+if the new draft has the same file name. The cost: a longer count leaves fewer of the 24 characters of a draft file
+name.
 
 The name of each issue subagent of a planner subagent starts with the name of the planner subagent and `-`.
 [The start of an issue subagent](#the-start-of-an-issue-subagent) gives the rules of these names. The Agent tool refuses
@@ -331,9 +341,13 @@ The prompt of a planner subagent gives these facts:
 - The item of planning work word for word, with its sender and its date. The prompt names the source of each fact, as
   the source bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 - The own name and the scope of the orchestrator.
-- The folder of the draft files, `/tmp/tasker/<own name>/drafts/`, with the own name of the orchestrator. An example is
-  `/tmp/tasker/orchestrator-m31/drafts/`. Each new draft file name of the planner subagent starts with its own name and
-  `-`, for example `plan-4-terms.md`.
+- The folder of the draft files. It is the absolute path of `drafts/` of
+  [the orchestrator folder](limits.md#the-orchestrator-folder), from the read of the data root, with no `$HOME` and no
+  `~`. An example, for the data root `/home/u/.local/share/tasker`, the repo key `codeguru42/tasker` and the own name
+  `orchestrator-m31`, is `/home/u/.local/share/tasker/codeguru42-tasker/orchestrators/m31/drafts/`. While the bar of
+  that section holds, the folder is the old folder, `/tmp/tasker/<own name>/drafts/`, with the own name of the
+  orchestrator. Each new draft file name of the planner subagent starts with its own name and `-`, for example
+  `plan-4-terms.md`.
 - The name of the planner subagent.
 - The docs to read: this page and [planner.md](planner.md). The planner subagent reads each other doc of a kept rule
   only for a step that needs it. It reads each doc with the commands of
@@ -350,8 +364,10 @@ has the value `none`, for example a key with no entry. The file holds the list o
 commands as fixed words, so a change of [that list](allowed-commands.md#the-planner-subagent) also changes the file. The
 facts of each answer go in the item of planning work.
 
-The reason for the folder: the initial planner of the slug writes its drafts to `/tmp/tasker/<slug>/drafts/`. A shared
-folder can give two drafts one file name.
+The reason for the folder: a file of the orchestrator folder stays through a reboot, and a reboot clears `/tmp`. A draft
+that waits for the user is then not lost. No planner session writes in `drafts/`, so a draft of a planner session never
+has the file name of a draft there. The reason of [planner.md](planner.md) for `/tmp` holds only for a draft in the old
+folder.
 
 For an item of planning work of an answer, the prompt also gives the path of the draft file and the question. It gives
 the answer and its source: the words of the user word for word, or the reason of a settled answer. For a draft with two
@@ -716,7 +732,8 @@ The planner subagent changes these rules:
    user is such a step too, and change 9 gives its actor.
 7. The folder of the draft files is the folder of [The prompt](#the-prompt). The bullet that starts "The issue-draft
    subagent of each planner session writes each draft" gives the folder of the slug. That folder does not hold for the
-   planner subagent. The draft file, the report file and the record file stand in this folder.
+   planner subagent. A draft keeps its folder. The draft file, the report file and the record file stand next to each
+   other, in `drafts/` or in the old folder, also for an answer of the user while the bar holds.
 8. The actors of the work on a draft. The planner subagent starts the issue-draft subagent, the issue-review subagent
    and the issue-post subagent with the Agent tool, as the work needs. Each start of an agent and each wait for a report
    in the kept rules is a step of the planner subagent. [The issue subagents](#the-issue-subagents) gives the start
@@ -892,8 +909,8 @@ again is not new, so no later review stops the post for it.
 ### The record file
 
 The planner subagent keeps a record of each finding of each review of a draft. It also records each dismissal with its
-reason: its own dismissals and each dismissal of the result of an issue-draft subagent. The record file is in the folder
-of the draft files of [The prompt](#the-prompt), next to the draft file.
+reason: its own dismissals and each dismissal of the result of an issue-draft subagent. The record file is next to the
+draft file, in the folder of [The prompt](#the-prompt) or in the old folder.
 
 The name is `<file>.findings.md` next to the draft file `<file>.md`. The name of a record file is never the name of a
 draft file. The reason: a draft file name has only lowercase letters, digits and `-`, as
@@ -918,6 +935,34 @@ says. A new issue-draft subagent also starts with no context.
 
 If a read or a write of the record file fails, the failure rule applies to the planner subagent. It then starts no
 review and no issue-post subagent for the draft. Its result says so, and the draft waits for a decision of the user.
+
+### A missing draft file
+
+A draft file can be missing, for example after a delete by the user. Three cases give the steps. The failure rule does
+not apply to a missing draft file, and no bar starts.
+
+- The planner subagent of an answer reads the draft file before its first issue subagent. If the file is missing, it
+  starts an issue-draft subagent for the draft. The prompt of that subagent says that the file is missing. The planner
+  subagent adds the line `Count starts again: draft file missing` to the record file. The record is empty, as the last
+  paragraph of this section says. The new draft has its first review.
+- The issue-draft subagent can write a new draft at the same path. The steps are in [issue-draft.md](issue-draft.md).
+- The issue-post subagent posts nothing, also for a comment. Its result gives the path and states that the post did not
+  finish. The steps are in [issue-post.md](issue-post.md).
+
+If the record file is missing too, the record is empty, as [The record file](#the-record-file) says.
+
+### A failed call on a file of a draft
+
+A call on a file of a draft can fail or get a denial. The files are the draft file, the report file, the record file and
+the body file. The result of each issue subagent gives the command, the path and the error. After a denial, the result
+keeps the exact call and the exact text of [the tool-block rule](tasker-commands.md#the-tool-block-rule).
+
+After such a result, the planner subagent starts no other subagent for that draft. Its own result gives the same facts,
+and the draft waits for a decision of the user. A failed call on a file of `drafts/` also starts the bar of
+[the orchestrator folder](limits.md#the-orchestrator-folder), when it reaches the orchestrator.
+
+Two cases are exceptions. A missing draft file follows [A missing draft file](#a-missing-draft-file). A failed size
+count follows its own rule in [issue-draft.md](issue-draft.md) and [issue-post.md](issue-post.md), and starts no bar.
 
 ### The start of an issue subagent
 
