@@ -521,8 +521,8 @@ requested change, stay as [The open peer requests](#the-open-peer-requests) list
 in its question file through the handoff, as [The orchestrator folder](limits.md#the-orchestrator-folder) says. The
 handoff file holds no list of the items of planning work that have a
 [proposal file](planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It gives
-no path of the three folders and no path of `drafts/`. A path of a draft file in the text of a question stays. The new
-orchestrator makes that path itself from the data root, the repo key and its own slug.
+no path of the three folders and no path of `drafts/`. The new orchestrator makes these paths itself from the data root,
+the repo key and its own slug. A path of a draft file in the text of a question stays as it is.
 
 After the write of its handoff file, the old orchestrator writes no new file in the three folders and gives no new
 question id. A question that reaches it after the write gets no question file. The old orchestrator shows the full text
