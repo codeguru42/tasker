@@ -138,7 +138,7 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   - The tool call `CronList`, for the list of its jobs
   - The list `ls $HOME/Documents/tasker/handoff/` and a Read call on a handoff file there, for the check of the handoff
     folder
-  - The card wait of a failed CI run, as ci-wait.md:167 gives it,
+  - The card wait of [A failed CI run](ci-wait.md#a-failed-ci-run),
     `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`
   - A read of the variables `HERDR_TAB_ID` and `HERDR_PANE_ID`, for the close of its tab or pane
 
