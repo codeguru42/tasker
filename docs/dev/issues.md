@@ -71,11 +71,10 @@ how to do it on GitHub.
   [The post of a draft](planner.md#the-post-of-a-draft).
 
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md.
-  [The self-check rule](rules.md#docs) of that bullet covers each post of this page. Examples are an issue, a comment, a
-  recurrence comment, the write of a milestone description and the text of a project field. A session that shows a draft
-  to the user runs the self-check over the file of the draft before it shows the draft. An issue-draft subagent runs the
-  self-check over its draft file before its report, as [The self-check](issue-draft.md#the-self-check) of issue-draft.md
-  says.
+  [The self-check rule](rules.md#docs) of that bullet covers each post of this page and each draft that a session shows
+  to the user. Examples are an issue, a comment, a recurrence comment, the write of a milestone description and the text
+  of a project field. An issue-draft subagent runs the self-check over its draft file before its report, as
+  [The self-check](issue-draft.md#the-self-check) of issue-draft.md says.
 - For the priority of an issue, see [The body of an issue](issue-subagents.md#the-body-of-an-issue) of
   issue-subagents.md and [The project board](#the-project-board).
 - Right after each post of the body of an issue, the session compares the posted body with the body of its draft file.

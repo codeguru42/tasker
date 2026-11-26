@@ -153,10 +153,10 @@ task.
 
   The session fixes each hit before its next step, the post or the show of a draft. The rule does not depend on a draft
   that the session shows to the user, for example for a task subagent that posts a comment. A session that shows a draft
-  to the user also runs the self-check before it shows the draft, as [Before a post](issues.md#before-a-post) of
-  issues.md says. An [issue-post subagent](issue-post.md#the-issue-post-subagent) posts a draft file or an approved
-  comment text word for word. The self-check of the session that wrote that text covers the post. A session that writes
-  only a part of a text runs the self-check over that part, and the rest stays as it was.
+  to the user also runs the self-check before it shows the draft. An
+  [issue-post subagent](issue-post.md#the-issue-post-subagent) posts a draft file or an approved comment text word for
+  word. The self-check of the session that wrote that text covers the post. A session that writes only a part of a text
+  runs the self-check over that part, and the rest stays as it was.
 
   The reason: GitHub keeps the history of each edit of a comment, so a fix after the post leaves the flagged text in
   that history. On 2026-11-16, the comment of step 11 on #939 had two sentences that a self-check flagged after the

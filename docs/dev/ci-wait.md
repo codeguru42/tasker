@@ -153,7 +153,12 @@ issue of a failed CI run gets the priority `P0`. The priority rule of
 priority. [The project board](issues.md#the-project-board) gives the commands of the priority. The repo has the label
 `broken-test`.
 
-1. The orchestrator makes the body file in its own step. File a new issue:
+1. The orchestrator makes the body file in its own step.
+
+   Before the post, the orchestrator follows [the self-check rule](rules.md#docs) of rules.md over the title and the
+   body file.
+
+   File a new issue:
    `gh issue create --title '<title>' --body-file <absolute path of the body file> --milestone "<milestone in progress>"`.
    Write each single quote of the title as `'\''`, as [The reads before the write](issues.md#the-reads-before-the-write)
    says. The milestone in progress is the current milestone of
@@ -162,9 +167,6 @@ priority. [The project board](issues.md#the-project-board) gives the commands of
    result of the rerun and of the local run). The body asks for the cause and a fix. It must not ask only for a retry or
    a longer timeout. If `gh issue create` fails, no issue exists, and [the failure rule](limits.md#the-failure-rule)
    applies. The task subagent keeps waiting, and the task stays in `landed`.
-
-   Before the post, the orchestrator follows [the self-check rule](rules.md#docs) of rules.md over the title and the
-   body file.
 
    If `gh issue create` worked, set the priority `P0` on the card of the new issue. First, wait for the card:
    `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`.
