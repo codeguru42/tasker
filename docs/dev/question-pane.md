@@ -190,11 +190,12 @@ comment and a measure. The sender does that step.
 Such a step is a proposed write. The question session judges whether the question proposed the step. This judgment is
 open on purpose.
 
-These kinds are requests, not write actions: a change of the title or the body of an issue, a comment on an issue, a
-change of a blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. A change of the text
+These kinds are requests, not write actions: a change of the title or the body of an issue, a comment on an issue, a add
+of a blocked-by link, a change of the field `Priority`, and a change of a tracked file of the repo. A change of the text
 of an issue and a comment count as requests only when the message of the sender did not propose them. A step that the
-message proposes stays a step of the sender. [The actor of each write action](#the-actor-of-each-write-action) gives the
-actor of each kind and of each request.
+message proposes stays a step of the sender. A removal of a blocked-by link that the user asks for is a link-removal
+request, not a request. [The actor of each write action](#the-actor-of-each-write-action) gives the actor of each kind
+and of each request.
 
 The metadata of an issue is its milestone, its labels, its state (open or closed) and the column of its card on the
 project board. The blocked-by links and the field `Priority` are not metadata in these rules.
@@ -216,15 +217,27 @@ issue.
 
 A move of an issue into the milestone "Future" is not a metadata request. Such a move also removes the blocked-by links
 of the issue, as the "Future" bullet of [The blocked-by links](issue-subagents.md#the-blocked-by-links) says. A
-blocked-by link is not metadata, so no new metadata request can undo that removal.
+blocked-by link is not metadata, so no new metadata request can undo that removal. A request to add the link back goes
+to the planner of the orchestrator as a request.
 
 A metadata request is a write action, not a request of the paragraph that starts "These kinds are requests". A metadata
 change that the message of the sender proposes is a proposed step of the sender, not a metadata request.
 
-A look-first word is a word of the user that asks to see or to approve the command of a metadata request before it runs.
-Examples are "show me the command first", "ask me before you do it" and "let me approve it". The question session judges
-whether words are a look-first word. This judgment is open on purpose. If the session is not sure, the words count as a
-look-first word.
+A link-removal request is a set of words of the user in a question pane. The words ask to remove one or more blocked-by
+links. The item of the sender did not propose the removal. The words point to each link, for example "remove the link
+that #12 waits for #10". They can also name only the blocked issue, for example "remove the blocker of #12". A question,
+a maybe or a thought is not a link-removal request, for example "maybe remove the link of #12?". Words that only let the
+sender decide are not one.
+
+The question session judges whether the item proposed the removal. This judgment is open on purpose.
+
+A link-removal request is a write action, not a request. A blocked-by link stays outside the metadata of an issue. Apart
+from that, a link-removal request follows each rule of a metadata request on this page.
+
+A look-first word is a word of the user that asks to see or to approve the command of a metadata request or of a
+link-removal request before it runs. Examples are "show me the command first", "ask me before you do it" and "let me
+approve it". The question session judges whether words are a look-first word. This judgment is open on purpose. If the
+session is not sure, the words count as a look-first word.
 
 A user-level file is one of three files: the configuration file of tasker at the path of
 [Where the file is](../config.md#where-the-file-is), `$HOME/.claude/settings.json` and `$HOME/.claude/CLAUDE.md`. Each
@@ -266,9 +279,9 @@ its rules.
 
 A [write subagent](#the-pane-owner-handles-a-decision) is a subagent of the pane owner. It runs one run of
 write-subagent actions in a row of one settled decision message. An exception covers a decision message that does not
-settle the question. For that message, a write subagent runs the metadata requests of the message, as
-[The pane owner handles a decision](#the-pane-owner-handles-a-decision) says. A write subagent writes no file other than
-a user-level file and an input file. It writes no memory note, as [the memory rule](rules.md#docs) says.
+settle the question. For that message, a write subagent runs the metadata requests and the link-removal requests of the
+message, as [The pane owner handles a decision](#the-pane-owner-handles-a-decision) says. A write subagent writes no
+file other than a user-level file and an input file. It writes no memory note, as [the memory rule](rules.md#docs) says.
 
 A context clear is a step that removes the context of the question session. The context is each prompt, each reply and
 each tool output that the session holds.
@@ -939,19 +952,20 @@ its command, path or text was in the first reply and did not change. The decisio
 "not approved", with its command and its undo step. The pane owner runs none of them, and the user can approve one later
 in a new pane message or in the tab of the orchestrator.
 
-A metadata request with no look-first word is an exception to the approval rule of the paragraph before. The words of
-the user that ask for the change are the approval. The question session shows no command, no undo step and no input file
-for it, and it asks no approval question. The decision message does not mark it "not approved".
+A metadata request or a link-removal request with no look-first word is an exception to the approval rule of the
+paragraph before. The words of the user that ask for the change are the approval. The question session shows no command,
+no undo step and no input file for it, and it asks no approval question. The decision message does not mark it "not
+approved".
 
-If the words of the user hold a look-first word for a metadata request, the question session shows the exact command in
-the pane. It also shows the undo step of the change. It asks no approval question, as the paragraph that starts "The
-pane asks no approval question" says. The decision message gives the command and the undo step, and it marks the change
-"not approved". The pane owner does not run it. The user can approve it later in a new pane message or in the tab of the
-orchestrator.
+If the words of the user hold a look-first word for a metadata request or a link-removal request, the question session
+shows the exact command in the pane. It also shows the undo step of the change. It asks no approval question, as the
+paragraph that starts "The pane asks no approval question" says. The decision message gives the command and the undo
+step, and it marks the change "not approved". The pane owner does not run it. The user can approve it later in a new
+pane message or in the tab of the orchestrator.
 
-A look-first word covers only the request that it names. The next metadata request of the same pane gets no second step
-unless it holds its own look-first word. A look-first word that comes after the question session sent the request does
-not stop the change. The change is already running.
+A look-first word covers only the request that it names. The next metadata request or link-removal request of the same
+pane gets no second step unless it holds its own look-first word. A look-first word that comes after the question
+session sent the request does not stop the change. The change is already running.
 
 A pick never approves a write action with an input file. After the send, the question session shows the text of the file
 in the pane, from the talk or from the sender. After the user gives an approval word, the session sends a second message
@@ -1248,8 +1262,9 @@ text later with the approval word, as that subsection says. For a write action t
 the user that approved it, word for word: the pick or the yes to the confirm question. It marks each other write action
 "not approved", as that subsection says. The question session sends the message at once and asks no approval question.
 
-A metadata request with no look-first word is an exception to the paragraph before. The paragraph that starts "A
-metadata request goes to the pane owner" gives its message.
+A metadata request or a link-removal request with no look-first word is an exception to the paragraph before. The
+paragraph that starts "A metadata request goes to the pane owner" gives the message of a metadata request. The paragraph
+that starts "A [link-removal request](#terms) goes to the pane owner" gives the message of a link-removal request.
 
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
@@ -1316,11 +1331,54 @@ data are almost always requested by the user and should just be performed withou
 requested." A pane that asks again after the user asked for the change gives the user a second step for one request. The
 look-first word is a choice of issue #997, not the words of the user.
 
-For a comment on an issue, a change of a blocked-by link and a change of the field `Priority`, the question session
-sends a request, in the form of a request for a new issue. When it first shows the text to the user, it reads the title
-and the body, as [Before a post](issues.md#before-a-post) gives the read. It keeps that read as the start hash. It shows
-in full the text that the user approves, as [The commands in the first reply](#the-commands-in-the-first-reply) says.
-The message gives the exact text that the user approved and the start hash of that read. The question session runs the
+A [link-removal request](#terms) goes to the pane owner in the form of a metadata request. The decision message gives
+the words of the user word for word. It gives the exact command of each removal, in the order of the words, as a
+[plain call](issues.md#the-reads-before-the-write) that names its target itself. This also holds for a message that does
+not settle the question and for a message of the kind **No decision**. A later decision message of the same question
+gives only the removals that no earlier message gave. A link-removal request needs no direct pick, it ends no open
+discussion, and it does not close the pane.
+
+The command of one removal is `gh issue edit <blocked number> -R <repo> --remove-blocked-by <blocker number>`. The undo
+step is `gh issue edit <blocked number> -R <repo> --add-blocked-by <blocker number>`. The question session shows the
+undo step only with a look-first word. No actor runs the shown undo step.
+
+With no look-first word, the words of the user are the approval. The question session shows no command and no undo step,
+and it asks no approval question. With a look-first word, the session shows the command and the undo step. The message
+then marks the removal "not approved", and the pane owner does not run it.
+
+A part that the question session reads into the words is a guess, for example which blocker the words name. The guess
+goes through the confirm question of the guess rule above. If the user does not accept the guess, the message gives no
+command for that removal.
+
+To read the blockers of an issue, the question session runs
+`gh issue view <blocked number> -R <repo> --json blockedBy -q '.blockedBy.nodes[] | "\(.number) \(.state)"'`. The
+command is read-only, so the question session can run it. A guess counts only the lines with `OPEN`. The session never
+picks a closed blocker.
+
+If the read fails, the session makes no guess for that removal. The message gives the words of the user and no command.
+The session tells the user the command and the error, and that the removal does not run. The user can name the blocker
+in new words. If the read shows no open blocker, the same holds, and the session tells the user that the issue has no
+open blocker.
+
+The user undoes a removal with a request to add the link. That request goes to the planner of the orchestrator as a
+request. Known limit: for the kind `claude`, no one tested this path for a request of a pane.
+
+The measures of issue #1077, with gh 2.105.0 (2026-11-17), on 2026-11-25: the read for #1053 printed `1021 OPEN`. The
+read for #1024 printed one line `985 OPEN` and seven lines with `CLOSED`. The read for #1005 printed only lines with
+`CLOSED`. `gh issue edit --help` lists `--remove-blocked-by number`, `--add-blocked-by number` and
+`-R, --repo [HOST/]OWNER/REPO`. No one ran the removal with `-R <repo>`, and no one measured the exit code for a link
+that does not exist.
+
+The reason for the rule of a link-removal request: the planner subagent runs no write to GitHub. Its issue-post subagent
+removes only a link of a race. The pane needs one actor for one plain command, and the words of the user approve that
+command, as for a metadata request. On 2026-11-24, in a question pane of orchestrator-m31, the user decided that a
+removal of a blocked-by link from a question pane goes to the write subagent, as a metadata request does.
+
+For a comment on an issue, an add of a blocked-by link and a change of the field `Priority`, the question session sends
+a request, in the form of a request for a new issue. When it first shows the text to the user, it reads the title and
+the body, as [Before a post](issues.md#before-a-post) gives the read. It keeps that read as the start hash. It shows in
+full the text that the user approves, as [The commands in the first reply](#the-commands-in-the-first-reply) says. The
+message gives the exact text that the user approved and the start hash of that read. The question session runs the
 self-check of Before a post over the text that it shows, with no file.
 
 These rules cover only a change or a comment that the message did not propose. A requested change of the draft of the
