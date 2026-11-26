@@ -204,9 +204,14 @@ had only `bash`, as [pi-sessions.md](pi-sessions.md) says.
 These rules of the planner subagent do not hold for a planner session: [The result](planner-subagent.md#the-result),
 [No metadata](planner-subagent.md#no-metadata) and the six kinds of
 [A draft that needs the user](planner-subagent.md#a-draft-that-needs-the-user). A planner session keeps the list of
-[The escape hatch](#the-escape-hatch). Where a rule of the planner subagent puts a question or a report in its result,
-the planner session asks or tells the user in its chat. Each other rule of a planner session stays, for example its
-chat, its metadata changes, its own comments and its rounds of `/session-review`.
+[The escape hatch](#the-escape-hatch). The remaining findings of
+[The count of reviews](planner-subagent.md#the-count-of-reviews) hold for a planner session. After a review 3 with a new
+finding, the planner session asks the question of the remaining findings in its chat. The question has the content of
+the paragraph that starts "The remaining findings are the term" and the form of the paragraph that starts "The form of
+the result" of [A draft that needs the user](planner-subagent.md#a-draft-that-needs-the-user). The planner session posts
+nothing for that draft before the answer. Where a rule of the planner subagent puts a question or a report in its
+result, the planner session asks or tells the user in its chat. Each other rule of a planner session stays, for example
+its chat, its metadata changes, its own comments and its rounds of `/session-review`.
 
 The planner session runs `tasker show-config --repo <key>` and reads the entries `sessions.models.issue-draft`,
 `sessions.models.issue-review` and `sessions.models.issue-post`. It maps each entry as
@@ -421,9 +426,10 @@ Each planner runs the reviews of a draft as
 
 ### The post of a draft
 
-After the reviews, an issue-post subagent makes each post of a planner, with no approval of the user. For a session with
-no role, the ad hoc post subagent makes it. The post follows [docs/dev/issue-post.md](issue-post.md). These rules still
-apply to the post: [The steps of a post](issue-post.md#the-steps-of-a-post) of issue-post.md.
+After the reviews approve a draft, as [The count of reviews](planner-subagent.md#the-count-of-reviews) says, an
+issue-post subagent makes each post of a planner, with no approval of the user. For a session with no role, the ad hoc
+post subagent makes it. The post follows [docs/dev/issue-post.md](issue-post.md). These rules still apply to the post:
+[The steps of a post](issue-post.md#the-steps-of-a-post) of issue-post.md.
 
 On 2026-11-12, the user gave this reason for the post with no approval of the user: "Have the planner run the review
 cycles defined in its rules. Then post the final result."
