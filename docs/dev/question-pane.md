@@ -532,6 +532,55 @@ The reason is that the question session cannot fix a missed link, because it sho
 2026-11-22, the first-reply text of the question orchestrator-m31-221 named eight issues as plain keys outside its issue
 line. The user said: "link for all mentioned issues".
 
+The orchestrator also runs the name and state check over the first-reply text. It runs this check each time that it runs
+the link check, so it covers the same writes, prompts and questions with no file. The link check stays as it is. The
+name and state check is also a read of the text by the orchestrator, with no script and no code.
+
+A local name is a name that only an issue, a comment on an issue or a report defines. Examples are "parts 12 to 16",
+"item 2" and "finding 2". The check finds each local name. In place of the name, the text gives the content of the
+thing, and it can give the name after the content. The orchestrator judges which names are local names, and this
+judgment is open on purpose.
+
+A local name passes the check if the text defines it near its use. The definition stands in the sentence of the name,
+for example in parentheses, or in the sentence right before it. For a name in the sentence of the question, the
+definition stands in that sentence. A name also passes if an earlier text in the same pane defined it for the user, as
+the bullet of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "Define each term"
+says. The orchestrator judges whether a definition is enough, and this judgment is open on purpose.
+
+The check also finds each mention of an issue outside a code span and outside a code block, as the link check does. The
+first mention of each issue gives the current state of the issue. If the text has an issue line, the issue line is the
+first mention of its issue. A later mention of the same issue gives no state. The state is "open", "closed as <reason>
+on <date>", or "closed on <date>" for a close with no reason. The reason is the close reason of GitHub in plain words,
+as in "closed as completed on 2026-11-24" and "closed as not planned on 2026-11-22".
+
+The text never says "landed" for a close as completed. A close as completed does not prove that a task landed. For
+example, [#671](https://github.com/codeguru42/tasker/issues/671) is an issue of manual steps for the user, and it closed
+as completed.
+
+The state comes from a read of the issue right before the write or the prompt, with
+`gh issue view <number> -R <repo> --json state,stateReason,closedAt`. A read for an earlier write or an earlier prompt
+does not count, because an issue can close at any time. If the orchestrator writes a question file and then puts its
+text in a prompt with no other work between, one read serves both. The date is the local date of the machine of the
+orchestrator. GitHub gives `closedAt` in UTC, so the orchestrator gets the local date with
+`date -d <closedAt> +%Y-%m-%d`. A state in the text that differs from the state of the current read fails the check.
+
+If the read of the state of an issue fails, the write or the prompt goes on. The text then says, next to that issue,
+that its state is not known. The orchestrator tells the user the command and the error in its tab.
+
+If a local name or a mention fails the check, the orchestrator changes the text before the write or the prompt. So a
+question file at its write and a prompt never hold a text that fails the check. If the check at a prompt changes the
+text, the orchestrator writes the question file again, as the paragraph that starts "A part of the text can change"
+says. The content of a local name and the state of an issue stand in the sentence of the mention or in the issue line.
+They add no sentence to the five-sentence limit of [The question session](#the-question-session), and in the issue line,
+the state does not count in the 10 words of its phrase.
+
+The reason: on 2026-11-25, the first reply of the question orchestrator-m31-385 said "parts 12 to 16 of
+docs/sessions.md" and "After the move of #978". Only a comment on
+[#978](https://github.com/codeguru42/tasker/issues/978) defined those part numbers. The text did not give the state of
+#978. The user asked: "wdym parts 12 to 16? Are these new on the #984 branch?", "by "now" do you mean when #978 is
+implemented?" and "I'm confused. This question session said it was about #984 and now you are talking about #978 that
+already landed."
+
 At each pane start and each reuse, the orchestrator reads the question file of the question. It puts the text of the
 file in the opener prompt or the reuse prompt as the first-reply text. For a question with no file, and under the
 fallback, it uses the text from its session. The opener subagent, the reuse subagent and the question session read no
@@ -650,6 +699,8 @@ session shows it as part of its first reply.
 The reason: the user opens the issue of the question with one click and does not look for its key in the text. On
 2026-11-20, the user said: "file a ticket to update the question pane template to include a link to the issue under
 discussion".
+
+The issue line also gives the state of its issue after its phrase, as [The question file](#the-question-file) says.
 
 The other details of the first-reply text have a limit: at most five sentences.
 [The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives examples of them, in its bullet that starts
