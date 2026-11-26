@@ -213,6 +213,13 @@ nothing for that draft before the answer. Where a rule of the planner subagent p
 result, the planner session asks or tells the user in its chat. Each other rule of a planner session stays, for example
 its chat, its metadata changes, its own comments and its rounds of `/session-review`.
 
+The rule of a planner subagent across drafts does not hold for a planner session. That rule is the paragraph of
+[The start of an issue subagent](planner-subagent.md#the-start-of-an-issue-subagent) that starts "One planner subagent
+runs at most one subagent of the three kinds at a time", with its reasons, its record and its cost. A planner session
+starts the drafts of a milestone at once, as [The start of the initial planner](#the-start-of-the-initial-planner) and
+[The order of the work](#the-order-of-the-work) say. For one draft, at most one subagent of the three kinds runs at a
+time, as [The order of the work on a draft](planner-subagent.md#the-order-of-the-work-on-a-draft) says.
+
 The planner session runs `tasker show-config --repo <key>` and reads the entries `sessions.models.issue-draft`,
 `sessions.models.issue-review` and `sessions.models.issue-post`. It maps each entry as
 [The model of the start](planner-subagent.md#the-model-of-the-start) says.
