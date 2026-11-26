@@ -404,8 +404,9 @@ session of the start checks does no start duty. The start duties are:
   the find and the read of its record.
 - The start of the planner subagents of the items that wait, as
   [The proposal file](dev/planner-subagent.md#the-proposal-file) says. The orchestrator starts them at the end of its
-  start steps. The start depends on the list of `proposals/` of the first duty. At a start with no handoff file, each
-  file of `proposals/` waits for the word of the user, as [A stop with no handoff](#a-stop-with-no-handoff) says.
+  start steps. The start depends on the list of `proposals/` of the first duty. At a start with no handoff file, no file
+  of `proposals/` is an item that waits until the word of the user, as [A stop with no handoff](#a-stop-with-no-handoff)
+  says. At such a start, this duty starts no planner subagent from those files.
 
 This section gives no order between the start duties and the board watch job. After a handoff,
 [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives that order.
