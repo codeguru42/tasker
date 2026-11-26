@@ -163,8 +163,12 @@ of the task subagent for that reset. The delays prevent a resume of all the task
 
 - The reason for this rule: on 2026-10-24 at 18:01:22, the orchestrator scheduled the five-hour job of #416 for 18:01,
   and the job did not fire (#431).
-- When the orchestrator schedules a job, the prompt of the job must name the issue and the task subagent. The prompt
-  must tell the orchestrator to do the steps of "When the job fires".
+- When the orchestrator schedules a job, the prompt of the job names the issue, the task subagent and
+  [When the job fires](#when-the-job-fires). At the step that makes a five-hour job, the orchestrator reads
+  [`prompt-templates/jobs/quota-five-hour.md`](../../prompt-templates/jobs/quota-five-hour.md). At the step that makes a
+  seven-day job, it reads [`prompt-templates/jobs/quota-seven-day.md`](../../prompt-templates/jobs/quota-seven-day.md).
+  It fills `{{ISSUE}}` and `{{TASK_SUBAGENT}}` and gives the filled text as the prompt. [A pi stop](#a-pi-stop) gives
+  the file of the pi job.
 - The orchestrator must keep the id of each job of a ticket. A ticket has at most one five-hour job, one seven-day job
   and one [pi job](#a-pi-stop).
 - For a seven-day job, the orchestrator must keep the seven-day reset time of the job with its id.
@@ -185,8 +189,9 @@ also reads the seven-day reset time and applies this rule. This holds whether or
   [future-time rule](#schedule-a-job-when-a-task-subagent-starts) applies before each schedule.
 - The reason: after the seven-day quota runs out, no session has tokens for a later read. As a result, the orchestrator
   schedules the job at the first read that gives the time.
-- The prompt of the job names the issue, the task subagent and the window `seven_day`. The prompt tells the orchestrator
-  to do the steps of "When the job fires".
+- The prompt of the job names the issue, the task subagent, the window `seven_day` and
+  [When the job fires](#when-the-job-fires).
+  [`prompt-templates/jobs/quota-seven-day.md`](../../prompt-templates/jobs/quota-seven-day.md) gives its words.
 - If the ticket has a seven-day job that has not fired, and the seven-day reset time did not change, the orchestrator
   schedules no second one. To compare, the orchestrator uses the seven-day reset time that it stored with the job id.
 - If the seven-day reset time changed, the orchestrator first applies the
@@ -436,8 +441,9 @@ the `resets at:` time, with the delay and the rounding of
 not later than the `date` read of that rule, the orchestrator schedules no pi job. Then the stop counts as a full stop.
 
 If the ticket has a pi job that has not fired, the orchestrator schedules no second one. The prompt of the job names the
-issue, the task subagent and the words "pi job". It tells the orchestrator to do the steps of
-[When the job fires](#when-the-job-fires).
+issue, the task subagent, the words "pi job" and [When the job fires](#when-the-job-fires). At the CronCreate of the pi
+job, the orchestrator reads [`prompt-templates/jobs/quota-pi.md`](../../prompt-templates/jobs/quota-pi.md), fills it and
+gives the filled text as the prompt.
 
 At a full stop, the orchestrator schedules no job. The task stays in `quota_blocked` until the word of the user, as
 [The pi wait](#the-pi-wait) says.

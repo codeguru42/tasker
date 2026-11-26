@@ -415,8 +415,9 @@ The board watch rule has these parts:
   [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The cron
   fires two times each hour, for example `7,37 * * * *`. Each read of the board after this make follows
   [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot). So the first read of the board can delete the job.
-- The prompt of the job starts with "Board watch:". The rest of the prompt says: read the board, as
-  [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets) says.
+- The prompt of the job starts with "Board watch:" and names
+  [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets). At the CronCreate of the job, the orchestrator reads
+  [`prompt-templates/jobs/board-watch.md`](../prompt-templates/jobs/board-watch.md) and gives its body as the prompt.
 - When the job fires, the orchestrator reads the board as the prompt says. It starts each ticket that the rules of Pick
   the tickets allow. It reads the issue of a ticket only right before its start, as
   [the open-question rule](dev/pick-the-tickets.md#the-open-question-rule) says. The job changes none of these rules.
