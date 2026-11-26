@@ -332,7 +332,8 @@ No one measured these facts of case C:
 
 Cases D, E, F and G are more failed pulls in real use. Each of them came on 2026-11-24. In each of them, the pull
 printed "fatal: Cannot fast-forward to multiple branches." and exited with 128. No source gives the order in time of
-cases D, E, F and G, so the letters D to G give no order in time. All times are -0700.
+cases D, E, F and G, so the letters D to G give no order in time. Case H is one more failed pull in real use, on
+2026-11-25. So it came after each of cases D to G. All times are -0700.
 
 Case D is a failure of the question session of the question `orchestrator-m31-332`. The source of each fact of case D is
 the report of that session, as orchestrator-m31 relayed it on 2026-11-24. No one measured these facts again. The session
@@ -493,6 +494,90 @@ No one measured these facts of case G:
 - The pull form and the folder that the prompt of review 1 of plan-110 gave.
 - Whether the fetch ran, and its exit code.
 - Each other step of item 7.
+
+Case H is a failure of the question session of the question `orchestrator-m31-388`, in the question pane
+`question-973-count`. The first source of case H is the report of that session, as orchestrator-m31 relayed it on
+2026-11-25. The source says that no one tested these facts further. The session reported these facts:
+
+- The session used git 2.47.3.
+- The pull at the start of the session printed "Already up to date." The source gives no time for this pull.
+- Later, at the start of the `/session-review` rounds, the session ran `git pull --ff-only origin main` in the local
+  clone.
+- The pull printed "fatal: Cannot fast-forward to multiple branches." and exited with 128. It ran a little before
+  15:52:14.
+- Then the session ran `git fetch origin`, which exited with 0. It read the review docs with
+  `git show origin/main:<path>`.
+- Before and after the fetch, `HEAD` was at `628239c8` and `origin/main` was at `64d2aa7a`.
+- The reflog of `origin/main` gave `64d2aa7a` at 2026-11-25 15:44:52, with the message "fetch --append --no-auto-gc
+  --no-write-commit-graph origin: fast-forward".
+- The reflog of `origin/main` also gave `628239c8` at 14:53:59, with the message "fetch origin: fast-forward".
+- The reflog of `HEAD` gave the newest entry `628239c8` at 15:19:05, with the message "pull --ff-only origin main:
+  Fast-forward".
+- The configuration `remote.origin.fetch` is `+refs/heads/*:refs/remotes/origin/*`.
+
+The source does not name the clone of the reflog reads and of the configuration read. It gives no time for them.
+
+The second source of case H is the report of round 2 of the `/session-review` rounds of the same session.
+orchestrator-m31 relayed it on 2026-11-25. No one measured it again. The source gives no time for these steps. The
+session reported these facts:
+
+- At the start of round 2, the session ran `git pull --ff-only origin main` in the local clone.
+- The pull printed "Updating 628239c8..64d2aa7a" and "Fast-forward", and exited with 0.
+- After that pull, `HEAD` and `origin/main` were both at `64d2aa7a`, and the tree was clean.
+
+The third source of case H is a read in the local clone on 2026-11-25 at 16:01:45, with git 2.47.3. The read gave these
+facts:
+
+- `HEAD` and `origin/main` were both at `64d2aa7a6dd808f7fbe9454112625532d832d40d`. The source names no command for
+  these two values.
+- The reflog of `HEAD` gave the newest entry `64d2aa7a` at 15:59:33, with the message "pull --ff-only origin main:
+  Fast-forward". The entry before it is `628239c8` at 15:19:05, with the same message.
+- The reflog of `origin/main` gave the newest entry `64d2aa7a` at 15:44:52, with the message "fetch --append
+  --no-auto-gc --no-write-commit-graph origin: fast-forward". The entry before it is `628239c8` at 14:53:59, with the
+  message "fetch origin: fast-forward".
+- `git config --get-all remote.origin.fetch` printed `+refs/heads/*:refs/remotes/origin/*`.
+- `git remote` lists two remotes.
+- `git merge-base --is-ancestor 628239c8 64d2aa7a` exited with 0. So `64d2aa7a` is a fast-forward of `628239c8`.
+
+The next facts are inferences, not measures. The local clone holds the reflog entries of the first source, with the same
+hashes, times and messages. In the local clone, `HEAD` was at `628239c8` from 15:19:05 to 15:59:33. `origin/main` was at
+`64d2aa7a` from 15:44:52 to at least 16:01:45. So from 15:44:52 to 15:59:33, a fast-forward from `628239c8` to
+`64d2aa7a` was due.
+
+This is an inference, not a measure, with a condition. If the failed pull ran after 15:19:05, it did not move `HEAD`,
+because the reflog of `HEAD` has no entry from 15:19:05 to 15:59:33. The source gives the time only as "a little before
+15:52:14". So it does not say whether the pull ran after 15:19:05.
+
+This is an inference of the source, not a measure, with a condition. If the failed pull ran after 15:44:52, a
+fast-forward was due when the pull failed. Then the failed pull left the local clone behind `origin/main`. The source
+does not say whether the pull ran after 15:44:52.
+
+This is an inference, not a measure: in case D, nothing was due. In case E, nothing was due, with the condition of case
+E. Case H differs from both, with the condition of the paragraph above.
+
+This is an inference, not a measure: the pull of round 2 started at `628239c8`, so `HEAD` was still at `628239c8` at the
+start of round 2. The session saw `origin/main` at `64d2aa7a` before the fetch. So the local clone stayed behind
+`origin/main` from the read before the fetch until the pull of round 2. The pull of round 2 ended that gap.
+
+This is an inference, not a measure, with a condition. The reflog of `HEAD` at 16:01:45 has one entry that moved `HEAD`
+from `628239c8` to `64d2aa7a`, at 15:59:33. If the pull of round 2 ran before the read of 16:01:45, it is the pull of
+that entry. The source does not give the time of the pull of round 2. No source says that it is the pull of 15:59:33.
+
+No one measured these facts of case H:
+
+- The cause. No one saw another git command that fetches in the same clone at the same moment. Such a command is a
+  guess.
+- The exact time of the failed pull, and whether it ran before or after 15:44:52.
+- Whether a command fetches more than one remote in the local clone, and which command.
+- Which command or tool runs `git pull -q --ff-only` in the local clone.
+- The command that ran the fetch of 15:44:52.
+- The command or session that ran the pull of 15:59:33.
+- The time of the pull of round 2, and whether that pull is the pull of 15:59:33.
+- How the session got the values of `HEAD` and `origin/main` and the state of the tree after the pull of round 2.
+- The time of the pull of the start, and how the session got the git version.
+- The clone and the time of the reflog reads and of the configuration read of the first source.
+- The time of the reads of `HEAD` and `origin/main` before and after the fetch.
+- Each step of item 7 other than the fetch and the doc reads.
 
 `--ff-only` changes nothing when it cannot fast-forward. `.claude/settings.json` has no rule for the pull, so the
 classifier of auto mode decides each call that no rule matches. The commands of this rule stand in the lists of
