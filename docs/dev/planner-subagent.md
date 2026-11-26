@@ -105,8 +105,9 @@ The count covers each planner subagent that the orchestrator started and that ru
 with no report, as [The life of a planner subagent](#the-life-of-a-planner-subagent) says, counts. A late report that
 starts an ended planner subagent again is not a start of the orchestrator, so that planner subagent does not count. A
 planner subagent whose wait a word of the user ended holds no place in the count, as
-[The wait before a handoff](#the-wait-before-a-handoff) says. The rule on the same draft file does not cover it. The
-known limits of that subsection give the result.
+[The wait before a handoff](#the-wait-before-a-handoff) says. The known limits of
+[The wait before a handoff](#the-wait-before-a-handoff) give the result. Such a planner subagent makes no path busy, as
+[The wait for a busy path](#the-wait-for-a-busy-path) says.
 
 Before each start of a planner subagent, the orchestrator follows [The wait for a busy path](#the-wait-for-a-busy-path).
 
@@ -127,10 +128,11 @@ These four known limits hold:
 - Each planner subagent makes its table of the needs and the likely files only from its own drafts. So two planner
   subagents that post at about the same time can miss a blocked-by link between their two issues.
 - The duplicate search right before a post can miss an issue that another planner subagent posts at the same moment.
-- A late report can start an ended planner subagent again. That planner subagent does not count, and the rule on the
-  same draft file does not cover it. It judges the findings of the report and writes the record file of its draft. At
-  the same moment, a planner subagent of an answer of the user can run on the same draft. Then the two write one record
-  file and can write one draft file. The orchestrator sees the start again only at the second result.
+- A late report can start an ended planner subagent again. That planner subagent does not count, and it makes no path
+  busy, as [The wait for a busy path](#the-wait-for-a-busy-path) says. It judges the findings of the report and writes
+  the record file of its draft. At the same moment, a planner subagent of an answer of the user can run on the same
+  draft. Then the two write one record file and can write one draft file. The orchestrator sees the start again only at
+  the second result.
 - [The name](#the-name) counts `plan-<count>` from 1 in each session of the orchestrator. A later session of an
   orchestrator with the same own name has the same folder of the draft files. So a new draft can get the file name of a
   draft of an earlier session that waits for a decision of the user. The new draft and its record file then overwrite
@@ -274,12 +276,11 @@ the answers, each with its source. The source is the words of the user word for 
 When fewer than `maxPlannerSubagents` planner subagents run, the orchestrator lists `proposals/`. It starts the planner
 subagent of the next item of planning work that waits, in the order of arrival, lowest number first. It does this at the
 arrival of an item, after a result and at the end of its start steps. It starts planner subagents until
-`maxPlannerSubagents` run or no item waits. A planner subagent that runs can have the draft file path of an item in its
-prompt. Then the orchestrator starts no planner subagent for that item, as
-[The count of planner subagents](#the-count-of-planner-subagents) says. That item keeps its proposal file and waits for
-the result of that planner subagent. The orchestrator takes the next item of planning work that waits. An item that
-waits is a proposal file whose planner subagent does not run. While the bar of the fallback holds, an item that waits is
-an item that waits in the session. These files are not items that wait:
+`maxPlannerSubagents` run or no item waits. Before each start, the orchestrator follows
+[The wait for a busy path](#the-wait-for-a-busy-path). An item with a busy path keeps its proposal file and waits.
+
+An item that waits is a proposal file whose planner subagent does not run. While the bar of the fallback holds, an item
+that waits is an item that waits in the session. These files are not items that wait:
 
 - A file that stays after a failed delete at a result.
 - A file whose write of the name failed, until the next word of the user.
@@ -1086,9 +1087,9 @@ notification of that subsection. A wait notification does not end the wait. The 
 the user can also end it, as [The wait before a handoff](#the-wait-before-a-handoff) says.
 
 If a planner subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the orchestrator.
-The orchestrator then starts one new planner subagent for the same item of planning work. If that one also ends with no
-report, the orchestrator tells the user. The proposal file of the item stays, as [The proposal file](#the-proposal-file)
-says.
+The orchestrator then starts one new planner subagent for the same item of planning work. That start also follows
+[The wait for a busy path](#the-wait-for-a-busy-path). If that one also ends with no report, the orchestrator tells the
+user. The proposal file of the item stays, as [The proposal file](#the-proposal-file) says.
 
 A late report of an issue subagent can start an ended planner subagent again. The orchestrator handles the second result
 of the planner subagent as a result. The second result deletes no proposal file, because no file names its sender.
