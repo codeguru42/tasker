@@ -1492,7 +1492,9 @@ link-removal commands of step 7 of [the defer rule](pick-the-tickets.md#the-defe
 rule, for a task in flight, are not a write action of the write subagent. The approval of the move covers that removal.
 
 For a link-removal request, the write subagent runs only the removal commands of the message. It adds no link, and it
-runs no read before a removal. The user names each link, and the words of the user are the approval.
+runs no read before a removal, because the message already gives the exact command with the blocker number. The blocker
+number of each removal comes from the words of the user, or from a guess that the user accepted through the confirm
+question. The words of the user, with each accepted guess, are the approval.
 
 The answer to the sender names each write action and says that the orchestrator tells the user the result. The actors
 start after the answer, also after a failed send of it. The write actions of one settled message run in the order of the
