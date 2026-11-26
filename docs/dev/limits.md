@@ -183,6 +183,14 @@ The terms of this section:
   `orchestrator-m31` has the slug `m31`.
 - The three folders are `questions/`, `proposals/` and `handoffs/` in the orchestrator folder.
 - A call on the three folders is a `mkdir -p`, an `ls`, a Read call, a write or a delete in the three folders.
+- `drafts/` is the folder `<data root>/<repo slug>/orchestrators/<slug>/drafts/`. It is in the orchestrator folder, but
+  it is not one of the three folders. It holds the files of each new draft of the planner subagents of the orchestrator.
+  [The prompt](planner-subagent.md#the-prompt) gives its use.
+- The old folder is the folder `/tmp/tasker/<own name>/drafts/`, with the own name of the orchestrator. It holds the
+  drafts that a planner subagent wrote there before `drafts/` existed. It also holds the drafts of a time of the bar.
+- The writers in `drafts/` and in the old folder are the orchestrator, the planner subagents, the issue-draft subagents
+  and the issue-post subagents of that orchestrator. The readers are these actors and also the issue-review subagents
+  and a question session of a pane of that orchestrator.
 - The own handoff folder is `handoffs/`. The shared handoff folder is the folder of
   [The handoff file](handoff.md#the-handoff-file).
 
@@ -229,20 +237,54 @@ No one measured these calls on a file under the data root, for any kind. No one 
 permission prompt for them. No one measured whether the classifier of the auto mode denies them. The first use can show
 a permission prompt or a denial, and the fallback of this section covers that case.
 
-A call on the three folders can fail or get a denial of [the tool-block rule](tasker-commands.md#the-tool-block-rule).
-For a failure, [the failure rule](#the-failure-rule) applies. A failed read of the data root or a failed `mkdir -p`
-counts as a failure of the call after it. After a denial, the step of the denied call stops, as step 1 of the tool-block
-rule says. A denied call of [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner) stops only that
-call. After a failure or a denial, the fallback holds:
+The orchestrator runs two calls on `drafts/`, both for the kind `claude`:
 
-- The orchestrator runs no later call on the three folders until the next word of the user. This rule is the bar.
+- A make, `mkdir -p <drafts>`, before the first count read of a session, if the folder can be missing.
+- The count read, `ls <drafts> | sed -n -E 's/^plan-([0-9]+)-.*/\1/p' | sort -n | tail -n 1`, before each start of a
+  planner subagent. [The name](planner-subagent.md#the-name) gives its use.
+
+Both are plain calls. Each uses the absolute path that starts with the data root as the read printed it, with no
+`$HOME`, no `~` and no `cd`. A count read passes only with no error and an empty output or one number. Each other result
+fails, also an error text in the output. The reason: with GNU tools, an `ls` of a missing folder printed its error text
+on stderr, and the whole count read exited with 0, the code of `tail`. So the exit code is no sign of a failure, and the
+error text is. The output is at most one short line. The reason: `drafts/` grows with each draft, and a full list at
+each start fills the context of the orchestrator.
+
+The orchestrator runs no other call on `drafts/`, except the read-only calls of
+[the check of the pane owner](question-pane.md#the-check-of-the-pane-owner). These calls are no git command and no `cd`
+command, so no ask rule of [Claude Code](setup.md#claude-code) matches them. No one measured them on a file under the
+data root.
+
+A call on the three folders or on `drafts/` can fail or get a denial of
+[the tool-block rule](tasker-commands.md#the-tool-block-rule). For a failure, [the failure rule](#the-failure-rule)
+applies. A failed read of the data root or a failed `mkdir -p` counts as a failure of the call after it. After a denial,
+the step of the denied call stops, as step 1 of the tool-block rule says. A denied call of
+[the check of the pane owner](question-pane.md#the-check-of-the-pane-owner) stops only that call. After a failure or a
+denial, the fallback holds:
+
+- The orchestrator runs no later call on the three folders and no later call on `drafts/` until the next word of the
+  user. This rule is the bar. One bar covers the three folders and `drafts/`.
 - Until that word, the orchestrator keeps each new question and each new item of planning work in its session. A pane
   starts with the text from the session.
 - The rest of the work of the orchestrator goes on.
-- The next word of the user ends the bar for all calls on the three folders.
+- The next word of the user ends the bar for all calls on the three folders and on `drafts/`.
+- Before its next start of a planner subagent after the bar, the orchestrator makes a missing `drafts/` and runs the
+  count read again. While the bar holds, the prompt of each new planner subagent gives the old folder.
 - After that word, the orchestrator writes a question file for each open question that its session holds with no file.
   It also writes a proposal file for each item of planning work that waits in its session with no file. The items start
   in the order of arrival, under the configured count of planner subagents.
+
+These events start the bar:
+
+- A failed or denied call on the three folders.
+- A failed read of the data root, or a failed or denied call of the two calls above on `drafts/`.
+- A failed or denied call on a file of `drafts/` that reaches the orchestrator through the tool-block rule or through
+  the result of a planner subagent.
+
+These events start no bar: a read of a missing file of a draft, and a failed or denied size count of an issue-draft
+subagent or an issue-post subagent. The reason: such a failure loses one draft step, not the use of the folder. The cost
+of the bar: the orchestrator keeps no new file in the three folders and starts each new planner subagent with the old
+folder, which has no count read. The three states are these: not started, holds, and ended by the next word of the user.
 
 Step 6 of the tool-block rule stays. The orchestrator brings each denial to the user in its question pane, and that pane
 starts with the text from the session. For a denied list of `questions/`, the rule of
@@ -260,14 +302,21 @@ The orchestrator folder is an exception to [the own-worktree rule](#the-own-work
 the orchestrator, and it has these limits:
 
 - The orchestrator makes, lists, reads, writes and deletes files only in its own three folders. Its `mkdir -p` can also
-  make the parent folders of the three folders.
+  make the parent folders of the three folders. It also runs the two calls on `drafts/` that this section gives.
 - For [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner), the orchestrator also lists the
-  folder of the draft files with `ls <folder>`. It reads the drafts there with the Read tool. These calls only read.
-  They are an allowed exception to each limit of this section on the calls in that folder. The bar of the fallback
-  covers only the three folders.
+  folder of the draft files with `ls <folder>`. It reads the drafts there with the Read tool. The folder is `drafts/`
+  and the old folder. These calls only read. They are the one read-only exception to the rule of no other call on
+  `drafts/`, and an allowed exception to each other limit of this section on the calls in that folder. The bar of the
+  fallback stops them in `drafts/` too.
 - The exception covers no other file of the data root and no worktree of tasker.
-- The exception covers no task subagent, no planner subagent, no opener subagent, no reuse subagent, no question session
-  and no write subagent.
+- The exception covers no task subagent, no opener subagent, no reuse subagent and no write subagent. It covers the
+  calls of the writers and readers of `drafts/` and the old folder that the terms give, for the planner subagents, their
+  issue subagents and a question session. It covers them only in `drafts/` of their own orchestrator, and in the old
+  folder. It covers no call on the three folders, no other file of the data root and no worktree of tasker.
+- The kinds `pi` and `codex` make no `drafts/` and run no count read.
+- The end of the start steps runs no call on `drafts/`.
+- No session deletes a file of `drafts/`. The cost: the folder only grows. On 2026-11-24, the old folder of
+  `orchestrator-m31` held 398 names.
 - A read of another file of the data folder still needs the permission of the user, as the own-worktree rule says.
 - The exception also covers a Read call on the handoff file that the first prompt names, also before the read of the
   data root. The reason: [The start checks](../orchestrator.md#the-start-checks) read the tab id of the old orchestrator
