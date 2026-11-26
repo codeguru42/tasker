@@ -1456,10 +1456,10 @@ rounds end. [Close and continue](#close-and-continue) reads the final report. In
 other word names each report of a round and the final report. So the paragraph that starts "The report leaves out"
 covers each report.
 
-The first target of each proposal of step 6 is the user in the pane, after the search of step 6 of `/session-review` and
-after the check of [The check of the pane owner](#the-check-of-the-pane-owner). So each such proposal is a waiting
-decision of step 7 of `/session-review`. The user accepts, changes or drops it in the pane. The question session still
-drafts no issue and posts nothing.
+The first target of each proposal of step 6 is the user in the pane. The proposal goes there after the search of step 6
+of `/session-review` and after the check of [The check of the pane owner](#the-check-of-the-pane-owner). So each such
+proposal is a waiting decision of step 7 of `/session-review`. The user accepts, changes or drops it in the pane. The
+question session still drafts no issue and posts nothing.
 
 A proposal of step 6 is not a doc proposal of [Send a decision](#send-a-decision), and it already names the file and the
 change. If such a proposal rests on words of the user, it gives those words word for word, beside the file and the
@@ -1474,10 +1474,12 @@ recurrence comment does. It gives the words of the user word for word, as for ea
 the user, the final report gives it.
 
 See step 6 of [`/session-review`](../../.claude/skills/session-review/SKILL.md#steps) for the search of the open issues.
-If the search finds a recurrence, it goes to the user in the pane first, after the check, and the report of its round
-names the open issue. A proposal after a denied search goes to the user in the pane with its note. A later result of the
-search goes to the user in the pane. After a failed search, the report of the round gives the command, the error and the
-note with the proposal. A failed search is not a failed round, so the rounds go on.
+If the search finds a recurrence, it goes to the user in the pane first, after the check. The report of its round names
+the open issue. A proposal after a denied search goes to the user in the pane with its note. A later result of the
+search goes to the user in the pane.
+
+After a failed search, the report of the round gives the command, the error and the note with the proposal. A failed
+search is not a failed round, so the rounds go on.
 
 For a question session, step 2 of the list also holds the next round for each new open question, until its wait ends. A
 new open question is an open question that no earlier round of the same rounds listed. As
@@ -1623,15 +1625,23 @@ before closing". No one measured the tokens of the rounds in a question pane.
 ### The check of the pane owner
 
 The folder of the draft files is each folder in which the planner subagents of the orchestrator write new draft files.
-Today that is the folder of [The prompt](planner-subagent.md#the-prompt). A draft of the check is one of these files: a
-file in the folder of the draft files whose name starts with the name of a planner subagent that a proposal file names,
-and `-`; a file whose path a proposal file names; or a file whose path an open question of the orchestrator names. The
-record file, the report file and the body file of a draft are not drafts of the check. Their draft file is the match.
+Today that is the folder of [The prompt](planner-subagent.md#the-prompt).
 
-A check request is a message of the question session to its pane owner in the rounds. It asks whether a proposal file,
-an [item of planning work that waits](planner-subagent.md#the-proposal-file), or a draft of the check already covers the
-change of a proposal of step 6. The check is the work of the pane owner for one check request. The check answer is the
-reply of the pane owner.
+A draft of the check is a file of one of these kinds:
+
+- A file in the folder of the draft files whose name starts with the name of a planner subagent and `-`. A proposal file
+  names that planner subagent.
+- A file whose path a proposal file names.
+- A file whose path an open question of the orchestrator names.
+
+The record file, the report file and the body file of a draft are not drafts of the check. Their draft file is the
+match.
+
+A check request is a message of the question session to its pane owner in the rounds. It asks for each match of a
+proposal of step 6. A match is a proposal file, an
+[item of planning work that waits](planner-subagent.md#the-proposal-file) or a draft of the check. A match covers the
+change in full or in part. The check is the work of the pane owner for one check request. The check answer is the reply
+of the pane owner.
 
 The question session sends a check request for each proposal of step 6, also for a recurrence. The search of step 6 runs
 first, and the request names each open issue that the search found. The request names the file and the change of each
@@ -1659,8 +1669,7 @@ example is `PANE-OWNER orchestrator-m31 orchestrator-m31-7: CHECK-ANSWER m5.` Fo
 line per match, with the path and a few words that end with "in full" or "in part". For a proposal with no match, it
 gives "No match.". It gives one line "Not checked:" with each part that the pane owner did not check and the reason.
 
-A match is a proposal file, an item of planning work that waits, or a draft of the check that covers the change in full
-or in part. The pane owner judges whether a file covers the change. This judgment is open on purpose.
+The pane owner judges whether a file covers the change. This judgment is open on purpose.
 
 For the kind `claude`, the pane owner checks each proposal file, each item of planning work that waits and each draft of
 the check. It takes the open questions from [The question file](#the-question-file). It lists the folder of the draft
@@ -1673,8 +1682,8 @@ Each failed or denied call follows the rules for its folder. These are [the fail
 to step 1 of the tool-block rule. After each failed or denied call, the pane owner still checks each other file that it
 can. The answer names the call, the error or the denial, and the part that it did not check.
 
-If the pane owner cannot list the folder of the draft files, also for a missing folder, the answer says that it checked
-no draft of the first kind. Before the first draft of a planner subagent, the folder can be missing.
+The pane owner can fail to list the folder of the draft files, also for a missing folder. The answer then says that it
+checked no draft of the first kind. Before the first draft of a planner subagent, the folder can be missing.
 
 While the bar of the fallback holds, the pane owner runs no call that the bar stops. It checks the items of planning
 work that wait and the open questions of its session, and each draft that they name. For the first kind of draft, it
@@ -1717,20 +1726,21 @@ after the check answer, or after the word of the user to go on.
 These events change the check:
 
 - Running, and the user ends the rounds: the final report gives the proposal as an open finding that waits for its check
-  answer, with the note that no check answer came. The pane owner sends it to the planner of the orchestrator, as it
-  sends each open finding.
+  answer. The final report adds the note that no check answer came. The pane owner sends it to the planner of the
+  orchestrator, as it sends each open finding.
 - Running, and the user tells the pane owner to close the pane before the final report: the pane owner closes the pane
   as before. The proposal gets no report, as each finding of a round with no report.
 - Ended by the word of the user, and a late check answer comes: the question session shows each match to the user. If
   the proposal still waits for the user, the proposal names each match.
 - The report that gave the proposal already went, and the final report did not go yet: the next report names each late
-  match beside that proposal. After the pane owner accepts that report, it sends the late matches to the planner of the
-  orchestrator as one planning request. The request names the proposal, the report that gave it and each match, and it
-  gives the words of the user word for word.
-- No later report can name the late match: after the pane owner accepts the final report, it compares each check answer
-  that it sent with the reports that it accepted. Each match that no accepted report names beside its proposal goes to
-  the planner of the orchestrator. If the final report gives the proposal, the match goes with that proposal. If not, it
-  goes as one planning request. A match of a proposal that no accepted report gives goes to no one.
+  match beside that proposal. The pane owner accepts that report. Then it sends the late matches to the planner of the
+  orchestrator as one planning request. The request names the proposal, the report that gave it and each match. It gives
+  the words of the user word for word.
+- No later report can name the late match: the final report gave the proposal, or the late check answer came after the
+  final report. After the pane owner accepts the final report, it compares each check answer that it sent with the
+  reports that it accepted. Each match that no accepted report names beside its proposal goes to the planner of the
+  orchestrator. If the final report gives the proposal, the match goes with that proposal. If not, it goes as one
+  planning request. A match of a proposal that no accepted report gives goes to no one.
 - The pane owner sends no check answer after it accepts the final report, and none after the close of the pane.
 
 In a handoff, the old orchestrator answers each check request as usual until its pane closes. See
