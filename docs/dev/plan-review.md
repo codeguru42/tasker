@@ -367,10 +367,11 @@ does not edit the issue body for a change of scope. The orchestrator owns the is
 not edit them (see [Limits](limits.md#limits)). On 2026-10-16, the user asked for a comment for the change of scope of
 #232. The change of scope of #219 also used a comment.
 
-Before the orchestrator posts a comment that starts with `## Change of scope`, it compares each sentence of the comment
-with the landed code. A sentence of the comment can state a fact of the code, for example the order of the steps of a
-command. On #274, the comment said that diverged tips refuse "before the move to `updating_branch`". The fetch of the
-command runs after that move, so the task subagent stopped, and a second comment corrected the row.
+Before the orchestrator posts a comment that starts with `## Change of scope`, it follows
+[the self-check rule](rules.md#docs) of rules.md. It also compares each sentence of the comment with the landed code. A
+sentence of the comment can state a fact of the code, for example the order of the steps of a command. On #274, the
+comment said that diverged tips refuse "before the move to `updating_branch`". The fetch of the command runs after that
+move, so the task subagent stopped, and a second comment corrected the row.
 
 Before such a comment fixes an order of steps, the orchestrator also searches
 [the orchestration pages](../orchestrator.md) for each other sentence that gives an order of the same steps. The comment
@@ -411,6 +412,8 @@ The orchestrator makes sure that all the words that name one place point to the 
 land yet, the orchestrator compares each place with the change-of-scope comment that makes the change. If that comment
 gives no place for an item, the note does not assume a place for it. For example, the note does not assume that the
 milestone item is the last item.
+
+Before the post of the note, the orchestrator also follows [the self-check rule](rules.md#docs) of rules.md.
 
 The orchestrator does not edit the body of the issue for this note. The orchestrator also does not decide the answer. An
 issue with a task in flight gets no note from this rule. The bullet of [Land the work](land-the-work.md#land-the-work)
@@ -455,6 +458,9 @@ It gives the gap, the answer, and who answered: the orchestrator or the user. Th
 the comment to the task subagent. The task subagent copies the full text of the comment with the copy step of
 [the change-of-scope comment](#the-change-of-scope-comment). As a result, the plan session and the review see the answer
 in the issue.
+
+Before the post of each `## Design gap` comment, the orchestrator follows [the self-check rule](rules.md#docs) of
+rules.md.
 
 The user can change the answer before `tasker approve`. In that case, the orchestrator posts a new `## Design gap`
 comment and sends its link. The new comment gives the gap and the new answer, and it says that it replaces the earlier

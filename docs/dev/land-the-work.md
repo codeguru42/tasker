@@ -162,7 +162,8 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   the next refine of the task subagent. On #117, edits that arrived one by one cost extra refines. After a comment that
   starts with `## Change of scope`, the orchestrator also posts the open-question note of
   [the change-of-scope comment](plan-review.md#the-change-of-scope-comment) on each open issue with no task that names
-  the changed fact.
+  the changed fact. Before each such edit or post, the orchestrator follows [the self-check rule](rules.md#docs) of
+  rules.md.
 - This bullet covers a change to an issue in flight by an orchestrator. The requester is the orchestrator that wants the
   change. The requester does not edit the body. The orchestrator of the task is the orchestrator of the milestone of the
   issue, found as [The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) says, except in the cases
