@@ -33,8 +33,8 @@ title, line 2 is blank, and the body follows. The body file of [Before a post](i
 two lines. A comment draft has no title line, as [A comment draft](#a-comment-draft) says.
 
 It edits only its draft file, its report file and the files of a [scratch folder](plan-review.md#the-state-of-the-user).
-It makes each scratch folder under `/tmp`. These rules come from
-[The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner).
+It makes each scratch folder under `/tmp`. [The state of the user](planner.md#the-state-of-the-user) of planner.md also
+gives the scratch folder under `/tmp` to each issue subagent.
 
 The pull of step 1 of the doc-read rule is no write of a file, as
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
