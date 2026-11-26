@@ -128,6 +128,7 @@ These bullets of [The body of an issue](issue-subagents.md#the-body-of-an-issue)
 issue-draft subagent does. Each bullet is named by its first words:
 
 - "Before the post, the planner compares reasons in issue examples with the docs"
+- "Before the post, the session that drafts the issue searches the tracked Markdown files"
 - "If a Docs item says that no doc names a thing"
 - "If an issue copies a fact from a ticket"
 - "Before the post, the planner tests each outside-tool fact it writes"
