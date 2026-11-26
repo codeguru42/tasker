@@ -231,8 +231,10 @@ The orchestrator does all the steps of this section.
 
   The orchestrator also reads the board after a defer and after the end of a hold of
   [the parent-hold rule](#the-parent-hold-rule). It also reads the board after a stop of a task subagent whose slot it
-  frees. The fill rule applies after each of these reads and after the read at a landing. The bullet "Run at most
-  `maxTaskSubagents` task subagents at the same time" gives it.
+  frees. It also reads the board after the end of a write subagent that got a link-removal request, as
+  [The actor of each write action](question-pane.md#the-actor-of-each-write-action) says. The fill rule applies after
+  each of these reads and after the read at a landing. The bullet "Run at most `maxTaskSubagents` task subagents at the
+  same time" gives it.
 
 - The outside-Todo find: no issue of the scope waits out of sight of the user. The pick cannot start an issue that is
   outside Todo. So the orchestrator lists each such issue and raises it one time.
