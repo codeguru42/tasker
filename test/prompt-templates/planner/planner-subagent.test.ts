@@ -166,6 +166,7 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
       "gh project item-list 3 --owner codeguru42 --limit 1000 --format json",
       "gh issue view <number> --json projectItems",
       "git -C <local clone> grep -n -E '<pattern>' origin/main -- <paths>",
+      "git -C <local clone> grep -n -A1 -E '<pattern>' origin/main -- <paths>",
       "git -C <local clone> show origin/main:<path> | tr '\\n' ' ' | grep -o -E '<pattern>'",
       "A Read call on a draft file",
       "a Read call on the report file of an issue-draft subagent",
