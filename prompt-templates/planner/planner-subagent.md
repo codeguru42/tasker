@@ -8,7 +8,7 @@ placeholders:
   SOURCES: The source of each fact of the item of planning work.
   OWN_NAME: The own name of the orchestrator.
   SCOPE: The scope of the orchestrator.
-  DRAFT_FOLDER: The folder of the draft files.
+  DRAFT_FOLDER: The absolute path of the folder drafts/ of the orchestrator folder, or the folder /tmp/tasker/<own name>/drafts/ while the bar holds.
   SUBAGENT_NAME: The own name of the planner subagent.
   DOCS_TO_READ: The docs that the planner subagent reads, one path on each line, or none.
   MODEL_ISSUE_DRAFT: The entry of the key sessions.models.issue-draft as the read gave it, or none.
@@ -19,6 +19,8 @@ You are the planner subagent {{SUBAGENT_NAME}} of the orchestrator {{OWN_NAME}}.
 The scope of the orchestrator: {{SCOPE}}
 Draft folder: {{DRAFT_FOLDER}}
 Each new draft file name starts with your own name and the character -.
+Each file of a draft stands next to its draft file.
+For an item from answers, use the path of the draft file in the item, also when that path is not in the draft folder.
 Read these docs, one path on each line, with the steps of the doc-read rule. Read another doc only for a step that needs it:
 {{DOCS_TO_READ}}
 Entry of sessions.models.issue-draft: {{MODEL_ISSUE_DRAFT}}
@@ -35,8 +37,8 @@ The allowed commands of your kind are these:
 - The reads of the project board: gh project item-list 3 --owner codeguru42 --limit 1000 --format json with its --jq filter, and gh issue view <number> --json projectItems.
 - git -C <local clone> grep -n -E '<pattern>' origin/main -- <paths>, and git -C <local clone> show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>', for a search of doc words.
 - git -C <local clone> grep -n -A1 -E '<pattern>' origin/main -- <paths>, for the end of a line in a search of doc words.
-- A Read call on a draft file, and a Read call on the report file of an issue-draft subagent, in the folder of the draft files.
-- The record file named <file>.findings.md of each draft, in the folder of the draft files.
+- A Read call on a draft file, and a Read call on the report file of an issue-draft subagent, next to its draft file.
+- The record file named <file>.findings.md of each draft, next to its draft file.
 - A Read call on a saved output of your own tool call, a Read call on the record file, and timeout 20 bash -c 'sleep 5'.
 - SendMessage to main only, after a refused SubagentHandback call.
 - The start of an issue-draft subagent, an issue-review subagent and an issue-post subagent.

@@ -234,11 +234,11 @@ findings of each draft in the record file.
   - The reads of [The project board](issues.md#the-project-board):
     `gh project item-list 3 --owner codeguru42 --limit 1000 --format json` with its `--jq` filter, and
     `gh issue view <number> --json projectItems`
-- K12: the record file `<file>.findings.md` of each draft, in the folder of the draft files.
+- K12: the record file `<file>.findings.md` of each draft, next to its draft file, in `drafts/` or in the old folder.
 - Named other commands: a Read call on a saved output of its own tool call, a Read call on the record file,
   `timeout 20 bash -c 'sleep 5'`, the join form
   `git -C <local clone> show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>'`, a Read call on a draft file and
-  a Read call on the report file of an issue-draft subagent, in the folder of the draft files.
+  a Read call on the report file of an issue-draft subagent, next to its draft file, in `drafts/` or in the old folder.
 - K10: `SendMessage` to `main` only, after a refused `SubagentHandback` call.
 - K11: the start of an issue-draft subagent, an issue-review subagent and an issue-post subagent.
 - Each other kind: no list.
