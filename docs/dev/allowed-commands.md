@@ -86,8 +86,11 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 [The steps for the open peer requests](handoff-orchestrator.md#the-steps-for-the-open-peer-requests),
 [The proposal file](planner-subagent.md#the-proposal-file), [Limits](limits.md#limits),
 [the own-worktree rule](limits.md#the-own-worktree-rule),
-[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner) and
-[The orchestrator folder](limits.md#the-orchestrator-folder).
+[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner),
+[The board watch job](../orchestrator.md#the-board-watch-job), [Terms](quota.md#terms),
+[Schedule a job when a task subagent starts](quota.md#schedule-a-job-when-a-task-subagent-starts),
+[When the job fires](quota.md#when-the-job-fires), [A pi stop](quota.md#a-pi-stop),
+[A failed CI run](ci-wait.md#a-failed-ci-run) and [The orchestrator folder](limits.md#the-orchestrator-folder).
 
 - K1: the read-only `tasker` commands of
   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule). They are `show-config`,
@@ -127,7 +130,20 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)), a Read call on a file of the
   local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'`, a Read call on the saved output of its own tool call,
   `ls` on its own three folders and a Read call on a file of its own three folders. For the check of a check request, it
-  also runs `ls` on the folder of the draft files and a Read call on a draft file there.
+  also runs `ls` on the folder of the draft files and a Read call on a draft file there. It also has these reads, each
+  named by its source:
+  - The time read `date +%Y-%m-%d-%H%M`, for the name of a handoff file and of a pane handoff file
+  - The time reads `date` and `date -d @<seconds>` of the quota jobs
+  - The quota reads `tasker show-quota | jq -r '<filter>'` and `tasker show-quota | jq -c '<filter>'`, with the filters
+    of [Terms](quota.md#terms)
+  - The provider read `tasker show-config --repo <repo> | jq -r '.assistant.provider'` of a pi stop
+  - The tool call `ListAgents`, for the session list
+  - The tool call `CronList`, for the list of its jobs
+  - The list `ls $HOME/Documents/tasker/handoff/` and a Read call on a handoff file there, for the check of the handoff
+    folder
+  - The card wait of a failed CI run, as ci-wait.md:167 gives it,
+    `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`
+  - A read of the variables `HERDR_TAB_ID` and `HERDR_PANE_ID`, for the close of its tab or pane
 
 This list gives the forms of the kind `claude`. [The orchestrator folder](limits.md#the-orchestrator-folder) gives the
 forms of the kinds `pi` and `codex`, and no one measured them.
