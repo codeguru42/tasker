@@ -757,7 +757,9 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   A subagent does each step that another rule gives the session. For example, it reads
   [A question of the user](#a-question-of-the-user) and measures facts for
   [A decision of the user](#a-decision-of-the-user). It follows [Before a post](issues.md#before-a-post) for an issue.
-  For an ad hoc draft, it follows [The ticket subagent](planner.md#the-ticket-subagent).
+  For an ad hoc draft, the main session starts the issue-draft subagent and the issue-review subagent. It follows the
+  same rules of the planner subagent as a planner session, as
+  [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) says.
 
   A subagent of the main session posts a reviewed ad hoc draft under
   [The post of a draft](planner.md#the-post-of-a-draft), because the main session runs no `gh` command. After the post,

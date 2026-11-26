@@ -275,8 +275,8 @@ The reasons for this path:
 - Inside one folder, two drafts already have different names, so their body files differ.
 - Each poster has the path of its draft file, and the rule needs no name of a planner subagent.
 - The end `.body.md` differs from `-body.md`. A draft name has only lowercase letters, digits and `-`, as
-  [The ticket subagent](planner.md#the-ticket-subagent) says. So `<name>.body.md` is never a draft path and never
-  overwrites a draft such as `x-body.md`.
+  [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) says. So `<name>.body.md` is never a
+  draft path and never overwrites a draft such as `x-body.md`.
 
 The subagent changes no other metadata. It moves no card. It runs no `gh project item-add`, for the reason of the bullet
 of [The project board](issues.md#the-project-board) that starts "A workflow of the board". It sets no priority, as the

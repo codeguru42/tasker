@@ -425,11 +425,11 @@ For a planner subagent, these six kinds take the place of the list of decisions 
    the question pane.
 
 Each kept rule that names a kind of The escape hatch names one of these six kinds for a planner subagent. Two examples
-follow. The first is the paragraph of [The ticket subagent](planner.md#the-ticket-subagent) that starts "Before the
-planner sends a question of a report to the user". The second is each place of issue-draft.md that names a kind of The
-escape hatch, for example its paragraph that starts "The report gives a question for the user". The reason: the
-issue-draft subagents of a planner subagent follow issue-draft.md. The initial planner and the ad hoc planner keep the
-list of The escape hatch.
+follow. The first is the paragraph of [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner)
+that starts "Before the planner sends a question of a report to the user". The second is each place of issue-draft.md
+that names a kind of The escape hatch, for example its paragraph that starts "The report gives a question for the user".
+The reason: the issue-draft subagents of a planner subagent follow issue-draft.md. The initial planner and the ad hoc
+planner keep the list of The escape hatch.
 
 Sometimes the reviews end and a finding of one of the six kinds is still open. Then the draft is a draft of that kind.
 The source is the last item of the list of The escape hatch, which starts "A finding of one of these kinds".
@@ -543,15 +543,15 @@ own item.
 
 The planner subagent keeps these rules:
 
-1. The text of [The ticket subagent](planner.md#the-ticket-subagent) and of
+1. The text of [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) and of
    [The review loop of a draft](planner.md#the-review-loop-of-a-draft) before their first subsections. This includes the
    judgment of a drop of a lesson or a proposed issue. Also
-   [The bans of a review agent](planner.md#the-bans-of-a-review-agent). Each issue-review subagent gets these bans, and
-   [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives its prompt. Change 3, change 5, change 6,
-   change 7 and drop 7 leave out parts of these rules. Change 8 gives their actors. For the planner subagent, the text
-   of The ticket subagent and The review loop of a draft holds only with the actors of change 8. Step 6 of The review
-   loop of a draft and the paragraph after the steps do not hold. [The count of reviews](#the-count-of-reviews) takes
-   their place.
+   [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent). Each issue-review
+   subagent gets these bans, and [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives its prompt.
+   Change 3, change 5, change 6, change 7 and drop 7 leave out parts of these rules. Change 8 gives their actors. For
+   the planner subagent, the text of The ticket subagent and The review loop of a draft holds only with the actors of
+   change 8. Step 6 of The review loop of a draft and the paragraph after the steps do not hold.
+   [The count of reviews](#the-count-of-reviews) takes their place.
 2. [The wait for a report](planner.md#the-wait-for-a-report). The planner subagent is the starter of each of its issue
    subagents. [The wait for an issue subagent](#the-wait-for-an-issue-subagent) gives its steps. Change 4 changes one
    bullet of a late report.

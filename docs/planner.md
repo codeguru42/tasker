@@ -14,8 +14,8 @@ says.
 The planner pages are `docs/planner.md` and the pages of this list, "The pages":
 
 - [docs/dev/planner.md](dev/planner.md): the rules for milestone planning and ad hoc drafts: the start of the initial
-  planner, the read of the milestones, the start prompts, the order of the work, wrong text of an open issue, the ticket
-  subagent, the review loop of a draft, what goes in a ticket and the work with the user.
+  planner, the read of the milestones, the start prompts, the order of the work, wrong text of an open issue, the issue
+  subagents of a planner, the review loop of a draft, what goes in a ticket and the work with the user.
 - [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
   own-session closure.
 - [docs/dev/items.md](dev/items.md): the form of a message, the terms of the questions and the answer.

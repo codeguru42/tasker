@@ -16,7 +16,8 @@ are these:
 
 These steps name a part of this page:
 
-- The paragraph of [The ticket subagent](planner.md#the-ticket-subagent) about a question of a report.
+- The paragraph of [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) about a question of a
+  report.
 - The report paragraph of [The post of a draft](planner.md#the-post-of-a-draft).
 - The edge-case sentence of [The escape hatch](planner.md#the-escape-hatch).
 - The sentence of [The review loop of a draft](planner.md#the-review-loop-of-a-draft) that starts "The draft that each
@@ -39,7 +40,7 @@ two lines. A comment draft has no title line, as [A comment draft](#a-comment-dr
 It edits only its draft file, its report file and the files of a [scratch folder](plan-review.md#the-state-of-the-user).
 It makes each scratch folder under `/tmp`. These rules come from step 1 of
 [The review loop of a draft](planner.md#the-review-loop-of-a-draft). They also come from
-[The ticket subagent](planner.md#the-ticket-subagent).
+[The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner).
 
 The pull of step 1 of the doc-read rule is no write of a file, as
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
@@ -114,8 +115,9 @@ again over the draft file before its report.
 
 ## The read bans
 
-The issue-draft subagent keeps these two bans of [The bans of a review agent](planner.md#the-bans-of-a-review-agent),
-with their exceptions, word for word:
+The issue-draft subagent keeps these two bans of
+[The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent), with their exceptions,
+word for word:
 
 - Read no file under `$HOME/.claude/` and not the file `$HOME/.claude.json`. A saved output of your own tool call is an
   exception: the file that the result names after "Full output saved to:". Read it with the Read tool, in parts with
