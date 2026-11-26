@@ -199,10 +199,11 @@ folder, not as the path of a call. [The question file](question-pane.md#the-ques
 `questions/`. [The proposal file](planner-subagent.md#the-proposal-file) gives the files of `proposals/`.
 [The handoff file](handoff.md#the-handoff-file) gives the files of `handoffs/`.
 
-Only an orchestrator of that slug writes in its orchestrator folder. tasker makes, reads and changes nothing there. Two
-orchestrators with different slugs have different folders, as [The slug](../orchestrator.md#the-slug) says. During a
-handoff, the old and the new orchestrator of one slug both run. After the write of its handoff file, the old
-orchestrator writes no new file in the three folders and gives no new question id.
+Only an orchestrator of that slug writes in its three folders. In `drafts/`, the writers are the writers that the terms
+of this section give. tasker makes, reads and changes nothing there. Two orchestrators with different slugs have
+different folders, as [The slug](../orchestrator.md#the-slug) says. During a handoff, the old and the new orchestrator
+of one slug both run. After the write of its handoff file, the old orchestrator writes no new file in the three folders
+and gives no new question id.
 
 Before its first call on the three folders in a session, the orchestrator reads the data root with
 `tasker show-config | jq -r '.dataRoot'`. This read is a K1 command. Step 1 of
@@ -326,8 +327,9 @@ steps, the orchestrator lists `questions/` and `proposals/`. So an automatic sta
 before it left. A start with no handoff file is a start whose first prompt names no handoff file.
 [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) gives the steps for the files of such a start.
 
-The orchestrator folder is an exception to [the own-worktree rule](#the-own-worktree-rule). The exception covers only
-the orchestrator, and it has these limits:
+The orchestrator folder is an exception to [the own-worktree rule](#the-own-worktree-rule). The exception covers the
+orchestrator. In `drafts/` of its own orchestrator, it also covers the planner subagents, their issue subagents and a
+question session of a pane of that orchestrator. The exception has these limits:
 
 - The orchestrator makes, lists, reads, writes and deletes files only in its own three folders. Its `mkdir -p` can also
   make the parent folders of the three folders. It also runs the two calls on `drafts/` that this section gives.
