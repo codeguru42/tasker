@@ -543,10 +543,19 @@ own item.
 
 The planner subagent keeps these rules:
 
-1. The kept parts of [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner): the judgment of a
-   drop of a lesson or a proposed issue, the paragraph of a question of a report, the change of the draft after a report
-   and the start hash. Also the terms of [The review loop of a draft](planner.md#the-review-loop-of-a-draft). The bans
-   of an issue-review subagent stand in
+1. The text of [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) before its first
+   subsection, and the text of [The review loop of a draft](planner.md#the-review-loop-of-a-draft) before its first
+   subsection. The planner subagent leaves out the paragraphs that give a rule only for a planner session. These
+   paragraphs start "Each planner session of the kind", "The reason: on 2026-11-21", "A pi planner session has no rule
+   here", "These rules of the planner subagent do not hold", "The planner session runs
+   `tasker show-config --repo <key>`", "The planner session gives each issue subagent the list", "The planner session
+   names each issue subagent", "An ad hoc planner uses an ad hoc name" and "If the own name is a GitHub issue key". So
+   it keeps the paragraphs that start "Before a planner subagent starts the first issue-draft subagent", "The reason:
+   each review costs", "The planner then does each step after the reviews", "Before the planner sends a question of a
+   report", "A change of the draft after a report", "For a change of an open issue", "If an issue-draft subagent of a
+   change of an open issue", "If an issue subagent ends with no report", "The fact of the first sentence of the bullet",
+   "The fact of that bullet also holds", "On 2026-11-15, the same planner" and "The planner gives each draft file a
+   name". The bans of an issue-review subagent stand in
    [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent), and
    [The prompt of an issue subagent](#the-prompt-of-an-issue-subagent) gives its prompt. Change 3, change 5, change 6,
    change 7 and drop 7 leave out parts of these rules. Change 8 gives their actors.
