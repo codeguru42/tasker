@@ -733,7 +733,10 @@ The planner subagent changes these rules:
 7. The folder of the draft files is the folder of [The prompt](#the-prompt). The bullet that starts "The issue-draft
    subagent of each planner session writes each draft" gives the folder of the slug. That folder does not hold for the
    planner subagent. A draft keeps its folder. The draft file, the report file and the record file stand next to each
-   other, in `drafts/` or in the old folder, also for an answer of the user while the bar holds.
+   other, in `drafts/` or in the old folder, also for an answer of the user while the bar holds. The folder of the
+   prompt holds only the new drafts of the planner subagent. A draft from before this change, or from a time of the bar,
+   stays in the old folder with its files. A reboot can still delete such a draft. Then
+   [A missing draft file](#a-missing-draft-file) holds.
 8. The actors of the work on a draft. The planner subagent starts the issue-draft subagent, the issue-review subagent
    and the issue-post subagent with the Agent tool, as the work needs. Each start of an agent and each wait for a report
    in the kept rules is a step of the planner subagent. [The issue subagents](#the-issue-subagents) gives the start
@@ -938,18 +941,24 @@ review and no issue-post subagent for the draft. Its result says so, and the dra
 
 ### A missing draft file
 
-A draft file can be missing, for example after a delete by the user. Three cases give the steps. The failure rule does
-not apply to a missing draft file, and no bar starts.
+A draft file can be missing, also after a reboot that cleared the old folder. The steps hold for a draft file in either
+folder. The failure rule does not apply to a missing draft file, and no bar starts.
 
-- The planner subagent of an answer reads the draft file before its first issue subagent. If the file is missing, it
-  starts an issue-draft subagent for the draft. The prompt of that subagent says that the file is missing. The planner
-  subagent adds the line `Count starts again: draft file missing` to the record file. The record is empty, as the last
-  paragraph of this section says. The new draft has its first review.
-- The issue-draft subagent can write a new draft at the same path. The steps are in [issue-draft.md](issue-draft.md).
-- The issue-post subagent posts nothing, also for a comment. Its result gives the path and states that the post did not
-  finish. The steps are in [issue-post.md](issue-post.md).
+- Before it starts the first issue subagent of an answer, the planner subagent reads the draft file of the answer.
+- If the file is missing and the next step is an issue-draft subagent, the planner subagent still starts it.
+- If the file is missing and the next step is a post, it starts no issue-post subagent. A post is next for the answer
+  "post the draft as it stands" and for an approved comment. Then the result gives the path and the fact that the file
+  is missing, and the draft waits for a decision of the user.
 
-If the record file is missing too, the record is empty, as [The record file](#the-record-file) says.
+The issue-draft subagent of the answer can write a new draft at the same path, as
+[issue-draft.md](issue-draft.md#a-missing-draft-file) says. If it writes one, its report says that the draft file was
+missing. Only then does the planner subagent start the count of reviews again, with the line
+`Count starts again: draft file missing` in the record file. A missing record file of such a draft counts as an empty
+record, as [The record file](#the-record-file) says. If it writes no draft, its result gives the path and the error, and
+the planner subagent starts no review and no post. The draft waits for a decision of the user.
+
+An issue-post subagent that finds no draft file posts nothing, as [issue-post.md](issue-post.md#a-missing-draft-file)
+says.
 
 ### A failed call on a file of a draft
 
