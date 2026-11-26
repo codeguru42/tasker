@@ -521,8 +521,8 @@ requested change, stay as [The open peer requests](#the-open-peer-requests) list
 in its question file through the handoff, as [The orchestrator folder](limits.md#the-orchestrator-folder) says. The
 handoff file holds no list of the items of planning work that have a
 [proposal file](planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It gives
-no path of the three folders. The new orchestrator makes that path itself from the data root, the repo key and its own
-slug.
+no path of the three folders and no path of `drafts/`. A path of a draft file in the text of a question stays. The new
+orchestrator makes that path itself from the data root, the repo key and its own slug.
 
 After the write of its handoff file, the old orchestrator writes no new file in the three folders and gives no new
 question id. A question that reaches it after the write gets no question file. The old orchestrator shows the full text
@@ -696,7 +696,8 @@ the data root, as [The orchestrator folder](limits.md#the-orchestrator-folder) s
 After all [the start checks](../orchestrator.md#the-start-checks) pass, the new orchestrator does the check of
 [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). Right after that check, at the end of its
 start steps, it lists `questions/` and `proposals/`, as [The orchestrator folder](limits.md#the-orchestrator-folder)
-says. A session whose start check failed does not list these folders. It reads no question file at its start.
+says. At the end of its start steps, the new orchestrator runs no call on `drafts/`. A session whose start check failed
+does not list these folders. It reads no question file at its start.
 
 After these lists, it reads the tasks in flight with `tasker status`, also
 [the parked tasks](pick-the-tickets.md#the-defer-rule). It reads the other sessions with `ListAgents`. Then, if all

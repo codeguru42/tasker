@@ -29,7 +29,8 @@ starts one [planner subagent](planner-subagent.md) for each item of planning wor
 **Orchestrator**: A top-level session that runs one scope. It picks tickets and starts task subagents.
 
 **Orchestrator folder**: The folder `<data root>/<repo slug>/orchestrators/<slug>/` of one orchestrator, with the
-folders `questions/`, `proposals/` and `handoffs/`. Only that orchestrator writes there.
+folders `questions/`, `proposals/` and `handoffs/`, and the folder `drafts/`. The orchestrator writes in all of them.
+Its planner subagents and their issue-draft and issue-post subagents write only in `drafts/`.
 [The orchestrator folder](limits.md#the-orchestrator-folder) gives its rules.
 
 **Own name**: The name of a session. The role is the part of the own name before the first `-`, and the slug is the part
