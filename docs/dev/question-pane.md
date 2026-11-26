@@ -715,7 +715,8 @@ The pane owner prepares first-reply text that follows
 [issue-link rule](working-with-the-user.md#the-issue-link-rule). It attributes facts and measures of the question to the
 sender. The text holds the question, the choices and costs, the recommendation, the paths and the decisions so far. It
 also follows the bullet of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "Define
-each term".
+each term". For a question about a [planned edit](#terms), the text also holds the shown edit, as
+[The shown edit](#the-shown-edit) says.
 
 The first-reply text gives its one question with no number. For the first-reply text, this paragraph wins over each rule
 of [The form of a reply](working-with-the-user.md#the-form-of-a-reply) that numbers or lists the open questions.
@@ -958,7 +959,9 @@ with the text and the word, word for word. If the session has no text for the fi
 text is missing. The action then stays "not approved".
 
 A question that leads to no write action shows no command, no undo step, no path and no text of a write. A request of
-[Terms](#terms), for example a [title or body request](#terms), keeps its own form.
+[Terms](#terms), for example a [title or body request](#terms), keeps its own form. A shown edit of
+[The shown edit](#the-shown-edit) is not a command, a path or a text of a write. So a question that leads to no write
+action still shows its shown edit.
 
 The reason: on 2026-11-20, the user said in a question pane: "No, the exact commands should be shown before the
 choices". In the refine of the plan of #988, the user said about the approval: "Each choice should explicitly include in
