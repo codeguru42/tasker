@@ -53,13 +53,22 @@ reason, `skills/tasker/SKILL.md` does not list its commands (see
 `docs/dev/limits.md`. For the known behaviors of the installed `tasker`, see
 [the facts of the installed tasker](dev/tasker-commands.md#the-facts-of-the-installed-tasker).
 
-The start docs of the orchestrator are `docs/orchestrator.md`, the pages of the list "The pages" below,
-[docs/dev/rules.md](dev/rules.md), [docs/dev/working-with-the-user.md](dev/working-with-the-user.md),
-[docs/sessions.md](sessions.md), with its sections on the start of a session, the start gate of a pi session and a
-blocked session, and [docs/dev/GLOSSARY.md](dev/GLOSSARY.md). At its start, the orchestrator makes a complete read of
-each start doc before any other work, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says.
+The start docs of the orchestrator are `docs/orchestrator.md`, [docs/dev/rules.md](dev/rules.md),
+[docs/dev/working-with-the-user.md](dev/working-with-the-user.md), [docs/sessions.md](sessions.md), with its sections on
+the start of a session, the start gate of a pi session and a blocked session, and
+[docs/dev/GLOSSARY.md](dev/GLOSSARY.md). At its start, the orchestrator makes a complete read of each start doc before
+any other work, as [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) says. The pages of the list "The pages" below
+are not start docs. [The start reads](#the-start-reads) gives the reads of the start.
 
-The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages":
+On 2026-11-26, an orchestrator said that 12 pages of the list "The pages" stayed unread at its start. The user then
+asked: "what are the 12 orchestration pages?" The user then said that the orchestrator reads these pages only for a step
+that needs them. After that, the user said: "yes, start a planner to draft this as a new rule". The rule covers each
+page of the list for two reasons. First, no doc names the 12 pages, because they are the pages that one session left
+unread. Second, the list "The pages" is the one set of pages that a rule can name.
+
+The orchestration pages are `docs/orchestrator.md` and the pages of this list, "The pages". Each entry names the
+sections of its page. The orchestrator uses the list to find the page that a step needs, as
+[The start reads](#the-start-reads) says.
 
 - [docs/dev/question-pane.md](dev/question-pane.md): "A question pane", "The question file" and "The pane handoff".
 - [docs/dev/pick-the-tickets.md](dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket
@@ -103,9 +112,9 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
 
 ## The start of an orchestrator
 
-This section gives the scope, the slug, the start of an orchestrator and
-[a stop with no handoff](#a-stop-with-no-handoff). [docs/dev/GLOSSARY.md](dev/GLOSSARY.md) defines the scope, the slug
-and the own name.
+This section gives the scope, the slug, the start of an orchestrator, [the start reads](#the-start-reads), the
+[start duties](#the-start-duties) and [a stop with no handoff](#a-stop-with-no-handoff).
+[docs/dev/GLOSSARY.md](dev/GLOSSARY.md) defines the scope, the slug and the own name.
 
 ### The scope
 
@@ -212,12 +221,39 @@ The user said this in a pane about #976: "This will never happen. An orchestrato
 or it drafts a handoff. If the user attempts to start a new fresh orchestrator outside of this, then it is on them and
 the user has to deal with the mess."
 
+### The start reads
+
+The start reads are the complete reads that the orchestrator makes at its start, before any other work. They are these
+reads, in order:
+
+1. A complete read of `docs/dev/doc-reads.md` and the second read of `AGENTS.md`, as
+   [The start prompts](dev/doc-reads.md#the-start-prompts) says. The read of `AGENTS.md` is a complete read, as
+   [The old read](dev/doc-reads.md#the-old-read) says.
+2. A complete read of each start doc.
+3. A complete read of each doc that the first prompt names. This covers each extra doc of a handoff prompt, as
+   [The handoff file of the orchestrator](dev/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) defines it.
+   If the prompt names a page of the list "The pages", that page also gets a complete read in the start reads.
+
+The start reads read no other page. A step of the start can still need a page, for example a step of
+[the start checks](#the-start-checks) or a [start duty](#the-start-duties). Such a step reads the page as a read on
+need.
+
+A read on need is a read of a page for a step of the work that needs a rule of that page. After its start reads, the
+orchestrator reads a page only as a read on need. This follows the read rule of [AGENTS.md](../AGENTS.md): after its
+start, a session reads another doc only for a step of its work that needs the doc.
+
+The orchestrator judges which page a step needs. The list "The pages" names the sections of each page, and the
+orchestrator finds the page for a step there. A read on need is a doc read under
+[the doc-read rule](dev/doc-reads.md#the-doc-read-rule), so it is a complete read of the page.
+[The re-read rule](dev/doc-reads.md#the-re-read-rule) gives the reads after a landing and the last read.
+
 ### The first prompt
 
 The first prompt names the own name and the scope. It also names the branch check, step 1 and the start read of
 `docs/dev/doc-reads.md`, `AGENTS.md` and `docs/orchestrator.md`, as
 [the doc-read rule](dev/doc-reads.md#the-doc-read-rule) gives them. It also asks for a complete read of each start doc
-before any other work. [The start prompts](dev/doc-reads.md#the-start-prompts) says more.
+before any other work. [The start reads](#the-start-reads) gives the start docs and the other start reads. The first
+prompt asks for no read of the other pages. [The start prompts](dev/doc-reads.md#the-start-prompts) says more.
 
 The first prompt of a milestone scope is the template
 [`prompt-templates/start/orchestrator-milestone.md`](../prompt-templates/start/orchestrator-milestone.md).
@@ -253,7 +289,8 @@ and 3. For a pi orchestrator, the user alone keeps the slugs apart.
 After these steps, the orchestrator lists its folders `questions/` and `proposals/`, as
 [The orchestrator folder](dev/limits.md#the-orchestrator-folder) says for the end of the start steps. After a handoff,
 this list comes after [The check of the handoff folder](dev/handoff.md#the-check-of-the-handoff-folder), as The
-orchestrator folder says.
+orchestrator folder says. [The start duties](#the-start-duties) gives the other steps before the pick of the first
+ticket.
 
 A new orchestrator after a handoff follows the same order: the complete start reads, then these steps, then the role
 work. A new orchestrator after a handoff is an orchestrator whose first prompt is the prompt of a handoff of an
@@ -347,15 +384,38 @@ The way on asks for the close of the failed session for these reasons:
 The way on adds no step for the new orchestrator. It does the start checks and the start after a handoff from the prompt
 of the handoff file.
 
+### The start duties
+
+A start duty is a step that a page gives for the start of a session of the orchestrator, before the pick of the first
+ticket. This list is the pointer of each start duty in a start doc. So the orchestrator does each start duty at its
+start, also for a page that no other step of the start needs. Each duty reads its page as a read on need. A failed
+session of the start checks does no start duty. The start duties are:
+
+- The list of `questions/` and `proposals/` at the end of the start steps, as
+  [The orchestrator folder](dev/limits.md#the-orchestrator-folder) says. [The start checks](#the-start-checks) gives its
+  place.
+- The first free item id from `questions/` at a start with no handoff file, as [Terms](dev/question-pane.md#terms) says.
+- The label check of the broken-test ban, as [A failed CI run](dev/ci-wait.md#a-failed-ci-run) says. It runs at the
+  start of the session and before each start of a ticket. So it runs before the start of the first ticket.
+- The outside-Todo find of [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets). It runs after the start reads
+  and before the pick of the first ticket. The find also reads the label `on hold`, as
+  [A ticket on hold](dev/pick-the-tickets.md#a-ticket-on-hold) says. After a handoff,
+  [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the place of
+  the find and the read of its record.
+
+The search for start duties found only these duties outside the pages that the handoff prompt names. The duties of a
+start after a handoff are in `docs/dev/handoff-orchestrator.md`, which that prompt names. They are the read of
+`tasker status`, the read of `ListAgents`, the task list and the open peer requests.
+
 ### The states of a start
 
-| State                         | User                         | Orchestrator                                                                                                                                                           | Who tells whom                                 |
-| ----------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| The read of the configuration | Runs `tasker show-config`    |                                                                                                                                                                        |                                                |
-| The read fails                | Starts no orchestrator       |                                                                                                                                                                        | The command tells the user                     |
-| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                                                                                                          |                                                |
-| A start check fails           |                              | Does no role work and makes no board watch job. With a handoff file in the first prompt, the message also gives the path and the way on                                | The orchestrator tells the user in its own tab |
-| The start checks pass         |                              | A new orchestrator after a handoff does the check of the handoff folder first. Lists `questions/` and `proposals/`, makes the board watch job and starts its role work |                                                |
+| State                         | User                         | Orchestrator                                                                                                                                                                                  | Who tells whom                                 |
+| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| The read of the configuration | Runs `tasker show-config`    |                                                                                                                                                                                               |                                                |
+| The read fails                | Starts no orchestrator       |                                                                                                                                                                                               | The command tells the user                     |
+| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                                                                                                                                 |                                                |
+| A start check fails           |                              | Does no role work and makes no board watch job. With a handoff file in the first prompt, the message also gives the path and the way on                                                       | The orchestrator tells the user in its own tab |
+| The start checks pass         |                              | A new orchestrator after a handoff does the check of the handoff folder first. Lists `questions/` and `proposals/`, does the start duties, makes the board watch job and starts its role work |                                                |
 
 With a first prompt that names a handoff file, the message of a failed start check also gives the path and the way on of
 [the start checks](#the-start-checks). These states follow that failed start check:
