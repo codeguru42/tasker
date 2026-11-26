@@ -32,13 +32,10 @@ which commands each agent can perform. It should not restrict those commands in 
    another actor already runs that command. For this part, the rule text of the first bullet is the step of the doc that
    needs the read.
 
-   Until the issue "Test each list of allowed-commands.md against the read-only rule" of the milestone M31 lands, this
-   interim rule wins over part 3. It is docs only. The reason: no one tested the lists against part 3 before this issue.
-   Each list stays as it stands. Part 3 adds no command to a list by itself. A ticket can still add a command under the
-   first bullet. Part 2 still holds. At a gap, part 4 and the other bullets of this section hold. The issue lands when
-   someone closes it as completed. The interim rule holds while the issue is not posted, is open, or is closed in
-   another way. That issue removes the interim rule. If it gives another meaning of a read-only command, its meaning
-   wins.
+   A command that a list names with limit words counts as named for this part, also for a job outside its limit words.
+   The reason: a limit word names the job that needs the command, or how that job runs it. So it is not a limit of
+   another kind. This rule has a known limit. A limit word can still make a list narrower than a job needs, and no test
+   finds that. Part 4 covers such a job as a gap.
 
 4. A gap is a job of an actor that needs a command that the list of the actor does not name. A job outside the limit
    words of a command of the list is a gap too. Only an actor with a section on this page has a gap.
