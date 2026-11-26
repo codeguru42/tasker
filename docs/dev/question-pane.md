@@ -1887,6 +1887,9 @@ Each failed or denied call follows the rules for its folder. These are [the fail
 to step 1 of the tool-block rule. After each failed or denied call, the pane owner still checks each other file that it
 can. The answer names the call, the error or the denial, and the part that it did not check.
 
+A failed or denied call of the check on a file of `drafts/` starts the bar of
+[The orchestrator folder](limits.md#the-orchestrator-folder), and only that call stops, not the check.
+
 The pane owner can fail to list the folder of the draft files, also for a missing folder. The answer then says that it
 checked no draft of the first kind. Before the first draft of a planner subagent, the folder can be missing. A failed
 `ls` of a missing `drafts/` is no failed call on a file of a draft. It starts no bar, as a read of a file that does not
