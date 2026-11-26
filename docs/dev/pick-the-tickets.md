@@ -1454,3 +1454,42 @@ landing rules still apply.
   doc, or the words of the user. The message or the prompt marks each cause or claim that nobody measured as not
   measured. A claim of a final report with no command and no read is such a claim. The reason: in M14, two claims that
   nobody measured reached the planner as facts. A guess can then go into a tracked doc as a fact.
+
+### The start of a task subagent
+
+An orchestrator of the kind `claude` does these steps at each start of a task subagent with its `Agent` tool:
+
+1. Run `tasker show-config --repo <key>` for the repo of the ticket, and read the entry `sessions.models.task`. See
+   [`sessions`](../config.md#sessions).
+2. If the read fails, follow [the failure rule](limits.md#the-failure-rule). Then pass no `model` and no `effort`, and
+   go on with the start.
+3. If the read gives no entry, pass no `model` and no `effort`.
+4. If the read gives an entry, pass the `effort` of the entry. Pass the `model` that
+   [The model of the start](planner-subagent.md#the-model-of-the-start) gives for the `model` of the entry. If the map
+   gives no model, pass no `model`.
+5. Pass the subagent type `general-purpose`, as the planner subagent start does. Never pass the type `fork`, and never
+   leave out the type.
+
+A fork gets the context of the orchestrator, and the prompt of a task subagent gives only the context of its ticket. On
+2026-11-21, the tool schema of the `Agent` tool said that a fork ignores `model` and `effort`. On 2026-11-22, it said
+again that a fork ignores `effort`. A task subagent writes files, and on 2026-11-21, the list of the subagent types left
+`Edit` and `Write` out of the tools of `Explore` and `Plan`. No one read the version of Claude Code at these reads. They
+are reads of a tool schema and of a list, not measures of a start.
+
+The steps cover each start of a task subagent. This includes a task subagent for a whole ticket and a task subagent for
+one task change. It also includes a second session for the same ticket, with a suffix.
+
+The model and the effort go in the parameters `model` and `effort` of the `Agent` call. They do not go in the text of
+the prompt or in a template of the prompt.
+
+The read holds back no start. A failed read, a missing entry and a model that the map does not name each still start the
+task subagent.
+
+The time of the read:
+
+- Not started: the orchestrator reads the entry right before the start.
+- Running: the orchestrator reads the entry only at a start. So a later change of the entry does not reach a running
+  task subagent.
+- Ended and started again by a message: the orchestrator reads no entry at a message, and the message gives no model and
+  no effort. No one measured which model and effort the task subagent then runs on. Only a new start reads the entry
+  again.
