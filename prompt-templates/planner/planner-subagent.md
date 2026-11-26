@@ -37,8 +37,8 @@ The allowed commands of your kind are these:
 - The reads of the project board: gh project item-list 3 --owner codeguru42 --limit 1000 --format json with its --jq filter, and gh issue view <number> --json projectItems.
 - git -C <local clone> grep -n -E '<pattern>' origin/main -- <paths>, and git -C <local clone> show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>', for a search of doc words.
 - git -C <local clone> grep -n -A1 -E '<pattern>' origin/main -- <paths>, for the end of a line in a search of doc words.
-- A Read call on a draft file, and a Read call on the report file of an issue-draft subagent, next to its draft file.
-- The record file named <file>.findings.md of each draft, next to its draft file.
+- A Read call on a draft file, and a Read call on the report file of an issue-draft subagent, next to its draft file, in drafts/ or in the old folder.
+- The record file named <file>.findings.md of each draft, next to its draft file, in drafts/ or in the old folder.
 - A Read call on a saved output of your own tool call, a Read call on the record file, and timeout 20 bash -c 'sleep 5'.
 - SendMessage to main only, after a refused SubagentHandback call.
 - The start of an issue-draft subagent, an issue-review subagent and an issue-post subagent.
