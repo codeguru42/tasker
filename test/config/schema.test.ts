@@ -744,6 +744,8 @@ describe("parseConfig sessions", () => {
       "issue-review": { model: "opus", effort: "max" },
       "issue-post": { model: "opus", effort: "max" },
       write: { model: "opus", effort: "max" },
+      opener: { model: "sonnet", effort: "low" },
+      reuse: { model: "haiku", effort: "max" },
       task: { model: "opus", effort: "max" },
     };
     raw.repos.tasker.sessions = { models };
@@ -762,6 +764,30 @@ describe("parseConfig sessions", () => {
     const raw = validConfig();
     raw.repos.tasker.sessions = { models: { task: { model: "gpt-5", effort: "high" } } };
     expect(issuesOf(raw)).toContain("repos.tasker.sessions.models.task.model: is not a claude-code model: gpt-5");
+  });
+
+  it.each(["opener", "reuse"])("rejects a gpt model in the subagent role %s", (role) => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { [role]: { model: "gpt-5", effort: "low" } } };
+    expect(issuesOf(raw)).toContain(`repos.tasker.sessions.models.${role}.model: is not a claude-code model: gpt-5`);
+  });
+
+  it.each(["opener", "reuse"])("rejects a claude model of the subagent role %s under the kind pi", (role) => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { kind: "pi", models: { [role]: { model: "opus", effort: "low" } } };
+    expect(issuesOf(raw)).toContain(
+      `repos.tasker.sessions.models.${role}.model: is not a pi model in the form <provider>/<model-id>: opus`,
+    );
+  });
+
+  it.each(["opener", "reuse"])("reports entry faults of the subagent role %s at their paths", (role) => {
+    const missing = validConfig();
+    missing.repos.tasker.sessions = { models: { [role]: { model: "opus" } } };
+    expectIssueAt(issuesOf(missing), `repos.tasker.sessions.models.${role}.effort`);
+
+    const extra = validConfig();
+    extra.repos.tasker.sessions = { models: { [role]: { model: "opus", effort: "low", x: 1 } } };
+    expect(issuesOf(extra)).toContain(`repos.tasker.sessions.models.${role}.x: unrecognized key`);
   });
 
   it("reports write entry faults at their paths", () => {

@@ -16,7 +16,7 @@ const PI_MODEL = "openrouter/deepseek/deepseek-v4.1-flash";
 // The report lines of the session roles in a file with no entry for them.
 const NONE_SESSIONS =
   "planner: none\norchestrator: none\nquestion: none\n" +
-  "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: none\ntask: none\n";
+  "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: none\nopener: none\nreuse: none\ntask: none\n";
 
 // Makes sure that the file still holds before and that its folder holds no other file.
 function expectNothingChanged({ dir, path }: { dir: string; path: string }, before: string): void {
@@ -83,7 +83,7 @@ describe("model", () => {
           "plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n" +
           "planner: opus (effort xhigh)\norchestrator: sonnet (effort max)\n" +
           "question: opus (effort max)\n" +
-          "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: opus (effort max)\ntask: none\n",
+          "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: opus (effort max)\nopener: none\nreuse: none\ntask: none\n",
         err: "",
       });
       expect(result.out).not.toMatch(/^operator:/m);
@@ -99,7 +99,7 @@ describe("model", () => {
       expect(result.out).toBe("");
       expect(result.err).toContain("argument 'operator' is invalid");
       expect(result.err).toContain(
-        "Allowed choices are plan, execute, review, planner, orchestrator, question, issue-draft, issue-review, issue-post, write, task.",
+        "Allowed choices are plan, execute, review, planner, orchestrator, question, issue-draft, issue-review, issue-post, write, opener, reuse, task.",
       );
       expectNothingChanged(file, before);
     });
@@ -256,6 +256,8 @@ describe("model", () => {
       "issue-review",
       "issue-post",
       "write",
+      "opener",
+      "reuse",
       "task",
     ] as const)("sets a new entry of the role %s in a file with no sessions key", async (role) => {
       const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
@@ -298,6 +300,21 @@ describe("model", () => {
       const result = await runCommand(model, "model", KEY, "--role", "planner", PI_MODEL, "--effort", "xhigh");
 
       expect(result).toEqual({ code: 0, out: `planner: ${PI_MODEL} (effort xhigh)\n`, err: NOTE });
+      expectNothingChanged(file, printedJson(expected));
+    });
+
+    it("sets the effort max of the subagent role reuse with an entry", async () => {
+      const file = useConfigFile((dataRoot) => {
+        const raw = rawFile(dataRoot);
+        raw.repos.tasker.sessions = { models: { reuse: { model: "opus", effort: "low" } } };
+        return printedJson(raw);
+      });
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = { models: { reuse: { model: "opus", effort: "max" } } };
+
+      const result = await runCommand(model, "model", KEY, "--role", "reuse", "--effort", "max");
+
+      expect(result).toEqual({ code: 0, out: "reuse: opus (effort max)\n", err: NOTE });
       expectNothingChanged(file, printedJson(expected));
     });
 
@@ -434,27 +451,30 @@ describe("model", () => {
       expectNothingChanged(file, before);
     });
 
-    it("prints task: none for the role task with no entry", async () => {
+    it.each(["task", "opener", "reuse"])("prints the none line for the role %s with no entry", async (role) => {
       useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
 
-      const result = await runCommand(model, "model", KEY, "--role", "task");
+      const result = await runCommand(model, "model", KEY, "--role", role);
 
-      expect(result).toEqual({ code: 0, out: "task: none\n", err: "" });
+      expect(result).toEqual({ code: 0, out: `${role}: none\n`, err: "" });
     });
 
-    it("requires a task entry when only the model is given", async () => {
-      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
-      const before = readFileSync(file.path, "utf8");
+    it.each(["task", "opener", "reuse"])(
+      "requires an entry of the role %s when only the model is given",
+      async (role) => {
+        const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+        const before = readFileSync(file.path, "utf8");
 
-      const result = await runCommand(model, "model", KEY, "--role", "task", "sonnet");
+        const result = await runCommand(model, "model", KEY, "--role", role, "sonnet");
 
-      expect(result).toEqual({
-        code: 1,
-        out: "",
-        err: "the role task has no entry: give the model and --effort\n",
-      });
-      expectNothingChanged(file, before);
-    });
+        expect(result).toEqual({
+          code: 1,
+          out: "",
+          err: `the role ${role} has no entry: give the model and --effort\n`,
+        });
+        expectNothingChanged(file, before);
+      },
+    );
 
     it("requires a write model entry when only the effort is given", async () => {
       const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
@@ -470,23 +490,24 @@ describe("model", () => {
       expectNothingChanged(file, before);
     });
 
-    it("prints the loader errors for an issue-review model that the provider refuses", async () => {
-      const file = useConfigFile((dataRoot) => {
-        const raw = rawFile(dataRoot);
-        raw.repos.tasker.sessions = { models: { "issue-review": { model: "opus", effort: "high" } } };
-        return printedJson(raw);
-      });
-      const before = readFileSync(file.path, "utf8");
+    it.each(["issue-review", "opener", "reuse"])(
+      "prints the loader errors for a model of the role %s that the provider refuses",
+      async (role) => {
+        const file = useConfigFile((dataRoot) => {
+          const raw = rawFile(dataRoot);
+          raw.repos.tasker.sessions = { models: { [role]: { model: "opus", effort: "high" } } };
+          return printedJson(raw);
+        });
+        const before = readFileSync(file.path, "utf8");
 
-      const result = await runCommand(model, "model", KEY, "--role", "issue-review", "gpt-5");
+        const result = await runCommand(model, "model", KEY, "--role", role, "gpt-5");
 
-      expect(result.code).toBe(1);
-      expect(result.out).toBe("");
-      expect(result.err).toContain(
-        "repos.tasker.sessions.models.issue-review.model: is not a claude-code model: gpt-5",
-      );
-      expectNothingChanged(file, before);
-    });
+        expect(result.code).toBe(1);
+        expect(result.out).toBe("");
+        expect(result.err).toContain(`repos.tasker.sessions.models.${role}.model: is not a claude-code model: gpt-5`);
+        expectNothingChanged(file, before);
+      },
+    );
 
     it("prints the loader errors and changes nothing for xhigh on an assistant role", async () => {
       const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
@@ -523,7 +544,7 @@ describe("model", () => {
 
       expect(code).toBe(0);
       expect(help).toContain(
-        "The role to print or to set: an assistant role (plan, execute, review), a session role (planner, orchestrator, question) or a subagent role (issue-draft, issue-review, issue-post, write, task)",
+        "The role to print or to set: an assistant role (plan, execute, review), a session role (planner, orchestrator, question) or a subagent role (issue-draft, issue-review, issue-post, write, opener, reuse, task)",
       );
       expect(help).toContain("xhigh and max are for a session role or a subagent role only");
       expect(help).toContain("each subagent role");
