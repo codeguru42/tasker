@@ -1093,9 +1093,10 @@ the user gives the word to end the hold to that orchestrator, on a path of the w
 orchestrator removes the label and asks the question of each hold comment with no answer comment, as the paragraphs
 above say.
 
-The order matters. A new orchestrator reads the label `on hold` at its start, in the read of this section and in the
-outside-Todo find. It reads the hold comments only at the end of a hold. If the user removes the label before the start,
-the new orchestrator sees no ended hold. It then starts the ticket and asks no question of its hold comments.
+The order matters. A new orchestrator reads the label `on hold` at its start, in the outside-Todo find, a
+[start duty](../orchestrator.md#the-start-duties). It reads the hold comments only at the end of a hold. If the user
+removes the label before the start, the new orchestrator sees no ended hold. It then starts the ticket and asks no
+question of its hold comments.
 
 If the label is already gone at the word of the user, the orchestrator skips its removal.
 

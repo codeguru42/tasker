@@ -1,9 +1,10 @@
 # Question panes
 
 This page gives the rules of a question pane. The readers of this page are each pane owner and each question session.
-The orchestrator reads it as a start doc, as [docs/orchestrator.md](../orchestrator.md) says. A question session reads
-it before its first reply, as [The question session](#the-question-session) says. The reason for this page: on
-2026-11-13, the user said "pull out the rules for the question pane from the rules for the operator into its own doc".
+For a step that needs a rule of this page, the orchestrator reads it as a read on need, as
+[The start reads](../orchestrator.md#the-start-reads) says. A question session reads it before its first reply, as
+[The question session](#the-question-session) says. The reason for this page: on 2026-11-13, the user said "pull out the
+rules for the question pane from the rules for the operator into its own doc".
 
 The orchestrator is the only top-level role of this page.
 
