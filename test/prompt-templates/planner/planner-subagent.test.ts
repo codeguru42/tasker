@@ -188,9 +188,11 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
       "For an item from answers, use the path of the draft file in the item, also when that path is not in the draft folder.",
     );
     expect(body).toContain(
-      "- A Read call on a draft file, and a Read call on the report file of an issue-draft subagent, next to its draft file.",
+      "- A Read call on a draft file, and a Read call on the report file of an issue-draft subagent, next to its draft file, in drafts/ or in the old folder.",
     );
-    expect(body).toContain("- The record file named <file>.findings.md of each draft, next to its draft file.");
+    expect(body).toContain(
+      "- The record file named <file>.findings.md of each draft, next to its draft file, in drafts/ or in the old folder.",
+    );
     expect(body).not.toContain("in the folder of the draft files");
   });
 
