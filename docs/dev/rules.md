@@ -12,6 +12,31 @@ zod facts and the tests.
   mean that a change to a tracked file requires an issue". A change of a tracked file that the user asks for in a
   question pane goes to the planner of the orchestrator as a request for a new issue, as
   [The question session](question-pane.md#the-question-session) says.
+- The consistency rule: each issue change leaves no inconsistency among tracked Markdown files. For this rule, a tracked
+  Markdown file is a `.md` file that git tracks in this repo. An inconsistency is a disagreement between two places, for
+  example contradictory rules, stale descriptions, different names for one thing, or different counts of one set. A
+  change leaves every tracked Markdown file in agreement with each rule or fact that it adds or changes. No tracked
+  Markdown file still states, or relies on, a removed rule or fact. The same change updates another file when its
+  sentence becomes false or inconsistent. It also removes old inconsistencies between a sentence in a file changed for
+  the ticket's work and another tracked Markdown file. A file changed only to remove an old inconsistency does not
+  expand the search to its other old inconsistencies. Old inconsistencies between two otherwise unchanged files stay
+  outside the ticket's scope because comparing every pair takes too much work. This rule covers every tracked Markdown
+  file because repository skills and prompt templates also state rules that sessions follow. A conflict there can
+  mislead a session just as a conflict between docs can. The user asked for the entire set of documents, so the rule
+  includes those files. The drafting session searches as
+  [the issue search rule](issue-subagents.md#the-body-of-an-issue) says.
+  [The issue check](plan-review.md#the-issue-check) covers omitted files and Docs items that say a file stays. The
+  one-home rule remains in [Code](#code); this rule does not change the prompt exception there. Inconsistent rules can
+  make a session follow one rule and break another. The body of #1008 said on 2026-11-21:
+
+  > An additional rule: every change made by an issue must leave the entire set of documents in a self-consistent state.
+  > Therefore, any change that #1008 that leaves a contradiction or inconsistency must be avoided.
+
+  The body of #1008 also said:
+
+  > so if I understand correctly, #1008 changes one document in a way that disagrees or even contradicts another
+  > document. If so then yes, they should both change to stay in agreement. Better yet, the documents should be
+  > refactored so that a fact is only stated in one place.
 
 ## Check
 
@@ -268,7 +293,9 @@ task.
   for plan, execute or review.
 - The instructions for tasker come from the installed skill. The installed skill is the copy that
   `tasker install-skills` of the installed tasker put in a folder of `skillsDirs`. The assistant loads it by itself.
-- A session reads the files of `skills/tasker/` only for a task that changes them.
+- A session reads the files of `skills/tasker/` only for a task that changes them or to find text that a change makes
+  false or inconsistent. The [consistency rule](#changes) permits that search because the session must find each tracked
+  Markdown file that its change makes inconsistent.
 - This rule wins over "the files of the repo" in the bullet of the sources of the task subagent in the Limits list of
   [docs/dev/limits.md](limits.md#limits).
 
