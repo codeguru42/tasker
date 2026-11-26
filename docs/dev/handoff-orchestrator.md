@@ -476,9 +476,15 @@ handoff file:
   [The start of the new orchestrator](#the-start-of-the-new-orchestrator). The first step of the prompt is the prompt
   read of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The prompt also names each extra doc.
   An extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
-  [the re-read rule](doc-reads.md#the-re-read-rule) does not hold.
-- For a set scope, the prompt names each open issue of the set as it stands at the handoff. It uses the form of the
-  first prompt of [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator).
+  [the re-read rule](doc-reads.md#the-re-read-rule) does not hold. The old orchestrator fills
+  [`prompt-templates/handoff/orchestrator.md`](../../prompt-templates/handoff/orchestrator.md). `{{SCOPE}}` is the
+  scope, `{{HANDOFF_PATH}}` the path of the file, `{{SESSION_NAME}}` the session name, `{{FIRST_FREE_ITEM_ID}}` the
+  first free item id and `{{EXTRA_DOCS}}` the extra docs with the label "Extra docs:", or empty. Then it splits the
+  result on newlines, drops each empty line and joins the rest with one space, so that the prompt is one line. An empty
+  `{{EXTRA_DOCS}}` or `{{OPEN_ISSUES}}` leaves no word.
+- For a set scope, the prompt names each open issue of the set as it stands at the handoff. `{{OPEN_ISSUES}}` holds the
+  open issues with the label "Open issues:", in the form of the first prompt of
+  [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator). It is empty for a milestone scope.
 - The number of each open broken-test issue that the old orchestrator knows of (see the broken-test rule in
   [A failed CI run](ci-wait.md#a-failed-ci-run)).
 - A table of the open issues of the scope, with the columns issue, topic, blockers and files.
@@ -654,9 +660,10 @@ In a handoff of an orchestrator, this rule wins over the bullet of "The own-sess
 user opened in a pane. That bullet says that such a session cannot close itself. So the old orchestrator that the user
 started also closes itself by its tab id.
 
-The new orchestrator is `orchestrator-<slug>`. Under `pi`, the name comes from `-n` and the session reads it before its
-role work, so the prompt holds no name step. The new orchestrator does
-[the start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff file.
+The new orchestrator is `orchestrator-<slug>`. For each kind, step 1 of
+[the start checks](../orchestrator.md#the-start-checks) reads the own name, so the prompt holds no name step. The new
+orchestrator does [the start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a
+handoff file.
 
 The new orchestrator does its start in this order:
 

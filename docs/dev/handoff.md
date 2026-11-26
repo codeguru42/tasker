@@ -115,6 +115,10 @@ exception to the measured facts, because its entries give the facts of the stopp
     The old session puts the role index of the new session in place of `<role index>`, for example `docs/planner.md`.
     This sub-bullet wins over the sentences "The prompt holds only the facts of this handoff" and "The old session puts
     no rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
+  - For an orchestrator, the prompt is the filled template
+    [`prompt-templates/handoff/orchestrator.md`](../../prompt-templates/handoff/orchestrator.md), as
+    [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The
+    template holds the prompt read with `docs/orchestrator.md` as the role index.
 - Each open question with its id, as [The form of a message](items.md#the-form-of-a-message) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. For an orchestrator, this bullet
