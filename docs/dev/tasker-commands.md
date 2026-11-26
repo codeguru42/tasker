@@ -119,8 +119,9 @@ Each actor of [the table](permissions.md#the-table) follows these steps for a de
 7. Only the user approves a permission prompt, in the session where Claude Code shows it. A word of the user in a
    decision message or in a relayed message approves no permission prompt. The recommendation mode of
    [A decision of the user](working-with-the-user.md#a-decision-of-the-user) never covers a denial. If the user declines
-   the prompt, the command did not run, and the session follows the paragraph of [A denied command](#a-denied-command)
-   that starts "If the user declined the call at a permission prompt".
+   the prompt, the command did not run. The session gives no choices and waits for a new word of the user. The
+   orchestrator follows the paragraph of [A denied command](#a-denied-command) that starts "If the user declined the
+   call at a permission prompt".
 
 No session offers the user a command with the `!` prefix of Claude Code. The rule covers a choice, a recommendation, a
 report and a reply. It covers an ordinary denial, a check failure and a denied `scan` or `store` of
@@ -226,12 +227,14 @@ them. Then operator-m16 withdrew that guess. The exact call later showed that th
 The classifier of auto mode can deny a `gh` write of a planner subagent. The planner subagent gives the exact command,
 the folder and the exact text of the denial in its result, as [The result](planner-subagent.md#the-result) says. The
 orchestrator asks in its [question pane](question-pane.md#start). It gives the choices of
-[A denied command](#a-denied-command), with no `!` run. An issue subagent reports through its planner subagent, as
+[A denied command](#a-denied-command), with no `!` run. If the user chooses a manual run, the user gives the exit code
+and the output to the question session in the pane. That session sends them in its decision message, as
+[Send a decision](question-pane.md#send-a-decision) says. An issue subagent reports through its planner subagent, as
 [the report chain](permissions.md#the-report-chain) says. A subagent of a session with no role reports to its main
 session instead. The main session gives the user the facts, as the paragraph that starts "Third, the main session runs a
 call" under [The tools of a session](working-with-the-user.md#the-tools-of-a-session) says. If the user chooses a manual
-run, the user gives the exit code and the output to the question session in the pane. That session sends them in its
-decision message, as [Send a decision](question-pane.md#send-a-decision) says.
+run on that path, the user gives the exit code and the output to the main session, and the main session sends them to
+its subagent.
 
 The message to the planner subagent gives the output of the command, or says that the command did not run. The output
 goes with the words of the user. If the command ran, the planner subagent goes on with its work. If it did not run, the
