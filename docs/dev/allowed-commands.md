@@ -219,7 +219,10 @@ Sources: [The draft file](issue-draft.md#the-draft-file), [The size of a draft](
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor`, `git show origin/main:<path>`, `git grep -n -E '<pattern>' -- <paths>` in the local
-  clone, and `git grep -n -E '<pattern>' origin/main -- <paths>` after the old read.
+  clone, and `git grep -n -E '<pattern>' origin/main -- <paths>` after the old read. Also
+  `git grep -n -A1 -E '<pattern>' -- <paths>` in the local clone and
+  `git grep -n -A1 -E '<pattern>' origin/main -- <paths>` after the old read, for the end of a line in a search of doc
+  words, as [the doc-search rule](rules.md#docs) says.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 - K5: the start read `gh issue view <number> --json title,body`, `gh issue list` and `gh issue view` of the open issues,
@@ -244,7 +247,10 @@ Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-i
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor`, `git show origin/main:<path>`, `git grep -n -E '<pattern>' -- <paths>` in the local
-  clone, and `git grep -n -E '<pattern>' origin/main -- <paths>` after the old read.
+  clone, and `git grep -n -E '<pattern>' origin/main -- <paths>` after the old read. Also
+  `git grep -n -A1 -E '<pattern>' -- <paths>` in the local clone and
+  `git grep -n -A1 -E '<pattern>' origin/main -- <paths>` after the old read, for the end of a line in a search of doc
+  words, as [the doc-search rule](rules.md#docs) says.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 - K5: `gh issue list ... | jq ...` and the other `gh` reads of the open and closed issues. It writes no file.
