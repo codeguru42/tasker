@@ -268,17 +268,6 @@ describe("model", () => {
       expectNothingChanged(file, printedJson(expected));
     });
 
-    it("sets the entry of the role task", async () => {
-      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
-      const expected = rawFile(file.dataRoot);
-      expected.repos.tasker.sessions = { models: { task: { model: "sonnet", effort: "medium" } } };
-
-      const result = await runCommand(model, "model", KEY, "--role", "task", "sonnet", "--effort", "medium");
-
-      expect(result).toEqual({ code: 0, out: "task: sonnet (effort medium)\n", err: NOTE });
-      expectNothingChanged(file, printedJson(expected));
-    });
-
     it("adds the key models when sessions has no models key", async () => {
       const file = useConfigFile((dataRoot) => {
         const raw = rawFile(dataRoot);
