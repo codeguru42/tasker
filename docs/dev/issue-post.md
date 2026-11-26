@@ -60,6 +60,12 @@ A prompt can give the key of an existing issue for the end of its post. Then the
 steps 4 to 7: the compare, the links, the race paragraph and The last steps of a post. Step 1 is the duplicate search.
 Without this rule, the subagent finds its own issue again and posts nothing, so the post has no end.
 
+## A missing draft file
+
+If the draft file of the post is missing, the subagent posts nothing and writes no body file. This holds for a comment
+post too: it posts nothing from the approved text. The result gives the path and says that the post is not complete.
+[A missing draft file](planner-subagent.md#a-missing-draft-file) gives the case of the planner subagent.
+
 ## A comment post
 
 A comment post is the post of one approved comment of a planner subagent on an issue. A planner subagent starts an
@@ -178,8 +184,9 @@ section allows no other step between the last read and the write.
   count and says that the post is not complete.
 - If the count fails, the subagent makes no write. A failed count is a count call with an exit code other than 0, an
   output with no number, or a denied call. A failed count gives no answer, so it never passes the count. The result
-  gives the command and the error and says that the post is not complete. After a denied call, the subagent also follows
-  item 5 of [The result of an issue-post subagent](#the-result-of-an-issue-post-subagent).
+  gives the command and the error and says that the post is not complete. A failed count starts no bar. After a denied
+  call, the subagent also follows item 5 of
+  [The result of an issue-post subagent](#the-result-of-an-issue-post-subagent).
 
 The session that started the issue-post subagent handles such a stop as a post that is not complete, under its existing
 rules.
@@ -257,19 +264,21 @@ An issue-post subagent makes only these writes:
   starts "If the walk finds a cycle" gives that removal.
 - The body file, in the folder of the draft file of the post. Its path is the absolute path of the draft file from the
   prompt, with `.body.md` in place of the `.md` at its end. For example, the draft file
-  `/tmp/tasker/orchestrator-m31/drafts/plan-3-links.md` gets the body file
-  `/tmp/tasker/orchestrator-m31/drafts/plan-3-links.body.md`. The draft file `/tmp/tasker/docs/drafts/links.md` gets the
-  body file `/tmp/tasker/docs/drafts/links.body.md`. The subagent writes no other file. The pull of step 1 of
-  [the doc-read rule](doc-reads.md#the-doc-read-rule) is no write, as
+  `/home/u/.local/share/tasker/codeguru42-tasker/orchestrators/m31/drafts/plan-3-links.md` gets the body file
+  `/home/u/.local/share/tasker/codeguru42-tasker/orchestrators/m31/drafts/plan-3-links.body.md`. The draft file
+  `/tmp/tasker/docs/drafts/links.md` gets the body file `/tmp/tasker/docs/drafts/links.body.md`. The subagent writes no
+  other file. The pull of step 1 of [the doc-read rule](doc-reads.md#the-doc-read-rule) is no write, as
   [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 
 The reasons for this path:
 
-- The draft folder holds the own name of the orchestrator, the slug of the planner or the ad hoc name. So a body file
-  collides only where its draft file collides.
-- Two planner subagents of one orchestrator share a draft folder. In one session they never give two drafts one file
-  name, as [The count of planner subagents](planner-subagent.md#the-count-of-planner-subagents) says. A later session
-  with the same own name starts only after the old session waits for each planner subagent.
+- The draft folder holds the repo slug and the slug of the orchestrator, or the own name for the old folder, the slug of
+  the planner or the ad hoc name. So a body file collides only where its draft file collides.
+- Two planner subagents of one orchestrator share a draft folder. The count read and the counts of the session keep
+  their names apart, as [The name](planner-subagent.md#the-name) says. After a compaction, two planner subagents of one
+  session can have one name, and their files can clash, as the known limits of
+  [The count of planner subagents](planner-subagent.md#the-count-of-planner-subagents) say. A later session with the
+  same own name starts only after the old session waits for each planner subagent.
   [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says this. The exception is a wait that a
   word of the user ended. Then the known limits of that subsection hold.
 - Inside one folder, two drafts already have different names, so their body files differ.
