@@ -120,17 +120,19 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   - A write and a delete (`rm <file>`) of a file of its own three folders
   - A write of a pane handoff file in its own handoff folder
   - `mkdir -p` on its own three folders
+  - `mkdir -p <drafts>`, on `drafts/`
 
-  The three folders of the [orchestrator folder](limits.md#the-orchestrator-folder), and the parent folders that
-  `mkdir -p` makes for them, count as the folder of the orchestrator for K12.
+  The three folders and `drafts/` of the [orchestrator folder](limits.md#the-orchestrator-folder), and the parent
+  folders that `mkdir -p` makes for them, count as the folder of the orchestrator for K12.
 
 - K13 to K15: no list.
 - Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says),
   `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)), a Read call on a file of the
   local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'`, a Read call on the saved output of its own tool call,
-  `ls` on its own three folders and a Read call on a file of its own three folders. For the check of a check request, it
-  also runs `ls` on the folder of the draft files and a Read call on a draft file there. It also has these reads, each
-  named by its source:
+  `ls` on its own three folders and a Read call on a file of its own three folders. It also runs the count read
+  `ls <drafts> | sed -n -E 's/^plan-([0-9]+)-.*/\1/p' | sort -n | tail -n 1`, with the absolute path of `drafts/`. For
+  the check of a check request, it also runs `ls` on the folder of the draft files and a Read call on a draft file
+  there. The folder is `drafts/` or the old folder. It also has these reads, each named by its source:
   - The time read `date +%Y-%m-%d-%H%M`, for the name of a handoff file and of a pane handoff file
   - The time reads `date` and `date -d @<seconds>` of the quota jobs
   - The quota reads `tasker show-quota | jq -r '<filter>'` and `tasker show-quota | jq -c '<filter>'`, with the filters
@@ -215,9 +217,10 @@ Sources: [Sessions](../config.md#sessions), [the doc-read rule](doc-reads.md#the
 [No metadata](planner-subagent.md#no-metadata), [The reads before the write](issues.md#the-reads-before-the-write),
 [The project board](issues.md#the-project-board), [The blocked-by links](issues.md#the-blocked-by-links),
 [The post of a draft](planner.md#the-post-of-a-draft), [The body of an issue](issue-subagents.md#the-body-of-an-issue),
-[The blocked-by links](issue-subagents.md#the-blocked-by-links) and [Docs](rules.md#docs). The section Sessions says
-that the planner subagent starts the draft, review and post subagents. The planner subagent keeps the record of the
-findings of each draft in the record file.
+[The blocked-by links](issue-subagents.md#the-blocked-by-links), [Docs](rules.md#docs) and
+[The orchestrator folder](limits.md#the-orchestrator-folder). The section Sessions says that the planner subagent starts
+the draft, review and post subagents. The planner subagent keeps the record of the findings of each draft in the record
+file.
 
 - K1: `tasker status`, before a question of its result about a write that the reads before the write can skip.
 - K3: `git -C <local clone> show origin/main:<path>`, for each doc that it reads. Also
@@ -252,7 +255,8 @@ Sources: [The draft file](issue-draft.md#the-draft-file), [The size of a draft](
 [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases),
 [A change of an open issue](issue-draft.md#a-change-of-an-open-issue), [Before a post](issues.md#before-a-post),
 [The blocked-by links](issues.md#the-blocked-by-links), [The body of an issue](issue-subagents.md#the-body-of-an-issue),
-[The blocked-by links](issue-subagents.md#the-blocked-by-links) and [Docs](rules.md#docs).
+[The blocked-by links](issue-subagents.md#the-blocked-by-links), [Docs](rules.md#docs) and
+[The orchestrator folder](limits.md#the-orchestrator-folder).
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor`, `git show origin/main:<path>`, `git grep -n -E '<pattern>' -- <paths>` in the local
@@ -265,7 +269,8 @@ Sources: [The draft file](issue-draft.md#the-draft-file), [The size of a draft](
 - K5: the start read `gh issue view <number> --json title,body`, `gh issue list` and `gh issue view` of the open issues,
   the links read `gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocked_by` and the label read
   `gh issue view <blocker> -R <repo> --json labels -q '.labels[].name'`.
-- K12: its draft file, its report file and the files of a scratch folder under `/tmp`.
+- K12: its draft file, its report file and the files of a scratch folder under `/tmp`. Its report file stands next to
+  its draft file, in `drafts/` or in the old folder.
 - Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `wc -m <draft file>`,
   `timeout 20 bash -c 'sleep 5'`, a Read call on the saved output of its own tool call, `printf '%s\n' "$json"`,
   `sha256sum` and `jq -r '.title, .body'` in the start read, the join form
@@ -280,7 +285,8 @@ Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-i
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent),
 [the doc-read rule](doc-reads.md#the-doc-read-rule), [The context of a review](issue-review.md#the-context-of-a-review),
 [The tests of a draft](issue-review.md#the-tests-of-a-draft),
-[The body of an issue](issue-subagents.md#the-body-of-an-issue) and [Docs](rules.md#docs).
+[The body of an issue](issue-subagents.md#the-body-of-an-issue), [Docs](rules.md#docs) and
+[The orchestrator folder](limits.md#the-orchestrator-folder).
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor`, `git show origin/main:<path>`, `git grep -n -E '<pattern>' -- <paths>` in the local
@@ -295,7 +301,7 @@ Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-i
 - Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'`, a Read
   call on the saved output of its own tool call, the join forms `tr '\n' ' ' < <path> | grep -o -E '<pattern>'` and
   `git show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>'`, and a Read call on the draft file of its review,
-  in the folder of the draft files.
+  in `drafts/` or in the old folder.
 - Each other kind: no list.
 
 ## The issue-post subagent
@@ -306,8 +312,8 @@ Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-i
 [Before a post](issues.md#before-a-post), [The reads before the write](issues.md#the-reads-before-the-write),
 [The blocked-by links](issues.md#the-blocked-by-links), [The blocked-by links](issue-subagents.md#the-blocked-by-links),
 [The last steps of a post](issue-post.md#the-last-steps-of-a-post),
-[The result of an issue-post subagent](issue-post.md#the-result-of-an-issue-post-subagent) and
-[the defer rule](pick-the-tickets.md#the-defer-rule).
+[The result of an issue-post subagent](issue-post.md#the-result-of-an-issue-post-subagent),
+[the defer rule](pick-the-tickets.md#the-defer-rule) and [The orchestrator folder](limits.md#the-orchestrator-folder).
 
 - K1: `tasker status`, in the reads before the write and in the in-flight check.
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
@@ -331,8 +337,8 @@ Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-i
   `gh issue comment <number> -R <repo> --body-file <absolute path of the body file>`, which asks the user.
 - K7: the `gh issue edit` calls that add or remove a blocked-by link, with the milestone and the labels of the draft in
   `gh issue create`.
-- K12: the body file of the post, next to its draft file: the absolute path of the draft file, with `.body.md` in place
-  of the `.md` at its end.
+- K12: the body file of the post, next to its draft file, in `drafts/` or in the old folder: the absolute path of the
+  draft file, with `.body.md` in place of the `.md` at its end.
 - Named other commands: a Read call on a file of the local clone, a Read call on the body file of a comment post,
   `wc -l <path>`, `wc -m <absolute path of the body file>`, `timeout 20 bash -c 'sleep 5'`, a Read call on the saved
   output of its own tool call, `printf '%s\n' "$json"` and `sha256sum` in the hash read, `diff` in the compare after a
@@ -385,8 +391,8 @@ as [The prompts](question-pane.md#the-prompts) gives it. The prompt gives each c
 
 Sources: [The question session](question-pane.md#the-question-session), [The herdr path](question-pane.md#terms),
 [Send a decision](question-pane.md#send-a-decision),
-[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner) and
-[the doc-read rule](doc-reads.md#the-doc-read-rule).
+[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner),
+[the doc-read rule](doc-reads.md#the-doc-read-rule) and [The orchestrator folder](limits.md#the-orchestrator-folder).
 
 - K1, K3 and K5: the read-only commands, other than `herdr` commands.
 - K4: `git fetch origin` and `git pull --ff-only origin main`, in its local clone.
@@ -396,7 +402,7 @@ Sources: [The question session](question-pane.md#the-question-session), [The her
 - Named other commands: `timeout 20 bash -c 'sleep 1'`, a Read call on a file of the local clone, `wc -l <path>`,
   `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call. It also has these reads, each
   named by its source:
-  - A Read call on a draft file or a report file that the question names, in the folder of the draft files
+  - A Read call on a draft file or a report file that the question names, in `drafts/` or in the old folder
   - The start hash `sha256sum <path>` of a user-level file
   - A Read call on the whole configuration file of tasker, before a write of that user-level file
   - The JSON test `printf '%s' '<new text>' | jq -s -e 'length == 1 and (.[0] | type == "object")'`
