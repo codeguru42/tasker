@@ -402,6 +402,13 @@ session of the start checks does no start duty. The start duties are:
   [A ticket on hold](dev/pick-the-tickets.md#a-ticket-on-hold) says. After a handoff,
   [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the place of
   the find and the read of its record.
+- The start of the planner subagents of the items that wait, as
+  [The proposal file](dev/planner-subagent.md#the-proposal-file) says. The orchestrator starts them at the end of its
+  start steps. The start depends on the list of `proposals/` of the first duty. At a start with no handoff file, each
+  file of `proposals/` waits for the word of the user, as [A stop with no handoff](#a-stop-with-no-handoff) says.
+
+This section gives no order between the start duties and the board watch job. After a handoff,
+[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives that order.
 
 The search for start duties found only these duties outside the pages that the handoff prompt names. The duties of a
 start after a handoff are in `docs/dev/handoff-orchestrator.md`, which that prompt names. They are the read of
@@ -409,13 +416,13 @@ start after a handoff are in `docs/dev/handoff-orchestrator.md`, which that prom
 
 ### The states of a start
 
-| State                         | User                         | Orchestrator                                                                                                                                                                                  | Who tells whom                                 |
-| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| The read of the configuration | Runs `tasker show-config`    |                                                                                                                                                                                               |                                                |
-| The read fails                | Starts no orchestrator       |                                                                                                                                                                                               | The command tells the user                     |
-| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                                                                                                                                 |                                                |
-| A start check fails           |                              | Does no role work and makes no board watch job. With a handoff file in the first prompt, the message also gives the path and the way on                                                       | The orchestrator tells the user in its own tab |
-| The start checks pass         |                              | A new orchestrator after a handoff does the check of the handoff folder first. Lists `questions/` and `proposals/`, does the start duties, makes the board watch job and starts its role work |                                                |
+| State                         | User                         | Orchestrator                                                                                                                                                                                                                                                                                                          | Who tells whom                                 |
+| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| The read of the configuration | Runs `tasker show-config`    |                                                                                                                                                                                                                                                                                                                       |                                                |
+| The read fails                | Starts no orchestrator       |                                                                                                                                                                                                                                                                                                                       | The command tells the user                     |
+| The start                     | Runs the command of the kind | Runs step 1 and the start reads, and makes no board watch job                                                                                                                                                                                                                                                         |                                                |
+| A start check fails           |                              | Does no role work and makes no board watch job. With a handoff file in the first prompt, the message also gives the path and the way on                                                                                                                                                                               | The orchestrator tells the user in its own tab |
+| The start checks pass         |                              | A new orchestrator after a handoff does the check of the handoff folder first. Lists `questions/` and `proposals/`, makes the board watch job and starts its role work. Does [the start duties](#the-start-duties) before the pick of its first ticket, at the places that The start duties and the handoff page give |                                                |
 
 With a first prompt that names a handoff file, the message of a failed start check also gives the path and the way on of
 [the start checks](#the-start-checks). These states follow that failed start check:
