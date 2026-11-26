@@ -1703,7 +1703,8 @@ The rule has these gates:
 - The rules of Claude Code: the ask rules of the setup docs name no `gh` command, and the tracked
   `.claude/settings.json` holds only `Bash(tasker *)`. No one read `$HOME/.claude/settings.json` for this issue. The
   classifier of auto mode decides a call that no rule matches.
-- The tool-block rule of the write subagent, which the paragraph below gives, does not change.
+- The tool-block rule of the write subagent, which the paragraph that starts "A call of the write subagent can get a
+  tool block" gives, does not change.
 
 Each other removal of a blocked-by link keeps its actor and its steps:
 
