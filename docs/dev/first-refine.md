@@ -1507,6 +1507,29 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   [the needed-doc-change rule](plan-review.md#the-issue-check). If a hit changes what the ticket must do, apply
   [the issue check](plan-review.md#the-issue-check).
 
+- In the first refine, decide whether the ticket removes a rule. A removed rule includes a rule, step, case or duty that
+  the ticket deletes or replaces. A move or rename alone does not count. Name each removed rule, and ask the plan to
+  search for each pointer to each rule in [each tracked file with the extension `.md`](rules.md#changes). The plan
+  chooses the search words, for example the rule name, anchor, first words or key words. The search follows
+  [the doc-search rule](rules.md#docs), including its rule for text across wrapped lines.
+
+  A pointer names, links to or depends on the removed rule. Text that tells a reader to follow the rule is also a
+  pointer. The plan judges whether each hit is a pointer or a record. A record describes what a past ticket or session
+  did and stays true after removal. The plan names each hit. It names each record as a record and leaves it unchanged.
+  Within the scope form, it changes or links each pointer that is not a record so that the resulting text no longer
+  points to the removed rule. A change or link applies only where Docs names the document and Out of scope does not
+  exclude the change. For a needed doc change, follow [the needed-doc-change rule](plan-review.md#the-issue-check). If a
+  hit changes what the ticket must do, follow [the issue check](plan-review.md#the-issue-check). Do not widen the
+  issue's scope.
+
+  Searching `skills/tasker/` counts as reading those files. Cover them only when
+  [the installed-skill rule](rules.md#the-installed-skill) permits that read. Reviews then avoid finding pointers one
+  loop at a time. Skills and prompt templates outside `docs/` can also contain rules that sessions follow. On
+  [#980](https://github.com/codeguru42/tasker/issues/980) (2026-11-24), four docs had pointers to the old rule:
+  `docs/dev/pick-the-tickets.md`, `docs/dev/handoff.md`, `docs/dev/planner-subagent.md` and `docs/dev/question-pane.md`.
+  Reviews found the pointers one loop at a time. The estimate for that ticket was about two loops, and no one measured a
+  saving. The work also edited the tracked file `.claude/skills/session-review/SKILL.md`.
+
 - Each kept rule keeps its conditions and its definitions. When a rule moves from one doc to another, keep every fact of
   each moved sentence. On #118, the moved UTF-8 rule lost its "reads" half. In a ticket that moves text, ask the plan to
   keep each old sentence and to change only the words that point to a place. On #206, a sentence that the plan reworded
