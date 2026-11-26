@@ -1150,10 +1150,6 @@ the user that approved it, word for word: the pick or the yes to the confirm que
 A metadata request with no look-first word is an exception to the paragraph before. The paragraph that starts "A
 metadata request goes to the pane owner" gives its message.
 
-After the user approves a proposed write, the decision message gives the words of the user word for word. The paragraph
-that starts "The decision message goes to the pane owner" gives this rule. For a proposed write that is not a measure,
-the message gives no command, no undo step and no input file.
-
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
 `--body-file`, the command names a new path under `/tmp/tasker/<slug>/drafts/`. The slug is the slug of the pane owner.
@@ -1221,10 +1217,10 @@ look-first word is a choice of issue #997, not the words of the user.
 
 For a comment on an issue, a change of a blocked-by link and a change of the field `Priority`, the question session
 sends a request, in the form of a request for a new issue. When it first shows the text to the user, it reads the title
-and the body, as [Before a post](issues.md#before-a-post) gives the read. It shows that text in full, as
-[The commands in the first reply](#the-commands-in-the-first-reply) says. It keeps that read as the start hash. The
-message gives the exact text that the user approved and the start hash of that read. The question session runs the
-self-check of Before a post over the text that it shows, with no file.
+and the body, as [Before a post](issues.md#before-a-post) gives the read. It shows in full the text that the user
+approves, as [The commands in the first reply](#the-commands-in-the-first-reply) says. It keeps that read as the start
+hash. The message gives the exact text that the user approved and the start hash of that read. The question session runs
+the self-check of Before a post over the text that it shows, with no file.
 
 These rules cover only a change or a comment that the message did not propose. A requested change of the draft of the
 sender stays with the sender.
