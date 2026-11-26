@@ -2006,16 +2006,19 @@ to step 1 of the tool-block rule. After each failed or denied call, the pane own
 can. The answer names the call, the error or the denial, and the part that it did not check.
 
 The pane owner can fail to list the folder of the draft files, also for a missing folder. The answer then says that it
-checked no draft of the first kind. Before the first draft of a planner subagent, the folder can be missing.
+checked no draft of the first kind. Before the first draft of a planner subagent, the folder can be missing. A failed
+`ls` of a missing `drafts/` is no failed call on a file of a draft. It starts no bar, as a read of a file that does not
+exist starts none. [The orchestrator folder](limits.md#the-orchestrator-folder) gives the events of the bar.
 
 While the bar of the fallback holds, the pane owner runs no call that the bar stops. It checks the items of planning
 work that wait and the open questions of its session, and each draft that they name. For the first kind of draft, it
 uses the names of the running planner subagents that its session started. The answer says that it read no proposal file
 and no question file.
 
-Two files can start with the name of one planner subagent, for example a file of an earlier session of the same
-orchestrator. The pane owner checks both, and the answer can name both. The user decides on each match in the pane.
-`drafts/` keeps the files of earlier sessions, because no session deletes a file there.
+Two files can start with the name of one planner subagent. In the old folder, a new draft of a time of the bar can have
+the name of an older draft. After a compaction, two planner subagents of one session can have one name. The count read
+makes each new name in `drafts/` higher than each earlier name, as [The name](planner-subagent.md#the-name) says. The
+pane owner checks both files, and the answer can name both. The user decides on each match in the pane.
 
 A known limit: a full `ls` of a growing `drafts/` can fill the context of the orchestrator. The check has no filtered
 form of the list.
