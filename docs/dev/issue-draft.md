@@ -106,8 +106,8 @@ A cut gets no review of its own. This section adds no exception to a review loop
 ## The self-check
 
 The issue-draft subagent runs the self-check of the simple-english skill over the draft file, as
-[Before a post](issues.md#before-a-post) says. It runs the check before its report, after the count and the cut of
-[The size of a draft](#the-size-of-a-draft).
+[the self-check rule](rules.md#docs) of rules.md says. It runs the check before its report, after the count and the cut
+of [The size of a draft](#the-size-of-a-draft).
 
 ## The read bans
 

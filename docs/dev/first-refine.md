@@ -1623,7 +1623,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   the wrap commit of #506 for most lines of the docs. The issue can put the bullets of earlier tickets out of scope
   (#169).
 - On #228, one hint of an issue used "check" as a verb, and the comment draft used "checked".
-  [Before a post](issues.md#before-a-post) gives the self-check of each draft.
+  [The self-check rule](rules.md#docs) of rules.md gives the self-check of each draft.
 - If a hint of the issue starts with a rule that a doc already gives, ask the plan to state only the new fact. Then the
   old rule is only the source of an example, with a link. On #186, a link plus a restatement still counted as a copy,
   and it cost one loop.
