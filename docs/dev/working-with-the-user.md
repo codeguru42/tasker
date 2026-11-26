@@ -119,6 +119,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   report, it names the cleanup and gives its reason. This bullet permits the write of the cleanup, unless a rule keeps
   the approval of that write for the user. The session still uses only the commands that its role permits.
 
+  For a cleanup on GitHub, the session follows [the self-check rule](rules.md#docs) of rules.md before the write.
+
   A harmless cleanup removes or fixes a duplicate text or a stale text. It changes no decision of the user, no rule of
   the docs and no scope of an issue. It changes nothing beyond that text, and one edit undoes it. Whether a
   recommendation is clear and whether a cleanup is harmless are judgments of the session, open on purpose.
@@ -504,7 +506,8 @@ notice and a landing order. An orchestrator acts on no note for later from a pee
 [A message outside the kinds](../orchestrator.md#a-message-outside-the-kinds) says.
 
 - A note for later about an issue goes in that issue, as a comment or in the body. The issue keeps the note through a
-  handoff. [Before a post](issues.md#before-a-post) says who approves the text.
+  handoff. [Before a post](issues.md#before-a-post) says who approves the text. Before the post, the session follows
+  [the self-check rule](rules.md#docs) of rules.md.
 - If no issue fits, a message can carry a note for later. The note goes in its own message. The message starts with "No
   action now." and names the trigger. The reader keeps the note in its handoff file until the trigger.
 - A message can name a later time with no trigger that the reader can test. The reader then asks the sender for the
@@ -546,6 +549,9 @@ The rules of a milestone hold:
    this write. At the end of a milestone hold, the session that gets the word of the user removes the hold record. The
    rest of the description stays as it was. Each other change of the description of a held milestone keeps the hold
    record.
+
+   Before a session writes the hold record, it follows [the self-check rule](rules.md#docs) of rules.md over that
+   record. The self-check does not cover the rest of the description, and the rest stays as it was.
 
    For an orchestrator, this item has a change that wins over the text above. An orchestrator writes and removes no hold
    record. At the word to start a hold, it tells the user in its own tab to write the record. At the word to end a hold,

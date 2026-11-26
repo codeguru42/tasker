@@ -583,8 +583,9 @@ that issue was #662. Otherwise give the capture to the planner as a proposed iss
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 If the issue-state read fails, post nothing, tell the user, and keep the capture only in the report in the tab. Ask the
-approval of the comment draft in the pane. Post only after user approval, using any changes the user requests. If the
-user rejects or drops it, post nothing and keep it only in the report in the tab.
+approval of the comment draft in the pane. Before the ask and before the post, follow
+[the self-check rule](rules.md#docs) of rules.md. Post only after user approval, using any changes the user requests. If
+the user rejects or drops it, post nothing and keep it only in the report in the tab.
 
 Do not edit a document to claim the form of the stop; the later quota-outcome issue owns that work. An answer of (b) no
 is not a capture, so this paragraph does not apply to that answer. For a capture, keep this task in `failed`. The reset

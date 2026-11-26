@@ -1379,8 +1379,8 @@ For a comment on an issue, an add of a blocked-by link and a change of the field
 a request, in the form of a request for a new issue. When it first shows the text to the user, it reads the title and
 the body, as [Before a post](issues.md#before-a-post) gives the read. It keeps that read as the start hash. It shows in
 full the text that the user approves, as [The commands in the first reply](#the-commands-in-the-first-reply) says. The
-message gives the exact text that the user approved and the start hash of that read. The question session runs the
-self-check of Before a post over the text that it shows, with no file.
+message gives the exact text that the user approved and the start hash of that read. The question session follows
+[the self-check rule](rules.md#docs) of rules.md over the text that it shows, with no file.
 
 These rules cover only a change or a comment that the message did not propose. A requested change of the draft of the
 sender stays with the sender.
