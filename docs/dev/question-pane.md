@@ -470,6 +470,42 @@ A pane that shows the first reply is a successful start, also after an error of 
 can say that the pane shows no first reply. Then the orchestrator tells the user the command and the error in its tab.
 The orchestrator leaves the pane open and stops the run until the user speaks.
 
+#### The model of an opener subagent or a reuse subagent
+
+An orchestrator of the kind `claude` does these steps at each start of an opener subagent or a reuse subagent:
+
+1. Run `tasker show-config --repo <repo key>`. See [`sessions`](../config.md#sessions).
+2. For an opener subagent, read the entry `.sessions.models.opener`. For a reuse subagent, read
+   `.sessions.models.reuse`.
+3. If the read fails, follow [the failure rule](limits.md#the-failure-rule). Then pass no `model` and no `effort`, and
+   start the subagent.
+4. If the read gives no entry, pass no `model` and no `effort`.
+5. If the read gives an entry, pass the `effort` of the entry.
+6. Pass the `model` that [The model of the start](planner-subagent.md#the-model-of-the-start) gives for the `model` of
+   the entry. If the map gives no model, pass no `model`.
+7. Pass the subagent type `general-purpose`. Never pass the type `fork`.
+
+An orchestrator of another kind reads no entry `opener` or `reuse`, as [`sessions`](../config.md#sessions) says.
+
+A fork ignores `model` and `effort`. This fact comes from a read of the tool schema of the `Agent` tool on 2026-11-22.
+No one read the version of Claude Code at that read.
+
+The model and the effort go in the parameters `model` and `effort` of the `Agent` call. They never go in the text of a
+prompt. The opener prompt, the reuse prompt and the session prompt do not change.
+
+A failed read or a missing entry holds back no start. The rule for a write of the configuration file of tasker in
+[The actor of each write action](#the-actor-of-each-write-action) stays and wins. In that case, `tasker show-config`
+exits with 1, and no pane starts until the user puts the file back.
+
+The time of the read:
+
+- Not started: the read of this start gives the model and the effort.
+- Running: a change of the configuration does not change the subagent. It keeps the model and the effort of its start.
+- Ended: the next start reads the entry again.
+
+The entries `opener` and `reuse` set only the opener subagent and the reuse subagent. They do not set the question
+session. A reuse keeps the model and the effort of the question session.
+
 ### The question file
 
 A question file is the file `questions/<question id>.md` in the
@@ -1961,7 +1997,9 @@ not stop a reuse.
 
 For a reuse, the pane owner starts one reuse subagent with the reuse prompt of [The prompts](#the-prompts). The pane
 stays open while the reuse subagent runs. The pane owner gives the first-reply text of the next question under the rules
-of [The question session](#the-question-session), as for a new pane.
+of [The question session](#the-question-session), as for a new pane. The pane owner sets the model and the effort of the
+reuse subagent as
+[The model of an opener subagent or a reuse subagent](#the-model-of-an-opener-subagent-or-a-reuse-subagent) says.
 
 The reuse subagent waits, with a time limit, until the question session waits at its input prompt, in the state `idle`
 or `done`. It sends no input to a session in a turn or in `blocked`. It runs the context clear and the after-clear read.
