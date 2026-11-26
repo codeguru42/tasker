@@ -66,8 +66,8 @@ how to do it on GitHub.
   reason. It names each file of the check. After the post, it adds each approved link under
   [The blocked-by links](#the-blocked-by-links) and [The reads before the write](#the-reads-before-the-write).
 
-  For a draft of its issue subagents, the ad hoc planner adds the links in the report of the issue-draft subagent with
-  no approval of the user. It gives each link and its reason in the report of
+  For a draft of its issue subagents, the ad hoc planner gives the links in the report of the issue-draft subagent to
+  the subagent that posts the draft, with no approval of the user. It gives each link and its reason in the report of
   [The post of a draft](planner.md#the-post-of-a-draft).
 
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md. Before a session shows a

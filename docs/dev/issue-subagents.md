@@ -257,8 +257,9 @@ planner links two issues when one issue needs", which names the planner.
 - A ticket that closes a live security gap starts as the order of a live security gap in
   [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. This bullet adds no link and removes no link.
 - Before the planner starts the issue-draft subagents of a milestone, it makes a table of the needs and the likely files
-  of each issue. It adds the links from the table when it posts the issues. The bullet of a real need, the bullet of the
-  form and the bullet of a rename use the likely files of the table.
+  of each issue. It gives the links of the table to the issue-post subagent, which posts the issues, as
+  [The prompt of an issue subagent](planner-subagent.md#the-prompt-of-an-issue-subagent) says. The bullet of a real
+  need, the bullet of the form and the bullet of a rename use the likely files of the table.
 - A ticket with its own folder runs in parallel and gets a blocked-by link only for a real need.
 - The planner gives each parallel line of work its own dev doc. With no shared doc, the orchestrator can run the lines
   at the same time, and no shared-file wait of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) holds them back.
