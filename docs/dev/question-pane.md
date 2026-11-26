@@ -187,6 +187,9 @@ A message to the pane owner is not a write action. This also holds for a `herdr`
 question of the sender proposes and the user approves is also not a write action. Examples are the post of a draft, a
 comment and a measure. The sender does that step.
 
+Such a step is a proposed write. The question session judges whether the question proposed the step. This judgment is
+open on purpose.
+
 These kinds are requests, not write actions: a change of the title or the body of an issue, a comment on an issue, a
 change of a blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. A change of the text
 of an issue and a comment count as requests only when the message of the sender did not propose them. A step that the
@@ -812,6 +815,8 @@ After its first reply, the question session follows these rules. Each item names
   [Send a decision](#send-a-decision) gives the send.
 - It shows and approves commands and input files as [The commands in the first reply](#the-commands-in-the-first-reply)
   says.
+- It asks no second approval of an approved proposed write. It shows each text for approval in full, as
+  [The commands in the first reply](#the-commands-in-the-first-reply) says.
 - It decides when to send a decision, and it handles a direct pick, a discussion, the confirm question, a guess and **No
   decision**. It gives the parts of the decision message and handles a failed send. [Send a decision](#send-a-decision)
   gives these rules.
@@ -844,6 +849,10 @@ the title or the body of an issue, it gives them as a title or body request. In 
 can be a change of the draft of the sender. This guess goes through the confirm question of
 [Send a decision](#send-a-decision) before the send. If the user does not accept it, the message gives the words as that
 request with no guess. The planner then decides.
+
+A proposed write that is not a measure stays a step of the sender. The question session gives no command, no undo step
+and no input file for it. A requested draft change gets no command, no undo step and no approval of the resulting issue
+text in the pane.
 
 A question session starts no subagent that plans, drafts, reviews or posts an issue. It asks no session other than the
 pane owner for such work.
@@ -908,6 +917,32 @@ A question that leads to no write action shows no command, no undo step, no path
 The reason: on 2026-11-20, the user said in a question pane: "No, the exact commands should be shown before the
 choices". In the refine of the plan of #988, the user said about the approval: "Each choice should explicitly include in
 the text if they approve the commands."
+
+After the user approves a proposed write, the question session asks no second approval of that write.
+[Send a decision](#send-a-decision) gives the time of the send and the confirm question of a discussion or a guess. A
+question that makes an unclear answer clear is not a second approval round. A pick that approves a proposed measure that
+changes user state needs no further approval round.
+[The pane owner handles a decision](#the-pane-owner-handles-a-decision) gives the rule for words that let the sender
+decide.
+
+Before the question session shows a text for approval, it says in one sentence what the approval covers. The sentence
+names the action and its target. This also holds for the later approval of the text of an input file. For an approval
+that a pick already gave, the reply that reports the send names the approved action and its target. That reply asks no
+approval question for a command that the pick approved.
+
+Each text that the question session shows for approval appears in full. The session shows no shortened view and leaves
+out no part of the text. If the session cannot get the whole text, it tells the user and asks no approval of that text.
+The action then stays "not approved" where these rules ask for that mark. This rule does not change the five-sentence
+limit of the first-reply text. It does not require issue text in a pane.
+
+A reply that shows a text for approval and a command keeps the two apart. The user can see which part is the text and
+which part is the command. An approval of a request or of a text in the pane is not a tool permission prompt. It
+approves no such prompt.
+
+The reason: on 2026-11-16, in a question pane about the post of a reviewed draft, the user picked the choice that posts
+it. The question session asked again for an approval. It showed a view of the draft with its last section shortened. The
+user then asked what the approval covered. The user gave this rule about the undo step: "There is no need for an "undo
+step" when you ask for approval to post an issue."
 
 ### The prompts
 
@@ -1115,6 +1150,10 @@ the user that approved it, word for word: the pick or the yes to the confirm que
 A metadata request with no look-first word is an exception to the paragraph before. The paragraph that starts "A
 metadata request goes to the pane owner" gives its message.
 
+After the user approves a proposed write, the decision message gives the words of the user word for word. The paragraph
+that starts "The decision message goes to the pane owner" gives this rule. For a proposed write that is not a measure,
+the message gives no command, no undo step and no input file.
+
 Each command of a write action is a [plain call](issues.md#the-reads-before-the-write). Each command names its target
 itself, for example with `git -C <folder>` or `gh -R <repo>`. If a command takes a file as input, for example with
 `--body-file`, the command names a new path under `/tmp/tasker/<slug>/drafts/`. The slug is the slug of the pane owner.
@@ -1182,7 +1221,8 @@ look-first word is a choice of issue #997, not the words of the user.
 
 For a comment on an issue, a change of a blocked-by link and a change of the field `Priority`, the question session
 sends a request, in the form of a request for a new issue. When it first shows the text to the user, it reads the title
-and the body, as [Before a post](issues.md#before-a-post) gives the read. It keeps that read as the start hash. The
+and the body, as [Before a post](issues.md#before-a-post) gives the read. It shows that text in full, as
+[The commands in the first reply](#the-commands-in-the-first-reply) says. It keeps that read as the start hash. The
 message gives the exact text that the user approved and the start hash of that read. The question session runs the
 self-check of Before a post over the text that it shows, with no file.
 
@@ -2079,6 +2119,8 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | A rule of the docs stops the write subagent before a step with the user                                                                                  | Any                                     | Tells the user. The action does not run                                                                                                                                                                                                                                                                                                           |                      | The pane owner tells the user                                    |
 | The hash of a user-level file differs from the start hash                                                                                                | Any                                     | The write subagent writes nothing. Each later action does not run. The pane owner tells the user                                                                                                                                                                                                                                                  |                      | The pane owner tells the user                                    |
 | A settled decision message gives a write action with no actor                                                                                            | Waits for the close request             | The action does not run. The pane owner tells the user in one line                                                                                                                                                                                                                                                                                |                      | The pane owner tells the user                                    |
+| The user approves a proposed write                                                                                                                       | Asks no second approval                 |                                                                                                                                                                                                                                                                                                                                                   |                      | The question session tells the pane owner                        |
+| The question session cannot get the whole text for an approval                                                                                           | Asks no approval of the text            | Runs no action marked "not approved"                                                                                                                                                                                                                                                                                                              |                      | The question session tells the user                              |
 | `tasker show-config` exits with code 1 after a write of the configuration file of tasker                                                                 | Any                                     | Opens no pane. Tells the user in its tab the errors and the old text of the file. After the word of the user, runs `tasker show-config` again. Each `tasker` command fails until then                                                                                                                                                             |                      | The pane owner tells the user. The user tells the pane owner     |
 | A `herdr` command of a settled message fails                                                                                                             | Any                                     | The failure rule applies. Each later action does not run                                                                                                                                                                                                                                                                                          |                      | The pane owner tells the user                                    |
 | A handoff or [the rounds of the end of an orchestrator](#the-gate-of-the-rounds-of-an-orchestrator) is due while a pane is open or a write subagent runs | Any                                     | Starts neither while the pane is open or the write subagent runs. In the stopping-point case, the pane handoff or the usual close comes first, as The pane handoff says                                                                                                                                                                           |                      | The pane owner tells the user                                    |
