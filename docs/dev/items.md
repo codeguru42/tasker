@@ -14,8 +14,10 @@ This page gives the form of a message, the terms of the questions to the user an
 - The text of a message also gives the content of each issue that it names. The content stands next to the plain key, at
   the first mention of the issue in the message. [The issue-link rule](working-with-the-user.md#the-issue-link-rule)
   says what the content is.
-- A message about a draft gives a summary of the draft and the path of the draft file, not the draft. The path is
-  `/tmp/tasker/<slug>/drafts/<file>.md`.
+- A message about a draft gives a summary of the draft and the path of the draft file, not the draft. A draft of a
+  planner session has the path `/tmp/tasker/<slug>/drafts/<file>.md`. A draft of a planner subagent of an orchestrator
+  has its path in `drafts/` of [the orchestrator folder](limits.md#the-orchestrator-folder) or in the old folder
+  `/tmp/tasker/<own name>/drafts/`.
 - A progress report starts with the mark `Report:`, as
   [the rule of a progress report](working-with-the-user.md#reports-and-questions-of-a-session) says.
 

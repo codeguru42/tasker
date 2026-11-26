@@ -1826,7 +1826,9 @@ before closing". No one measured the tokens of the rounds in a question pane.
 ### The check of the pane owner
 
 The folder of the draft files is each folder in which the planner subagents of the orchestrator write new draft files.
-Today that is the folder of [The prompt](planner-subagent.md#the-prompt).
+Today that is `drafts/` of [the orchestrator folder](limits.md#the-orchestrator-folder), as
+[The prompt](planner-subagent.md#the-prompt) says. The old folder `/tmp/tasker/<own name>/drafts/` also counts. It holds
+older drafts and the drafts of a time of the bar.
 
 A draft of the check is a file of one of these kinds:
 
@@ -1874,8 +1876,10 @@ The pane owner judges whether a file covers the change. This judgment is open on
 
 For the kind `claude`, the pane owner checks each proposal file, each item of planning work that waits and each draft of
 the check. It takes the open questions from [The question file](#the-question-file). It lists the folder of the draft
-files and reads the drafts there. These calls only read. See
-[The orchestrator folder](limits.md#the-orchestrator-folder) for the limits of the calls.
+files and reads the drafts there. These calls only read. They are the one read-only exception to the rule that the
+orchestrator runs no other call on `drafts/`, and the one bar stops them in `drafts/` too. See
+[The orchestrator folder](limits.md#the-orchestrator-folder) for the limits of the calls. A question session reads the
+draft file and the report file of its question in either folder, and no file of the three folders.
 
 Each failed or denied call follows the rules for its folder. These are [the failure rule](limits.md#the-failure-rule),
 [the tool-block rule](tasker-commands.md#the-tool-block-rule) and the fallback of
@@ -1893,6 +1897,10 @@ and no question file.
 
 Two files can start with the name of one planner subagent, for example a file of an earlier session of the same
 orchestrator. The pane owner checks both, and the answer can name both. The user decides on each match in the pane.
+`drafts/` keeps the files of earlier sessions, because no session deletes a file there.
+
+A known limit: a full `ls` of a growing `drafts/` can fill the context of the orchestrator. The check has no filtered
+form of the list.
 
 An orchestrator of the kind `pi` or `codex` writes no proposal file and starts no planner subagent. It sends the ack and
 a check answer that says that the check does not cover its kind.
@@ -2201,8 +2209,8 @@ The user holds no state of its own in this table. The column "Who tells whom" gi
 | A pane start or a reuse for a question with a question file                                                                                              | Not started                             | Lists the questions folder. Reads the question file. Puts its text in the opener or reuse prompt as the first-reply text                                                                                                                                                                                                                          |                      | The pane owner tells the opener or reuse subagent                |
 | The read of the question file fails at a pane start or a reuse                                                                                           | Not started                             | The fallback holds. Uses the text from its session. If the session holds no text, starts no pane for the question. The question stays open                                                                                                                                                                                                        |                      | The pane owner tells the user                                    |
 | The list of the questions folder fails                                                                                                                   | Not started                             | The fallback holds. Makes no automatic start until the next word of the user. Lists the folder again at that word                                                                                                                                                                                                                                 |                      | The pane owner tells the user                                    |
-| A call on the three folders fails or gets a denial                                                                                                       | Any state                               | The fallback holds. Runs no later call on the three folders until the next word of the user. A pane starts with the text from the session                                                                                                                                                                                                         | Keeps working        | The pane owner tells the user                                    |
-| The next word of the user after a failed or denied call on the three folders                                                                             | Any state                               | Ends the bar. Writes a question file for each open question with no file and a proposal file for each waiting item of planning work with no file                                                                                                                                                                                                  |                      | The user tells the pane owner                                    |
+| A call on the three folders or on `drafts/` fails or gets a denial, or another event of the bar of `limits.md` occurs                                    | Any state                               | The fallback holds. Runs no later call on the three folders and on `drafts/` until the next word of the user. A pane starts with the text from the session. The prompt of each new planner subagent gives the old folder                                                                                                                          | Keeps working        | The pane owner tells the user                                    |
+| The next word of the user after a failed or denied call on the three folders or on `drafts/`, or after another event of the bar                          | Any state                               | Ends the bar. Before the next start, makes a missing `drafts/` and runs the count read again. Writes a question file for each open question with no file and a proposal file for each waiting item of planning work with no file                                                                                                                  |                      | The user tells the pane owner                                    |
 | The session starts                                                                                                                                       | Running. Start line, reads, question    | The question stays open                                                                                                                                                                                                                                                                                                                           |                      | The question session tells the user                              |
 | A message arrives with the header of the open pane and the current question                                                                              | Waits for the ack                       | Accepts it. Sends the ack                                                                                                                                                                                                                                                                                                                         |                      | The question session tells the pane owner                        |
 | A decision message arrives, and the read of the question file fails with no text in the session                                                          | Waits for the ack                       | Sends the ack. The message does not settle the question. The question stays open                                                                                                                                                                                                                                                                  |                      | The pane owner tells the user                                    |
@@ -2343,9 +2351,9 @@ If two rows match, the rows of one bullet below follow its rule:
   pane owner starts nothing.
 - The row "A question arrives after the old orchestrator wrote its handoff file" wins over the row "An open question
   arrives, and no bar of the fallback holds".
-- The row "A call on the three folders fails or gets a denial" also applies after the rows "The read of the question
-  file fails at a pane start or a reuse", "The list of the questions folder fails" and "The delete of a question file
-  fails".
+- The row "A call on the three folders or on `drafts/` fails or gets a denial, or another event of the bar of
+  `limits.md` occurs" also applies after the rows "The read of the question file fails at a pane start or a reuse", "The
+  list of the questions folder fails" and "The delete of a question file fails".
 - The row "The list of the questions folder fails" wins over the row "No word of the user. The conditions of an
   automatic start hold" until the next word of the user.
 - The row "A decision message arrives, and the read of the question file fails with no text in the session" wins over
@@ -2509,4 +2517,4 @@ shown again, satisfies the note, for example whether Claude Code sends the note 
 No one measured the search of the open issues in a question pane. Two question sessions reported searches of the issues
 in their panes on 2026-11-23, and no one else measured these runs. No one measured a check request or a check answer
 through `herdr`. No one measured a permission prompt or a denial for a list or a read of the folder of the draft files
-by the orchestrator.
+by the orchestrator. This also holds for `drafts/`.
