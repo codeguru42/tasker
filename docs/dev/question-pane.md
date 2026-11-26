@@ -941,8 +941,8 @@ approves no such prompt.
 
 The reason: on 2026-11-16, in a question pane about the post of a reviewed draft, the user picked the choice that posts
 it. The question session asked again for an approval. It showed a view of the draft with its last section shortened. The
-user then asked what the approval covered. The user gave this rule about the undo step: "There is no need for an "undo
-step" when you ask for approval to post an issue."
+user then asked what the approval covered. The user gave this rule: "There is no need for an "undo step" when you ask
+for approval to post an issue."
 
 ### The prompts
 
@@ -1217,10 +1217,10 @@ look-first word is a choice of issue #997, not the words of the user.
 
 For a comment on an issue, a change of a blocked-by link and a change of the field `Priority`, the question session
 sends a request, in the form of a request for a new issue. When it first shows the text to the user, it reads the title
-and the body, as [Before a post](issues.md#before-a-post) gives the read. It shows in full the text that the user
-approves, as [The commands in the first reply](#the-commands-in-the-first-reply) says. It keeps that read as the start
-hash. The message gives the exact text that the user approved and the start hash of that read. The question session runs
-the self-check of Before a post over the text that it shows, with no file.
+and the body, as [Before a post](issues.md#before-a-post) gives the read. It keeps that read as the start hash. It shows
+in full the text that the user approves, as [The commands in the first reply](#the-commands-in-the-first-reply) says.
+The message gives the exact text that the user approved and the start hash of that read. The question session runs the
+self-check of Before a post over the text that it shows, with no file.
 
 These rules cover only a change or a comment that the message did not propose. A requested change of the draft of the
 sender stays with the sender.
