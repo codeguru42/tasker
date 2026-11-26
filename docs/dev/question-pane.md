@@ -541,11 +541,12 @@ A local name is a name that only an issue, a comment on an issue or a report def
 thing, and it can give the name after the content. The orchestrator judges which names are local names, and this
 judgment is open on purpose.
 
-A local name passes the check if the text defines it near its use. The definition stands in the sentence of the name,
-for example in parentheses, or in the sentence right before it. For a name in the sentence of the question, the
-definition stands in that sentence. A name also passes if an earlier text in the same pane defined it for the user, as
-the bullet of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "Define each term"
-says. The orchestrator judges whether a definition is enough, and this judgment is open on purpose.
+A local name passes the check and stays as it is if the text defines it near its use. The definition stands in the
+sentence of the name, for example in parentheses, or in the sentence right before it. For a name in the sentence of the
+question, the definition stands in that sentence. A name also passes if an earlier text in the same pane defined it for
+the user, as the bullet of [A decision of the user](working-with-the-user.md#a-decision-of-the-user) that starts "Define
+each term" says. Only a local name with no such definition gets its content in place of the name. The orchestrator
+judges whether a definition is enough, and this judgment is open on purpose.
 
 The check also finds each mention of an issue outside a code span and outside a code block, as the link check does. The
 first mention of each issue gives the current state of the issue. If the text has an issue line, the issue line is the
@@ -700,7 +701,8 @@ The reason: the user opens the issue of the question with one click and does not
 2026-11-20, the user said: "file a ticket to update the question pane template to include a link to the issue under
 discussion".
 
-The issue line also gives the state of its issue after its phrase, as [The question file](#the-question-file) says.
+After its phrase, the issue line also gives a comma and then the state of its issue, as
+[The question file](#the-question-file) says.
 
 The other details of the first-reply text have a limit: at most five sentences.
 [The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives examples of them, in its bullet that starts
