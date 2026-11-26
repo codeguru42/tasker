@@ -268,8 +268,8 @@ A call on the three folders, the read of the data root, a call of the two calls 
 events start the bar" below is the only list of the events. For a failure, [the failure rule](#the-failure-rule)
 applies. A failed read of the data root or a failed `mkdir -p` counts as a failure of the call after it. After a denial,
 the step of the denied call stops, as step 1 of the tool-block rule says. A denied call of
-[the check of the pane owner](question-pane.md#the-check-of-the-pane-owner) stops only that call. After a failure or a
-denial, the fallback holds:
+[the check of the pane owner](question-pane.md#the-check-of-the-pane-owner) stops only that call. This sentence is about
+step 1 of the tool-block rule and does not decide the bar. After a failure or a denial, the fallback holds:
 
 - The orchestrator runs no later call on the three folders and no later call on `drafts/` until the next word of the
   user. This rule is the bar. One bar covers the three folders and `drafts/`.
@@ -290,6 +290,9 @@ These events start the bar:
 - A failed or denied call on a file of `drafts/`. A denial reaches the orchestrator through the tool-block rule: from an
   issue subagent through its planner subagent, from a planner subagent, or from a question session to its pane owner.
   Another failure reaches it through the result of a planner subagent.
+- A failed or denied Read call of [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner) on a draft
+  file in `drafts/`, or a denied `ls` of `drafts/` in that check. Such an own call of the orchestrator reaches the
+  orchestrator at once.
 
 These events start no bar: a read of a file that does not exist, and a failed or denied size count. The reason for the
 first: it shows no fault of the access to the folder, and
