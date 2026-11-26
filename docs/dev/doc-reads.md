@@ -13,10 +13,22 @@ the prompt of the orchestrator names. For example, a prompt can name `docs/dev/p
 `docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `origin/main` from which
 the orchestrator last read the docs of the orchestrator.
 
+The re-read docs are the docs of the orchestrator that the orchestrator reads again after a landing. They are these
+docs:
+
+- Each start doc of [docs/orchestrator.md](../orchestrator.md#the-start-reads), and `AGENTS.md`.
+- Each doc that the prompt of the orchestrator names.
+- Each page of the list "The pages" that the orchestrator read in its session.
+
+In the state Running or Ended of item 5 of [step 2](#step-2-read-each-doc-with-the-read-tool), a page counts as read in
+the session. In the state Not started, a page is not a re-read doc. An old read of a page with `git show` counts as a
+read of the page in the same way.
+
 At the start of its session, the orchestrator does step 1 of [the doc-read rule](#the-doc-read-rule). The first last
 read is `<head>`, the hash that step 1 reads. If step 1 did not pull, the orchestrator runs
 `git -C <local clone> rev-parse --verify origin/main` after the fetch, and that hash is the first last read. Then the
-orchestrator reads the docs of the orchestrator, as the doc-read rule says.
+orchestrator makes its start reads, as [The start reads](../orchestrator.md#the-start-reads) says. The start reads read
+no other page.
 
 Each time a ticket lands, the orchestrator does these steps. They are at the place that the bullet "When the final
 report of the task subagent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work)
@@ -28,19 +40,27 @@ gives. The steps change no task.
 3. Run `git -C <local clone> diff --name-only <last read>..<tip> -- AGENTS.md docs/ skills/`. The output lists each file
    that changed since the last read. If the output is empty, no doc changed, and the steps are complete. The last read
    stays.
-4. Before the next step of your work, read again each file of the list that is a doc of the orchestrator, with the Read
-   tool in pieces, as step 2 of the doc-read rule says. If step 1 did not pull, use
-   `git -C <local clone> show <tip>:<path>` instead. A file of the list outside the docs of the orchestrator needs no
-   read. If `AGENTS.md` or `docs/orchestrator.md` is on the list, also read, for the first time, each new doc that it
-   names for the work of the orchestrator, with the same read. Then `<tip>` is the new last read.
+4. Before the next step of your work, read again each file of the list that is a re-read doc, with the Read tool in
+   pieces, as step 2 of the doc-read rule says. If step 1 did not pull, use `git -C <local clone> show <tip>:<path>`
+   instead. A file of the list that is not a re-read doc needs no read. This also holds for a changed page that the
+   orchestrator did not read. If `AGENTS.md` or `docs/orchestrator.md` is on the list, also read, for the first time,
+   each new start doc that it names, with the same read. A new page of the list "The pages" gets no read at the landing.
+   Then `<tip>` is the new last read.
+
+The memory step of [Land the work](land-the-work.md#land-the-work) stays. Its read of the landed docs can cover a page
+that is not a re-read doc. That read is a read on need for the memory step, so the page then counts as read.
+
+A read on need does step 1 of [the doc-read rule](#the-doc-read-rule), and step 1 can pull a newer commit. The last read
+stays. So the start docs can be of an older commit than a page that the orchestrator read on need. The next run of the
+steps above reads again each re-read doc that changed since the last read, for example `docs/dev/rules.md`.
 
 If a command of [the doc-read rule](#the-doc-read-rule) fails before a doc read of the orchestrator,
 [the failure rule](limits.md#the-failure-rule) applies. This applies to the first read at the start of the session and
 to each later doc read. If a command of the steps above fails, the failure rule also applies. If the orchestrator must
 read a doc, it then reads the doc with `git -C <local clone> show origin/main:<path>`, from the `origin/main` of the
 last fetch that worked. Then the orchestrator continues its work. The last read stays. At the start of the session, the
-orchestrator then runs `git -C <local clone> rev-parse --verify origin/main` before it reads the docs of the
-orchestrator, and that hash is the first last read. The orchestrator does the steps above again at the next landing.
+orchestrator then runs `git -C <local clone> rev-parse --verify origin/main` before its start reads, and that hash is
+the first last read. The orchestrator does the steps above again at the next landing.
 
 If the branch check of step 1 fails, the orchestrator reads no doc. It tells the user the command and its output, and it
 starts no new ticket. It keeps its running tasks on their last read. It repeats the check at its next landing, or when
@@ -90,7 +110,9 @@ its next notice, or when the user says that `main` is back.
 
 Each orchestrator has its own docs of the orchestrator, because each prompt names its own docs. `AGENTS.md`,
 `docs/orchestrator.md`, the pages of its list "The pages", `docs/sessions.md`, `docs/dev/GLOSSARY.md`,
-`docs/dev/rules.md` and `docs/dev/working-with-the-user.md` are docs of each orchestrator.
+`docs/dev/rules.md` and `docs/dev/working-with-the-user.md` are docs of each orchestrator. A page that an orchestrator
+did not read is still a doc of that orchestrator for this rule. So the notice still goes out for a change of that page.
+The notice makes the other orchestrator do the steps of the re-read rule, and those steps read only its re-read docs.
 
 The re-read rule and the notice rule do not cover the task subagents. Each new task subagent reads its docs when it
 starts. [The task subagent notice](#the-task-subagent-notice) gives the docs of a task subagent, and it covers a task
