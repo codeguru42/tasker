@@ -133,6 +133,46 @@ task.
   `skills/tasker/SKILL.md` and `skills/tasker/references/`) describe the behavior that a user sees, for example the
   commands, the flags and the configuration.
 - Update the docs in the same change as the code.
+- The section-split rule covers each tracked Markdown file. A tracked Markdown file is a Markdown file that git tracks
+  in this repo. This set includes files under `prompt-templates/`, `skills/` and `.claude/skills/`. The set covers the
+  files with the links and the file with the heading.
+
+  Links from several other tracked Markdown files to the same heading are a reason to consider a split. A split moves
+  the section under that heading into its own tracked Markdown file. Only links with an anchor count, for example
+  `limits.md#the-failure-rule`. A reference by heading text without a link does not count. This rule sets no fixed count
+  of links and requires no split.
+
+  The case is strongest when each file with such a link uses only that section and no other part of the file that holds
+  the section.
+
+  Whether a split is worth it is a judgment, open on purpose. The session that drafts a change of a tracked Markdown
+  file makes it in these cases:
+
+  - Its change adds a link to a heading of another tracked Markdown file.
+  - It finds several such links to one heading in the tracked Markdown files that it reads for its change.
+
+  The session judges only from links that it sees in files that it reads for its change. This rule asks for no new
+  search. It changes no read gate of [The installed skill](#the-installed-skill) and no list of
+  [the allowed commands](allowed-commands.md).
+
+  In a ticket, the task subagent makes the judgment. The sessions that tasker starts for plan and execute have no path
+  for a new issue. If the session judges that a split is worth it, it asks for an issue through its existing path.
+
+  The judgment never stops a ticket, widens its scope or changes a file. A split changes tracked files, so it goes
+  through an issue under [the tracked-change rule](#changes).
+
+  The reason follows from [A link in a doc](doc-reads.md#a-link-in-a-doc), [The old read](doc-reads.md#the-old-read) and
+  [Step 2: read each doc with the Read tool](doc-reads.md#step-2-read-each-doc-with-the-read-tool). A reader that
+  follows a link to one section still reads the whole file. A split lets that reader read only the part that it uses.
+
+  A split follows the bullet that starts "A ticket that renames a doc" in
+  [The blocked-by links](issue-subagents.md#the-blocked-by-links). For a new file under `docs/`, see the bullet that
+  starts "To add a topic" in [AGENTS.md](#agentsmd).
+
+  On 2026-11-22, the user said: "When we find multiple links to a header from different docs, we should consider
+  splitting it to its own doc. Especially when sources with the links only refer to that part of the document and don't
+  use any of the rest." In this quote, "header" means a heading of a tracked Markdown file.
+
 - Put a new command in the index `skills/tasker/SKILL.md`, in the reference file of its phase under
   `skills/tasker/references/`, and in the `--help` output.
 - Each session writes all its text with the simple-english skill. A session is an assistant session, for example the
