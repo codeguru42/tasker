@@ -143,6 +143,25 @@ task.
   description of a pull request. It also includes the replies to the user, the reports and messages between sessions,
   and the feedback texts of `tasker refine` and `tasker review <issue> "<feedback>"`. This rule does not apply to the
   sessions that tasker starts for plan, execute and review, except for the docs that they write.
+
+  The self-check rule: before a session of this bullet posts text on GitHub, it runs the self-check of the
+  simple-english skill over that text. The text is each kind of text on GitHub that this bullet lists, for example a
+  comment or a milestone description. The self-check runs over the final text of the post, the text that the post
+  command sends. If the text changes after the self-check, the session runs the self-check again over the changed text
+  before the post. The self-check counts the words of each sentence. It also searches the text for the banned words and
+  for an `if` or a `when` inside a sentence.
+
+  The session fixes each hit before its next step, the post or the show of a draft. The rule does not depend on a draft
+  that the session shows to the user, for example for a task subagent that posts a comment. A session that shows a draft
+  to the user also runs the self-check before it shows the draft, as [Before a post](issues.md#before-a-post) of
+  issues.md says. An [issue-post subagent](issue-post.md#the-issue-post-subagent) posts a draft file or an approved
+  comment text word for word. The self-check of the session that wrote that text covers the post.
+
+  The reason: GitHub keeps the history of each edit of a comment, so a fix after the post leaves the flagged text in
+  that history. On 2026-11-16, the comment of step 11 on #939 had two sentences that a self-check flagged after the
+  post. On 2026-10-15, a draft had four sentences over the limit, and one search and one word count over the draft file
+  found them.
+
 - Each session writes "task subagent" for the session that [docs/dev/GLOSSARY.md](GLOSSARY.md) defines as a task
   subagent, also where the text of an issue says "agent".
 - The memory rule: no session writes memory. A session makes no new memory note and adds no text to a memory note. A
