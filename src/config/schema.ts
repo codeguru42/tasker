@@ -309,6 +309,9 @@ const subagentRoleShape = {
   write: SessionRoleSchema.optional().describe(
     "The model and effort for write subagents, which an orchestrator starts to run approved changes.",
   ),
+  task: SessionRoleSchema.optional().describe(
+    "The model and effort for task subagents, which an orchestrator starts for each ticket and for each task change.",
+  ),
 };
 
 const SessionModelsSchema = z.strictObject({
@@ -380,7 +383,7 @@ const RepoSchema = z
       maxPlannerSubagents: 3,
       maxTaskSubagents: 3,
     }).describe(
-      "The agent kind and models of planner and orchestrator sessions, the models of question sessions, and the models of the planner, draft, review, post and write subagents. Also the highest counts of planner subagents and task subagents that run at the same time.",
+      "The agent kind and models of planner and orchestrator sessions, the models of question sessions, and the models of the planner, draft, review, post, write and task subagents. Also the highest counts of planner subagents and task subagents that run at the same time.",
     ),
     verify: VerifySchema.describe("The commands and environment for the verify phase."),
     bootstrap: BootstrapSchema.default({ commands: [], env: [] }).describe(
