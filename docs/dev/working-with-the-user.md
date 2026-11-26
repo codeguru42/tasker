@@ -550,8 +550,8 @@ The rules of a milestone hold:
    rest of the description stays as it was. Each other change of the description of a held milestone keeps the hold
    record.
 
-   Before a session writes the hold record, it follows [the self-check rule](rules.md#docs) of rules.md over that
-   record. The self-check does not cover the rest of the description, and the rest stays as it was.
+   Before a session writes the hold record, it follows [the self-check rule](rules.md#docs) of rules.md. The hold record
+   is the part of the description that the session writes, so the self-check covers only the record.
 
    For an orchestrator, this item has a change that wins over the text above. An orchestrator writes and removes no hold
    record. At the word to start a hold, it tells the user in its own tab to write the record. At the word to end a hold,

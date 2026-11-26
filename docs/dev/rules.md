@@ -148,14 +148,15 @@ task.
   simple-english skill over that text. The text is each kind of text on GitHub that this bullet lists, for example a
   comment or a milestone description. The self-check runs over the final text of the post, the text that the post
   command sends. If the text changes after the self-check, the session runs the self-check again over the changed text
-  before the post. The self-check counts the words of each sentence. It also searches the text for the banned words and
-  for an `if` or a `when` inside a sentence.
+  before the post. The self-check is the full self-check of the simple-english skill, with all its steps, and this rule
+  copies none of them.
 
   The session fixes each hit before its next step, the post or the show of a draft. The rule does not depend on a draft
   that the session shows to the user, for example for a task subagent that posts a comment. A session that shows a draft
   to the user also runs the self-check before it shows the draft, as [Before a post](issues.md#before-a-post) of
   issues.md says. An [issue-post subagent](issue-post.md#the-issue-post-subagent) posts a draft file or an approved
-  comment text word for word. The self-check of the session that wrote that text covers the post.
+  comment text word for word. The self-check of the session that wrote that text covers the post. A session that writes
+  only a part of a text runs the self-check over that part, and the rest stays as it was.
 
   The reason: GitHub keeps the history of each edit of a comment, so a fix after the post leaves the flagged text in
   that history. On 2026-11-16, the comment of step 11 on #939 had two sentences that a self-check flagged after the
