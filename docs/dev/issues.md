@@ -27,8 +27,8 @@ GitHub.
 
 - If you post an issue and are not a planner, read another rule in
   [The body of an issue](issue-subagents.md#the-body-of-an-issue). This is the bullet that starts: "Before the post, the
-  session that drafts the issue searches the tracked Markdown files". Search the tracked Markdown files. Name each file
-  and its existing false or inconsistent passage in Docs.
+  session that drafts the issue searches the tracked Markdown files". Follow that bullet, including its return path when
+  the search finds a needed Docs change missing from the draft.
 
 - For a change of the title or the body of an open issue, the session reads both at the start of the draft. The draft
   starts from that read, not from an older draft file. The same read gives the start hash, the output of `sha256sum`

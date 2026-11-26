@@ -29,6 +29,12 @@ issues.md.
 
 ## The steps of a post
 
+Before these steps for a new issue or a title or body change of an open issue, follow the search bullet of
+[The body of an issue](issue-subagents.md#the-body-of-an-issue) that starts "Before the post, the session that drafts
+the issue searches the tracked Markdown files". If the search finds a needed Docs change missing from the draft, follow
+that bullet's return and approval path before posting. After an approved revision returns, do these steps with the
+updated draft. The normal posting reads and guards still apply.
+
 For an issue post, an issue-post subagent does these steps in this order:
 
 1. Run the duplicate search right before the post, in its own call. The bullet of
