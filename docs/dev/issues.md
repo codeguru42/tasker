@@ -7,8 +7,9 @@ This page gives the steps and the GitHub facts to file issues, blocked-by links 
 [issue-post subagent](GLOSSARY.md) also reads [The blocked-by links](#the-blocked-by-links) and
 [The project board](#the-project-board), as [issue-post.md](issue-post.md) says. [planner.md](planner.md) defines the
 terms "planner" and "blocked-by link", and [docs/dev/GLOSSARY.md](GLOSSARY.md) defines the term "user".
-[issue-subagents.md](issue-subagents.md) holds the rules for what an issue says and where it goes. This page holds only
-how to do it on GitHub.
+[issue-subagents.md](issue-subagents.md) holds the rules for what an issue says and where it goes. A session that is not
+a planner reads the parts of issue-subagents.md that this section sends it to. This page holds only how to do it on
+GitHub.
 
 ## Before a post
 
@@ -23,6 +24,11 @@ how to do it on GitHub.
   user, [The escape hatch](planner.md#the-escape-hatch) of planner.md says what the answer does. The planner also makes
   sure of the kinds of GitHub objects to make, as [The order of the work](planner.md#the-order-of-the-work) of
   planner.md says.
+
+- If you post an issue and are not a planner, read another rule in
+  [The body of an issue](issue-subagents.md#the-body-of-an-issue). This is the bullet that starts: "Before the post, the
+  session that drafts the issue searches the tracked Markdown files". Search the tracked Markdown files. Name each file
+  and its existing false or inconsistent passage in Docs.
 
 - For a change of the title or the body of an open issue, the session reads both at the start of the draft. The draft
   starts from that read, not from an older draft file. The same read gives the start hash, the output of `sha256sum`
