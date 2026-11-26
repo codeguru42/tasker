@@ -1,7 +1,7 @@
 /** Helpers that the tests of the orchestrator prompt templates share. */
 import { readFileSync } from "node:fs";
 import { packagePath } from "../../src/package-path.js";
-import { markdownSection, sharedWordRuns } from "./doc-text.js";
+import { markdownSection, sharedWordRuns, words } from "./doc-text.js";
 
 const PROMPT_READ_START = "`Run git branch --show-current.";
 
@@ -23,9 +23,7 @@ function withoutPromptRead(body: string): string {
 
 /** Count the words of the body, without the prompt-read sentence. */
 export function promptWordCount(body: string): number {
-  return withoutPromptRead(body)
-    .split(/\s+/)
-    .filter((word) => word !== "").length;
+  return words(withoutPromptRead(body)).length;
 }
 
 /**

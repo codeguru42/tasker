@@ -25,7 +25,8 @@ export function docPaths(text: string): string[] {
   return [...new Set(matches)];
 }
 
-function words(text: string): string[] {
+/** Give the words of the text, split on white space, with no empty word. */
+export function words(text: string): string[] {
   return text.split(/\s+/).filter((word) => word !== "");
 }
 

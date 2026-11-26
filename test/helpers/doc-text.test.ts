@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { docPaths, markdownSection, sharedWordRuns, startBlock } from "./doc-text.js";
+import { docPaths, markdownSection, sharedWordRuns, startBlock, words } from "./doc-text.js";
 
 describe("markdownSection", () => {
   it("gives the lines up to the next heading", () => {
@@ -73,5 +73,15 @@ describe("startBlock", () => {
 
   it("gives undefined when the last line is missing", () => {
     expect(startBlock(`${first}\nMiddle line.\n`)).toBeUndefined();
+  });
+});
+
+describe("words", () => {
+  it("splits on white space and drops empty words", () => {
+    expect(words("  one\ttwo\n three  ")).toEqual(["one", "two", "three"]);
+  });
+
+  it("gives no word for an empty text", () => {
+    expect(words("")).toEqual([]);
   });
 });
