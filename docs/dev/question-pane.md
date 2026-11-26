@@ -1484,12 +1484,13 @@ The order rule below covers only the rows with the write subagent or the orchest
 change is an action of the orchestrator. The next actor starts only after the report of the task subagent.
 
 The write subagent runs no other kind of write: no write to the text of an issue, no comment, no add of a link, no
-removal of a link other than the two removals of this paragraph, no git write, no `herdr` command, no message to a
-session and no `tasker` command. A move of an issue into "Future" is a metadata change. The write subagent also removes
-each link of the issue to an open issue in the same step, as the "Future" bullet of
-[The blocked-by links](issue-subagents.md#the-blocked-by-links) says. For that removal, the write subagent runs only the
-link-removal commands of step 7 of [the defer rule](pick-the-tickets.md#the-defer-rule). The other steps of the defer
-rule, for a task in flight, are not a write action of the write subagent. The approval of the move covers that removal.
+removal of a link other than the removal of a move into "Future" and the removals of a link-removal request, no git
+write, no `herdr` command, no message to a session and no `tasker` command. A move of an issue into "Future" is a
+metadata change. The write subagent also removes each link of the issue to an open issue in the same step, as the
+"Future" bullet of [The blocked-by links](issue-subagents.md#the-blocked-by-links) says. For that removal, the write
+subagent runs only the link-removal commands of step 7 of [the defer rule](pick-the-tickets.md#the-defer-rule). The
+other steps of the defer rule, for a task in flight, are not a write action of the write subagent. The approval of the
+move covers that removal.
 
 For a link-removal request, the write subagent runs only the removal commands of the message. It adds no link, and it
 runs no read before a removal, because the message already gives the exact command with the blocker number. The blocker
