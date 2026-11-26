@@ -494,8 +494,9 @@ The model and the effort go in the parameters `model` and `effort` of the `Agent
 prompt. The opener prompt, the reuse prompt and the session prompt do not change.
 
 A failed read or a missing entry holds back no start. The rule for a write of the configuration file of tasker in
-[The actor of each write action](#the-actor-of-each-write-action) stays and wins. In that case, `tasker show-config`
-exits with 1, and no pane starts until the user puts the file back.
+[The actor of each write action](#the-actor-of-each-write-action) stays and wins for its case. Its case is the run of
+`tasker show-config` after the report of a write subagent that wrote the configuration file of tasker. If that run exits
+with 1, no pane starts until the user puts the file back.
 
 The time of the read:
 
