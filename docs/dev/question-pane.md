@@ -2020,8 +2020,10 @@ and no question file.
 
 Two files can start with the name of one planner subagent. In the old folder, a new draft of a time of the bar can have
 the name of an older draft. After a compaction, two planner subagents of one session can have one name. The count read
-makes each new name in `drafts/` higher than each earlier name, as [The name](planner-subagent.md#the-name) says. The
-pane owner checks both files, and the answer can name both. The user decides on each match in the pane.
+makes a new name higher than each earlier name in `drafts/` only, as [The name](planner-subagent.md#the-name) says. A
+new name can equal the name of a draft in the old folder, because the count read does not list the old folder. For
+example, the first planner subagent of an empty `drafts/` is `plan-1`, and the old folder can hold `plan-1-links.md`.
+The pane owner checks both files, and the answer can name both. The user decides on each match in the pane.
 
 A known limit: a full `ls` of a growing `drafts/` can fill the context of the orchestrator. The check has no filtered
 form of the list.
