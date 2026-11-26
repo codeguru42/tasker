@@ -85,7 +85,8 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator),
 [The steps for the open peer requests](handoff-orchestrator.md#the-steps-for-the-open-peer-requests),
 [The proposal file](planner-subagent.md#the-proposal-file), [Limits](limits.md#limits),
-[the own-worktree rule](limits.md#the-own-worktree-rule) and
+[the own-worktree rule](limits.md#the-own-worktree-rule),
+[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner) and
 [The orchestrator folder](limits.md#the-orchestrator-folder).
 
 - K1: the read-only `tasker` commands of
@@ -125,7 +126,8 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 - Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says),
   `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)), a Read call on a file of the
   local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'`, a Read call on the saved output of its own tool call,
-  `ls` on its own three folders and a Read call on a file of its own three folders.
+  `ls` on its own three folders and a Read call on a file of its own three folders. For the check of a check request, it
+  also runs `ls` on the folder of the draft files and a Read call on a draft file there.
 
 This list gives the forms of the kind `claude`. [The orchestrator folder](limits.md#the-orchestrator-folder) gives the
 forms of the kinds `pi` and `codex`, and no one measured them.
@@ -334,13 +336,15 @@ as [The prompts](question-pane.md#the-prompts) gives it. The prompt gives each c
 
 ## A question session
 
-Sources: [The question session](question-pane.md#the-question-session), [The herdr path](question-pane.md#terms) and
+Sources: [The question session](question-pane.md#the-question-session), [The herdr path](question-pane.md#terms),
+[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner) and
 [the doc-read rule](doc-reads.md#the-doc-read-rule).
 
 - K1, K3 and K5: the read-only commands, other than `herdr` commands.
 - K4: `git fetch origin` and `git pull --ff-only origin main`, in its local clone.
 - K9 and K10: only the herdr path to its pane owner, for the messages that
-  [Send a decision](question-pane.md#send-a-decision) gives.
+  [Send a decision](question-pane.md#send-a-decision) gives, and for the check request of
+  [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner).
 - Named other commands: `timeout 20 bash -c 'sleep 1'`, a Read call on a file of the local clone, `wc -l <path>`,
   `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call.
 - Each other kind: no list. It sends each write action back to its pane owner.
