@@ -250,13 +250,22 @@ on stderr, and the whole count read exited with 0, the code of `tail`. So the ex
 error text is. The output is at most one short line. The reason: `drafts/` grows with each draft, and a full list at
 each start fills the context of the orchestrator.
 
+The two calls use the data root of the read of the session. If no read of the session gave the data root, the
+orchestrator reads it first, as for the three folders.
+
 The orchestrator runs no other call on `drafts/`, except the read-only calls of
 [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner). These calls are no git command and no `cd`
 command, so no ask rule of [Claude Code](setup.md#claude-code) matches them. No one measured them on a file under the
 data root.
 
-A call on the three folders or on `drafts/` can fail or get a denial of
-[the tool-block rule](tasker-commands.md#the-tool-block-rule). For a failure, [the failure rule](#the-failure-rule)
+For the planner subagents, the issue subagents and a question session, none of their calls on `drafts/` is a git command
+or a `cd` command, so no ask rule matches them. No one measured whether Claude Code asks a permission prompt for them or
+whether the classifier of the auto mode denies them. A denial follows the tool-block rule and starts the bar. The
+issue-review subagent and the question session write nothing in `drafts/`.
+
+A call on the three folders, the read of the data root, a call of the two calls on `drafts/`, or a call on a file of
+`drafts/` can fail or get a denial of [the tool-block rule](tasker-commands.md#the-tool-block-rule). The list "These
+events start the bar" below is the only list of the events. For a failure, [the failure rule](#the-failure-rule)
 applies. A failed read of the data root or a failed `mkdir -p` counts as a failure of the call after it. After a denial,
 the step of the denied call stops, as step 1 of the tool-block rule says. A denied call of
 [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner) stops only that call. After a failure or a
@@ -278,13 +287,29 @@ These events start the bar:
 
 - A failed or denied call on the three folders.
 - A failed read of the data root, or a failed or denied call of the two calls above on `drafts/`.
-- A failed or denied call on a file of `drafts/` that reaches the orchestrator through the tool-block rule or through
-  the result of a planner subagent.
+- A failed or denied call on a file of `drafts/`. A denial reaches the orchestrator through the tool-block rule: from an
+  issue subagent through its planner subagent, from a planner subagent, or from a question session to its pane owner.
+  Another failure reaches it through the result of a planner subagent.
 
-These events start no bar: a read of a missing file of a draft, and a failed or denied size count of an issue-draft
-subagent or an issue-post subagent. The reason: such a failure loses one draft step, not the use of the folder. The cost
-of the bar: the orchestrator keeps no new file in the three folders and starts each new planner subagent with the old
-folder, which has no count read. The three states are these: not started, holds, and ended by the next word of the user.
+These events start no bar: a read of a file that does not exist, and a failed or denied size count. The reason for the
+first: it shows no fault of the access to the folder, and
+[A missing draft file](planner-subagent.md#a-missing-draft-file) gives the steps. The reason for the second: each size
+count keeps its own rule for a failure.
+
+The reason for a bar after a failed call on a file of `drafts/`: each later planner subagent gets the same folder and
+can get the same failure, and the bar stops this repeat until the user decides. The reason for one bar: one bar is
+simpler than a second bar with its own states, as
+[Simplify over special rules](working-with-the-user.md#simplify-over-special-rules) says. The cost: one failed call on a
+file of `drafts/` also stops the calls on the three folders. New questions and new planning requests then stay only in
+the session until the next word of the user, and the write of the handoff file also waits for that word.
+
+The bar has three states:
+
+- Not started: the orchestrator runs the two calls before each start, and the prompt gives `drafts/`.
+- Holds: the orchestrator runs neither call, the prompt of each new planner subagent gives the old folder, and the start
+  does not wait.
+- Ended by the next word of the user: before the next start, the orchestrator makes a missing `drafts/` and runs the
+  count read again. If they pass, the prompt gives `drafts/`.
 
 Step 6 of the tool-block rule stays. The orchestrator brings each denial to the user in its question pane, and that pane
 starts with the text from the session. For a denied list of `questions/`, the rule of
