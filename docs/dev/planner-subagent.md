@@ -108,11 +108,7 @@ planner subagent whose wait a word of the user ended holds no place in the count
 [The wait before a handoff](#the-wait-before-a-handoff) says. The rule on the same draft file does not cover it. The
 known limits of that subsection give the result.
 
-Two planner subagents that run at the same time never get the same draft file in their prompts. If the prompt of a
-running planner subagent gives the same draft file path as an item of an answer of the user or of a settled answer, the
-item waits for the result of that planner subagent. The orchestrator then takes the next item that waits. The reason:
-two planner subagents on one draft file overwrite the draft file and the record file of each other. This rule does not
-cover a planner subagent that a late report starts again.
+Before each start of a planner subagent, the orchestrator follows [The wait for a busy path](#the-wait-for-a-busy-path).
 
 In one session of the orchestrator, two planner subagents never give two drafts one file name in the folder of
 [The prompt](#the-prompt). This also covers the draft of an ended planner subagent that waits for a decision of the
@@ -140,6 +136,90 @@ These four known limits hold:
   draft of an earlier session that waits for a decision of the user. The new draft and its record file then overwrite
   the old ones. No step of the planner subagent lists the folder. The same clash can occur today with one planner
   subagent at a time.
+
+### The wait for a busy path
+
+Two planner subagents never work on one draft or one match at the same time. Before the start of a planner subagent for
+an item, the orchestrator compares the paths of the item with the busy paths. If a path of the item is busy, the
+orchestrator starts no planner subagent for that item. The item keeps its proposal file and waits for the result of the
+planner subagent that makes the path busy. The orchestrator then takes the next item that waits. The reason: two planner
+subagents on one draft file overwrite the draft file and the record file of each other.
+
+These terms hold for this wait:
+
+- A running planner subagent is a planner subagent that holds a place in
+  [The count of planner subagents](#the-count-of-planner-subagents).
+- The paths of an item are each path that the words of the item give as a match, and the proposal file of the item. For
+  an item of an answer of the user or of a settled answer, its draft file path is a path of the item too.
+- A record file, a report file or a body file of a draft stands for its draft file, as in
+  [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner).
+- If a path is a path of its own item, a running planner subagent makes the path busy. It also makes busy each path in
+  the folder of the draft files whose file name starts with its name and `-`. An example is `plan-4-terms.md` for
+  `plan-4`.
+- A busy path is a path that a running planner subagent makes busy.
+- A start list is the step of [The proposal file](#the-proposal-file) that starts the planner subagents of the items
+  that wait. It runs at the arrival of an item, after a result and at the end of the start steps.
+
+A planner subagent that the orchestrator started earlier at the same start list is a running planner subagent too. The
+wait also holds when the draft file path of a new item is a match of the item of a running planner subagent. An example:
+a running planner subagent has an item that names `plan-3-rules.md` as a match. Later, an item of an answer comes with
+the draft file path `plan-3-rules.md`, and that item waits too. An item with no busy path starts under
+[The count of planner subagents](#the-count-of-planner-subagents).
+
+If two paths name the same file, they are the same path. A path can be a full path or a file name only. A file name only
+of a draft names its file in the folder of the draft files. `proposals/<number>.md` names its file in the
+[orchestrator folder](limits.md#the-orchestrator-folder). For each other path, the orchestrator judges which file the
+path names, and this judgment is open on purpose.
+
+An item that waits for a busy path is still an [item of planning work that waits](#the-proposal-file). So
+[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner) still finds it.
+
+The orchestrator takes the paths of an item from the words of its proposal file. The proposal file holds these words
+word for word, so the paths stay through a compaction and a handoff. The orchestrator takes the busy paths of a running
+planner subagent from the proposal file that names that planner subagent. While the bar of the fallback of
+[The orchestrator folder](limits.md#the-orchestrator-folder) holds, the orchestrator takes both from its session.
+
+A read of these paths can fail or get a denial of [the tool-block rule](tasker-commands.md#the-tool-block-rule). Then
+[the failure rule](limits.md#the-failure-rule), the tool-block rule and the fallback of The orchestrator folder apply,
+as for each call on the three folders. A failed or denied read gives no answer, so no item passes the compare with it.
+If the read of the proposal file of an item fails or gets a denial, that item does not start at that decision. If the
+read of the busy paths of a running planner subagent fails or gets a denial, no item starts at that decision.
+
+While the bar holds, the orchestrator reads no proposal file, and the compare uses its session. The read of a proposal
+file runs again only after the next word of the user ends the bar. While the bar holds, the session can lack the paths,
+for example after a compaction. If the session lacks the paths of an item that waits, that item does not start. If the
+session lacks the paths of a running planner subagent, no item starts until the bar ends.
+
+A busy path has these states:
+
+- Not started: a planner subagent that holds no place in the count yet makes no path busy. An item that waits makes no
+  path busy.
+- Running: while a planner subagent holds a place in the count, it makes its paths busy.
+- Ended: a planner subagent that holds no place in the count makes no path busy. This holds after its result and after
+  an end with no report.
+
+Another rule can keep the place of a planner subagent in the count after an end with no report. Then the hold of the
+place wins, and the paths of that planner subagent stay busy while it holds the place. The draft of an ended planner
+subagent that waits for a decision of the user is not busy.
+
+After an end with no report, the orchestrator starts one new planner subagent for the same item, as
+[The life of a planner subagent](#the-life-of-a-planner-subagent) says. That start also gets the compare of this wait.
+If a path of the item is busy, the item waits, and its later start is still the one new planner subagent. An end with no
+report adds no start list. An item that waited for a path of the ended planner subagent starts at the next start list.
+
+These known limits hold:
+
+- A planner subagent that a late report starts again holds no place in the count, so it makes no path busy.
+- A planner subagent whose wait a word of the user ended in a handoff holds no place in the count, as
+  [The wait before a handoff](#the-wait-before-a-handoff) says. So it makes no path busy.
+- The name of a file of another draft can start with the name of a running planner subagent and `-`. An example is a
+  draft of an earlier session. An item that names such a file waits with no clash. The cost is a longer wait only.
+- The wait lasts as long as the planner subagent of the busy path runs, with its review loops. No time limit ends it.
+- An item A can wait for a busy path, and a later item B can name the proposal file of A as a match. Then B can start
+  before A, against the order of arrival. The paths of B then make the proposal file of A busy, so A waits for the
+  result of B. The cost: B works on a match whose planner subagent did not run yet, and A starts later.
+- After an end with no report, an item that waited for a path of the ended planner subagent waits until the next start
+  list. The cost is a longer wait only.
 
 ### The model of the start
 
