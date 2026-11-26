@@ -332,8 +332,9 @@ No one measured these facts of case C:
 
 Cases D, E, F and G are more failed pulls in real use. Each of them came on 2026-11-24. In each of them, the pull
 printed "fatal: Cannot fast-forward to multiple branches." and exited with 128. No source gives the order in time of
-cases D, E, F and G, so the letters D to G give no order in time. Case H is one more failed pull in real use, on
-2026-11-25. So it came after each of cases D to G. All times are -0700.
+cases D, E, F and G, so the letters D to G give no order in time.
+
+Case H is one more failed pull in real use, on 2026-11-25. So it came after each of cases D to G. All times are -0700.
 
 Case D is a failure of the question session of the question `orchestrator-m31-332`. The source of each fact of case D is
 the report of that session, as orchestrator-m31 relayed it on 2026-11-24. No one measured these facts again. The session
@@ -555,7 +556,7 @@ does not say whether the pull ran after 15:44:52.
 This is an inference, not a measure: in case D, nothing was due. In case E, nothing was due, with the condition of case
 E. Case H differs from both, with the condition of the paragraph above.
 
-This is an inference, not a measure: the pull of round 2 started at `628239c8`, so `HEAD` was still at `628239c8` at the
+This is an inference, not a measure: the pull of round 2 started at `628239c8`. So `HEAD` was still at `628239c8` at the
 start of round 2. The session saw `origin/main` at `64d2aa7a` before the fetch. So the local clone stayed behind
 `origin/main` from the read before the fetch until the pull of round 2. The pull of round 2 ended that gap.
 
