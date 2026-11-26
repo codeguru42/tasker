@@ -341,12 +341,15 @@ Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-i
 
 ## The write subagent of the orchestrator
 
-Sources: [The actor of each write action](question-pane.md#the-actor-of-each-write-action) and
-[The reads before the write](issues.md#the-reads-before-the-write).
+Sources: [The actor of each write action](question-pane.md#the-actor-of-each-write-action),
+[The reads before the write](issues.md#the-reads-before-the-write), [Terms](question-pane.md#terms) and
+[Send a decision](question-pane.md#send-a-decision).
 
 - K5: the reads before the write, for example `gh issue view`.
 - K7: a change of the metadata of an issue with `gh issue edit`, and the link-removal commands of step 7 of
-  [the defer rule](pick-the-tickets.md#the-defer-rule).
+  [the defer rule](pick-the-tickets.md#the-defer-rule). K7 also names
+  `gh issue edit <blocked number> -R <repo> --remove-blocked-by <blocker number>`, for each removal of a link-removal
+  request, with no read before it.
 - K12: each input file, at the path that the message gives.
 - K13: a write of a user-level file, only the text that the user approved, after the hash check.
 - Named other commands: `sha256sum <path>`.
