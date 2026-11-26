@@ -136,8 +136,12 @@ forms of the kinds `pi` and `codex`, and no one measured them.
 
 Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-worktree-rule),
 [the plain-form rule](tasker-commands.md#the-plain-form-rule), [Run one ticket](run-one-ticket.md#run-one-ticket),
-[the CI wait](ci-wait.md#the-ci-wait), [the doc-read rule](doc-reads.md#the-doc-read-rule) and the ask rules of
-[Claude Code](setup.md#claude-code).
+[the CI wait](ci-wait.md#the-ci-wait), [The issue check](plan-review.md#the-issue-check),
+[The patch check](rebase-conflicts.md#the-patch-check), [Review findings](review-findings.md#review-findings),
+[The docs-only update](review-findings.md#the-docs-only-update),
+[The broken-commit steps](verify-failures.md#the-broken-commit-steps),
+[The commit check](verify-failures.md#the-commit-check), [the doc-read rule](doc-reads.md#the-doc-read-rule) and the ask
+rules of [Claude Code](setup.md#claude-code).
 
 - K1: `tasker show`, `tasker show-plan`, `tasker show-verify`, `tasker show-review` and the other read-only commands of
   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule).
@@ -147,7 +151,20 @@ Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-w
   "runs", because most task changes run with no word of the user. A cell says "asks the user" only when each command of
   the list asks.
 - K3: `git log`, `git show` and `git diff` on `tasker/<task branch>`, `git show origin/main:<path>`, and the other `git`
-  reads of [Limits](limits.md#limits).
+  reads of [Limits](limits.md#limits). It also has these reads, each named by its source:
+  - The base check `git cat-file -e <base commit>^{commit}`
+  - The merge-base reads `git merge-base tasker/<task branch> origin/<base branch>`,
+    `git merge-base tasker/<task branch> tasker/<parent branch>` and `git merge-base HEAD origin/<base branch>`
+  - The base reads `git -C <local clone> merge-base origin/<base branch> tasker/<task branch>` and
+    `git -C <local clone> merge-base origin/<base branch> <task hash>` of the docs-only update
+  - The base reads `git ls-tree -r --name-only <merge base>` and `git grep <pattern> <merge base>` of the issue check
+  - The branch read `git ls-remote --exit-code --heads origin refs/heads/<task branch>`
+  - The patch check `git cherry <base> <tip>`
+  - The tip read `git rev-parse tasker/<task branch>` of the CI wait
+  - The patch-id read `set -o pipefail; git diff origin/<base branch>...tasker/<task branch> | git patch-id --stable`
+  - The text id read
+    `set -o pipefail; git diff -U0 origin/<base branch>...tasker/<task branch> | grep -v -e '^index ' -e '^@@' | git hash-object --stdin`
+  - The state read `git -C <path> status` after a failed `git rebase --abort` of the commit check
 - K4: `git fetch tasker`, `git fetch origin`, `git worktree add`, `git worktree remove` and `git reset --keep`, as the
   own-worktree rule and [Limits](limits.md#limits) say.
 - K5: `gh run list`, `gh run view`, `gh run watch` and `gh issue view`.
@@ -155,7 +172,12 @@ Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-w
 - K12 and K14: files of its own task worktree.
 - Named other commands: `npm ci` before a direct npm script, `npm run check` and the other direct npm scripts of the
   task worktree, `gh run rerun <run id> --failed` (the only write on GitHub Actions), a Read call on a saved output of
-  its own tool call, and `timeout 20 bash -c 'sleep 5'`.
+  its own tool call, and `timeout 20 bash -c 'sleep 5'`. It also has these reads, each named by its source:
+  - The count `git diff <commit>~1 <commit> -- <mechanical files> | wc -l` of a split diff read
+  - The version read `node --version` of the local run of a failed CI test
+  - A read of whole files of the task in its task worktree, for the diff read and for the test of a dismiss reason
+  - A search of each test file of the diff for a helper name that is defined two times
+  - A read of its own feedback file before a refine or a review with feedback text from a file
 - K7 to K11, K13 and K15: no list.
 
 ## A task subagent for one task change
