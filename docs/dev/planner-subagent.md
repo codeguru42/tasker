@@ -1087,7 +1087,7 @@ notification of that subsection. A wait notification does not end the wait. The 
 the user can also end it, as [The wait before a handoff](#the-wait-before-a-handoff) says.
 
 If a planner subagent ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the orchestrator.
-The orchestrator then starts one new planner subagent for the same item of planning work. That start also follows
+The orchestrator then starts one new planner subagent for the same item of planning work, after the compare of
 [The wait for a busy path](#the-wait-for-a-busy-path). If that one also ends with no report, the orchestrator tells the
 user. The proposal file of the item stays, as [The proposal file](#the-proposal-file) says.
 
