@@ -215,12 +215,12 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [The form of a reply](#the-form-of-a-reply) and the first reply of a
   [question pane](question-pane.md#a-question-pane).
 
-  The reason: on 2026-11-15, a session with no role worked as an ad hoc planner. At the report of each ticket subagent,
-  the session described its draft once, in prose. Later replies gave the open decisions in numbered lists, and they
-  named the drafts only by the names of their draft files. Examples are "The rule of the `one-line-fix` draft: A, B or
-  C" and "Which drafts do you want me to post? The candidates are `adhoc-own-name`, `dismissal-claims`, and
-  `one-line-fix` after decision 1." Before each decision, the user had to ask what the draft was: "What is the one line
-  fix?", "What is the adhoc own name draft?" and "what is 'adhoc own name' that needs posted?".
+  The reason: on 2026-11-15, a session with no role worked as an ad hoc planner. At the report of each draft, the
+  session described its draft once, in prose. Later replies gave the open decisions in numbered lists, and they named
+  the drafts only by the names of their draft files. Examples are "The rule of the `one-line-fix` draft: A, B or C" and
+  "Which drafts do you want me to post? The candidates are `adhoc-own-name`, `dismissal-claims`, and `one-line-fix`
+  after decision 1." Before each decision, the user had to ask what the draft was: "What is the one line fix?", "What is
+  the adhoc own name draft?" and "what is 'adhoc own name' that needs posted?".
 
 - An unclear answer of the user is an answer whose meaning the session cannot be sure of. The main example is an answer
   with two or more meanings. Before the session acts on an unclear answer, it asks the user what the answer means. An
@@ -249,9 +249,9 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   then its review loops again, then its post. The user answered "1 post it", and the session posted the draft as it
   stood (#927).
 
-  Then the user said "I mean follow your recommendation". The session had to change the posted body of #927 with a new
-  ticket subagent and a body edit. The answer can mean the draft as it stood or the recommended order. Under this
-  bullet, the session asks first.
+  Then the user said "I mean follow your recommendation". The session had to change the posted body of #927 with new
+  reviews and a body edit. The answer can mean the draft as it stood or the recommended order. Under this bullet, the
+  session asks first.
 
 - The session can ask the user to approve a plan or a change of scope. If the approval settles a choice that the session
   and the user discussed before, the question names each choice that the approval drops. On 2026-10-19, in the plan
@@ -651,8 +651,8 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   the runs of `claude-code` and `codex`.
 - Each piece of work that waits becomes an issue in its later milestone, as
   [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) of issue-subagents.md says.
-  [issues.md](issues.md) gives the steps to file the issue. An edge case that a ticket subagent of a planner decided as
-  "later" with no proposed later issue gets no issue, as
+  [issues.md](issues.md) gives the steps to file the issue. An edge case that an issue-draft subagent decided as "later"
+  with no proposed later issue gets no issue, as
   [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of issue-draft.md says.
 - Containers are out of scope for now. Do not raise or file an edge case that occurs only in a container. An example is
   a process that has the same pid at each start, so that the lock row of a crashed run looks like the lock row of the
@@ -757,9 +757,9 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   A subagent does each step that another rule gives the session. For example, it reads
   [A question of the user](#a-question-of-the-user) and measures facts for
   [A decision of the user](#a-decision-of-the-user). It follows [Before a post](issues.md#before-a-post) for an issue.
-  For an ad hoc draft, the main session starts the issue-draft subagent and the issue-review subagent. It follows the
-  same rules of the planner subagent as a planner session, as
-  [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) says.
+  For an ad hoc draft, the main session starts the issue-draft subagent and the issue-review subagent under the rules of
+  the planner subagent, as [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) says. The ad
+  hoc name, the names and the draft folder of an ad hoc planner hold.
 
   A subagent of the main session posts a reviewed ad hoc draft under
   [The post of a draft](planner.md#the-post-of-a-draft), because the main session runs no `gh` command. After the post,

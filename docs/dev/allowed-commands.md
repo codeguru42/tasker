@@ -1,12 +1,14 @@
 # The allowed commands
 
-The reader of this page is the orchestrator. The plan session of a task that changes a list also reads it. An actor does
-not read it.
+The reader of this page is the orchestrator. The plan session of a task that changes a list also reads it. A planner
+session and the main session of an ad hoc draft also read it, each for the list of each issue subagent that it starts.
+An actor does not read it.
 
 For each actor of [the table](permissions.md#the-table), this page lists the commands that the orchestrator sends to
 that actor. The orchestrator looks the list up here. It sends the list in the prompt or in the message that starts the
 actor. The actor receives the list. It does not take a list by itself. A starter that starts an actor for the
-orchestrator passes the list of that actor on. An example is the planner subagent, which starts an issue subagent.
+orchestrator passes the list of that actor on. Examples are the planner subagent and a planner session, which start an
+issue subagent. The main session of an ad hoc draft passes on the issue-draft and issue-review lists.
 
 The form of the send is open. A later ticket decides it. Until then, the lists are docs only, as
 [the place of the rules](permissions.md#the-place-of-the-rules) says. A rule page of an actor gives no copy of a list.

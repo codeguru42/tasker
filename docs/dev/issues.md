@@ -55,28 +55,28 @@ how to do it on GitHub.
 
 - If an issue already covers the change, the session that posts the issue offers the user an extension of that issue
   (its body or its links) instead of a new issue. That session tells the user what each draft has that the other one
-  does not have. For a match of a planner, [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of
-  planner.md gives the steps.
+  does not have. For a match of a planner, [The post of a draft](planner.md#the-post-of-a-draft) of planner.md gives the
+  steps.
 - Each session that posts an issue and is not a planner decides the blocked-by links of its draft. The session finds the
   open issues and tasks in flight that edit the same files as the draft. It also finds the issues that the draft needs.
   It uses [The blocked-by links](issue-subagents.md#the-blocked-by-links). A session with no role is an ad hoc planner
-  for a draft of its ticket subagent.
+  for a draft of its issue subagents.
 
   A session that is not a planner shows the result with the draft: each link and its reason, or "no links" and the
   reason. It names each file of the check. After the post, it adds each approved link under
   [The blocked-by links](#the-blocked-by-links) and [The reads before the write](#the-reads-before-the-write).
 
-  For a draft of its ticket subagent, the ad hoc planner adds the links in that subagent's report with no approval of
-  the user. It gives each link and its reason in the report of [The post of a draft](planner.md#the-post-of-a-draft).
+  For a draft of its issue subagents, the ad hoc planner adds the links in the report of the issue-draft subagent with
+  no approval of the user. It gives each link and its reason in the report of
+  [The post of a draft](planner.md#the-post-of-a-draft).
 
 - The text of each post follows the simple-english bullet of [Docs](rules.md#docs) of rules.md. Before a session shows a
-  draft to the user, the session runs the self-check of the simple-english skill over the file of the draft. The ticket
-  subagent of a planner runs the check over its draft file before the first loop of
-  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md. An issue-draft subagent runs the
-  check over its draft file before its report, as [The self-check](issue-draft.md#the-self-check) of issue-draft.md
-  says. The check counts the words of each sentence. It also searches the draft for the banned words and for an `if` or
-  a `when` inside a sentence. The session fixes each hit before it shows the draft. For example, on 2026-10-15, a draft
-  had four sentences over the limit, and one search and one word count over the draft file found them.
+  draft to the user, the session runs the self-check of the simple-english skill over the file of the draft. An
+  issue-draft subagent runs the check over its draft file before its report, as
+  [The self-check](issue-draft.md#the-self-check) of issue-draft.md says. The check counts the words of each sentence.
+  It also searches the draft for the banned words and for an `if` or a `when` inside a sentence. The session fixes each
+  hit before it shows the draft. For example, on 2026-10-15, a draft had four sentences over the limit, and one search
+  and one word count over the draft file found them.
 - For the priority of an issue, see [The body of an issue](issue-subagents.md#the-body-of-an-issue) of
   issue-subagents.md and [The project board](#the-project-board).
 - Right after each post of the body of an issue, the session compares the posted body with the body of its draft file.
@@ -87,7 +87,8 @@ how to do it on GitHub.
   A difference is a failed post. The session then follows [The reads before the write](#the-reads-before-the-write) and
   runs `gh issue edit <number> -R <repo> --body-file <absolute path of the body file>` alone in a plain call. It
   compares again. If the read fails, or the second compare also fails, the session stops and tells the user. On
-  2026-10-26, a script left an old second design after the Docs section of #604, and only a review agent saw it.
+  2026-10-26, a script left an old second design after the Docs section of #604, and only a subagent that reviewed the
+  draft saw it.
 
 ### The reads before the write
 

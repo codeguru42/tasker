@@ -342,9 +342,13 @@ the model and the effort of a subagent, not of a session. The orchestrator start
 [item of planning work](dev/planner-subagent.md#the-start). The key `planner` sets the model and the effort of the
 planner subagent and of a planner session.
 
-The planner subagent starts the draft subagent, the review subagent and the post subagent. They draft an issue, review a
-draft and post an approved issue. The orchestrator starts the write subagent to run an approved change of the metadata
-of an issue or of a user-level file, as [the actor table](dev/question-pane.md#the-actor-of-each-write-action) says.
+The planner subagent and a planner session start the draft subagent, the review subagent and the post subagent. The main
+session of an ad hoc draft starts the draft subagent and the review subagent. They draft an issue, review a draft and
+post an approved issue. The orchestrator starts the write subagent to run an approved change of the metadata of an issue
+or of a user-level file, as [the actor table](dev/question-pane.md#the-actor-of-each-write-action) says. The keys
+`issue-draft`, `issue-review` and `issue-post` also set the model and the effort of an issue subagent of a planner
+session. For an ad hoc draft, the keys `issue-draft` and `issue-review` also set them for an issue subagent of the main
+session.
 
 | Key                   | Type                 | Default    | Notes                                                                                                                 |
 | --------------------- | -------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
