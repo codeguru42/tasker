@@ -232,8 +232,8 @@ a permission prompt or a denial, and the fallback of this section covers that ca
 A call on the three folders can fail or get a denial of [the tool-block rule](tasker-commands.md#the-tool-block-rule).
 For a failure, [the failure rule](#the-failure-rule) applies. A failed read of the data root or a failed `mkdir -p`
 counts as a failure of the call after it. After a denial, the step of the denied call stops, as step 1 of the tool-block
-rule says. For a call of [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner), only that call
-stops, as that section says. After a failure or a denial, the fallback holds:
+rule says. A denied call of [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner) stops only that
+call. After a failure or a denial, the fallback holds:
 
 - The orchestrator runs no later call on the three folders until the next word of the user. This rule is the bar.
 - Until that word, the orchestrator keeps each new question and each new item of planning work in its session. A pane
@@ -262,7 +262,7 @@ the orchestrator, and it has these limits:
 - The orchestrator makes, lists, reads, writes and deletes files only in its own three folders. Its `mkdir -p` can also
   make the parent folders of the three folders.
 - For [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner), the orchestrator also lists the
-  folder of the draft files with `ls <folder>` and reads the drafts there with the Read tool. These calls only read.
+  folder of the draft files with `ls <folder>`. It reads the drafts there with the Read tool. These calls only read.
   They are an allowed exception to each limit of this section on the calls in that folder. The bar of the fallback
   covers only the three folders.
 - The exception covers no other file of the data root and no worktree of tasker.
