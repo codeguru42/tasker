@@ -388,7 +388,8 @@ message starts the task subagent again, and it can then act on the answer after 
 A task subagent can end with no stopping-point report, or no report can come at all. In Claude Code, the old
 orchestrator learns of an end with no report from the end notification of Claude Code.
 [The wait for a report](planner.md#the-wait-for-a-report) defines that notification for an agent that a planner or a
-ticket subagent starts. No one measured it for a task subagent of an orchestrator, or for a Codex or a pi orchestrator.
+subagent of a planner starts. No one measured it for a task subagent of an orchestrator, or for a Codex or a pi
+orchestrator.
 
 At the end notification, the wait for that task ends. With no end notification, only a word of the user ends the wait.
 If no report comes, the user can tell the old orchestrator to go on. The old orchestrator then tells the user that a

@@ -220,7 +220,6 @@ These sessions keep the old read, also for a doc that they reach by a link:
 - The planner subagent, the opener subagent, the reuse subagent and the write subagent of the orchestrator, if such a
   subagent reads a doc. This covers each helper subagent of such a subagent, apart from the issue subagents.
 - A read subagent that a session with no role starts for a read of code or docs.
-- The ticket subagent and the review agent of a planner. The user deprecated them on 2026-11-21.
 - A session of a kind other than `claude`, for example `pi`. The measured `pi` sessions had only `bash`. Such a session
   runs no pull.
 

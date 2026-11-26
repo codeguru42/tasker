@@ -307,8 +307,8 @@ each known form again. `<slug>` is the slug of the planner, as [docs/dev/GLOSSAR
 
 The store file is state of the user, as [The state of the user](plan-review.md#the-state-of-the-user) defines it. Only a
 planner runs `store` on this file, and only the user approves step 5. So the question of step 4 is a question for the
-user alone, as [The terms of the questions](items.md#the-terms-of-the-questions) says. A task subagent, the
-orchestrator, a ticket subagent and a review agent run no `store` on this file.
+user alone, as [The terms of the questions](items.md#the-terms-of-the-questions) says. A task subagent, the orchestrator
+and an issue subagent run no `store` on this file.
 
 If the classifier denies `scan` or `store`, the planner runs that step in no other form and in no part. It tells the
 user the exact command and the exact text of the denial. The planner gives the user no command with the `!` prefix for

@@ -1,7 +1,7 @@
 # Plan review
 
 The readers of this page are the task subagent of a ticket, the orchestrator for the fact test, the stop rule and the
-design-gap rule, and the planner for the fact test. A ticket subagent and its review agents also read
+design-gap rule, and the planner for the fact test. Each issue subagent also reads
 [The state of the user](#the-state-of-the-user). [The base rule](run-one-ticket.md#the-base-rule) covers each command of
 this page that uses `origin/<base branch>`.
 
@@ -91,12 +91,11 @@ one measure, not in a folder that a program reads, such as `$HOME/.config`. The 
 of a task subagent and of a task worktree are not such state. A read that changes nothing is not a change of the state
 of the user, for example `crontab -l`.
 
-In this subsection, a covered session is a task subagent, the orchestrator, a ticket subagent or a review agent of a
-ticket subagent. A covered session changes no state of the user, unless the user approved the command of that change.
-The ban also covers a change that the covered session undoes after the measure. A command that a step of
-[the orchestration pages](../orchestrator.md) or of [the planner pages](../planner.md) names is not such a change.
-Examples are `git fetch origin` and a `tasker` command. A measure of a fact is not such a step, also in
-[the fact test](#the-fact-test) or [the issue check](#the-issue-check).
+In this subsection, a covered session is a task subagent, the orchestrator or an issue subagent. A covered session
+changes no state of the user, unless the user approved the command of that change. The ban also covers a change that the
+covered session undoes after the measure. A command that a step of [the orchestration pages](../orchestrator.md) or of
+[the planner pages](../planner.md) names is not such a change. Examples are `git fetch origin` and a `tasker` command. A
+measure of a fact is not such a step, also in [the fact test](#the-fact-test) or [the issue check](#the-issue-check).
 
 Whether a write changes the state of the user is a judgment. The judgment is open on purpose, and the covered session
 that runs the command makes it. In doubt, the covered session treats the write as a change of the state of the user. A
@@ -135,7 +134,7 @@ under [the design-gap rule](#the-design-gap-rule). It asks the question in its o
 of the user to the task subagent with `SendMessage`.
 
 For a measure of its own that needs such a change, the orchestrator also asks the question in its question pane. It is a
-question for the user alone. A ticket subagent follows [The state of the user](planner.md#the-state-of-the-user) of
+question for the user alone. An issue subagent follows [The state of the user](planner.md#the-state-of-the-user) of
 planner.md for the outcomes of the answer. The answer of the user on a question of a task subagent or of the
 orchestrator has one of these outcomes:
 
@@ -156,10 +155,10 @@ orchestrator has one of these outcomes:
   the rule of that answer, for example [the change-of-scope comment](#the-change-of-scope-comment).
 
 On 2026-11-01, the user said that a test that writes to the real `$HOME/.codex` or to the data of the user waits for the
-user. On 2026-11-04, the ticket subagent of planner-m16 for #751 measured timers of `systemd-run --user` and a crontab
-with no approval of the user. It made test units, installed a test crontab and removed it with `crontab -r`. The crontab
-was empty before, and the ticket subagent removed each unit, so nothing was lost. The prompt of the ticket subagent
-asked it to measure the forms with harmless commands and to remove each test job.
+user. On 2026-11-04, a subagent of planner-m16 for #751 measured timers of `systemd-run --user` and a crontab with no
+approval of the user. It made test units, installed a test crontab and removed it with `crontab -r`. The crontab was
+empty before, and that subagent removed each unit, so nothing was lost. The prompt of that subagent asked it to measure
+the forms with harmless commands and to remove each test job.
 
 ## The issue check
 
