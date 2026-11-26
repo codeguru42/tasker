@@ -255,6 +255,15 @@ request for a new issue. The issue reading is the reading of the question sessio
 issue reading is a guess. It goes through the confirm question of [Send a decision](#send-a-decision), as each other
 guess does.
 
+A planned edit is a change of a file that a plan, a draft, a report or another file of the question holds. The question
+does not make the change, and a later step makes it, for example the task of a ticket. A change of the title or the body
+of an issue is not a planned edit, also when a file holds its new text. A planned edit is not a write action. It is also
+not a request of the paragraph that starts "These kinds are requests". The user does not ask for a planned edit in the
+pane.
+
+The shown edit is the part of the first-reply text that gives a planned edit. [The shown edit](#the-shown-edit) gives
+its rules.
+
 A [write subagent](#the-pane-owner-handles-a-decision) is a subagent of the pane owner. It runs one run of
 write-subagent actions in a row of one settled decision message. An exception covers a decision message that does not
 settle the question. For that message, a write subagent runs the metadata requests of the message, as
