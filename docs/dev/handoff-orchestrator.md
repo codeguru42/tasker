@@ -477,8 +477,9 @@ handoff file:
   [The start of the new orchestrator](#the-start-of-the-new-orchestrator). The first step of the prompt is the prompt
   read of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The prompt also names each extra doc.
   An extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
-  [the re-read rule](doc-reads.md#the-re-read-rule) does not hold. The old orchestrator fills
-  [`prompt-templates/handoff/orchestrator.md`](../../prompt-templates/handoff/orchestrator.md). `{{SCOPE}}` is the
+  [the re-read rule](doc-reads.md#the-re-read-rule) does not hold. The fixed list holds each page of the list "The
+  pages". So a page is never an extra doc, also a page that the old orchestrator read on need. The old orchestrator
+  fills [`prompt-templates/handoff/orchestrator.md`](../../prompt-templates/handoff/orchestrator.md). `{{SCOPE}}` is the
   scope, `{{HANDOFF_PATH}}` the path of the file, `{{SESSION_NAME}}` the session name, `{{FIRST_FREE_ITEM_ID}}` the
   first free item id and `{{EXTRA_DOCS}}` the extra docs with the label "Extra docs:", or empty. Then it splits the
   result on newlines, drops each empty line and joins the rest with one space, so that the prompt is one line. An empty
@@ -669,18 +670,20 @@ handoff file.
 The new orchestrator does its start in this order:
 
 1. The start reads. The prompt read of the handoff prompt is their first part. The prompt read does step 1 of
-   [the doc-read rule](doc-reads.md#the-doc-read-rule). Then the new orchestrator makes a complete read of each doc of
-   the orchestrator, as the start part of [the re-read rule](doc-reads.md#the-re-read-rule) says. Then the start reads
-   end. The new orchestrator does the start reads one time. It does not do them again after the start checks.
+   [the doc-read rule](doc-reads.md#the-doc-read-rule). Then the new orchestrator makes the rest of its start reads, as
+   [The start reads](../orchestrator.md#the-start-reads) says. The handoff prompt names
+   `docs/dev/handoff-orchestrator.md` and `docs/dev/handoff.md` for its start steps, so both get a complete read. Each
+   extra doc gets one too. No other page gets a complete read. Then the start reads end. The new orchestrator does the
+   start reads one time. It does not do them again after the start checks.
 2. [The start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff file.
 3. [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder), only after all start checks pass.
 4. The steps of this section that follow the check of the handoff folder.
 
 This is the order of a first start: the complete start reads, then the start checks, then the role work. The start
-checks need the start docs. For example, step 1 of the start checks reads the own name as
-[docs/sessions.md](../sessions.md) says, and the prompt read does not read `docs/sessions.md`. The start checks decide
-whether the session does role work. The check of the handoff folder picks the handoff file of the work, and it can tell
-the user about a newer file. So a check before all start checks pass gives work and a message with no use.
+checks need the start docs and the docs that the prompt names. For example, step 1 of the start checks reads the own
+name as [docs/sessions.md](../sessions.md) says, and the prompt read does not read `docs/sessions.md`. The start checks
+decide whether the session does role work. The check of the handoff folder picks the handoff file of the work, and it
+can tell the user about a newer file. So a check before all start checks pass gives work and a message with no use.
 
 If a step of the start checks fails, the new orchestrator is a failed session. An example is a stop by step 3 for a row
 of `herdr agent list` with the own name and a tab id that is not the tab id of the handoff file. The failed session
