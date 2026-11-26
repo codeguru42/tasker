@@ -41,6 +41,11 @@ rule.
   user. For a subagent, the fact or the question goes in its result. An example is the bullet of
   [The blocked-by links](#the-blocked-by-links) that starts "The planner gives the reasons for the links in the chat
   with the user". For a planner, the rule keeps its meaning.
+- If a call on a file of its draft fails, the result gives the command, the path and the error. The files are the draft
+  file, the report file, the record file and the body file. After a denial, the result keeps the exact call and the
+  exact text of [the tool-block rule](tasker-commands.md#the-tool-block-rule).
+  [A failed call on a file of a draft](planner-subagent.md#a-failed-call-on-a-file-of-a-draft) gives the steps that
+  follow. A missing draft file and a failed size count are the exceptions.
 - After a [refused `SubagentHandback` call](limits.md#the-answer-wait-rule), the subagent sends the same result with
   `SendMessage` to the session that started it. The first line of the message says that Claude Code refused the
   `SubagentHandback` call. Then the subagent ends its turn.

@@ -39,6 +39,14 @@ gives the scratch folder under `/tmp` to each issue subagent.
 The pull of step 1 of the doc-read rule is no write of a file, as
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
 
+## A missing draft file
+
+The prompt can give the path of a draft file that is missing. This is no failure, and it starts no bar. The subagent can
+write a new draft at the same path from the facts of its prompt, the question and the answer. Whether these facts are
+enough is its judgment. If it writes a new draft, its report says that the draft file was missing. If it writes none,
+its result gives the path and the error. [A missing draft file](planner-subagent.md#a-missing-draft-file) gives the case
+of the planner subagent.
+
 ## A comment draft
 
 A comment draft is the draft of a comment of a planner subagent on an issue. The prompt names it with the kind of the
@@ -82,9 +90,10 @@ the text after the cut. The count and the cut run before each report, not only a
 a review gets that review.
 
 The report gives the count. After a cut, it also gives the count before the cut and each removal. If the count fails,
-the report gives the command and the error. For a denied count, the report gives the exact command and the exact text of
-the denial. If the count after the cut is still over the target, the report gives that count as a fact. The draft then
-goes on under the existing rules, and the count of The count of the body still stops a body over the limit.
+the report gives the command and the error. A failed size count starts no bar. For a denied count, the report gives the
+exact command and the exact text of the denial. If the count after the cut is still over the target, the report gives
+that count as a fact. The draft then goes on under the existing rules, and the count of The count of the body still
+stops a body over the limit.
 
 A cut is a change of the draft, as each other change of the issue-draft subagent is:
 
