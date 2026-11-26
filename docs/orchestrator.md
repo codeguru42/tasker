@@ -64,7 +64,7 @@ The orchestration pages are `docs/orchestrator.md` and the pages of this list, "
 - [docs/dev/question-pane.md](dev/question-pane.md): "A question pane", "The question file" and "The pane handoff".
 - [docs/dev/pick-the-tickets.md](dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket
   rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold", "The end of an
-  orchestrator" and "The prompt of a task subagent".
+  orchestrator", "The prompt of a task subagent" and "The start of a task subagent".
 - [docs/dev/doc-reads.md](dev/doc-reads.md): the re-read rule, the notice rule, the task subagent notice and the
   doc-read rule.
 - [docs/dev/run-one-ticket.md](dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base
