@@ -169,8 +169,8 @@ gives the state of the task after its command succeeds.
     `origin` can still exist.
 11. After `tasker finish`, post a comment on the issue that starts with `## Decisions made during implementation`. List
     the choices that the issue did not state, with the reasons. Name each detail that the issue did not give. A list
-    item of the comment has no bold text at its start. The task subagent writes the comment in its final form before it
-    posts it, because GitHub keeps the history of each edit.
+    item of the comment has no bold text at its start. The task subagent writes the comment in its final form. Before
+    the post, it follows [the self-check rule](rules.md#docs) of rules.md.
 
 ### The final report
 

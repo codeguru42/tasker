@@ -163,6 +163,9 @@ priority. [The project board](issues.md#the-project-board) gives the commands of
    a longer timeout. If `gh issue create` fails, no issue exists, and [the failure rule](limits.md#the-failure-rule)
    applies. The task subagent keeps waiting, and the task stays in `landed`.
 
+   Before the post, the orchestrator follows [the self-check rule](rules.md#docs) of rules.md over the title and the
+   body file.
+
    If `gh issue create` worked, set the priority `P0` on the card of the new issue. First, wait for the card:
    `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`.
    `<number>` is the number of the new issue, from the URL that `gh issue create` prints. The workflow of the board adds

@@ -939,7 +939,8 @@ orchestrator does these steps:
    subagent can start from them. Examples are the state of the task, the open plan questions, the answers so far and the
    facts that the task subagent tested. For a stacked task, the comment gives the start base of the last read when the
    work of the task subagent ended. The final report gives it, or says that the task subagent held none (see
-   [the comeback rule](run-one-ticket.md#the-comeback-rule)).
+   [the comeback rule](run-one-ticket.md#the-comeback-rule)). Before the post, follow
+   [the self-check rule](rules.md#docs) of rules.md.
 7. List the open issues that the deferred issue blocks:
    `gh issue view <number> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. For each issue
    of the list, read its milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The command
@@ -1071,6 +1072,9 @@ posts an answer comment at once, with no approval of the user, as for a hold com
 `## Answer to an open question of a ticket on hold`, and it gives the answer and the link of its hold comment. A hold
 comment with an answer comment no longer counts. If the post of an answer comment fails,
 [the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start until the post works.
+
+Before the post of each hold comment and each answer comment, the orchestrator follows
+[the self-check rule](rules.md#docs) of rules.md.
 
 When a hold ends, a ticket with a task in flight comes back as the last paragraph of the defer rule says. A ticket with
 no task starts as any other ticket. The reason for the label: a card in Todo looks like a ticket that can start.
