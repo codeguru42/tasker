@@ -43,6 +43,8 @@ Each send of the docs to the planner of the orchestrator is a planning request. 
 - The paragraph of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) about an old orchestrator.
 - Each relay, request, open finding, accepted proposal and recurrence that a
   [question pane](question-pane.md#a-question-pane) sends to the planner of the orchestrator.
+- The planning request of late matches that [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner)
+  gives.
 
 For each item of planning work of a planning request, the orchestrator of the kind `claude` starts a planner subagent,
 as [The start](#the-start) says.
