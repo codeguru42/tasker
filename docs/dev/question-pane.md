@@ -190,10 +190,10 @@ comment and a measure. The sender does that step.
 Such a step is a proposed write. The question session judges whether the question proposed the step. This judgment is
 open on purpose.
 
-These kinds are requests, not write actions: a change of the title or the body of an issue, a comment on an issue, a add
-of a blocked-by link, a change of the field `Priority`, and a change of a tracked file of the repo. A change of the text
-of an issue and a comment count as requests only when the message of the sender did not propose them. A step that the
-message proposes stays a step of the sender. A removal of a blocked-by link that the user asks for is a link-removal
+These kinds are requests, not write actions: a change of the title or the body of an issue, a comment on an issue, an
+add of a blocked-by link, a change of the field `Priority`, and a change of a tracked file of the repo. A change of the
+text of an issue and a comment count as requests only when the message of the sender did not propose them. A step that
+the message proposes stays a step of the sender. A removal of a blocked-by link that the user asks for is a link-removal
 request, not a request. [The actor of each write action](#the-actor-of-each-write-action) gives the actor of each kind
 and of each request.
 
@@ -1453,11 +1453,11 @@ sender decide approve no write action. A write action marked "not approved" does
 decide approve no write action. A message that does not settle the question starts no write subagent, apart from the
 case of the next paragraph.
 
-The words of the user that ask for a metadata change with no look-first word are the approval of its command. If a
-message does not settle the question, the pane owner still starts one write subagent for its metadata requests. A
-request with a guess that the user did not accept does not run. The pane owner starts no actor for another write action
-of such a message. In a settled message, the metadata requests run in the order of the message, as the paragraph on the
-order of the actors says.
+The words of the user that ask for a metadata change or a link removal with no look-first word are the approval of its
+command. If a message does not settle the question, the pane owner still starts one write subagent for its metadata
+requests and its link-removal requests. A request with a guess that the user did not accept does not run. The pane owner
+starts no actor for another write action of such a message. In a settled message, the metadata requests and the
+link-removal requests run in the order of the message, as the paragraph on the order of the actors says.
 
 #### The actor of each write action
 
@@ -1468,7 +1468,8 @@ Each kind of write or request of [Terms](#terms) has one actor.
 | A new issue                                                                    | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
 | A change of the title or the body of an issue that the message did not propose | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
 | A comment on an issue that the message did not propose                         | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
-| A change of a blocked-by link or of the field `Priority`                       | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| An add of a blocked-by link or a change of the field `Priority`                | The planner of the orchestrator, as a request                                                                                                                                                                                                                                                                                                                                                                                                      |
+| A removal of a blocked-by link of a link-removal request                       | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | A change of the metadata of an issue                                           | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | A write of a user-level file                                                   | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | A change of a tracked file of the repo                                         | The planner of the orchestrator, as a request for a new issue                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -1482,12 +1483,16 @@ Each kind of write or request of [Terms](#terms) has one actor.
 The order rule below covers only the rows with the write subagent or the orchestrator as the actor. The send of a task
 change is an action of the orchestrator. The next actor starts only after the report of the task subagent.
 
-The write subagent runs no other kind of write: no write to the text of an issue, no comment, no link, no git write, no
-`herdr` command, no message to a session and no `tasker` command. A move of an issue into "Future" is a metadata change.
-The write subagent also removes each link of the issue to an open issue in the same step, as the "Future" bullet of
+The write subagent runs no other kind of write: no write to the text of an issue, no comment, no add of a link, no
+removal of a link other than the two removals of this paragraph, no git write, no `herdr` command, no message to a
+session and no `tasker` command. A move of an issue into "Future" is a metadata change. The write subagent also removes
+each link of the issue to an open issue in the same step, as the "Future" bullet of
 [The blocked-by links](issue-subagents.md#the-blocked-by-links) says. For that removal, the write subagent runs only the
 link-removal commands of step 7 of [the defer rule](pick-the-tickets.md#the-defer-rule). The other steps of the defer
 rule, for a task in flight, are not a write action of the write subagent. The approval of the move covers that removal.
+
+For a link-removal request, the write subagent runs only the removal commands of the message. It adds no link, and it
+runs no read before a removal. The user names each link, and the words of the user are the approval.
 
 The answer to the sender names each write action and says that the orchestrator tells the user the result. The actors
 start after the answer, also after a failed send of it. The write actions of one settled message run in the order of the
@@ -1497,9 +1502,9 @@ the report of the actor before it. A request is not part of this order. The orch
 orchestrator one time and does not wait for it, as the paragraph on requests says. A failure of any write action stops
 each later write action. The orchestrator tells the user each action that did not run.
 
-The metadata requests of a message that does not settle the question run in the order of the message. That message has
-no answer to the sender, so the write subagent starts after the ack. A failure of one request stops each later request,
-and the orchestrator tells the user each request that did not run.
+The metadata requests and the link-removal requests of a message that does not settle the question run in the order of
+the message. That message has no answer to the sender, so the write subagent starts after the ack. A failure of one
+request stops each later request, and the orchestrator tells the user each request that did not run.
 
 The write subagent first writes each input file at its path, with the slug of the orchestrator. Then it does its actions
 in order. It reports the exit code and the output of each command, and the orchestrator then tells the user the result
@@ -1536,9 +1541,10 @@ each `tasker` command fails, also the commands of each running task subagent.
 
 The write subagent keeps each rule of the docs for that kind of write. Examples are
 [The reads before the write](issues.md#the-reads-before-the-write) for the state of an issue and the "Future" bullet of
-[The blocked-by links](issue-subagents.md#the-blocked-by-links). The approval of the user in the message covers each
-write that such a rule adds to the action. If such a rule gives a step with the user, the write subagent stops before
-that write and reports. The orchestrator then tells the user, and the action does not run.
+[The blocked-by links](issue-subagents.md#the-blocked-by-links). "The reads before the write" covers an add of a link
+and a change of a title or a body, not a removal of a link-removal request. The approval of the user in the message
+covers each write that such a rule adds to the action. If such a rule gives a step with the user, the write subagent
+stops before that write and reports. The orchestrator then tells the user, and the action does not run.
 
 The write subagent runs no `tasker` command. The orchestrator sends each task change to a task subagent. It runs
 `tasker model` on the words of the settled message, and each read-only command, itself.
@@ -1564,6 +1570,56 @@ failed command is a command that cannot start or that exits with an error. A wri
 skips also counts as a failed command. The orchestrator then tells the user the command and the error, as
 [the failure rule](limits.md#the-failure-rule) says. If the write subagent ends with no report, the orchestrator tells
 the user that the results are not known.
+
+For a removal of a link-removal request, the report of the write subagent gives the exit code and the output, and the
+orchestrator tells the user. A non-zero exit code is a failed command, also for a link that does not exist. Exit code 0
+counts as a removed link. This is the first-run measure, because no one measured the exit code of such a removal before.
+
+#### The read of the board after a removal
+
+After a write subagent that got a link-removal request ends, the orchestrator reads the board at once. A freed ticket
+then does not wait for the board watch job.
+
+- Not started: a failed start runs no removal, and no read follows. The orchestrator tells the user each action that did
+  not run.
+- Running: the read waits for the end of the write subagent. Each other read of the board keeps its time.
+- Ended: the orchestrator reads the board after the report. A later failed command of the same write subagent does not
+  stop the read. An end with no report also gives the read, because a removal can have run.
+
+The read is a normal read of the board of the scope, as the board-read bullet of
+[Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The fill rule applies after it. Each rule that stops a
+start still holds, for example the wait before a handoff. The read is not a write action.
+
+A failed read follows [the failure rule](limits.md#the-failure-rule). The orchestrator starts no ticket that the read
+covers until a later read works.
+
+A removed link can free an issue of another milestone. The orchestrator sends no message about it to a peer. The peer
+finds the freed issue at its next read of the board.
+
+#### The link-removal request for each kind of orchestrator
+
+The rule holds for each kind of orchestrator, as the metadata-request rule does, so that each kind has one path. No one
+measured a pi start of a write subagent, as the known pi limit above says. A failed start runs no action.
+
+The rule has these gates:
+
+- The list of the write subagent in [allowed-commands.md](allowed-commands.md) names the removal command.
+- The permission table of [permissions.md](permissions.md) does not change.
+- The rules of Claude Code: the ask rules of the setup docs name no `gh` command, and the tracked
+  `.claude/settings.json` holds only `Bash(tasker *)`. No one read `$HOME/.claude/settings.json` for this issue. The
+  classifier of auto mode decides a call that no rule matches.
+- The tool-block rule of the write subagent, which the paragraph below gives, does not change.
+
+Each other removal of a blocked-by link keeps its actor and its steps:
+
+- The removal at a move into "Future" or into another milestone.
+- The removal at the start of a hold.
+- The removal of a link of a race or of a reversed link.
+- The removal in the offer of an outside blocker.
+- The removal in an answer to a design gap.
+
+An answer in a pane to a question of one of these steps is not a link-removal request, because the item proposed the
+removal.
 
 A call of the write subagent can get a [tool block](tasker-commands.md#the-tool-block-rule). After a check failure of
 that rule, the write subagent first runs the same call again one time, in the same form. After each other tool block,
@@ -1610,13 +1666,13 @@ with the answer. A failed relay invokes the failure rule. The orchestrator sends
 wait for it.
 
 The pane owner sends each [request for a new issue](#terms) of a decision message to the planner of the orchestrator. It
-does the same for each other request of [Terms](#terms): a change of the title or the body of an issue, a comment, a
-change of a blocked-by link or of the field `Priority`, and a change of a tracked file of the repo. It sends the request
-one time, also when the message does not settle the question. The pane does not wait for it. The message starts with
-`From the user:`. It names the question pane and the question id. It gives the words of the user word for word and each
-guess of the question session that the user accepted, still marked as a guess. A message from a pane that the user
+does the same for each other request of [Terms](#terms): a change of the title or the body of an issue, a comment, an
+add of a blocked-by link, a change of the field `Priority`, and a change of a tracked file of the repo. It sends the
+request one time, also when the message does not settle the question. The pane does not wait for it. The message starts
+with `From the user:`. It names the question pane and the question id. It gives the words of the user word for word and
+each guess of the question session that the user accepted, still marked as a guess. A message from a pane that the user
 closed with a confirm question open holds no guess. For a title or body request, it gives the words of the user and each
-guess that the user accepted, with no exact text and no start hash. For a comment, a change of a blocked-by link or a
+guess that the user accepted, with no exact text and no start hash. For a comment, an add of a blocked-by link or a
 change of the field `Priority`, it gives the exact text and the start hash.
 
 The request goes in a message of its own. Such a message is a relay to the planner of the orchestrator, not an answer to
@@ -1639,7 +1695,7 @@ from a read of the issue, as [Before a post](issues.md#before-a-post) and
 and from the issue reading, if the user accepted one. If they name no single issue, the planner posts nothing and asks
 the user first.
 
-For a comment, a change of a blocked-by link or a change of the field `Priority`, the planner runs its review loops on a
+For a comment, an add of a blocked-by link or a change of the field `Priority`, the planner runs its review loops on a
 text that the user approved in a pane. If a loop changes the text, the planner posts the changed text with no new
 approval of the user. It still runs each other rule of [Before a post](issues.md#before-a-post). This paragraph is a
 reading of the answer of the user, not the words of the user.
@@ -2039,7 +2095,8 @@ stands right after the header. The message has five parts:
 - Each word of the user in the pane, word for word, in its order
 - Each reading of the session, marked as a guess
 - Each finding that no message to the pane owner gave yet, for example a stated doc rule, a fact, a preference, a
-  request of [Terms](#terms), a write action or a metadata request, each with the words of the user word for word
+  request of [Terms](#terms), a write action, a metadata request or a link-removal request, each with the words of the
+  user word for word
 
 No one measured a size limit of `herdr pane send-text` for a long message. If the send fails, the question session tells
 the user in the pane, as for each failed send, and the failure of a missing pane handoff below applies.
@@ -2063,15 +2120,15 @@ fact or preference, and each request of [Terms](#terms), to the planner of the o
 send gives the words of the user word for word and no guess. The question keeps its question file, because no decision
 settled it.
 
-Each write action and each metadata request of the pane handoff does not run, because the user answered no confirm
-question for them. The pane handoff file marks each one "not run", with the words of the user. The handoff file gives
-each one with the mark, as
+Each write action, each metadata request and each link-removal request of the pane handoff does not run, because the
+user answered no confirm question for them. The pane handoff file marks each one "not run", with the words of the user.
+The handoff file gives each one with the mark, as
 [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The old
-orchestrator tells the user in its tab. The user can ask for each such action again. A decision message that the old
-orchestrator accepts before the pane handoff gets the usual steps of
-[The pane owner handles a decision](#the-pane-owner-handles-a-decision), also its write subagent, for a settled message
-and for a message that does not settle the question. The wait for the write subagent and the task change stay in
-[The panes and the write subagents](handoff-orchestrator.md#the-panes-and-the-write-subagents).
+orchestrator tells the user in its tab. The user can ask for each such action again. A link-removal request does not go
+to the planner of the orchestrator. A decision message that the old orchestrator accepts before the pane handoff gets
+the usual steps of [The pane owner handles a decision](#the-pane-owner-handles-a-decision), also its write subagent, for
+a settled message and for a message that does not settle the question. The wait for the write subagent and the task
+change stay in [The panes and the write subagents](handoff-orchestrator.md#the-panes-and-the-write-subagents).
 
 Then the old orchestrator sends the close request. The rounds run, and the pane closes with no reuse. The report of the
 rounds leaves out each finding of a pane handoff that got the ack and each finding of a decision message.
