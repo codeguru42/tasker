@@ -1472,9 +1472,11 @@ An orchestrator of the kind `claude` does these steps at each start of a task su
 
 A fork gets the context of the orchestrator, and the prompt of a task subagent gives only the context of its ticket. On
 2026-11-21, the tool schema of the `Agent` tool said that a fork ignores `model` and `effort`. On 2026-11-22, it said
-again that a fork ignores `effort`. A task subagent writes files, and on 2026-11-21, the list of the subagent types left
-`Edit` and `Write` out of the tools of `Explore` and `Plan`. No one read the version of Claude Code at these reads. They
-are reads of a tool schema and of a list, not measures of a start.
+again that a fork ignores `effort`.
+
+A task subagent writes files. On 2026-11-21, the list of the subagent types left `Edit` and `Write` out of the tools of
+`Explore` and `Plan`. No one read the version of Claude Code at these reads. They are reads of a tool schema and of a
+list, not measures of a start.
 
 The steps cover each start of a task subagent. This includes a task subagent for a whole ticket and a task subagent for
 one task change. It also includes a second session for the same ticket, with a suffix.
