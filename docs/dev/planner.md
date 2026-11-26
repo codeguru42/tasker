@@ -226,8 +226,10 @@ The reason: each review costs at least one issue-review subagent. On 2026-11-04,
 a median of about 120,000 tokens of context.
 
 The planner then does each step after the reviews. Examples are a question to the user, the post and the report of the
-post. When it posts, the planner adds the links. Links between drafts that are not posted yet stay with the planner,
-from its table of the needs and the likely files.
+post. Before the post, the planner gives each blocked-by link of the draft to the issue-post subagent, as
+[The prompt of an issue subagent](planner-subagent.md#the-prompt-of-an-issue-subagent) says. The issue-post subagent
+adds the links. Links between drafts that are not posted yet stay with the planner, from its table of the needs and the
+likely files.
 
 Before the planner sends a question of a report to the user, it applies the paragraph of
 [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of issue-draft.md that starts "The
@@ -369,7 +371,8 @@ After the starter starts an agent, it does these steps:
 2. End the turn with no other tool call.
 3. If the report of the agent arrives, use it. If a wait notification arrives, end the turn again. If an end
    notification arrives with no report, follow
-   [The wait for an issue subagent](planner-subagent.md#the-wait-for-an-issue-subagent).
+   [The wait for an issue subagent](planner-subagent.md#the-wait-for-an-issue-subagent) for an issue subagent. For a
+   planner subagent, follow [The life of a planner subagent](planner-subagent.md#the-life-of-a-planner-subagent).
 
 The starter starts no background `sleep` for the wait, and it reads no clock. The wait has no time limit. The harness
 starts the starter again with the report and with each harness notification.
