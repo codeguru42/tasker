@@ -186,7 +186,8 @@ findings of each draft in the record file.
 - K3: `git -C <local clone> show origin/main:<path>`, for each doc that it reads. Also
   `git -C <local clone> grep -n -E '<pattern>' origin/main -- <paths>` for a search of doc words, and
   `git -C <local clone> log origin/main` and `git -C <local clone> show <commit>` for what a closed issue of a match
-  landed.
+  landed. Also `git -C <local clone> grep -n -A1 -E '<pattern>' origin/main -- <paths>`, for the end of a line in a
+  search of doc words, as [the doc-search rule](rules.md#docs) says.
 - K4: `git -C <local clone> fetch origin`, before its first doc read.
 - K5: these reads:
   - The state read `gh issue view <number> --json state -q .state`
