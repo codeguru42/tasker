@@ -112,10 +112,10 @@ planner subagent whose wait a word of the user ended holds no place in the count
 Before each start of a planner subagent, the orchestrator follows [The wait for a busy path](#the-wait-for-a-busy-path).
 
 In one session of the orchestrator, two planner subagents never give two drafts one file name in the folder of
-[The prompt](#the-prompt). This also covers the draft of an ended planner subagent that waits for a decision of the
-user. Each new draft file name of a planner subagent starts with its own name and `-`, for example `plan-4-terms.md`.
-The limit of 24 characters still holds. The planner subagent chooses each draft file path in a prompt, so this needs no
-read and no new command.
+[The prompt](#the-prompt), with one exception. The known limit about a compaction in this section is that exception.
+This also covers the draft of an ended planner subagent that waits for a decision of the user. Each new draft file name
+of a planner subagent starts with its own name and `-`, for example `plan-4-terms.md`. The limit of 24 characters still
+holds. The planner subagent chooses each draft file path in a prompt, so this needs no read and no new command.
 
 The cost: up to `maxPlannerSubagents` planner subagents and as many subagents of the three kinds run in the session of
 the orchestrator, with its task subagents. Each planner subagent that a late report starts again adds one to each count.
@@ -140,8 +140,9 @@ These known limits hold:
   read. A new draft goes to the old folder, so it can get the file name of an older draft there. The new draft and its
   record file then overwrite the old ones.
 - After a compaction of the context, the orchestrator can lose the counts that it gave in its session. Then it can give
-  a name again. Two planner subagents of one session can then have one name, and their files can clash. No one measured
-  what the Agent tool does with a repeated name.
+  a name again. Two planner subagents of one session can then have one name, and their files can clash. This breaks the
+  rule that each name is new in the session of the orchestrator, as the paragraph that starts "In one session of the
+  orchestrator" gives it. No one measured what the Agent tool does with a repeated name.
 
 ### The wait for a busy path
 
@@ -984,9 +985,11 @@ Read tool. The type is `general-purpose`. On 2026-11-19, with Claude Code 2.1.32
 "Tools: \*" for `general-purpose`.
 
 The planner subagent gives each subagent a name with the `name` option of the Agent tool. Each name is new in the
-session of the orchestrator, with at most 64 characters. The form is `<planner subagent name>-<kind>-<file>-<count>`.
-`<kind>` is `draft`, `review` or `post`. `<file>` is the draft file name without `.md`. `<count>` counts the starts of
-that kind for that draft file in that planner subagent, from 1. An example is `plan-4-review-plan-4-terms-1`.
+session of the orchestrator, except after a compaction, as the known limits of
+[The count of planner subagents](#the-count-of-planner-subagents) say. Each name has at most 64 characters. The form is
+`<planner subagent name>-<kind>-<file>-<count>`. `<kind>` is `draft`, `review` or `post`. `<file>` is the draft file
+name without `.md`. `<count>` counts the starts of that kind for that draft file in that planner subagent, from 1. An
+example is `plan-4-review-plan-4-terms-1`.
 
 With a count below 100, a name has at most 47 characters. A planner subagent name has at most 12 characters, as
 [The name](#the-name) says. A draft file name has at most 24, as
