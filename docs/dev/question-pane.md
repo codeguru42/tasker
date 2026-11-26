@@ -990,6 +990,58 @@ it. The question session asked again for an approval. It showed a view of the dr
 user then asked what the approval covered. The user gave this rule: "There is no need for an "undo step" when you ask
 for approval to post an issue."
 
+### The shown edit
+
+If a question is about a [planned edit](#terms), the first-reply text gives the shown edit. The pane owner judges
+whether a question is about a planned edit. This judgment is open on purpose. A question about no planned edit has no
+shown edit.
+
+The shown edit has one of two forms. The path form gives the path of the file that holds the edit and the line of the
+edit in that file. The block form gives the old text and the new text of the edit in one code block. The block marks
+which text is old and which text is new. The pane owner chooses the form and the marks. This judgment is open on
+purpose.
+
+The pane owner prepares the shown edit when it prepares the rest of the first-reply text. At that step, the shown edit
+gives the edit as the pane owner knows it. The question file holds the shown edit as part of the first-reply text. The
+question session shows it word for word, as it shows the rest of that text.
+
+The limit of five sentences of [The question session](#the-question-session) stays. The path and the line of the path
+form count as a path of the question, so they do not count in that limit. A sentence that only names the file, its path
+and the line does not count. The link check and the name and state check can add a link and a few words to an issue key
+in that sentence. Then the sentence still does not count. An example is the sentence "Plan v1 of #978 edits line 74 of
+`<path>`".
+
+The code block of the block form counts as one sentence. If the edit is long, or if the limit has no room for the block,
+the first-reply text gives only the path form. The pane owner judges whether an edit is long. This judgment is open on
+purpose.
+
+The shown edit follows the rules of [The form of a reply](working-with-the-user.md#the-form-of-a-reply). It is a detail
+of the question and not a list. It stands with the other details of the question, before the proposed steps and the
+choices.
+
+The old text and the new text stay word for word in the pane. The pane changes some words and lines on the way to the
+user. If the old text or the new text holds one of these, the first-reply text gives only the path form:
+
+- The word `LINE-BREAK`
+- The word `FIRST-REPLY`
+- A code fence, that is a line that starts with three backticks
+
+The pane owner can know the file of the edit but not the line or the text. Then it reads that file first. After the
+read, it gives one of the two forms, where the read makes that possible.
+
+If the pane owner can give neither form, the first-reply text says that it does not show the edit. That sentence names
+each place of the edit that the pane owner knows, for example the path of the plan. This also holds after a failed read
+of the file of the edit. That sentence does not count in the limit.
+
+A planned edit is not a [write action](#terms). So the shown edit gives no command and no undo step. The rules of
+[The commands in the first reply](#the-commands-in-the-first-reply) for a write action do not change. The rule for a
+[title or body request](#terms) does not change either. The shown edit never gives an old or a new title or body of an
+issue.
+
+The reason: on 2026-11-23, the first reply of the question orchestrator-m31-304 said "Plan v1 of #978 edits line 74 of
+that file" and did not show the edit. The user then asked in the pane: "what is the proposed edit?". No one measured the
+date of that first reply.
+
 ### The prompts
 
 This subsection gives the rules of the opener prompt, the reuse prompt and the session prompt of a question pane. The
