@@ -212,18 +212,23 @@ shows it in that report. In each case, the task subagent also lists each false c
 report.
 
 The needed-doc-change rule: a needed doc change is in the scope of the ticket. The scope of a ticket is what the ticket
-must do, as its issue gives it. A needed doc change is a change of a doc of the repo that an acceptance case of the
-issue needs. A doc of the repo is a Markdown file under `docs/`, or one of the files `AGENTS.md` and `CONTRIBUTING.md`.
-If an acceptance case fails with no change of a doc, the case needs a change of that doc. The case reads the merge
-commit of the work, with each other change of the ticket in place.
+must do, as its issue gives it. A needed doc change has either of these bases:
 
-The rule also covers a doc that the Docs section of the issue does not name. It also covers a doc that a Docs item says
-does not change or stays. This holds also for a Docs item with a true reason. For this rule, an acceptance case counts
-as a requirement of the issue check. The acceptance case wins over such a Docs item. Only the second and the third bound
-below keep the doc as it is.
+- An acceptance case of the issue needs the change of a doc of the repo. A doc of the repo is a Markdown file under
+  `docs/`, or one of the files `AGENTS.md` and `CONTRIBUTING.md`. If an acceptance case fails with no change of a doc,
+  the case needs a change of that doc. The case reads the merge commit of the work, with each other change of the ticket
+  in place.
+- The [consistency rule](rules.md#changes) needs the change of a tracked Markdown file. The consistency rule gives the
+  scope and limits of this basis.
 
-In the issue check, the acceptance case and the current text of the doc are a conflict. This conflict does not change
-what the ticket must do. The task subagent follows the steps that this section gives for such a conflict:
+For either basis, the rule also covers a doc that the Docs section of the issue does not name. It also covers a doc that
+a Docs item says does not change or stays. This holds also for a Docs item with a true reason. An acceptance case counts
+as a requirement of the issue check. For a consistency-based change, the consistency rule wins over such a Docs item.
+Only the second and the third bound below keep the doc as it is.
+
+In the issue check, the acceptance case or the consistency rule and the current text of the doc are a conflict. Neither
+conflict changes what the ticket must do. The task subagent follows the steps that this section gives for either
+conflict:
 
 - It does not stop.
 - It says in the feedback text of the refine of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket) how it
@@ -239,22 +244,27 @@ of a review. For a finding of review 5, see the bullet that starts "If a finding
 in [Review findings](review-findings.md#review-findings). No session asks the user whether the ticket can make a needed
 doc change.
 
-Whether an acceptance case needs a change of a doc is a judgment, open on purpose. The session that has the question
-makes the judgment. In the issue check, that session is the task subagent.
+Whether an acceptance case or the consistency rule needs a change of a doc is a judgment, open on purpose. The drafting
+session makes this judgment for Docs. The task subagent makes it in the issue check and in later steps.
 
 The needed-doc-change rule has these bounds:
 
-- A needed doc change only makes the doc fit the requirements and the acceptance cases of the issue. It adds no rule,
-  fact or reason beyond them.
+- A needed doc change only makes the doc fit the requirements and the acceptance cases of the issue, or removes an old
+  inconsistency that the consistency rule covers. It adds no unrelated rule, fact or reason.
 - If the Out of scope section of the issue excludes the change, the rule does not apply. Then the conflict changes what
   the ticket must do, and the fifth case of [the stop rule](#the-stop-rule) applies.
 - If the issue gives a decision or a word of the user that the doc stays, the rule does not apply either. Then the fifth
   case of the stop rule applies.
-- Each other case of the stop rule still applies, for example a security gap. A Docs item can name a doc only to say
-  that the doc does not change. For the fourth case (a shared file), the issue does not name such a doc.
+- Each other case of the stop rule still applies, including a security gap, a shared file, and a design choice that the
+  issue does not make. A Docs item can name a doc only to say that the doc does not change. For the fourth case (a
+  shared file), the issue does not name such a doc.
 
-The reason: the acceptance cases of an issue already say what the ticket must do. So the user does not decide whether
-the ticket can meet them.
+Only the user changes the scope of a ticket or decides that a doc stays. A Docs item is not a decision of the user.
+
+The user gave the consistency rule for every ticket, so the user does not decide again whether a ticket can follow it.
+The separate reason for the acceptance-case basis is that the acceptance cases already say what the ticket must do. So
+the user does not decide whether the ticket can meet them. A compliant new issue avoids a Docs conflict with the
+consistency rule. An older issue can still have one.
 
 On #968, a ticket of the milestone M31, an edit history of its body on GitHub holds a version of 2026-11-21T21:17:26Z.
 That version said that `docs/dev/question-pane.md` does not change. Its reason was that #963 sends each request to the
@@ -301,7 +311,8 @@ these cases:
 - The plan makes a design choice that the issue does not make. A choice of the implementation is not such a choice. A
   choice of the place or words of a doc change is a choice of the implementation. The bullet of
   [The body of an issue](issue-subagents.md#the-body-of-an-issue) that starts "An issue never dictates the
-  implementation" defines the implementation.
+  implementation" defines the implementation. A choice of which fact is true needs support from code, a landed decision
+  or tracked Markdown. Without that support, it is an unresolved design choice.
 - The plan has a security gap.
 - The plan changes a file that the issue does not name, and another task in progress also changes that file. For
   example, `tasker refine` prints a warning for such a file (see ["Land the work"](land-the-work.md#land-the-work)). If
