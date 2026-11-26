@@ -98,8 +98,11 @@ The user denies a call when the user declines it at a permission prompt.
 Each actor of [the table](permissions.md#the-table) follows these steps for a denial.
 [The report chain](permissions.md#the-report-chain) gives the path of each report.
 
-1. After a denial, the actor runs the denied action in no other form and no part of it. It stops that step. It reports
-   the exact call, the exact text of the denial, the folder of the call, the step and the purpose to its starter.
+1. After a denial, the actor runs the denied action in no other form and no part of it. It stops that step. Some denials
+   stop only the denied call, not the step. They are the search of the open issues, as
+   [step 6 of `/session-review`](../../.claude/skills/session-review/SKILL.md#steps) says. They also include a call of
+   [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner), as that section says. It reports the
+   exact call, the exact text of the denial, the folder of the call, the step and the purpose to its starter.
 2. After a check failure, the actor first runs the same call again one time, in the same form. A second check failure is
    a denial of step 1.
 3. A starter that gets the report sends it on to its own starter, up to the orchestrator.
