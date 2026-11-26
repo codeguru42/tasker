@@ -110,7 +110,7 @@ Each actor of [the table](permissions.md#the-table) follows these steps for a de
    task subagent, the orchestrator relays the word. For a write subagent, the steps of the paragraph of
    [the question pane](question-pane.md#the-pane-owner-handles-a-decision) that starts "The commands after the denied
    call wait" apply. For an issue subagent, the orchestrator relays the word to the planner subagent, and the planner
-   subagent relays it to the issue subagent.
+   subagent relays it to the issue subagent. A word that names no new form keeps the same form.
 5. No third actor runs the denied call. The one exception: the orchestrator runs a call of a task subagent on the word
    of the user, as the paragraph that starts "After a tool block" says, but never a task change. Without a word of the
    user, no actor runs a form of the call.
@@ -118,7 +118,17 @@ Each actor of [the table](permissions.md#the-table) follows these steps for a de
    [A denied command](#a-denied-command). For a check failure, the check-failure bullets below apply.
 7. Only the user approves a permission prompt, in the session where Claude Code shows it. A word of the user in a
    decision message or in a relayed message approves no permission prompt. The recommendation mode of
-   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) never covers a denial.
+   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) never covers a denial. If the user declines
+   the prompt, the command did not run. The session gives no choices and waits for a new word of the user.
+
+No session offers the user a command with the `!` prefix of Claude Code. The rule covers a choice, a recommendation, a
+report and a reply. It covers an ordinary denial, a check failure and a denied `scan` or `store` of
+[The denial records](#the-denial-records). A check failure is no exception. The reason is the word of the user: "I
+prefer to never run a command manually with !". The user can still choose a manual run. The user runs the command and
+gives the exit code and the output. That choice comes from the user. It is not an offer of a session. The result goes,
+with the word of the user, through [the report chain](permissions.md#the-report-chain) to the actor whose step waits. If
+the command ran, the actor follows its steps after a run. If the command did not run, or no result reaches the actor,
+the step stays open. The actor then runs the action in no other form without a new word of the user.
 
 A task subagent runs a git command in the local clone of the orchestrator with `git -C <clone>`, not with
 `cd <clone> && git ...` in a chain.
@@ -214,16 +224,19 @@ them. Then operator-m16 withdrew that guess. The exact call later showed that th
 
 The classifier of auto mode can deny a `gh` write of a planner subagent. The planner subagent gives the exact command,
 the folder and the exact text of the denial in its result, as [The result](planner-subagent.md#the-result) says. The
-orchestrator asks in its [question pane](question-pane.md#start). The user runs the command and gives the exit code and
-the output to the question session in the pane. The question session sends them in its decision message, as
+orchestrator asks in its [question pane](question-pane.md#start). It gives the choices of
+[A denied command](#a-denied-command), with no `!` run. An issue subagent reports through its planner subagent, as
+[the report chain](permissions.md#the-report-chain) says. A session with no role keeps its existing path to the user
+through its main session. If the user chooses a manual run, the user gives the exit code and the output to the question
+session in the pane. That session sends them in its decision message, as
 [Send a decision](question-pane.md#send-a-decision) says.
 
-The message to the planner gives the output of the command, or says that the command did not run. The output goes with
-the words of the user. If the command ran, the planner goes on with its work. If it did not run, the step stays open,
-and the planner runs the action in no other form.
+The message to the planner subagent gives the output of the command, or says that the command did not run. The output
+goes with the words of the user. If the command ran, the planner subagent goes on with its work. If it did not run, the
+step stays open, and the planner subagent runs the action in no other form.
 
-An initial planner gives the user the command directly. A check failure keeps its own bullets. On 2026-10-30, the
-classifier denied `gh issue comment` and `gh issue edit` of planner-m26, and the user ran each command.
+On 2026-10-30, the classifier denied `gh issue comment` and `gh issue edit` of planner-m26, and the user ran each
+command. This record is history and gives no live step.
 
 A check failure is a denial whose text says that the classifier of auto mode gave no verdict. A check failure is a tool
 block, with these differences:
@@ -238,21 +251,22 @@ block, with these differences:
   says that the denial is a check failure. If the second try gets a denial that is not a check failure, that denial is a
   tool block with none of these differences.
 - For a check failure, the orchestrator tells the user the exact command and the link https://status.claude.com/. The
-  task subagent also gives the folder where the call ran, and the orchestrator tells the user that folder. The user can
-  run the command with the `!` prefix of Claude Code, which does not go through the classifier. If the user runs the
-  command, the orchestrator tells the task subagent in its answer that the command ran, with its output.
+  task subagent also gives the folder where the call ran, and the orchestrator tells the user that folder. The
+  orchestrator gives the choices of [A denied command](#a-denied-command). If the user chooses a manual run and gives
+  the result, the orchestrator relays it to the task subagent with the word of the user.
 - The orchestrator follows the same steps for a check failure of its own call: it runs the same call again one time, in
   the same form. If that try also fails with a check failure, the orchestrator tells the user the exact command and the
-  link, so that the user can run the command with the `!` prefix.
-- A planner follows the same steps for a check failure of its own call. If the second try also fails with a check
-  failure, a planner subagent gives the question in its result, and the orchestrator gives the user the link in its
-  pane. The paragraph that starts "The classifier of auto mode can deny" and the paragraphs after it give the steps of
-  the question. An initial planner gives the user the command and the link directly.
+  link, and gives the choices of [A denied command](#a-denied-command).
+- A planner subagent follows the same steps for a check failure of its own call. If the second try also fails with a
+  check failure, the planner subagent gives the question in its result, and the orchestrator gives the user the link in
+  its pane. The paragraph that starts "The classifier of auto mode can deny" and the paragraphs after it give the steps
+  of the question.
 - Each other actor follows the same steps for a check failure of its own call. A second check failure goes up the report
   chain to the orchestrator.
-
-A check failure is the one case where the user can run the call with the `!` prefix, because the classifier gave no
-verdict.
+- The one retry also applies when a run on the word of the user gets its first check failure. If the retry runs, the
+  actor continues its work. If the retry gets an ordinary denial or a second check failure, the step stays open. The
+  facts go to the user again through the report chain, and the user decides again. A report after two check failures
+  says that the denial is a check failure, and it gives https://status.claude.com/. No further automatic retry follows.
 
 On 2026-10-25, in the session of #428, each Bash call that no permission rule allowed failed with this text:
 
@@ -261,7 +275,8 @@ On 2026-10-25, in the session of #428, each Bash call that no permission rule al
 > the action again once, as-is. Repeated attempts are slowed by a growing delay, and after 10 responses in a row without
 > a verdict the turn stops.
 
-The user then ran `gh issue create` with the `!` prefix, and the posts of #482 and #483 worked.
+The user then ran `gh issue create` with the `!` prefix, and the posts of #482 and #483 worked. This record is history.
+It gives no live step and no live actor.
 
 ### The denial records
 
@@ -325,8 +340,9 @@ This section covers a [tool block](#the-tool-block-rule) of a call of a [write s
 of the orchestrator: a denied call of the orchestrator and of each actor of [the table](permissions.md#the-table). A
 denied command of another session stays with the tool-block rule.
 
-The choices that the orchestrator gives hold no `!` run. A check failure keeps its own steps, as
-[the tool-block rule](#the-tool-block-rule) says. The first choice depends on the actor that got the denial:
+The choices that the orchestrator gives hold no `!` run, as the paragraph that starts "No session offers the user a
+command" says. A check failure keeps its own steps, as [the tool-block rule](#the-tool-block-rule) says. The first
+choice depends on the actor that got the denial:
 
 - Task subagent: the orchestrator relays the word, and the task subagent runs the call one time, in the form of the
   word. The orchestrator never runs a task change itself, as step 5 of the denial steps says.
@@ -380,6 +396,10 @@ A denial in the other session is a tool block of that session, and the step of t
 second choice, the user tells the orchestrator whether the command ran. Until then, the step stays open, and the
 orchestrator continues its other work. It does not wait in a loop, as
 [the answer-wait rule](limits.md#the-answer-wait-rule) says for a task subagent.
+
+The user can choose a manual run of the command. The orchestrator does not offer one. The orchestrator relays the exit
+code, the output and the word of the user through the starter chain to the actor whose step waits. The actor then
+follows the steps of the paragraph that starts "No session offers the user a command".
 
 ## The command rules
 
