@@ -950,7 +950,7 @@ The model and the effort go in the Agent call, not in the prompt.
 
 The planner subagent is the starter of each subagent of the three kinds, as
 [The wait for a report](planner.md#the-wait-for-a-report) defines a starter. It judges the end of each one by the kinds
-of notification of that subsection. It ends its turn during the wait.
+of notification of that subsection. It ends its turn during the wait as step 2 of The wait for a report says.
 
 If a subagent of the three kinds ends with no report, [the failure rule](limits.md#the-failure-rule) applies to the
 planner subagent. It starts one new subagent of the same kind for the same step. A refused Agent call is an end with no

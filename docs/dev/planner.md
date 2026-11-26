@@ -380,7 +380,7 @@ minutes after its start.
 After the starter starts an agent, it does these steps:
 
 1. Keep the agent id and the name of the agent.
-2. End the turn with no other tool call.
+2. If the starter has no other step to do while the agent runs, end the turn with no other tool call.
 3. If the report of the agent arrives, use it. If a wait notification arrives, end the turn again. If an end
    notification arrives with no report, follow
    [The wait for an issue subagent](planner-subagent.md#the-wait-for-an-issue-subagent) for an issue subagent. For a
@@ -398,8 +398,8 @@ context, 2 minutes 43 seconds after its hand-back.
 
 For a late report, the planner uses the first bullet of this list that matches:
 
-- If an issue-draft subagent of the draft runs, the late report waits for its report. Then the planner uses this list
-  again for the late report.
+- If an issue subagent of the draft runs, the late report waits for its report. Then the planner uses this list again
+  for the late report.
 - If the draft waits for a decision of the user, the late report waits for that answer. This includes a question in the
   result of a planner subagent and a question in the chat of the initial planner or the ad hoc planner. Then the planner
   uses this list again for the late report. An answer that accepts the draft with no change makes the planner post the
