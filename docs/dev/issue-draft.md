@@ -1,6 +1,6 @@
 ---
 name: issue-draft
-description: Load this document when an issue-draft subagent starts, when a ticket subagent of a planner works on its draft, and when a planner needs the report, the edge cases or a change of an open issue of a draft.
+description: Load this document when an issue-draft subagent starts, and when a planner needs the report, the edge cases or a change of an open issue of a draft.
 ---
 
 # The issue-draft subagent
@@ -9,9 +9,6 @@ This page gives the rules that each [issue-draft subagent](GLOSSARY.md) follows 
 are these:
 
 - Each issue-draft subagent, as [the read rule](issue-subagents.md#the-read-rule) says.
-- Each [ticket subagent](GLOSSARY.md) of a planner, for the work on its draft. It follows each rule of this page, as an
-  issue-draft subagent does. For a ticket subagent, "the issue-draft subagent" on this page names the ticket subagent.
-  The ticket subagent keeps the old read of [the doc-read rule](doc-reads.md#the-doc-read-rule).
 - Each planner, because some steps of a planner name a part of this page. The next paragraph names these steps.
 
 These steps name a part of this page:
@@ -20,8 +17,6 @@ These steps name a part of this page:
   report.
 - The report paragraph of [The post of a draft](planner.md#the-post-of-a-draft).
 - The edge-case sentence of [The escape hatch](planner.md#the-escape-hatch).
-- The sentence of [The review loop of a draft](planner.md#the-review-loop-of-a-draft) that starts "The draft that each
-  planner posts after the last loop".
 - The bullet of [Core features first](working-with-the-user.md#core-features-first) that starts "Each piece of work that
   waits".
 
@@ -38,8 +33,7 @@ title, line 2 is blank, and the body follows. The body file of [Before a post](i
 two lines. A comment draft has no title line, as [A comment draft](#a-comment-draft) says.
 
 It edits only its draft file, its report file and the files of a [scratch folder](plan-review.md#the-state-of-the-user).
-It makes each scratch folder under `/tmp`. These rules come from step 1 of
-[The review loop of a draft](planner.md#the-review-loop-of-a-draft). They also come from
+It makes each scratch folder under `/tmp`. These rules come from
 [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner).
 
 The pull of step 1 of the doc-read rule is no write of a file, as
@@ -85,8 +79,7 @@ Before each report, and before the self-check that comes before that report, the
 A cut of length only changes no meaning. Each requirement, each acceptance case and each fact stays. The cut removes,
 for example, repeated text and table padding. The count and the cut run before the self-check, so the self-check covers
 the text after the cut. The count and the cut run before each report, not only after the last loop, because a cut before
-a review gets that review. The self-check that a ticket subagent runs before its first loop comes before any count, as
-[The self-check](#the-self-check) says. The ticket subagent counts and cuts only before its report.
+a review gets that review.
 
 The report gives the count. After a cut, it also gives the count before the cut and each removal. If the count fails,
 the report gives the command and the error. For a denied count, the report gives the exact command and the exact text of
@@ -101,17 +94,11 @@ A cut is a change of the draft, as each other change of the issue-draft subagent
 
 A cut gets no review of its own. This section adds no exception to a review loop and no new approval rule.
 
-A ticket subagent of a planner runs all its review loops before its report. Its last loop is a loop with no finding that
-it takes, or loop 3. So its count and its cut come after its last loop, and no review follows its report. The draft that
-the planner posts after that last loop includes the cut, in both cases.
-
 ## The self-check
 
 The issue-draft subagent runs the self-check of the simple-english skill over the draft file, as
 [Before a post](issues.md#before-a-post) says. It runs the check before its report, after the count and the cut of
-[The size of a draft](#the-size-of-a-draft). A ticket subagent still runs the check before its first loop, as step 2 of
-[The review loop of a draft](planner.md#the-review-loop-of-a-draft) says. After a cut, a ticket subagent runs the check
-again over the draft file before its report.
+[The size of a draft](#the-size-of-a-draft).
 
 ## The read bans
 
@@ -125,8 +112,6 @@ word for word:
 - Read no credential file, for example a login file of `gh` or `pi`. Read no `.claude/settings.local.json` file. You can
   read the tracked `.claude/settings.json` with `git show origin/main:.claude/settings.json`. If you cannot read a file
   that the draft names, report each fact about it as not tested.
-
-A ticket subagent keeps these bans too.
 
 ## The steps before a post
 
@@ -167,10 +152,10 @@ The prompt of an issue-draft subagent can give the findings of a review. The iss
 finding. It changes the draft, or it dismisses the finding and keeps one line with the reason.
 
 The issue-draft subagent applies [Core features first](working-with-the-user.md#core-features-first) to each finding of
-a review agent and to each question of its own work. It decides each edge case as "later" and keeps the draft in its
-scope. For an edge case, it dismisses the finding or drops the question, with the reason "an edge case, later". It can
-also name a proposed later issue for the edge case in its report, with its milestone. Whether a case is an edge case,
-and whether it gets a proposed later issue, is a judgment of the issue-draft subagent, open on purpose. The report lists
+a review and to each question of its own work. It decides each edge case as "later" and keeps the draft in its scope.
+For an edge case, it dismisses the finding or drops the question, with the reason "an edge case, later". It can also
+name a proposed later issue for the edge case in its report, with its milestone. Whether a case is an edge case, and
+whether it gets a proposed later issue, is a judgment of the issue-draft subagent, open on purpose. The report lists
 each such edge case in its own list, with its proposed later issue.
 
 The paragraph before this one does not cover a security gap or a bug in the core path, as Core features first says. The

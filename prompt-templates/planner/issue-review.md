@@ -1,6 +1,6 @@
 ---
 name: issue-review
-description: Load this template when the planner subagent fills the prompt of an issue-review subagent, or you change that prompt.
+description: Load this template when a planner subagent, a planner session or the main session of an ad hoc draft fills the prompt of an issue-review subagent, or you change that prompt.
 placeholders:
   RULE_DOCS: The two rule documents of the subagent, one path on each line, or none.
   DRAFT_FILE: The path of the draft file that the subagent reviews.

@@ -1,6 +1,6 @@
 ---
 name: issue-post
-description: Load this document when an issue-post subagent starts, when a planner posts an issue, and when a subagent of the main session posts a reviewed ad hoc draft.
+description: Load this document when an issue-post subagent starts, when a planner starts an issue-post subagent for a post, and when a subagent of the main session posts a reviewed ad hoc draft.
 ---
 
 # The issue-post subagent
@@ -14,8 +14,8 @@ outside that section is for an issue post, except a rule that names a comment po
 [The result of an issue-post subagent](#the-result-of-an-issue-post-subagent). The readers of this page are these:
 
 - Each issue-post subagent, as [the read rule](issue-subagents.md#the-read-rule) says.
-- Each planner, for each issue post that it makes. A planner follows each rule of an issue post, as an issue-post
-  subagent does. A planner makes no comment post.
+- Each planner session of the kind `claude` and each planner subagent, because each starts an issue-post subagent for
+  each post and reads its result.
 - A subagent of the main session that posts a reviewed ad hoc draft. The bullet of `docs/dev/working-with-the-user.md`
   that starts "A subagent of the main session posts a reviewed ad hoc draft" gives that post. Such a subagent follows
   each rule of an issue post, as an issue-post subagent does. It makes no comment post.
@@ -62,9 +62,9 @@ Without this rule, the subagent finds its own issue again and posts nothing, so 
 
 ## A comment post
 
-A comment post is the post of one approved comment of a planner subagent on an issue. Only a planner subagent starts an
-issue-post subagent for it, as [The starter of an issue subagent](planner-subagent.md#the-starter-of-an-issue-subagent)
-says.
+A comment post is the post of one approved comment of a planner subagent on an issue. A planner subagent starts an
+issue-post subagent for it, and a planner session keeps its own comments, as
+[The starter of an issue subagent](planner-subagent.md#the-starter-of-an-issue-subagent) says.
 
 ### The prompt of a comment post
 

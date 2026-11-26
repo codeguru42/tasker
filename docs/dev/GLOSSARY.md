@@ -6,17 +6,19 @@ name the sessions of a slug.
 ## Language
 
 **Issue-draft subagent**: A subagent that writes one draft of an issue, or one draft of a comment of a planner subagent.
-It follows [issue-subagents.md](issue-subagents.md) and [issue-draft.md](issue-draft.md). Only a
-[planner subagent](planner-subagent.md) starts it.
+It follows [issue-subagents.md](issue-subagents.md) and [issue-draft.md](issue-draft.md). A
+[planner subagent](planner-subagent.md), a planner session of the kind `claude` and the main session of an ad hoc draft
+start it.
 
 **Issue-post subagent**: A subagent that posts one approved issue, or one approved comment of a planner subagent, on
-GitHub. It follows [issue-subagents.md](issue-subagents.md) and [issue-post.md](issue-post.md). Only a
-[planner subagent](planner-subagent.md) starts it. The subagent of the main session that posts a reviewed ad hoc draft
-is not an issue-post subagent. It keeps its own start.
+GitHub. It follows [issue-subagents.md](issue-subagents.md) and [issue-post.md](issue-post.md). A
+[planner subagent](planner-subagent.md) or a planner session of the kind `claude` starts it. The subagent of the main
+session that posts a reviewed ad hoc draft is not an issue-post subagent. It keeps its own start.
 
 **Issue-review subagent**: A subagent that reviews one draft of an issue, or one draft of a comment of a planner
-subagent. It follows [issue-subagents.md](issue-subagents.md) and [issue-review.md](issue-review.md). Only a
-[planner subagent](planner-subagent.md) starts it. A review agent of a ticket subagent is not an issue-review subagent.
+subagent. It follows [issue-subagents.md](issue-subagents.md) and [issue-review.md](issue-review.md). A
+[planner subagent](planner-subagent.md), a planner session of the kind `claude` and the main session of an ad hoc draft
+start it.
 
 **Item of planning work**: One unit of work that goes to the planner of an orchestrator. It is one lesson, one measured
 fact, one finding, one recurrence, or one proposed issue (also a change of the title or the body of an issue). It is
@@ -71,8 +73,5 @@ the slug of a milestone. The slug is not the path slug or the title slug of the 
 
 **Task subagent**: A subagent that the orchestrator starts for one ticket, or for one task change of a task, with the
 [native subagent tools](pick-the-tickets.md#the-prompt-of-a-task-subagent) of its session. _Avoid_: Agent
-
-**Ticket subagent**: A subagent that a planner starts with the Agent tool for the work on one draft of an issue. A
-review agent is not a ticket subagent.
 
 **User**: The person who works with the sessions.

@@ -1,6 +1,6 @@
 ---
 name: issue-review
-description: Load this document when an issue-review subagent starts, when a review agent of a ticket subagent starts its review, and when a ticket subagent of a planner starts a review agent.
+description: Load this document when an issue-review subagent starts, and when a planner session, a planner subagent or the main session of an ad hoc draft starts an issue-review subagent.
 ---
 
 # The issue-review subagent
@@ -9,12 +9,8 @@ This page gives the rules that each [issue-review subagent](GLOSSARY.md) follows
 readers of this page are these:
 
 - Each issue-review subagent, as [the read rule](issue-subagents.md#the-read-rule) says.
-- Each review agent of a [ticket subagent](GLOSSARY.md), for its review. It follows each rule of this page, as an
-  issue-review subagent does. For a review agent, "the issue-review subagent" on this page names the review agent.
-- Each ticket subagent of a planner. Step 4 of [The review loop of a draft](planner.md#the-review-loop-of-a-draft) gives
-  a review agent the tests and the bans of this page.
-
-The review agent and the ticket subagent keep the old read of [the doc-read rule](doc-reads.md#the-doc-read-rule).
+- Each starter that fills the bans of this page into a prompt: a planner subagent, a planner session of the kind
+  `claude` and the main session of an ad hoc draft.
 
 When a step of its work needs a doc that a link of this page names, a reader reads that doc. A reader does not read it
 at its start, as [The read rule](issue-subagents.md#the-read-rule) of issue-subagents.md says.
@@ -30,9 +26,8 @@ An issue-review subagent starts with no context of the session that started it. 
 of its review, the docs and the code.
 
 A measure can need a change of the state of the user. For such a measure, an issue-review subagent follows the ban on
-the state of the user in [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent). A review agent of a ticket
-subagent gives such a measure as a finding, as [The state of the user](planner.md#the-state-of-the-user) of planner.md
-says.
+the state of the user in [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent). An issue-review subagent
+gives such a measure as a finding, as [The state of the user](planner.md#the-state-of-the-user) of planner.md says.
 
 ## The tests of a draft
 
@@ -108,12 +103,13 @@ A file under `$HOME/.claude/` can hold the settings, the transcripts and the log
 subagent of a planner the scratchpad folder of the planner, so two issue-review subagents can write and read one file.
 [The folder bullet of Limits](limits.md#limits) says the same for a task subagent. Claude Code saves a large output of a
 tool call to a file under `$HOME/.claude/projects/` and gives only a preview in the result. So an issue-review subagent
-needs that read to see the full output. The review agents of 2026-11-07 wrote each file with Bash, which a review agent
-needs for its reads of the repo and of GitHub.
+needs that read to see the full output. The subagents of planner-m16 that reviewed drafts on 2026-11-07 wrote each file
+with Bash, which an issue-review subagent needs for its reads of the repo and of GitHub.
 
-On 2026-11-07, three review agents of planner-m16 wrote a file with the name `open.json` in the scratchpad folder. The
-prompt of one of them banned that write. Another review agent read two saved outputs of its own commands with the Read
-tool, although its prompt banned each read under `$HOME/.claude/projects`. The auto mode classifier denied its Bash
-`grep` of a third saved output with the reason "[PII Data Handling]". Its reads with the Read tool got no denial.
+On 2026-11-07, three subagents of planner-m16 that reviewed drafts wrote a file with the name `open.json` in the
+scratchpad folder. The prompt of one of them banned that write. Another one read two saved outputs of its own commands
+with the Read tool, although its prompt banned each read under `$HOME/.claude/projects`. The auto mode classifier denied
+its Bash `grep` of a third saved output with the reason "[PII Data Handling]". Its reads with the Read tool got no
+denial.
 
 The prompt of an issue-review subagent gives this list word for word through the placeholder REVIEW_BANS.
