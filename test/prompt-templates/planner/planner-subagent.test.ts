@@ -175,6 +175,25 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
     expect(body).not.toMatch(/\bgap\b/i);
   });
 
+  it("describes the draft folder as drafts/ or the old folder while the bar holds", () => {
+    expect(readPromptTemplate(path).placeholders.DRAFT_FOLDER).toBe(
+      "The absolute path of the folder drafts/ of the orchestrator folder, or the folder /tmp/tasker/<own name>/drafts/ while the bar holds.",
+    );
+  });
+
+  it("puts each file of a draft next to its draft file", () => {
+    const body = plannerTemplateBody("planner-subagent");
+    expect(body).toContain("Each file of a draft stands next to its draft file.");
+    expect(body).toContain(
+      "For an item from answers, use the path of the draft file in the item, also when that path is not in the draft folder.",
+    );
+    expect(body).toContain(
+      "- A Read call on a draft file, and a Read call on the report file of an issue-draft subagent, next to its draft file.",
+    );
+    expect(body).toContain("- The record file named <file>.findings.md of each draft, next to its draft file.");
+    expect(body).not.toContain("in the folder of the draft files");
+  });
+
   it("gives the wait command with its quotes", () => {
     const filled = fillPlannerTemplate("planner-subagent", sample);
     expect(filled).toContain(PLANNER_WAIT);
