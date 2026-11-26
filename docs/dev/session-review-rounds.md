@@ -11,9 +11,9 @@ the report and the steps of a failure. It also gives the first target of each pr
 hold rule of a question session. That subsection also defines the report of each round and the final report. That
 subsection wins over this page.
 
-A round is one run of `/session-review`. A memory change, a new proposal and new open work that no earlier round listed
-each count as something new. A round can find a lesson that an earlier round missed, or a new fact from the answers of
-the user.
+A round is one full run of `/session-review`. A memory change, a new proposal and new open work that no earlier round
+listed each count as something new. A round can find a lesson that an earlier round missed, or a new fact from the
+answers of the user.
 
 A round ran only after a call of the session-review skill for it. The report of the rounds names only the rounds that
 ran, and its count of rounds is the count of the rounds that ran. It names no round that the session plans or did not
@@ -24,12 +24,35 @@ that 2 rounds ran, as [The rounds before the close](question-pane.md#the-rounds-
 in the question panes of the questions orchestrator-m31-157 and orchestrator-m31-161, a report of the rounds again named
 rounds that did not run. The user made sure of each count.
 
+In each round, the session runs each step of `/session-review`. A question session still skips the steps that
+[The rounds before the close](question-pane.md#the-rounds-before-the-close) lets a question session skip. A check in the
+thinking of the session, with no summary to the user, is not a round.
+
+Each round reviews at least the whole transcript since the end of the last round of the session. If no round of the
+session ran before, the round reviews at least the whole transcript since the start of the session. This part of the
+transcript includes the answers of the user to the earlier round. Steps 1 and 7 of
+[the session-review skill](../../.claude/skills/session-review/SKILL.md) name no part of the transcript. This rule gives
+steps 1 and 7 a lower bound and takes nothing away from these steps. For a question session,
+[The rounds before the close](question-pane.md#the-rounds-before-the-close) still wins over this page and names no part
+of the transcript.
+
+Each round also reads the list of the summary of the last earlier round of the session. The lower bound of the
+transcript removes no open entry of that list from the summary of the round. A repeat of such an entry is still not a
+new finding, as step 7 (e) of the skill says.
+
+The reason for the full run and the summary of each round: the user can then trust the count of the rounds. The user can
+also trust the claim that the last round found nothing new. On 2026-11-22, the user said, word for word: "you must run
+an entire session review of the transcript since the last review" and "1. This is general for session review rounds, not
+specific to the question pane." On the same day, a round was only a check in the thinking of a session. The round gave
+no summary to the user.
+
 Each session that this page covers does these steps for its rounds:
 
 1. Run one round.
-2. Give the findings of the round to the user. Ask the user about each waiting decision. Use the path that the docs of
-   the session give for a question to the user. Before the next round, settle with the user each waiting decision of the
-   round whose wait did not end.
+2. Give the summary of step 8 of the skill for the round to the user. Give the summary also for a round that finds
+   nothing new. The paragraph that starts "The summary of a round goes" gives the path of the summary. Ask the user
+   about each waiting decision. Before the next round, settle with the user each waiting decision of the round whose
+   wait did not end.
 3. Do steps 1 and 2 again until a round finds nothing new. After step 2 ends, start the next round at once, in the same
    turn. Do not wait for a word of the user. For an orchestrator,
    [The gate of the rounds of an orchestrator](question-pane.md#the-gate-of-the-rounds-of-an-orchestrator) holds the
@@ -45,6 +68,31 @@ The reason for the place: on 2026-11-22, the user said: "Issue #1033 needs to mo
 as a general procedure for review rounds. It isn't specific to the question pane". So the list is on this page, which
 the close request of a question pane already names. On 2026-11-21, the user said: "don't wait for me to tell you to run
 the next review round". This is the reason for the start at once in step 3.
+
+The summary of a round goes on the path that the docs of the session give for the user:
+
+- If the summary holds a waiting decision or a [new open question](question-pane.md#the-rounds-before-the-close), the
+  summary goes on the path for a question to the user.
+- If the summary holds neither, the summary goes on the path for a report to the user. For an orchestrator, this path is
+  a progress report in its own tab, as
+  [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says. The `Report:`
+  line and the id of the progress report come before the summary. The first line of step 8 of the skill stays the first
+  line of the summary.
+- For a question session, both paths are its pane.
+
+This split is a choice of issue #1053, and the user can change the split. For an orchestrator, the rule of
+[Terms](question-pane.md#terms) for the waiting decisions and the open questions of the rounds wins over the split.
+
+The summary of a round comes before the next round. The summary of the last round comes before the report of the rounds.
+For a question session, the report of the rounds is the final report, as
+[The rounds before the close](question-pane.md#the-rounds-before-the-close) says. A failed round needs no summary,
+because the paragraph that starts "If a round or a send of a finding fails" applies to the failed round. If the user
+ends the rounds by the paragraph that starts "The user can end the rounds", no next summary comes.
+
+The summary of a round is not a report of a round of
+[The rounds before the close](question-pane.md#the-rounds-before-the-close). A question session gives the summary of a
+round that finds nothing new in the pane of the question session. The question session sends the pane owner no report of
+that round, as that subsection says.
 
 If a round or a send of a finding fails, [the failure rule](limits.md#the-failure-rule) applies to that session, and its
 rounds end. A failed round is not a round that finds nothing new. In the close, the close then stops at this stage.
