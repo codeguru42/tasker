@@ -16,7 +16,7 @@ const PI_MODEL = "openrouter/deepseek/deepseek-v4.1-flash";
 // The report lines of the session roles in a file with no entry for them.
 const NONE_SESSIONS =
   "planner: none\norchestrator: none\nquestion: none\n" +
-  "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: none\n";
+  "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: none\ntask: none\n";
 
 // Makes sure that the file still holds before and that its folder holds no other file.
 function expectNothingChanged({ dir, path }: { dir: string; path: string }, before: string): void {
@@ -83,7 +83,7 @@ describe("model", () => {
           "plan: opus (effort high)\nexecute: sonnet (effort medium)\nreview: opus (effort high)\n" +
           "planner: opus (effort xhigh)\norchestrator: sonnet (effort max)\n" +
           "question: opus (effort max)\n" +
-          "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: opus (effort max)\n",
+          "issue-draft: none\nissue-review: none\nissue-post: none\nwrite: opus (effort max)\ntask: none\n",
         err: "",
       });
       expect(result.out).not.toMatch(/^operator:/m);
@@ -99,7 +99,7 @@ describe("model", () => {
       expect(result.out).toBe("");
       expect(result.err).toContain("argument 'operator' is invalid");
       expect(result.err).toContain(
-        "Allowed choices are plan, execute, review, planner, orchestrator, question, issue-draft, issue-review, issue-post, write.",
+        "Allowed choices are plan, execute, review, planner, orchestrator, question, issue-draft, issue-review, issue-post, write, task.",
       );
       expectNothingChanged(file, before);
     });
@@ -248,19 +248,36 @@ describe("model", () => {
       expectNothingChanged(file, printedJson(expected).trimEnd());
     });
 
-    it.each(["planner", "orchestrator", "question", "issue-draft", "issue-review", "issue-post", "write"] as const)(
-      "sets a new entry of the role %s in a file with no sessions key",
-      async (role) => {
-        const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
-        const expected = rawFile(file.dataRoot);
-        expected.repos.tasker.sessions = { models: { [role]: { model: "claude-opus-5-5", effort: "high" } } };
+    it.each([
+      "planner",
+      "orchestrator",
+      "question",
+      "issue-draft",
+      "issue-review",
+      "issue-post",
+      "write",
+      "task",
+    ] as const)("sets a new entry of the role %s in a file with no sessions key", async (role) => {
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = { models: { [role]: { model: "claude-opus-5-5", effort: "high" } } };
 
-        const result = await runCommand(model, "model", KEY, "--role", role, "claude-opus-5-5", "--effort", "high");
+      const result = await runCommand(model, "model", KEY, "--role", role, "claude-opus-5-5", "--effort", "high");
 
-        expect(result).toEqual({ code: 0, out: `${role}: claude-opus-5-5 (effort high)\n`, err: NOTE });
-        expectNothingChanged(file, printedJson(expected));
-      },
-    );
+      expect(result).toEqual({ code: 0, out: `${role}: claude-opus-5-5 (effort high)\n`, err: NOTE });
+      expectNothingChanged(file, printedJson(expected));
+    });
+
+    it("sets the entry of the role task", async () => {
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+      const expected = rawFile(file.dataRoot);
+      expected.repos.tasker.sessions = { models: { task: { model: "sonnet", effort: "medium" } } };
+
+      const result = await runCommand(model, "model", KEY, "--role", "task", "sonnet", "--effort", "medium");
+
+      expect(result).toEqual({ code: 0, out: "task: sonnet (effort medium)\n", err: NOTE });
+      expectNothingChanged(file, printedJson(expected));
+    });
 
     it("adds the key models when sessions has no models key", async () => {
       const file = useConfigFile((dataRoot) => {
@@ -428,6 +445,28 @@ describe("model", () => {
       expectNothingChanged(file, before);
     });
 
+    it("prints task: none for the role task with no entry", async () => {
+      useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+
+      const result = await runCommand(model, "model", KEY, "--role", "task");
+
+      expect(result).toEqual({ code: 0, out: "task: none\n", err: "" });
+    });
+
+    it("requires a task entry when only the model is given", async () => {
+      const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
+      const before = readFileSync(file.path, "utf8");
+
+      const result = await runCommand(model, "model", KEY, "--role", "task", "sonnet");
+
+      expect(result).toEqual({
+        code: 1,
+        out: "",
+        err: "the role task has no entry: give the model and --effort\n",
+      });
+      expectNothingChanged(file, before);
+    });
+
     it("requires a write model entry when only the effort is given", async () => {
       const file = useConfigFile((dataRoot) => printedJson(rawFile(dataRoot)));
       const before = readFileSync(file.path, "utf8");
@@ -495,7 +534,7 @@ describe("model", () => {
 
       expect(code).toBe(0);
       expect(help).toContain(
-        "The role to print or to set: an assistant role (plan, execute, review), a session role (planner, orchestrator, question) or a subagent role (issue-draft, issue-review, issue-post, write)",
+        "The role to print or to set: an assistant role (plan, execute, review), a session role (planner, orchestrator, question) or a subagent role (issue-draft, issue-review, issue-post, write, task)",
       );
       expect(help).toContain("xhigh and max are for a session role or a subagent role only");
       expect(help).toContain("each subagent role");

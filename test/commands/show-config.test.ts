@@ -50,6 +50,18 @@ describe("show-config", () => {
     });
   });
 
+  it("prints the task entry of the repo that --repo names", async () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { task: { model: "opus", effort: "high" } } };
+    useConfigFile(() => JSON.stringify(raw));
+    const io = captureIo();
+
+    const code = await run(["show-config", "--repo", "tasker"], { commands: [showConfig], io });
+
+    expect(code).toBe(0);
+    expect(JSON.parse(io.out.join("")).sessions.models).toEqual({ task: { model: "opus", effort: "high" } });
+  });
+
   it("prints the counts that the file sets for the repo that --repo names", async () => {
     const raw = validConfig();
     raw.repos.tasker.sessions = { maxPlannerSubagents: 1, maxTaskSubagents: 5 };

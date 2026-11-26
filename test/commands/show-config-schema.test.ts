@@ -95,6 +95,17 @@ describe("show-config-schema", () => {
     ]);
   });
 
+  it("prints the entries of the subagent role task", async () => {
+    const entries = entriesOf((await showConfigSchemaRun("repos.<key>.sessions.models.task")).out);
+
+    expect(entries.map((entry) => entry.path)).toEqual([
+      "repos.<key>.sessions.models.task",
+      "repos.<key>.sessions.models.task.model",
+      "repos.<key>.sessions.models.task.effort",
+    ]);
+    for (const entry of entries) expect(entry.description).not.toBe("");
+  });
+
   it("prints the counts of planner subagents and task subagents", async () => {
     const entries = entriesOf((await showConfigSchemaRun("repos.<key>.sessions")).out);
     const byPath = new Map(entries.map((entry) => [entry.path, entry]));
@@ -176,7 +187,7 @@ describe("show-config-schema", () => {
     expect(byPath.has("repos.<key>.sessions.models.question.model")).toBe(true);
     expect(byPath.has("repos.<key>.sessions.models.question.effort")).toBe(true);
     expect(byPath.get("repos.<key>.sessions.models.question")?.description).toMatch(/question sessions/i);
-    for (const role of ["issue-draft", "issue-review", "issue-post", "write"]) {
+    for (const role of ["issue-draft", "issue-review", "issue-post", "write", "task"]) {
       expect(byPath.has(`repos.<key>.sessions.models.${role}.model`)).toBe(true);
       expect(byPath.has(`repos.<key>.sessions.models.${role}.effort`)).toBe(true);
     }
@@ -185,13 +196,14 @@ describe("show-config-schema", () => {
       "issue-review": /review subagent/i,
       "issue-post": /post subagent/i,
       write: /write subagent/i,
+      task: /task subagent/i,
     };
     for (const [role, pattern] of Object.entries(subagentWords)) {
       expect(byPath.get(`repos.<key>.sessions.models.${role}`)?.description).toMatch(pattern);
     }
     expect(byPath.get("repos.<key>.sessions.models.planner")?.description).toMatch(/planner subagent/i);
     expect(byPath.get("repos.<key>.sessions.models.planner")?.description).toMatch(/planner session/i);
-    expect(byPath.get("repos.<key>.sessions")?.description).toMatch(/draft, review, post and write subagents/i);
+    expect(byPath.get("repos.<key>.sessions")?.description).toMatch(/draft, review, post, write and task subagents/i);
     for (const path of [
       "repos.<key>.sessions.kind",
       "repos.<key>.sessions.models",

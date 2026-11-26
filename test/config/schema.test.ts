@@ -744,6 +744,7 @@ describe("parseConfig sessions", () => {
       "issue-review": { model: "opus", effort: "max" },
       "issue-post": { model: "opus", effort: "max" },
       write: { model: "opus", effort: "max" },
+      task: { model: "opus", effort: "max" },
     };
     raw.repos.tasker.sessions = { models };
     expect(parsedRepo(raw).sessions.models).toEqual(models);
@@ -755,6 +756,12 @@ describe("parseConfig sessions", () => {
     expect(issuesOf(raw)).toContain(
       "repos.tasker.sessions.models.issue-review.model: is not a claude-code model: gpt-5",
     );
+  });
+
+  it("rejects a gpt model in the subagent role task", () => {
+    const raw = validConfig();
+    raw.repos.tasker.sessions = { models: { task: { model: "gpt-5", effort: "high" } } };
+    expect(issuesOf(raw)).toContain("repos.tasker.sessions.models.task.model: is not a claude-code model: gpt-5");
   });
 
   it("reports write entry faults at their paths", () => {
@@ -951,6 +958,22 @@ describe("parseConfig sessions", () => {
       expect(issuesOf(raw)).toContain(
         "repos.tasker.sessions.models.write.model: is not a pi model in the form <provider>/<model-id>: opus",
       );
+    });
+
+    it("rejects a claude model of the subagent role task under the kind pi", () => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi", models: { task: { model: "opus", effort: "high" } } };
+      expect(issuesOf(raw)).toContain(
+        "repos.tasker.sessions.models.task.model: is not a pi model in the form <provider>/<model-id>: opus",
+      );
+    });
+
+    it("rejects a pi model that ends in a thinking level in the subagent role task", () => {
+      const raw = validConfig();
+      raw.repos.tasker.sessions = { kind: "pi", models: { task: { model: "openrouter/auto:high", effort: "high" } } };
+      expect(issuesOf(raw)).toEqual([
+        "repos.tasker.sessions.models.task.model: ends in the pi thinking level :high: openrouter/auto:high",
+      ]);
     });
 
     it("reports a bad pi session model together with the other errors of the file", () => {
