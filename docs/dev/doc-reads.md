@@ -330,6 +330,170 @@ No one measured these facts of case C:
 - Each part of item 7 other than the fetch. The report names only the fetch. For example, it does not say whether the
   session made the old read.
 
+Cases D, E, F and G are more failed pulls in real use. Each of them came on 2026-11-24. In each of them, the pull
+printed "fatal: Cannot fast-forward to multiple branches." and exited with 128. No source gives the order in time of
+cases D, E, F and G, so the letters D to G give no order in time. All times are -0700.
+
+Case D is a failure of the question session of the question `orchestrator-m31-332`. The source of each fact of case D is
+the report of that session, as orchestrator-m31 relayed it on 2026-11-24. No one measured these facts again. The session
+reported these facts:
+
+- The pull at the start of the session printed "Already up to date."
+- Later, with git 2.47.3, the session ran `git pull --ff-only origin main` in the local clone.
+- The pull printed "fatal: Cannot fast-forward to multiple branches." and exited with 128. It ran a little before
+  14:24:00.
+- After the failed pull, the session ran `git fetch origin`, which exited with 0. Then it read the docs from
+  `origin/main`.
+- Before and after the failed pull, `HEAD` and `origin/main` were both at `d94007cf`.
+
+A fast-forward is due when `origin/main` is a later commit on the line of `HEAD` and differs from `HEAD`. This section
+says that nothing was due when `HEAD` and `origin/main` are at the same commit. This is an inference, not a measure: the
+failed pull of case D moved neither `HEAD` nor `origin/main`, and nothing was due.
+
+No one measured these facts of case D:
+
+- The cause. No one saw another git command that fetches in the same clone at the same moment. Such a command is a
+  guess.
+- The exact time of the failed pull.
+- Whether a command fetches more than one remote in the local clone, and which command.
+- Which command or tool runs `git pull -q --ff-only` in the local clone.
+- The git version at the time of case D. The session reported git 2.47.3, but it did not say how it got the version. A
+  read at 16:34:33, after case D, printed `git version 2.47.3`.
+
+Case E is a failure of the question session of the question `orchestrator-m31-338`. The source of each fact of case E is
+the report of that session, as orchestrator-m31 relayed it on 2026-11-24. No one measured these facts again. The source
+gives no time for any of these steps. The session reported these facts:
+
+- At the start of the session, `git pull --ff-only origin main` in the local clone printed "fatal: Cannot fast-forward
+  to multiple branches." and exited with 128.
+- Then the session ran `git fetch origin` and read the docs from `origin/main`.
+- `git --version` printed `git version 2.47.3`.
+- At the start of its review rounds, the same pull printed "Already up to date." and exited with 0.
+- `git reflog show --date=iso HEAD` gave `d94007cf` at 2026-11-24 12:00:04 as its newest entry.
+- `git reflog show --date=iso refs/remotes/origin/main` gave `d94007cf` at 2026-11-24 11:46:27 as its newest entry.
+
+The source does not name the clone of the two reflog reads. This is an inference of the source, not a measure, with a
+condition. If the two reflog reads ran in the local clone, `HEAD` and `origin/main` were both at `d94007cf` before and
+after the failed pull. Then nothing was due when the pull failed.
+
+No one measured these facts of case E:
+
+- The cause. No one saw another git command that fetches in the same clone at the same moment. Such a command is a
+  guess.
+- The exact time of the failed pull.
+- Whether a command fetches more than one remote in the local clone, and which command.
+- Which command or tool runs `git pull -q --ff-only` in the local clone.
+- The values of `HEAD` and `origin/main` just before and just after the failed pull. The source infers them from the
+  reflog.
+- The time and the clone of the reflog reads, and the time of `git --version`.
+- The exit code of `git fetch origin`.
+- Each step of item 7 other than the fetch and the doc reads.
+
+The reads of the local clone on 2026-11-24 at about 14:37 and at 16:34:33 came after case D. Each of them ran in the
+local clone with git 2.47.3. On 2026-11-24, later fetches moved `origin/main`, at 16:01:39 and after. The read at about
+14:37 gave these facts:
+
+- `git rev-parse --verify HEAD` and `git rev-parse --verify origin/main` both gave
+  `d94007cfc371b2f4b84793c02e32bb12753317fb`. An earlier read at 14:29 gave the same values.
+- The reflog of `HEAD` gave the newest entry `d94007cf` at 2026-11-24 12:00:04, with the message "pull --ff-only origin
+  main: Fast-forward".
+- The entry before it in the reflog of `HEAD` is `1bc56344` at 2026-11-23 16:53:29, with the message "pull -q --ff-only:
+  Fast-forward".
+- The reflog of `origin/main` gave the newest entry `d94007cf` at 2026-11-24 11:46:27, with the message "fetch --append
+  --no-auto-gc --no-write-commit-graph origin: fast-forward".
+- The four entries before it in the reflog of `origin/main`, of 2026-11-23, have the same form. One of them, at
+  07:51:52, also has `-q`.
+- The last entry of the reflog of `origin/main` before 16:53:29 is `1bc56344` at 16:42:12.
+- `git remote` lists two remotes.
+- A pull just before these reads printed "Already up to date." It added no entry to either reflog.
+
+The read at 16:34:33 gave these facts:
+
+- The reflog of `HEAD` gave the entry `d94007cf` at 12:00:04. The next entry is `020e7c48` at 16:14:26, with the message
+  "pull --ff-only origin main: Fast-forward".
+- The reflog of `origin/main` gave the entry `d94007cf` at 11:46:27. The next entry is `020e7c48` at 16:01:39, with the
+  message "fetch --append --no-auto-gc --no-write-commit-graph origin: fast-forward".
+- `git remote` lists two remotes. `git --version` printed `git version 2.47.3`.
+
+This is an inference, not a measure: `HEAD` was at `d94007cf` from 12:00:04 to 16:14:26, and `origin/main` was at
+`d94007cf` from 11:46:27 to 16:01:39. Case D ran a little before 14:24:00, inside both times. This supports the report
+of case D.
+
+This is an inference, not a measure, with a condition. If the reflog reads of case E ran in the local clone, the session
+of case E read the reflog of `origin/main` before 16:01:39. The source does not say whether that read ran before or
+after the failed pull.
+
+This is an inference, not a measure: some command or tool in the local clone runs `git pull -q --ff-only`, as the entry
+of 16:53:29 shows.
+
+Case F is a failure of the orchestrator orchestrator-m31. The source of each fact of case F is the report of
+orchestrator-m31 of 2026-11-24. No one measured these facts again. orchestrator-m31 reported these facts:
+
+- After the landing of #981, the pull of orchestrator-m31 printed "fatal: Cannot fast-forward to multiple branches." and
+  exited with 128.
+- Then orchestrator-m31 followed item 7. It ran `git fetch origin` and read the docs from `origin/main`.
+
+The doc-read rules tell the orchestrator to pull the local clone after each landing, as
+[the re-read rule](#the-re-read-rule) says. This is an inference, not a measure, with a condition. If orchestrator-m31
+ran the pull as the doc-read rules say, the pull was `git pull --ff-only origin main` in the local clone. The source
+does not give the pull form or the folder of the pull.
+
+No one measured these facts of case F:
+
+- The cause. No one saw another git command that fetches in the same clone at the same moment. Such a command is a
+  guess.
+- The exact time of the failed pull. The source says only that it came after the landing of #981.
+- If the pull ran in the local clone: whether a command fetches more than one remote in the local clone, and which
+  command.
+- If the pull ran in the local clone: which command or tool runs `git pull -q --ff-only` in the local clone.
+- The git version.
+- The values of `HEAD` and `origin/main` just before and just after the failed pull.
+- The pull form and the folder of the pull.
+- The exit code of `git fetch origin`.
+- Each step of item 7 other than the fetch and the doc reads.
+
+Case G is a failure of an issue-review subagent, in review 1 of the planner subagent plan-110. That review was the first
+review of a draft of a new body of #1039. Two reports of 2026-11-24 give the facts of case G. No one measured them
+again. orchestrator-m31 reported that the issue-review subagent had the failed pull ("Cannot fast-forward to multiple
+branches", exit 128) in review 1 of plan-110.
+
+plan-110 reported these facts:
+
+- The pull of review 1 failed with "fatal: Cannot fast-forward to multiple branches." and exit 128.
+- The subagent made "the old read".
+- `origin/main` moved to `4752a209` during the review.
+
+The start prompt of an issue-review subagent uses the words "the old read" for the reads with
+`git show origin/main:<path>` alone. It gives `git fetch origin` as a step of its own. So this section does not count
+the fetch of case G as done.
+
+A read of the git history of this repo gave these facts:
+
+- On 2026-11-24, the start prompt of an issue-review subagent gave the pull `git pull --ff-only origin main` with no
+  `-C` option.
+- The prompt ran the pull in the folder where the session starts. That folder is the local clone.
+- The words of the pull came in commit `47c8415a` (2026-11-23 01:17:07).
+- The words of the folder came in commit `666b89cf` (2026-11-23 01:40:00).
+
+No one read the prompt of review 1 of plan-110. No source gives the time of that review. This is an inference, not a
+measure, with a condition. If that prompt gave the same pull, the pull of case G was `git pull --ff-only origin main` in
+the local clone. Case G is a record of the rules of 2026-11-24.
+
+No one measured these facts of case G:
+
+- The cause. No one saw another git command that fetches in the same clone at the same moment. Such a command is a
+  guess.
+- The exact time of the failed pull.
+- If the pull ran in the local clone: whether a command fetches more than one remote in the local clone, and which
+  command.
+- If the pull ran in the local clone: which command or tool runs `git pull -q --ff-only` in the local clone.
+- The git version.
+- The values of `HEAD` and `origin/main` just before and just after the failed pull.
+- Whether `origin/main` moved to `4752a209` before or after the failed pull.
+- The pull form and the folder that the prompt of review 1 of plan-110 gave.
+- Whether the fetch ran, and its exit code.
+- Each other step of item 7.
+
 `--ff-only` changes nothing when it cannot fast-forward. `.claude/settings.json` has no rule for the pull, so the
 classifier of auto mode decides each call that no rule matches. The commands of this rule stand in the lists of
 [the allowed commands](allowed-commands.md).
