@@ -366,6 +366,7 @@ as [The prompts](question-pane.md#the-prompts) gives it. The prompt gives each c
 ## A question session
 
 Sources: [The question session](question-pane.md#the-question-session), [The herdr path](question-pane.md#terms),
+[Send a decision](question-pane.md#send-a-decision),
 [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner) and
 [the doc-read rule](doc-reads.md#the-doc-read-rule).
 
@@ -375,5 +376,12 @@ Sources: [The question session](question-pane.md#the-question-session), [The her
   [Send a decision](question-pane.md#send-a-decision) gives, and for the check request of
   [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner).
 - Named other commands: `timeout 20 bash -c 'sleep 1'`, a Read call on a file of the local clone, `wc -l <path>`,
-  `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call.
+  `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call. It also has these reads, each
+  named by its source:
+  - A Read call on a draft file or a report file that the question names, in the folder of the draft files
+  - The start hash `sha256sum <path>` of a user-level file
+  - A Read call on the whole configuration file of tasker, before a write of that user-level file
+  - The JSON test `printf '%s' '<new text>' | jq -s -e 'length == 1 and (.[0] | type == "object")'`
+  - The start read of [Before a post](issues.md#before-a-post),
+    `json=$(gh issue view <number> --json title,body) && printf '%s\n' "$json" | sha256sum && printf '%s\n' "$json" | jq -r '.title, .body'`
 - Each other kind: no list. It sends each write action back to its pane owner.
