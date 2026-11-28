@@ -347,7 +347,10 @@ for it.
 - The join for part cover. Before the start of a planner subagent for an item A, the orchestrator reads the matches that
   the words of A give. Take a match B that is a proposal file or an item that waits, with the cover "in part" in the
   words of A. If B still waits and names no planner subagent, the orchestrator joins A and B. Full cover gets no join,
-  as [The work for each cover](#the-work-for-each-cover) says.
+  as [The work for each cover](#the-work-for-each-cover) says. If the words of the user in item A keep the change apart
+  from match B, the orchestrator makes no join. Item A starts alone, and step 1 of
+  [The work for each cover](#the-work-for-each-cover) applies. This judgment is open on purpose. In doubt, the
+  orchestrator makes no join.
 - The late matches. At the arrival of a planning request of late matches, the orchestrator ties it to the item of its
   proposal. Three cases follow, and a fourth case covers a failed tie.
   - If that item still waits, the orchestrator joins the late matches with it.
@@ -356,13 +359,16 @@ for it.
     writes the draft path or the issue key of the result into the late-match file as one more match. Then the item waits
     as each other item.
   - If its planner subagent already ended, the orchestrator takes the draft path or the issue key from that result in
-    its session and writes it into the late-match file. If the result gave no draft and no issue, for example after a
-    drop, the orchestrator writes that fact as the state of that match.
+    its session and writes it into the late-match file.
+  - In either case above, if the result gave no draft and no issue, for example after a drop, the orchestrator writes
+    that fact as the state of that match. The item then waits as each other item.
   - If the tie fails, or the session lacks the result, the late matches wait for a decision of the user. The
     orchestrator asks in its question pane.
 - The join itself. The joined item keeps the file with the lower number, so the order of arrival of the earlier item
   holds. The orchestrator appends the words of the other item to that file, word for word, with its sender, its date and
-  the source of each fact. Then it deletes the other file. One item then has one proposal file, as before.
+  the source of each fact. It also copies the pane id, the question id and the message number of the other file into the
+  kept file beside its words and sources. A later planning request of late matches for the other proposal still ties to
+  the joined item, as The tie says. Then it deletes the other file. One item then has one proposal file, as before.
 - The count. A joined item starts one planner subagent and takes one place in
   [The count of planner subagents](#the-count-of-planner-subagents).
 - The calls. Each read, write and delete of a join is a call on the three folders.
