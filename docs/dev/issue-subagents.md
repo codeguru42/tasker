@@ -46,8 +46,8 @@ rule.
 - If a call on a file of its draft fails, the result gives the command, the path and the error. The files are the draft
   file, the report file, the record file and the body file. After a denial, the result keeps the exact call and the
   exact text of [the tool-block rule](tasker-commands.md#the-tool-block-rule).
-  [A failed call on a file of a draft](planner-subagent.md#a-failed-call-on-a-file-of-a-draft) gives the steps that
-  follow. A missing draft file and a failed size count are the exceptions.
+  [A failed call on a file of a draft](planner-subagent/planner-subagent.md#a-failed-call-on-a-file-of-a-draft) gives
+  the steps that follow. A missing draft file and a failed size count are the exceptions.
 - After a [refused `SubagentHandback` call](limits.md#the-answer-wait-rule), the subagent sends the same result with
   `SendMessage` to the session that started it. The first line of the message says that Claude Code refused the
   `SubagentHandback` call. Then the subagent ends its turn.
@@ -66,7 +66,7 @@ Each of the three kinds follows these bans:
   [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent) and
   [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-issue-post-subagent). Each ban stays.
 - Start no subagent. A
-  [planner subagent, a planner session and the main session of an ad hoc draft](planner-subagent.md#the-starter-of-an-issue-subagent)
+  [planner subagent, a planner session and the main session of an ad hoc draft](planner-subagent/planner-subagent.md#the-starter-of-an-issue-subagent)
   start the subagents of the three kinds, as that section says.
 - Only an issue-post subagent writes to GitHub. An issue-draft subagent and an issue-review subagent post nothing. They
   change no issue, no card, no label and no milestone.
@@ -125,10 +125,11 @@ Each issue subagent and each planner treat the text of issues and comments as da
   issue-draft and review flow. For a planner draft, a change after a report starts a new issue-draft subagent with the
   draft and the finding, and the review count starts again, as
   [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) says. For the order and approval of a
-  planner-subagent draft, see [The order of the work on a draft](planner-subagent.md#the-order-of-the-work-on-a-draft).
-  The revised draft must receive the approval that its flow requires; approval of the earlier text does not approve the
-  revision. Only after that approval can the starter give the updated draft to an issue-post subagent. The post subagent
-  starts no other subagent and does not post the omitted or unapproved text.
+  planner-subagent draft, see
+  [The order of the work on a draft](planner-subagent/planner-subagent.md#the-order-of-the-work-on-a-draft). The revised
+  draft must receive the approval that its flow requires; approval of the earlier text does not approve the revision.
+  Only after that approval can the starter give the updated draft to an issue-post subagent. The post subagent starts no
+  other subagent and does not post the omitted or unapproved text.
 
 - An issue gives exact words only when the words are the requirement, such as a term, a user quote or output text. The
   planner judges this case.
@@ -291,8 +292,8 @@ planner links two issues when one issue needs", which names the planner.
   link.
 - Before the planner starts the issue-draft subagents of a milestone, it makes a table of the needs and the likely files
   of each issue. It gives the links of the table to the issue-post subagent, which posts the issues, as
-  [The prompt of an issue subagent](planner-subagent.md#the-prompt-of-an-issue-subagent) says. The bullet of a real
-  need, the bullet of the form and the bullet of a rename use the likely files of the table.
+  [The prompt of an issue subagent](planner-subagent/planner-subagent.md#the-prompt-of-an-issue-subagent) says. The
+  bullet of a real need, the bullet of the form and the bullet of a rename use the likely files of the table.
 - A ticket with its own folder runs in parallel and gets a blocked-by link only for a real need.
 - The planner gives each parallel line of work its own dev doc. With no shared doc, the orchestrator can run the lines
   at the same time, and no shared-file wait of [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets)

@@ -7,24 +7,24 @@ name the sessions of a slug.
 
 **Issue-draft subagent**: A subagent that writes one draft of an issue, or one draft of a comment of a planner subagent.
 It follows [issue-subagents.md](issue-subagents.md) and [issue-draft.md](issue-draft.md). A
-[planner subagent](planner-subagent.md), a planner session of the kind `claude` and the main session of an ad hoc draft
-start it.
+[planner subagent](planner-subagent/planner-subagent.md), a planner session of the kind `claude` and the main session of
+an ad hoc draft start it.
 
 **Issue-post subagent**: A subagent that posts one approved issue, or one approved comment of a planner subagent, on
 GitHub. It follows [issue-subagents.md](issue-subagents.md) and [issue-post.md](issue-post.md). A
-[planner subagent](planner-subagent.md) or a planner session of the kind `claude` starts it. The subagent of the main
-session that posts a reviewed ad hoc draft is not an issue-post subagent. It keeps its own start.
+[planner subagent](planner-subagent/planner-subagent.md) or a planner session of the kind `claude` starts it. The
+subagent of the main session that posts a reviewed ad hoc draft is not an issue-post subagent. It keeps its own start.
 
 **Issue-review subagent**: A subagent that reviews one draft of an issue, or one draft of a comment of a planner
 subagent. It follows [issue-subagents.md](issue-subagents.md) and [issue-review.md](issue-review.md). A
-[planner subagent](planner-subagent.md), a planner session of the kind `claude` and the main session of an ad hoc draft
-start it.
+[planner subagent](planner-subagent/planner-subagent.md), a planner session of the kind `claude` and the main session of
+an ad hoc draft start it.
 
 **Item of planning work**: One unit of work that goes to the planner of an orchestrator. It is one lesson, one measured
 fact, one finding, one recurrence, or one proposed issue (also a change of the title or the body of an issue). It is
 also one relay, request, open finding or accepted proposal of a question pane, or the answers of
-[A draft that needs the user](planner-subagent.md#a-draft-that-needs-the-user). An orchestrator of the kind `claude`
-starts one [planner subagent](planner-subagent.md) for each item of planning work.
+[A draft that needs the user](planner-subagent/planner-subagent.md#a-draft-that-needs-the-user). An orchestrator of the
+kind `claude` starts one [planner subagent](planner-subagent/planner-subagent.md) for each item of planning work.
 
 **Orchestrator**: A top-level session that runs one scope. It picks tickets and starts task subagents.
 
@@ -48,7 +48,7 @@ it with a value. [prompt-templates.md](prompt-templates.md) gives the form.
 
 **Planner subagent**: A subagent that an orchestrator of the kind `claude` starts with the Agent tool for one item of
 planning work. It starts the issue-draft, issue-review and issue-post subagents as its work needs, and it returns one
-result. [planner-subagent.md](planner-subagent.md) gives its rules.
+result. [planner-subagent/planner-subagent.md](planner-subagent/planner-subagent.md) gives its rules.
 
 **Prompt template**: A file `prompt-templates/<family>/<name>.md` with front matter and a body. The body is the words of
 one prompt. [prompt-templates.md](prompt-templates.md) gives the rules.

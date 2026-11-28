@@ -339,8 +339,8 @@ session, in the form that herdr names it in `herdr agent start --kind`.
 A subagent is a helper that a Claude Code session starts with its `Agent` tool. A subagent runs inside the session that
 starts it. A subagent role is one of `issue-draft`, `issue-review`, `issue-post`, `write`, `opener`, `reuse` and `task`.
 Each subagent role sets the model and the effort of a subagent, not of a session. The orchestrator starts one planner
-subagent for each [item of planning work](dev/planner-subagent.md#the-start). The key `planner` sets the model and the
-effort of the planner subagent and of a planner session.
+subagent for each [item of planning work](dev/planner-subagent/planner-subagent.md#the-start). The key `planner` sets
+the model and the effort of the planner subagent and of a planner session.
 
 The planner subagent and a planner session start the draft subagent, the review subagent and the post subagent. The main
 session of an ad hoc draft starts the draft subagent and the review subagent. They draft an issue, review a draft and
@@ -418,11 +418,11 @@ provider. Any other model gives the error
 This check is the same for each key of `models`. The `Agent` tool lists only the models `sonnet`, `opus`, `haiku` and
 `fable`. So the loader accepts a model that the `Agent` tool does not list, for example `claude-opus-5-5` or `opusplan`.
 
-These starts use the map of [The model of the start](dev/planner-subagent.md#the-model-of-the-start): the start of a
-planner, task, opener, reuse or write subagent. They pass only a `model` that the map gives, or no `model`. The issue
-subagent starts of a planner subagent and of a planner session use the same map. Each `model` that the map passes is in
-the list of the tool schema of the `Agent` tool. An example of a value that the map does not name is `opusplan`. For
-such a value, the start passes no `model`.
+These starts use the map of [The model of the start](dev/planner-subagent/planner-subagent.md#the-model-of-the-start):
+the start of a planner, task, opener, reuse or write subagent. They pass only a `model` that the map gives, or no
+`model`. The issue subagent starts of a planner subagent and of a planner session use the same map. Each `model` that
+the map passes is in the list of the tool schema of the `Agent` tool. An example of a value that the map does not name
+is `opusplan`. For such a value, the start passes no `model`.
 
 These facts come from the map and from reads of the tool schema of the `Agent` tool, not from a measure of a start. No
 one measured a start of a task subagent, an opener subagent or a reuse subagent. No one measured a start of a write,

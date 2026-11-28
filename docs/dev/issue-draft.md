@@ -49,8 +49,9 @@ The pull of step 1 of the doc-read rule is no write of a file, as
 The prompt can give the path of a draft file that is missing. This is no failure, and it starts no bar. The subagent can
 write a new draft at the same path from the facts of its prompt, the question and the answer. Whether these facts are
 enough is its judgment. If it writes a new draft, its report says that the draft file was missing. If it writes none,
-its result gives the path and the error. [A missing draft file](planner-subagent.md#a-missing-draft-file) gives the case
-of the planner subagent.
+its result gives the path and the error.
+[A missing draft file](planner-subagent/planner-subagent.md#a-missing-draft-file) gives the case of the planner
+subagent.
 
 ## A comment draft
 
@@ -84,7 +85,7 @@ The issue-draft subagent reads each file that a claim of the draft names as
 The draft of an issue keeps its body at or under a size target of 60000 characters. The target gives a margin under the
 limit of [The count of the body](issue-post.md#the-count-of-the-body). The target binds the draft of an issue, not the
 draft of a comment. The reason: an issue-draft subagent also drafts a comment, as change 9 of
-[The changed rules](planner-subagent.md#the-changed-rules) of planner-subagent.md says.
+[The changed rules](planner-subagent/planner-subagent.md#the-changed-rules) of planner-subagent.md says.
 
 Before each report, and before the self-check that comes before that report, the issue-draft subagent does these steps:
 
@@ -160,9 +161,9 @@ and result that a rule of the planner pages gives to the user. It also gives eac
 issue, it also gives the start hash of [Before a post](issues.md#before-a-post). It also gives the counts, the removals
 and a failed count of [The size of a draft](#the-size-of-a-draft).
 
-For an issue-draft subagent of a [planner subagent](planner-subagent.md), the result through `SubagentHandback` gives
-each dismissal with its reason. The planner subagent adds each one to its
-[record file](planner-subagent.md#the-record-file).
+For an issue-draft subagent of a [planner subagent](planner-subagent/planner-subagent.md), the result through
+`SubagentHandback` gives each dismissal with its reason. The planner subagent adds each one to its
+[record file](planner-subagent/planner-subagent.md#the-record-file).
 
 ## The findings and the edge cases
 

@@ -30,10 +30,10 @@ goes to the pane. When a rule waits for the user, the answer of the question tha
 orchestrator gives each lesson, each finding of a session review, each recurrence and each proposed issue to its
 planner. The planner bullet of
 [The prompt of a task subagent](dev/orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the steps. For
-an orchestrator of the kind `claude`, the planner is a new [planner subagent](dev/planner-subagent.md) for each
-[item of planning work](dev/planner-subagent.md#the-start). An orchestrator sends a peer only the seven kinds of
-[The kinds of peer message](#the-kinds-of-peer-message). [The request rule](#the-request-rule) gives the seventh kind,
-the request for a decision of the user that needs a peer to act.
+an orchestrator of the kind `claude`, the planner is a new [planner subagent](dev/planner-subagent/planner-subagent.md)
+for each [item of planning work](dev/planner-subagent/planner-subagent.md#the-start). An orchestrator sends a peer only
+the seven kinds of [The kinds of peer message](#the-kinds-of-peer-message). [The request rule](#the-request-rule) gives
+the seventh kind, the request for a decision of the user that needs a peer to act.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
 not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).
@@ -109,10 +109,11 @@ sections of its page. The orchestrator uses the list to find the page that a ste
   questions with no automatic start" and "The steps for the open peer requests".
 - [docs/dev/limits.md](dev/limits.md): "Limits", the own-worktree rule, "The orchestrator folder", the update rule, the
   local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
-- [docs/dev/planner-subagent.md](dev/planner-subagent.md): "The kind of the orchestrator", "The planning requests", "The
-  start", "The proposal file", "The prompt", "The result", "A settled question", "No metadata", "The kept rules", "The
-  changed rules", "The dropped rules", "The issue subagents", "A missing draft file", "A failed call on a file of a
-  draft", "The life of a planner subagent" and "The chain of subagents".
+- [docs/dev/planner-subagent/planner-subagent.md](dev/planner-subagent/planner-subagent.md): "The kind of the
+  orchestrator", "The planning requests", "The start", "The proposal file", "The prompt", "The result", "A settled
+  question", "No metadata", "The kept rules", "The changed rules", "The dropped rules", "The issue subagents", "A
+  missing draft file", "A failed call on a file of a draft", "The life of a planner subagent" and "The chain of
+  subagents".
 
 ## The start of an orchestrator
 
@@ -408,10 +409,11 @@ session of the start checks does no start duty. The start duties are:
   [The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives
   the place of the find and the read of its record.
 - The start of the planner subagents of the items that wait, as
-  [The proposal file](dev/planner-subagent.md#the-proposal-file) says. The orchestrator starts them at the end of its
-  start steps. The start depends on the list of `proposals/` of the first duty. At a start with no handoff file, no file
-  of `proposals/` is an item that waits until the word of the user, as [A stop with no handoff](#a-stop-with-no-handoff)
-  says. At such a start, this duty starts no planner subagent from those files.
+  [The proposal file](dev/planner-subagent/planner-subagent.md#the-proposal-file) says. The orchestrator starts them at
+  the end of its start steps. The start depends on the list of `proposals/` of the first duty. At a start with no
+  handoff file, no file of `proposals/` is an item that waits until the word of the user, as
+  [A stop with no handoff](#a-stop-with-no-handoff) says. At such a start, this duty starts no planner subagent from
+  those files.
 
 This section gives no order between the start duties and the board watch job. After a handoff,
 [The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives

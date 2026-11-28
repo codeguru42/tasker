@@ -12,7 +12,7 @@ import {
 const path = packagePath("prompt-templates/planner/planner-subagent.md");
 
 const RESULT_ASK = "Return your result to the orchestrator with the tool SubagentHandback.";
-const DOCS_TO_READ = "docs/dev/planner-subagent.md\ndocs/dev/planner.md\ndocs/dev/issues.md";
+const DOCS_TO_READ = "docs/dev/planner-subagent/planner-subagent.md\ndocs/dev/planner.md\ndocs/dev/issues.md";
 const ENTRY = '{ "model": "claude-opus-5-5", "effort": "high" }';
 const ENTRY_SENTENCE =
   "If an entry is none, the key has no entry. Then pass no model and no effort when you start a subagent of that kind.";
@@ -73,7 +73,7 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
     expect(docPaths(fillPlannerTemplate("planner-subagent", sample))).toEqual(DOCS_TO_READ.split("\n"));
   });
 
-  it("shares no 8-word run with docs/dev/planner-subagent.md", () => {
+  it("shares no 8-word run with docs/dev/planner-subagent/planner-subagent.md", () => {
     expect(plannerDocWordRuns(plannerTemplateBody("planner-subagent"))).toEqual([]);
   });
 

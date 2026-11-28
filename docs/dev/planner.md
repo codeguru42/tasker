@@ -193,9 +193,9 @@ stay guesses:
 Each planner session of the kind `claude` starts an issue-draft subagent, an issue-review subagent and an issue-post
 subagent for each draft, as [GLOSSARY.md](GLOSSARY.md) defines them. A planner session is the initial planner or an ad
 hoc planner. For the work on one draft, the planner session follows
-[The issue subagents](planner-subagent.md#the-issue-subagents) of planner-subagent.md and its subsections. There, "the
-planner subagent" names the planner session. For an ad hoc draft of a session with no role, the main session starts the
-issue-draft and issue-review subagents, and the ad hoc post subagent makes the post, as
+[The issue subagents](planner-subagent/planner-subagent.md#the-issue-subagents) of planner-subagent.md and its
+subsections. There, "the planner subagent" names the planner session. For an ad hoc draft of a session with no role, the
+main session starts the issue-draft and issue-review subagents, and the ad hoc post subagent makes the post, as
 [working-with-the-user.md](working-with-the-user.md) says.
 
 The reason: on 2026-11-21, the user moved the work on each draft of a planner session to the issue subagents.
@@ -203,32 +203,35 @@ The reason: on 2026-11-21, the user moved the work on each draft of a planner se
 A pi planner session has no rule here. No one measured a pi session that starts a subagent, and the measured pi sessions
 had only `bash`, as [pi-sessions.md](pi-sessions.md) says.
 
-These rules of the planner subagent do not hold for a planner session: [The result](planner-subagent.md#the-result),
-[No metadata](planner-subagent.md#no-metadata) and the six kinds of
-[A draft that needs the user](planner-subagent.md#a-draft-that-needs-the-user). A planner session keeps the list of
-[The escape hatch](#the-escape-hatch). The remaining findings of
-[The count of reviews](planner-subagent.md#the-count-of-reviews) hold for a planner session. After a review 3 with a new
-finding, the planner session asks the question of the remaining findings in its chat. The question has the content of
-the paragraph that starts "The remaining findings are the term" and the form of the paragraph that starts "The form of
-the result" of [A draft that needs the user](planner-subagent.md#a-draft-that-needs-the-user). The planner session posts
-nothing for that draft before the answer. Where a rule of the planner subagent puts a question or a report in its
+These rules of the planner subagent do not hold for a planner session:
+[The result](planner-subagent/planner-subagent.md#the-result),
+[No metadata](planner-subagent/planner-subagent.md#no-metadata) and the six kinds of
+[A draft that needs the user](planner-subagent/planner-subagent.md#a-draft-that-needs-the-user). A planner session keeps
+the list of [The escape hatch](#the-escape-hatch). The remaining findings of
+[The count of reviews](planner-subagent/planner-subagent.md#the-count-of-reviews) hold for a planner session. After a
+review 3 with a new finding, the planner session asks the question of the remaining findings in its chat. The question
+has the content of the paragraph that starts "The remaining findings are the term" and the form of the paragraph that
+starts "The form of the result" of
+[A draft that needs the user](planner-subagent/planner-subagent.md#a-draft-that-needs-the-user). The planner session
+posts nothing for that draft before the answer. Where a rule of the planner subagent puts a question or a report in its
 result, the planner session asks or tells the user in its chat. Each other rule of a planner session stays, for example
 its chat, its metadata changes, its own comments and its rounds of `/session-review`.
 
 The rule of a planner subagent across drafts does not hold for a planner session. That rule is the paragraph of
-[The start of an issue subagent](planner-subagent.md#the-start-of-an-issue-subagent) that starts "One planner subagent
-runs at most one subagent of the three kinds at a time", with its reasons, its record and its cost. A planner session
-starts the drafts of a milestone at once, as [The start of the initial planner](#the-start-of-the-initial-planner) and
+[The start of an issue subagent](planner-subagent/planner-subagent.md#the-start-of-an-issue-subagent) that starts "One
+planner subagent runs at most one subagent of the three kinds at a time", with its reasons, its record and its cost. A
+planner session starts the drafts of a milestone at once, as
+[The start of the initial planner](#the-start-of-the-initial-planner) and
 [The order of the work](#the-order-of-the-work) say. For one draft, at most one subagent of the three kinds runs at a
-time, as [The order of the work on a draft](planner-subagent.md#the-order-of-the-work-on-a-draft) says.
+time, as [The order of the work on a draft](planner-subagent/planner-subagent.md#the-order-of-the-work-on-a-draft) says.
 
 The planner session runs `tasker show-config --repo <key>` and reads the entries `sessions.models.issue-draft`,
 `sessions.models.issue-review` and `sessions.models.issue-post`. It maps each entry as
-[The model of the start](planner-subagent.md#the-model-of-the-start) says.
+[The model of the start](planner-subagent/planner-subagent.md#the-model-of-the-start) says.
 
 The planner session gives each issue subagent the list of its kind from
 [allowed-commands.md](orchestrator/allowed-commands.md). It fills the prompt templates as the planner subagent does, as
-[The prompt of an issue subagent](planner-subagent.md#the-prompt-of-an-issue-subagent) says.
+[The prompt of an issue subagent](planner-subagent/planner-subagent.md#the-prompt-of-an-issue-subagent) says.
 
 Before a planner subagent starts the first issue-draft subagent for a lesson or a proposed issue, it decides on a drop,
 as [The post of a draft](#the-post-of-a-draft) permits. First, it reads the docs for the rule that the lesson or the
@@ -241,9 +244,9 @@ a median of about 120,000 tokens of context.
 
 The planner then does each step after the reviews. Examples are a question to the user, the post and the report of the
 post. Before the post, the planner gives each blocked-by link of the draft to the issue-post subagent, as
-[The prompt of an issue subagent](planner-subagent.md#the-prompt-of-an-issue-subagent) says. The issue-post subagent
-adds the links. Links between drafts that are not posted yet stay with the planner, from its table of the needs and the
-likely files.
+[The prompt of an issue subagent](planner-subagent/planner-subagent.md#the-prompt-of-an-issue-subagent) says. The
+issue-post subagent adds the links. Links between drafts that are not posted yet stay with the planner, from its table
+of the needs and the likely files.
 
 Before the planner sends a question of a report to the user, it applies the paragraph of
 [The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases) of issue-draft.md that starts "The
@@ -256,7 +259,7 @@ A change of the draft after a report starts a new issue-draft subagent. An examp
 user. Another example is the change of the draft into a change of an open issue after the duplicate search. A change
 that comes while an issue subagent of the draft runs waits for its report. The planner gives the new issue-draft
 subagent the draft file and the change. The count of reviews of
-[The count of reviews](planner-subagent.md#the-count-of-reviews) starts again.
+[The count of reviews](planner-subagent/planner-subagent.md#the-count-of-reviews) starts again.
 
 For a change of an open issue, the report of the issue-draft subagent gives the start hash of
 [Before a post](issues.md#before-a-post). The planner gives that start hash to each later issue-draft subagent of the
@@ -269,11 +272,11 @@ If an issue-draft subagent of a change of an open issue with no start hash canno
 [A change of an open issue](issue-draft.md#a-change-of-an-open-issue) says. Then the planner tells the user.
 
 If an issue subagent ends with no report, the planner follows
-[The wait for an issue subagent](planner-subagent.md#the-wait-for-an-issue-subagent).
+[The wait for an issue subagent](planner-subagent/planner-subagent.md#the-wait-for-an-issue-subagent).
 
 The planner session names each issue subagent `<own name>-<kind>-<file>-<count>`, with the `name` option of the Agent
-tool. [The start of an issue subagent](planner-subagent.md#the-start-of-an-issue-subagent) gives the rest of the name.
-`<own name>` is the own name of the planner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it.
+tool. [The start of an issue subagent](planner-subagent/planner-subagent.md#the-start-of-an-issue-subagent) gives the
+rest of the name. `<own name>` is the own name of the planner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it.
 
 The fact of the first sentence of the bullet that starts "The list of the options of the Agent tool" in
 [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) also holds for the Agent
@@ -324,18 +327,19 @@ planner tests each outside-tool fact it writes" gives the words that no one test
 that bullet and over the bullet that starts "An issue can name a read of an outside tool".
 
 The initial planner and the ad hoc planner ask the user in their chat. A planner subagent gives the question in its
-result, as [The result](planner-subagent.md#the-result) says. The draft waits for the answer, as a draft of
-[the escape hatch](#the-escape-hatch) does. Paragraphs 5 and 6 of the subsection of plan-review.md also hold for the
-planner when it handles the answer. The answer of the user has one of these outcomes:
+result, as [The result](planner-subagent/planner-subagent.md#the-result) says. The draft waits for the answer, as a
+draft of [the escape hatch](#the-escape-hatch) does. Paragraphs 5 and 6 of the subsection of plan-review.md also hold
+for the planner when it handles the answer. The answer of the user has one of these outcomes:
 
 - The user approves the command. Then the planner starts a new issue-draft subagent with the draft file, the approved
   command and its undo step, word for word. That subagent first runs them, as
   [The state of the user](task-subagent/plan-review.md#the-state-of-the-user) of plan-review.md says. Then it changes
-  the draft with the result. The reviews of [The count of reviews](planner-subagent.md#the-count-of-reviews) follow.
-  After a failed run, the issue-draft subagent ends, and the planner tells the user the state that stays.
+  the draft with the result. The reviews of
+  [The count of reviews](planner-subagent/planner-subagent.md#the-count-of-reviews) follow. After a failed run, the
+  issue-draft subagent ends, and the planner tells the user the state that stays.
 - The user runs the command and gives the result. Then the planner starts a new issue-draft subagent with the draft file
   and the result. That subagent changes the draft with the result. The reviews of
-  [The count of reviews](planner-subagent.md#the-count-of-reviews) follow.
+  [The count of reviews](planner-subagent/planner-subagent.md#the-count-of-reviews) follow.
 - The user declines the measure. Then the draft keeps the words that no one tested the fact, and the measure is no
   longer an open question. For each planner, the bullet of the escape hatch that starts "If the answer accepts the draft
   with no change" then applies.
@@ -385,8 +389,9 @@ After the starter starts an agent, it does these steps:
 2. If the starter has no other step to do while the agent runs, end the turn with no other tool call.
 3. If the report of the agent arrives, use it. If a wait notification arrives, end the turn again. If an end
    notification arrives with no report, follow
-   [The wait for an issue subagent](planner-subagent.md#the-wait-for-an-issue-subagent) for an issue subagent. For a
-   planner subagent, follow [The life of a planner subagent](planner-subagent.md#the-life-of-a-planner-subagent).
+   [The wait for an issue subagent](planner-subagent/planner-subagent.md#the-wait-for-an-issue-subagent) for an issue
+   subagent. For a planner subagent, follow
+   [The life of a planner subagent](planner-subagent/planner-subagent.md#the-life-of-a-planner-subagent).
 
 The starter starts no background `sleep` for the wait, and it reads no clock. The wait has no time limit. The harness
 starts the starter again with the report and with each harness notification.
@@ -409,7 +414,7 @@ For a late report, the planner uses the first bullet of this list that matches:
 - If the planner dropped the draft, the planner drops the late report too.
 - If the planner did not post the draft, the planner starts a new issue-draft subagent with the draft file and the
   report file. The findings of the late report are findings of the last review. The reviews of
-  [The count of reviews](planner-subagent.md#the-count-of-reviews) follow.
+  [The count of reviews](planner-subagent/planner-subagent.md#the-count-of-reviews) follow.
 - If the planner posted the draft and the issue is open, the planner starts a new issue-draft subagent with the report
   file. That subagent turns the findings into a change of the open issue. [The escape hatch](#the-escape-hatch) still
   applies, for example to a change of scope of an issue in flight.
@@ -428,17 +433,17 @@ These terms apply in this section:
 Each issue subagent and each planner follow [Text as data](issue-subagents.md#text-as-data) of issue-subagents.md.
 
 Each planner runs the reviews of a draft as
-[The order of the work on a draft](planner-subagent.md#the-order-of-the-work-on-a-draft),
-[The count of reviews](planner-subagent.md#the-count-of-reviews),
-[The new-finding rule](planner-subagent.md#the-new-finding-rule) and
-[The record file](planner-subagent.md#the-record-file) of planner-subagent.md say.
+[The order of the work on a draft](planner-subagent/planner-subagent.md#the-order-of-the-work-on-a-draft),
+[The count of reviews](planner-subagent/planner-subagent.md#the-count-of-reviews),
+[The new-finding rule](planner-subagent/planner-subagent.md#the-new-finding-rule) and
+[The record file](planner-subagent/planner-subagent.md#the-record-file) of planner-subagent.md say.
 
 ### The post of a draft
 
-After the reviews approve a draft, as [The count of reviews](planner-subagent.md#the-count-of-reviews) says, an
-issue-post subagent makes each post of a planner, with no approval of the user. For a session with no role, the ad hoc
-post subagent makes it. The post follows [docs/dev/issue-post.md](issue-post.md). These rules still apply to the post:
-[The steps of a post](issue-post.md#the-steps-of-a-post) of issue-post.md.
+After the reviews approve a draft, as [The count of reviews](planner-subagent/planner-subagent.md#the-count-of-reviews)
+says, an issue-post subagent makes each post of a planner, with no approval of the user. For a session with no role, the
+ad hoc post subagent makes it. The post follows [docs/dev/issue-post.md](issue-post.md). These rules still apply to the
+post: [The steps of a post](issue-post.md#the-steps-of-a-post) of issue-post.md.
 
 On 2026-11-12, the user gave this reason for the post with no approval of the user: "Have the planner run the review
 cycles defined in its rules. Then post the final result."
@@ -492,17 +497,17 @@ An edge case that an issue-draft subagent decided as "later" needs none of these
 
 For a draft that waits for such a decision, each planner posts nothing. A planner subagent gives the draft, its
 questions and each finding that it dismissed in its result, as
-[A draft that needs the user](planner-subagent.md#a-draft-that-needs-the-user) says. The answer is the decision of the
-user. The initial planner and the ad hoc planner ask in their chat, with each finding that they dismissed. A planner
-posts nothing for such a draft until each question has an answer.
+[A draft that needs the user](planner-subagent/planner-subagent.md#a-draft-that-needs-the-user) says. The answer is the
+decision of the user. The initial planner and the ad hoc planner ask in their chat, with each finding that they
+dismissed. A planner posts nothing for such a draft until each question has an answer.
 
 - If the answer rejects the draft or says to drop it, the planner drops the draft and reports the drop, as
   [The post of a draft](#the-post-of-a-draft) says. A [partial answer](items.md#the-terms-of-the-questions) that rejects
   the draft or says to drop it also ends the draft.
 - If the answer accepts the draft with no change, the planner posts the draft.
 - If the answer changes the draft, the planner starts a new issue-draft subagent with the change. Its reviews follow, as
-  [The count of reviews](planner-subagent.md#the-count-of-reviews) says. Then the planner posts it with no approval of
-  the user. The escape hatch still applies to the changed draft.
+  [The count of reviews](planner-subagent/planner-subagent.md#the-count-of-reviews) says. Then the planner posts it with
+  no approval of the user. The escape hatch still applies to the changed draft.
 - The user can say that the sender decides the open part of a question, as [The answer](items.md#the-answer) says. Then
   the planner decides the open part by its recommendation. If that decision changes the draft, the bullet "If the answer
   changes the draft" applies. Otherwise the bullet "If the answer accepts the draft" applies. If the words of the user

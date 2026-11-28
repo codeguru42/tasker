@@ -111,8 +111,9 @@ after the close of that pane. Each step has one purpose and its own number, so t
    "An old orchestrator of the kind `claude` starts a planner subagent" of
    [The items of a handoff file](../handoff.md#the-items-of-a-handoff-file) says. Before the send, wait as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then, for an orchestrator of the kind
-   `claude`, do the steps of [The wait before a handoff](../planner-subagent.md#the-wait-before-a-handoff). Before the
-   write, wait until no subagent is in the state running and no item of planning work waits, as
+   `claude`, do the steps of
+   [The wait before a handoff](../planner-subagent/planner-subagent.md#the-wait-before-a-handoff). Before the write,
+   wait until no subagent is in the state running and no item of planning work waits, as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. That wait does not count an item that a
    stop of the queue holds. It also does not count the item of a planner subagent whose wait a word of the user ended.
    Then write the handoff file in your own handoff folder, as [The handoff file](../handoff.md#the-handoff-file) says.
@@ -166,7 +167,7 @@ handoff file. In both cases, the new orchestrator never gets it.
   [The wait for a report](../planner.md#the-wait-for-a-report) defines. Neither is a report.
 - The send is the send of each fact and each lesson, as the paragraph that starts "An old orchestrator of the kind
   `claude` starts a planner subagent" of [The items of a handoff file](../handoff.md#the-items-of-a-handoff-file) says.
-- The planner wait is [The wait before a handoff](../planner-subagent.md#the-wait-before-a-handoff).
+- The planner wait is [The wait before a handoff](../planner-subagent/planner-subagent.md#the-wait-before-a-handoff).
 - A task in flight is a task that did not land. A parked task is not a task in flight.
 
 ### The wait before the start
@@ -227,8 +228,9 @@ wait starts a planner subagent for each item, or runs again for it.
 Before the write of the handoff file, wait until no subagent is in the state running and no item of planning work waits.
 Two items do not count: an item that a stop of the queue holds, and the item of a planner subagent whose wait a word of
 the user ended. Each such file stays in `proposals/` at the write, as the planner wait and
-[The proposal file](../planner-subagent.md#the-proposal-file) say. The planner wait keeps its rule. This section copies
-none of its steps. The exception of [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
+[The proposal file](../planner-subagent/planner-subagent.md#the-proposal-file) say. The planner wait keeps its rule.
+This section copies none of its steps. The exception of
+[The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
 
 ### The end of the wait for one subagent
 
@@ -264,7 +266,7 @@ in flight keeps the rules of [The end with no report](#the-end-with-no-report) a
   the old orchestrator. This is a known limit.
 
 For a planner subagent whose wait a word of the user ended,
-[The wait before a handoff](../planner-subagent.md#the-wait-before-a-handoff) gives the other steps.
+[The wait before a handoff](../planner-subagent/planner-subagent.md#the-wait-before-a-handoff) gives the other steps.
 
 ### The reports during the handoff
 
@@ -522,9 +524,9 @@ its question and no text of that question. The entry does not copy the question.
 requested change, stay as [The open peer requests](#the-open-peer-requests) lists them. The reason: the question stays
 in its question file through the handoff, as [The orchestrator folder](../limits.md#the-orchestrator-folder) says. The
 handoff file holds no list of the items of planning work that have a
-[proposal file](../planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It
-gives no path of the three folders and no path of `drafts/`. The new orchestrator makes these paths itself from the data
-root, the repo key and its own slug. A path of a draft file in the text of a question stays as it is.
+[proposal file](../planner-subagent/planner-subagent.md#the-proposal-file). It holds the full text of each question with
+no file. It gives no path of the three folders and no path of `drafts/`. The new orchestrator makes these paths itself
+from the data root, the repo key and its own slug. A path of a draft file in the text of a question stays as it is.
 
 After the write of its handoff file, the old orchestrator writes no new file in the three folders and gives no new
 question id. A question that reaches it after the write gets no question file. The old orchestrator shows the full text

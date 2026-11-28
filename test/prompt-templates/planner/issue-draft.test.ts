@@ -70,7 +70,7 @@ describe("prompt-templates/planner/issue-draft.md", () => {
     expect(docPaths(fillPlannerTemplate("issue-draft", sample))).toEqual(["docs/dev/issue-subagents.md", "docs/dev/issue-draft.md"]);
   });
 
-  it("shares no 8-word run with docs/dev/planner-subagent.md", () => {
+  it("shares no 8-word run with docs/dev/planner-subagent/planner-subagent.md", () => {
     expect(plannerDocWordRuns(plannerTemplateBody("issue-draft"))).toEqual([]);
   });
 

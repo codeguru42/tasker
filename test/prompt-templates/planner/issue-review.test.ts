@@ -64,7 +64,7 @@ describe("prompt-templates/planner/issue-review.md", () => {
     expect(docPaths(filled)).toEqual(["docs/dev/issue-subagents.md", "docs/dev/issue-review.md"]);
   });
 
-  it("shares no 8-word run with docs/dev/planner-subagent.md", () => {
+  it("shares no 8-word run with docs/dev/planner-subagent/planner-subagent.md", () => {
     expect(plannerDocWordRuns(plannerTemplateBody("issue-review"))).toEqual([]);
   });
 

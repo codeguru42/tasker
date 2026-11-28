@@ -187,7 +187,7 @@ The terms of this section:
 - A call on the three folders is a `mkdir -p`, an `ls`, a Read call, a write or a delete in the three folders.
 - `drafts/` is the folder `<data root>/<repo slug>/orchestrators/<slug>/drafts/`. It is in the orchestrator folder, but
   it is not one of the three folders. It holds the files of each new draft of the planner subagents of the orchestrator.
-  [The prompt](planner-subagent.md#the-prompt) gives its use.
+  [The prompt](planner-subagent/planner-subagent.md#the-prompt) gives its use.
 - The old folder is the folder `/tmp/tasker/<own name>/drafts/`, with the own name of the orchestrator. It holds the
   drafts that a planner subagent wrote there before `drafts/` existed. It also holds the drafts of a time of the bar.
 - The writers in `drafts/` and in the old folder are the orchestrator, the planner subagents, the issue-draft subagents
@@ -198,8 +198,8 @@ The terms of this section:
 
 An example of an orchestrator folder is `$HOME/.local/share/tasker/codeguru42-tasker/orchestrators/m31/`, as a name of a
 folder, not as the path of a call. [The question file](question-pane.md#the-question-file) gives the files of
-`questions/`. [The proposal file](planner-subagent.md#the-proposal-file) gives the files of `proposals/`.
-[The handoff file](handoff.md#the-handoff-file) gives the files of `handoffs/`.
+`questions/`. [The proposal file](planner-subagent/planner-subagent.md#the-proposal-file) gives the files of
+`proposals/`. [The handoff file](handoff.md#the-handoff-file) gives the files of `handoffs/`.
 
 Only an orchestrator of that slug writes in its three folders. In `drafts/`, the writers are the writers that the terms
 of this section give. tasker makes, reads and changes nothing there. Two orchestrators with different slugs have
@@ -234,7 +234,8 @@ The forms of the calls for the kind `claude`:
 
 An orchestrator of the kind `pi` or `codex` runs the same `ls`, `mkdir -p` and `rm` in its shell. It reads a file with
 `cat <file>`. It writes a file with `cat > <file> <<'EOF'`, with a quoted end word. The measured pi sessions had only
-the tool `bash`, as [The kind of the orchestrator](planner-subagent.md#the-kind-of-the-orchestrator) says.
+the tool `bash`, as [The kind of the orchestrator](planner-subagent/planner-subagent.md#the-kind-of-the-orchestrator)
+says.
 
 No one measured these calls on a file under the data root, for any kind. No one measured whether Claude Code asks a
 permission prompt for them. No one measured whether the classifier of the auto mode denies them. The first use can show
@@ -244,7 +245,7 @@ The orchestrator runs two calls on `drafts/`, both for the kind `claude`:
 
 - A make, `mkdir -p <drafts>`, before the first count read of a session, if the folder can be missing.
 - The count read, `ls <drafts> | sed -n -E 's/^plan-([0-9]+)-.*/\1/p' | sort -n | tail -n 1`, before each start of a
-  planner subagent. [The name](planner-subagent.md#the-name) gives its use.
+  planner subagent. [The name](planner-subagent/planner-subagent.md#the-name) gives its use.
 
 Both are plain calls. Each uses the absolute path that starts with the data root as the read printed it, with no
 `$HOME`, no `~` and no `cd`. A count read passes only with no error and an empty output or one number. Each other result
@@ -299,8 +300,8 @@ These events start the bar:
 
 These events start no bar: a read of a file that does not exist, and a failed or denied size count. The reason for the
 first: it shows no fault of the access to the folder, and
-[A missing draft file](planner-subagent.md#a-missing-draft-file) gives the steps. The reason for the second: each size
-count keeps its own rule for a failure.
+[A missing draft file](planner-subagent/planner-subagent.md#a-missing-draft-file) gives the steps. The reason for the
+second: each size count keeps its own rule for a failure.
 
 The reason for a bar after a failed call on a file of `drafts/`: each later planner subagent gets the same folder and
 can get the same failure, and the bar stops this repeat until the user decides. The reason for one bar: one bar is

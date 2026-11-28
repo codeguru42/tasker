@@ -27,9 +27,9 @@ export function fillPlannerTemplate(name: string, values: Record<string, string>
   return fillFamilyTemplate("planner", name, values);
 }
 
-/** Give each run of 8 words that the body shares with `docs/dev/planner-subagent.md`. */
+/** Give each run of 8 words that the body shares with `docs/dev/planner-subagent/planner-subagent.md`. */
 export function plannerDocWordRuns(body: string): string[] {
-  return sharedWordRuns(body, readFileSync(packagePath("docs/dev/planner-subagent.md"), "utf8"));
+  return sharedWordRuns(body, readFileSync(packagePath("docs/dev/planner-subagent/planner-subagent.md"), "utf8"));
 }
 
 /** Tell whether the sentence stands in the filled text after the start block. */

@@ -38,7 +38,6 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/handoff.md](docs/dev/handoff.md): the handoff of a session.
 - [docs/dev/limits.md](docs/dev/limits.md): the limits of the orchestrator and the task subagents.
 - [docs/dev/planner.md](docs/dev/planner.md): the rules of a planner.
-- [docs/dev/planner-subagent.md](docs/dev/planner-subagent.md): the rules of a planner subagent of the orchestrator.
 - [docs/dev/issue-subagents.md](docs/dev/issue-subagents.md): the rules that each draft, review and post subagent of a
   planner follows.
 - [docs/dev/issue-draft.md](docs/dev/issue-draft.md): the rules of an issue-draft subagent.
@@ -62,6 +61,11 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/codex-sessions.md](docs/dev/codex-sessions.md): the measured facts of Codex sessions.
 - [docs/dev/pi-sessions.md](docs/dev/pi-sessions.md): measured pi tools and limits for a pi session in a herdr pane.
 - [docs/dev/release.md](docs/dev/release.md): the releases.
+
+## docs/dev/planner-subagent/
+
+- [docs/dev/planner-subagent/planner-subagent.md](docs/dev/planner-subagent/planner-subagent.md): the rules of a planner
+  subagent of the orchestrator.
 
 ## docs/dev/task-subagent/
 

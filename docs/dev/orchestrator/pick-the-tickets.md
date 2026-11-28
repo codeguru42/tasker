@@ -1176,7 +1176,8 @@ pane for each such finding. It sends each proposed issue of the rounds to its pl
 rounds is handled, as [Session-review rounds](../session-review-rounds.md) defines a handled finding.
 
 The orchestrator starts the end reads only after the result of each planner subagent of the rounds. A question in such a
-result is an open question of the orchestrator, as [The result](../planner-subagent.md#the-result) says.
+result is an open question of the orchestrator, as [The result](../planner-subagent/planner-subagent.md#the-result)
+says.
 
 The end reads read these facts again:
 
@@ -1465,19 +1466,21 @@ landing rules still apply.
   prompt of that ticket.
 - The planner bullet: the orchestrator gives each lesson of a final report, each finding of a session review, each
   recurrence and each proposed issue only to its planner. For an orchestrator of the kind `claude`, the planner is a new
-  [planner subagent](../planner-subagent.md) for each item of planning work, as
-  [The start](../planner-subagent.md#the-start) of planner-subagent.md says. The prompt gives the lesson, the ticket,
-  the date, and the doc and the section that the lesson fits. For a recurrence, it also names the open issue. The
-  planner drafts and posts the issue, as [The review loop of a draft](../planner.md#the-review-loop-of-a-draft) of
-  planner.md says. The orchestrator drafts and files no issue itself. The one exception is the issue of step 1 of
+  [planner subagent](../planner-subagent/planner-subagent.md) for each item of planning work, as
+  [The start](../planner-subagent/planner-subagent.md#the-start) of planner-subagent.md says. The prompt gives the
+  lesson, the ticket, the date, and the doc and the section that the lesson fits. For a recurrence, it also names the
+  open issue. The planner drafts and posts the issue, as
+  [The review loop of a draft](../planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
+  files no issue itself. The one exception is the issue of step 1 of
   [A failed CI run](../task-subagent/ci-wait.md#a-failed-ci-run), which the orchestrator files itself. After a failed
   start of a planner subagent, the orchestrator asks the user in its question pane, as
   [Start](../question-pane.md#start) says. A refused Agent call is a failed start. The question gives the full text of
   the lesson, the finding, the recurrence or the proposed issue. It has two choices: a new planner subagent for it, or a
   drop. A progress report starts no step, so a lesson in a report is lost. A question keeps the lesson until the
-  decision of the user. [The life of a planner subagent](../planner-subagent.md#the-life-of-a-planner-subagent) gives
-  the wait for a planner subagent. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each
-  issue draft to the planner.
+  decision of the user.
+  [The life of a planner subagent](../planner-subagent/planner-subagent.md#the-life-of-a-planner-subagent) gives the
+  wait for a planner subagent. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue
+  draft to the planner.
 
   A request of [the user](../GLOSSARY.md) to draft an issue, or to change the title or the body of an issue, is a
   proposed issue of this bullet. [The orchestrator](../../orchestrator.md) gives it to its planner with no question to
@@ -1502,8 +1505,8 @@ An orchestrator of the kind `claude` does these steps at each start of a task su
    and go on with the start.
 3. If the read gives no entry, pass no `model` and no `effort`.
 4. If the read gives an entry, pass the `effort` of the entry. Pass the `model` that
-   [The model of the start](../planner-subagent.md#the-model-of-the-start) gives for the `model` of the entry. If the
-   map gives no model, pass no `model`.
+   [The model of the start](../planner-subagent/planner-subagent.md#the-model-of-the-start) gives for the `model` of the
+   entry. If the map gives no model, pass no `model`.
 5. Pass the subagent type `general-purpose`, as the planner subagent start does. Never pass the type `fork`, and never
    leave out the type.
 

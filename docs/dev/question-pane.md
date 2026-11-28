@@ -249,11 +249,12 @@ such file is outside the local clone and outside each worktree. An untracked fil
 waits for a later decision.
 
 For an orchestrator of the kind `claude`, the planner of the orchestrator is a new
-[planner subagent](planner-subagent.md) for each [item of planning work](planner-subagent.md#the-start). A request,
-relay, open finding, accepted proposal or recurrence is such an item. So is the planning request of late matches of
+[planner subagent](planner-subagent/planner-subagent.md) for each
+[item of planning work](planner-subagent/planner-subagent.md#the-start). A request, relay, open finding, accepted
+proposal or recurrence is such an item. So is the planning request of late matches of
 [The check of the pane owner](#the-check-of-the-pane-owner). On this page, a send to such a planner is the start of a
 planner subagent. After a failed start, the orchestrator asks the user in its question pane, as
-[The start](planner-subagent.md#the-start) says.
+[The start](planner-subagent/planner-subagent.md#the-start) says.
 
 An input file is a file under `/tmp/tasker/<slug>/drafts/`, with the slug of the pane owner.
 
@@ -391,8 +392,8 @@ orders the questions by the number at the end of the question id. It compares th
 
 The orchestrator gives the question ids in the arrival order of key 3. This holds for both parts of key 3. The earlier
 question comes first. In one message, the lower question number of the asking session comes first. For the questions of
-one result of a [planner subagent](planner-subagent.md#a-draft-that-needs-the-user), the orchestrator gives the question
-ids in the order of the numbers of the result, as that section says.
+one result of a [planner subagent](planner-subagent/planner-subagent.md#a-draft-that-needs-the-user), the orchestrator
+gives the question ids in the order of the numbers of the result, as that section says.
 
 A word of the user that names an open question starts the pane of that question first. An open question that arrives
 later takes its place in the list order, so it can come before an older open question. This holds before, during and
@@ -505,8 +506,8 @@ An orchestrator of the kind `claude` does these steps at each start of an opener
    start the subagent.
 4. If the read gives no entry, pass no `model` and no `effort`.
 5. If the read gives an entry, pass the `effort` of the entry.
-6. Pass the `model` that [The model of the start](planner-subagent.md#the-model-of-the-start) gives for the `model` of
-   the entry. If the map gives no model, pass no `model`.
+6. Pass the `model` that [The model of the start](planner-subagent/planner-subagent.md#the-model-of-the-start) gives for
+   the `model` of the entry. If the map gives no model, pass no `model`.
 7. Pass the subagent type `general-purpose`. Never pass the type `fork`.
 
 An orchestrator of another kind reads no entry `opener` or `reuse`, as [`sessions`](../config.md#sessions) says.
@@ -1424,10 +1425,10 @@ subagent goes back to that task subagent with the message path that the orchestr
 task subagent has no pane, so the herdr path does not reach it. A question of a session that tasker starts goes back
 through the task subagent of its task. A planner subagent is never the sender of a question of a pane. Its questions
 come in its result, and the orchestrator asks them as its own open questions. See
-[The result](planner-subagent.md#the-result). Each such message starts `From the user:`. The next line identifies
-question pane `<name>`. It gives the question id, the user's words, and requested draft changes. The sender treats that
-message as any other `From the user:` message. A question of the orchestrator itself has no sender, and the orchestrator
-acts on the decision.
+[The result](planner-subagent/planner-subagent.md#the-result). Each such message starts `From the user:`. The next line
+identifies question pane `<name>`. It gives the question id, the user's words, and requested draft changes. The sender
+treats that message as any other `From the user:` message. A question of the orchestrator itself has no sender, and the
+orchestrator acts on the decision.
 
 When the pane owner accepts a decision message, it reads the [question file](#the-question-file) again. It judges from
 that text whether the message settles the question. It also reads the question file again when a word of the user in its
@@ -1519,9 +1520,10 @@ in one line.
 
 Right before each start of a write subagent, the orchestrator runs `tasker show-config --repo <repo key>` and reads
 `.sessions.models.write`. With an entry, the `Agent` call gives the `effort` of the entry. It gives the `model` that
-[The model of the start](planner-subagent.md#the-model-of-the-start) gives for the `model` of the entry. If the map of
-that subsection gives no model, the call gives no `model` and still gives the `effort`. With no entry, the call gives no
-model and no effort, as [Sessions](../config.md#sessions) says for a subagent role with no entry.
+[The model of the start](planner-subagent/planner-subagent.md#the-model-of-the-start) gives for the `model` of the
+entry. If the map of that subsection gives no model, the call gives no `model` and still gives the `effort`. With no
+entry, the call gives no model and no effort, as [Sessions](../config.md#sessions) says for a subagent role with no
+entry.
 
 A failed read follows [the failure rule](limits.md#the-failure-rule). The write subagent then starts with no model and
 no effort, because the user already approved the action. A failed start runs no write action. A refused `Agent` call is
@@ -1647,7 +1649,7 @@ request as a proposed issue of the orchestrator, with its review loops and its p
 post or the drop to the orchestrator.
 
 A planner subagent gives its report of the post or the drop and each question in its result instead, as
-[The result](planner-subagent.md#the-result) says.
+[The result](planner-subagent/planner-subagent.md#the-result) says.
 
 For a title or body request, the user approves the request, not a text. The planner drafts the change, runs its review
 loops and posts the reviewed text, as for a new issue. It needs no approval of the user for the text. The draft starts
@@ -1949,8 +1951,8 @@ before closing". No one measured the tokens of the rounds in a question pane.
 
 The folder of the draft files is each folder in which the planner subagents of the orchestrator write new draft files.
 Today that is `drafts/` of [the orchestrator folder](limits.md#the-orchestrator-folder), as
-[The prompt](planner-subagent.md#the-prompt) says. The old folder `/tmp/tasker/<own name>/drafts/` also counts. It holds
-older drafts and the drafts of a time of the bar.
+[The prompt](planner-subagent/planner-subagent.md#the-prompt) says. The old folder `/tmp/tasker/<own name>/drafts/` also
+counts. It holds older drafts and the drafts of a time of the bar.
 
 A draft of the check is a file of one of these kinds:
 
@@ -1964,9 +1966,9 @@ match.
 
 A check request is a message of the question session to its pane owner in the rounds. It asks for each match of a
 proposal of step 6. A match is a proposal file, an
-[item of planning work that waits](planner-subagent.md#the-proposal-file) or a draft of the check. A match covers the
-change in full or in part. The check is the work of the pane owner for one check request. The check answer is the reply
-of the pane owner.
+[item of planning work that waits](planner-subagent/planner-subagent.md#the-proposal-file) or a draft of the check. A
+match covers the change in full or in part. The check is the work of the pane owner for one check request. The check
+answer is the reply of the pane owner.
 
 The question session sends a check request for each proposal of step 6, also for a recurrence. The search of step 6 runs
 first, and the request names each open issue that the search found. The request names the file and the change of each
@@ -2024,10 +2026,11 @@ and no question file.
 
 Two files can start with the name of one planner subagent. In the old folder, a new draft of a time of the bar can have
 the name of an older draft. After a compaction, two planner subagents of one session can have one name. The count read
-makes a new name higher than each earlier name in `drafts/` only, as [The name](planner-subagent.md#the-name) says. A
-new name can equal the name of a draft in the old folder, because the count read does not list the old folder. For
-example, the first planner subagent of an empty `drafts/` is `plan-1`, and the old folder can hold `plan-1-links.md`.
-The pane owner checks both files, and the answer can name both. The user decides on each match in the pane.
+makes a new name higher than each earlier name in `drafts/` only, as
+[The name](planner-subagent/planner-subagent.md#the-name) says. A new name can equal the name of a draft in the old
+folder, because the count read does not list the old folder. For example, the first planner subagent of an empty
+`drafts/` is `plan-1`, and the old folder can hold `plan-1-links.md`. The pane owner checks both files, and the answer
+can name both. The user decides on each match in the pane.
 
 A known limit: a full `ls` of a growing `drafts/` can fill the context of the orchestrator. The check has no filtered
 form of the list.

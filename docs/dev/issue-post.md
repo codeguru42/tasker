@@ -70,13 +70,14 @@ Without this rule, the subagent finds its own issue again and posts nothing, so 
 
 If the draft file of the post is missing, the subagent posts nothing and writes no body file. This holds for a comment
 post too: it posts nothing from the approved text. The result gives the path and says that the post is not complete.
-[A missing draft file](planner-subagent.md#a-missing-draft-file) gives the case of the planner subagent.
+[A missing draft file](planner-subagent/planner-subagent.md#a-missing-draft-file) gives the case of the planner
+subagent.
 
 ## A comment post
 
 A comment post is the post of one approved comment of a planner subagent on an issue. A planner subagent starts an
 issue-post subagent for it, and a planner session keeps its own comments, as
-[The starter of an issue subagent](planner-subagent.md#the-starter-of-an-issue-subagent) says.
+[The starter of an issue subagent](planner-subagent/planner-subagent.md#the-starter-of-an-issue-subagent) says.
 
 ### The prompt of a comment post
 
@@ -281,17 +282,17 @@ The reasons for this path:
 - The draft folder holds the repo slug and the slug of the orchestrator, or the own name for the old folder, the slug of
   the planner or the ad hoc name. So a body file collides only where its draft file collides.
 - Two planner subagents of one orchestrator share a draft folder. The count read and the counts of the session keep
-  their names apart, as [The name](planner-subagent.md#the-name) says. After a compaction, two planner subagents of one
-  session can have one name, and their files can clash, as the known limits of
-  [The count of planner subagents](planner-subagent.md#the-count-of-planner-subagents) say. While the bar of
-  [the orchestrator folder](limits.md#the-orchestrator-folder) holds, the orchestrator runs no count read. So a new
-  draft in the old folder can get the file name of an older draft there, as the same known limits say. A later session
-  with the same own name starts only after the old session waits for each planner subagent.
-  [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says this. The exception is a wait that a
-  word of the user ended. Then the known limits of that subsection hold.
+  their names apart, as [The name](planner-subagent/planner-subagent.md#the-name) says. After a compaction, two planner
+  subagents of one session can have one name, and their files can clash, as the known limits of
+  [The count of planner subagents](planner-subagent/planner-subagent.md#the-count-of-planner-subagents) say. While the
+  bar of [the orchestrator folder](limits.md#the-orchestrator-folder) holds, the orchestrator runs no count read. So a
+  new draft in the old folder can get the file name of an older draft there, as the same known limits say. A later
+  session with the same own name starts only after the old session waits for each planner subagent.
+  [The wait before a handoff](planner-subagent/planner-subagent.md#the-wait-before-a-handoff) says this. The exception
+  is a wait that a word of the user ended. Then the known limits of that subsection hold.
 - Inside one folder, two drafts have different names, so their body files differ. The two exceptions are the bar and a
   compaction, as the known limits of
-  [The count of planner subagents](planner-subagent.md#the-count-of-planner-subagents) say.
+  [The count of planner subagents](planner-subagent/planner-subagent.md#the-count-of-planner-subagents) say.
 - Each poster has the path of its draft file, and the rule needs no name of a planner subagent.
 - The end `.body.md` differs from `-body.md`. A draft name has only lowercase letters, digits and `-`, as
   [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) says. So `<name>.body.md` is never a

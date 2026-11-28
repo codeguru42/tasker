@@ -83,7 +83,7 @@ links to those sections, and this table does not repeat them. For `pi`, the rule
 | The review session of tasker           | runs       | never runs    | runs       | runs       | never runs | never runs | never runs | never runs | never runs | never runs | runs       | runs       | never runs | runs       | runs       | runs | Code of tasker. `claude-code`: [The plan and review roles](../assistants.md#the-plan-and-review-roles). `codex`: [The codex provider](../assistants.md#the-codex-provider) and [What the sandbox blocks and what stays open](../assistants.md#what-the-sandbox-blocks-and-what-stays-open). `pi`: [The limits of the plan and review roles](../assistants.md#the-limits-of-the-plan-and-review-roles). Kind `pi`: docs only for each rule that no seam enforces | The task subagent that started the run, in the output of tasker                           |
 
 The planner subagent runs K12 because it keeps the record of the findings of each draft in the
-[record file](../planner-subagent.md#the-record-file).
+[record file](../planner-subagent/planner-subagent.md#the-record-file).
 
 Notes on the three session rows. Each cell comes from a statement of `assistants.md`, or from the rule of the cell
 definitions where the doc has no statement.

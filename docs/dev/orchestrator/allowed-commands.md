@@ -83,7 +83,7 @@ Sources: [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-
 [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
 [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator),
 [The steps for the open peer requests](handoff-orchestrator.md#the-steps-for-the-open-peer-requests),
-[The proposal file](../planner-subagent.md#the-proposal-file), [Limits](../limits.md#limits),
+[The proposal file](../planner-subagent/planner-subagent.md#the-proposal-file), [Limits](../limits.md#limits),
 [the own-worktree rule](../limits.md#the-own-worktree-rule),
 [The check of the pane owner](../question-pane.md#the-check-of-the-pane-owner),
 [The board watch job](../../orchestrator.md#the-board-watch-job), [Terms](quota.md#terms),
@@ -218,8 +218,9 @@ Sources: [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-
 ## The planner subagent
 
 Sources: [Sessions](../../config.md#sessions), [the doc-read rule](../doc-reads.md#the-doc-read-rule),
-[The result](../planner-subagent.md#the-result), [The record file](../planner-subagent.md#the-record-file),
-[No metadata](../planner-subagent.md#no-metadata),
+[The result](../planner-subagent/planner-subagent.md#the-result),
+[The record file](../planner-subagent/planner-subagent.md#the-record-file),
+[No metadata](../planner-subagent/planner-subagent.md#no-metadata),
 [The reads before the write](../issues.md#the-reads-before-the-write),
 [The project board](../issues.md#the-project-board), [The blocked-by links](../issues.md#the-blocked-by-links),
 [The post of a draft](../planner.md#the-post-of-a-draft),
