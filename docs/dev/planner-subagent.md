@@ -915,8 +915,9 @@ user.
 A draft gets at most 3 reviews. The count starts at 1 for the first review of the draft.
 
 The count starts at 1 again for a change of the draft from an answer of the user or from a settled answer. It also
-starts at 1 again for the change of a draft into a change of an open issue after the duplicate search. The planner
-subagent adds a line `Count starts again: <reason>` to the record file.
+starts at 1 again for the change of a draft into a change of an open issue after the duplicate search. It also starts at
+1 again for the change of a match draft for an item with a match, as [An item with a match](#an-item-with-a-match) says.
+The planner subagent adds a line `Count starts again: <reason>` to the record file.
 
 A review counts only with a report. A second issue-review subagent for the same review adds no review to the count.
 
@@ -945,6 +946,19 @@ Such a draft waits for a decision of the user. The result of the planner subagen
 the remaining findings of the draft, as [The result](#the-result) says. It also gives the question about the remaining
 findings, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
+A changed match draft can wait only for the question about the remaining findings. In this case, no other question of
+the draft is open, and no answer of the draft waits in a proposal file. The state of the match in the prompt gives these
+facts. The count starts again for the change, and one of two cases follows.
+
+- If a review has no new finding, it approves the draft. The planner subagent starts the issue-post subagent. Its result
+  says that the question about the remaining findings is moot, with the question id.
+- If a review has a new finding, nothing posts. The steps of this section hold: a new issue-draft subagent after review
+  1 or 2, and the remaining findings after review 3. The draft keeps its open question. The new findings go in the
+  result as a new question, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
+
+A finding of one of the six kinds that the next paragraph names still sends the draft to the escape hatch. In each other
+case, a changed match draft posts nothing.
+
 The work on the draft can leave a finding of one of the six kinds of
 [A draft that needs the user](#a-draft-that-needs-the-user) open. The draft is then a draft of that kind. That finding
 still sends the draft to the escape hatch, also for an approved draft. Keep 1 and keep 5 give this step.
@@ -970,10 +984,10 @@ subagent. The cost: the full text of each review and of the record file fills th
 
 An issue-review subagent does not judge whether a finding is new. Its prompt gives no earlier finding.
 
-After a change of the draft from an answer of the user or from a settled answer, each review and each dismissal of the
-draft before the change still counts. The record file keeps them. The reason: the result of the planner subagent already
-showed the user each dismissed finding, as The result says. The cost: a finding that the change of the user makes true
-again is not new, so no later review stops the post for it.
+After a change of the draft from an answer of the user, from a settled answer or from an item with a match, each review
+and each dismissal of the draft before the change still counts. The record file keeps them. The reason: the result of
+the planner subagent already showed the user each dismissed finding, as The result says. The cost: a finding that the
+change of the user makes true again is not new, so no later review stops the post for it.
 
 ### The record file
 
