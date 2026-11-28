@@ -50,6 +50,9 @@ Each send of the docs to the planner of the orchestrator is a planning request. 
 For each item of planning work of a planning request, the orchestrator of the kind `claude` starts a planner subagent,
 as [The start](#the-start) says.
 
+The orchestrator joins a planning request of late matches with the item of its proposal, as
+[A joined item](#a-joined-item) says. The request names the proposal and the report that gave it.
+
 ## The start
 
 Only the orchestrator starts a planner subagent. A task subagent, a question session, a planner and a planner subagent
@@ -158,7 +161,8 @@ These terms hold for this wait:
 - A running planner subagent is a planner subagent that holds a place in
   [The count of planner subagents](#the-count-of-planner-subagents).
 - The paths of an item are each path that the words of the item give as a match, and the proposal file of the item. For
-  an item of an answer of the user or of a settled answer, its draft file path is a path of the item too.
+  an item of an answer of the user or of a settled answer, its draft file path is a path of the item too. The paths of a
+  joined item are the paths of each of its items. The deleted file of a join is no path.
 - A record file, a report file or a body file of a draft stands for its draft file, as in
   [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner).
 - If a path is a path of its own item, a running planner subagent makes the path busy. It also makes busy each path in
@@ -223,9 +227,11 @@ These known limits hold:
 - The name of a file of another draft can start with the name of a running planner subagent and `-`. An example is a
   draft of an earlier session. An item that names such a file waits with no clash. The cost is a longer wait only.
 - The wait lasts as long as the planner subagent of the busy path runs, with its review loops. No time limit ends it.
-- An item A can wait for a busy path, and a later item B can name the proposal file of A as a match. Then B can start
-  before A, against the order of arrival. The paths of B then make the proposal file of A busy, so A waits for the
-  result of B. The cost: B works on a match whose planner subagent did not run yet, and A starts later.
+- An item A can wait for a busy path, and a later item B can name the proposal file of A as a match with full cover.
+  Then B can start before A, against the order of arrival. The paths of B then make the proposal file of A busy, so A
+  waits for the result of B. The cost: B works on a match whose planner subagent did not run yet, and A starts later.
+  For part cover, B joins A instead, as [A joined item](#a-joined-item) says, if A still waits. The limit still holds
+  when A already runs.
 - After an end with no report, an item that waited for a path of the ended planner subagent waits until the next start
   list. The cost is a longer wait only.
 
@@ -303,6 +309,8 @@ that waits is an item that waits in the session. These files are not items that 
   the user. [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) gives the steps.
 - A file of a draft that still has an open question, until the answer to the last open question of the draft, or until
   an answer drops the draft. See [A settled question](#a-settled-question).
+- A late-match file that waits for the result of a planner subagent that runs, as [A joined item](#a-joined-item) says.
+- A file whose join failed, until the next word of the user.
 
 Before the start of a planner subagent, the orchestrator writes the name of that planner subagent into its proposal
 file. The name is `plan-<count>` of [The name](#the-name). The file holds the tie of the item and the planner subagent,
@@ -327,6 +335,53 @@ file again. The user decides.
 
 A file can still stay in `proposals/` at the write of the handoff file, for example a kept file of a failed start. Such
 a file stays in the folder, and the new orchestrator finds it at the end of its start steps.
+
+#### A joined item
+
+A joined item is one item that the orchestrator made from two items before a planner subagent starts. These rules hold
+for it.
+
+- The tie. The proposal file of an item from a report of a question pane also holds the report that gave it: the pane
+  id, the question id and the message number. The orchestrator ties a proposal of a report to its proposal file by these
+  facts and by the words of the proposal. This judgment is open on purpose. If no file or two files fit, the tie fails.
+- The join for part cover. Before the start of a planner subagent for an item A, the orchestrator reads the matches that
+  the words of A give. Take a match B that is a proposal file or an item that waits, with the cover "in part" in the
+  words of A. If B still waits and names no planner subagent, the orchestrator joins A and B. Full cover gets no join,
+  as [The work for each cover](#the-work-for-each-cover) says.
+- The late matches. At the arrival of a planning request of late matches, the orchestrator ties it to the item of its
+  proposal. Three cases follow, and a fourth case covers a failed tie.
+  - If that item still waits, the orchestrator joins the late matches with it.
+  - If its planner subagent runs, the late-match item waits for its result. The late-match file names the planner
+    subagent that it waits for, and it is not an item that waits until that result. After the result, the orchestrator
+    writes the draft path or the issue key of the result into the late-match file as one more match. Then the item waits
+    as each other item.
+  - If its planner subagent already ended, the orchestrator takes the draft path or the issue key from that result in
+    its session and writes it into the late-match file. If the result gave no draft and no issue, for example after a
+    drop, the orchestrator writes that fact as the state of that match.
+  - If the tie fails, or the session lacks the result, the late matches wait for a decision of the user. The
+    orchestrator asks in its question pane.
+- The join itself. The joined item keeps the file with the lower number, so the order of arrival of the earlier item
+  holds. The orchestrator appends the words of the other item to that file, word for word, with its sender, its date and
+  the source of each fact. Then it deletes the other file. One item then has one proposal file, as before.
+- The count. A joined item starts one planner subagent and takes one place in
+  [The count of planner subagents](#the-count-of-planner-subagents).
+- The calls. Each read, write and delete of a join is a call on the three folders.
+  [The orchestrator folder](limits.md#the-orchestrator-folder), [the failure rule](limits.md#the-failure-rule) and
+  [the tool-block rule](tasker-commands.md#the-tool-block-rule) apply, with the fallback. If the write fails or gets a
+  denial, no join happens, and both files stay. The two items then wait for a decision of the user and do not start. If
+  the delete fails after a good write, the file of the other item stays, and the orchestrator tells the user the path.
+  That file is not an item that waits. While the bar holds, the orchestrator joins the two items in its session and
+  writes no file.
+- The planner subagent reads no proposal file. The prompt gives the words of each joined item.
+
+These rules need no change in [limits.md](limits.md), [allowed-commands.md](allowed-commands.md) or
+[permissions.md](permissions.md). The planner subagent gets no new command. A join is a call of the orchestrator on its
+own three folders, and The orchestrator folder already covers each such call.
+
+The cost of the part-cover join is a new write of the orchestrator into the proposal file of another item, and a change
+in the order of the work of the matched item. The cost of the late-match join is new reads and writes of the
+orchestrator, and the tie of a proposal of a report to its proposal file. A wrong tie joins the wrong items. The user
+sees the join in the result.
 
 These known limits hold:
 
