@@ -316,7 +316,8 @@ that waits is an item that waits in the session. These files are not items that 
   the user. [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) gives the steps.
 - A file of a draft that still has an open question, until the answer to the last open question of the draft, or until
   an answer drops the draft. See [A settled question](#a-settled-question).
-- A late-match file that waits for the result of a planner subagent that runs, as [A joined item](#a-joined-item) says.
+- A late-match file, until the result of the planner subagent of its item, as [A joined item](#a-joined-item) says. This
+  holds also while a replacement of that planner subagent waits for its start.
 - A file whose join failed, until the next word of the user.
 
 Before the start of a planner subagent, the orchestrator writes the name of that planner subagent into its proposal
@@ -358,7 +359,9 @@ for it.
 
 - The tie. The proposal file of an item from a report of a question pane also holds the report that gave it: the pane
   id, the question id and the message number. The orchestrator ties a proposal of a report to its proposal file by these
-  facts and by the words of the proposal. This judgment is open on purpose. If no file or two files fit, the tie fails.
+  facts and by the words of the proposal. This judgment is open on purpose. The orchestrator can also tie a request by
+  its session. If its session holds the result of the proposal, it uses that result. The tie fails only if neither the
+  proposal files nor the session give one item.
 - The join for part cover. Before the start of a planner subagent for an item A, the orchestrator reads the matches that
   the words of A give. Take a match B that is a proposal file or an item that waits, with the cover "in part" in the
   words of A. If B still waits and names no planner subagent, the orchestrator joins A and B. Full cover gets no join,
@@ -386,8 +389,7 @@ for it.
     subagent judges the cover of each, as [The cover of a match](#the-cover-of-a-match) says.
   - In either case above, if the result gave no draft and no issue, for example after a drop, the orchestrator writes
     that fact as the state of that match. The item then waits as each other item.
-  - If the tie fails, or the session lacks the result, the late matches wait for a decision of the user. The
-    orchestrator asks in its question pane.
+  - If the tie fails, the late matches wait for a decision of the user. The orchestrator asks in its question pane.
 - The join itself. The joined item keeps the file with the lower number, so the order of arrival of the earlier item
   holds. The orchestrator appends the words of the other item to that file, word for word, with its sender, its date and
   the source of each fact. It also copies the pane id, the question id and the message number of the other file into the
