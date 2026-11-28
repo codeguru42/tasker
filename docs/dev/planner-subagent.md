@@ -397,13 +397,11 @@ for it.
   - If the tie fails, the late matches wait for a decision of the user. The orchestrator asks in its question pane.
 - The join itself. The joined item keeps the file with the lower number, so the order of arrival of the earlier item
   holds. The orchestrator appends the words of the other item to that file, word for word, with its sender, its date and
-  the source of each fact. It also copies the pane id, the question id and the message number of the other file into the
-  kept file beside its words and sources. A later planning request of late matches for the other proposal still ties to
-  the joined item, as The tie says. The prompt gives the state "joined into this item" for that match, as
-  [The prompt](#the-prompt) says. Before it deletes the other file, the orchestrator lists in the kept file the number
-  of each file that joined into it. It copies the number of the other file and each number, pane id, question id and
-  message number that the other file already holds, also from earlier joins. One item then has one proposal file, as
-  before.
+  the source of each fact. Before it deletes the other file, the orchestrator lists in the kept file the number of each
+  file that joined into it. It copies the number, the pane id, the question id and the message number of the other file,
+  and each of these facts that the other file already holds from earlier joins. A later planning request of late matches
+  for the other proposal still ties to the joined item, as The tie says. The prompt gives the state "joined into this
+  item" for that match, as [The prompt](#the-prompt) says. One item then has one proposal file, as before.
 - The count. A joined item starts one planner subagent and takes one place in
   [The count of planner subagents](#the-count-of-planner-subagents).
 - The calls. Each read, write and delete of a join is a call on the three folders.
@@ -412,8 +410,8 @@ for it.
   denial, no join happens, and both files stay. The two items then wait for a decision of the user and do not start. If
   the delete fails after a good write, the file of the other item stays, and the orchestrator tells the user the path.
   That file is not an item that waits. While the bar holds, the orchestrator joins the two items in its session and
-  writes no file. After the bar ends, the orchestrator writes the kept file and deletes the other file, as The join
-  itself says, before it starts either item.
+  writes no file. After the bar ends, the orchestrator writes the kept file before it starts either item. It deletes the
+  other file only after it finds that file in `proposals/`, as The join itself says.
 - The planner subagent reads no proposal file. The prompt gives the words of each joined item.
 
 These rules need no change in [limits.md](limits.md), [allowed-commands.md](allowed-commands.md) or
