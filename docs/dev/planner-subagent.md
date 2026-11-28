@@ -750,7 +750,8 @@ For each match of an item, the result gives these facts:
 - The path of the match.
 - The cover: in full, in part or none.
 - The action. It is one of these: no change, the changed match draft, the change of an open issue with its key, a new
-  draft, a post after the case of [The count of reviews](#the-count-of-reviews), or nothing after a failed read.
+  draft, a post after a review with no finding, as [The count of reviews](#the-count-of-reviews) says, or nothing after
+  a failed read.
 - The reason for the action.
 
 For a changed match draft, the result also gives a short summary of the change. It says that the draft still waits for
@@ -771,8 +772,9 @@ plan v1 of #1097. The date is 2026-11-26.
   the proposal. The cost: new reads and writes of the orchestrator. The orchestrator must tie a proposal of a report to
   its proposal file.
 - OD4, a match draft that waits only for the question about the remaining findings. The answer is "2 b", and it is
-  narrow. The planner subagent posts the draft only if the new reviews find nothing new. The cost: a post before the
-  answer to a question that the user saw. The orchestrator drops a question of another draft from a result.
+  narrow. The planner subagent posts the draft only after a review with no finding at all. A finding from an earlier
+  review also stops the post. The cost: a post before the answer to a question that the user saw. The orchestrator drops
+  a question of another draft from a result.
 
 ### The known limits of a match
 
@@ -1066,11 +1068,15 @@ A changed match draft can wait only for the question about the remaining finding
 the draft is open, and no answer of the draft waits in a proposal file. The state of the match in the prompt gives these
 facts. The count starts again for the change, and one of two cases follows.
 
-- If a review has no new finding, it approves the draft. The planner subagent starts the issue-post subagent. Its result
-  says that the question about the remaining findings is moot, with the question id.
-- If a review has a new finding, nothing posts. The steps of this section hold: a new issue-draft subagent after review
-  1 or 2, and the remaining findings after review 3. The draft keeps its open question. The new findings go in the
-  result as a new question, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
+- The planner subagent posts the changed match draft only after a review with no finding at all. A finding from an
+  earlier review counts as a finding, including a remaining finding. It starts the issue-post subagent. Its result says
+  that the question about the remaining findings is moot, with the question id.
+- If a review has a finding, nothing posts. The steps of this section hold: a new issue-draft subagent after review 1 or
+  2, and the remaining findings after review 3. The draft keeps its open question. The new findings go in the result as
+  a new question, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
+
+For this case, this rule wins over the sentence "A review with no new finding approves the draft." The changed match
+draft must not post while any review finding remains.
 
 A finding of one of the six kinds that the next paragraph names still sends the draft to the escape hatch. In each other
 case, a changed match draft posts nothing.
