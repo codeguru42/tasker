@@ -164,7 +164,12 @@ These terms hold for this wait:
   an item of an answer of the user or of a settled answer, its draft file path is a path of the item too. The paths of a
   joined item are the paths of each of its items. A draft path or issue key supplied as a match state counts as one of
   the item's paths. For example, this includes the draft path from the result when its proposal file has since
-  disappeared. The deleted file of a join is no path.
+  disappeared. Before the start, the orchestrator writes each draft path or issue key of a match state into the proposal
+  file of the item that has that match. If the write fails or gets a denial, that item does not start at that decision,
+  as the paragraph that starts "A read of these paths can fail" says for a read. While the bar of the fallback holds,
+  the session keeps the path. The proposal number of the deleted file of a join stays a path of the joined item while
+  its planner subagent runs. A match that names that proposal file means the joined item, so the item waits for the
+  result of the joined planner subagent. After that result, the proposal number is no path.
 - A record file, a report file or a body file of a draft stands for its draft file, as in
   [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner).
 - If a path is a path of its own item, a running planner subagent makes the path busy. It also makes busy each path in
@@ -388,7 +393,8 @@ for it.
   the source of each fact. It also copies the pane id, the question id and the message number of the other file into the
   kept file beside its words and sources. A later planning request of late matches for the other proposal still ties to
   the joined item, as The tie says. The prompt gives the state "joined into this item" for that match, as
-  [The prompt](#the-prompt) says. Then it deletes the other file. One item then has one proposal file, as before.
+  [The prompt](#the-prompt) says. The orchestrator lists the number of the other file in the kept file before it deletes
+  the other file. One item then has one proposal file, as before.
 - The count. A joined item starts one planner subagent and takes one place in
   [The count of planner subagents](#the-count-of-planner-subagents).
 - The calls. Each read, write and delete of a join is a call on the three folders.
@@ -438,8 +444,9 @@ The prompt of a planner subagent gives these facts:
   takes each state from its proposal files, its question files and its session. A failed or denied read follows
   [the failure rule](limits.md#the-failure-rule), [the tool-block rule](tasker-commands.md#the-tool-block-rule) and the
   fallback of [The orchestrator folder](limits.md#the-orchestrator-folder). Then the state is `not known`. The known
-  limit: after a compaction, the session can lack a post or a drop. For a joined item, the prompt gives the words of
-  each item, with its sender, its date and its sources.
+  limit: after a compaction, the session can lack a post or a drop. The orchestrator writes each draft path or issue key
+  of a state into the proposal file of its item, as [The wait for a busy path](#the-wait-for-a-busy-path) says. For a
+  joined item, the prompt gives the words of each item, with its sender, its date and its sources.
 - The ask for the result through the tool `SubagentHandback`.
 
 The words of this prompt stand in the file
