@@ -510,9 +510,9 @@ The orchestrator handles a result in this way:
 4. Take each answer of the user and each settled answer as part of an item of planning work. A draft with two or more
    questions and an answer that drops a draft are exceptions, as
    [A draft that needs the user](#a-draft-that-needs-the-user) says.
-5. If the result says that a question of a posted match draft is moot, drop that question as moot work, as
-   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The text of that question in a pane
-   does not change.
+5. If the result says that each question about the remaining findings of a posted match draft is moot, drop each of
+   these questions as moot work, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The
+   text of each such question in a pane does not change.
 
 The new planner subagent of such an item follows change 6.
 
@@ -795,8 +795,9 @@ For each match of an item, the result gives these facts:
 - The reason for the action.
 
 For a changed match draft, the result also gives a short summary of the change. It says that the draft still waits for
-its open questions. After a post of that case, the result names the question about the remaining findings as moot, with
-its question id. Step 5 of [The result](#the-result) gives the work of the orchestrator for that question.
+its open questions. After a post of that case, the result names each question about the remaining findings of the draft
+as moot, each with its question id. Step 5 of [The result](#the-result) gives the work of the orchestrator for these
+questions.
 
 ### The decided choices
 
@@ -814,7 +815,7 @@ plan v1 of #1097. The date is 2026-11-26.
 - OD4, a match draft that waits only for the question about the remaining findings. The answer is "2 b", and it is
   narrow. The planner subagent posts the draft only after a review with no finding at all. A finding from an earlier
   review also stops the post. The cost: a post before the answer to a question that the user saw. The orchestrator drops
-  a question of another draft from a result.
+  each such question of another draft from a result.
 
 ### The known limits of a match
 
@@ -828,7 +829,7 @@ These known limits hold:
   session of the orchestrator can lack a post or a drop.
 - A failed read of one match stops the whole item, also when the other matches are good.
 - The planner subagent reads no proposal file, so it takes the cover of such a match from the item.
-- The question about the remaining findings in a pane keeps its text, also after a post that makes it moot.
+- Each question about the remaining findings in a pane keeps its text, also after a post that makes it moot.
 - After full cover, the user can later drop the match draft. The change then goes with it. The result named the match,
   so the user saw this before the drop.
 - After full cover of a match with no draft yet, the planner subagent of the matched item can later drop or change its
@@ -1110,13 +1111,13 @@ Such a draft waits for a decision of the user. The result of the planner subagen
 the remaining findings of the draft, as [The result](#the-result) says. It also gives the question about the remaining
 findings, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
-A changed match draft can have no open question other than the question about the remaining findings. That question can
-be there or not. No answer of the draft waits in a proposal file. The state of the match in the prompt gives these
+A changed match draft can have no open question other than the questions about the remaining findings. Such a question
+can be there or not. No answer of the draft waits in a proposal file. The state of the match in the prompt gives these
 facts. The count starts again for the change, and one of two cases follows.
 
 - The planner subagent posts the changed match draft only after a review with no finding at all. A finding from an
-  earlier review counts as a finding, including a remaining finding. It starts the issue-post subagent. Its result says
-  that the question about the remaining findings is moot, with the question id.
+  earlier review counts as a finding, including a remaining finding. It starts the issue-post subagent. Its result names
+  each question about the remaining findings of the draft as moot, each with its question id.
 - If a review has a finding, nothing posts. The steps of this section hold: a new issue-draft subagent after review 1 or
   2, and the remaining findings after review 3. The draft keeps its open question. The new findings go in the result as
   a new question, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
