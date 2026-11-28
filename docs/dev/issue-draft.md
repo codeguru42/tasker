@@ -20,6 +20,10 @@ These steps name a part of this page:
 - The bullet of [Core features first](working-with-the-user.md#core-features-first) that starts "Each piece of work that
   waits".
 
+Each issue-draft subagent and each session that follows these draft rules must apply the rules for its kind of draft.
+The comment content rule and the body edit rules under [A change of an open issue](#a-change-of-an-open-issue) apply to
+both. These rules protect each draft in the same way, regardless of who prepares it.
+
 When a step of its work needs a doc that a link of this page names, a reader reads that doc. A reader does not read it
 at its start, as [The read rule](issue-subagents.md#the-read-rule) of issue-subagents.md says.
 
@@ -60,7 +64,8 @@ a comment draft. Each other rule of this page holds for it as well, unless this 
   [A recurrence](issues.md#a-recurrence) of issues.md.
 - The draft contains only the facts that its source in the prompt or its comment rule calls for. Put each extra fact in
   its own new item in the report, using the existing route to the session that started the draft. This rule holds for
-  both kinds of comment. For a recurrence comment, the comment still gives the ticket, date and facts of the new case.
+  both kinds of comment. The content rule adds to the other comment draft rules, which still apply. It controls which
+  facts go in the comment and where extra facts go, so a comment contains only its required facts.
 - The count of [The size of a draft](#the-size-of-a-draft) runs, so the report gives the number of characters. No cut
   runs, because the size target does not bind a comment. A count over the limit of
   [The count of the body](issue-post.md#the-count-of-the-body) still stops the post.
@@ -196,6 +201,10 @@ start hash.
 A claim is a fact with a test date, a source commit hash, or both. A claim can have these values on its own or share a
 line that gives them for several facts. To test a claim again, read its source again and compare the claim with that
 read.
+
+These rules add no command or read. Use the existing command lists and permission rows. A new claim test uses the
+evidence path already named in the draft. Use a listed read on its existing path. If a read needs a read-only command
+that the list does not name, follow the existing rules for a gap. Keep the existing read bans and failed-read cases.
 
 - Keep the existing date and hash for each claim that the draft does not test again. Keep a date even if the claim has
   no hash, and keep a hash even if it has no date.
