@@ -764,8 +764,10 @@ Follow these steps in this order.
    [The count of reviews](#the-count-of-reviews) says. A new question goes in the result only after a review that finds
    something. After a review with no finding and a post, no new question follows. A question that the escape hatch
    requires for the draft still goes in the result, for example a choice between two designs or a security gap.
-5. For part cover of a posted match, follow [The post of a draft](planner.md#the-post-of-a-draft). It gives the cases of
-   an open issue with no task, an issue in flight and a closed issue.
+5. For part cover of a posted match, start an issue-draft subagent with the issue key and the change, as for a change of
+   an open issue. The reviews of [The count of reviews](#the-count-of-reviews) follow. Then the three cases of
+   [The post of a draft](planner.md#the-post-of-a-draft) apply: an open issue with no task, an issue in flight and a
+   closed issue.
 6. Read the state of the match for this step, not the words of the item. If the state is "joined into this item", the
    planner subagent works on both items, as [The proposal file](#the-proposal-file) says. The kept file holds the words
    of the other item, with its reference to the matched proposal file. If the match has no draft yet, has part cover,
@@ -1122,8 +1124,9 @@ facts. The count starts again for the change, and one of two cases follows.
   2, and the remaining findings after review 3. The draft keeps its open question. The new findings go in the result as
   a new question, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
-For this case, this rule wins over the sentence "A review with no new finding approves the draft." The changed match
-draft must not post while any review finding remains.
+For this case, this rule wins over two rules: the sentence "A review with no new finding approves the draft.", and the
+ban of [The order of the work on a draft](#the-order-of-the-work-on-a-draft) on an issue-post subagent for a draft that
+waits for a decision of the user. The changed match draft must not post while any review finding remains.
 
 A finding of one of the six kinds that the next paragraph names still sends the draft to the escape hatch. In each other
 case, a changed match draft posts nothing.
@@ -1156,7 +1159,9 @@ An issue-review subagent does not judge whether a finding is new. Its prompt giv
 After a change of the draft from an answer of the user, from a settled answer or from an item with a match, each review
 and each dismissal of the draft before the change still counts. The record file keeps them. The reason: the result of
 the planner subagent already showed the user each dismissed finding, as The result says. The cost: a finding that the
-change of the user makes true again is not new, so no later review stops the post for it.
+change of the user makes true again is not new, so no later review stops the post for it. The case of a changed match
+draft in [The count of reviews](#the-count-of-reviews) is the exception: there a finding from an earlier review also
+stops the post.
 
 ### The record file
 
