@@ -1,7 +1,7 @@
 # First refine
 
 This page lists the hints for the first refine of a ticket, sorted by the kind of ticket.
-[orchestrator.md](../orchestrator.md) defines the term "ticket". [GLOSSARY.md](GLOSSARY.md) defines the term "task
+[orchestrator.md](../../orchestrator.md) defines the term "ticket". [GLOSSARY.md](../GLOSSARY.md) defines the term "task
 subagent". [Review findings](review-findings.md#review-findings) defines a loop. The first refine is the first
 `tasker refine` of step 4 of [Run one ticket](run-one-ticket.md#run-one-ticket).
 
@@ -15,13 +15,13 @@ moved the target of "Without that", which broke the hint that starts "If a refin
 paragraph", and [the diff read](run-one-ticket.md#the-diff-read) found it. Each cost one loop.
 
 An issue gives exact hint words only when they are the requirement. The ticket plan chooses the target and words of a
-doc change, as [the body of an issue](issue-subagents.md#the-body-of-an-issue) says.
+doc change, as [the body of an issue](../issue-subagents.md#the-body-of-an-issue) says.
 
 Before the task subagent gives a hint, it compares the hint with the Out of scope section of the issue. If the Out of
 scope section excludes what the hint asks for, the task subagent does not give the hint, also when the hint fits its
 ticket. The bullet "A hint of the orchestrator can resolve a conflict" of
-["The prompt of a task subagent"](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the same compare
-for the orchestrator.
+["The prompt of a task subagent"](../orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the same
+compare for the orchestrator.
 
 ## All tickets
 
@@ -36,19 +36,19 @@ for the orchestrator.
   counts such a local helper as a copy (#127). A key of a change object that names the case of the test is not a
   repeated default, for example `failingCommand: null` for a failed run. On #220, a first refine read the ban on a
   repeat of the steps of the shared helper too widely. The fix cost an extra refine. Before a ticket adds a second test
-  file of the same kind, move the shared setup into `test/helpers/` ([rules.md](rules.md#tests)).
+  file of the same kind, move the shared setup into `test/helpers/` ([rules.md](../rules.md#tests)).
 - If a plan stores a value that code reads back, the task subagent compares the plan with
-  [the rule of the `events` table](data-root.md#events-table). The value lives in a column of a table. If the plan keeps
-  the value in another place, for example a file, the first refine asks for a column.
+  [the rule of the `events` table](../data-root.md#events-table). The value lives in a column of a table. If the plan
+  keeps the value in another place, for example a file, the first refine asks for a column.
 - Ask the plan for the side effects of each fix before `tasker approve`. A fix can cause a new finding about its own
   side effect.
 - If a ticket adds a small exported helper, ask the plan for each place that does the same job
-  ([rules.md](rules.md#tests)).
+  ([rules.md](../rules.md#tests)).
 - An issue can ask for the same behavior as existing code, for example with the words "as `<file>` does". Ask the plan
-  to call one shared helper for that behavior, not to copy the code ([the one-home rule](rules.md#code)). If no exported
-  helper exists yet, the plan moves the code into one, and the existing code calls it. On #542 (2026-10-25), the first
-  form had a copy in `src/prompts/plan.ts` of the rule that makes a closing tag harmless. Review 1 had no findings, and
-  the diff read found the copy. The fix cost one use of the add-work rule.
+  to call one shared helper for that behavior, not to copy the code ([the one-home rule](../rules.md#code)). If no
+  exported helper exists yet, the plan moves the code into one, and the existing code calls it. On #542 (2026-10-25),
+  the first form had a copy in `src/prompts/plan.ts` of the rule that makes a closing tag harmless. Review 1 had no
+  findings, and the diff read found the copy. The fix cost one use of the add-work rule.
 - If a review or the diff read finds a duplication, ask the plan to search all of `src/` and `test/` for the same
   pattern, not only the files of the diff, and to fix every copy in the same refine. A copy can already be on the base
   branch, in a file that the ticket does not touch (#94). [Review findings](review-findings.md#review-findings) gives
@@ -60,32 +60,32 @@ for the orchestrator.
   one if it moves or stays, with the reason. Ask it to fix all of them in the same refine. On #153, the refine fixed
   only the one use that loop 1 named, and loop 2 found the next import from `src/plan/` in `src/review/`.
 - If a function becomes the one home of a rule, the old callers use only its result
-  ([the one-home rule](rules.md#code)).
+  ([the one-home rule](../rules.md#code)).
 - A rule can have a check in a caller, and that check must stay. Then ask the plan to put the rule in the caller only
-  ([the one-home rule](rules.md#code)). Ask the plan to add no check in the called function that no caller reaches,
-  because that check is a second home. For a general helper, the bullet of [rules.md](rules.md#code) that starts "A
+  ([the one-home rule](../rules.md#code)). Ask the plan to add no check in the called function that no caller reaches,
+  because that check is a second home. For a general helper, the bullet of [rules.md](../rules.md#code) that starts "A
   general helper keeps its promise" wins. On #504 (2026-10-30), the rule that `--base` wins over the base branch hint
   stood in `src/tasks/start.ts` and in a check of `resolveBaseBranch`. Review 1 found the second home, and the fix cost
   one loop.
 - A ticket that adds a required option to a shared function breaks the callers that an earlier ticket landed. After the
-  rebase, run `npm run check` and update those callers ([rules.md](rules.md#commits)).
+  rebase, run `npm run check` and update those callers ([rules.md](../rules.md#commits)).
 - A ticket can add lines to the output of a command. Then ask the plan to name each test that reads that output with
   `toEqual`, `toBe` or `endsWith`. Another ticket that lands first can add more such tests, also to a file that the plan
   named. After each `tasker update-branch`, the task subagent searches `test/` again for such tests and names each new
   test in the next refine. On #351 (2026-10-30), the update onto #233 brought four new tests that expected the output to
   end at the `state:` line. The verify run failed, and the fix cost one refine.
-- In the first refine, compare each todo that makes a commit with [the Check rule](rules.md#check). Each such todo runs
-  each command of the Check rule, in the order of the Check rule, with a pass condition for each command. For each todo
-  of a red `test:` commit, [Commits](rules.md#commits) gives the pass condition of `npm run check`. If a todo leaves out
-  a command, or has another order or pass condition, ask the plan to fix it. If a sentence of the plan leaves the order
-  of the commands open, ask the plan to remove it. On #782 (2026-11-06), a sentence of plan v3 left the order of the
-  commands open, and refine 3 asked the plan to remove it.
+- In the first refine, compare each todo that makes a commit with [the Check rule](../rules.md#check). Each such todo
+  runs each command of the Check rule, in the order of the Check rule, with a pass condition for each command. For each
+  todo of a red `test:` commit, [Commits](../rules.md#commits) gives the pass condition of `npm run check`. If a todo
+  leaves out a command, or has another order or pass condition, ask the plan to fix it. If a sentence of the plan leaves
+  the order of the commands open, ask the plan to remove it. On #782 (2026-11-06), a sentence of plan v3 left the order
+  of the commands open, and refine 3 asked the plan to remove it.
 
-- In a docs ticket, ask the plan to run `npm run format:check`, not `npx prettier` ([the Check rule](rules.md#check)).
-  The plans of #245 and #254 used `npx prettier`. A plan that runs `npm run format` and then `npm run format:check` is
-  fine. On #266, plan v1 already used `npm run format`.
+- In a docs ticket, ask the plan to run `npm run format:check`, not `npx prettier`
+  ([the Check rule](../rules.md#check)). The plans of #245 and #254 used `npx prettier`. A plan that runs
+  `npm run format` and then `npm run format:check` is fine. On #266, plan v1 already used `npm run format`.
 - In a ticket that changes code, ask the plan to run a test file with `npm test -- <file>`, not with `npx vitest run`
-  ([the Check rule](rules.md#check)). On #428 (2026-10-25), plan v1 used `npx vitest run`.
+  ([the Check rule](../rules.md#check)). On #428 (2026-10-25), plan v1 used `npx vitest run`.
 - If a refine asks the plan to fix commits in place (a fixup commit and an autosquash rebase), give the base commit in
   the feedback. For a plain base, get it with `git merge-base HEAD origin/<base branch>` in a worktree of the task
   branch, as [the commit check](verify-failures.md#the-commit-check) does.
@@ -99,27 +99,27 @@ for the orchestrator.
   [the broken-commit steps](verify-failures.md#the-broken-commit-steps) say. The plan does not ask the execute session
   for `git merge-base` against a local branch in the worktree of tasker. On #419 (2026-10-25), the local `main` of the
   clone of tasker was an old commit, and plan v6 used the base commit 9ce3caa9 for this reason. If `origin` holds the
-  task branch from step 9 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md), the task subagent does the
-  pushed-branch rule of [the broken-commit steps](verify-failures.md#the-broken-commit-steps) after step 11 of that
+  task branch from step 9 of [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md), the task subagent does
+  the pushed-branch rule of [the broken-commit steps](verify-failures.md#the-broken-commit-steps) after step 11 of that
   page. It does this before each later `tasker update-branch`. The parent of a
-  [stacked task](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) can land with changed commits before the task
-  has a commit of its own. Then the push of step 9 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) puts
-  a commit of `origin/<base branch>` on `origin`. In that case, each run of the pushed-branch rule deletes nothing,
-  because the ancestor check of step 4 of the rule passes. On #426 (2026-10-25), the rule ran two times and deleted
-  nothing.
+  [stacked task](../orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) can land with changed commits before the
+  task has a commit of its own. Then the push of step 9 of
+  [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md#procedure) puts a commit of `origin/<base branch>` on
+  `origin`. In that case, each run of the pushed-branch rule deletes nothing, because the ancestor check of step 4 of
+  the rule passes. On #426 (2026-10-25), the rule ran two times and deleted nothing.
 - In a docs ticket where several commits change the same line, ask the plan for a fallback that makes one `docs:`
   commit. A fixup autosquash of such commits conflicts. On #253, the task subagent hit this conflict. If the task has
   one `docs:` commit, the feedback of a fix after a review can ask for `git commit --amend --no-edit`, with the base
   commit named. On #265, the amend kept one commit with no autosquash conflict. Do not ask for an amend when the task is
-  the parent of a [stacked task](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule). The amend rewrites the base
-  of the stacked task. Ask for a new commit on top instead.
+  the parent of a [stacked task](../orchestrator/pick-the-tickets.md#the-stacked-ticket-rule). The amend rewrites the
+  base of the stacked task. Ask for a new commit on top instead.
 - If the feedback of a refine names the base commit of the task at `tasker start`, read it with `git fetch tasker` and
   then `git rev-parse --verify tasker/<task branch>` right after `tasker start`. Do not read it from the local `main`,
   because `main` can move after the start. On #150, the feedback said that `main` moved after plan v1, but the task had
   started on a later commit.
 - A `git fetch` over ssh in the local clone can hang for many minutes. A `timeout` around a `git fetch` keeps it short.
-  The ban on `timeout` of [the command rules](tasker-commands.md#the-command-rules) covers only a `tasker` command. On
-  #327, one fetch hung 17 minutes, and the next fetch passed at once.
+  The ban on `timeout` of [the command rules](../tasker-commands.md#the-command-rules) covers only a `tasker` command.
+  On #327, one fetch hung 17 minutes, and the next fetch passed at once.
 - `git merge-tree` of the tip of the task onto the base names more conflicting files than the rebase of the commits of
   the task alone. It is a rough read, not the list of the real conflicts. On #182, it named `docs/statemachine.md`, and
   the rebase conflicted in `docs/dev/tasks.md` only.
@@ -128,14 +128,14 @@ for the orchestrator.
   about dropped errors and about cost.
 - A ticket can have a schema transform that lowers a value and an exported parser that folds the same value again. For
   such a ticket, name the bullet "A general helper keeps its promise for each input that its type accepts" of
-  [rules.md](rules.md#code) in the first refine. The parser keeps its fold, because its type accepts a value that the
+  [rules.md](../rules.md#code) in the first refine. The parser keeps its fold, because its type accepts a value that the
   schema did not lower. "On #544 (2026-10-25), the configuration schema lowered the site of a Jira repo, and
   `KEY_PARSERS.jira` folded it again with `asciiFold()`. A review asked to drop the fold of the parser."
 - If a review finding depends on the timing of the event loop, ask for a failing test first. If execute cannot make a
   test fail, dismiss the finding with the evidence from the local machine. The evidence is a loop of about 200 runs of
   that test. Such a loop finds a test that fails only sometimes. Before the dismiss, the task subagent runs the loop in
   the task worktree, as [the measure rule](run-one-ticket.md#the-measure-rule) does, after the npm ci bullet of
-  [Limits](limits.md#limits). If the plan depends on the timing of the event loop, the task subagent runs
+  [Limits](../limits.md#limits). If the plan depends on the timing of the event loop, the task subagent runs
   [the fact test](plan-review.md#the-fact-test) two times. The task subagent gives both results in the first refine. One
   run starts the code in top-level code. The other run starts it inside a callback of the poll phase (the phase of the
   event loop that runs the callbacks of input and output), for example after an `await` of a file read. A real run of
@@ -146,7 +146,7 @@ for the orchestrator.
 - For a test on fake timers, ask for `vi.runAllTimersAsync()` and not a helper that moves the clock a fixed amount. On
   #223, such a helper drew a finding about a false comment.
 - If two test files need one expected value, ask the plan to put the value in `test/helpers/`
-  ([the one-home rule](rules.md#code)). Ask the plan to make each test file import it, also the existing test file.
+  ([the one-home rule](../rules.md#code)). Ask the plan to make each test file import it, also the existing test file.
   Examples are the literal text of a default fixture, the arguments of a call and an error message. On #157,
   [the diff read](run-one-ticket.md#the-diff-read) found the text of the default review findings copied in 4 test files,
   after a review with no findings. On #547 (2026-10-31), the new test files copied `statusCalls` and `loginMessage` of
@@ -160,8 +160,8 @@ for the orchestrator.
   `ENOTDIR` for each user, also root. A folder with `chmod 0555` stops a write only for a user that cannot write
   everywhere. On #316, the test needed this.
 - If a new sentence makes an exception to an earlier clause, the exact text says which one wins. For example, the
-  dead-code rule of [rules.md](rules.md#code) keeps a function for a later ticket "also as an unused export" (#124). A
-  fallback sentence covers a case where a lookup finds no value, for example no tab id. If an exception covers another
+  dead-code rule of [rules.md](../rules.md#code) keeps a function for a later ticket "also as an unused export" (#124).
+  A fallback sentence covers a case where a lookup finds no value, for example no tab id. If an exception covers another
   case that also has no such value, the fallback comes before the exception. In the other order, the fallback also
   covers the case of the exception. On #487 (2026-10-25), refine 1 put the fallback "If the tab list gives no tab id"
   before the handoff case.
@@ -170,16 +170,16 @@ for the orchestrator.
   one rule with a fallback, not two rules that do not agree. On #357, the review read the two sentences as two rules.
 - If the issue gives the words of a scope exception, ask the plan whether the exception covers a bullet or a sentence.
   On #226, "except where a bullet names the planning session" can take the whole
-  [draft-first rule](issues.md#before-a-post) away from the other sessions.
+  [draft-first rule](../issues.md#before-a-post) away from the other sessions.
 - Ask the plan to add no reason that the issue does not give. On #121, a reason clause that the plan added on its own
   drew a contradiction finding. Also ask the plan to add no reference that the issue does not name. This hint settles a
   plan question about the scope of a new rule. On #259, the plan then did not name `docs/dev/orchestration.md`. When the
-  first refine gives this hint, it also names each link that [the one-home rule](rules.md#code) asks for. It also names
-  each link to the home of a term that the issue uses, for example [the fact test](plan-review.md#the-fact-test). Such a
-  link is not a reference that the hint bans. On #402, plan v2 dropped a link that the one-home rule needs, because the
-  first refine gave this hint. On #432 (2026-10-25), refine 1 removed the link to the home of "fact test", because the
-  first refine gave this hint. Review 1 asked for the link again, refine 4 added it again, and this cost one review
-  loop.
+  first refine gives this hint, it also names each link that [the one-home rule](../rules.md#code) asks for. It also
+  names each link to the home of a term that the issue uses, for example [the fact test](plan-review.md#the-fact-test).
+  Such a link is not a reference that the hint bans. On #402, plan v2 dropped a link that the one-home rule needs,
+  because the first refine gave this hint. On #432 (2026-10-25), refine 1 removed the link to the home of "fact test",
+  because the first refine gave this hint. Review 1 asked for the link again, refine 4 added it again, and this cost one
+  review loop.
 - If an issue says that a page or a bullet stays, ask the plan to change no line of it. For a needed doc change, this
   hint gives way to [the needed-doc-change rule](plan-review.md#the-issue-check). On #632, the Docs section said that a
   bullet of `docs/dev/operator-items.md` stays, and plan v1 still changed that section.
@@ -188,7 +188,7 @@ for the orchestrator.
   The task subagent tests each such claim against the issue and the feedback of each refine. If neither gives that
   source, the task subagent asks the plan in a refine to remove the claim. On #475 (2026-10-25), plan v2 called a text
   of the feedback "text that the user dictated", to keep a sentence over the word limit. On #439 (2026-10-25), a todo of
-  plans v2 and v3 gave a false decision of the user about [the Check rule](rules.md#check) that no feedback gave. If
+  plans v2 and v3 gave a false decision of the user about [the Check rule](../rules.md#check) that no feedback gave. If
   neither the issue nor an answer of the orchestrator gives the source of a text, a feedback text names no source. It
   says "the task subagent". On #520 (2026-10-25), refine 1 wrote "the user asked for these scripts" with no such word of
   the user, and plan v2 copied it. This cost refine 2.
@@ -200,7 +200,7 @@ for the orchestrator.
   this cost refine 2. On #629, refine 1 asked for "the agent", but plan v2 still named "the user" as the source.
 
 - If an issue gives a reason in an example, ask the plan to compare that reason with the docs.
-  [The body of an issue](issue-subagents.md#the-body-of-an-issue) asks the planner to make the same compare before
+  [The body of an issue](../issue-subagents.md#the-body-of-an-issue) asks the planner to make the same compare before
   posting. If no doc supports the reason, ask the plan to drop it from the example. On #265, the Summary of the issue
   gave the reason "an agent changes only its own task". The plan copied it into the example, and review 1 found it.
 - A condition of the issue that now holds is not a difference, for example "After #199 lands" when #199 is closed. Say
@@ -209,9 +209,9 @@ for the orchestrator.
   before the next refine. On #198, a hint of the first refine had removed a sentence that the change-of-scope comment
   later required.
 - If the plan copies issue text, ask the plan to rewrite each word that the simple-english skill bans
-  ([rules.md](rules.md#docs)). Examples are "should" and "could". On #120, the plan copied "could" from the issue, and
-  four reviews missed it. Ask the plan to run step 4 of the self-check of the simple-english skill over its text, not
-  only a search for "should", "could" and "might". On #369, the word read missed "checks" as a verb, and it cost one
+  ([rules.md](../rules.md#docs)). Examples are "should" and "could". On #120, the plan copied "could" from the issue,
+  and four reviews missed it. Ask the plan to run step 4 of the self-check of the simple-english skill over its text,
+  not only a search for "should", "could" and "might". On #369, the word read missed "checks" as a verb, and it cost one
   refine before `tasker approve`. Step 4 of the self-check replaces the words "config", "settings" and "options" with
   "configuration". As a result, a hit of step 4 counts only in the meaning of the configuration. The word "option" in
   the meaning of a choice is not such a hit. On #435 (2026-10-25), the plan changed the word "option" of the issue to
@@ -224,7 +224,8 @@ for the orchestrator.
   of the issue. On #440 (2026-10-25), the first plain term "no longer runs" also covered "not started yet", and that
   changed the rule. Review 1 found the gap as [a design gap](plan-review.md#the-design-gap-rule).
 - Ask the plan to start each item of a vertical list with an uppercase letter, as the simple-english skill says
-  ([rules.md](rules.md#docs)). On #227, plan v4 had list items with a lowercase start, and one more refine fixed them.
+  ([rules.md](../rules.md#docs)). On #227, plan v4 had list items with a lowercase start, and one more refine fixed
+  them.
 - An issue can add or change a sentence of a doc. Such a sentence can be over its word limit in the simple-english
   skill. Before the first refine, count the words of such a sentence. Count them as
   [the hint that starts "If an issue gives exact doc text"](#all-tickets) says.
@@ -255,17 +256,17 @@ for the orchestrator.
   the plan in the first refine for the word count of each such example sentence. A split of that sentence breaks the
   requirement. On #450 (2026-10-25), plan v1 had an example sentence of 31 words, and its fallback split the sentence.
   Each sentence of a numbered step of a procedure doc has the limit of Rule 5.1 of the simple-english skill
-  ([rules.md](rules.md#docs)). Ask the plan to count the words of each new step sentence. On #487 (2026-10-25), two new
-  step sentences went over the limit of Rule 5.1.
+  ([rules.md](../rules.md#docs)). Ask the plan to count the words of each new step sentence. On #487 (2026-10-25), two
+  new step sentences went over the limit of Rule 5.1.
 - In a doc step, ask the plan to write a function name without its arguments, for example `doctorChecks()`, not
-  `doctorChecks(repos)`. [rules.md](rules.md#docs) counts the arguments of a function as a repeat of the code. On #266,
-  the trim of the sentences that repeat the code found such a step.
+  `doctorChecks(repos)`. [rules.md](../rules.md#docs) counts the arguments of a function as a repeat of the code. On
+  #266, the trim of the sentences that repeat the code found such a step.
 - A check of the docs in the plan must not write a file to the folder of the task subagent. The folder bullet of
-  [Limits](limits.md#limits) names that folder. Process substitution, for example `diff <(cmd1) <(cmd2)`, needs no file.
-  On #115, a plan step wrote a temporary file to the folder of the task subagent.
+  [Limits](../limits.md#limits) names that folder. Process substitution, for example `diff <(cmd1) <(cmd2)`, needs no
+  file. On #115, a plan step wrote a temporary file to the folder of the task subagent.
 - If the ticket derives a name from a key, for example a session name from an issue key, say that a collision of derived
-  names is not an issue ([Core features first](working-with-the-user.md#core-features-first)). Otherwise the plan raises
-  the question (#115).
+  names is not an issue ([Core features first](../working-with-the-user.md#core-features-first)). Otherwise the plan
+  raises the question (#115).
 - If a plan step or a doc step points to a report, link to the item of the report, not to the step as a whole. On #120,
   a link to a step as a whole drew a finding.
 - A hint or a sentence that names a step also names the page of the step, for example "step 8 of
@@ -277,16 +278,16 @@ for the orchestrator.
 - In `grep -E`, write `|` for an alternative, not `\|`. In an extended regular expression, `\|` matches a literal bar.
   On #266, a search with `\|` found neither of two functions that exist.
 - If the work of [the add-work rule](run-one-ticket.md#the-add-work-rule) adds tests and code, ask the plan for a
-  `test:` commit and then a `feat:` or `fix:` commit, as [Tests](rules.md#tests) and [Commits](rules.md#commits) of
-  rules.md say. On #122, the work of the add-work rule put both in one commit.
-- A change of only help text and comments adds no behavior. Its prefix is `refactor:`, as [Commits](rules.md#commits) of
-  rules.md says. On #346, a refine gave such a change the prefix `fix:`, and one more refine fixed it.
+  `test:` commit and then a `feat:` or `fix:` commit, as [Tests](../rules.md#tests) and [Commits](../rules.md#commits)
+  of rules.md say. On #122, the work of the add-work rule put both in one commit.
+- A change of only help text and comments adds no behavior. Its prefix is `refactor:`, as [Commits](../rules.md#commits)
+  of rules.md says. On #346, a refine gave such a change the prefix `fix:`, and one more refine fixed it.
 - If the plan depends on a fact about a program on the local machine, for example the behavior of `claude` under a
   permission mode, measure the fact and give it in the first refine with the command and its result
   ([the fact test](plan-review.md#the-fact-test)). On #128, the plan session tried to get such a fact itself, outside
-  the worktree. Ask the plan to add no test that the issue or [Tests](rules.md#tests) of rules.md does not ask for. A
-  fact test is the work of the task subagent. It runs in [the folder of the task subagent](limits.md#limits) or in the
-  task worktree, before the refine, and never a todo of the plan. On #425, plan v1 added the guard test
+  the worktree. Ask the plan to add no test that the issue or [Tests](../rules.md#tests) of rules.md does not ask for. A
+  fact test is the work of the task subagent. It runs in [the folder of the task subagent](../limits.md#limits) or in
+  the task worktree, before the refine, and never a todo of the plan. On #425, plan v1 added the guard test
   `test/package-version.test.ts`, and it gave the execute session the fact test `npm pack` in the worktree of tasker.
   Refine 1 removed both.
 - If a ticket adds a security check of a path for an outside tool, the real path can disagree with the tool. An example
@@ -308,8 +309,8 @@ for the orchestrator.
 
   If the code is a script, for example a script of `scripts/`, the task subagent also runs it end to end. The run comes
   after the first `tasker verify` that passes, and before the first `tasker review`. The task subagent runs the script
-  file of the task worktree. Before the run, it applies [the update rule](limits.md#the-update-rule). If a step of the
-  update rule fails, the task subagent [stops](limits.md#the-answer-wait-rule).
+  file of the task worktree. Before the run, it applies [the update rule](../limits.md#the-update-rule). If a step of
+  the update rule fails, the task subagent [stops](../limits.md#the-answer-wait-rule).
 
   The task subagent makes up input in those shapes. The hint that starts "For
   [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder of that input. The run starts in that
@@ -327,8 +328,8 @@ for the orchestrator.
   their fix cost about 4 hours and 6 plan and execute cycles. No one measured whether this hint prevents such a gap.
 
 - If a ticket depends on the loaded copy of a skill that the task subagent must not run, the task subagent measures
-  which copy loads. An example is `/session-review`, which [Limits](limits.md#limits) bans for a task subagent. The task
-  subagent uses a scratch run of `claude -p` in a scratch repo that starts no skill. The hint that starts "For
+  which copy loads. An example is `/session-review`, which [Limits](../limits.md#limits) bans for a task subagent. The
+  task subagent uses a scratch run of `claude -p` in a scratch repo that starts no skill. The hint that starts "For
   [a fact test](plan-review.md#the-fact-test) in a scratch repo" gives the folder. The prompt asks the session to list
   the descriptions of its skills and to run no skill. The run uses
   `--model haiku --max-turns 1 --disallowedTools Bash Write Edit`. A control skill that only the scratch repo holds
@@ -346,22 +347,22 @@ for the orchestrator.
   tool call of the work. The task subagent gives its result in the comment of step 11 of
   [Run one ticket](run-one-ticket.md#run-one-ticket). On #252, the result of a 40-minute test came after the landing.
 - For [a fact test](plan-review.md#the-fact-test) in a scratch repo, make a new folder inside
-  [the folder of the task subagent](limits.md#limits) with `mkdir`. Start each command in that folder as
+  [the folder of the task subagent](../limits.md#limits) with `mkdir`. Start each command in that folder as
   [the fact test](plan-review.md#the-fact-test) says. Do not clear a folder with `rm -rf`. On #231, a Bash call with
   `rm -rf` drew a permission prompt. The same test in a new folder ran with no prompt.
 - If [a fact test](plan-review.md#the-fact-test) starts `claude` from a Bash call of the task subagent, the test run
   gets no `HERDR_*` name in its environment. A test session that `herdr agent start` starts is not covered. For example,
   the test starts `claude -p` with `env -i` and only the names of `ALLOWED_ENV_NAMES` in
-  `src/config/allowed-env-names.ts`, the filter of [The environment of a phase](phases.md#the-environment-of-a-phase).
-  The reason is that the hook `herdr-agent-state.sh` of the user configuration of Claude Code runs at each
-  `SessionStart`. The hook can report the session onto the pane that the `HERDR_*` names give. The task subagent of #523
-  measured with Claude Code 2.1.310 and herdr 0.9.3 on 2026-10-25 that with the filter, no `HERDR_*` name passed and the
-  hook did nothing.
+  `src/config/allowed-env-names.ts`, the filter of
+  [The environment of a phase](../phases.md#the-environment-of-a-phase). The reason is that the hook
+  `herdr-agent-state.sh` of the user configuration of Claude Code runs at each `SessionStart`. The hook can report the
+  session onto the pane that the `HERDR_*` names give. The task subagent of #523 measured with Claude Code 2.1.310 and
+  herdr 0.9.3 on 2026-10-25 that with the filter, no `HERDR_*` name passed and the hook did nothing.
 - If [a fact test](plan-review.md#the-fact-test) needs a command that runs for a set time, the task subagent uses
   `timeout <seconds> tail -f /dev/null`. An example is a stand-in for a slow command. The task subagent cannot run a
   foreground `sleep`, as step 5 of [the CI wait](ci-wait.md#the-ci-wait) says. On #523 (2026-10-25), Claude Code 2.1.310
   blocked a foreground `sleep 40` in a Bash call of the task subagent.
-- If a script for [a fact test](plan-review.md#the-fact-test) in [the folder of the task subagent](limits.md#limits),
+- If a script for [a fact test](plan-review.md#the-fact-test) in [the folder of the task subagent](../limits.md#limits),
   outside the repo, uses top-level `await`, give the script the extension `.mts`. No `package.json` in that folder sets
   `"type": "module"`. As a result, `tsx` builds a `.ts` file there as CommonJS and refuses top-level `await`. On #225,
   `tsx` refused such a `.ts` script, and the same script ran as `.mts`.
@@ -369,7 +370,7 @@ for the orchestrator.
   subagent, `grep` is a shell function that runs `ugrep`, not GNU grep. On #280, the task subagent measured its pattern
   with GNU grep 3.11.
 - To read a value in a scratch test, for example the real error of a git command, write the value to a file in
-  [the folder of the task subagent](limits.md#limits), for example with `appendFileSync`. On #287, the output of
+  [the folder of the task subagent](../limits.md#limits), for example with `appendFileSync`. On #287, the output of
   `console.log` in a scratch test did not show in the output of `npm test`. The write to a file showed the error.
 - [A fact test](plan-review.md#the-fact-test) tests the exact assertion of the plan, not only the text of the doc. On
   #137, `toEqual([input])` failed, because zod removes the unknown keys before the schema runs `refine()`.
@@ -422,13 +423,13 @@ for the orchestrator.
 - A finding about a test gap that names two values needs a scratch check of each value. On #47, plan v5 covered only the
   remote.
 - A refine can ask for a check that throws for a value that the code always has. Such a check cannot fail, and the
-  dead-code rule of [rules.md](rules.md#code) bans it. Point the plan to the existing form, for example `feedback!` in
-  `runResumed()`. On #347, such a check cost one refine before `tasker approve`.
+  dead-code rule of [rules.md](../rules.md#code) bans it. Point the plan to the existing form, for example `feedback!`
+  in `runResumed()`. On #347, such a check cost one refine before `tasker approve`.
 - A ticket can change code to use a new export in place of an old one. If it does, ask the plan to name each old export
   that loses its last use in `src/`. Ask the plan to remove each one in the same change, because the dead-code rule of
-  [rules.md](rules.md#code) bans an unused export. An example of a new export is a new list or a new schema. No step of
-  `npm run check` finds an unused export, so the check does not stop it. On #562 (2026-10-25), review 1 found the unused
-  export `EFFORTS` in `src/config/schema.ts`, and the fix cost one loop.
+  [rules.md](../rules.md#code) bans an unused export. An example of a new export is a new list or a new schema. No step
+  of `npm run check` finds an unused export, so the check does not stop it. On #562 (2026-10-25), review 1 found the
+  unused export `EFFORTS` in `src/config/schema.ts`, and the fix cost one loop.
 - If a docs todo asks for reasons, give the plan the reasons that the issue lists. Then the session writes the reason,
   not only the rule. On #131, the first plan gave only the rules, and the diff read had to ask for the reasons again.
 
@@ -479,7 +480,7 @@ for the orchestrator.
 - A ticket can give doc text word for word in its Docs section. Then ask the plan for a search step in each todo that
   adds or changes such text. The step runs in the execute run, after the edits and before `npm run format`. In the task
   worktree, the step searches the doc of each Docs item of the todo. It searches for each piece of the new text of that
-  Docs item. The search follows [the doc-search rule](rules.md#docs).
+  Docs item. The search follows [the doc-search rule](../rules.md#docs).
 
   A piece is a paragraph, a heading, a list item, a table or a fenced block of the new text. In a list item with two or
   more paragraphs, each paragraph is a piece. A nested list item and a fenced block inside a list item are also pieces.
@@ -537,36 +538,36 @@ for the orchestrator.
   both held it. Plan v2 used `headBranch` as the key word of the fifth paragraph. So a search for that key word gives a
   hit with or without the fifth paragraph. The fix cost one refine, refine 2.
 
-- The red `test:` commit ([rules.md](rules.md#commits)) of a new store method changes only test files and fails the type
-  check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
+- The red `test:` commit ([rules.md](../rules.md#commits)) of a new store method changes only test files and fails the
+  type check, as in commit `97e8d2f`. Say this in the first refine. On #130, this kept the todo of the red commit clear.
 - In a ticket that adds a method to an interface, tell the plan that the red `test:` commit
-  ([rules.md](rules.md#commits)) can need one `// eslint-disable-next-line @typescript-eslint/no-unsafe-call` comment.
-  The comment goes on the line that calls the new method. Without the comment, `npm run lint` fails, because the method
-  does not exist yet. The `feat:` commit removes the comment. On #26, the `test:` commit `01704bf5` had this comment,
-  and the `feat:` commit `254d65e5` removed it.
-- In a ticket that adds a new export, a red `test:` commit ([rules.md](rules.md#commits)) that calls the missing export
-  fails `npm run lint` with `no-unsafe-call`. Ask the plan to test the export through the command that uses it. That
-  test needs no `eslint-disable-next-line` comment. If no command uses the export yet, the red commit uses the comment
-  of the hint that starts "In a ticket that adds a method to an interface". On #599 (2026-10-30), the tests of
+  ([rules.md](../rules.md#commits)) can need one `// eslint-disable-next-line @typescript-eslint/no-unsafe-call`
+  comment. The comment goes on the line that calls the new method. Without the comment, `npm run lint` fails, because
+  the method does not exist yet. The `feat:` commit removes the comment. On #26, the `test:` commit `01704bf5` had this
+  comment, and the `feat:` commit `254d65e5` removed it.
+- In a ticket that adds a new export, a red `test:` commit ([rules.md](../rules.md#commits)) that calls the missing
+  export fails `npm run lint` with `no-unsafe-call`. Ask the plan to test the export through the command that uses it.
+  That test needs no `eslint-disable-next-line` comment. If no command uses the export yet, the red commit uses the
+  comment of the hint that starts "In a ticket that adds a method to an interface". On #599 (2026-10-30), the tests of
   `newParentId()` ran through `tasker start`.
 - If a case cannot happen in a real run, ask the plan to test it through the function that builds the result or the
   message, not through a real run. On #132, a command that the deadline keeps from its start cannot occur in a real
   verify run. The reason: a command that runs at the deadline gets SIGTERM and is itself the failing command.
 - In the diff read, also search for doc sentences that a new shared helper made false. The search follows
-  [the doc-search rule](rules.md#docs). On #133, a new shared read helper changed an error text, and the diff read found
-  two doc sentences that it made false. On #132, the helper-name search of
+  [the doc-search rule](../rules.md#docs). On #133, a new shared read helper changed an error text, and the diff read
+  found two doc sentences that it made false. On #132, the helper-name search of
   [the diff read](run-one-ticket.md#the-diff-read) found a copied test helper after a review with no findings.
 - A ticket can add a new case, for example a new tracker, and leave some features out of that case. Ask the plan to
   search `docs/config.md`, `skills/` and `README.md` for the sentences on each such feature. The search follows
-  [the doc-search rule](rules.md#docs). For each hit, the plan tests the sentence for the new case. Then the plan says
-  whether the text changes or why it stays. The reason: a sentence can still describe only the old case, and a review
-  then finds it at the cost of a loop.
+  [the doc-search rule](../rules.md#docs). For each hit, the plan tests the sentence for the new case. Then the plan
+  says whether the text changes or why it stays. The reason: a sentence can still describe only the old case, and a
+  review then finds it at the cost of a loop.
 - A ticket can add a reason for a command to demote a task or to refuse. Then ask the plan to search `src/`, `docs/`,
   `skills/` and `README.md` for each form of the old condition. The search of `src/` covers the code comments and the
-  help text, and each other search follows [the doc-search rule](rules.md#docs). For each hit, the plan says whether the
-  text changes or why it stays. On #233 (2026-10-30), the old condition was that the head moved, and the texts gave it
-  as "only when the head moved", "a moved head" and "worktree moved". Review 3 found three such texts, and the fix cost
-  one loop.
+  help text, and each other search follows [the doc-search rule](../rules.md#docs). For each hit, the plan says whether
+  the text changes or why it stays. On #233 (2026-10-30), the old condition was that the head moved, and the texts gave
+  it as "only when the head moved", "a moved head" and "worktree moved". Review 3 found three such texts, and the fix
+  cost one loop.
 - A new doc sentence can give the next command or the place of a check in a command. For a next command, ask the plan to
   test the sentence against each outcome of the step before that command. For a check, ask the plan to read the order of
   the checks in the code. If `tasker update-branch` demotes the task, "run the next command" is false, so ask the plan
@@ -577,7 +578,7 @@ for the orchestrator.
 - In [the diff read](run-one-ticket.md#the-diff-read), read each sentence that starts with "The reason:" together with
   the sentence before it. Make sure that the reason argues for that sentence, not against it. On #422 (2026-10-25), the
   diff read found a reason that the diff of #422 itself put in
-  [the overlap rule](orchestrator/land-the-work.md#the-overlap-rule) of `docs/dev/land-the-work.md`. The reason stood
+  [the overlap rule](../orchestrator/land-the-work.md#the-overlap-rule) of `docs/dev/land-the-work.md`. The reason stood
   right after the fallback sentence, which takes the files of a task from its plan when the branch diff is empty. The
   reason argued against that fallback. No review reported it.
 - To find a copied test helper, search the exact form of a mapping step, for example `({ name, required, timeoutMs })`.
@@ -597,29 +598,30 @@ for the orchestrator.
 - If [the diff read](run-one-ticket.md#the-diff-read) finds small work and the ticket must wait under a landing order,
   the task subagent adds the work before the wait. On #221, the fix landed in the loop before the wait. The review after
   `tasker update-branch` then had nothing new to find.
-- For a [stacked task](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) whose parent is in `landed` while plan
-  v1 is under review, wait for the close of the issue of the parent. Then run `tasker update-branch` before the first
-  refine. `tasker refine` refuses the task until the update, with the error of the moved-base guard
-  ([the stacked-task guards](workspaces.md#stacked-task)). A refine after the update is still needed, because the update
-  marks the plan as stale ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)).
-  On #247, the wait took about 2 minutes. If the task subagent holds no start base, it runs no check, and the start of
-  this bullet applies. Otherwise, when the parent is in `landed`, `finishing` or `finished`, the task subagent first
-  runs `git fetch origin`. Then it runs `git merge-base --is-ancestor <start base> origin/<base branch>`. `<start base>`
-  is [the start base of the last read](review-findings.md#review-findings). `<base branch>` is the branch that the
-  parent landed on, as [step 7 of the rebase-conflict procedure](rebase-conflicts.md#procedure) defines it, for example
-  `main`. The check does not use `tasker/<parent branch>`. If the exit code is 0, the old commits of the parent are on
-  the base branch. Then the first two sentences of this bullet apply. If the exit code is 1, the parent rewrote its
-  commits after the start of the task. Then the task subagent can go at once to steps 5 to 11 of
+- For a [stacked task](../orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) whose parent is in `landed` while
+  plan v1 is under review, wait for the close of the issue of the parent. Then run `tasker update-branch` before the
+  first refine. `tasker refine` refuses the task until the update, with the error of the moved-base guard
+  ([the stacked-task guards](../workspaces.md#stacked-task)). A refine after the update is still needed, because the
+  update marks the plan as stale
+  ([the facts of the installed tasker](../tasker-commands.md#the-facts-of-the-installed-tasker)). On #247, the wait took
+  about 2 minutes. If the task subagent holds no start base, it runs no check, and the start of this bullet applies.
+  Otherwise, when the parent is in `landed`, `finishing` or `finished`, the task subagent first runs `git fetch origin`.
+  Then it runs `git merge-base --is-ancestor <start base> origin/<base branch>`. `<start base>` is
+  [the start base of the last read](review-findings.md#review-findings). `<base branch>` is the branch that the parent
+  landed on, as [step 7 of the rebase-conflict procedure](rebase-conflicts.md#procedure) defines it, for example `main`.
+  The check does not use `tasker/<parent branch>`. If the exit code is 0, the old commits of the parent are on the base
+  branch. Then the first two sentences of this bullet apply. If the exit code is 1, the parent rewrote its commits after
+  the start of the task. Then the task subagent can go at once to steps 5 to 11 of
   [the rebase-conflict procedure](rebase-conflicts.md#procedure), with the `--onto` case of step 7. See
   [step 7](rebase-conflicts.md#procedure) for the reason of the `--onto` case. The task subagent enters that page with
   no conflict report. After step 11, the task subagent runs `tasker show <issue>`. If the state is
   `awaiting_plan_review`, the task subagent continues with the first refine. If the state is `executed` and the task has
   no commit of its own, the task subagent does not do step 13 of that page. Instead, it
-  [stops](limits.md#the-answer-wait-rule) and reports. Steps 15 to 21 of that page stay for the cleanup after
+  [stops](../limits.md#the-answer-wait-rule) and reports. Steps 15 to 21 of that page stay for the cleanup after
   `tasker finish`. If the fetch fails, or the exit code is not 0 and not 1, the task subagent stops, as the next bullet
   says. On #468 (2026-10-25), a plain `tasker update-branch` stopped on a conflict three times, and the `--onto` case of
   step 7 moved the task.
-- The task subagent of a [stacked task](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) runs
+- The task subagent of a [stacked task](../orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) runs
   `git merge-base --is-ancestor tasker/<parent branch> tasker/<task branch>` before each command that depends on the
   parent. These commands are `tasker refine`, `tasker approve` and `tasker execute`, not only the first refine. Before
   the check, the task subagent runs `git fetch tasker`. The check uses the hash that
@@ -628,37 +630,37 @@ for the orchestrator.
   head. [The base rule](run-one-ticket.md#the-base-rule) says where the task subagent meets a landed parent at
   `tasker verify` and at `tasker refine`. The parent can land while the task is in `approved`. If the check then exits
   with 1, the task subagent runs `tasker update-branch` from `approved`, because `tasker execute` refuses a task whose
-  parent landed ([the stacked-task guards](workspaces.md#stacked-task)). An update that moves the head demotes the task
-  to `awaiting_plan_review` and costs a refine. The bullet of
-  [Land the work](orchestrator/land-the-work.md#land-the-work) for a stacked task in `approved` gives the case where the
-  head does not move. On #347, lesson 1 of the final report gave the demotion. On #346, the task subagent ran the update
-  from `executed` after #47 landed. If the check exits with 1 in `awaiting_plan_review`, the task subagent runs
+  parent landed ([the stacked-task guards](../workspaces.md#stacked-task)). An update that moves the head demotes the
+  task to `awaiting_plan_review` and costs a refine. The bullet of
+  [Land the work](../orchestrator/land-the-work.md#land-the-work) for a stacked task in `approved` gives the case where
+  the head does not move. On #347, lesson 1 of the final report gave the demotion. On #346, the task subagent ran the
+  update from `executed` after #47 landed. If the check exits with 1 in `awaiting_plan_review`, the task subagent runs
   `tasker update-branch` before the refine, because the update marks the plan as stale
-  ([the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). If the check exits with
-  another code, for example 128 for a ref that does not exist, the task subagent [stops](limits.md#the-answer-wait-rule)
-  and reports the error. On #356, review 2 asked for both cases. The sentence that starts "If the check exits with 1 in
-  `awaiting_plan_review`" has an exception. A parent can move again and again in its own review loops before it lands.
-  Right after the check before `tasker approve` exits with 1, the task subagent runs
-  `tasker show <full key of the parent>`. If the `state:` line is not `merging`, `landed`, `finishing`, `cleanup_failed`
-  or `finished`, the exception applies. Then the task subagent lists each file that the parent changed since the merge
-  base, with `git diff --name-only tasker/<task branch>...tasker/<parent branch>`. A rewrite of the parent adds more
-  files to this list. The plan files are the files that the last `tasker show-plan` changes, links to or quotes. If no
-  listed file is a plan file, the task subagent runs `tasker approve` and `tasker execute`, after the plan review of
-  [step 3 of "Run one ticket"](run-one-ticket.md#run-one-ticket). In this case, an exit 1 of the check before
-  `tasker execute` does not stop the execute. Then the task subagent runs `tasker update-branch` from `executed`. On
-  #460 (2026-10-25), the task stayed in `executed` after this update. If a listed file is a plan file, the task subagent
-  still runs `tasker update-branch` before the refine, as that sentence says. If the update from `executed` reports a
-  rebase conflict, the task subagent follows [the rebase-conflict procedure](rebase-conflicts.md#procedure). If another
-  command of this exception fails, the task subagent [stops](limits.md#the-answer-wait-rule) and reports the error. The
-  update from `executed` does not take the place of the update after the parent lands, which
-  [Land the work](orchestrator/land-the-work.md#land-the-work) gives. This order has a cost: the parent can move again
-  after the update. Then each later update of the task can cost a review loop, as
+  ([the facts of the installed tasker](../tasker-commands.md#the-facts-of-the-installed-tasker)). If the check exits
+  with another code, for example 128 for a ref that does not exist, the task subagent
+  [stops](../limits.md#the-answer-wait-rule) and reports the error. On #356, review 2 asked for both cases. The sentence
+  that starts "If the check exits with 1 in `awaiting_plan_review`" has an exception. A parent can move again and again
+  in its own review loops before it lands. Right after the check before `tasker approve` exits with 1, the task subagent
+  runs `tasker show <full key of the parent>`. If the `state:` line is not `merging`, `landed`, `finishing`,
+  `cleanup_failed` or `finished`, the exception applies. Then the task subagent lists each file that the parent changed
+  since the merge base, with `git diff --name-only tasker/<task branch>...tasker/<parent branch>`. A rewrite of the
+  parent adds more files to this list. The plan files are the files that the last `tasker show-plan` changes, links to
+  or quotes. If no listed file is a plan file, the task subagent runs `tasker approve` and `tasker execute`, after the
+  plan review of [step 3 of "Run one ticket"](run-one-ticket.md#run-one-ticket). In this case, an exit 1 of the check
+  before `tasker execute` does not stop the execute. Then the task subagent runs `tasker update-branch` from `executed`.
+  On #460 (2026-10-25), the task stayed in `executed` after this update. If a listed file is a plan file, the task
+  subagent still runs `tasker update-branch` before the refine, as that sentence says. If the update from `executed`
+  reports a rebase conflict, the task subagent follows [the rebase-conflict procedure](rebase-conflicts.md#procedure).
+  If another command of this exception fails, the task subagent [stops](../limits.md#the-answer-wait-rule) and reports
+  the error. The update from `executed` does not take the place of the update after the parent lands, which
+  [Land the work](../orchestrator/land-the-work.md#land-the-work) gives. This order has a cost: the parent can move
+  again after the update. Then each later update of the task can cost a review loop, as
   [Review findings](review-findings.md#review-findings) says. On #460 (2026-10-25), this order saved the refines.
 - A docs ticket with a stacked parent can need one spare review loop. After the parent lands, `tasker update-branch`
   moves the task onto `main`. If the changed lines change in the move, for example in a rebase conflict, the review
   after the move counts as a loop ([Review findings](review-findings.md#review-findings)).
-- The review of a [stacked task](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) also reviews the lines of its
-  parent. The task subagent compares each finding with the diff of the task branch against its start base.
+- The review of a [stacked task](../orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) also reviews the lines of
+  its parent. The task subagent compares each finding with the diff of the task branch against its start base.
   [The same-patch rule](review-findings.md#review-findings) defines the start base. A finding on a line of the parent is
   outside the issue, and the task subagent dismisses it with that reason. On #271, three of the four findings of review
   loop 1 were about the text of #270.
@@ -708,7 +710,7 @@ for the orchestrator.
   that matches the new text.
 
   A first-words name matches the new text in this case: its scope holds the new text, and its quoted words start the new
-  text. The search follows [the doc-search rule](rules.md#docs), because the quoted words can span two lines. Ask the
+  text. The search follows [the doc-search rule](../rules.md#docs), because the quoted words can span two lines. Ask the
   plan to name each hit and to keep one target for each such first-words name. The reason: two parts in the scope of a
   first-words name can start with its quoted words. Then a reader can follow the name to the wrong part.
 
@@ -736,7 +738,7 @@ for the orchestrator.
   before it.
 
   If a ticket edits doc text, ask the plan to read the sentences before and after each edited range. Prettier wraps the
-  docs, as [rules.md](rules.md#docs) says, so the first word of an edited sentence can end the line before the edited
+  docs, as [rules.md](../rules.md#docs) says, so the first word of an edited sentence can end the line before the edited
   range. An edit can keep that word as a stray word, and an edit can also remove a sentence right before the edited
   range. A diff can show the line of a stray word as an unchanged line, so the read covers the file and the diff. On
   #735 and #736 (2026-11-04), "The" and "Then" stayed as stray words in `docs/dev/ci-wait.md` and `docs/dev/planner.md`.
@@ -754,23 +756,23 @@ for the orchestrator.
   the cost repeats.
 
 - If a refine removes a name from a list inside a sentence, ask the plan to fix the "and" of that sentence. Also ask it
-  to search each doc for the same list. The search follows [the doc-search rule](rules.md#docs). On #20, a refine
+  to search each doc for the same list. The search follows [the doc-search rule](../rules.md#docs). On #20, a refine
   removed a name from a list, and the other docs with the same list kept the old "and".
 - If a ticket writes files across the whole repo, for example a format run or a rename in each file, ask the plan to
   leave out the folder `.claude/`. The execute session cannot write some files under `.claude/`, for example
   `.claude/settings.json`. On #148, the format run left `.claude/settings.json` as it was, and the first `tasker verify`
   failed on it. The Write tool and the Edit tool of the execute session can write under `.claude/skills/`. Each other
   path under `.claude/` stays blocked for them, and the shell cannot write under `.claude/skills/` (see
-  [the execute role](assistants.md#the-execute-role)). On #413, the Write tool refused
+  [the execute role](../assistants.md#the-execute-role)). On #413, the Write tool refused
   `.claude/skills/session-review/SKILL.md`, and the task failed in `executing`.
 - If two test helpers share a one-line rule, for example a PATH prefix, ask the plan to put the rule in one shared
-  helper up front ([rules.md](rules.md#tests)). On #43, a new git wrapper helper copied the PATH rule of a sibling
+  helper up front ([rules.md](../rules.md#tests)). On #43, a new git wrapper helper copied the PATH rule of a sibling
   helper, and review 1 found the copy. The fix cost one loop.
 - Ask the plan to write no claim about a count in new text, for example "two functions fetch". Such a claim becomes
   false with each new case. On #199, the fix of a count drew a new finding in the next loop.
 - If the issue gives a `gh issue list` or a `gh project item-list` command, ask the plan to add `--limit 1000`. By
-  default, gh lists at most 30 issues (#200). [The project board](issues.md#the-project-board) gives the limit of
-  `gh project item-list`, and [the priority rule](orchestrator/pick-the-tickets.md#pick-the-tickets) holds such a
+  default, gh lists at most 30 issues (#200). [The project board](../issues.md#the-project-board) gives the limit of
+  `gh project item-list`, and [the priority rule](../orchestrator/pick-the-tickets.md#pick-the-tickets) holds such a
   command.
 - If a page has two headings with the same name, the issue gives the exact anchor (#194).
 - If an issue asks for a heading "next to a bullet", ask the plan to put the heading after the bullet list, not inside
@@ -791,8 +793,8 @@ for the orchestrator.
   belongs to `grep`. On #267, the task subagent ran [the ancestor check](rebase-conflicts.md#the-ancestor-check) a
   second time alone, and it passed.
 - If the issue puts a command out of scope, ask the plan not to edit the docs of that command. On #159, the plan
-  narrowed a reason sentence in the "Retry" section of [tasks.md](tasks.md#retry). Review 1 read the new sentence as a
-  promise of a case that the ticket did not build.
+  narrowed a reason sentence in the "Retry" section of [tasks.md](../tasks.md#retry). Review 1 read the new sentence as
+  a promise of a case that the ticket did not build.
 - If the Out of scope section of an issue limits a new rule, ask the plan to state that limit in the doc text. A reader
   of the doc does not see the issue, so a review can find the rule too wide. On #500, review 2 found that no doc gave
   such a limit, and the fix cost one loop.
@@ -815,11 +817,11 @@ for the orchestrator.
 - A link must support the exact sentence that holds it. Ask the plan to compare each link sentence with its target, for
   example "X says that Y". The target must say Y. On #159, a link sentence claimed more than its target doc says.
   [The diff read](run-one-ticket.md#the-diff-read) found it after execute. On #212, the compare found a real gap before
-  execute, because [docs/config.md](../config.md#assistant) names the provider `claude-code`, not the `claude` command.
-  The target of a link can cover only a part of the sentence. Then ask the plan for a link in the form "See [the
-  target]". This form makes no claim about the target. The form "as [the target] says" claims that the target says the
-  whole sentence. On #494 (2026-10-25), plan v1 linked to a hint with "as [the hint ...] says", but the hint covers only
-  a case of a condition. Refine 1 used "See [the hint ...]".
+  execute, because [docs/config.md](../../config.md#assistant) names the provider `claude-code`, not the `claude`
+  command. The target of a link can cover only a part of the sentence. Then ask the plan for a link in the form "See
+  [the target]". This form makes no claim about the target. The form "as [the target] says" claims that the target says
+  the whole sentence. On #494 (2026-10-25), plan v1 linked to a hint with "as [the hint ...] says", but the hint covers
+  only a case of a condition. Refine 1 used "See [the hint ...]".
 - If a plan rewrites "the test X fails when ..." into "X enforces these rules", ask the plan for one sentence for each
   test, with only the rule that the test enforces. On #266, plan v1 said that two tests enforce a rule that no test
   enforces.
@@ -827,15 +829,15 @@ for the orchestrator.
   #190, the lead-in repeated three facts of [the commit check](verify-failures.md#the-commit-check), and review 1 found
   the copy.
 - If a change makes an argument optional, ask the plan to list each doc sentence that depends on that argument, and to
-  say for each one if it changes. On #159, the feedback of [`tasker refine`](tasks.md#refine) became optional. Review 2
-  found the sentence "a left-out question counts as answered by the feedback".
+  say for each one if it changes. On #159, the feedback of [`tasker refine`](../tasks.md#refine) became optional. Review
+  2 found the sentence "a left-out question counts as answered by the feedback".
 - If a ticket adds an option that takes numbers, name the raw-string rule to the plan. The comment of the helper that
   reads whole-number options in `src/commands/shared.ts` gives the rule: an error prints the value as the user typed it.
   On #158, review 1 found that a very large `--finding` position printed a changed number.
 - Before the plan adds a test helper, ask it to search `test/commands/`, `test/tasks/` and `test/helpers/` for a helper
   that does the same job. On #178, one shared check of a refused command replaced three local copies.
-- The rule of [Tests](rules.md#tests) on shared test helpers also covers a one-line wrapper around a shared helper. The
-  second copy of such a wrapper is a duplication. On #179, three such wrappers cost one review loop.
+- The rule of [Tests](../rules.md#tests) on shared test helpers also covers a one-line wrapper around a shared helper.
+  The second copy of such a wrapper is a duplication. On #179, three such wrappers cost one review loop.
 - If a command has a failure path that ends in a state other than `failed`, ask the plan to give the shared failure step
   of `src/tasks/` the target state as an argument. On #180, the catch block of `finish` copied the steps, and the review
   found the copy.
@@ -861,7 +863,7 @@ for the orchestrator.
   the helper takes `undefined` as a missing argument. As a result, a row with `undefined` tests the default value, not
   the case of its label. On #545 (2026-10-30), `blockerTo("TEST-3", undefined)` took the default `BACKLOG`, and review 1
   found it.
-- [The orchestration pages](../orchestrator.md) describe the installed tasker. A plan for a change of the tasker that
+- [The orchestration pages](../../orchestrator.md) describe the installed tasker. A plan for a change of the tasker that
   this repo builds does not edit them. On #278, plan v2 added a todo for `docs/dev/orchestration.md`, and the task
   subagent took it out.
 - If a label does not exist, `gh issue list --label <name> --limit 1000 --json number` prints `[]` and exits with 0.
@@ -875,7 +877,7 @@ for the orchestrator.
   issue said that each refine of a pushed task puts the branch in the note case. A refine with an amend gets the at-risk
   error instead. Review 2 found this, and a change of scope of the user narrowed the sentence. It cost one loop. This
   also covers a reason that a hint or a refine adds about a state: before the feedback asks for it, search the docs for
-  each rule that changes that state. The search follows [the doc-search rule](rules.md#docs). On #423, refine 1 asked
+  each rule that changes that state. The search follows [the doc-search rule](../rules.md#docs). On #423, refine 1 asked
   for "origin keeps the push of an earlier step 9 until step 21", and review 3 found that the pushed-branch rule of
   `docs/dev/verify-failures.md` can delete that push earlier. It cost one loop.
 - If the issue gives a reason with a condition, for example "a failure would stop each update", ask the plan for the
@@ -884,9 +886,9 @@ for the orchestrator.
 - A search or a check command of the plan, for example a `grep` count or a claim that a doc does not hold some words, is
   a fact of [the fact test](plan-review.md#the-fact-test). Before `tasker approve`, the task subagent runs it on each
   form of the words, for example `--opt=value` next to `--opt value`. The search follows
-  [the doc-search rule](rules.md#docs). On #392, a pattern of plan v2 needed a space before `$HOME`, and it counted 2 on
-  the correct line. Refine 2 fixed it. On #388, plan v1 searched only for "the bullet before it" and missed "the bullet
-  before this one" in `docs/dev/planner.md`. The issue check found it with
+  [the doc-search rule](../rules.md#docs). On #392, a pattern of plan v2 needed a space before `$HOME`, and it counted 2
+  on the correct line. Refine 2 fixed it. On #388, plan v1 searched only for "the bullet before it" and missed "the
+  bullet before this one" in `docs/dev/planner.md`. The issue check found it with
   `grep -n -E 'the bullet before (this one|it)'`. On #383, a search for `base branch:` also hit prose where a colon ends
   a phrase before a code span, and the expected output of the plan missed one such hit. Sort each hit before the plan
   calls one hit the only one.
@@ -906,8 +908,8 @@ for the orchestrator.
 
   The reasons: for the behavior of the installed tasker, `docs/statemachine.md` is a page for human users who want to
   see how tasker works. That page can be out of date. The code of `src/` can be newer than the installed `tasker`, as
-  [the intro of docs/orchestrator.md](../orchestrator.md) says. For `skills/tasker/`, see
-  [The installed skill](rules.md#the-installed-skill).
+  [the intro of docs/orchestrator.md](../../orchestrator.md) says. For `skills/tasker/`, see
+  [The installed skill](../rules.md#the-installed-skill).
 
   On #356, plan v1 of a hint ticket took a fact from `docs/statemachine.md`. On #198, the plan took the output form of
   `tasker status` from `skills/tasker/references/inspect.md`. On #229, the plan took the text of an empty-feedback error
@@ -920,11 +922,11 @@ for the orchestrator.
   `src/tasks/review.ts` as evidence. The issue said that the review of a stacked task also reviews the lines of its
   parent (#271). The task subagent dismissed the finding with the issue text.
 
-  [The facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker) say how a session treats a
-  fact of its list.
+  [The facts of the installed tasker](../tasker-commands.md#the-facts-of-the-installed-tasker) say how a session treats
+  a fact of its list.
 
 - In a ticket about the installed tasker, tell the plan that "the task worktree" is the worktree of the task subagent,
-  as [the own-worktree rule](limits.md#the-own-worktree-rule) says. The worktree that tasker makes for a task is a
+  as [the own-worktree rule](../limits.md#the-own-worktree-rule) says. The worktree that tasker makes for a task is a
   worktree of tasker. On #366, plan v1 used "the task worktree" for the worktree of tasker.
 
 - If an issue lists current code behavior, ask the plan to read the current code. Ask it to compare each listed case
@@ -935,7 +937,7 @@ for the orchestrator.
   index. If the command is missing, the claim of the issue is false. Apply
   [the issue check](plan-review.md#the-issue-check).
 - A ticket can add or change a `tasker` command. Then ask the plan to compare the command with
-  [the stacked-task guards](workspaces.md#stacked-task) of `src/tasks/parent.ts`.
+  [the stacked-task guards](../workspaces.md#stacked-task) of `src/tasks/parent.ts`.
 - If an issue gives a case table, ask the plan whether two rows can match one case. If they can, ask it to name the
   winning row or the missing requirement.
 - If a plan adds a test of an exact message, ask the plan to keep one row for each message. Also ask it to remove the
@@ -973,16 +975,17 @@ for the orchestrator.
 
 ## A ticket that changes git code
 
-- Give the design context of [version-control.md](version-control.md#how-tasker-uses-git) up front. Otherwise the review
-  raises cases that cannot occur.
+- Give the design context of [version-control.md](../version-control.md#how-tasker-uses-git) up front. Otherwise the
+  review raises cases that cannot occur.
 - Test on the local machine each mechanism that the refine names, and the user configuration keys of each git command
   ([the fact test](plan-review.md#the-fact-test)). On one ticket, `-c core.bare=true` had no effect, and three
   configuration keys gave a wrong result with no error.
-- Name the rules of [version-control.md](version-control.md) and [workspaces.md](workspaces.md) that the code must
-  follow, for example [the environment of git](version-control.md#rungit) and
-  [the exact ref reads](workspaces.md#revisions).
+- Name the rules of [version-control.md](../version-control.md) and [workspaces.md](../workspaces.md) that the code must
+  follow, for example [the environment of git](../version-control.md#rungit) and
+  [the exact ref reads](../workspaces.md#revisions).
 - Name the disk state of each path: fresh, partial and complete. For a configuration key with more than one value, name
-  the `--replace-all` and `--unset-all` rules of [The clone configuration](version-control.md#the-clone-configuration).
+  the `--replace-all` and `--unset-all` rules of
+  [The clone configuration](../version-control.md#the-clone-configuration).
 - A test that compares the output of tasker with "what git writes" reads the value of git with a separate plain git
   call, before tasker can change it.
 - Git code that does not read the error text of git keeps two calls for "exists" and "read". Name the two-call pattern
@@ -996,10 +999,10 @@ for the orchestrator.
 - Before the landing, the task subagent runs each test file of a command that makes git commits. For example, it runs
   these tests with a rebase or a merge, with the global git configuration hidden:
   `GIT_CONFIG_GLOBAL=/dev/null npm test -- <test file>`. Then the tests run with no global git identity, as on the
-  GitHub runner ([Tests](code-conventions.md#tests)). On #273, 21 tests of `test/commands/update-branch.test.ts` passed
-  on the local machine and failed on CI. #287 fixed them.
-- To find each test that needs [a git identity](code-conventions.md#tests), run the whole test suite with no global and
-  no system git configuration: `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm test`. On #287, this run took
+  GitHub runner ([Tests](../code-conventions.md#tests)). On #273, 21 tests of `test/commands/update-branch.test.ts`
+  passed on the local machine and failed on CI. #287 fixed them.
+- To find each test that needs [a git identity](../code-conventions.md#tests), run the whole test suite with no global
+  and no system git configuration: `GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 npm test`. On #287, this run took
   about 30 seconds. It showed that only the tests of `test/commands/update-branch.test.ts` had the gap.
 - After a move of the head that is not a fast-forward, the code reads again each value that it read for the old head. An
   example of such a move is a take of the remote tip. An example of such a value is the containment of the base. On
@@ -1008,7 +1011,7 @@ for the orchestrator.
 ## A ticket that adds a check of `tasker doctor`
 
 - A remediation names only the cause that it fixes.
-- Name the timeout rules of [the shared wrapper](doctor.md#the-shared-wrapper) for each check.
+- Name the timeout rules of [the shared wrapper](../doctor.md#the-shared-wrapper) for each check.
 
 ## A ticket that builds an assistant provider
 
@@ -1023,10 +1026,10 @@ for the orchestrator.
   subagent uses the real home or a copy that the user makes.
 - A ticket can build or change a table of paths with write keys and deny keys, for example the filesystem table of a
   sandbox. The task subagent then asks the plan to state that a deny path wins over a write path, as
-  [The arguments](assistants.md#the-arguments) gives it for `codex`. The plan also states that each key of the table is
-  a real path, with a symbolic link resolved in every part. The plan also states that the table drops a write key on or
-  under a deny path. On #661 (2026-11-01), the fix of each loop drew a new edge case of the table, and reviews 3 and 4
-  found these cases. The task subagent then stopped under the case "Two reviews in a row" of
+  [The arguments](../assistants.md#the-arguments) gives it for `codex`. The plan also states that each key of the table
+  is a real path, with a symbolic link resolved in every part. The plan also states that the table drops a write key on
+  or under a deny path. On #661 (2026-11-01), the fix of each loop drew a new edge case of the table, and reviews 3 and
+  4 found these cases. The task subagent then stopped under the case "Two reviews in a row" of
   [the stop rule](plan-review.md#the-stop-rule).
 
 ## A ticket that adds or changes a guard or a parser
@@ -1060,9 +1063,9 @@ parser of the ticket.
 - The input run is a run in which the task subagent passes its own inputs to the check in the task worktree. The task
   subagent does the input run one time, after the first `tasker verify` that passes and before the first
   `tasker review`. If the first `tasker review` already ran, the task subagent does no input run. Before the run, the
-  task subagent applies [the update rule](limits.md#the-update-rule). The run is a direct test in the task worktree, so
-  both install cases of [Limits](limits.md#limits) apply. If a step of the update rule or of the install fails, or the
-  run cannot start, the task subagent [stops](limits.md#the-answer-wait-rule).
+  task subagent applies [the update rule](../limits.md#the-update-rule). The run is a direct test in the task worktree,
+  so both install cases of [Limits](../limits.md#limits) apply. If a step of the update rule or of the install fails, or
+  the run cannot start, the task subagent [stops](../limits.md#the-answer-wait-rule).
 
   Each input is a text that the task subagent expects the check to block or refuse. The inputs combine places of the
   check with option forms. They also put one place of the check inside another, for example a command inside `$( )`
@@ -1084,9 +1087,9 @@ parser of the ticket.
   with the Requirements of the issue. If the Requirements let such an input through, the input needs no work.
 
   If the Requirements do not say whether the check must block such an input, the task subagent asks the orchestrator.
-  The sources bullet of [Limits](limits.md#limits) gives this ask. The task subagent asks before it adds the work, and
-  it waits for the answer, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. The reason: one run of the
-  add-work rule then covers each input.
+  The sources bullet of [Limits](../limits.md#limits) gives this ask. The task subagent asks before it adds the work,
+  and it waits for the answer, as [the answer-wait rule](../limits.md#the-answer-wait-rule) says. The reason: one run of
+  the add-work rule then covers each input.
 
   Then the task subagent adds the work with [the add-work rule](run-one-ticket.md#the-add-work-rule). The feedback lists
   each input that the check lets through but must block or refuse. It asks for a fix of the check and a Block row for
@@ -1101,10 +1104,10 @@ parser of the ticket.
 
 - Give the full export map and a table of the neutral names.
 - Name the compare rule for the tests of an operation
-  ([code-conventions.md](code-conventions.md#add-an-operation-to-the-version-control-provider)).
+  ([code-conventions.md](../code-conventions.md#add-an-operation-to-the-version-control-provider)).
 - Make sure that each member signature obeys the sharing rule of the interface. For example, a provider that is shared
   for each `(id, account)` cannot know the project of a repo, so its `parse` takes `project`
-  ([issue-trackers.md](issue-trackers.md#the-issue-provider)).
+  ([issue-trackers.md](../issue-trackers.md#the-issue-provider)).
 
 ## A ticket that changes a path
 
@@ -1115,7 +1118,7 @@ parser of the ticket.
 
 - Before a ticket splits a file, ask the plan to list each local function of the old file (a function that the file does
   not export) and to name each new file that uses it. A local function that two new files use must go to one shared
-  place ([rules.md](rules.md#tests)). Otherwise the split makes a copy (#140).
+  place ([rules.md](../rules.md#tests)). Otherwise the split makes a copy (#140).
 - If a move must keep the code exact, ask the plan for a scripted proof that execute runs and reports. A move changes
   each line of the file, so a read of the diff cannot show a dropped test or a changed body (#140). The proof compares
   the old and the new state in four ways:
@@ -1150,7 +1153,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 ## A ticket with test fixtures
 
-- Name the import rule of `test/fixtures/` ([code-conventions.md](code-conventions.md#layout)).
+- Name the import rule of `test/fixtures/` ([code-conventions.md](../code-conventions.md#layout)).
 - The task subagent can record fixture data on the local machine and put it in the refine with "write them exactly as
   given". About 45 KB worked. Then the task subagent compares each file with `cmp` against `tasker/<task branch>`.
 - If an issue asks that each test of a file gets a value from a fixture, ask the plan to name the fixture that each test
@@ -1196,7 +1199,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   1, and `git show <commit>:<missing path>` exits with 128. Say so in the first refine. Otherwise the plan asks for a
   failure case for each such command (#114). A missing path of `git show <commit>:<path>` has two error texts, and both
   exit with 128. Also, `git show` does not resolve `..` in a path, so a rule that reads a link target resolves the path
-  first. [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the two error texts and the `..` fact. On #411,
+  first. [The doc-read rule](../doc-reads.md#the-doc-read-rule) gives the two error texts and the `..` fact. On #411,
   review 1 found that a sentence named only the text "does not exist in". A new rule can name a git command only as an
   example. Such an example is not a command step. The issue can give only some exit codes of the example. Then ask the
   plan to keep only the exit codes that the issue gives. On #483 (2026-10-25), plan v1 added a sentence for the exit
@@ -1221,7 +1224,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   last sentence of a list item, ask the plan to keep the line break of the item. The execute session removes the line
   break with the sentence, and two items then sit on one line. Ask the plan to search the result for a step number after
   a period, for example with `grep -n -E "[^0-9][.] ?[0-9]+[.] "`. On #266, this cost one review loop. The search
-  follows [the doc-search rule](rules.md#docs).
+  follows [the doc-search rule](../rules.md#docs).
 - A fenced code block at column 0 inside a numbered list ends the list. Then `npm run format:check` can fail, for
   example when indented text of the same step follows the block. Indent the block three spaces. On #119, this cost a
   loop.
@@ -1233,7 +1236,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   the ban "never read, search or run anything in a worktree of tasker" disagreed. Review loop 1 found it, and the user
   decided that the exception does not cover a worktree.
 - If an exception needs its own git test, offer the user the rule with no exception as the first choice at once. Do not
-  wait for the two loops of [Simplify over special rules](working-with-the-user.md#simplify-over-special-rules). On
+  wait for the two loops of [Simplify over special rules](../working-with-the-user.md#simplify-over-special-rules). On
   #302, loops 2 to 4 each found a new edge case in the test, and the user dropped the exception.
 - If a ticket adds a rule that bans an action in the reply to the user, ask the plan for a scope bullet. Before
   `tasker approve`, the task subagent decides whether the issue covers two cases: a request in the form of a question.
@@ -1264,19 +1267,19 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule waits for a report from another orchestrator, it also gives that orchestrator the duty to send the report.
   Otherwise the wait has no end. On #147, review 1 found this gap. If a rule ends a wait on named events, ask the plan
   for an end case when the waited object leaves the flow. On #238,
-  [the parent hold](orchestrator/pick-the-tickets.md#the-parent-hold-rule) also ends when the issue of the parent
+  [the parent hold](../orchestrator/pick-the-tickets.md#the-parent-hold-rule) also ends when the issue of the parent
   closes.
 - A rule that says "the order of X wins over the hold" also tells X to send that order to the held task subagent. The
   order is a message to the held task subagent, for example from the orchestrator, not a landing order. Without that
   order, the held task subagent reads only
-  [the parent-hold rule](orchestrator/pick-the-tickets.md#the-parent-hold-rule), and the deadlock (each side waits for
-  the other) stays. On #302, review loop 6 found this.
+  [the parent-hold rule](../orchestrator/pick-the-tickets.md#the-parent-hold-rule), and the deadlock (each side waits
+  for the other) stays. On #302, review loop 6 found this.
 - If a rule adds a new way to unblock a ticket, for example an approved blocked-by link, ask the plan for a moment that
   reads the states at once. Otherwise the ticket waits until the next landing. On #227, review 2 found this gap.
 - If a rule records a commit of the shared clone, the rule reads the hash before the work that the hash stamps. Another
   task subagent can move the clone between the read and the work, as
-  [the shared-clone rule](limits.md#the-shared-clone-rule) says. The review of #135 found this race in
-  [the re-read rule](doc-reads.md#the-re-read-rule).
+  [the shared-clone rule](../limits.md#the-shared-clone-rule) says. The review of #135 found this race in
+  [the re-read rule](../doc-reads.md#the-re-read-rule).
 - If a rule records a value, say how long the value lives. Cover each later step that uses it, also on another page. On
   #163, loop 1 found this gap. Also ask the plan to name the end of the life of the value across a second round of the
   same procedure. On #231, review 1 asked how long `<deleted>` lives when a second rebase conflict pushes the branch
@@ -1287,18 +1290,18 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   to come, not only for one such way. See the hint that starts "If a rule waits for a report from another orchestrator",
   which asks for an end case when the waited object leaves the flow. If two reviews in a row each find a new way that
   the later start fails to come, offer the simpler rule, as
-  [Simplify over special rules](working-with-the-user.md#simplify-over-special-rules) says. On #443 (2026-10-25), each
-  new trigger of the hold of [the parent-hold rule](orchestrator/pick-the-tickets.md#the-parent-hold-rule) drew a new
-  case where the hold never ends. After three such reviews, the user chose the simpler rule.
+  [Simplify over special rules](../working-with-the-user.md#simplify-over-special-rules) says. On #443 (2026-10-25),
+  each new trigger of the hold of [the parent-hold rule](../orchestrator/pick-the-tickets.md#the-parent-hold-rule) drew
+  a new case where the hold never ends. After three such reviews, the user chose the simpler rule.
 - If a new rule deletes a thing that a check reads, for example the tip on origin, ask the plan to
-  [name the hash one time](limits.md#the-shared-clone-rule). Ask it to use that name in each sentence of the check, also
-  in its pass sentence. On #231, review 2 found the pass sentence with the old name.
+  [name the hash one time](../limits.md#the-shared-clone-rule). Ask it to use that name in each sentence of the check,
+  also in its pass sentence. On #231, review 2 found the pass sentence with the old name.
 - In a ticket that changes the quota rules, give in the first refine [the fact test](plan-review.md#the-fact-test) that
   the quota event gives only the windows `five_hour` and `seven_day`, and that it can give only `seven_day` (#648). For
-  the safe command, see [Terms](orchestrator/quota.md#terms). On #232, this fact settled two review findings.
+  the safe command, see [Terms](../orchestrator/quota.md#terms). On #232, this fact settled two review findings.
 - If a rule runs at each read of a value, ask the plan to put the rule right after the read, not inside a branch such as
   "If there is a reset time". On #232, review 1 found that a stale five-hour time gave no
-  [seven-day job](orchestrator/quota.md#terms).
+  [seven-day job](../orchestrator/quota.md#terms).
 - If a ticket turns one job of a ticket into two, ask the plan to find each rule that leaves a task subagent out or
   schedules no new job. Ask it to make sure that each such rule is true for the other job that still lives. On #232,
   review 1 and review 3 found such a case.
@@ -1309,8 +1312,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   cover more than one such comment. [The issue check](plan-review.md#the-issue-check) gives the reason. On #247, reviews
   1 and 2 found these two gaps one at a time.
 - If the plan searches for the sentences that hold a term, ask for a pattern that also stops at a colon, for example
-  `[^.:]*`. The search follows [the doc-search rule](rules.md#docs). The pattern `[^.]*` misses the lead-in of a list,
-  which ends with a colon. On #152, the plan and the task subagent missed one line this way, and it cost one loop.
+  `[^.:]*`. The search follows [the doc-search rule](../rules.md#docs). The pattern `[^.]*` misses the lead-in of a
+  list, which ends with a colon. On #152, the plan and the task subagent missed one line this way, and it cost one loop.
 - If a rule takes sentences from one case for a new kind of case, ask the plan whether each borrowed sentence fits the
   new kind. On #139, a sentence for a false claim let a conflict skip the refine that changes the plan. A new table row
   that copies the cells of the row next to it also takes sentences from one case for a new kind of case. Ask the plan
@@ -1341,7 +1344,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 - If a rule adds a new path to an existing step, ask the plan to search the whole paragraph of that step for the words
   of the old path. Ask it to fix each such sentence in one commit. The search follows
-  [the doc-search rule](rules.md#docs). On #198, three review loops found the words "in an answer", "that sends the
+  [the doc-search rule](../rules.md#docs). On #198, three review loops found the words "in an answer", "that sends the
   answer" and "a comment of the orchestrator" one sentence at a time. The same search applies when a ticket turns some
   statements into "not a claim": ask the plan to scope each later sentence of the same paragraph that names an output or
   a claim. On #393, review 1 found the measure sentence of [the issue check](plan-review.md#the-issue-check), and it
@@ -1356,9 +1359,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   #166, each fix drew a new case, and the work took 4 loops.
 - If a ticket changes how a session numbers the questions of a message, ask the plan in the first refine for a list. The
   list names each place that reads those numbers or an answer to them. Examples of such a place are the send of an
-  answer and the close of a question in [The answer](items.md#the-answer) of `docs/dev/items.md`. The plan searches the
-  changed pages, and each page that links to a changed section, with `git grep`. The search follows
-  [the doc-search rule](rules.md#docs). For each place, the plan says whether it changes or why it stays. If a place
+  answer and the close of a question in [The answer](../items.md#the-answer) of `docs/dev/items.md`. The plan searches
+  the changed pages, and each page that links to a changed section, with `git grep`. The search follows
+  [the doc-search rule](../rules.md#docs). For each place, the plan says whether it changes or why it stays. If a place
   stays, the plan names each old gap of that place that stays outside the issue. See
   [the hint that starts "If a requirement adds a case to an existing condition"](#a-ticket-that-changes-a-procedure-doc).
   On #472 (2026-10-25), the operator numbers the questions of each item again for its one list. Review 3 found the send
@@ -1377,10 +1380,10 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   trigger sentences, because the Out of scope section kept "the list of the findings". Review 1 found the conflict, and
   the user changed the scope.
 - If an issue limits a rule to one session, for example "the session that got it", the first refine compares that limit
-  with [the items of a handoff file](handoff.md#the-items-of-a-handoff-file) before the plan. The handoff file carries a
-  decision of the user to the new session while no doc and no open issue holds it. On #375, the issue limited
-  [the recommendation mode](working-with-the-user.md#a-decision-of-the-user) to the session that got it. Review 1 found
-  the conflict with the handoff, and the fix cost a change of scope.
+  with [the items of a handoff file](../handoff.md#the-items-of-a-handoff-file) before the plan. The handoff file
+  carries a decision of the user to the new session while no doc and no open issue holds it. On #375, the issue limited
+  [the recommendation mode](../working-with-the-user.md#a-decision-of-the-user) to the session that got it. Review 1
+  found the conflict with the handoff, and the fix cost a change of scope.
 - A new check of a fact, next to an old check of the same fact, draws a "two checks can disagree" finding. In the first
   refine, ask the plan whether the new check replaces the old one, and which check ends the rule. On #376, the label
   check and the old state read of `gh issue view` both ended the ban. The fix removed the old read.
@@ -1405,7 +1408,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule or a design-gap answer reads a value from a source, for example the `based on` note of `tasker start`, ask
   for the case when the source is missing. On #344, review 3 found this gap, and it cost one loop. If a rule or a
   definition gives a default, ask the plan to test each case that uses the default. On #498 (2026-10-31), if the old
-  session of [a topic handoff](handoff.md#a-topic-handoff) was the operator and the prompt named no operator,
+  session of [a topic handoff](../handoff.md#a-topic-handoff) was the operator and the prompt named no operator,
   `planner-npm` got the default `operator-npm`. No session had that name, and the gap cost one stop before
   `tasker approve`.
 - If a ticket lets an orchestrator run a ticket of another milestone, ask the plan to list each rule that finds the
@@ -1432,8 +1435,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   in the bullet on a change to an issue in flight.
 - If a rule makes a step run again, ask the plan in the first refine for two things. First, the second run skips each
   job that the first run made. An example is each job that the first run of a step scheduled under
-  [the future-time rule](orchestrator/quota.md#schedule-a-job-when-a-task-subagent-starts). Second, the rule names what
-  the second run does for each of its jobs, not only for the job that started the second run. On #431 (2026-10-25),
+  [the future-time rule](../orchestrator/quota.md#schedule-a-job-when-a-task-subagent-starts). Second, the rule names
+  what the second run does for each of its jobs, not only for the job that started the second run. On #431 (2026-10-25),
   review 5 found both gaps in the future-time rule.
 - If a ticket adds a stop to one step, ask the plan to look for each other step that uses the same input. An example of
   an input is the base commit. The plan adds the same stop there. On #419, step 4 of
@@ -1478,8 +1481,8 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   Claude Code 2.1.310 through `herdr agent start` of herdr 0.9.3.
 - A new page of a ticket can give the form of a message. Then each other step of the new pages that sends that message
   links to that rule. Ask the plan to search each message form across all the new pages. The search follows
-  [the doc-search rule](rules.md#docs). On #403, one page said that an instruction of the user goes as "From the user:".
-  Review 1 found a bare "stop" in step 1 of "Stop a session".
+  [the doc-search rule](../rules.md#docs). On #403, one page said that an instruction of the user goes as "From the
+  user:". Review 1 found a bare "stop" in step 1 of "Stop a session".
 - If a hint or a plan line asks to cut a part of a list sentence, it also gives the full new sentence. On #405, a plan
   line said "remove only the false part" of a list sentence, and the execute session broke the list ("the drafts of each
   issue, their rewrites"). This cost refine 2 and review loop 2.
@@ -1489,22 +1492,22 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a rule limits a count of running task subagents, ask the plan in the first refine for a list. The list names each
   bullet that sets a count that a kept item must join. On #429, review 1 found that the bullet "Run at most 3 agents at
   the same time" counted only running task subagents. A requirement can add a free-slot condition to a start. Then ask
-  the plan whether the slot that [the parent-hold rule](orchestrator/pick-the-tickets.md#the-parent-hold-rule) keeps for
-  that ticket counts as free for it. A kept slot is not free for another start. On #443 (2026-10-25), the plan said that
-  the free-slot condition also accepts the slot that the parent-hold rule keeps for the ticket.
+  the plan whether the slot that [the parent-hold rule](../orchestrator/pick-the-tickets.md#the-parent-hold-rule) keeps
+  for that ticket counts as free for it. A kept slot is not free for another start. On #443 (2026-10-25), the plan said
+  that the free-slot condition also accepts the slot that the parent-hold rule keeps for the ticket.
 - A new rule can search `origin/main` and only link to a bullet that fetches before a later read. The link does not
   cover the search. Ask the plan to put a `git fetch origin` in the new rule itself, right before the search. On #442
   (2026-10-25), the bullet of plan v1 linked to the `git show` bullet, which fetches before its read, not before the
   search. Review 1 found the search before the fetch. If a new rule gives an example search of the docs, ask the plan
   for the `origin/main` form at once. The fetch of the sentence before still applies. An example is
-  `git grep -n '<words>' origin/main -- docs`. The search follows [the doc-search rule](rules.md#docs). A search of the
-  files on disk can read another commit, as [the doc-read rule](doc-reads.md#the-doc-read-rule) says. On #483
+  `git grep -n '<words>' origin/main -- docs`. The search follows [the doc-search rule](../rules.md#docs). A search of
+  the files on disk can read another commit, as [the doc-read rule](../doc-reads.md#the-doc-read-rule) says. On #483
   (2026-10-25), plan v1 searched the files on disk, and the fix cost a design-gap answer in a stop before
   `tasker approve`. The hint gives no exit codes of the example commands. They are out of scope.
-- If a ticket adds a new kind of handoff, for example [a topic handoff](handoff.md#a-topic-handoff), ask the plan in the
-  first refine for two things. First, the plan gives the session name of the new session. Second, it names the session
-  that starts the new session. On #438 (2026-10-25), plan v1 left open who starts the new session, and review 1 found
-  the other three gaps.
+- If a ticket adds a new kind of handoff, for example [a topic handoff](../handoff.md#a-topic-handoff), ask the plan in
+  the first refine for two things. First, the plan gives the session name of the new session. Second, it names the
+  session that starts the new session. On #438 (2026-10-25), plan v1 left open who starts the new session, and review 1
+  found the other three gaps.
 
 ## A ticket that moves or trims a doc
 
@@ -1515,9 +1518,9 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 
 - In the first refine, decide whether the ticket removes a rule. A removed rule includes a rule, step, case or duty that
   the ticket deletes or replaces. A move or rename alone does not count. Name each removed rule, and ask the plan to
-  search for each pointer to each rule in [each tracked file with the extension `.md`](rules.md#changes). The plan
+  search for each pointer to each rule in [each tracked file with the extension `.md`](../rules.md#changes). The plan
   chooses the search words, for example the rule name, anchor, first words or key words. The search follows
-  [the doc-search rule](rules.md#docs), including its rule for text across wrapped lines.
+  [the doc-search rule](../rules.md#docs), including its rule for text across wrapped lines.
 
   A pointer names, links to or depends on the removed rule. Text that tells a reader to follow the rule is also a
   pointer. The plan judges whether each hit is a pointer or a record. A record describes what a past ticket or session
@@ -1529,7 +1532,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   issue's scope.
 
   Searching `skills/tasker/` counts as reading those files. Cover them only when
-  [the installed-skill rule](rules.md#the-installed-skill) permits that read. Reviews then avoid finding pointers one
+  [the installed-skill rule](../rules.md#the-installed-skill) permits that read. Reviews then avoid finding pointers one
   loop at a time. Skills and prompt templates outside `docs/` can also contain rules that sessions follow. On
   [#980](https://github.com/codeguru42/tasker/issues/980) (2026-11-24), four docs had pointers to the old rule:
   `docs/dev/pick-the-tickets.md`, `docs/dev/handoff.md`, `docs/dev/planner-subagent.md` and `docs/dev/question-pane.md`.
@@ -1540,18 +1543,18 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   each moved sentence. On #118, the moved UTF-8 rule lost its "reads" half. In a ticket that moves text, ask the plan to
   keep each old sentence and to change only the words that point to a place. On #206, a sentence that the plan reworded
   to make it "true" gained a fact, and review 3 found it. The one home of a merged rule covers each case of the old
-  copies. If the [home](rules.md#code) of a merged fact uses a term that an old copy defined, ask the plan to move the
-  definition to the home too. On #204, the home said "prunes" but not what the prune removes, and review 2 found the
+  copies. If the [home](../rules.md#code) of a merged fact uses a term that an old copy defined, ask the plan to move
+  the definition to the home too. On #204, the home said "prunes" but not what the prune removes, and review 2 found the
   lost definition. If a ticket gives a term its one home, ask the plan to search the docs for each other sentence that
-  defines the same term. The search follows [the doc-search rule](rules.md#docs). On #338, the parent-hold rule still
+  defines the same term. The search follows [the doc-search rule](../rules.md#docs). On #338, the parent-hold rule still
   said "A ready state is ...", and review 1 found it. On #342, plan v1 defined a free slot as "fewer agents run than the
-  limit". A slot stays held until [Delete the job](orchestrator/quota.md#delete-the-job) frees it, also after the turn
-  of the task subagent ends. Link to the home of the term, and do not define it again.
+  limit". A slot stays held until [Delete the job](../orchestrator/quota.md#delete-the-job) frees it, also after the
+  turn of the task subagent ends. Link to the home of the term, and do not define it again.
 - A code comment can name a doc heading. Search `src/` and `test/` for a heading before a rename.
 - Write a gap that no code covers yet as a rule for the caller with "must", not as a claim that the code does it.
-- If the issue calls a sentence a copy of a home ([the one-home rule](rules.md#code)), ask the plan to compare the words
-  and the scope of the two. A sentence under a section with another scope is not a copy. A copy can also hold one more
-  fact. Before the task subagent dismisses a finding because it contradicts the issue
+- If the issue calls a sentence a copy of a home ([the one-home rule](../rules.md#code)), ask the plan to compare the
+  words and the scope of the two. A sentence under a section with another scope is not a copy. A copy can also hold one
+  more fact. Before the task subagent dismisses a finding because it contradicts the issue
   ([Review findings](review-findings.md#review-findings)), the task subagent makes sure that the claim of the issue is
   true. On #199 and #202, a "copy" held another fact. On #202, the task subagent dismissed a real finding.
 - If a rule moves from a narrow heading to a section for the whole page, ask the plan to keep the words that gave the
@@ -1560,7 +1563,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   After the change, a pronoun in that sentence can name nothing (#203).
 - In a ticket that moves sections to another page, ask the plan to list each "this page" in the text that stays. The
   moved text is not the only place. The ticket changes each "this page" whose scope now covers a moved section. On #324,
-  the [Limits](limits.md#limits) bullet "the steps on this page",
+  the [Limits](../limits.md#limits) bullet "the steps on this page",
   [the verify-failure rule](verify-failures.md#the-verify-failure-rule) and two intro sentences became false. Review
   loop 1 found them.
 - Ask the plan for a link on each name of a rule or a section that now lives on another page. The first use in each
@@ -1568,19 +1571,19 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
   name and a bare name both count. On #324, a rule only for quoted names left four bare names with no link, for example
   [the diff read](run-one-ticket.md#the-diff-read) and [the issue check](plan-review.md#the-issue-check). Loops 1 to 3
   found them one direction or one set of names at a time. On #322, the diff read found a quoted name,
-  "[The prompt of an agent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent)", that the plan missed. A
+  "[The prompt of an agent](../orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent)", that the plan missed. A
   search for the bare quote with no `[` before it finds such names. The search follows
-  [the doc-search rule](rules.md#docs). If a hint is about a form of text, for example quote marks, ask the plan to
+  [the doc-search rule](../rules.md#docs). If a hint is about a form of text, for example quote marks, ask the plan to
   write each example of the hint in the exact form that the example describes. On #355, a new hint drew the difference
   between a quoted name and a bare name of a rule. The plan put quote marks around the bare-name examples, the diff read
   and the issue check, and review 1 found it. A hint of the orchestrator then asked for a link on each term that another
   doc defines. The plan put the links inside the quote marks, so the mistake was harder to see.
 - An example sentence can name a section of a file, for example the sample notice of
-  [the notice rule](doc-reads.md#the-notice-rule). After the move of that section, the file name changes, and the
+  [the notice rule](../doc-reads.md#the-notice-rule). After the move of that section, the file name changes, and the
   section name stays. On #322, the section name was swapped, and #324 fixed the same sample again.
 - For the proof of a move, ask the plan to undo each expected link change with a `sed` pass. Run the pass on both the
   old text and the new text. A `sed` pass edits one line at a time. Prettier keeps each link on one line, so the pass
-  still finds each link, as [the doc-search rule](rules.md#docs) says. But a changed link can move the line breaks of
+  still finds each link, as [the doc-search rule](../rules.md#docs) says. But a changed link can move the line breaks of
   its paragraph. So compare the two outputs of the pass with `git diff --no-index --word-diff=porcelain`. Apart from the
   two header lines, a moved line break gives no line that starts with `-` or `+` in this diff. As a result, these lines
   show only the real differences. The task subagents of #322, #323 and #324 used this proof. The word diff
@@ -1605,7 +1608,7 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - If a hint keeps an old list item as its own sentence, first make sure that no kept rule of the page already says the
   same thing. Otherwise the kept sentence repeats that rule. On #338, a hint kept the fourth case of
   [the stop rule](plan-review.md#the-stop-rule) as its own sentence, and the sentence repeated the message bullet of
-  [the Docs rule](orchestrator/land-the-work.md#the-docs-rule). Review 1 found the repeat.
+  [the Docs rule](../orchestrator/land-the-work.md#the-docs-rule). Review 1 found the repeat.
 - If a refine replaces repeated text with a pointer, the pointer names the thing, for example the reason or the rule,
   not "the same answer". On #373, "gets the same answer as such a plan" drew a finding in review 1.
 
@@ -1648,16 +1651,16 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - Before the task subagent asks the plan to extend a bullet, the plan chooses the target from current doc text. If an
   older issue names the target bullet, the task subagent follows that direction, as the hint that starts "If an older
   issue names a hint's target bullet" says. The task subagent runs `git blame --ignore-revs-file .git-blame-ignore-revs`
-  on the target bullet at the root of its [task worktree](limits.md#the-own-worktree-rule). A plain `git blame` shows
+  on the target bullet at the root of its [task worktree](../limits.md#the-own-worktree-rule). A plain `git blame` shows
   the wrap commit of #506 for most lines of the docs. The issue can put the bullets of earlier tickets out of scope
   (#169).
 - On #228, one hint of an issue used "check" as a verb, and the comment draft used "checked".
-  [The self-check rule](rules.md#docs) of rules.md gives the self-check of each draft.
+  [The self-check rule](../rules.md#docs) of rules.md gives the self-check of each draft.
 - If a hint of the issue starts with a rule that a doc already gives, ask the plan to state only the new fact. Then the
   old rule is only the source of an example, with a link. On #186, a link plus a restatement still counted as a copy,
   and it cost one loop.
 - A hint that gives a read of a remote-tracking ref also gives the fetch before the read and the `--verify` of
-  [the shared-clone rule](limits.md#the-shared-clone-rule). A hint about a value that changes later names the moment
+  [the shared-clone rule](../limits.md#the-shared-clone-rule). A hint about a value that changes later names the moment
   that it covers. On #169, review 1 found both.
 - If the issue asks for a link to a bullet, make sure that the target has an anchor. A bullet has no anchor, so the link
   goes to the section of the bullet. On #167, the plan was unable to link to the duplication hint.
@@ -1667,6 +1670,6 @@ This section covers a ticket that writes files outside the sandbox, on paths tha
 - In a ticket that adds hints, if the issue says "the section that fits it", say "add no new section" in the first
   refine. On #228, plan v1 made a new section for one hint.
 - If a hint uses a term that another doc defines, ask the plan for a link on the term, not a sentence that defines it
-  again. On #214, the plan defined "[home](rules.md#code)" again, and review 1 found the copy.
+  again. On #214, the plan defined "[home](../rules.md#code)" again, and review 1 found the copy.
 - If a hint asks the plan for one sentence that covers the facts of two bullets, ask the plan to choose its place. The
   plan uses current doc text.

@@ -40,11 +40,11 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 - When the user must decide something, first explain in the reply what happened, what the problem is, and what each
   choice does. Then ask, and give a recommendation.
 - Before a decision of the user or a recommendation to the user, the session measures each fact that the decision or the
-  recommendation rests on. A fact about an outside tool comes from [a fact test](plan-review.md#the-fact-test). A fact
-  about the code or the docs comes from a read of the ref that holds the fact, for example `origin/main`. The bullet
-  that starts "Before the session answers a question" of [A question of the user](#a-question-of-the-user) gives the
-  read. A fact about a task comes from a read-only `tasker` command. The session gives the command and the result, and
-  next to each fact that it did not measure, it says so.
+  recommendation rests on. A fact about an outside tool comes from
+  [a fact test](task-subagent/plan-review.md#the-fact-test). A fact about the code or the docs comes from a read of the
+  ref that holds the fact, for example `origin/main`. The bullet that starts "Before the session answers a question" of
+  [A question of the user](#a-question-of-the-user) gives the read. A fact about a task comes from a read-only `tasker`
+  command. The session gives the command and the result, and next to each fact that it did not measure, it says so.
 
   This bullet also covers a question to the user about a fact, for example whether a gap is a
   [live security gap](orchestrator/pick-the-tickets.md#pick-the-tickets). A cheap read-only measure comes before such a
@@ -131,7 +131,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   [question for the user alone](items.md#the-terms-of-the-questions) and the approval of a comment on an issue in
   [Before a post](issues.md#before-a-post). If the session is in doubt whether a cleanup is harmless, it asks the user.
 
-  The ban of [The state of the user](plan-review.md#the-state-of-the-user) still applies to each session that it covers.
+  The ban of [The state of the user](task-subagent/plan-review.md#the-state-of-the-user) still applies to each session
+  that it covers.
 
   On 2026-11-13, the description of the GitHub milestone M24 held two hold texts. The hold record of rule 2 of
   [A milestone hold](#a-milestone-hold) stood at its start, and an older hold text stood after it. planner-docs named
@@ -265,8 +266,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 - The user can let the session decide open choices by its own recommendation. The session then tells the user each
   choice and its reason in its reply. In this mode, this bullet wins over the first bullet of this section. It also wins
   over each rule that sends such a choice to the user, for example
-  [the design-gap rule](plan-review.md#the-design-gap-rule). The mode does not cover a rule that says that only the user
-  does an action, for example "Only the user changes a landing order of the overlap rule" (see
+  [the design-gap rule](task-subagent/plan-review.md#the-design-gap-rule). The mode does not cover a rule that says that
+  only the user does an action, for example "Only the user changes a landing order of the overlap rule" (see
   [Land the work](orchestrator/land-the-work.md#land-the-work)).
 
   Some kinds of choice still go to the user first. These kinds are a security gap, a change of scope, a landing order
@@ -656,10 +657,10 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   tasker does not have also waits until later, as an edge case does.
 - Two kinds of finding do not wait: a security gap and a bug in the core path. Tell the user about a security gap at
   once. Say when the gap starts, from the code on `origin/main` and from the machine.
-  [Review findings](review-findings.md#review-findings) of review-findings.md defines both terms and gives the steps for
-  a finding of a review. On 2026-11-07, with no measure, planner-m16 told the user that a security gap for three secret
-  files of `pi` starts after #726 lands. A read of `origin/main` for the draft of #814 showed the gap already live for
-  the runs of `claude-code` and `codex`.
+  [Review findings](task-subagent/review-findings.md#review-findings) of review-findings.md defines both terms and gives
+  the steps for a finding of a review. On 2026-11-07, with no measure, planner-m16 told the user that a security gap for
+  three secret files of `pi` starts after #726 lands. A read of `origin/main` for the draft of #814 showed the gap
+  already live for the runs of `claude-code` and `codex`.
 - Each piece of work that waits becomes an issue in its later milestone, as
   [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) of issue-subagents.md says.
   [issues.md](issues.md) gives the steps to file the issue. An edge case that an issue-draft subagent decided as "later"
@@ -695,12 +696,12 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   fault of an edge case still waits until later. Its issue asks for a fix of the root cause, not for a workaround.
 - Some sessions do not fix a fault themselves, for example an orchestrator or a planner. Such a session files an issue
   or a finding. The issue or the finding asks for a fix of the root cause.
-- The single `tasker retry` of [the verify-failure rule](verify-failures.md#the-verify-failure-rule) stays as it is. It
-  covers a failure that does not come from the code, and the verify-failure rule wins over this rule. The reason: such a
-  failure has no cause in the repo to fix.
-- The `gh run rerun` of step 9 of [the CI wait](ci-wait.md#the-ci-wait) stays as it is. The reason: step 1 of
-  [A failed CI run](ci-wait.md#a-failed-ci-run) then files an issue for each failed run, also for a flaky one. So the
-  rerun hides no fault.
+- The single `tasker retry` of [the verify-failure rule](task-subagent/verify-failures.md#the-verify-failure-rule) stays
+  as it is. It covers a failure that does not come from the code, and the verify-failure rule wins over this rule. The
+  reason: such a failure has no cause in the repo to fix.
+- The `gh run rerun` of step 9 of [the CI wait](task-subagent/ci-wait.md#the-ci-wait) stays as it is. The reason: step 1
+  of [A failed CI run](task-subagent/ci-wait.md#a-failed-ci-run) then files an issue for each failed run, also for a
+  flaky one. So the rerun hides no fault.
 - The reason for this rule: the user said "We need to find the root cause and solve it rather than slap a bandaid on it
   that covers it up."
 
@@ -710,15 +711,15 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
   in a row where the fix of a rule draws a new edge case, give the user a simpler rule as the first choice and the patch
   as the second choice.
 - In one case, an exception for one more loop drew a new edge case in each of 4 loops. The user replaced all the special
-  loop rules with one rule: "up to 5 loops, then report". [Review findings](review-findings.md#review-findings) of
-  review-findings.md holds it.
+  loop rules with one rule: "up to 5 loops, then report".
+  [Review findings](task-subagent/review-findings.md#review-findings) of review-findings.md holds it.
 - When the orchestrator gives the user the simpler rule as a choice, the orchestrator also tells the task subagent of
   the ticket to wait. The task subagent does not run its next `tasker approve` or `tasker accept` until the user
   decides. The task subagent waits as [the answer-wait rule](limits.md#the-answer-wait-rule) says. Then the orchestrator
   sends the task subagent the decision of the user. The reason: if the user then picks the simpler rule, a landing with
   the patch costs a second ticket. On 2026-10-17, the task subagent of #250 went on, and #250 landed with the patch
   before the user chose the simpler rule. #306 undoes the patch. The task subagent also stops by itself under the case
-  "Two reviews in a row" of [the stop rule](plan-review.md#the-stop-rule).
+  "Two reviews in a row" of [the stop rule](task-subagent/plan-review.md#the-stop-rule).
 
 ## The tools of a session
 

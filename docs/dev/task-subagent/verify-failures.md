@@ -5,18 +5,19 @@ command of this page that uses `origin/<base branch>`.
 
 ## The verify-failure rule
 
-This rule applies to each `tasker verify` on [the orchestration pages](../orchestrator.md), in step 5 of
+This rule applies to each `tasker verify` on [the orchestration pages](../../orchestrator.md), in step 5 of
 [Run one ticket](run-one-ticket.md#run-one-ticket), in step 9 and after `tasker update-branch` in
-["Land the work"](orchestrator/land-the-work.md#land-the-work). If `tasker verify` fails, the task goes to `failed`. In
-`failed`, `tasker show <issue>` lists `refine`, `update-branch`, `retry` and `abort`. A fix of a failed `tasker verify`
-does not count as a loop of ["Review findings"](review-findings.md#review-findings). The limits of this rule count each
-refine and each retry after the last `tasker verify` that passed, for any cause. If the task is in `failed` after a
-command other than `tasker verify` or `tasker retry`, this rule does not apply. In that case, the task subagent follows
-the paragraph after this list, which starts "If a command fails". The task subagent reads the output of `tasker verify`
-and finds the cause of the failure. Then the task subagent does the first case of this list that applies:
+["Land the work"](../orchestrator/land-the-work.md#land-the-work). If `tasker verify` fails, the task goes to `failed`.
+In `failed`, `tasker show <issue>` lists `refine`, `update-branch`, `retry` and `abort`. A fix of a failed
+`tasker verify` does not count as a loop of ["Review findings"](review-findings.md#review-findings). The limits of this
+rule count each refine and each retry after the last `tasker verify` that passed, for any cause. If the task is in
+`failed` after a command other than `tasker verify` or `tasker retry`, this rule does not apply. In that case, the task
+subagent follows the paragraph after this list, which starts "If a command fails". The task subagent reads the output of
+`tasker verify` and finds the cause of the failure. Then the task subagent does the first case of this list that
+applies:
 
 - If the failure comes from the code and the task subagent already sent the refine of the next case, the task subagent
-  [stops](limits.md#the-answer-wait-rule).
+  [stops](../limits.md#the-answer-wait-rule).
 - If the failure comes from the code, the task subagent finds the cause with
   [the bisect diagnosis](#the-bisect-diagnosis) before repair. Then the task subagent runs one
   `tasker refine <issue> "<feedback>"`. `tasker refine` accepts a task in `failed` only when the task has a plan
@@ -37,13 +38,13 @@ and finds the cause of the failure. Then the task subagent does the first case o
   test failed one time for a reason outside the code. `tasker retry` accepts a task in `failed`. By default,
   `tasker retry` runs `tasker verify` again on the same code. If that verify passes, the task subagent runs
   `tasker show <issue>`, and the task is in the state that it prints. Then the task subagent runs the command that comes
-  after `tasker verify` in the place that ran it. In each place on [the orchestration pages](../orchestrator.md), that
-  command is `tasker review`.
+  after `tasker verify` in the place that ran it. In each place on [the orchestration pages](../../orchestrator.md),
+  that command is `tasker review`.
 
 If a command fails or the task is in another state, run `tasker show <issue>` and follow the commands that it prints. If
-the task is a possible Codex limit, do the steps of [A Codex limit](orchestrator/quota.md#a-codex-limit) before a
+the task is a possible Codex limit, do the steps of [A Codex limit](../orchestrator/quota.md#a-codex-limit) before a
 command that `tasker show <issue>` prints. For a timeout of `tasker execute`, follow the paragraph of
-[the run times](tasker-commands.md#the-run-times) that starts "If `tasker execute` fails with a timeout".
+[the run times](../tasker-commands.md#the-run-times) that starts "If `tasker execute` fails with a timeout".
 
 To find the next command, use these:
 
@@ -136,9 +137,9 @@ implementation commit that fails `npm run check`, or the tip of the task branch 
 has no next commit, so it must pass, whatever its prefix. The cause commit of a broken commit is the commit that adds
 the cause of its failure. It is the broken commit itself, an earlier broken commit, or an earlier commit that the check
 skips, for example a `test:` commit that adds a test configuration. The cause stays in the task commits after their
-base. The Commits section of [docs/dev/rules.md](rules.md) defines an implementation commit and gives the rule. The fix
-of a broken commit goes into its cause commit, not into a new commit on top. The steps do not change the limits or the
-cases of the verify-failure rule.
+base. The Commits section of [docs/dev/rules.md](../rules.md) defines an implementation commit and gives the rule. The
+fix of a broken commit goes into its cause commit, not into a new commit on top. The steps do not change the limits or
+the cases of the verify-failure rule.
 
 The base commit is the commit under the first commit of the task branch. `tasker update-branch` moves the task branch
 onto a newer base, so the base commit changes. For this reason, diagnosis preparation finds the base commit again. The
@@ -156,11 +157,11 @@ session diagnoses again on its current history and base. A history rewrite or ba
 hashes and bounds. In the refine of step 4, the task subagent gives the new base commit. If the task stays stacked after
 `tasker update-branch`, the base commit is the start base of the last read, as
 [the same-patch rule](review-findings.md#review-findings) defines it, and the task subagent runs no `git merge-base`. If
-the task subagent holds no start base for a stacked task, the task subagent [stops](limits.md#the-answer-wait-rule). A
-task stays stacked when the `base:` line of `tasker show <issue>` still has the form `refs/heads/<parent branch>`.
+the task subagent holds no start base for a stacked task, the task subagent [stops](../limits.md#the-answer-wait-rule).
+A task stays stacked when the `base:` line of `tasker show <issue>` still has the form `refs/heads/<parent branch>`.
 Otherwise, the task subagent runs `git fetch --multiple tasker origin`, then
 `git merge-base tasker/<task branch> origin/<base branch>`. If a command fails, the task subagent
-[stops](limits.md#the-answer-wait-rule). This refine of step 4 is part of the same fix, not a new refine of the
+[stops](../limits.md#the-answer-wait-rule). This refine of step 4 is part of the same fix, not a new refine of the
 verify-failure rule, so the limits of that rule do not change. Then the task subagent continues as usual.
 `tasker verify` runs after `tasker approve` and `tasker execute`, as the steps of "Run one ticket" say. The feedback
 tells the session (the execute session that tasker starts) to diagnose again on its current history and base, then fix
@@ -202,15 +203,15 @@ passes, the task subagent does the commit check before `tasker review`, unless t
 `tasker update-branch` after the failed `tasker verify`. This check runs only because a `tasker verify` failed before
 the fix. When `tasker verify` passes and no failed `tasker verify` came before it, the task subagent runs no commit
 check. After `tasker update-branch`, the task subagent runs no commit check until `tasker verify` fails. `tasker verify`
-runs after `tasker update-branch` as step 9 and ["Land the work"](orchestrator/land-the-work.md#land-the-work) say. If
-the commit check fails, the task subagent stops and reports the list of broken commits. The task subagent does not run
-another refine, because the verify-failure rule permits one refine.
+runs after `tasker update-branch` as step 9 and ["Land the work"](../orchestrator/land-the-work.md#land-the-work) say.
+If the commit check fails, the task subagent stops and reports the list of broken commits. The task subagent does not
+run another refine, because the verify-failure rule permits one refine.
 
 The pushed-branch rule covers a task whose task branch was pushed to `origin` at step 9 of
-[docs/dev/rebase-conflicts.md](rebase-conflicts.md). After that push, a fixup commit and an autosquash rebase change the
-task branch of tasker, and `origin` keeps the pushed commits. The fix of a broken commit under the tip still goes into
-its cause commit. On #201, the next `tasker update-branch` worked again only after the old task branch on `origin` was
-deleted with a lease. The task subagent does the rule after a step 11 of that page that records a
+[docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md). After that push, a fixup commit and an autosquash
+rebase change the task branch of tasker, and `origin` keeps the pushed commits. The fix of a broken commit under the tip
+still goes into its cause commit. On #201, the next `tasker update-branch` worked again only after the old task branch
+on `origin` was deleted with a lease. The task subagent does the rule after a step 11 of that page that records a
 [`<taken>`](rebase-conflicts.md#procedure). The rule does not run in [the loop](rebase-conflicts.md#procedure) of step
 11 of that page. The task subagent does the rule before each later `tasker update-branch` of the task, until step 21 of
 that page ends. The `tasker update-branch <issue> --take-remote` of step 11 is not a command of the rule. The rule
@@ -231,10 +232,10 @@ or in a worktree of tasker. The git commands change no task, for example a task 
    pushed commits. Go to step 7. If the exit code is 1, tasker changed the pushed commits. Go on with step 5. If the
    exit code is another code, stop. Nothing changes.
 5. Make sure that `<commit>` is a hash that the task subagent holds as the driver of
-   [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure). These hashes are the `<taken>` of the last step 11 of
-   that page and a [`<pushed>`](rebase-conflicts.md#procedure) of a take. A `<pushed>` of a new conflict does not count.
-   If the task subagent holds neither hash, stop. If `<commit>` differs from each hash that the task subagent holds,
-   stop. Nothing changes.
+   [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md#procedure). These hashes are the `<taken>` of the
+   last step 11 of that page and a [`<pushed>`](rebase-conflicts.md#procedure) of a take. A `<pushed>` of a new conflict
+   does not count. If the task subagent holds neither hash, stop. If `<commit>` differs from each hash that the task
+   subagent holds, stop. Nothing changes.
 
    On #460 (2026-10-25), the push was d4704974, and `<taken>` was dc153ce9. The orchestrator approved a delete with a
    lease at the pushed tip.
@@ -247,8 +248,8 @@ or in a worktree of tasker. The git commands change no task, for example a task 
    of rebase-conflicts.md ends, or until the next push of step 9 of that page. That push ends the old `<deleted>`, and
    the task subagent holds no `<deleted>` until a later delete of this rule.
 7. Run the `tasker update-branch` that the step that started the rule asked for, as
-   [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. That step gives the state of the task after the
-   command.
+   [the plain-form rule](../tasker-commands.md#the-plain-form-rule) says. That step gives the state of the task after
+   the command.
 
 Right after step 6, `origin` has no task branch. While the task subagent holds `<deleted>`,
 [the take check](rebase-conflicts.md#the-take-check) in step 17 of rebase-conflicts.md uses it. If nobody pushed the
@@ -286,13 +287,13 @@ The session does these steps in its worktree, on the task branch, with the base 
 
 The task subagent does the manual fix only when the orchestrator tells it to, after the stop for a manual fix in the
 verify-failure rule. The task subagent never changes the tasker clone (the clone of this repo that tasker keeps, see
-[docs/dev/rebase-conflicts.md](rebase-conflicts.md)) or its worktrees by hand (see
-[the own-worktree rule](limits.md#the-own-worktree-rule)). The task subagent does these steps:
+[docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md)) or its worktrees by hand (see
+[the own-worktree rule](../limits.md#the-own-worktree-rule)). The task subagent does these steps:
 
 1. Do [the remote setup](run-one-ticket.md#the-diff-read). Then do step 6 of
-   [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The task subagent works in the task worktree. Step 6 of that
-   page uses it. [The local-commit rule](limits.md#the-local-commit-rule) holds from step 2 of this list. If a step
-   fails, [stop](limits.md#the-answer-wait-rule).
+   [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md). The task subagent works in the task worktree. Step
+   6 of that page uses it. [The local-commit rule](../limits.md#the-local-commit-rule) holds from step 2 of this list.
+   If a step fails, [stop](../limits.md#the-answer-wait-rule).
 2. Diagnose the failure as [the bisect diagnosis](#the-bisect-diagnosis) says. Use the base commit from step 4 of
    [the commit check](#the-commit-check). If diagnosis is incomplete, stop. The worktree and local task branch stay.
 3. Repair each established cause by following [the broken-commit steps](#the-broken-commit-steps). Run the full audit
@@ -302,7 +303,7 @@ verify-failure rule. The task subagent never changes the tasker clone (the clone
    time, using the base commit of that audit. Then run the full audit one more time. If it still lists a broken commit,
    stop and report the list. If an audit stops with an error, stop. In each case, the worktree and local task branch
    stay. Nothing reached tasker.
-5. Do steps 9 to 21 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md): the push to `origin`,
+5. Do steps 9 to 21 of [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md): the push to `origin`,
    `tasker update-branch <issue> --take-remote`, the next commands, and the cleanup after `tasker finish`.
 
 ## The commit check
@@ -313,11 +314,11 @@ implementation commit and the tip. It also runs before repair when a failure doe
 commit. The task subagent does it in the task worktree, on the local task branch:
 
 1. Do steps 1 to 4 of [the remote setup](run-one-ticket.md#the-diff-read). If a step fails,
-   [stop](limits.md#the-answer-wait-rule). Nothing changes.
+   [stop](../limits.md#the-answer-wait-rule). Nothing changes.
 2. Run `git fetch --multiple tasker origin`. If the fetch fails, stop. Nothing changes.
 3. Work in the task worktree, on the local task branch. This step makes no worktree. Outside the manual fix, do
-   [the update rule](limits.md#the-update-rule). In the manual fix,
-   [the local-commit rule](limits.md#the-local-commit-rule) holds, so run no update. If a step fails, stop. Nothing
+   [the update rule](../limits.md#the-update-rule). In the manual fix,
+   [the local-commit rule](../limits.md#the-local-commit-rule) holds, so run no update. If a step fails, stop. Nothing
    changes.
 4. In the task worktree, find the base commit. For a plain base, run `git merge-base HEAD origin/<base branch>`. If the
    command fails, stop. For a stacked task, the base commit is the start base of the last read, as

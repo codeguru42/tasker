@@ -38,8 +38,8 @@ For all the rules, read the docs of this base list with the steps of the doc-rea
 - `docs/sessions.md`
 - `docs/dev/GLOSSARY.md`
 - `docs/dev/rules.md`
-- `docs/dev/first-refine.md`
-- `docs/dev/rebase-conflicts.md`
+- `docs/dev/task-subagent/first-refine.md`
+- `docs/dev/task-subagent/rebase-conflicts.md`
 - `docs/dev/working-with-the-user.md`
 Also read each doc that the ticket changes, one path on each line, or none:
 {{TICKET_DOCS}}

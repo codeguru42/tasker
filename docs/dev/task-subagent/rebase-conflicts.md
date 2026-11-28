@@ -2,7 +2,7 @@
 
 This page gives the procedure for a rebase conflict that `tasker update-branch` reports.
 
-The page is for [the installed `tasker`](../orchestrator.md) that drives the work on this repo. To see the flags of a
+The page is for [the installed `tasker`](../../orchestrator.md) that drives the work on this repo. To see the flags of a
 command, run `tasker <command> --help`.
 
 ## Who runs the procedure
@@ -45,19 +45,19 @@ Run each git command in the clone of the driver or in its worktree.
 
 5. Run `git fetch --multiple tasker origin`. The fetch reads the task branch from the tasker clone. The fetch of
    `origin` also gets the base branch.
-6. If a worktree already holds the local task branch, use it, and do [the update rule](limits.md#the-update-rule) in the
-   worktree. For a task subagent, that worktree is the task worktree of
-   [the own-worktree rule](limits.md#the-own-worktree-rule) of `docs/dev/limits.md`. Then go to step 7. Otherwise, run
-   `git worktree add -b <task branch> <path> tasker/<task branch>`. This makes a worktree with a local task branch. If
-   the local task branch already exists, follow the branch-exists case of the own-worktree rule. Do not copy it here.
+6. If a worktree already holds the local task branch, use it, and do [the update rule](../limits.md#the-update-rule) in
+   the worktree. For a task subagent, that worktree is the task worktree of
+   [the own-worktree rule](../limits.md#the-own-worktree-rule) of `docs/dev/limits.md`. Then go to step 7. Otherwise,
+   run `git worktree add -b <task branch> <path> tasker/<task branch>`. This makes a worktree with a local task branch.
+   If the local task branch already exists, follow the branch-exists case of the own-worktree rule. Do not copy it here.
 7. In the worktree, rebase the task branch onto `origin/<base branch>`. If the task is a stacked task whose parent
    landed, the driver runs `git rebase --onto origin/<base branch> <start base> <task branch>` in the worktree instead.
 
    Here, `<base branch>` is the base of the landed parent, which is the base that the walk ends on, for example `main`.
    After the stop of step 4, that base is a plain branch name. `<start base>` is the start base of the last read, as
-   [the same-patch rule](review-findings.md#review-findings) of `docs/dev/review-findings.md` defines it. A plain rebase
-   onto `origin/<base branch>` also replays the old commits of the parent. On #182, the 16 commits of the task replayed
-   with one conflict, in `docs/dev/tasks.md`.
+   [the same-patch rule](review-findings.md#review-findings) of `docs/dev/task-subagent/review-findings.md` defines it.
+   A plain rebase onto `origin/<base branch>` also replays the old commits of the parent. On #182, the 16 commits of the
+   task replayed with one conflict, in `docs/dev/tasks.md`.
 
    In the loop of step 11, run a plain rebase onto `origin/<base branch>`, also for a stacked task. Step 4 goes on only
    for a parent that landed. As a result, the local task branch is already on the base branch. The `<start base>` of
@@ -65,8 +65,8 @@ Run each git command in the clone of the driver or in its worktree.
 
    If the driver holds no start base, stop. A person decides the next step, as step 10 describes. The worktree and the
    local task branch stay. Fix the conflicts. From here to step 11,
-   [the local-commit rule](limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds. At the new conflict of step
-   11, the rule holds with no break through the loop.
+   [the local-commit rule](../limits.md#the-local-commit-rule) of `docs/dev/limits.md` holds. At the new conflict of
+   step 11, the rule holds with no break through the loop.
 
    A conflict in the migration array of `src/store/migrations.ts` has one fix. Keep all the migrations. Put the
    migrations of the base first, in their order, then the migrations of the task. Each number of a migration of the task
@@ -74,9 +74,9 @@ Run each git command in the clone of the driver or in its worktree.
 
    Examples of the forms are `migrations[N]`, `migrations.slice(0, N)`, `makeOldDatabase(<path>, N)` and
    `schemaVersion(...)` with `.toBe(N)`. A check of `migrations.length` holds the new total of the migrations. The
-   reason is in [Schema versions](data-root.md#schema-versions): a migration never changes its place after it lands. If
-   step 8 then fails, for example because two migrations add the same column, stop. A person decides the next step, as
-   step 10 describes.
+   reason is in [Schema versions](../data-root.md#schema-versions): a migration never changes its place after it lands.
+   If step 8 then fails, for example because two migrations add the same column, stop. A person decides the next step,
+   as step 10 describes.
 
 8. In the worktree, run `npm run check`. The command must pass.
 9. In the worktree, run `git rev-parse --verify <task branch>`. If the read fails, stop before the push. A person
@@ -104,8 +104,9 @@ Run each git command in the clone of the driver or in its worktree.
     The `<taken>` of the last step 11 lives until the next step 11 runs. That step records a new `<taken>`, or it
     records no `<taken>`. It records no `<taken>` when one of its two commands fails, or at a new conflict. After the
     next step 11, the old `<taken>` is gone. The delete gives no `<deleted>` of the pushed-branch rule of
-    [the broken-commit steps](verify-failures.md#the-broken-commit-steps) in `docs/dev/verify-failures.md`, because the
-    push of step 9 comes right after it. This holds for a delete at `<pushed>` too.
+    [the broken-commit steps](verify-failures.md#the-broken-commit-steps) in
+    `docs/dev/task-subagent/verify-failures.md`, because the push of step 9 comes right after it. This holds for a
+    delete at `<pushed>` too.
 
     These events end a `<pushed>`:
 
@@ -189,14 +190,14 @@ only what differs.
 17. Make sure that the base branch contains the work of the task branch. First, read two hashes in your clone:
     `git rev-parse --verify <task branch>` gives `<tip>`, and `git rev-parse --verify origin/<base branch>` gives
     `<base>`. For a task subagent, `<tip>` is the tip of the local task branch after its last update rule (see
-    [the update rule](limits.md#the-update-rule) of `docs/dev/limits.md`). `tasker merge` lands the tip of tasker as a
-    fast-forward, so the ancestor check then passes. If no update ran after step 11, `<tip>` is the pushed tip, and the
-    take check applies as it is written. If a read fails, stop. Then run [the ancestor check](#the-ancestor-check). If
-    it exits with 0, continue with step 18. If the ancestor check exits with 1, do [the patch check](#the-patch-check).
-    If the ancestor check exits with a code that is not 0 and not 1, stop at once and do not run `git cherry`. If the
-    patch check passes, continue with step 18. If `git cherry` exits with 0 and a line starts with `+`, do
-    [the take check](#the-take-check). If the patch check fails in another case, stop. The take check does not run. If
-    the take check passes, continue with step 18. If the take check fails, stop.
+    [the update rule](../limits.md#the-update-rule) of `docs/dev/limits.md`). `tasker merge` lands the tip of tasker as
+    a fast-forward, so the ancestor check then passes. If no update ran after step 11, `<tip>` is the pushed tip, and
+    the take check applies as it is written. If a read fails, stop. Then run [the ancestor check](#the-ancestor-check).
+    If it exits with 0, continue with step 18. If the ancestor check exits with 1, do
+    [the patch check](#the-patch-check). If the ancestor check exits with a code that is not 0 and not 1, stop at once
+    and do not run `git cherry`. If the patch check passes, continue with step 18. If `git cherry` exits with 0 and a
+    line starts with `+`, do [the take check](#the-take-check). If the patch check fails in another case, stop. The take
+    check does not run. If the take check passes, continue with step 18. If the take check fails, stop.
 18. Remove the worktree: `git worktree remove <path>`. Do not use `--force`, because `--force` deletes the changes that
     are not committed. Files that `.gitignore` lists do not stop `git worktree remove`, for example `node_modules/` from
     `npm ci`.
@@ -210,11 +211,11 @@ only what differs.
     contains the work, a commit with the same patch for each commit, or the landed result of tasker after it took the
     pushed tip. If the command fails, stop. The worktree is gone. The local task branch stays.
 21. Make sure that `origin` has no task branch: do step 10 of "Run one ticket" in
-    [docs/dev/run-one-ticket.md](run-one-ticket.md#run-one-ticket). If the driver is not the task subagent of a ticket,
-    it runs those commands in the clone of the driver. Where that step says to report to the orchestrator, a person
-    decides the next step instead. Step 10 of this page describes this rule. The driver does not do step 11 of "Run one
-    ticket". In this step, the worktree and the local task branch are gone. The failure cases of step 21 are the cases
-    of step 10 of "Run one ticket". Step 10 of "Run one ticket" names what stays.
+    [docs/dev/task-subagent/run-one-ticket.md](run-one-ticket.md#run-one-ticket). If the driver is not the task subagent
+    of a ticket, it runs those commands in the clone of the driver. Where that step says to report to the orchestrator,
+    a person decides the next step instead. Step 10 of this page describes this rule. The driver does not do step 11 of
+    "Run one ticket". In this step, the worktree and the local task branch are gone. The failure cases of step 21 are
+    the cases of step 10 of "Run one ticket". Step 10 of "Run one ticket" names what stays.
 
 ### The ancestor check
 

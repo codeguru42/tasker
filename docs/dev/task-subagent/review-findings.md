@@ -48,33 +48,34 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   holds the tip that the move used, and a later move of the parent does not change it.
 
   After a `tasker update-branch` that reports a rebase conflict, the start base of the last read stays. The first patch
-  id of a stacked task and the case of step 7 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) use the
-  start base of the last read. The loop of step 11 is the exception for step 7 of that page. On #262, the task subagent
-  ran `tasker update-branch` one time before the parent landed. The right start base was then the tip of the parent
-  under the task branch, not the commit of the start. If a command of a read of the start base fails, the task subagent
-  holds no start base. For the first patch id, that is a failed command of this rule, as the bullet "The review after
-  `tasker update-branch` counts as a loop" says. The second patch id: after `tasker update-branch`, while the task is in
-  `executed` and before `tasker verify`, the task subagent runs the same two commands again. The three dots diff against
-  the merge base. As a result, the first patch id uses the old base, and the second patch id uses the new base. The task
-  subagent must run the fetch before each read. The reads of this rule are each read of a patch id and each read of a
-  text id of the same-text compare. The fetch before each such read is also a read of this rule. The reads are a new
-  step at each `tasker update-branch`. The task subagent runs each read in its plain form: one read alone in its own
-  Bash call, as [the plain-form rule](tasker-commands.md#the-plain-form-rule) asks for a `tasker` command. No `cd` comes
-  before the read, and no other command is in the same call. Each git command of the read has the form
-  [`git -C <local clone>`](tasker-commands.md#the-tool-block-rule), as the tool-block rule gives for a git command in
+  id of a stacked task and the case of step 7 of
+  [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md#procedure) use the start base of the last read. The
+  loop of step 11 is the exception for step 7 of that page. On #262, the task subagent ran `tasker update-branch` one
+  time before the parent landed. The right start base was then the tip of the parent under the task branch, not the
+  commit of the start. If a command of a read of the start base fails, the task subagent holds no start base. For the
+  first patch id, that is a failed command of this rule, as the bullet "The review after `tasker update-branch` counts
+  as a loop" says. The second patch id: after `tasker update-branch`, while the task is in `executed` and before
+  `tasker verify`, the task subagent runs the same two commands again. The three dots diff against the merge base. As a
+  result, the first patch id uses the old base, and the second patch id uses the new base. The task subagent must run
+  the fetch before each read. The reads of this rule are each read of a patch id and each read of a text id of the
+  same-text compare. The fetch before each such read is also a read of this rule. The reads are a new step at each
+  `tasker update-branch`. The task subagent runs each read in its plain form: one read alone in its own Bash call, as
+  [the plain-form rule](../tasker-commands.md#the-plain-form-rule) asks for a `tasker` command. No `cd` comes before the
+  read, and no other command is in the same call. Each git command of the read has the form
+  [`git -C <local clone>`](../tasker-commands.md#the-tool-block-rule), as the tool-block rule gives for a git command in
   the local clone. The `set -o pipefail;` and the pipe of a read are part of that one read. A denial of a read is a
-  [tool block](tasker-commands.md#the-tool-block-rule). After a denial, the task subagent follows the tool-block rule.
-  The update of a denial is the `tasker update-branch` that the denied read belongs to. A read of the first patch id or
-  the first text id belongs to the update right after it. A read of the second patch id or the second text id belongs to
-  the update right before it. The fetch before a read belongs to the same update as that read. The task subagent never
-  sends a read and a `tasker update-branch` as parallel calls of one message. A read that belongs to the update right
-  after it ends before that update starts. A read that belongs to the update right before it starts after that update
-  ends. The task subagent also runs the reads of this rule one after the other, never as parallel calls of one message.
-  Each read starts after the read before it ends. A read of this rule and the read of the start base after an update
-  also run one after the other. The review after the update of a denial counts as a loop, as the bullet "The review
-  after `tasker update-branch` counts as a loop" says for a failed command. This holds also when the task subagent runs
-  that update after the answer of the orchestrator. A denial covers only the update of the denial. At each later
-  `tasker update-branch`, the task subagent runs all the reads again, also the denied read. If the answer of the
+  [tool block](../tasker-commands.md#the-tool-block-rule). After a denial, the task subagent follows the tool-block
+  rule. The update of a denial is the `tasker update-branch` that the denied read belongs to. A read of the first patch
+  id or the first text id belongs to the update right after it. A read of the second patch id or the second text id
+  belongs to the update right before it. The fetch before a read belongs to the same update as that read. The task
+  subagent never sends a read and a `tasker update-branch` as parallel calls of one message. A read that belongs to the
+  update right after it ends before that update starts. A read that belongs to the update right before it starts after
+  that update ends. The task subagent also runs the reads of this rule one after the other, never as parallel calls of
+  one message. Each read starts after the read before it ends. A read of this rule and the read of the start base after
+  an update also run one after the other. The review after the update of a denial counts as a loop, as the bullet "The
+  review after `tasker update-branch` counts as a loop" says for a failed command. This holds also when the task
+  subagent runs that update after the answer of the orchestrator. A denial covers only the update of the denial. At each
+  later `tasker update-branch`, the task subagent runs all the reads again, also the denied read. If the answer of the
   orchestrator says otherwise, the answer wins. On #290, the classifier denied the second patch-id read once, the task
   subagent skipped the reads at the next update, and two reviews counted as loops. On #374, the diff read ran its first
   `tasker update-branch` with no first patch id, and the task subagent sent a read and an update in parallel. On #443
@@ -106,11 +107,11 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   `awaiting_work_review`. If it has findings, the task goes to `reviewed`, and the task subagent works on them with
   steps 6 to 8 of ["Run one ticket"](run-one-ticket.md#run-one-ticket). After the 5th loop, the bullet "After the 5th
   loop" wins. If a real finding of a same-patch review is still open, the task subagent
-  [stops](limits.md#the-answer-wait-rule) as that bullet says. If the task subagent dismisses all the findings in step 7
-  of [Run one ticket](run-one-ticket.md#run-one-ticket), the task goes to `awaiting_work_review`. In each case, the task
-  subagent then continues as the place that ran `tasker update-branch` says. Work can follow the same-patch review, for
-  example the refine of step 8 or the work of [the add-work rule](run-one-ticket.md#the-add-work-rule). Then the next
-  `tasker review` counts as a loop.
+  [stops](../limits.md#the-answer-wait-rule) as that bullet says. If the task subagent dismisses all the findings in
+  step 7 of [Run one ticket](run-one-ticket.md#run-one-ticket), the task goes to `awaiting_work_review`. In each case,
+  the task subagent then continues as the place that ran `tasker update-branch` says. Work can follow the same-patch
+  review, for example the refine of step 8 or the work of [the add-work rule](run-one-ticket.md#the-add-work-rule). Then
+  the next `tasker review` counts as a loop.
 - The review after `tasker update-branch` counts as a loop in each of these cases. The two patch ids differ and the two
   text ids differ, for example because the rebase solved a conflict. `tasker update-branch` reported a rebase conflict.
   An output of `git patch-id` is empty, because an empty output gives no patch id. The task subagent did not read the
@@ -119,9 +120,10 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   the task keeps its state. The work changes between `tasker update-branch` and the review, for example with a refine
   after a failed `tasker verify`.
 - The limit of 5 loops counts all other reviews, as before. For a task in `reviewed`, the bullet of
-  ["Land the work"](orchestrator/land-the-work.md#land-the-work) that starts "If the task was in `reviewed`" gives the
-  count. On #92, `main` moved two times during the review loops. Each `tasker update-branch` from `awaiting_work_review`
-  forced a new review, and each review counted as a loop. As a result, 2 of the 5 loops had no change to the work.
+  ["Land the work"](../orchestrator/land-the-work.md#land-the-work) that starts "If the task was in `reviewed`" gives
+  the count. On #92, `main` moved two times during the review loops. Each `tasker update-branch` from
+  `awaiting_work_review` forced a new review, and each review counted as a loop. As a result, 2 of the 5 loops had no
+  change to the work.
 - The early update: this rule covers a task in `reviewed` when the earlier ticket of a landing order shares a file with
   the task. Before each refine of step 8, the later task subagent reads the state of the earlier task one time on the
   `state:` line of `tasker show <earlier issue>`. If the earlier task is in `landed`, `finishing` or `finished`, and the
@@ -259,7 +261,7 @@ later, the fix goes to the first place of this list that applies:
    its task subagent to add the fix to its next refine. For a ticket that has not started, the orchestrator edits its
    issue body.
 3. If no such ticket exists, the orchestrator sends the finding to the planner, as the planner bullet of
-   [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+   [The prompt of a task subagent](../orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 ### The docs-only update
 
@@ -282,10 +284,10 @@ of the moved files and the read of the files of the task are also reads of this 
 own. The `--no-renames` flag prints both names of a renamed file. Each read has the plain form of the same-patch rule.
 No read of this rule goes as a parallel call with `tasker update-branch` or with another read.
 
-A denial of a read is a [tool block](tasker-commands.md#the-tool-block-rule). After the answer of the orchestrator, the
-task subagent skips nothing at that update, unless the answer says otherwise. Another failed read does not stop the task
-subagent. The task subagent then also skips nothing at that update. A denial or a failed read does not change the count
-of a loop. At each later update, the task subagent runs all the reads again.
+A denial of a read is a [tool block](../tasker-commands.md#the-tool-block-rule). After the answer of the orchestrator,
+the task subagent skips nothing at that update, unless the answer says otherwise. Another failed read does not stop the
+task subagent. The task subagent then also skips nothing at that update. A denial or a failed read does not change the
+count of a loop. At each later update, the task subagent runs all the reads again.
 
 If each of these conditions is true, the task subagent can skip `tasker review` and each step of the diff read except
 the last fetch and `git merge-base --is-ancestor`:
@@ -309,6 +311,6 @@ before the verify-failure rule.
 
 The reason: the update changed no file of the task, so the diff and the whole files of the task stay the same. The cost:
 the review does not see a rule that a moved doc changed. If the moved doc is a doc of the task subagent,
-[the task subagent notice](doc-reads.md#the-task-subagent-notice) names the changed section. That notice can arrive
+[the task subagent notice](../doc-reads.md#the-task-subagent-notice) names the changed section. That notice can arrive
 after `tasker accept`. The user decided this rule on 2026-11-01. On #550, docs-only commits moved `main` four times in
 about 15 minutes, and each cycle cost one review run with the same patch id.

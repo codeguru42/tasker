@@ -339,11 +339,11 @@ steps are the same for each kind of job. Then exactly one of these cases applies
   ["Limits"](../limits.md#limits)). The orchestrator does not schedule another job for that task. The task stays in
   `awaiting_quota_approval` until the user decides.
 - If the task is in `failed` or `landed`, the orchestrator reads the last report of the task subagent. In `landed`, the
-  task subagent does [the CI wait](../ci-wait.md#the-ci-wait). If that report does not say that the task subagent
-  stopped, the orchestrator schedules the next job, as [The next job](#the-next-job) says. The task subagent keeps its
-  slot. A report of a failed run (step 11 of the CI wait) is not a stop, so the task subagent keeps its slot also then.
-  If the task subagent stopped, the orchestrator schedules no new job and tells the user. The orchestrator frees the
-  slot only in a case of "Delete the job".
+  task subagent does [the CI wait](../task-subagent/ci-wait.md#the-ci-wait). If that report does not say that the task
+  subagent stopped, the orchestrator schedules the next job, as [The next job](#the-next-job) says. The task subagent
+  keeps its slot. A report of a failed run (step 11 of the CI wait) is not a stop, so the task subagent keeps its slot
+  also then. If the task subagent stopped, the orchestrator schedules no new job and tells the user. The orchestrator
+  frees the slot only in a case of "Delete the job".
 - If the task is in `finishing`, `cleanup_failed`, `finished` or `cancelled`, or `tasker status --issue <issue>` lists
   no task, the orchestrator schedules no new job. The orchestrator frees the slot of the task subagent, as "Delete the
   job" says. By default, `tasker status` lists only the tasks in flight, so it does not list a `finished` or `cancelled`
@@ -397,8 +397,8 @@ not tell the task subagent that it has no job.
 - If the orchestrator tells the task subagent to resume, the task subagent runs `tasker status --issue <issue>`.
 - If the task is in `quota_blocked` or `interrupted`, the task subagent runs `tasker resume <issue>`. The task goes back
   to the state before the run that stopped, and tasker runs the same command again. After that command, the task reaches
-  the state that ["Run one ticket"](../run-one-ticket.md#run-one-ticket) gives for its step. Then the task subagent
-  continues with the next step of "Run one ticket".
+  the state that ["Run one ticket"](../task-subagent/run-one-ticket.md#run-one-ticket) gives for its step. Then the task
+  subagent continues with the next step of "Run one ticket".
 - If the task is in `awaiting_quota_approval`, the task subagent does not run `tasker resume` or
   `tasker approve-credits`. The task subagent [stops](../limits.md#the-answer-wait-rule).
 - If the task is in a different state, the task subagent does not run `tasker resume`. The task subagent continues from
@@ -521,11 +521,11 @@ Before any `tasker` command that changes the task, keep the `repo:`, `attempt:`,
 the lines and outputs to the orchestrator with the words "a possible Codex limit." Wait under the
 [answer-wait rule](../limits.md#the-answer-wait-rule). The task stays in `failed`.
 
-These steps take priority over retry instructions in [verify failures](../verify-failures.md),
+These steps take priority over retry instructions in [verify failures](../task-subagent/verify-failures.md),
 [tasker commands](../tasker-commands.md), and the comeback rule of
-[Run one ticket](../run-one-ticket.md#the-comeback-rule). A retry can append a new run to the same transcript. On the
-orchestrator's answer, follow the existing "If a command fails" paragraph, wait, or run `tasker retry <issue>`, as
-directed. Keep the slot while waiting.
+[Run one ticket](../task-subagent/run-one-ticket.md#the-comeback-rule). A retry can append a new run to the same
+transcript. On the orchestrator's answer, follow the existing "If a command fails" paragraph, wait, or run
+`tasker retry <issue>`, as directed. Keep the slot while waiting.
 
 #### The orchestrator's data root and questions
 
@@ -565,12 +565,12 @@ is the only stop record. If either command fails or prints no line, tell the use
 
 #### The answers
 
-| First answer             | Second answer                                    | Outcome                                                                                                                                               |
-| ------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| (b) no                   | Any                                              | No capture. Tell the task subagent to follow "If a command fails" in `docs/dev/verify-failures.md`. This failure is no longer a possible Codex limit. |
-| (a) yes or (c) not known | (a) yes                                          | Read the copy as above. Keep it with the report lines and outputs in the capture.                                                                     |
-| (a) yes or (c) not known | (b) no                                           | Keep only the report lines and outputs in the capture.                                                                                                |
-| (a) yes or (c) not known | No second question after a failed data-root read | Keep only the report lines and outputs, and name the failed read.                                                                                     |
+| First answer             | Second answer                                    | Outcome                                                                                                                                                             |
+| ------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (b) no                   | Any                                              | No capture. Tell the task subagent to follow "If a command fails" in `docs/dev/task-subagent/verify-failures.md`. This failure is no longer a possible Codex limit. |
+| (a) yes or (c) not known | (a) yes                                          | Read the copy as above. Keep it with the report lines and outputs in the capture.                                                                                   |
+| (a) yes or (c) not known | (b) no                                           | Keep only the report lines and outputs in the capture.                                                                                                              |
+| (a) yes or (c) not known | No second question after a failed data-root read | Keep only the report lines and outputs, and name the failed read.                                                                                                   |
 
 A "no" to the first question ends the questions without a second answer. Every other row needs an answer to each
 question presented. Until then, read nothing and tell the task subagent nothing. An answer that picks no choice leaves
@@ -598,7 +598,7 @@ only on the word of the user. Say this in the report of the capture.
 - When the task subagent reports that it ran `tasker finish`, for example in its final report, the orchestrator must
   delete each job of that ticket whose id still lives with CronDelete. A task in `landed` keeps its jobs and its slot
   until then, unless another bullet of this section applies, for example after a stop in
-  [the CI wait](../ci-wait.md#the-ci-wait). A report of a failed run is not a stop, so the jobs stay until
+  [the CI wait](../task-subagent/ci-wait.md#the-ci-wait). A report of a failed run is not a stop, so the jobs stay until
   `tasker finish`.
 - When the orchestrator cancels a task subagent, the orchestrator must delete each job of that task subagent whose id
   still lives with CronDelete.

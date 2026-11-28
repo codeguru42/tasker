@@ -36,9 +36,10 @@ The issue-draft subagent writes its draft to the path of the draft file that its
 title, line 2 is blank, and the body follows. The body file of [Before a post](issues.md#before-a-post) takes out these
 two lines. A comment draft has no title line, as [A comment draft](#a-comment-draft) says.
 
-It edits only its draft file, its report file and the files of a [scratch folder](plan-review.md#the-state-of-the-user).
-It makes each scratch folder under `/tmp`. [The state of the user](planner.md#the-state-of-the-user) of planner.md also
-gives the scratch folder under `/tmp` to each issue subagent.
+It edits only its draft file, its report file and the files of a
+[scratch folder](task-subagent/plan-review.md#the-state-of-the-user). It makes each scratch folder under `/tmp`.
+[The state of the user](planner.md#the-state-of-the-user) of planner.md also gives the scratch folder under `/tmp` to
+each issue subagent.
 
 The pull of step 1 of the doc-read rule is no write of a file, as
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
@@ -155,9 +156,9 @@ The report gives the path of the draft file, the title and a short summary of th
 the issue-draft subagent dismissed, with its reason. It also gives each finding and each part of the draft of a kind of
 [the escape hatch](planner.md#the-escape-hatch). It also gives the blocked-by links with their reasons, and each command
 and result that a rule of the planner pages gives to the user. It also gives each open question of
-[the state of the user](plan-review.md#the-state-of-the-user), with its command. For a change of an open issue, it also
-gives the start hash of [Before a post](issues.md#before-a-post). It also gives the counts, the removals and a failed
-count of [The size of a draft](#the-size-of-a-draft).
+[the state of the user](task-subagent/plan-review.md#the-state-of-the-user), with its command. For a change of an open
+issue, it also gives the start hash of [Before a post](issues.md#before-a-post). It also gives the counts, the removals
+and a failed count of [The size of a draft](#the-size-of-a-draft).
 
 For an issue-draft subagent of a [planner subagent](planner-subagent.md), the result through `SubagentHandback` gives
 each dismissal with its reason. The planner subagent adds each one to its
@@ -176,10 +177,10 @@ whether it gets a proposed later issue, is a judgment of the issue-draft subagen
 each such edge case in its own list, with its proposed later issue.
 
 The paragraph before this one does not cover a security gap or a bug in the core path, as Core features first says. The
-core path of a draft is the main use that the draft describes, as [Review findings](review-findings.md#review-findings)
-says for an issue. The issue-draft subagent changes the draft for a bug in the core path. A security gap stays a
-question for the user. The report gives a security gap first, with the time that the gap starts, as Core features first
-says.
+core path of a draft is the main use that the draft describes, as
+[Review findings](task-subagent/review-findings.md#review-findings) says for an issue. The issue-draft subagent changes
+the draft for a bug in the core path. A security gap stays a question for the user. The report gives a security gap
+first, with the time that the gap starts, as Core features first says.
 
 The report gives a question for the user only for a decision of a kind of
 [the escape hatch](planner.md#the-escape-hatch). It also gives a question for each kind of choice that still goes to the

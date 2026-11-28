@@ -25,9 +25,9 @@ zod facts and the tests.
   mislead a session just as a conflict between docs can. The user asked for the entire set of documents, so the rule
   includes those files. The drafting session searches as
   [the issue search rule](issue-subagents.md#the-body-of-an-issue) says.
-  [The issue check](plan-review.md#the-issue-check) covers omitted files and Docs items that say a file stays. The
-  one-home rule remains in [Code](#code); this rule does not change the prompt exception there. Inconsistent rules can
-  make a session follow one rule and break another. The body of #1008 said on 2026-11-21:
+  [The issue check](task-subagent/plan-review.md#the-issue-check) covers omitted files and Docs items that say a file
+  stays. The one-home rule remains in [Code](#code); this rule does not change the prompt exception there. Inconsistent
+  rules can make a session follow one rule and break another. The body of #1008 said on 2026-11-21:
 
   > An additional rule: every change made by an issue must leave the entire set of documents in a self-consistent state.
   > Therefore, any change that #1008 that leaves a contradiction or inconsistency must be avoided.
@@ -138,11 +138,11 @@ task.
 - These rules are the goal for each commit on the branch when the work lands. They also apply after a rebase onto a
   newer base branch. A rebase can break a commit under the tip of the branch, also when the tip passes.
 - A `docs:` commit has no rule for `npm run check`. Before a `docs:` commit, the session still runs `npm run check`, as
-  [Check](#check) says. Only step 8 of [the commit check](verify-failures.md#the-commit-check) runs it on a `docs:`
-  commit, and only at the tip of the task branch.
+  [Check](#check) says. Only step 8 of [the commit check](task-subagent/verify-failures.md#the-commit-check) runs it on
+  a `docs:` commit, and only at the tip of the task branch.
 - tasker does not check these rules. A task subagent checks each commit only after a failed `tasker verify`. When
   `tasker verify` passes, nobody checks the commits under the tip. The steps are in
-  [The broken-commit steps](verify-failures.md#the-broken-commit-steps).
+  [The broken-commit steps](task-subagent/verify-failures.md#the-broken-commit-steps).
 
 ## Docs
 
@@ -204,10 +204,10 @@ task.
   orchestrator, a task subagent or the planner. The skill holds the rules of the text, for example the banned words and
   the sentence limits. The text includes the docs and the text on GitHub: titles, bodies, comments, milestone
   descriptions and project field text. Examples are the comment of step 11 of
-  [Run one ticket](run-one-ticket.md#run-one-ticket) and the body of an issue. It also includes the title and the
-  description of a pull request. It also includes the replies to the user, the reports and messages between sessions,
-  and the feedback texts of `tasker refine` and `tasker review <issue> "<feedback>"`. This rule does not apply to the
-  sessions that tasker starts for plan, execute and review, except for the docs that they write.
+  [Run one ticket](task-subagent/run-one-ticket.md#run-one-ticket) and the body of an issue. It also includes the title
+  and the description of a pull request. It also includes the replies to the user, the reports and messages between
+  sessions, and the feedback texts of `tasker refine` and `tasker review <issue> "<feedback>"`. This rule does not apply
+  to the sessions that tasker starts for plan, execute and review, except for the docs that they write.
 
   The self-check rule: before a session of this bullet posts text on GitHub, it runs the self-check of the
   simple-english skill over that text. The text is each kind of text on GitHub that this bullet lists, for example a

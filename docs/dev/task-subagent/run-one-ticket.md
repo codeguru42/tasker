@@ -1,7 +1,7 @@
 # Run one ticket
 
 The reader of this page is the task subagent of a ticket. A task subagent for one task change runs only its command and
-no step of this page, as [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says.
+no step of this page, as [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule) says.
 [The base rule](#the-base-rule) covers each command of this page that uses `origin/<base branch>`.
 
 ## Run one ticket
@@ -14,20 +14,21 @@ gives the state of the task after its command succeeds.
    `tasker doctor` one more time. On #562 (2026-10-25), the first run printed
    `error gh project: codeguru42/tasker: the check did not finish in 15000 ms`, and the second run printed no error. If
    the output of the second run has no timeout line, go on with this step. If it has a timeout line,
-   [stop](limits.md#the-answer-wait-rule), and give the output of both runs in the report. The two runs of
+   [stop](../limits.md#the-answer-wait-rule), and give the output of both runs in the report. The two runs of
    `tasker doctor` change no task. Run `tasker doctor` at most two times in this step. After the stop, the answer of the
    orchestrator can say otherwise. Then read the issue with `gh issue view <number>`, and compare the issue body with
    the prompt of the task subagent. If the body differs from the prompt, report each change to the orchestrator. The
    body can change while the task subagent works. Each `tasker` command of steps 1 to 11 follows
-   [the command rules](tasker-commands.md#the-command-rules).
+   [the command rules](../tasker-commands.md#the-command-rules).
 2. If `tasker status --issue <issue>` already lists a task for the ticket, for example a parked task that came back (see
-   [the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule)), follow [the comeback rule](#the-comeback-rule)
+   [the defer rule](../orchestrator/pick-the-tickets.md#the-defer-rule)), follow [the comeback rule](#the-comeback-rule)
    instead of this step. Run `tasker start <issue>`. The task goes to `workspace_ready`. Read the output of
    `tasker start`, also stderr. The note `based on <key>'s branch` confirms a stacked task. If the note and the prompt
    do not agree (the prompt names a parent and the note is missing, or the note is present and the prompt names no
-   parent), [stop](limits.md#the-answer-wait-rule). If `tasker start` refuses with `blocking issue is still open`, stop.
-   No task exists. Then make the task worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says. If the
-   make fails, stop. The make changes no task. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
+   parent), [stop](../limits.md#the-answer-wait-rule). If `tasker start` refuses with `blocking issue is still open`,
+   stop. No task exists. Then make the task worktree as [the own-worktree rule](../limits.md#the-own-worktree-rule)
+   says. If the make fails, stop. The make changes no task. Then run `tasker plan <issue>`. The task goes to
+   `awaiting_plan_review`.
 3. Read the plan with `tasker show-plan` and `tasker show-questions`. Compare the plan with the Requirements and the
    Docs sections of the issue. Then apply [the stop rule](plan-review.md#the-stop-rule) and do
    [the quote check](plan-review.md#the-quote-check).
@@ -38,8 +39,8 @@ gives the state of the task after its command succeeds.
    plan questions in the feedback text. `tasker plan` takes no feedback. If no refine runs before the first
    `tasker approve`, do the fact test and the issue check before it.
 5. Run `tasker approve`. The task goes to `approved`. Run `tasker execute`. The task goes to `executed`. If you have no
-   job, send [the run-start report](orchestrator/quota.md#when-there-is-no-reset-time-yet) to the orchestrator. Send it
-   before you run `tasker verify`. Run `tasker verify`. If the verify commands pass, the task goes to
+   job, send [the run-start report](../orchestrator/quota.md#when-there-is-no-reset-time-yet) to the orchestrator. Send
+   it before you run `tasker verify`. Run `tasker verify`. If the verify commands pass, the task goes to
    `awaiting_work_review`. If they fail, follow [the verify-failure rule](verify-failures.md#the-verify-failure-rule).
    Run `tasker review`. When the review has findings, the task goes to `reviewed`. When it has none, the task stays in
    `awaiting_work_review`. If the review has no findings, go to step 9.
@@ -88,7 +89,7 @@ gives the state of the task after its command succeeds.
    for the new plan. Then do steps 5 to 8 again, starting with `tasker approve`. The
    ["Review findings"](review-findings.md#review-findings) section limits the number of loops. After review 5,
    [the leftover exception](review-findings.md#review-findings) says which steps follow the refine.
-9. Run each `tasker` command of this step as [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. The
+9. Run each `tasker` command of this step as [the plain-form rule](../tasker-commands.md#the-plain-form-rule) says. The
    rule also covers the `tasker` commands that change a task in the other steps. Before each `tasker accept` of this
    step, also the one after `tasker update-branch`, do [the diff read](#the-diff-read), except after
    [the docs-only update](review-findings.md#the-docs-only-update). Run `tasker accept`. The task goes to `accepted`.
@@ -108,7 +109,7 @@ gives the state of the task after its command succeeds.
    `tasker accept` and `tasker merge`, so `origin` refused the push as non-fast-forward, and the task went to `failed`.
    If the exit code is 0, `tasker merge` failed for another reason. In that case, follow the paragraph "If a command
    fails" of [the verify-failure rule](verify-failures.md#the-verify-failure-rule). If `git fetch` or `git merge-base`
-   fails, or the exit code is not 0 and not 1, [stop](limits.md#the-answer-wait-rule). This stop does not cover the
+   fails, or the exit code is not 0 and not 1, [stop](../limits.md#the-answer-wait-rule). This stop does not cover the
    reads of the same-patch rule. That rule gives the result of a failed read. After a `tasker merge` that succeeds, do
    [the CI wait](ci-wait.md#the-ci-wait). The task stays in `landed`. If the CI wait passes, run `tasker finish`. The
    task goes to `finished`, and the issue closes. If a run failed, step 12 of the CI wait runs `tasker finish`. If the
@@ -118,16 +119,16 @@ gives the state of the task after its command succeeds.
     `git fetch --prune tasker` in the local clone of the orchestrator. The fetch deletes each ref `tasker/<branch>`
     whose branch is no longer in the tasker clone. This also deletes the refs of other tasks. If the fetch fails, name
     the error in the report to the orchestrator. Then, also after a failed fetch, remove the task worktree as
-    [the own-worktree rule](limits.md#the-own-worktree-rule) says. Each "then do step 11" of this step comes after that
-    remove. The remove changes no task, and the task keeps its state, for example `finished`. In each case of this step
-    that says "delete nothing" or "delete nothing more", report to the orchestrator, and then do step 11. In such a
+    [the own-worktree rule](../limits.md#the-own-worktree-rule) says. Each "then do step 11" of this step comes after
+    that remove. The remove changes no task, and the task keeps its state, for example `finished`. In each case of this
+    step that says "delete nothing" or "delete nothing more", report to the orchestrator, and then do step 11. In such a
     case, unless the case says otherwise, the task branch on `origin` can still exist, and the task keeps its state. If
-    the task subagent followed [docs/dev/rebase-conflicts.md](rebase-conflicts.md) and did not do its steps 15 to 20
-    yet, it does those steps first. If a step of that page stops before step 21, do not do the rest of this step. The
-    shared failure paragraph before step 15 of that page names what stays behind, with the difference that the step
-    names, and the task keeps its state. Report to the orchestrator. Then do step 11. After steps 15 to 20, step 21 of
-    that page sends the task subagent back to this step. The task subagent then does the rest of this step and does not
-    do steps 15 to 20 again. Run each command of this step in the local clone of the orchestrator. Run
+    the task subagent followed [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md) and did not do its
+    steps 15 to 20 yet, it does those steps first. If a step of that page stops before step 21, do not do the rest of
+    this step. The shared failure paragraph before step 15 of that page names what stays behind, with the difference
+    that the step names, and the task keeps its state. Report to the orchestrator. Then do step 11. After steps 15 to
+    20, step 21 of that page sends the task subagent back to this step. The task subagent then does the rest of this
+    step and does not do steps 15 to 20 again. Run each command of this step in the local clone of the orchestrator. Run
     `tasker show <issue>`. It prints the task branch on the `branch:` line and the base branch on the `base:` line. If
     `tasker show` fails, delete nothing. If `tasker show` does not print the line `state: finished`, delete nothing. For
     example, the task is in `cleanup_failed`. In each case that follows, the task stays in `finished`. Run
@@ -144,12 +145,13 @@ gives the state of the task after its command succeeds.
     tip. This step calls it `<commit>`. If the command fails, delete nothing. Then read the tip of the base branch:
     `git rev-parse --verify origin/<base branch>`. This step calls the hash `<base>`. If the command fails, delete
     nothing. Make sure that the base branch contains `<commit>`: `git merge-base --is-ancestor <commit> <base>`. This is
-    [the ancestor check](rebase-conflicts.md#the-ancestor-check) of [docs/dev/rebase-conflicts.md](rebase-conflicts.md),
-    with `<commit>` as `<tip>`. That check gives the exit codes and the meaning of exit code 1. If the exit code is 1,
-    do [the patch check](rebase-conflicts.md#the-patch-check) of that page, with `<commit>` as `<tip>` and the same
+    [the ancestor check](rebase-conflicts.md#the-ancestor-check) of
+    [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md), with `<commit>` as `<tip>`. That check gives the
+    exit codes and the meaning of exit code 1. If the exit code is 1, do
+    [the patch check](rebase-conflicts.md#the-patch-check) of that page, with `<commit>` as `<tip>` and the same
     `<base>`. Do only the patch check and the take check, and do not do step 17 itself or steps 18 to 21 of that page.
     If `git cherry` exits with 0 and a line starts with `+`, and the task subagent followed
-    [docs/dev/rebase-conflicts.md](rebase-conflicts.md) for this task, do
+    [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md) for this task, do
     [the take check](rebase-conflicts.md#the-take-check) of that page. The task subagent is then the driver of that page
     and recorded `<taken>` at its step 11. Use `<commit>` as the pushed tip, the same `<base>` and the landed commit
     that `tasker merge` printed. Use only the two facts of the take check. Step 17 of that page already compared the
@@ -170,15 +172,15 @@ gives the state of the task after its command succeeds.
 11. After `tasker finish`, post a comment on the issue that starts with `## Decisions made during implementation`. List
     the choices that the issue did not state, with the reasons. Name each detail that the issue did not give. A list
     item of the comment has no bold text at its start. The task subagent writes the comment in its final form. Before
-    the post, it follows [the self-check rule](rules.md#docs) of rules.md.
+    the post, it follows [the self-check rule](../rules.md#docs) of rules.md.
 
 ### The final report
 
 At the end of its work on the ticket, the task subagent gives a final report to the orchestrator. The task subagent
 gives the final report as its final answer, not with `SendMessage`, except after a
-[refused `SubagentHandback` call](limits.md#the-answer-wait-rule). The work of the task subagent on the ticket ends
+[refused `SubagentHandback` call](../limits.md#the-answer-wait-rule). The work of the task subagent on the ticket ends
 after step 11, or when the orchestrator tells the task subagent to end its work, for example in step 1 of
-[the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule). The report gives these items:
+[the defer rule](../orchestrator/pick-the-tickets.md#the-defer-rule). The report gives these items:
 
 - The result: the landed commit, the number of review loops, the files that landed and, for each doc that landed, the
   sections that changed. If the work of the task subagent ended before `tasker finish`, for example after the
@@ -186,11 +188,11 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   of the work. In that case, for a stacked task, the result also gives the start base of the last read, or says that the
   task subagent holds no start base.
 - Each finding that the task subagent dismissed, with its reason.
-- For a task subagent with an entry of [the task list](orchestrator/handoff-orchestrator.md#the-task-list) in its
+- For a task subagent with an entry of [the task list](../orchestrator/handoff-orchestrator.md#the-task-list) in its
   prompt: the report carries into it the dismissed findings, the edge cases, the false claims and each `tasker retry` of
   the verify-failure rule that the entry names. The new task subagent does not lose them.
 - For a stopping-point report, the files that the work of the task changed so far, as
-  [the task list](orchestrator/handoff-orchestrator.md#the-task-list) needs them.
+  [the task list](../orchestrator/handoff-orchestrator.md#the-task-list) needs them.
 - Each leftover that the task subagent fixed under [the leftover exception](review-findings.md#review-findings). For
   each one, the item gives the finding and the false text. It also gives the earlier loop or other step of the ticket
   that made the text false. The item also says that no sixth review ran.
@@ -204,13 +206,13 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   the task subagent cannot test, because the issue names no ticket and no date for an output of the installed tasker.
 - Each fact of `docs/dev/tasker-commands.md` that names the installed tasker, that the ticket depends on, and that the
   task subagent cannot test (see
-  [the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)). For each such fact, the
+  [the facts of the installed tasker](../tasker-commands.md#the-facts-of-the-installed-tasker)). For each such fact, the
   bullet gives the fact and the reason that the task subagent cannot test it. The bullet covers only a fact that the
   issue does not state. The bullet of the issue check covers a fact that the issue states.
 - Each measure that changes [the state of the user](plan-review.md#the-state-of-the-user) and that the user declined,
   with the fact that stays untested.
 - Each task worktree or local task branch that stays, with its path.
-  [The own-worktree rule](limits.md#the-own-worktree-rule) says when one stays.
+  [The own-worktree rule](../limits.md#the-own-worktree-rule) says when one stays.
 - Each `tasker retry <issue>` that the task subagent ran under
   [the verify-failure rule](verify-failures.md#the-verify-failure-rule). For each such retry, the bullet gives the place
   that ran the failed `tasker verify`, for example step 5 of [Run one ticket](#run-one-ticket). It also gives the cause
@@ -221,19 +223,19 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   each cause or claim that nobody measured as not measured.
 
 The orchestrator sorts the lessons. A lesson that is a rule for the repo or for task subagents goes where the new-rule
-bullet of ["The prompt of a task subagent"](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+bullet of ["The prompt of a task subagent"](../orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 A final answer that the task subagent gives before the end of its work is an interim report, not the final report. That
 final answer gives the state of the task, says if the task subagent stopped, and says that the task subagent waits.
-Examples are the final answer of [the answer-wait rule](limits.md#the-answer-wait-rule) and the end of the turn after a
-quota stop in ["What the task subagent does" in "Quota"](orchestrator/quota.md#what-the-task-subagent-does).
+Examples are the final answer of [the answer-wait rule](../limits.md#the-answer-wait-rule) and the end of the turn after
+a quota stop in ["What the task subagent does" in "Quota"](../orchestrator/quota.md#what-the-task-subagent-does).
 
 ### The comeback rule
 
 This rule covers a ticket that already has a task in flight when its task subagent starts, for example a parked task
-that came back (see [the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule)). The task already exists, so the
-task subagent does not run `tasker start` or `tasker plan`. If the prompt gives an entry of
-[the task list](orchestrator/handoff-orchestrator.md#the-task-list) with a start base, that start base counts as the
+that came back (see [the defer rule](../orchestrator/pick-the-tickets.md#the-defer-rule)). The task already exists, so
+the task subagent does not run `tasker start` or `tasker plan`. If the prompt gives an entry of
+[the task list](../orchestrator/handoff-orchestrator.md#the-task-list) with a start base, that start base counts as the
 start base of the last read. It wins over each `## Parked task` comment. If the prompt gives no entry, or the entry
 gives no start base, the rest of this rule holds as written. If the issue has a comment that starts with
 `## Parked task` (step 6 of the defer rule), the task subagent reads the last such comment. Then it runs
@@ -246,20 +248,20 @@ that [the same-patch rule](review-findings.md#review-findings) names. If that la
 such comment of that account exists, the task subagent holds no start base. Then each step that uses the start base does
 what it says for a task subagent that holds no start base. For example, the diff read and the commit check stop. Then
 the task subagent does [the remote setup](#the-diff-read). Then the task subagent makes the task worktree as
-[the own-worktree rule](limits.md#the-own-worktree-rule) says. The branch-exists case can apply. The make changes no
+[the own-worktree rule](../limits.md#the-own-worktree-rule) says. The branch-exists case can apply. The make changes no
 task. If the task is in `quota_blocked`, `interrupted` or `awaiting_quota_approval`, the task subagent follows
-["What the task subagent does" in "Quota"](orchestrator/quota.md#what-the-task-subagent-does), and it does not do the
+["What the task subagent does" in "Quota"](../orchestrator/quota.md#what-the-task-subagent-does), and it does not do the
 rest of this rule. Otherwise, the task subagent runs
 `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. If the exit code is 1, the base branch moved.
 In that case, if `tasker show <issue>` lists `update-branch`, the task subagent runs `tasker update-branch`. If
 `tasker show <issue>` does not list `update-branch`, the task subagent does not run it. The diff read before
 `tasker accept` finds the move later. If `tasker update-branch` reports a rebase conflict, the task subagent follows
-[docs/dev/rebase-conflicts.md](rebase-conflicts.md), as ["Land the work"](orchestrator/land-the-work.md#land-the-work)
-says. If a step of that page stops, a command fails, or the exit code is not 0 and not 1, the task subagent
-[stops](limits.md#the-answer-wait-rule). Otherwise, the task subagent continues ["Run one ticket"](#run-one-ticket) from
-the state that `tasker show <issue>` prints. After `tasker update-branch`, "Land the work" gives the next commands for
-the states that it names. For another state, for example `failed`, the task subagent follows the commands that
-`tasker show <issue>` prints.
+[docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md), as
+["Land the work"](../orchestrator/land-the-work.md#land-the-work) says. If a step of that page stops, a command fails,
+or the exit code is not 0 and not 1, the task subagent [stops](../limits.md#the-answer-wait-rule). Otherwise, the task
+subagent continues ["Run one ticket"](#run-one-ticket) from the state that `tasker show <issue>` prints. After
+`tasker update-branch`, "Land the work" gives the next commands for the states that it names. For another state, for
+example `failed`, the task subagent follows the commands that `tasker show <issue>` prints.
 
 At each `tasker update-branch` of this rule that [the same-patch rule](review-findings.md#review-findings) covers, the
 task subagent does each read of that rule that belongs to the update. Examples are the first patch id before the update
@@ -267,9 +269,9 @@ and the second patch id after it.
 
 ### The base rule
 
-This rule covers each command of [the orchestration pages](../orchestrator.md) that uses `origin/<base branch>`. A
+This rule covers each command of [the orchestration pages](../../orchestrator.md) that uses `origin/<base branch>`. A
 stacked task is a task that `tasker start` based on the branch of its parent (see
-[the stacked-ticket rule](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule)).
+[the stacked-ticket rule](../orchestrator/pick-the-tickets.md#the-stacked-ticket-rule)).
 
 Before each such command, the task subagent reads the `base:` line of `tasker show <issue>`. The task subagent does
 these steps:
@@ -283,28 +285,29 @@ these steps:
    ["Run one ticket"](#run-one-ticket) in another session can delete the ref between two commands. If the read fails, do
    step 4.
 4. Run `tasker show <full key of the parent>`. If the `state:` line of the parent is `landed`, `finishing`,
-   `cleanup_failed` or `finished`, the parent [has landed](workspaces.md#stacked-task). If the parent has landed and the
-   `base:` line of the parent has a plain name, run `git fetch origin`, and then
+   `cleanup_failed` or `finished`, the parent [has landed](../workspaces.md#stacked-task). If the parent has landed and
+   the `base:` line of the parent has a plain name, run `git fetch origin`, and then
    `git rev-parse --verify origin/<base branch of the parent>`. `<base branch of the parent>` is the plain name of the
    `base:` line of the parent. Each command of the step uses this printed hash in place of `tasker/<parent branch>`.
 
    In each other case, and when a command of this step fails, the step that uses the base fails. A task subagent then
-   [stops](limits.md#the-answer-wait-rule) and reports the error, and the orchestrator follows
-   [the failure rule](limits.md#the-failure-rule).
+   [stops](../limits.md#the-answer-wait-rule) and reports the error, and the orchestrator follows
+   [the failure rule](../limits.md#the-failure-rule).
 
 A `tasker update-branch` with no conflict moves a stacked task onto the base that the walk ends on after the parent
 lands.
 
 A task subagent of a stacked task meets a landed parent at `tasker refine`, `tasker execute`, `tasker verify`,
 `tasker review` and `tasker accept`. The moved-base guard refuses each of them (see
-[the stacked-task guards](workspaces.md#stacked-task)). After `tasker finish` of the parent, `tasker refine` in
+[the stacked-task guards](../workspaces.md#stacked-task)). After `tasker finish` of the parent, `tasker refine` in
 `awaiting_plan_review` meets the same guard.
-[The facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker) say what happens in each case.
+[The facts of the installed tasker](../tasker-commands.md#the-facts-of-the-installed-tasker) say what happens in each
+case.
 
 These steps use the base: the comeback rule, the diff read, [the issue check](plan-review.md#the-issue-check),
 [the broken-commit steps](verify-failures.md#the-broken-commit-steps),
 [the commit check](verify-failures.md#the-commit-check), [the same-patch rule](review-findings.md#review-findings), and
-steps 3 to 5 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) when those rules do them. Step 7 of
+steps 3 to 5 of [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md) when those rules do them. Step 7 of
 [Run one ticket](#run-one-ticket) also uses the base.
 
 For a stacked task, the diff of the diff read and the first patch id of the same-patch rule, with its text id, use the
@@ -314,9 +317,10 @@ start base in place of `tasker/<parent branch>`. The base commit of step 4 of
 step 7 of [Run one ticket](#run-one-ticket) also uses the start base. The reason: after a rewrite of the parent,
 `tasker/<parent branch>` holds commits that are not under the task branch.
 
-Step 4 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md) does not stop for a stacked task when the diff read, the
-comeback rule or the commit check does the steps of that page. [The manual fix](verify-failures.md#the-manual-fix) and
-the procedure for a rebase conflict keep the stop of step 4 for a stacked task whose parent has not landed.
+Step 4 of [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md) does not stop for a stacked task when the
+diff read, the comeback rule or the commit check does the steps of that page.
+[The manual fix](verify-failures.md#the-manual-fix) and the procedure for a rebase conflict keep the stop of step 4 for
+a stacked task whose parent has not landed.
 
 ### The add-work rule
 
@@ -335,10 +339,10 @@ Before each `tasker accept` of step 9, the task subagent reads the full diff of 
 unless [the docs-only update](review-findings.md#the-docs-only-update) applies. The task subagent does this also after a
 review with no findings. In one milestone, this read found real duplication and false doc text on four tickets where the
 review found nothing. In the local clone of the orchestrator, the task subagent does the remote setup. The remote setup
-is steps 1 to 5 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure). The clone gets the read-only `tasker`
-remote, and the task subagent reads the base branch. The fetch of step 5 fetches both remotes. It reads the tasker clone
-through the read-only `tasker` remote, and it changes nothing there. Then the task subagent does
-[the update rule](limits.md#the-update-rule) in the task worktree. The task subagent reads whole files of the task
+is steps 1 to 5 of [docs/dev/task-subagent/rebase-conflicts.md](rebase-conflicts.md#procedure). The clone gets the
+read-only `tasker` remote, and the task subagent reads the base branch. The fetch of step 5 fetches both remotes. It
+reads the tasker clone through the read-only `tasker` remote, and it changes nothing there. Then the task subagent does
+[the update rule](../limits.md#the-update-rule) in the task worktree. The task subagent reads whole files of the task
 there. Then the task subagent runs `git diff origin/<base branch>...tasker/<task branch>`. For a stacked task, the task
 subagent runs `git diff <start base>...tasker/<task branch>` in place of that command. `<start base>` is the start base
 of the last read, as [the same-patch rule](review-findings.md#review-findings) defines it. After a rewrite of the
@@ -398,7 +402,7 @@ first patch id. Then it runs `tasker update-branch` and continues step 9 as it s
 reads of the same-patch rule are not commands of the diff read, and that rule gives the result of a failed read. The
 last fetch and `git merge-base` are commands of the diff read. An exit code of `git merge-base` that is not 0 and not 1
 is a failure. A failed step of the update rule is a failed command of the diff read. If a step or a command of the diff
-read fails or stops, the task subagent [stops](limits.md#the-answer-wait-rule). Nothing changes in the repo or the
+read fails or stops, the task subagent [stops](../limits.md#the-answer-wait-rule). Nothing changes in the repo or the
 worktrees of tasker. The report of the stop takes the place of the person who decides on that page.
 
 ### The measure rule
@@ -410,12 +414,13 @@ update of the diff read. If the issue asks for a measure at a named point of the
 measure on the commit of that point. For example, a measure "after the fix of the test race" runs on the commit of that
 fix, before the later commits of the task. The task subagent checks out that commit in the task worktree and names its
 hash with the numbers. After the measure, the task subagent runs `git switch <task branch>` in the task worktree. A
-failed switch is a failed command of the diff read, so the diff read [stops](limits.md#the-answer-wait-rule) as it says.
-A measure with no named point runs as this rule says. The result of the measure is an answer, not a failure of the diff
-read. For example, a count of failures, or a test command that exits with a code that is not 0, is a result. The task
-subagent records the result and continues the diff read. A command of the measure that cannot start, for example because
-`npm ci` fails, is also a failed command of the diff read. The diff read then stops, as it says. The task subagent does
-not rely on the execute session for the numbers. No read-only `tasker` command prints the last message of that session.
-A direct read of a transcript of tasker follows [the own-worktree rule](limits.md#the-own-worktree-rule). On #111, the
-task subagent measured the loops of the test again in its own worktree of the task branch. The task subagent gives the
-commands and the numbers of the last measure in the comment of step 11.
+failed switch is a failed command of the diff read, so the diff read [stops](../limits.md#the-answer-wait-rule) as it
+says. A measure with no named point runs as this rule says. The result of the measure is an answer, not a failure of the
+diff read. For example, a count of failures, or a test command that exits with a code that is not 0, is a result. The
+task subagent records the result and continues the diff read. A command of the measure that cannot start, for example
+because `npm ci` fails, is also a failed command of the diff read. The diff read then stops, as it says. The task
+subagent does not rely on the execute session for the numbers. No read-only `tasker` command prints the last message of
+that session. A direct read of a transcript of tasker follows
+[the own-worktree rule](../limits.md#the-own-worktree-rule). On #111, the task subagent measured the loops of the test
+again in its own worktree of the task branch. The task subagent gives the commands and the numbers of the last measure
+in the comment of step 11.

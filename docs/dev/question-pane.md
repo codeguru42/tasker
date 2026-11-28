@@ -801,9 +801,9 @@ path. A sentence that names such a place does not count.
 
 For a measure that changes the state of the user, the first-reply text gives the command and its undo step, as
 [The commands in the first reply](#the-commands-in-the-first-reply) says. It also gives each other part of such a
-question that [The state of the user](plan-review.md#the-state-of-the-user) asks for. An example is what the command and
-the undo step each change. These parts do not count in the limit. The question session needs them for its decision
-message, as [Send a decision](#send-a-decision) says.
+question that [The state of the user](task-subagent/plan-review.md#the-state-of-the-user) asks for. An example is what
+the command and the undo step each change. These parts do not count in the limit. The question session needs them for
+its decision message, as [Send a decision](#send-a-decision) says.
 
 The reason: on 2026-11-13, the user said, as operator-docs relayed it: "details sent to the question pane need to be
 shorter, like 5 sentences max". On that day, operator-docs reported a paragraph each for what happened, the problem and
@@ -2578,7 +2578,7 @@ wait of step 3 of the reuse prompt, and no one measured a permission that the us
 - 2026-11-13: a message with `SendMessage` from `orchestrator-docs` to the name of the test session showed in the pane
   as an unread message. The session waited at its input prompt and did not read it.
 
-For the 2026-10-25 trust-prompt fact of #519, see [#519](first-refine.md).
+For the 2026-10-25 trust-prompt fact of #519, see [#519](task-subagent/first-refine.md).
 
 On 2026-11-20, a session measured two problems of the herdr path on one machine. On that day, `claude --version` printed
 `2.1.330` and `herdr --version` printed `0.9.3`.

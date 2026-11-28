@@ -33,14 +33,8 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/data-root.md](docs/dev/data-root.md): the data root and the database.
 - [docs/dev/version-control.md](docs/dev/version-control.md): the git code.
 - [docs/dev/doctor.md](docs/dev/doctor.md): the code that all doctor checks share.
-- [docs/dev/rebase-conflicts.md](docs/dev/rebase-conflicts.md): the steps for a rebase conflict.
 - [docs/dev/doc-reads.md](docs/dev/doc-reads.md): when a session reads a doc.
-- [docs/dev/run-one-ticket.md](docs/dev/run-one-ticket.md): how the task subagent runs one ticket.
-- [docs/dev/plan-review.md](docs/dev/plan-review.md): the review of a plan.
 - [docs/dev/tasker-commands.md](docs/dev/tasker-commands.md): how a session runs the tasker commands.
-- [docs/dev/verify-failures.md](docs/dev/verify-failures.md): the steps after a failed verify run.
-- [docs/dev/ci-wait.md](docs/dev/ci-wait.md): the wait for CI.
-- [docs/dev/review-findings.md](docs/dev/review-findings.md): the steps for review findings.
 - [docs/dev/handoff.md](docs/dev/handoff.md): the handoff of a session.
 - [docs/dev/limits.md](docs/dev/limits.md): the limits of the orchestrator and the task subagents.
 - [docs/dev/planner.md](docs/dev/planner.md): the rules of a planner.
@@ -55,7 +49,6 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/items.md](docs/dev/items.md): the form of a message, the terms of the questions and the answer.
 - [docs/dev/question-pane.md](docs/dev/question-pane.md): a question pane.
 - [docs/dev/session-review-rounds.md](docs/dev/session-review-rounds.md): the rounds of `/session-review`.
-- [docs/dev/first-refine.md](docs/dev/first-refine.md): the hints for the first refine of a ticket.
 - [docs/dev/workspaces.md](docs/dev/workspaces.md): the base branch and the workspace of a task.
 - [docs/dev/issue-trackers.md](docs/dev/issue-trackers.md): the issue tracker code.
 - [docs/dev/github.md](docs/dev/github.md): the shared GitHub code.
@@ -69,6 +62,20 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
 - [docs/dev/codex-sessions.md](docs/dev/codex-sessions.md): the measured facts of Codex sessions.
 - [docs/dev/pi-sessions.md](docs/dev/pi-sessions.md): measured pi tools and limits for a pi session in a herdr pane.
 - [docs/dev/release.md](docs/dev/release.md): the releases.
+
+## docs/dev/task-subagent/
+
+- [docs/dev/task-subagent/rebase-conflicts.md](docs/dev/task-subagent/rebase-conflicts.md): the steps for a rebase
+  conflict.
+- [docs/dev/task-subagent/run-one-ticket.md](docs/dev/task-subagent/run-one-ticket.md): how the task subagent runs one
+  ticket.
+- [docs/dev/task-subagent/plan-review.md](docs/dev/task-subagent/plan-review.md): the review of a plan.
+- [docs/dev/task-subagent/verify-failures.md](docs/dev/task-subagent/verify-failures.md): the steps after a failed
+  verify run.
+- [docs/dev/task-subagent/ci-wait.md](docs/dev/task-subagent/ci-wait.md): the wait for CI.
+- [docs/dev/task-subagent/review-findings.md](docs/dev/task-subagent/review-findings.md): the steps for review findings.
+- [docs/dev/task-subagent/first-refine.md](docs/dev/task-subagent/first-refine.md): the hints for the first refine of a
+  ticket.
 
 ## docs/dev/orchestrator/
 

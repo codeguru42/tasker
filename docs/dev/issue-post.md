@@ -125,9 +125,9 @@ An issue-post subagent does these steps in this order. Each read and each write 
 
 A comment post changes no title, no body and no link. So it runs no `tasker status`, no read of the state and no read of
 the hash for its write. The search of step 4 is its read before the write. The reason comes from
-[The change-of-scope comment](plan-review.md#the-change-of-scope-comment). The plan session reads only the issue body
-and the repo. A task subagent copies a comment into its feedback only after the orchestrator sends the link of that
-comment. So a comment changes no input of the plan session of a task in flight.
+[The change-of-scope comment](task-subagent/plan-review.md#the-change-of-scope-comment). The plan session reads only the
+issue body and the repo. A task subagent copies a comment into its feedback only after the orchestrator sends the link
+of that comment. So a comment changes no input of the plan session of a task in flight.
 
 ### The gh facts of a comment post
 
@@ -228,8 +228,8 @@ A post is complete after these steps:
 If a link command fails, a read of the column fails, or the second read does not print `Todo`, the post is not complete.
 
 The exit code 124 of the wait is its normal end. The wait uses `timeout` because Claude Code 2.1.310 blocked a
-foreground `sleep 40` of a task subagent on #523 (2026-10-25), as [first-refine.md](first-refine.md) says. No one
-measured a foreground `sleep` of an issue-post subagent.
+foreground `sleep 40` of a task subagent on #523 (2026-10-25), as [first-refine.md](task-subagent/first-refine.md) says.
+No one measured a foreground `sleep` of an issue-post subagent.
 
 Only a planner moves an issue into a milestone. An issue-post subagent moves no issue into a milestone.
 

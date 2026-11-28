@@ -5,8 +5,8 @@ that runs one [scope](dev/GLOSSARY.md). It picks tickets and starts one task sub
 cards and sets the landing order.
 
 A ticket is an issue on the project board. A task subagent, as [GLOSSARY.md](dev/GLOSSARY.md) defines it, runs the steps
-of ["Run one ticket"](dev/run-one-ticket.md#run-one-ticket) for that ticket. A task subagent for one task change runs
-only one `tasker` command of a task. The user is the person who works with the sessions, as
+of ["Run one ticket"](dev/task-subagent/run-one-ticket.md#run-one-ticket) for that ticket. A task subagent for one task
+change runs only one `tasker` command of a task. The user is the person who works with the sessions, as
 [GLOSSARY.md](dev/GLOSSARY.md) says. The user starts the orchestrator, as
 [The start of an orchestrator](#the-start-of-an-orchestrator) says. The user can type in the session of the
 orchestrator, but most words of the user reach it through its question pane. No one measured how a session queues a text
@@ -39,8 +39,9 @@ tasker also starts its own sessions for plan, execute and review. They run in a 
 not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).
 
 The orchestrator and its task subagents run tasker from the local clone of the orchestrator. For one ticket, the task
-subagent of that ticket is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names. The
-orchestrator runs only read-only `tasker` commands itself, and a task subagent runs each command that changes a task, as
+subagent of that ticket is the driver that
+[docs/dev/task-subagent/rebase-conflicts.md](dev/task-subagent/rebase-conflicts.md) names. The orchestrator runs only
+read-only `tasker` commands itself, and a task subagent runs each command that changes a task, as
 [the orchestrator-command rule](dev/tasker-commands.md#the-orchestrator-command-rule) says. The orchestrator looks up
 the commands that it sends to each actor in [the allowed commands](dev/orchestrator/allowed-commands.md).
 
@@ -76,19 +77,21 @@ sections of its page. The orchestrator uses the list to find the page that a ste
   on hold", "The end of an orchestrator", "The prompt of a task subagent" and "The start of a task subagent".
 - [docs/dev/doc-reads.md](dev/doc-reads.md): the re-read rule, the notice rule, the task subagent notice and the
   doc-read rule.
-- [docs/dev/run-one-ticket.md](dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base
-  rule, the add-work rule, the diff read and the measure rule.
-- [docs/dev/plan-review.md](dev/plan-review.md): the repo-files rule, the fact test, the issue check, the
-  needed-doc-change rule, the stop rule, the change-of-scope comment, the design-gap rule and the quote check.
+- [docs/dev/task-subagent/run-one-ticket.md](dev/task-subagent/run-one-ticket.md): "Run one ticket", the final report,
+  the comeback rule, the base rule, the add-work rule, the diff read and the measure rule.
+- [docs/dev/task-subagent/plan-review.md](dev/task-subagent/plan-review.md): the repo-files rule, the fact test, the
+  issue check, the needed-doc-change rule, the stop rule, the change-of-scope comment, the design-gap rule and the quote
+  check.
 - [docs/dev/tasker-commands.md](dev/tasker-commands.md): the plain-form rule, the orchestrator-command rule, the
   tool-block rule, "A denied command", the command rules, the facts of the installed tasker and the run times.
 - [docs/dev/orchestrator/milestone-close.md](dev/orchestrator/milestone-close.md): the shared parts of the close of a
   milestone and the own-session closure.
 - [docs/dev/items.md](dev/items.md): the form of a message, the terms of the questions and the answer.
-- [docs/dev/verify-failures.md](dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the broken-commit
-  steps, the session check, the manual fix and the commit check.
-- [docs/dev/ci-wait.md](dev/ci-wait.md): the CI wait and "A failed CI run".
-- [docs/dev/review-findings.md](dev/review-findings.md): "Review findings" and the docs-only update.
+- [docs/dev/task-subagent/verify-failures.md](dev/task-subagent/verify-failures.md): the verify-failure rule, bisect
+  diagnosis, the broken-commit steps, the session check, the manual fix and the commit check.
+- [docs/dev/task-subagent/ci-wait.md](dev/task-subagent/ci-wait.md): the CI wait and "A failed CI run".
+- [docs/dev/task-subagent/review-findings.md](dev/task-subagent/review-findings.md): "Review findings" and the docs-only
+  update.
 - [docs/dev/orchestrator/land-the-work.md](dev/orchestrator/land-the-work.md): "Land the work", the overlap rule, the
   Docs rule, the hold rule and the stuck-task rule.
 - [docs/dev/orchestrator/quota.md](dev/orchestrator/quota.md): "Quota", "Terms", "The delay of each task subagent",
@@ -397,8 +400,8 @@ session of the start checks does no start duty. The start duties are:
   [The orchestrator folder](dev/limits.md#the-orchestrator-folder) says. [The start checks](#the-start-checks) gives its
   place.
 - The first free item id from `questions/` at a start with no handoff file, as [Terms](dev/question-pane.md#terms) says.
-- The label check of the broken-test ban, as [A failed CI run](dev/ci-wait.md#a-failed-ci-run) says. It runs at the
-  start of the session and before each start of a ticket. So it runs before the start of the first ticket.
+- The label check of the broken-test ban, as [A failed CI run](dev/task-subagent/ci-wait.md#a-failed-ci-run) says. It
+  runs at the start of the session and before each start of a ticket. So it runs before the start of the first ticket.
 - The outside-Todo find of [Pick the tickets](dev/orchestrator/pick-the-tickets.md#pick-the-tickets). It runs after the
   start reads and before the pick of the first ticket. The find also reads the label `on hold`, as
   [A ticket on hold](dev/orchestrator/pick-the-tickets.md#a-ticket-on-hold) says. After a handoff,
@@ -499,7 +502,7 @@ The board watch rule has these parts:
   applies to it. A read by the job can also come during the close of a milestone. Then it follows the same rules as a
   read of the board on a message of another session.
 - Each rule that stops a start wins over the job. Examples are the ban of
-  [A failed CI run](dev/ci-wait.md#a-failed-ci-run), a hold of the user and step 1 of
+  [A failed CI run](dev/task-subagent/ci-wait.md#a-failed-ci-run), a hold of the user and step 1 of
   [The steps of the old orchestrator](dev/orchestrator/handoff-orchestrator.md#the-steps-of-the-old-orchestrator).
   Another example is the ban on a new ticket after the suggestion of a handoff in
   [The landing count](dev/orchestrator/handoff-orchestrator.md#the-landing-count). Other examples are the hold before an
@@ -653,8 +656,8 @@ question session keep their own rules.
 An orchestrator sends a peer only these seven kinds of message:
 
 1. The doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule): the notice of a landing.
-2. The broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run): the notice with the number of the
-   broken-test issue.
+2. The broken-test notice of [A failed CI run](dev/task-subagent/ci-wait.md#a-failed-ci-run): the notice with the number
+   of the broken-test issue.
 3. The hold of [the hold rule](dev/orchestrator/land-the-work.md#the-hold-rule): the request for reports, and each
    report of a state or of a close.
    [The stacked-ticket rule](dev/orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) uses them.
@@ -807,5 +810,5 @@ The reasons for this rule:
   [Reports and questions of a session](dev/working-with-the-user.md#reports-and-questions-of-a-session) says.
 - The relay sentences of a landing order show their report in the tab of the orchestrator and ask the user in a pane.
 - A change to an issue in flight keeps its own bullet, because the requester of that bullet asks its own user before the
-  [change-of-scope comment](dev/plan-review.md#the-change-of-scope-comment).
+  [change-of-scope comment](dev/task-subagent/plan-review.md#the-change-of-scope-comment).
 - The new orchestrator has no other source for an open request than its handoff file.

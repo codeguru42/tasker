@@ -10,8 +10,8 @@ The orchestrator works from the current docs of the orchestrator. The docs of th
 `docs/orchestrator.md`, the pages of the list "The pages" of [docs/orchestrator.md](../orchestrator.md),
 `docs/sessions.md`, `docs/dev/GLOSSARY.md`, `docs/dev/rules.md`, `docs/dev/working-with-the-user.md`, and the docs that
 the prompt of the orchestrator names. For example, a prompt can name `docs/dev/planner.md`, `docs/dev/issues.md`,
-`docs/dev/first-refine.md` and `docs/dev/rebase-conflicts.md`. The last read is the commit of `origin/main` from which
-the orchestrator last read the docs of the orchestrator.
+`docs/dev/task-subagent/first-refine.md` and `docs/dev/task-subagent/rebase-conflicts.md`. The last read is the commit
+of `origin/main` from which the orchestrator last read the docs of the orchestrator.
 
 The re-read docs are the docs of the orchestrator that the orchestrator reads again after a landing. They are these
 docs:
@@ -94,7 +94,7 @@ The orchestrator of the ticket does these steps:
 4. Send one notice to each session of step 3 with `SendMessage`. Take the landed commit and the sections that changed
    from the same report. The notice names them in one or two lines.
 
-   For example: Landed `<commit>` on `main`. `docs/dev/run-one-ticket.md` changed in "Run one ticket", and
+   For example: Landed `<commit>` on `main`. `docs/dev/task-subagent/run-one-ticket.md` changed in "Run one ticket", and
    `docs/dev/orchestrator/land-the-work.md` changed in "Land the work".
 
 The notice does not depend on the re-read rule. If the re-read rule fails at this landing, the orchestrator of the
@@ -137,9 +137,9 @@ subagent. Each task subagent has its own docs, because each prompt names its own
 of a task subagent from the prompt that it wrote for that task subagent.
 
 A task subagent in flight is a task subagent of the orchestrator from its start until its
-[final report](run-one-ticket.md#the-final-report) arrives. The term "running" of ["Terms"](orchestrator/quota.md#terms)
-in `docs/dev/orchestrator/quota.md` keeps its own meaning. A task subagent in flight can be running or ended in the
-meaning of that page.
+[final report](task-subagent/run-one-ticket.md#the-final-report) arrives. The term "running" of
+["Terms"](orchestrator/quota.md#terms) in `docs/dev/orchestrator/quota.md` keeps its own meaning. A task subagent in
+flight can be running or ended in the meaning of that page.
 
 The task subagent notice covers each landing of a ticket of the orchestrator. The steps of the orchestrator come right
 after the steps of [the notice rule](#the-notice-rule), as [Land the work](orchestrator/land-the-work.md#land-the-work)
@@ -153,8 +153,8 @@ says.
    the report among its docs. The message is the task subagent notice. It names the landed commit and each changed
    section of each doc of that task subagent, from the same report.
 
-   For example: Landed `<commit>` on `main`. `docs/dev/run-one-ticket.md` changed in "The diff read", and
-   `docs/dev/review-findings.md` changed in "Review findings".
+   For example: Landed `<commit>` on `main`. `docs/dev/task-subagent/run-one-ticket.md` changed in "The diff read", and
+   `docs/dev/task-subagent/review-findings.md` changed in "Review findings".
 
 When the orchestrator gets a notice of the notice rule from another orchestrator, it sends a task subagent notice too.
 It sends it to each task subagent in flight that has a doc of the notice among its docs. The task subagent notice names
@@ -172,7 +172,7 @@ on, the task subagent follows the new text of the named sections. A step that th
 If the task subagent runs a long `tasker` command in the background, the read comes after the end of that command.
 
 A task subagent can wait in a loop that reads a state. Examples are the "To wait" bullet of "Land the work",
-[the CI wait](ci-wait.md#the-ci-wait) of `docs/dev/ci-wait.md` and the wait bullet of
+[the CI wait](task-subagent/ci-wait.md#the-ci-wait) of `docs/dev/task-subagent/ci-wait.md` and the wait bullet of
 [the command rules](tasker-commands.md#the-command-rules) of `docs/dev/tasker-commands.md`. Such a task subagent reads
 the named docs again before its next read of the state. The limit of the wait does not change.
 

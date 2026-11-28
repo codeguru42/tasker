@@ -399,7 +399,7 @@ lookup of the field id of each repo, also a failure.
 
 ## The measure of a failed call
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable`. The command
+The [fact test](task-subagent/plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable`. The command
 `acli jira workitem view TEST-999999 --json` asks for an issue that does not exist. It gives:
 
 - Exit code 1.
@@ -408,8 +408,8 @@ The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-st
 
 ## The measure of the login
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` with one login on 2026-10-25.
-`acli jira auth status` gives exit code 0, an empty stderr and this stdout:
+The [fact test](task-subagent/plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` with one login on
+2026-10-25. `acli jira auth status` gives exit code 0, an empty stderr and this stdout:
 
 ```
 ✓ Authenticated
@@ -423,8 +423,8 @@ because the task subagent must not log out.
 
 ## The measure of an ADF description
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable`. Two commands made and read an
-issue:
+The [fact test](task-subagent/plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable`. Two commands made
+and read an issue:
 
 - `acli jira workitem create --project TEST --type Task --summary "tasker #541 ADF measure" --description-file description.json`
 - `acli jira workitem view TEST-1 --json --fields description`
@@ -434,8 +434,8 @@ document is the value of `fields.description`. The read gave back the nodes, mar
 
 ## The measure of an issue read
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-25. The task subagent
-of #543 made three issues in the project `TEST`:
+The [fact test](task-subagent/plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-25. The
+task subagent of #543 made three issues in the project `TEST`:
 
 - `TEST-2`, with the labels `base:main` and `tasker-measure` and the component `tasker-measure`.
 - `TEST-3`, with no description.
@@ -459,8 +459,8 @@ issue. It gave:
 
 ## The measure of the blockers
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The task subagent
-of #545 made these links for the issue `TEST-9` of the project `TEST`:
+The [fact test](task-subagent/plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The
+task subagent of #545 made these links for the issue `TEST-9` of the project `TEST`:
 
 - `acli jira workitem link create --out TEST-9 --in TEST-6 --type Blocks --yes`
 - `acli jira workitem link create --out TEST-9 --in TEST-4 --type Blocks --yes`
@@ -486,8 +486,8 @@ of [The measure of a failed call](#the-measure-of-a-failed-call). With no `--fie
 
 ## The measure of the comments
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-31 on the issue
-`TEST-11`. The call is
+The [fact test](task-subagent/plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-31 on the
+issue `TEST-11`. The call is
 `acli jira workitem view TEST-11 --json --fields summary,description,labels,status,components,comment`. It gave exit
 code 0, one JSON object on stdout and an empty stderr.
 
@@ -516,8 +516,8 @@ has no `created`. The flat body of comment 3 lost its bullet list. For these rea
 
 ## The measure of the writes
 
-The [fact test](plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The task subagent
-of #546 made the issue `TEST-10` of the project `TEST` with
+The [fact test](task-subagent/plan-review.md#the-fact-test) measured `acli` version `1.3.39-stable` on 2026-10-30. The
+task subagent of #546 made the issue `TEST-10` of the project `TEST` with
 `acli jira workitem create --project TEST --type Task --summary "tasker #546 assign and transition measure" --json`. Its
 first status was `Backlog`. Stderr was empty in each case, and the exit code was 0 in each case.
 

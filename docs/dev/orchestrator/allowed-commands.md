@@ -75,7 +75,7 @@ Sources: [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-
 [the hold before an install](../release.md#the-hold-before-an-install),
 [Install a pre-release](../release.md#install-a-pre-release), [the doc-read rule](../doc-reads.md#the-doc-read-rule),
 [the re-read rule](../doc-reads.md#the-re-read-rule), [Pick the tickets](pick-the-tickets.md),
-[Land the work](land-the-work.md), [the CI wait](../ci-wait.md#the-ci-wait),
+[Land the work](land-the-work.md), [the CI wait](../task-subagent/ci-wait.md#the-ci-wait),
 [The actor of each write action](../question-pane.md#the-actor-of-each-write-action),
 [The herdr path](../question-pane.md#terms), [Start](../question-pane.md#start),
 [The question file](../question-pane.md#the-question-file), [The handoff file](../handoff.md#the-handoff-file),
@@ -89,7 +89,8 @@ Sources: [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-
 [The board watch job](../../orchestrator.md#the-board-watch-job), [Terms](quota.md#terms),
 [Schedule a job when a task subagent starts](quota.md#schedule-a-job-when-a-task-subagent-starts),
 [When the job fires](quota.md#when-the-job-fires), [A pi stop](quota.md#a-pi-stop),
-[A failed CI run](../ci-wait.md#a-failed-ci-run) and [The orchestrator folder](../limits.md#the-orchestrator-folder).
+[A failed CI run](../task-subagent/ci-wait.md#a-failed-ci-run) and
+[The orchestrator folder](../limits.md#the-orchestrator-folder).
 
 - K1: the read-only `tasker` commands of
   [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule). They are `show-config`,
@@ -104,8 +105,8 @@ Sources: [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-
   `git checkout <commit>` and `git checkout main` for the release steps.
 - K5: `gh issue view`, `gh issue list`, `gh run list`, `gh run view`, `gh run watch`, `gh project item-list` and the
   read forms of `gh api`.
-- K6: `gh issue create`, only for the issue of a failed CI run, as [A failed CI run](../ci-wait.md#a-failed-ci-run)
-  says.
+- K6: `gh issue create`, only for the issue of a failed CI run, as
+  [A failed CI run](../task-subagent/ci-wait.md#a-failed-ci-run) says.
 - K7: `gh issue edit` for a milestone, a label or a blocked-by link, as [Pick the tickets](pick-the-tickets.md) says,
   and `gh project item-edit` for the field `Priority`, as [The project board](../issues.md#the-project-board) says.
 - K8: `herdr agent list`, `herdr agent get`, `herdr agent wait`, `herdr pane read`, `herdr pane get`,
@@ -143,7 +144,7 @@ Sources: [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-
   - The tool call `CronList`, for the list of its jobs
   - The list `ls $HOME/Documents/tasker/handoff/` and a Read call on a handoff file there, for the check of the handoff
     folder
-  - The card wait of [A failed CI run](../ci-wait.md#a-failed-ci-run),
+  - The card wait of [A failed CI run](../task-subagent/ci-wait.md#a-failed-ci-run),
     `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`
   - A read of the variables `HERDR_TAB_ID` and `HERDR_PANE_ID`, for the close of its tab or pane
 
@@ -153,13 +154,16 @@ the forms of the kinds `pi` and `codex`, and no one measured them.
 ## A task subagent for a whole ticket
 
 Sources: [Limits](../limits.md#limits), [the own-worktree rule](../limits.md#the-own-worktree-rule),
-[the plain-form rule](../tasker-commands.md#the-plain-form-rule), [Run one ticket](../run-one-ticket.md#run-one-ticket),
-[the CI wait](../ci-wait.md#the-ci-wait), [The issue check](../plan-review.md#the-issue-check),
-[The patch check](../rebase-conflicts.md#the-patch-check), [Review findings](../review-findings.md#review-findings),
-[The docs-only update](../review-findings.md#the-docs-only-update),
-[The broken-commit steps](../verify-failures.md#the-broken-commit-steps),
-[The commit check](../verify-failures.md#the-commit-check), [the doc-read rule](../doc-reads.md#the-doc-read-rule) and
-the ask rules of [Claude Code](setup.md#claude-code).
+[the plain-form rule](../tasker-commands.md#the-plain-form-rule),
+[Run one ticket](../task-subagent/run-one-ticket.md#run-one-ticket),
+[the CI wait](../task-subagent/ci-wait.md#the-ci-wait),
+[The issue check](../task-subagent/plan-review.md#the-issue-check),
+[The patch check](../task-subagent/rebase-conflicts.md#the-patch-check),
+[Review findings](../task-subagent/review-findings.md#review-findings),
+[The docs-only update](../task-subagent/review-findings.md#the-docs-only-update),
+[The broken-commit steps](../task-subagent/verify-failures.md#the-broken-commit-steps),
+[The commit check](../task-subagent/verify-failures.md#the-commit-check),
+[the doc-read rule](../doc-reads.md#the-doc-read-rule) and the ask rules of [Claude Code](setup.md#claude-code).
 
 - K1: `tasker show`, `tasker show-plan`, `tasker show-verify`, `tasker show-review` and the other read-only commands of
   [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule).

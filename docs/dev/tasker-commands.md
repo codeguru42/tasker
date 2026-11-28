@@ -325,10 +325,10 @@ each of the three folders that did not exist, the deepest folder first.
 Before step 5, the user can change a line of `records.jsonl`. Then `store` keeps the changed line, after it replaces
 each known form again. `<slug>` is the slug of the planner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it.
 
-The store file is state of the user, as [The state of the user](plan-review.md#the-state-of-the-user) defines it. Only a
-planner runs `store` on this file, and only the user approves step 5. So the question of step 4 is a question for the
-user alone, as [The terms of the questions](items.md#the-terms-of-the-questions) says. A task subagent, the orchestrator
-and an issue subagent run no `store` on this file.
+The store file is state of the user, as [The state of the user](task-subagent/plan-review.md#the-state-of-the-user)
+defines it. Only a planner runs `store` on this file, and only the user approves step 5. So the question of step 4 is a
+question for the user alone, as [The terms of the questions](items.md#the-terms-of-the-questions) says. A task subagent,
+the orchestrator and an issue subagent run no `store` on this file.
 
 If the classifier denies `scan` or `store`, the planner runs that step in no other form and in no part. It tells the
 user the exact command and the exact text of the denial. The planner gives the user no command with the `!` prefix for
@@ -458,15 +458,15 @@ the version.
 
 Each fact of this page that names the installed tasker, for example each fact of this section, describes a behavior of
 the installed tasker. The fact is not a requirement for later work. If a ticket depends on such a fact, the task
-subagent first does [the fact test](plan-review.md#the-fact-test) against the installed `tasker`. The reason, in the
-words of the user: "We need to verify that the tasker behavior we are changing actually exists before trying to change
-it."
+subagent first does [the fact test](task-subagent/plan-review.md#the-fact-test) against the installed `tasker`. The
+reason, in the words of the user: "We need to verify that the tasker behavior we are changing actually exists before
+trying to change it."
 
 The fact test can show that the installed tasker does not have the behavior. Then the fact is out of date. The task
 subagent gives the fact, the command and the output in the feedback text and in the lessons of
-[its final report](run-one-ticket.md#the-final-report). The lesson goes to the planner, and the planner files a ticket
-for the fact. If an open issue already covers an out-of-date fact, the task subagent names that issue in place of the
-lesson.
+[its final report](task-subagent/run-one-ticket.md#the-final-report). The lesson goes to the planner, and the planner
+files a ticket for the fact. If an open issue already covers an out-of-date fact, the task subagent names that issue in
+place of the lesson.
 
 The task subagent cannot always measure such a behavior, for example when no task of its own is in the state that the
 fact needs. Then the task subagent reports the fact as a fact that it cannot test, in the feedback text and in its final
@@ -519,9 +519,9 @@ no fact of the list. As a result, the rule that the task subagent first does the
 - After `tasker update-branch`, the bootstrap of the task does not run again. If the new base changes
   `package-lock.json`, `tasker verify` fails on the old `node_modules` of the worktree of tasker. The fix is a refine
   that tells the execute session to run `npm ci`. For
-  [the verify-failure rule](verify-failures.md#the-verify-failure-rule), this failure comes from the code. The task
-  subagent sends one refine whose feedback tells the execute session to run `npm ci`, and it runs no `tasker retry`. A
-  commit check that finds no broken commit does not change this case.
+  [the verify-failure rule](task-subagent/verify-failures.md#the-verify-failure-rule), this failure comes from the code.
+  The task subagent sends one refine whose feedback tells the execute session to run `npm ci`, and it runs no
+  `tasker retry`. A commit check that finds no broken commit does not change this case.
 
 ## The run times
 

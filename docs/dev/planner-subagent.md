@@ -581,7 +581,7 @@ These questions are never settled. The orchestrator still asks each of them in i
   the approval of a comment in [Before a post](issues.md#before-a-post).
 - A question of a kind of choice that still goes to the user first. The bullet of A decision of the user that starts
   "The user can let the session decide" lists these kinds, for example a security gap and a change of scope.
-- The approval of a measure that changes [the state of the user](plan-review.md#the-state-of-the-user).
+- The approval of a measure that changes [the state of the user](task-subagent/plan-review.md#the-state-of-the-user).
 
 A question about a choice between two or more designs is settled if a rule of the docs or a fact of the code picks one
 design. Otherwise the orchestrator asks the user. A settled answer that leaves the draft unchanged does not approve the
@@ -621,11 +621,11 @@ For a planner subagent, these six kinds take the place of the list of decisions 
    third is the first bullet of [Before a post](issues.md#before-a-post). Change 9 gives its actors.
    [A comment post](issue-post.md#a-comment-post) of [issue-post.md](issue-post.md) gives the post of the approved
    comment.
-6. A measure that needs a change of [the state of the user](plan-review.md#the-state-of-the-user). The source is the
-   item of The escape hatch that starts "A measure that needs a change". Keep 3 keeps the measure as an open question of
-   the report. Change 2 puts it in the result. Keep 6 leaves its approval to the user. The question gives the command of
-   the measure. The reason: the issue can get a tested fact before its post. The cost: each such measure takes a turn of
-   the question pane.
+6. A measure that needs a change of [the state of the user](task-subagent/plan-review.md#the-state-of-the-user). The
+   source is the item of The escape hatch that starts "A measure that needs a change". Keep 3 keeps the measure as an
+   open question of the report. Change 2 puts it in the result. Keep 6 leaves its approval to the user. The question
+   gives the command of the measure. The reason: the issue can get a tested fact before its post. The cost: each such
+   measure takes a turn of the question pane.
 
 Each kept rule that names a kind of The escape hatch names one of these six kinds for a planner subagent. Two examples
 follow. The first is the paragraph of [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner)
@@ -1268,8 +1268,8 @@ three kinds. No chain needs a third layer. These records show chains of two laye
 - The paragraph of [The issue subagents of a planner](planner.md#the-issue-subagents-of-a-planner) that starts "The fact
   of the first sentence". On 2026-11-04, planner-m16-ticket-name-option-1, a subagent of planner-m16, started a
   subagent, and its report came back.
-- The paragraph of [run-one-ticket.md](run-one-ticket.md) that starts "If the proof shows no changed word", with the
-  paragraph "A split read of this form". On #506, a task subagent ran six parallel subagents.
+- The paragraph of [run-one-ticket.md](task-subagent/run-one-ticket.md) that starts "If the proof shows no changed
+  word", with the paragraph "A split read of this form". On #506, a task subagent ran six parallel subagents.
 - [The chain of subagents](#the-chain-of-subagents) of this page. On 2026-11-21, Claude Code 2.1.330 ran it once.
 
 On 2026-11-21, no record of the docs gave a test of a third layer.

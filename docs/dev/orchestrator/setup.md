@@ -69,7 +69,8 @@ The orchestrator runs the tickets with the installed `tasker`, as [docs/orchestr
 3. Run `tasker doctor`. It must pass. If a check fails, fix the cause that the check names. Then run `tasker doctor`
    again.
 4. If the tasker clone does not exist yet, run `tasker start` for one issue first. Then, in the local clone, add the
-   read-only `tasker` remote, as steps 1 and 2 of [docs/dev/rebase-conflicts.md](../rebase-conflicts.md#procedure) say.
+   read-only `tasker` remote, as steps 1 and 2 of
+   [docs/dev/task-subagent/rebase-conflicts.md](../task-subagent/rebase-conflicts.md#procedure) say.
 
 ## Claude Code
 

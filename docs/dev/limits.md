@@ -17,7 +17,7 @@ give the kinds of command of the list of each of them. A read at a gap follows
   orchestrator. If the clone has no `tasker` remote, the task subagent adds it as
   [the own-worktree rule](#the-own-worktree-rule) says. Then the task subagent runs `git log` or `git show` on
   `tasker/<task branch>`. For a diff of the task, the task subagent uses the command with three dots of
-  [the diff read](run-one-ticket.md#the-diff-read). In a split read, the task subagent also uses
+  [the diff read](task-subagent/run-one-ticket.md#the-diff-read). In a split read, the task subagent also uses
   `git diff <commit>~1 <commit>` for each commit of the range. If a command fails, the task subagent
   [stops](#the-answer-wait-rule) and reports the error. Nothing changes.
 - If a `git fetch` of a task subagent fails, also after a `timeout` (exit code 124), and its step gives no failure path,
@@ -31,24 +31,25 @@ give the kinds of command of the list of each of them. A read at a gap follows
   Before each direct npm script or test there, the task subagent applies both install cases below. If the worktree has
   no `node_modules`, the task subagent runs `npm ci` there. If `package-lock.json` differs from the copy of the last
   install, the task subagent runs `npm ci` there. Examples are `npm run check`, `npm run format:check` and the test loop
-  of [the measure rule](run-one-ticket.md#the-measure-rule). On #400, `npm run format:check` failed in a new task
-  worktree with `prettier: not found` until `npm ci` ran. Use the copy of
-  [the commit check](verify-failures.md#the-commit-check):
+  of [the measure rule](task-subagent/run-one-ticket.md#the-measure-rule). On #400, `npm run format:check` failed in a
+  new task worktree with `prettier: not found` until `npm ci` ran. Use the copy of
+  [the commit check](task-subagent/verify-failures.md#the-commit-check):
   `L=$(git rev-parse --git-path npm-ci-lock); cmp -s "$L" package-lock.json || { npm ci && cp package-lock.json "$L"; }`.
 
 - The task subagent uses only the issue, the files of the repo, its own tests on the local machine and the answers of
   the orchestrator as sources. If the issue does not give a detail that the work needs, the task subagent asks the
   orchestrator. Then the task subagent waits for the answer, as [the answer-wait rule](#the-answer-wait-rule) says.
-  Before `tasker approve`, [the stop rule](plan-review.md#the-stop-rule) and
-  [the design-gap rule](plan-review.md#the-design-gap-rule) give the steps and say who answers. After `tasker approve`,
-  the orchestrator asks the user. When the task subagent asks the orchestrator a question, the task subagent gives the
-  options, with its suggestion for each.
+  Before `tasker approve`, [the stop rule](task-subagent/plan-review.md#the-stop-rule) and
+  [the design-gap rule](task-subagent/plan-review.md#the-design-gap-rule) give the steps and say who answers. After
+  `tasker approve`, the orchestrator asks the user. When the task subagent asks the orchestrator a question, the task
+  subagent gives the options, with its suggestion for each.
 - The task subagent changes only its own issue. On GitHub issues, labels and the project board, the comment of step 11
-  of ["Run one ticket"](run-one-ticket.md#run-one-ticket) is the only write of the task subagent. The task subagent does
-  not edit an issue body, a label or the project board. This rule does not cover the git commands and the `tasker`
-  commands of the steps on [the orchestration pages](../orchestrator.md), for example `tasker merge` and the delete of
-  the task branch in step 10. On GitHub Actions, the rerun of step 9 of [the CI wait](ci-wait.md#the-ci-wait)
-  (`gh run rerun <run id> --failed`) is the only write of the task subagent.
+  of ["Run one ticket"](task-subagent/run-one-ticket.md#run-one-ticket) is the only write of the task subagent. The task
+  subagent does not edit an issue body, a label or the project board. This rule does not cover the git commands and the
+  `tasker` commands of the steps on [the orchestration pages](../orchestrator.md), for example `tasker merge` and the
+  delete of the task branch in step 10. On GitHub Actions, the rerun of step 9 of
+  [the CI wait](task-subagent/ci-wait.md#the-ci-wait) (`gh run rerun <run id> --failed`) is the only write of the task
+  subagent.
 - If tasker stops for a quota, follow ["Quota"](orchestrator/quota.md#quota). Never run `tasker approve-credits`.
 - If a `tasker` run fails and the task is a possible Codex limit, do the steps of
   [A Codex limit](orchestrator/quota.md#a-codex-limit). Do them before any `tasker` command that changes the task.
@@ -57,10 +58,10 @@ give the kinds of command of the list of each of them. A read at a gap follows
   current clone, on the commit that is checked out. The installed `tasker` runs the tickets, and an install replaces it.
 - No session writes memory, as [the memory rule](rules.md#docs) says. A task subagent also deletes no memory note, so
   that two task subagents do not change the same file. Task subagents report what they learn to the orchestrator in
-  their final report (see [the final report](run-one-ticket.md#the-final-report)). A task subagent does not run
-  `/session-review`, because the skill deletes memory notes. The bullet "When the final report of the task subagent of a
-  ticket says that the ticket landed" of [Land the work](orchestrator/land-the-work.md#land-the-work) says when the
-  orchestrator deletes a note.
+  their final report (see [the final report](task-subagent/run-one-ticket.md#the-final-report)). A task subagent does
+  not run `/session-review`, because the skill deletes memory notes. The bullet "When the final report of the task
+  subagent of a ticket says that the ticket landed" of [Land the work](orchestrator/land-the-work.md#land-the-work) says
+  when the orchestrator deletes a note.
 - The orchestrator and each task subagent load the simple-english skill and follow the simple-english bullet of
   [Docs](rules.md#docs) of rules.md.
 - The folder of a task subagent is `$HOME/Documents/tasker/agents/<session name>`. The session name is the name of the
@@ -134,10 +135,10 @@ bullet of [Limits](#limits) gives for the task worktree. It is on a local branch
 The task branch is on the `branch:` line of `tasker show <issue>`.
 
 - Make: the task subagent makes the task worktree one time, after `tasker start` in step 2 of
-  ["Run one ticket"](run-one-ticket.md#run-one-ticket) or in [the comeback rule](run-one-ticket.md#the-comeback-rule).
-  If the local clone has no `tasker` remote, add it as steps 1 and 2 of
-  [the remote setup](run-one-ticket.md#the-diff-read) say. Then run `git fetch tasker`. If the fetch fails,
-  [stop](#the-answer-wait-rule). Nothing changes. Then run
+  ["Run one ticket"](task-subagent/run-one-ticket.md#run-one-ticket) or in
+  [the comeback rule](task-subagent/run-one-ticket.md#the-comeback-rule). If the local clone has no `tasker` remote, add
+  it as steps 1 and 2 of [the remote setup](task-subagent/run-one-ticket.md#the-diff-read) say. Then run
+  `git fetch tasker`. If the fetch fails, [stop](#the-answer-wait-rule). Nothing changes. Then run
   `git worktree add -b <task branch> <path> tasker/<task branch>`. If it fails for a reason other than the branch-exists
   case, stop. No worktree exists.
 - The path: the task subagent keeps `<path>` from the make until the remove at the end. The task subagent keeps `<path>`
@@ -146,7 +147,7 @@ The task branch is on the `branch:` line of `tasker show <issue>`.
 - Use: each step that reads or runs the code of the task uses the task worktree, after the update rule.
 - The branch-exists case: the make fails with `fatal: a branch named '<task branch>' already exists` and exit 255. Git
   makes no folder. The local branch can hold commits that tasker does not hold, for example after a stop of
-  [the manual fix](verify-failures.md#the-manual-fix). Do these steps before the first update:
+  [the manual fix](task-subagent/verify-failures.md#the-manual-fix). Do these steps before the first update:
   1. Read `<hash>` with `git rev-parse --verify tasker/<task branch>`. Then run
      `git merge-base --is-ancestor <task branch> <hash>`.
   2. If the exit code is 1, the local branch holds a commit that tasker does not hold, or tasker rewrote the task branch
@@ -367,7 +368,7 @@ in the task worktree:
    [stop](#the-answer-wait-rule). Nothing changes. Then run `git rev-parse --git-path BISECT_START`. Make sure that the
    command succeeds and its named file does not exist. If either condition fails, stop without reset or cleanup. Nothing
    changes. For example, the worktree stays in a rebase when `git rebase --abort` fails in step 7 of
-   [the commit check](verify-failures.md#the-commit-check).
+   [the commit check](task-subagent/verify-failures.md#the-commit-check).
 4. Run `git status --porcelain`. If it prints a line, stop. Nothing changes. Test the output, because the command exits
    with 0 also when it prints lines. Ignored files such as `node_modules/` do not print.
 5. Run `git reset --keep <hash>`.
@@ -382,14 +383,15 @@ change no task.
 ### The local-commit rule
 
 The local task branch holds no commit of its own, with two exceptions. The first is
-[the manual fix](verify-failures.md#the-manual-fix), from its step 2 to step 11 of rebase-conflicts.md. The second is
-rebase-conflicts.md after a rebase conflict of `tasker update-branch`, from step 7 (the rebase) to step 11
+[the manual fix](task-subagent/verify-failures.md#the-manual-fix), from its step 2 to step 11 of rebase-conflicts.md.
+The second is rebase-conflicts.md after a rebase conflict of `tasker update-branch`, from step 7 (the rebase) to step 11
 (`--take-remote`). In that time, the task subagent does not run the update rule. If the task subagent
 [stops](#the-answer-wait-rule) in that time, for example after a failed push at step 10, the worktree and the local
-branch stay. The rule ends at each step 11 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure), except at
-the new conflict of that step. At that new conflict, the rule holds with no break through the loop of that step. After
-each other step 11 of that page, tasker holds the local tip ([`<taken>`](rebase-conflicts.md#procedure)), and the rule
-ends. The manual fix and rebase-conflicts.md link to this rule.
+branch stay. The rule ends at each step 11 of
+[docs/dev/task-subagent/rebase-conflicts.md](task-subagent/rebase-conflicts.md#procedure), except at the new conflict of
+that step. At that new conflict, the rule holds with no break through the loop of that step. After each other step 11 of
+that page, tasker holds the local tip ([`<taken>`](task-subagent/rebase-conflicts.md#procedure)), and the rule ends. The
+manual fix and rebase-conflicts.md link to this rule.
 
 ### The shared-clone rule
 
@@ -399,12 +401,13 @@ local clone listed the worktrees of the task subagents of other orchestrator ses
 of a branch of a remote in the local clone, for example `origin/<branch>` or `tasker/<branch>`. If a step uses a
 remote-tracking ref in more than one command, the step reads the full hash of the ref one time, with
 `git rev-parse --verify <ref>`. Each later command of the step uses that hash, not the ref. For example, if step 10 of
-["Run one ticket"](run-one-ticket.md#run-one-ticket) read `origin/<task branch>` for the check and again for the delete,
-a fetch between the two reads can move the ref, and the delete then acts on a commit that the check did not see. Use
-`--verify`, because plain `git rev-parse` also prints the name on its output when it fails. If `git rev-parse --verify`
-fails, for example because the ref does not exist, it exits with 128 and prints `fatal: Needed a single revision`. The
-step then stops, as the failure cases of that step say. If a step uses a remote-tracking ref in only one command, the
-step needs no hash read. The update rule reads `tasker/<task branch>` one time and resets to that hash.
+["Run one ticket"](task-subagent/run-one-ticket.md#run-one-ticket) read `origin/<task branch>` for the check and again
+for the delete, a fetch between the two reads can move the ref, and the delete then acts on a commit that the check did
+not see. Use `--verify`, because plain `git rev-parse` also prints the name on its output when it fails. If
+`git rev-parse --verify` fails, for example because the ref does not exist, it exits with 128 and prints
+`fatal: Needed a single revision`. The step then stops, as the failure cases of that step say. If a step uses a
+remote-tracking ref in only one command, the step needs no hash read. The update rule reads `tasker/<task branch>` one
+time and resets to that hash.
 
 ### The address rule
 
@@ -416,17 +419,18 @@ Examples are the run-start and run-end reports of
 ["Quota"](orchestrator/quota.md#quota), the reports of the stop cases, the list of files after `tasker approve` and the
 questions.
 
-The rule does not cover the final report (see [the final report](run-one-ticket.md#the-final-report)), except after a
-[refused `SubagentHandback` call](#the-answer-wait-rule). The task subagent of #153 learned this rule on 2026-10-15.
+The rule does not cover the final report (see [the final report](task-subagent/run-one-ticket.md#the-final-report)),
+except after a [refused `SubagentHandback` call](#the-answer-wait-rule). The task subagent of #153 learned this rule on
+2026-10-15.
 
 ### The answer-wait rule
 
 When the task subagent must wait for an answer or a next step from the orchestrator, the task subagent sends its report
 or its question with `SendMessage`, as [the address rule](#the-address-rule) says. Then the task subagent gives its
 final answer, which ends its turn. This final answer is an interim report (see
-[the final report](run-one-ticket.md#the-final-report)). The task subagent does not wait in a loop. The message of the
-orchestrator with the answer or the next step starts the task subagent again. The reason: a message to a task subagent
-that has ended starts the task subagent again, and the task subagent keeps its context (see
+[the final report](task-subagent/run-one-ticket.md#the-final-report)). The task subagent does not wait in a loop. The
+message of the orchestrator with the answer or the next step starts the task subagent again. The reason: a message to a
+task subagent that has ended starts the task subagent again, and the task subagent keeps its context (see
 ["Terms"](orchestrator/quota.md#terms) in ["Quota"](orchestrator/quota.md#quota)). On #153, the task subagent waited
 about 25 minutes in a loop for an answer, then ended its turn with a stop report. The message with the answer started
 the task subagent again, and the task subagent went on with its work.
@@ -475,7 +479,7 @@ A stop of a task subagent has these parts:
 A step that stops gives only the facts that differ from this list, for example a state of the task that changes, what
 stays behind, or a report to someone other than the orchestrator. When a step of
 [the orchestration pages](../orchestrator.md) sends the task subagent to
-[docs/dev/rebase-conflicts.md](rebase-conflicts.md), each stop of its procedure is a stop.
+[docs/dev/task-subagent/rebase-conflicts.md](task-subagent/rebase-conflicts.md), each stop of its procedure is a stop.
 
 For a resume message during the wait, see [the resume rule](orchestrator/quota.md#the-next-job) in
 ["When the job fires"](orchestrator/quota.md#when-the-job-fires). The rule does not cover a wait that reads a state, for

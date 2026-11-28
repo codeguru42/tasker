@@ -109,9 +109,9 @@ body and runs [The review loop of a draft](#the-review-loop-of-a-draft). Then it
 condition of the rule. A blocked issue and an issue with no blocker get the same rule.
 
 The body is the text that a later task reads. The plan session of a task reads only the issue body and the repo, as
-[The change-of-scope comment](plan-review.md#the-change-of-scope-comment) says. The task subagent copies no comment that
-starts with a heading other than `## Change of scope` or `## Design gap`. As a result, a comment with a correction does
-not reach the plan of a later task.
+[The change-of-scope comment](task-subagent/plan-review.md#the-change-of-scope-comment) says. The task subagent copies
+no comment that starts with a heading other than `## Change of scope` or `## Design gap`. As a result, a comment with a
+correction does not reach the plan of a later task.
 
 The rule adds no read and no command. Its test is the `tasker status` read and the read of the issue state of
 [The reads before the write](issues.md#the-reads-before-the-write). Each change of a body already runs these reads right
@@ -163,16 +163,16 @@ read gives no answer, so it never counts as "no task". A task can still start be
 
 These rules stay for their own cases:
 
-- The open-question note of [The change-of-scope comment](plan-review.md#the-change-of-scope-comment). It asks an open
-  question and gives no known right fact, so the note rule wins for its case.
+- The open-question note of [The change-of-scope comment](task-subagent/plan-review.md#the-change-of-scope-comment). It
+  asks an open question and gives no known right fact, so the note rule wins for its case.
 - The recurrence comment of [A recurrence](issues.md#a-recurrence). It records a new case, not wrong text.
 - The bullet "A comment on an issue" of [The rules for the user alone](#the-rules-for-the-user-alone). The rule makes no
   comment, so this limit does not stop the change of the body.
 - The paragraph of [question-pane.md](question-pane.md) that starts "For a title or body request". A request of the user
   in a question pane keeps that path.
 - The bullet of [What goes in a ticket](#what-goes-in-a-ticket) that starts "If the user states a design fact".
-- Item 2 of the missed-finding rule of [review-findings.md](review-findings.md). The orchestrator is not a planner, so
-  it keeps this rule.
+- Item 2 of the missed-finding rule of [review-findings.md](task-subagent/review-findings.md). The orchestrator is not a
+  planner, so it keeps this rule.
 
 The planner judges whether a text is wrong text or a new requirement. The judgment is open on purpose. A new requirement
 keeps the rules for a change of an open issue. A new design fact or rule of the user also keeps the bullet "If the user
@@ -313,9 +313,9 @@ Agent tool requires.
 
 ### The state of the user
 
-[The state of the user](plan-review.md#the-state-of-the-user) of plan-review.md gives the term, the ban, the form of the
-question and the approval. The ban also holds for each issue subagent, and each issue subagent makes each scratch folder
-under `/tmp`.
+[The state of the user](task-subagent/plan-review.md#the-state-of-the-user) of plan-review.md gives the term, the ban,
+the form of the question and the approval. The ban also holds for each issue subagent, and each issue subagent makes
+each scratch folder under `/tmp`.
 
 An issue-review subagent gives a measure that needs a change of the state of the user as a finding with its command. If
 the draft needs the measure, the issue-draft subagent makes the question an open question of its report. The bullet of
@@ -330,9 +330,9 @@ planner when it handles the answer. The answer of the user has one of these outc
 
 - The user approves the command. Then the planner starts a new issue-draft subagent with the draft file, the approved
   command and its undo step, word for word. That subagent first runs them, as
-  [The state of the user](plan-review.md#the-state-of-the-user) of plan-review.md says. Then it changes the draft with
-  the result. The reviews of [The count of reviews](planner-subagent.md#the-count-of-reviews) follow. After a failed
-  run, the issue-draft subagent ends, and the planner tells the user the state that stays.
+  [The state of the user](task-subagent/plan-review.md#the-state-of-the-user) of plan-review.md says. Then it changes
+  the draft with the result. The reviews of [The count of reviews](planner-subagent.md#the-count-of-reviews) follow.
+  After a failed run, the issue-draft subagent ends, and the planner tells the user the state that stays.
 - The user runs the command and gives the result. Then the planner starts a new issue-draft subagent with the draft file
   and the result. That subagent changes the draft with the result. The reviews of
   [The count of reviews](planner-subagent.md#the-count-of-reviews) follow.
@@ -484,7 +484,7 @@ When a draft needs one of these decisions, each planner asks the user before the
   is a choice of the implementation. The ticket plan makes it.
 - A change of scope of an issue in flight.
 - A security gap.
-- A measure that needs a change of [the state of the user](plan-review.md#the-state-of-the-user).
+- A measure that needs a change of [the state of the user](task-subagent/plan-review.md#the-state-of-the-user).
 - A finding of one of these kinds that the reviews leave open.
 
 An edge case that an issue-draft subagent decided as "later" needs none of these decisions, as
@@ -521,8 +521,8 @@ The post of a draft by each planner with no approval of the user does not cover 
   [The order of the work](#the-order-of-the-work). The escape hatch does not cover them. They stay with the user.
 - A comment on an issue. It is not a draft of this section, so it still needs the approval of the user.
 - A change of scope and a security gap. The escape hatch covers both.
-- The approval of a measure that changes [the state of the user](plan-review.md#the-state-of-the-user). The escape hatch
-  covers the wait of the draft, but only the user approves the measure.
+- The approval of a measure that changes [the state of the user](task-subagent/plan-review.md#the-state-of-the-user).
+  The escape hatch covers the wait of the draft, but only the user approves the measure.
 
 ### The initial planner
 

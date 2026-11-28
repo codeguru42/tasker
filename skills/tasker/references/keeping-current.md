@@ -58,8 +58,8 @@ Neither tip contains the other when the tips have diverged. These terms apply to
 
 - The remote side is the commits that only the remote tip reaches.
 - The local side is the commits that only the local tip reaches.
-- The same patch is the same git patch id, as [the patch check](../../../docs/dev/rebase-conflicts.md#the-patch-check)
-  describes.
+- The same patch is the same git patch id, as
+  [the patch check](../../../docs/dev/task-subagent/rebase-conflicts.md#the-patch-check) describes.
 - A commit only on origin is a remote-side commit with no same-patch commit on the local side. A remote-side merge
   commit always counts as one.
 - Local work at risk is a local-side commit that is not a merge commit, has no same-patch commit on the remote side, and

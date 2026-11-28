@@ -19,7 +19,7 @@ The task subagent does these steps:
    hash in the next steps, because `gh run list --commit` finds no run for a short hash.
 2. Make sure that `main` contains the landed commit: `git merge-base --is-ancestor <landed commit> origin/main`. The
    check also passes when other tickets landed on top of the landed commit after `tasker merge`. If the exit code is not
-   0, `origin/main` does not contain the work of the ticket. In that case, [stop](limits.md#the-answer-wait-rule) and
+   0, `origin/main` does not contain the work of the ticket. In that case, [stop](../limits.md#the-answer-wait-rule) and
    report this.
 3. Find the run with this command:
    `timeout 300 bash -c 'while :; do n=$(gh run list --workflow Check --branch main --commit <landed commit> --json databaseId -q length) || exit 2; [ "$n" != 0 ] && exit 0; sleep 30; done'`.
@@ -73,7 +73,7 @@ The task subagent does these steps:
    `workflowName` `Check`. Its `headSha` must also contain the landed commit, so
    `git merge-base --is-ancestor <landed commit> <headSha>` must exit with 0. If the taken run meets these conditions,
    the stop ends, and the CI wait passes. If a command fails, or the taken run does not meet them, report the result to
-   the orchestrator. Then wait again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. An answer that
+   the orchestrator. Then wait again, as [the answer-wait rule](../limits.md#the-answer-wait-rule) says. An answer that
    does not take a covering run keeps the stop.
 
 6. Run `gh run view <run id> --json status,conclusion,url,jobs`. If the command fails, stop and report the error. If
@@ -86,12 +86,12 @@ The task subagent does these steps:
    names come from `jobs`. If `gh run view --log-failed` fails, write down the error for the report of step 11 of the CI
    wait, and go to step 8 of the CI wait.
 8. Run the failed tests on the local machine, on the landed commit, in the task worktree. Do not change `main`. Do
-   [the update rule](limits.md#the-update-rule) in the task worktree. Then compare `git rev-parse --verify HEAD` with
+   [the update rule](../limits.md#the-update-rule) in the task worktree. Then compare `git rev-parse --verify HEAD` with
    the full hash of step 1 of the CI wait. After `tasker merge`, the tip of the task branch is the landed commit, as
    step 1 says. If a step of the update rule fails, or HEAD is not the landed commit, write down the error, skip the
    local run, and go to step 9 of the CI wait. Otherwise, run `node --version`. Then run `npm ci` as the npm ci bullet
-   of ["Limits"](limits.md#limits) says. Then run `npm test -- <test file> -t "<test name>"` for each failed test. The
-   report gives the Node version, because the Node version of CI can differ. The local run is evidence only, and a
+   of ["Limits"](../limits.md#limits) says. Then run `npm test -- <test file> -t "<test name>"` for each failed test.
+   The report gives the Node version, because the Node version of CI can differ. The local run is evidence only, and a
    failure in this step does not stop the CI wait. If `npm ci` or the test command cannot run, write down the error, and
    go to step 9 of the CI wait. The commands of this step change no task.
 9. Rerun the failed jobs of the run one time: `gh run rerun <run id> --failed`. Do not rerun a second time. Exit code 0
@@ -109,9 +109,9 @@ The task subagent does these steps:
 11. Report to the orchestrator: the run URL (`url`), the names of the failed jobs, steps and tests, and the verdict. The
     report also gives the result of the rerun: passed, failed again, did not start (with its error), or did not complete
     in 30 minutes. It also gives the result of the local run with the Node version, and each error of steps 7 to 9 of
-    the CI wait. Then wait for the answer of the orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule)
-    says. While the task subagent waits, the task stays in `landed`. This wait is not a stop. The steps of the
-    orchestrator are in "A failed CI run".
+    the CI wait. Then wait for the answer of the orchestrator, as
+    [the answer-wait rule](../limits.md#the-answer-wait-rule) says. While the task subagent waits, the task stays in
+    `landed`. This wait is not a stop. The steps of the orchestrator are in "A failed CI run".
 12. When the orchestrator answers with the number of the new issue, run `tasker finish`. The task goes to `finished`,
     and the issue closes. Then do steps 10 and 11 of "Run one ticket". The comment of step 11 also names the failed run,
     the verdict and the new issue.
@@ -125,8 +125,8 @@ signals only `gh run watch`. With no flag, the signal also stops `tail` in the B
 
 If the tool moves a call of step 5, wait for the report of the Bash tool. Until the report, start no second copy of the
 call and no other long wait. While you wait, run only the short wait of the bullet "To wait for the end of a long
-command" of [the command rules](tasker-commands.md#the-command-rules). After the report, do step 6 of the CI wait. For a
-moved call, step 6 takes the place of the exit codes of step 5.
+command" of [the command rules](../tasker-commands.md#the-command-rules). After the report, do step 6 of the CI wait.
+For a moved call, step 6 takes the place of the exit codes of step 5.
 
 The CI wait passes only when each run of the list passed in step 5 or 6, or the queued case of step 5 passes. A rerun
 that passes in step 9 of the CI wait does not make the CI wait pass. The task subagent still does steps 10 to 12 of the
@@ -134,40 +134,40 @@ CI wait. Other task subagents can land on `main` during the wait. The task subag
 landed commit, and the queued case of step 5 only reads a later run. If a git command of the CI wait fails, the task
 subagent stops and reports the error. Without a pass through the queued case of step 5, a stop also skips steps 10 and
 11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the task subagent gets a resume message
-while the task is in `landed` (see ["When the job fires"](orchestrator/quota.md#when-the-job-fires) and
-["What the task subagent does"](orchestrator/quota.md#what-the-task-subagent-does) in
-["Quota"](orchestrator/quota.md#quota)), the rule depends on what the task subagent did before. If the task subagent did
-not run `gh run rerun` yet, it does the CI wait again from step 1 of the CI wait. If it ran `gh run rerun` and did not
-send the report of step 11 yet, it does not run `gh run rerun` again. If the rerun did not start, it goes to step 10 of
-the CI wait with the result "did not start". Otherwise, it waits for the rerun as step 9 says, with a new 30-minute
+while the task is in `landed` (see ["When the job fires"](../orchestrator/quota.md#when-the-job-fires) and
+["What the task subagent does"](../orchestrator/quota.md#what-the-task-subagent-does) in
+["Quota"](../orchestrator/quota.md#quota)), the rule depends on what the task subagent did before. If the task subagent
+did not run `gh run rerun` yet, it does the CI wait again from step 1 of the CI wait. If it ran `gh run rerun` and did
+not send the report of step 11 yet, it does not run `gh run rerun` again. If the rerun did not start, it goes to step 10
+of the CI wait with the result "did not start". Otherwise, it waits for the rerun as step 9 says, with a new 30-minute
 limit from its first `gh run watch` after the resume. Then it goes on with step 10. If it sent the report of step 11, it
 does not do the CI wait again. It waits for the answer of the orchestrator, as
-[the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of the new issue, it goes on with step
-12 of the CI wait.
+[the answer-wait rule](../limits.md#the-answer-wait-rule) says. If it got the number of the new issue, it goes on with
+step 12 of the CI wait.
 
 ## A failed CI run
 
 This section gives the steps of the orchestrator after a task subagent reports a failed run in step 11 of
 [the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that a task subagent reports. An
 issue of a failed CI run gets the priority `P0`. The priority rule of
-[Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets) makes that issue start before the tickets with a
-lower priority. [The project board](issues.md#the-project-board) gives the commands of the priority. The repo has the
-label `broken-test`.
+[Pick the tickets](../orchestrator/pick-the-tickets.md#pick-the-tickets) makes that issue start before the tickets with
+a lower priority. [The project board](../issues.md#the-project-board) gives the commands of the priority. The repo has
+the label `broken-test`.
 
 1. The orchestrator makes the body file in its own step.
 
-   Before the post, the orchestrator follows [the self-check rule](rules.md#docs) of rules.md over the title and the
+   Before the post, the orchestrator follows [the self-check rule](../rules.md#docs) of rules.md over the title and the
    body file.
 
    File a new issue:
    `gh issue create --title '<title>' --body-file <absolute path of the body file> --milestone "<milestone in progress>"`.
-   Write each single quote of the title as `'\''`, as [The reads before the write](issues.md#the-reads-before-the-write)
-   says. The milestone in progress is the current milestone of
-   ["Pick the tickets"](orchestrator/pick-the-tickets.md#pick-the-tickets). If the verdict is broken, also add
-   `--label broken-test` to the command. The body gives the run URL, the failed tests, the verdict and the evidence of
-   the task subagent (the result of the rerun and of the local run). The body asks for the cause and a fix. It must not
-   ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists, and
-   [the failure rule](limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task stays in
+   Write each single quote of the title as `'\''`, as
+   [The reads before the write](../issues.md#the-reads-before-the-write) says. The milestone in progress is the current
+   milestone of ["Pick the tickets"](../orchestrator/pick-the-tickets.md#pick-the-tickets). If the verdict is broken,
+   also add `--label broken-test` to the command. The body gives the run URL, the failed tests, the verdict and the
+   evidence of the task subagent (the result of the rerun and of the local run). The body asks for the cause and a fix.
+   It must not ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists, and
+   [the failure rule](../limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task stays in
    `landed`.
 
    If `gh issue create` worked, set the priority `P0` on the card of the new issue. First, wait for the card:
@@ -177,27 +177,27 @@ label `broken-test`.
    the issue has a status, the command exits with 0.
 
    Exit code 124 means that the card did not show, and exit code 2 means that the read failed. After exit code 0, set
-   the option `P0` with the set command of [The project board](issues.md#the-project-board). If the read exits with 124
-   or 2, or the set fails, [the failure rule](limits.md#the-failure-rule) applies. A denial of the read by the
+   the option `P0` with the set command of [The project board](../issues.md#the-project-board). If the read exits with
+   124 or 2, or the set fails, [the failure rule](../limits.md#the-failure-rule) applies. A denial of the read by the
    classifier of auto mode also counts as a failed read. Then the issue has no priority, and the orchestrator does the
-   other steps. If the classifier denies the set, [the tool-block rule](tasker-commands.md#the-tool-block-rule) applies,
-   and the orchestrator does steps 2 to 4 at once.
+   other steps. If the classifier denies the set, [the tool-block rule](../tasker-commands.md#the-tool-block-rule)
+   applies, and the orchestrator does steps 2 to 4 at once.
 
 2. If the verdict is broken, the new issue blocks all further work. Send the broken-test notice to each other
    orchestrator, as the broken-test rule says. Add no blocked-by link to the other issues. Tell the user at once. If a
    handoff starts while the issue is open, name the issue in the handoff file, as
-   [The handoff file of the orchestrator](orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator)
+   [The handoff file of the orchestrator](../orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator)
    says. The reason for no blocked-by link is a decision of the user. On 2026-10-17, the user decided this for #287, the
    broken-test issue of #273, with the words "we don't need blocked-by links as long as all other orchestrators know to
    wait".
 3. If the verdict is flaky, the new issue blocks nothing.
 4. Send the task subagent the number of the new issue. The bullet of
-   ["Land the work"](orchestrator/land-the-work.md#land-the-work) that reads the state with `tasker show <issue>` first
-   applies to this message.
+   ["Land the work"](../orchestrator/land-the-work.md#land-the-work) that reads the state with `tasker show <issue>`
+   first applies to this message.
 
 The broken-test rule: a broken-test issue is the new issue of step 1 when the verdict is broken. It has the label
 `broken-test`. The rule has two actors: the orchestrator that files the broken-test issue, and each other orchestrator.
-The notice rule defines the other orchestrators (see [the notice rule](doc-reads.md#the-notice-rule)).
+The notice rule defines the other orchestrators (see [the notice rule](../doc-reads.md#the-notice-rule)).
 
 In step 2, the orchestrator that filed the broken-test issue sends a broken-test notice to each other orchestrator. It
 sends a notice for the verdict broken only. The notice gives the number of the broken-test issue. The orchestrator lists
@@ -213,7 +213,7 @@ milestone, a new session after a crash or a session after a `/clear`. The label 
 before each start of a ticket, the orchestrator runs
 `gh issue list --state open --label broken-test --limit 1000 --json number` in its local clone. If the list has an
 issue, the ban holds, except for the start of that issue itself. When the list is empty, the ban ends. If the command
-fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket.
+fails, [the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator starts no ticket.
 
 The ban covers only the start of a ticket. A task in flight is not a start, so the ban does not stop it. The rule gives
 no steps for two broken-test issues open at the same time. A second failed run most likely has the same cause, and the

@@ -87,7 +87,7 @@ recommendation.
 The issue-review subagent keeps these bans:
 
 - Run no command that reads the login of the user, for example `gh auth token`.
-- Change no state of the user, as "The state of the user" of `docs/dev/plan-review.md` says.
+- Change no state of the user, as "The state of the user" of `docs/dev/task-subagent/plan-review.md` says.
 - Post nothing, edit nothing and write no file. This ban also covers the scratchpad folder that Claude Code names in
   your system prompt. It wins over the instruction there to use that folder. In place of a file, use a pipe, for example
   `gh issue list ... | jq ...`.

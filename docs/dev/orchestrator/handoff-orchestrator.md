@@ -302,7 +302,7 @@ The terms of this case are:
   subagent ends its work after its current `tasker` command ends and runs no other `tasker` command. It removes the task
   worktree as [the own-worktree rule](../limits.md#the-own-worktree-rule) says, and the task keeps its state. Then it
   gives its final report. The case reuses step 1 because that step ends the work and keeps the task in its state, and
-  [the comeback rule](../run-one-ticket.md#the-comeback-rule) starts from that state.
+  [the comeback rule](../task-subagent/run-one-ticket.md#the-comeback-rule) starts from that state.
 - A stopping point is not a stop of [the answer-wait rule](../limits.md#the-answer-wait-rule), because after a stopping
   point the task subagent waits for no answer.
 - The stopping-point message is the message of the old orchestrator that asks a task subagent to come to its stopping
@@ -489,7 +489,7 @@ the handoff file:
   open issues with the label "Open issues:", in the form of the first prompt of
   [The start of an orchestrator](../../orchestrator.md#the-start-of-an-orchestrator). It is empty for a milestone scope.
 - The number of each open broken-test issue that the old orchestrator knows of (see the broken-test rule in
-  [A failed CI run](../ci-wait.md#a-failed-ci-run)).
+  [A failed CI run](../task-subagent/ci-wait.md#a-failed-ci-run)).
 - A table of the open issues of the scope, with the columns issue, topic, blockers and files.
 - The record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets), with one entry for each raised issue.
   Each entry gives the issue and its facts at the raise.
@@ -742,8 +742,8 @@ says. The steps are:
    [the own-worktree rule](../limits.md#the-own-worktree-rule).
 5. Start the task subagent. The prompt gives the context of the first bullet of "The prompt of a task subagent", the
    state from `tasker show <issue>`, the entry and each answer of the entry. The task subagent follows
-   [the comeback rule](../run-one-ticket.md#the-comeback-rule). If the base holds a template file for the prompt of a
-   second task subagent for the same ticket, the entry reaches the prompt through that template.
+   [the comeback rule](../task-subagent/run-one-ticket.md#the-comeback-rule). If the base holds a template file for the
+   prompt of a second task subagent for the same ticket, the entry reaches the prompt through that template.
 6. Give the new task subagent the free slot with the lowest number, as "The delay of each task subagent" says. Schedule
    its jobs as [Schedule a job when a task subagent starts](quota.md#schedule-a-job-when-a-task-subagent-starts) says. A
    rule that passes the slot and the jobs of an old session to a second session does not apply across a handoff, for

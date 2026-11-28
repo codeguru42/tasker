@@ -29,10 +29,10 @@ This page uses these terms for the questions to the user.
   - A kind of choice of the list in the bullet that starts "The user can let the session decide open choices by its own
     recommendation" of [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
   - A choice of [The rules for the user alone](planner.md#the-rules-for-the-user-alone).
-  - A choice of [The state of the user](plan-review.md#the-state-of-the-user): the approval of a measure that changes
-    the state of the user.
-  - A choice of the fifth case of [the stop rule](plan-review.md#the-stop-rule).
-  - A choice of the security report of [Review findings](review-findings.md#review-findings).
+  - A choice of [The state of the user](task-subagent/plan-review.md#the-state-of-the-user): the approval of a measure
+    that changes the state of the user.
+  - A choice of the fifth case of [the stop rule](task-subagent/plan-review.md#the-stop-rule).
+  - A choice of the security report of [Review findings](task-subagent/review-findings.md#review-findings).
   - A choice of the earlier-blocker offer in [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets): the
     orchestrator runs a blocker of an earlier milestone only on the word of the user.
   - A choice of the state `awaiting_quota_approval` in [Quota](orchestrator/quota.md#quota).

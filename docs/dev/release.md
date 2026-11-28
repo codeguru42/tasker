@@ -41,8 +41,8 @@ An install with no task in flight needs no hold, so this section does not cover 
 The hold covers the tasks of each orchestrator, also the tasks of an installing orchestrator. In the hold, the
 orchestrator starts no new ticket, and it tells each of its task subagents to hold. Each task subagent finishes its
 current `tasker` command and then runs no other `tasker` command. A task subagent can continue a step that runs no
-`tasker` command. An example is the rest of [the CI wait](ci-wait.md#the-ci-wait) after step 1 of the CI wait. The task
-subagent runs its next `tasker` command, for example `tasker finish`, only after the hold ends.
+`tasker` command. An example is the rest of [the CI wait](task-subagent/ci-wait.md#the-ci-wait) after step 1 of the CI
+wait. The task subagent runs its next `tasker` command, for example `tasker finish`, only after the hold ends.
 
 No run is in progress when `tasker status` shows no task in a state that spawns a process. These are the blue states of
 [docs/statemachine.md](../statemachine.md#main-lifecycle), the "spawning states", for example `planning`, `executing`,

@@ -41,11 +41,11 @@ local machine each fact about an outside tool that the plan depends on. Examples
 operating system. The task subagent does not rely on the plan session to test these facts. Before each refine, the task
 subagent also tests each fact that a plan question asks about, and it answers the question in the feedback text. The
 task subagent puts the commands and their results in the feedback text. A fact test that runs the code of the repo runs
-in the task worktree, after [the update rule](limits.md#the-update-rule).
+in the task worktree, after [the update rule](../limits.md#the-update-rule).
 
 If no refine runs before the first `tasker approve`, the task subagent does the fact test before it. The task subagent
 then adds the commands and their results to the list of files that it sends after `tasker approve`, as
-[Land the work](orchestrator/land-the-work.md#land-the-work) says. It also puts them in the comment of step 11 of
+[Land the work](../orchestrator/land-the-work.md#land-the-work) says. It also puts them in the comment of step 11 of
 [Run one ticket](run-one-ticket.md#run-one-ticket). The reason: the plan session cannot do a test that reads outside the
 worktree, because [the repo-files rule](#the-repo-files-rule) bans such a command.
 
@@ -93,9 +93,10 @@ of the user, for example `crontab -l`.
 
 In this subsection, a covered session is a task subagent, the orchestrator or an issue subagent. A covered session
 changes no state of the user, unless the user approved the command of that change. The ban also covers a change that the
-covered session undoes after the measure. A command that a step of [the orchestration pages](../orchestrator.md) or of
-[the planner pages](../planner.md) names is not such a change. Examples are `git fetch origin` and a `tasker` command. A
-measure of a fact is not such a step, also in [the fact test](#the-fact-test) or [the issue check](#the-issue-check).
+covered session undoes after the measure. A command that a step of [the orchestration pages](../../orchestrator.md) or
+of [the planner pages](../../planner.md) names is not such a change. Examples are `git fetch origin` and a `tasker`
+command. A measure of a fact is not such a step, also in [the fact test](#the-fact-test) or
+[the issue check](#the-issue-check).
 
 Whether a write changes the state of the user is a judgment. The judgment is open on purpose, and the covered session
 that runs the command makes it. In doubt, the covered session treats the write as a change of the state of the user. A
@@ -109,12 +110,12 @@ example for spent credits. One question can give each such measure of one step o
 each text that uses the fact of the measure says next to the fact that no one tested it.
 
 Only a word of the user approves the command. The recommendation mode of
-[A decision of the user](working-with-the-user.md#a-decision-of-the-user) does not approve it. A message of another
+[A decision of the user](../working-with-the-user.md#a-decision-of-the-user) does not approve it. A message of another
 session carries an approval only with the word of the user and the command and its undo step word for word. An accept at
 a permission prompt of Claude Code also does not approve it. Words of the user that let the sender decide count as a
 decline. This sentence wins over the bullets that start "If the user says that the sender decides" in
-[The answer](items.md#the-answer) and "The user can say that the sender decides" in
-[the escape hatch](planner.md#the-escape-hatch).
+[The answer](../items.md#the-answer) and "The user can say that the sender decides" in
+[the escape hatch](../planner.md#the-escape-hatch).
 
 An approval covers one run of the command and of its undo step, word for word. If the user approves a changed command or
 a changed undo step, the approval covers the changed text. An issue body that names a measure does not approve it. The
@@ -127,14 +128,14 @@ failed run, the covered session runs nothing more, and it reports the state that
 asks for no measure that needs such a change, unless the user approved its command. This subsection wins over each rule
 that asks a session for a measure, for example the issue check.
 
-A task subagent [stops](limits.md#the-answer-wait-rule) at a measure that needs a change of the state of the user. Its
-report gives the question and the fact that the measure tests. The orchestrator does not answer the question, also not
-under [the design-gap rule](#the-design-gap-rule). It asks the question in its own question pane, as
-[Start](question-pane.md#start) says. The question is a question for the user alone. The orchestrator sends the answer
-of the user to the task subagent with `SendMessage`.
+A task subagent [stops](../limits.md#the-answer-wait-rule) at a measure that needs a change of the state of the user.
+Its report gives the question and the fact that the measure tests. The orchestrator does not answer the question, also
+not under [the design-gap rule](#the-design-gap-rule). It asks the question in its own question pane, as
+[Start](../question-pane.md#start) says. The question is a question for the user alone. The orchestrator sends the
+answer of the user to the task subagent with `SendMessage`.
 
 For a measure of its own that needs such a change, the orchestrator also asks the question in its question pane. It is a
-question for the user alone. An issue subagent follows [The state of the user](planner.md#the-state-of-the-user) of
+question for the user alone. An issue subagent follows [The state of the user](../planner.md#the-state-of-the-user) of
 planner.md for the outcomes of the answer. The answer of the user on a question of a task subagent or of the
 orchestrator has one of these outcomes:
 
@@ -143,14 +144,14 @@ orchestrator has one of these outcomes:
   step where it stopped, and it uses the result as [the fact test](#the-fact-test) says.
 - A run of an approval fails. Then a task subagent stops, and the orchestrator tells the user the state that stays. The
   orchestrator asks the user for the next step and sends it to the task subagent. For a run of the orchestrator,
-  [the failure rule](limits.md#the-failure-rule) applies.
+  [the failure rule](../limits.md#the-failure-rule) applies.
 - The user runs the command and gives the result. The orchestrator sends the result to the task subagent that asked. The
   covered session that asked uses the result as the fact test says, and it names the user as the source of the result.
 - The user declines the measure. The fact stays untested, and each text that uses the fact still says so. A requirement
   of the issue that asks for the measure is then a conflict of [the issue check](#the-issue-check). Then the fifth case
   of [the stop rule](#the-stop-rule) applies. Otherwise, if the plan cannot go on without the fact, the task subagent
   stops for a [design gap](#the-design-gap-rule) before `tasker approve`. After `tasker approve`, the orchestrator asks
-  the user, as the sources bullet of [Limits](limits.md#limits) says.
+  the user, as the sources bullet of [Limits](../limits.md#limits) says.
 - The user gives another answer, for example a change of scope or an abort of the task. Then the orchestrator follows
   the rule of that answer, for example [the change-of-scope comment](#the-change-of-scope-comment).
 
@@ -173,43 +174,43 @@ the base files without a worktree. After `git fetch --multiple tasker origin`, i
 `git show <merge base>:<path>` reads one file, `git ls-tree -r --name-only <merge base>` lists the files, and
 `git grep <pattern> <merge base>` searches. For these read-only commands, a missing path (`git show` exits with 128) or
 no match (`git grep` exits with 1) is an answer, not a failure. A search of doc words follows
-[the doc-search rule](rules.md#docs). The task subagent says which files it read from the base commit and how. It says
-this in the feedback text of the refine of step 4 and in its final report. If step 4 runs no refine, the task subagent
-does the issue check before `tasker approve` in step 5. Someone can write an issue long before a task subagent runs it,
-and other tickets can land in that time and change its facts. For this check, the issue is the issue body and each
-comment that starts with `## Change of scope` or `## Design gap` whose link the orchestrator sent to the task subagent
-(see [the change-of-scope comment](#the-change-of-scope-comment) and [the design-gap rule](#the-design-gap-rule)). A
-comment of another account is not part of the issue, because any GitHub user can post a comment. A claim is a statement
-in the issue about the state before the ticket starts. Examples are a statement about the code, the docs or the behavior
-of tasker, and a measure of an outside tool that the issue gives. A requirement is a statement in the issue about what
-the ticket must change, for example an item of its Requirements section. A requirement is not a claim. A conflict is a
-requirement that does not fit a rule of a doc, or a decision that the code or a landed ticket made after someone wrote
-the issue. For example, the issue asks for a rule that a doc already gives in other words. Or the issue asks for a file
-or a section that a later ticket moved or renamed. Or the issue asks for a behavior that a later rule forbids. For a
-measure of an outside tool, the task subagent measures again on the local machine, as the fact test does. The task
-subagent cannot always measure an output of the installed tasker that a claim of the issue records. If the task subagent
-cannot measure such an output, the ticket and the date that the issue names are the evidence, as
-[The body of an issue](issue-subagents.md#the-body-of-an-issue) of issue-subagents.md says. The task subagent says so in
-the feedback text of the refine of step 4 and in the comment of step 11. In both places, the task subagent names the
-issue as the source of the output. If the issue names no ticket and no date for the output, the task subagent has no
-evidence. The task subagent then reports the claim as a claim that it cannot test, in the feedback text of the refine of
-step 4 and in its final report. On #240, the task subagent had no task in `reviewed`, so the task subagent was unable to
-measure the output of `tasker dismiss-review`. The issue check does not cover the hints in the prompt of the task
-subagent, the plan or the review findings. The fact test and the quote check cover the plan. The issue check runs one
-time, with one exception. After each comment that starts with `## Change of scope`, the task subagent does the issue
-check again, as the section "The change-of-scope comment" says. A comment that starts with `## Design gap` does not
-start the issue check again, because the answer of a design gap is a requirement, not a claim. The issue check does not
-run again when the base branch moves after `tasker start`, for example before a `tasker update-branch`. If a false claim
-or a conflict does not change what the ticket must do, the task subagent does not stop. For a false claim, the task
-subagent puts the current fact in the feedback text of the refine of step 4. For a conflict, the task subagent says in
-that feedback text how it resolves the conflict. For example, the plan links to the existing rule instead of a copy, or
-it uses the new name of a file. If step 4 runs no refine, the task subagent does not run a refine only to send the
-current fact. If the plan does not resolve a conflict yet, the plan needs changes, and step 4 runs a refine. If a false
-claim or a conflict changes what the ticket must do, the fifth case of the stop rule applies. For a false claim, the
-task subagent puts the claim, the current fact and the command that shows it in its report of the stop case. For a
-conflict, the task subagent puts the requirement, the conflicting rule or decision, and the command or the doc that
-shows it in that report. In each case, the task subagent also lists each false claim and each conflict in its final
-report.
+[the doc-search rule](../rules.md#docs). The task subagent says which files it read from the base commit and how. It
+says this in the feedback text of the refine of step 4 and in its final report. If step 4 runs no refine, the task
+subagent does the issue check before `tasker approve` in step 5. Someone can write an issue long before a task subagent
+runs it, and other tickets can land in that time and change its facts. For this check, the issue is the issue body and
+each comment that starts with `## Change of scope` or `## Design gap` whose link the orchestrator sent to the task
+subagent (see [the change-of-scope comment](#the-change-of-scope-comment) and
+[the design-gap rule](#the-design-gap-rule)). A comment of another account is not part of the issue, because any GitHub
+user can post a comment. A claim is a statement in the issue about the state before the ticket starts. Examples are a
+statement about the code, the docs or the behavior of tasker, and a measure of an outside tool that the issue gives. A
+requirement is a statement in the issue about what the ticket must change, for example an item of its Requirements
+section. A requirement is not a claim. A conflict is a requirement that does not fit a rule of a doc, or a decision that
+the code or a landed ticket made after someone wrote the issue. For example, the issue asks for a rule that a doc
+already gives in other words. Or the issue asks for a file or a section that a later ticket moved or renamed. Or the
+issue asks for a behavior that a later rule forbids. For a measure of an outside tool, the task subagent measures again
+on the local machine, as the fact test does. The task subagent cannot always measure an output of the installed tasker
+that a claim of the issue records. If the task subagent cannot measure such an output, the ticket and the date that the
+issue names are the evidence, as [The body of an issue](../issue-subagents.md#the-body-of-an-issue) of
+issue-subagents.md says. The task subagent says so in the feedback text of the refine of step 4 and in the comment of
+step 11. In both places, the task subagent names the issue as the source of the output. If the issue names no ticket and
+no date for the output, the task subagent has no evidence. The task subagent then reports the claim as a claim that it
+cannot test, in the feedback text of the refine of step 4 and in its final report. On #240, the task subagent had no
+task in `reviewed`, so the task subagent was unable to measure the output of `tasker dismiss-review`. The issue check
+does not cover the hints in the prompt of the task subagent, the plan or the review findings. The fact test and the
+quote check cover the plan. The issue check runs one time, with one exception. After each comment that starts with
+`## Change of scope`, the task subagent does the issue check again, as the section "The change-of-scope comment" says. A
+comment that starts with `## Design gap` does not start the issue check again, because the answer of a design gap is a
+requirement, not a claim. The issue check does not run again when the base branch moves after `tasker start`, for
+example before a `tasker update-branch`. If a false claim or a conflict does not change what the ticket must do, the
+task subagent does not stop. For a false claim, the task subagent puts the current fact in the feedback text of the
+refine of step 4. For a conflict, the task subagent says in that feedback text how it resolves the conflict. For
+example, the plan links to the existing rule instead of a copy, or it uses the new name of a file. If step 4 runs no
+refine, the task subagent does not run a refine only to send the current fact. If the plan does not resolve a conflict
+yet, the plan needs changes, and step 4 runs a refine. If a false claim or a conflict changes what the ticket must do,
+the fifth case of the stop rule applies. For a false claim, the task subagent puts the claim, the current fact and the
+command that shows it in its report of the stop case. For a conflict, the task subagent puts the requirement, the
+conflicting rule or decision, and the command or the doc that shows it in that report. In each case, the task subagent
+also lists each false claim and each conflict in its final report.
 
 The needed-doc-change rule: a needed doc change is in the scope of the ticket. The scope of a ticket is what the ticket
 must do, as its issue gives it. A needed doc change has either of these bases:
@@ -218,8 +219,8 @@ must do, as its issue gives it. A needed doc change has either of these bases:
   `docs/`, or one of the files `AGENTS.md` and `CONTRIBUTING.md`. If an acceptance case fails with no change of a doc,
   the case needs a change of that doc. The case reads the merge commit of the work, with each other change of the ticket
   in place.
-- The [consistency rule](rules.md#changes) needs the change of a tracked Markdown file. The consistency rule gives the
-  scope and limits of this basis.
+- The [consistency rule](../rules.md#changes) needs the change of a tracked Markdown file. The consistency rule gives
+  the scope and limits of this basis.
 
 For either basis, the rule also covers a doc that the Docs section of the issue does not name. It also covers a doc that
 a Docs item says does not change or stays. This holds also for a Docs item with a true reason. An acceptance case counts
@@ -279,11 +280,12 @@ decided the case of #968 on the word of the user. No one measured the path of th
 and the body change.
 
 In an issue, a measure of an outside tool is the one exception to "A requirement is not a claim". It is also a
-requirement, as [The body of an issue](issue-subagents.md#the-body-of-an-issue) says.
+requirement, as [The body of an issue](../issue-subagents.md#the-body-of-an-issue) says.
 
 The current code standards of the repo win over an old requirement of the issue that conflicts with them. The current
-code standards are the rules of [docs/dev/rules.md](rules.md) and [docs/dev/code-conventions.md](code-conventions.md),
-and the form of the code on the base branch. Examples of such a conflict:
+code standards are the rules of [docs/dev/rules.md](../rules.md) and
+[docs/dev/code-conventions.md](../code-conventions.md), and the form of the code on the base branch. Examples of such a
+conflict:
 
 - The issue names a file or a function that a later ticket moved. The plan uses the current place.
 - The issue says to reuse a helper from the module of one tracker. The helper now serves more than one module. The plan
@@ -303,29 +305,29 @@ follow the issue description." The fold moved to a neutral module.
 ## The stop rule
 
 Each time before the task subagent runs `tasker approve` in step 5 of
-[Run one ticket](run-one-ticket.md#run-one-ticket), the task subagent [stops](limits.md#the-answer-wait-rule) in each of
-these cases:
+[Run one ticket](run-one-ticket.md#run-one-ticket), the task subagent [stops](../limits.md#the-answer-wait-rule) in each
+of these cases:
 
 - The plan has an open question that the issue does not answer. A question about a choice of the implementation is not
   such a question. A choice of the place or words of a doc change is a choice of the implementation.
 - The plan makes a design choice that the issue does not make. A choice of the implementation is not such a choice. A
   choice of the place or words of a doc change is a choice of the implementation. The bullet of
-  [The body of an issue](issue-subagents.md#the-body-of-an-issue) that starts "An issue never dictates the
+  [The body of an issue](../issue-subagents.md#the-body-of-an-issue) that starts "An issue never dictates the
   implementation" defines the implementation. A choice of which fact is true needs support from code, a landed decision
   or tracked Markdown. Without that support, it is an unresolved design choice.
 - The plan has a security gap.
 - The plan changes a file that the issue does not name, and another task in progress also changes that file. For
   example, `tasker refine` prints a warning for such a file (see
-  ["Land the work"](orchestrator/land-the-work.md#land-the-work)). If the orchestrator already set a landing order for
-  that file, or told the task subagent that the file has no landing order, this case does not apply.
+  ["Land the work"](../orchestrator/land-the-work.md#land-the-work)). If the orchestrator already set a landing order
+  for that file, or told the task subagent that the file has no landing order, this case does not apply.
 
   For each task of the overlap warning, the task subagent reads the milestone of its issue with
   `gh issue view <issue> --json milestone -q '.milestone.title'`. `<issue>` is the number of the issue key on the line
   of the task in the warning. The task subagent knows the milestone of its own ticket from its prompt (see
-  [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent)). This case does not
-  count a task of another milestone. A task of another milestone is a task whose issue has another milestone than the
-  ticket of the task subagent, and both have a milestone. For such a task,
-  [the Docs rule](orchestrator/land-the-work.md#the-docs-rule) covers the shared file.
+  [The prompt of a task subagent](../orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent)). This case does
+  not count a task of another milestone. A task of another milestone is a task whose issue has another milestone than
+  the ticket of the task subagent, and both have a milestone. For such a task,
+  [the Docs rule](../orchestrator/land-the-work.md#the-docs-rule) covers the shared file.
 
   This case still applies to a file when the warning also lists that file for another task that the case counts. For
   example, the ticket of the task subagent is of "Docs". The warning lists a file for a task of "M19 — Polish" and for a
@@ -335,7 +337,7 @@ these cases:
 
   If a read fails, the case counts the task. An example of a failed read is exit code 1 with
   `GraphQL: Could not resolve to an issue or pull request ...`. The case also counts a task of the same milestone. For
-  the parent of a stacked ticket, [the stacked-ticket rule](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule)
+  the parent of a stacked ticket, [the stacked-ticket rule](../orchestrator/pick-the-tickets.md#the-stacked-ticket-rule)
   gives the exception. If the plan does not need the edit, the task subagent removes it in a refine of step 4, as "Land
   the work" says, and does not stop.
 
@@ -355,15 +357,16 @@ In each case, the task subagent reports the case. The design-gap rule says who a
 fourth case (a shared file), "Land the work" gives the steps. For the fifth case (a false claim or a conflict), the
 orchestrator asks the user, because only the user changes the scope of a ticket. If the user changes the scope, the
 orchestrator posts [a change-of-scope comment](#the-change-of-scope-comment) and sends its link to the task subagent in
-the answer. The bullet of [Land the work](orchestrator/land-the-work.md#land-the-work) about the state read covers that
-answer. The task subagent follows the steps of the section "The change-of-scope comment". For the sixth case (two
+the answer. The bullet of [Land the work](../orchestrator/land-the-work.md#land-the-work) about the state read covers
+that answer. The task subagent follows the steps of the section "The change-of-scope comment". For the sixth case (two
 reviews with a new edge case each), the orchestrator does one of two things. It gives the user the simpler rule as the
-first choice, as [Simplify over special rules](working-with-the-user.md#simplify-over-special-rules) says, and it sends
-the decision of the user to the task subagent. Or it finds that the two reviews are no such case, and it tells the task
-subagent to go on. After the answer, the task subagent puts the answer in the feedback text of the refine of step 4.
-Then the task subagent continues with step 4 and runs `tasker approve` in step 5. An answer before `tasker approve`
-costs no review loop, but a later answer costs one or more review loops. The quote check and the security report of
-["Review findings"](review-findings.md#review-findings) give more cases that stop before `tasker approve`.
+first choice, as [Simplify over special rules](../working-with-the-user.md#simplify-over-special-rules) says, and it
+sends the decision of the user to the task subagent. Or it finds that the two reviews are no such case, and it tells the
+task subagent to go on. After the answer, the task subagent puts the answer in the feedback text of the refine of
+step 4. Then the task subagent continues with step 4 and runs `tasker approve` in step 5. An answer before
+`tasker approve` costs no review loop, but a later answer costs one or more review loops. The quote check and the
+security report of ["Review findings"](review-findings.md#review-findings) give more cases that stop before
+`tasker approve`.
 
 ## The change-of-scope comment
 
@@ -371,29 +374,29 @@ If the user changes the scope of a ticket, the orchestrator posts the change as 
 starts with `## Change of scope`. Such a comment can come after a stop of the fifth case of
 [the stop rule](#the-stop-rule). It can also come after the security report of
 ["Review findings"](review-findings.md#review-findings). It can also come after a correction of the bullet of
-[Land the work](orchestrator/land-the-work.md#land-the-work) that covers a change to an issue in flight.
+[Land the work](../orchestrator/land-the-work.md#land-the-work) that covers a change to an issue in flight.
 
 The comment says which requirements change and how, and which items of the issue body no longer apply. The orchestrator
 does not edit the issue body for a change of scope. The orchestrator owns the issue bodies, and the task subagent does
-not edit them (see [Limits](limits.md#limits)). On 2026-10-16, the user asked for a comment for the change of scope of
-#232. The change of scope of #219 also used a comment.
+not edit them (see [Limits](../limits.md#limits)). On 2026-10-16, the user asked for a comment for the change of scope
+of #232. The change of scope of #219 also used a comment.
 
 Before the orchestrator posts a comment that starts with `## Change of scope`, it follows
-[the self-check rule](rules.md#docs) of rules.md. It also compares each sentence of the comment with the landed code. A
-sentence of the comment can state a fact of the code, for example the order of the steps of a command. On #274, the
+[the self-check rule](../rules.md#docs) of rules.md. It also compares each sentence of the comment with the landed code.
+A sentence of the comment can state a fact of the code, for example the order of the steps of a command. On #274, the
 comment said that diverged tips refuse "before the move to `updating_branch`". The fetch of the command runs after that
 move, so the task subagent stopped, and a second comment corrected the row.
 
 Before such a comment fixes an order of steps, the orchestrator also searches
-[the orchestration pages](../orchestrator.md) for each other sentence that gives an order of the same steps. The comment
-fixes each of them. The search follows [the doc-search rule](rules.md#docs). On #272, the first comment fixed the order
-of the landing steps. [The issue check](#the-issue-check) of the task subagent then found two sentences with the
-opposite order, in [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets) and in
-[the re-read rule](doc-reads.md#the-re-read-rule). A second comment fixed them.
+[the orchestration pages](../../orchestrator.md) for each other sentence that gives an order of the same steps. The
+comment fixes each of them. The search follows [the doc-search rule](../rules.md#docs). On #272, the first comment fixed
+the order of the landing steps. [The issue check](#the-issue-check) of the task subagent then found two sentences with
+the opposite order, in [Pick the tickets](../orchestrator/pick-the-tickets.md#pick-the-tickets) and in
+[the re-read rule](../doc-reads.md#the-re-read-rule). A second comment fixed them.
 
 The orchestrator sends the link of the comment to the task subagent before the next refine of the task subagent, as the
-bullet "When the orchestrator edits an issue body" of [Land the work](orchestrator/land-the-work.md#land-the-work) says.
-After each such comment, the task subagent does [the issue check](#the-issue-check) again for the claims and the
+bullet "When the orchestrator edits an issue body" of [Land the work](../orchestrator/land-the-work.md#land-the-work)
+says. After each such comment, the task subagent does [the issue check](#the-issue-check) again for the claims and the
 requirements of the changed scope. The task subagent does it before the refine, or the
 `tasker review <issue> "<feedback>"`, that sends the answer or the text of the comment.
 
@@ -418,19 +421,19 @@ The comment states the changed fact with the link of the change-of-scope comment
 depends on the old form, and it asks the open question with the answers that the orchestrator sees. The comment says
 that it is a note and not a change of scope, and that the user decides the answer before the ticket starts. The note can
 name a place in a doc. Before the orchestrator posts the note, it reads the doc as
-[the doc-read rule](doc-reads.md#the-doc-read-rule) says. Then it compares each place that the note names with that doc.
-The orchestrator makes sure that all the words that name one place point to the same place. For a change that did not
-land yet, the orchestrator compares each place with the change-of-scope comment that makes the change. If that comment
-gives no place for an item, the note does not assume a place for it. For example, the note does not assume that the
-milestone item is the last item.
+[the doc-read rule](../doc-reads.md#the-doc-read-rule) says. Then it compares each place that the note names with that
+doc. The orchestrator makes sure that all the words that name one place point to the same place. For a change that did
+not land yet, the orchestrator compares each place with the change-of-scope comment that makes the change. If that
+comment gives no place for an item, the note does not assume a place for it. For example, the note does not assume that
+the milestone item is the last item.
 
-Before the post of the note, the orchestrator also follows [the self-check rule](rules.md#docs) of rules.md.
+Before the post of the note, the orchestrator also follows [the self-check rule](../rules.md#docs) of rules.md.
 
 The orchestrator does not edit the body of the issue for this note. The orchestrator also does not decide the answer. An
 issue with a task in flight gets no note from this rule. The bullet of
-[Land the work](orchestrator/land-the-work.md#land-the-work) that covers a change to an issue in flight applies to such
-an issue. A failed read or a failed post of the orchestrator for this note is a case of
-[the failure rule](limits.md#the-failure-rule).
+[Land the work](../orchestrator/land-the-work.md#land-the-work) that covers a change to an issue in flight applies to
+such an issue. A failed read or a failed post of the orchestrator for this note is a case of
+[the failure rule](../limits.md#the-failure-rule).
 
 On 2026-10-17, the change of scope of #273 made the `revision` of the `base` event a ref, not a commit id. The Terms of
 #276 define the stored base revision as that value and replay the commits after it. The orchestrator named the gap only
@@ -449,7 +452,7 @@ A missing place or missing words for a doc change alone is not a design gap. The
 
 An answer of a design gap can name a rule or a hint that still applies to the case. Before the orchestrator gives such
 an answer, it searches each page of each rule or hint that the answer names. It searches for each other rule or hint on
-the same case. The search follows [the doc-search rule](rules.md#docs). The answer names each rule or hint that the
+the same case. The search follows [the doc-search rule](../rules.md#docs). The answer names each rule or hint that the
 search finds and that applies. The orchestrator judges which rule or hint covers the same case and applies. This
 judgment is open on purpose. On #434, the answer named only the hint of #120 and #369, and review 2 found the hint of
 #365 on a reason with "would".
@@ -463,7 +466,7 @@ place in the doc. If the comment names a bullet or a paragraph, in a doc or in t
 its first words. On #433 (2026-10-25), the first `## Design gap` comment gave the place "after the last item of the
 list, after the milestone item of #427", but the milestone item of #427 is the second item of the list. On #484
 (2026-10-25), the `## Design gap` comment named "the bullet on the report", and two bullets of the new text of
-[the tool-block rule](tasker-commands.md#the-tool-block-rule) matched it.
+[the tool-block rule](../tasker-commands.md#the-tool-block-rule) matched it.
 
 The orchestrator posts each answer of a design gap as a comment on the issue. The comment starts with `## Design gap`.
 It gives the gap, the answer, and who answered: the orchestrator or the user. Then the orchestrator sends the link of
@@ -471,7 +474,7 @@ the comment to the task subagent. The task subagent copies the full text of the 
 [the change-of-scope comment](#the-change-of-scope-comment). As a result, the plan session and the review see the answer
 in the issue.
 
-Before the post of each `## Design gap` comment, the orchestrator follows [the self-check rule](rules.md#docs) of
+Before the post of each `## Design gap` comment, the orchestrator follows [the self-check rule](../rules.md#docs) of
 rules.md.
 
 The user can change the answer before `tasker approve`. In that case, the orchestrator posts a new `## Design gap`
@@ -483,10 +486,10 @@ security report of ["Review findings"](review-findings.md#review-findings) and t
 [the change-of-scope comment](#the-change-of-scope-comment) do not apply to it. On #257, the user answered three design
 gaps before `tasker approve`, and review 1 still found that the rule "only the user ends a handoff" has no cancel.
 
-Before the orchestrator gives an answer that removes a [blocked-by link](planner.md) for a case, it asks two questions.
-Can an issue of that case start before its blocker lands? If it starts first, is the body of that issue still true? If
-the body is then false, the answer keeps the link, or it changes the body so that the body stays true. On #410, answer 4
-removed the link for one case but still fixed the body, so the body named a path not yet on `main`.
+Before the orchestrator gives an answer that removes a [blocked-by link](../planner.md) for a case, it asks two
+questions. Can an issue of that case start before its blocker lands? If it starts first, is the body of that issue still
+true? If the body is then false, the answer keeps the link, or it changes the body so that the body stays true. On #410,
+answer 4 removed the link for one case but still fixed the body, so the body named a path not yet on `main`.
 
 ## The quote check
 
@@ -507,9 +510,9 @@ and the task subagent judged it no quote.
 
 A plan or a finding can also give a rule of the simple-english skill, for example a limit, a rule number or a banned
 word. It can also say that it read the skill. Such a plan or finding does not count like a quote of a file outside the
-worktree. The reason: [rules.md](rules.md#docs) makes the skill the home of the text rules, so a rule of the skill is no
-outside source of fact. This exception wins over [the repo-files rule](#the-repo-files-rule) for the skill only. On #630
-(2026-10-31) and #700 (2026-11-01), each such plan cost one refine.
+worktree. The reason: [rules.md](../rules.md#docs) makes the skill the home of the text rules, so a rule of the skill is
+no outside source of fact. This exception wins over [the repo-files rule](#the-repo-files-rule) for the skill only. On
+#630 (2026-10-31) and #700 (2026-11-01), each such plan cost one refine.
 
 A plan can also name a skill that the plan prompt or the refine prompt of tasker tells the plan session to use. The
 fragment file `prompt-templates/tasker/shared-skills.md` of the task worktree gives these skills, and the task subagent
@@ -531,6 +534,6 @@ If a plan or a finding quotes a file outside the worktree, the task subagent tel
 orchestrator tells the user. After this report, the task subagent can still do the steps that come before
 `tasker approve` or `tasker accept`. For example, it can run a refine of step 4 or step 8 of
 [Run one ticket](run-one-ticket.md#run-one-ticket), or dismiss a finding in step 7. If the next command of the task
-subagent is `tasker approve` or `tasker accept`, the task subagent [stops](limits.md#the-answer-wait-rule). After the
+subagent is `tasker approve` or `tasker accept`, the task subagent [stops](../limits.md#the-answer-wait-rule). After the
 orchestrator answers, the task subagent does the step that the answer gives. If the answer gives no step, the task
 subagent continues "Run one ticket" from the step where it stopped.
