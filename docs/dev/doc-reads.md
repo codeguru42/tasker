@@ -735,7 +735,7 @@ the orchestrator, [the re-read rule](#the-re-read-rule) gives the failure path.
 
 A link in a doc that the reader follows is also a doc read. The reader drops the part from `#` (the anchor). It resolves
 the path against the folder of the doc. For example, the link `limits.md#the-failure-rule` in `docs/dev/doc-reads.md`
-gives `docs/dev/limits.md`, and the link `../../README.md#install` in `docs/dev/orchestrator/setup.md` gives
+gives `docs/dev/limits.md`, and the link `../../../README.md#install` in `docs/dev/orchestrator/setup.md` gives
 `README.md`. With the Read tool, `..` works. The `..` failure of `git show` applies only to the old read.
 
 ### The start prompts
