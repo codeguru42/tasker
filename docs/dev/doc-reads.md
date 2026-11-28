@@ -636,8 +636,9 @@ ends. A later read of this page can use the hint. A read with `git show` keeps t
    `File content (<n> tokens) exceeds maximum allowed tokens (<cap>)` gives no read. The refused call puts the read in
    Running. If the call supplied `limit`, halve it and retry at the same `offset`. If the call had no `limit`, retry at
    its original `offset`, or at line 1 if it supplied none. If the call had no `limit` and this read is covered by the
-   hint, retry with `limit` 700. In other reads, choose a `limit` and follow this item. A piece before the end is not a
-   complete read. Item 5 also names a partial view as a result that is not a complete read.
+   hint, retry with `limit` 700. If the call had no `limit` and the hint does not cover this read, retry with a `limit`
+   you choose. A piece before the end is not a complete read. Item 5 also names a partial view as a result that is not a
+   complete read.
 4. After the last piece of a doc, run `git -C <local clone> rev-parse --verify HEAD` and the clean-tree check. If the
    hash is not `<head>` or the tree is not clean, read that doc again with the old read.
 
