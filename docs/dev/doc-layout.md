@@ -22,13 +22,15 @@
   `limits.md` covers role limits, `working-with-the-user.md` covers work with the user, `tasker-commands.md` covers
   tasker commands, `items.md` defines message items, `handoff.md` covers handoffs, `issues.md` covers issues,
   `session-review-rounds.md` covers the review rounds of the orchestrator, a planner and a question session,
-  `GLOSSARY.md` defines shared terms, and `rules.md` gives repo rules. This doc moves here when the folder exists.
+  `GLOSSARY.md` defines shared terms, and `rules.md` gives repo rules. A doc that several roles follow has one home and
+  no copy. This doc moves here when the folder exists.
 - `docs/dev/code/` holds docs about tasker code, tests, build, release, trackers, assistants and data.
   `code-conventions.md` covers code style, `data-root.md` covers data storage, `version-control.md` covers git,
   `doctor.md` covers doctor checks, `forge.md`, `github.md` and `jira.md` cover tracker services, `issue-trackers.md`
   covers tracker code, `issue-keys.md` covers issue keys, `tasks.md` covers task commands, `phases.md` covers phases,
   `assistants.md` covers assistant providers, `prompt-templates.md` covers prompt templates, `release.md` covers
-  releases, `codex-sessions.md` and `pi-sessions.md` cover those sessions, and `workspaces.md` covers workspaces.
+  releases, `codex-sessions.md` and `pi-sessions.md` cover those sessions, and `workspaces.md` covers workspaces. No
+  role owns these docs, and developers read them for the code.
 
 This design creates no folder or index for the operator or the planner session, because both roles are deprecated.
 
@@ -51,11 +53,11 @@ A split doc stays with its role. For example, a split between starter rules and 
 the role that starts the session. This rule means a split needs no new layout decision. This doc does not decide a
 split.
 
-## A doc of a retired role
+## A doc of a deprecated role
 
-A doc that another issue will retire, such as `docs/dev/planner.md`, keeps its path until that work lands. It gets no
-new home. If parts remain, the retiring change places them by this rule. `docs/planner.md` also keeps its path and gets
-no new home.
+A doc of a deprecated role, such as `docs/dev/planner.md`, keeps its path until a later issue changes it. It gets no new
+home. If parts remain after that change, the change places them by this rule. `docs/planner.md` also keeps its path and
+gets no new home.
 
 ## The orchestrator index
 
