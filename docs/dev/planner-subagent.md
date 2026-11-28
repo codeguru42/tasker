@@ -397,11 +397,11 @@ for it.
   - If the tie fails, the late matches wait for a decision of the user. The orchestrator asks in its question pane.
 - The join itself. The joined item keeps the file with the lower number, so the order of arrival of the earlier item
   holds. The orchestrator appends the words of the other item to that file, word for word, with its sender, its date and
-  the source of each fact. Before it deletes the other file, the orchestrator lists in the kept file the number of each
-  file that joined into it. It copies the number, the pane id, the question id and the message number of the other file,
-  and each of these facts that the other file already holds from earlier joins. A later planning request of late matches
-  for the other proposal still ties to the joined item, as The tie says. The prompt gives the state "joined into this
-  item" for that match, as [The prompt](#the-prompt) says. One item then has one proposal file, as before.
+  the source of each fact. Before it deletes the other file, the orchestrator copies into the kept file the number, the
+  pane id, the question id and the message number of the other file, and each of these facts that the other file already
+  holds from earlier joins. A later planning request of late matches for the other proposal still ties to the joined
+  item, as The tie says. The prompt gives the state "joined into this item" for that match, as [The prompt](#the-prompt)
+  says. One item then has one proposal file, as before.
 - The count. A joined item starts one planner subagent and takes one place in
   [The count of planner subagents](#the-count-of-planner-subagents).
 - The calls. Each read, write and delete of a join is a call on the three folders.
