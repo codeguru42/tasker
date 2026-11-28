@@ -743,17 +743,18 @@ Follow these steps in this order.
 2. For each match, this step wins over its cover. If one of these cases holds for a match, make no change for that
    match: it has no cover; the change is not one ticket; its draft is gone, because its state says dropped or its file
    no longer exists, as [A missing draft file](#a-missing-draft-file) gives; it is a draft of a comment; or it is
-   outside the folder of the draft files. Follow the steps for their cover for each other match. A new draft covers only
-   the part of the change that no other match takes, as [The cover of a match](#the-cover-of-a-match) says. If another
-   match takes the whole change, make no new draft.
+   outside the folder of the draft files. Follow the steps for their cover for each other match. Take the part of the
+   change that no other match takes, as [The cover of a match](#the-cover-of-a-match) says. Make a new draft for that
+   part. If no part is left, make no new draft.
 3. For full cover, make no new draft and change nothing. This is a drop with no approval of the user, as keep 4 permits.
    A match with no draft yet follows this step too.
 4. For part cover of a match draft that waits, start an issue-draft subagent with the match draft and the change. The
    planner subagent does not change the draft itself. The rule of one ticket is in
    [The scope of a ticket](issue-subagents.md#the-scope-of-a-ticket). The count of reviews starts again, as
    [The count of reviews](#the-count-of-reviews) says. The planner subagent posts nothing, except that a match draft
-   that waits only for the question about the remaining findings posts after a review with no finding at all, as
-   [The count of reviews](#the-count-of-reviews) says. A new question of the reviews goes in the result.
+   with no other open question posts after a review with no finding at all, as
+   [The count of reviews](#the-count-of-reviews) says. A new question goes in the result only after a review that finds
+   something. After a review with no finding and a post, no new question follows.
 5. For part cover of a posted match, follow [The post of a draft](planner.md#the-post-of-a-draft). It gives the cases of
    an open issue with no task, an issue in flight and a closed issue.
 6. Read the state of the match for this step, not the words of the item. If the state is "joined into this item", the
@@ -1100,8 +1101,8 @@ Such a draft waits for a decision of the user. The result of the planner subagen
 the remaining findings of the draft, as [The result](#the-result) says. It also gives the question about the remaining
 findings, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
-A changed match draft can wait only for the question about the remaining findings. In this case, no other question of
-the draft is open, and no answer of the draft waits in a proposal file. The state of the match in the prompt gives these
+A changed match draft can have no open question other than the question about the remaining findings. That question can
+be there or not. No answer of the draft waits in a proposal file. The state of the match in the prompt gives these
 facts. The count starts again for the change, and one of two cases follows.
 
 - The planner subagent posts the changed match draft only after a review with no finding at all. A finding from an
