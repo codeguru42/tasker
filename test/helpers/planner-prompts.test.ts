@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { packagePath } from "../../src/package-path.js";
 import { readPromptTemplate } from "../../src/prompts/template-file.js";
@@ -42,7 +42,9 @@ describe("fillPlannerTemplate", () => {
 
 describe("plannerDocWordRuns", () => {
   it("gives a run of 8 words that the doc holds", () => {
-    const doc = readFileSync(packagePath("docs/dev/planner-subagent.md"), "utf8");
+    const docPath = packagePath("docs/dev/planner-subagent/planner-subagent.md");
+    expect(existsSync(docPath)).toBe(true);
+    const doc = readFileSync(docPath, "utf8");
     const run = doc
       .split(/\s+/)
       .filter((word) => word !== "")
