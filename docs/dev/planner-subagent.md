@@ -759,15 +759,16 @@ Follow these steps in this order.
    [The count of reviews](#the-count-of-reviews) says. The planner subagent posts nothing, except that a match draft
    with no other open question posts after a review with no finding at all, as
    [The count of reviews](#the-count-of-reviews) says. A new question goes in the result only after a review that finds
-   something. After a review with no finding and a post, no new question follows.
+   something. After a review with no finding and a post, no new question follows. A question that the escape hatch
+   requires for the draft still goes in the result, for example a choice between two designs or a security gap.
 5. For part cover of a posted match, follow [The post of a draft](planner.md#the-post-of-a-draft). It gives the cases of
    an open issue with no task, an issue in flight and a closed issue.
 6. Read the state of the match for this step, not the words of the item. If the state is "joined into this item", the
    planner subagent works on both items, as [The proposal file](#the-proposal-file) says. The kept file holds the words
    of the other item, with its reference to the matched proposal file. If the match has no draft yet, has part cover,
-   and has another state, the join did not happen. Then the planner subagent makes a new draft and names the match in
-   its result. The new draft covers only the part of the change that no other match takes, as step 2 says. If a waiting
-   match draft takes the whole change, step 6 makes no new draft.
+   and has another state, the join did not happen. Then that match takes no part of the change, and the planner subagent
+   names it in its result. Step 6 makes no draft of its own, because the one new draft of step 2 holds the part that no
+   match takes.
 7. A new draft names each posted match with full or part cover by its issue key and the overlap. It names no draft file
    and no proposal file.
 
