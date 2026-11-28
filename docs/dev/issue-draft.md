@@ -64,8 +64,7 @@ a comment draft. Each other rule of this page holds for it as well, unless this 
   [A recurrence](issues.md#a-recurrence) of issues.md.
 - The draft contains only the facts that its source in the prompt or its comment rule calls for. Put each extra fact in
   its own new item in the report, using the existing route to the session that started the draft. This rule holds for
-  both kinds of comment. The content rule adds to the other comment draft rules, which still apply. It controls which
-  facts go in the comment and where extra facts go, so a comment contains only its required facts.
+  both kinds of comment. The content rule adds to the other comment draft rules, which still apply.
 - The count of [The size of a draft](#the-size-of-a-draft) runs, so the report gives the number of characters. No cut
   runs, because the size target does not bind a comment. A count over the limit of
   [The count of the body](issue-post.md#the-count-of-the-body) still stops the post.
