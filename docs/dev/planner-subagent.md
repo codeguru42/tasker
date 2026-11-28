@@ -724,10 +724,12 @@ which match.
 Follow these steps in this order.
 
 1. The words of the user in the item win. If they keep the change apart, make a new draft.
-2. This step wins over each cover. Make a new draft if one of these holds. No match holds the cover. The change is not
-   one ticket. The match draft is gone, because its state says dropped or its file no longer exists, as
-   [A missing draft file](#a-missing-draft-file) gives. The match draft is a draft of a comment. The match draft is
-   outside the folder of the draft files.
+2. For each match, this step wins over its cover. If one of these cases holds for a match, make no change for that
+   match: it has no cover; the change is not one ticket; its draft is gone, because its state says dropped or its file
+   no longer exists, as [A missing draft file](#a-missing-draft-file) gives; it is a draft of a comment; or it is
+   outside the folder of the draft files. Follow the steps for their cover for each other match. A new draft covers only
+   the part of the change that no other match takes, as [The cover of a match](#the-cover-of-a-match) says. If another
+   match takes the whole change, make no new draft.
 3. For full cover, make no new draft and change nothing. This is a drop with no approval of the user, as keep 4 permits.
    A match with no draft yet follows this step too.
 4. For part cover of a match draft that waits, start an issue-draft subagent with the match draft and the change. The
