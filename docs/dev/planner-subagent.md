@@ -162,7 +162,9 @@ These terms hold for this wait:
   [The count of planner subagents](#the-count-of-planner-subagents).
 - The paths of an item are each path that the words of the item give as a match, and the proposal file of the item. For
   an item of an answer of the user or of a settled answer, its draft file path is a path of the item too. The paths of a
-  joined item are the paths of each of its items. The deleted file of a join is no path.
+  joined item are the paths of each of its items. A draft path or issue key supplied as a match state counts as one of
+  the item's paths. For example, this includes the draft path from the result when its proposal file has since
+  disappeared. The deleted file of a join is no path.
 - A record file, a report file or a body file of a draft stands for its draft file, as in
   [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner).
 - If a path is a path of its own item, a running planner subagent makes the path busy. It also makes busy each path in
@@ -368,7 +370,8 @@ for it.
   holds. The orchestrator appends the words of the other item to that file, word for word, with its sender, its date and
   the source of each fact. It also copies the pane id, the question id and the message number of the other file into the
   kept file beside its words and sources. A later planning request of late matches for the other proposal still ties to
-  the joined item, as The tie says. Then it deletes the other file. One item then has one proposal file, as before.
+  the joined item, as The tie says. The prompt gives the state "joined into this item" for that match, as
+  [The prompt](#the-prompt) says. Then it deletes the other file. One item then has one proposal file, as before.
 - The count. A joined item starts one planner subagent and takes one place in
   [The count of planner subagents](#the-count-of-planner-subagents).
 - The calls. Each read, write and delete of a join is a call on the three folders.
@@ -418,16 +421,16 @@ The prompt of a planner subagent gives these facts:
 - The list of the planner subagent in [the allowed commands](allowed-commands.md#the-planner-subagent).
 - The entries `sessions.models.issue-draft`, `sessions.models.issue-review` and `sessions.models.issue-post`, or the
   fact that a key has no entry. [The start of an issue subagent](#the-start-of-an-issue-subagent) uses them.
-- The state of each match of the item. The state is one of these five: the match draft waits for a decision of the user,
+- The state of each match of the item. The state is one of these six: the match draft waits for a decision of the user,
   with the kind and the id of each open question and the fact that an answer of the draft waits or not. The match is
   posted, with its issue key. The user dropped it. Its file no longer exists. Or it does not exist yet. A matched
   proposal file that is gone after the result of its planner subagent also gives the draft path or the issue key of that
-  result. The orchestrator takes each state from its proposal files, its question files and its session. A failed or
-  denied read follows [the failure rule](limits.md#the-failure-rule),
-  [the tool-block rule](tasker-commands.md#the-tool-block-rule) and the fallback of
-  [The orchestrator folder](limits.md#the-orchestrator-folder). Then the state is `not known`. The known limit: after a
-  compaction, the session can lack a post or a drop. For a joined item, the prompt gives the words of each item, with
-  its sender, its date and its sources.
+  result. Or the match is "joined into this item" after the orchestrator joins its item into this one. The orchestrator
+  takes each state from its proposal files, its question files and its session. A failed or denied read follows
+  [the failure rule](limits.md#the-failure-rule), [the tool-block rule](tasker-commands.md#the-tool-block-rule) and the
+  fallback of [The orchestrator folder](limits.md#the-orchestrator-folder). Then the state is `not known`. The known
+  limit: after a compaction, the session can lack a post or a drop. For a joined item, the prompt gives the words of
+  each item, with its sender, its date and its sources.
 - The ask for the result through the tool `SubagentHandback`.
 
 The words of this prompt stand in the file
@@ -734,10 +737,11 @@ Follow these steps in this order.
    goes in the result.
 5. For part cover of a posted match, follow [The post of a draft](planner.md#the-post-of-a-draft). It gives the cases of
    an open issue with no task, an issue in flight and a closed issue.
-6. For part cover of a match with no draft yet, the orchestrator joined the two items before the start, as
-   [The proposal file](#the-proposal-file) says. So the planner subagent of the joined item works on both items. If the
-   item still names such a match with part cover, the join did not happen. Then the planner subagent makes a new draft
-   and names the match in its result.
+6. Read the state of the match for this step, not the words of the item. If the state is "joined into this item", the
+   planner subagent works on both items, as [The proposal file](#the-proposal-file) says. The kept file holds the words
+   of the other item, with its reference to the matched proposal file. If the match has no draft yet, has part cover,
+   and has another state, the join did not happen. Then the planner subagent makes a new draft and names the match in
+   its result.
 7. A new draft names each posted match with full or part cover by its issue key and the overlap. It names no draft file
    and no proposal file.
 
