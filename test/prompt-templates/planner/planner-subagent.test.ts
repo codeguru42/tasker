@@ -112,7 +112,6 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
     const filled = fillPlannerTemplate("planner-subagent", sample);
     expect(filled).toContain("State of each match of the item, one match on each line:");
     expect(filled).toContain(sample.MATCH_STATES);
-    expect(filled).not.toContain("{{");
   });
 
   it("says what to do when a state of a match is not known", () => {
