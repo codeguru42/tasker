@@ -17,11 +17,11 @@
 - `docs/dev/issue-subagents/` holds docs with steps for the issue-draft, issue-review and issue-post subagents.
   `issue-subagents.md` gives their shared rules; `issue-draft.md`, `issue-review.md` and `issue-post.md` give their
   steps.
-- `docs/dev/question-pane/` holds docs with steps for a question-pane session. `question-pane.md` gives its steps, and
-  `session-review-rounds.md` gives the review rounds.
+- `docs/dev/question-pane/` holds docs with steps for a question-pane session. `question-pane.md` gives its steps.
 - `docs/dev/shared/` holds rules for several roles when no one role owns them. `doc-reads.md` covers doc reads,
   `limits.md` covers role limits, `working-with-the-user.md` covers work with the user, `tasker-commands.md` covers
   tasker commands, `items.md` defines message items, `handoff.md` covers handoffs, `issues.md` covers issues,
+  `session-review-rounds.md` covers the review rounds of the orchestrator, a planner and a question session,
   `GLOSSARY.md` defines shared terms, and `rules.md` gives repo rules. This doc moves here when the folder exists.
 - `docs/dev/code/` holds docs about tasker code, tests, build, release, trackers, assistants and data.
   `code-conventions.md` covers code style, `data-root.md` covers data storage, `version-control.md` covers git,
@@ -30,7 +30,7 @@
   `assistants.md` covers assistant providers, `prompt-templates.md` covers prompt templates, `release.md` covers
   releases, `codex-sessions.md` and `pi-sessions.md` cover those sessions, and `workspaces.md` covers workspaces.
 
-There is no folder or index for the operator or the planner session because both roles are retired.
+This design creates no folder or index for the operator or the planner session, because both roles are deprecated.
 
 ## The placement rule
 
@@ -39,7 +39,9 @@ Use these tests in order. The first test that fits sets the home of the doc:
 1. If the doc gives steps for one role, put it with that role. The readers do not set its home. For example, the
    orchestrator can read docs for other roles when needed.
 2. If the doc gives steps for several roles and no one role owns it, put it with the shared docs.
-3. If the doc covers tasker code, tests, build, release, trackers, assistants or data, put it with the code docs.
+3. If the doc covers tasker code, tests, build, release, trackers, assistants or data, put it with the code docs. This
+   test covers only docs for developers under `docs/dev/`. User guides about trackers or assistants stay under `docs/`
+   with the user docs.
 
 Each doc has one home and no copy. If these tests do not decide its home, name it with a reason in “The folders”.
 
