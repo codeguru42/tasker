@@ -122,9 +122,12 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
 
   it("gives the match states before the item", () => {
     const filled = fillPlannerTemplate("planner-subagent", sample);
-    const states = filled.indexOf("State of each match of the item");
-    expect(states).toBeGreaterThan(-1);
-    expect(states).toBeLessThan(filled.indexOf("Sender of the item:"));
+    const heading = filled.indexOf("State of each match of the item, one match on each line:");
+    const states = filled.indexOf(sample.MATCH_STATES);
+    const item = filled.indexOf(sample.ITEM);
+    expect(heading).toBeGreaterThan(-1);
+    expect(heading).toBeLessThan(states);
+    expect(states).toBeLessThan(item);
   });
 
   it("says that a joined item gives the words of each of its items", () => {
