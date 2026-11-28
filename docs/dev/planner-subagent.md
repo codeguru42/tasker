@@ -452,9 +452,10 @@ The prompt of a planner subagent gives these facts:
   takes each state from its proposal files, its question files and its session. A failed or denied read follows
   [the failure rule](limits.md#the-failure-rule), [the tool-block rule](tasker-commands.md#the-tool-block-rule) and the
   fallback of [The orchestrator folder](limits.md#the-orchestrator-folder). Then the state is `not known`. The known
-  limit: after a compaction, the session can lack a post or a drop. The orchestrator writes each draft path or issue key
-  of a state into the proposal file of its item, as [The wait for a busy path](#the-wait-for-a-busy-path) says. For a
-  joined item, the prompt gives the words of each item, with its sender, its date and its sources.
+  limit: after a compaction, the session can lack a post or a drop.
+  [The wait for a busy path](#the-wait-for-a-busy-path) gives what the orchestrator does with the draft path or the
+  issue key of a state. For a joined item, the prompt gives the words of each item, with its sender, its date and its
+  sources.
 - The ask for the result through the tool `SubagentHandback`.
 
 The words of this prompt stand in the file
@@ -796,10 +797,11 @@ For each match of an item, the result gives these facts:
   a failed read.
 - The reason for the action.
 
-For a changed match draft, the result also gives a short summary of the change. It says that the draft still waits for
-its open questions. After a post of that case, the result names each question about the remaining findings of the draft
-as moot, each with its question id. Step 5 of [The result](#the-result) gives the work of the orchestrator for these
-questions.
+For a changed match draft, the result also gives a short summary of the change. If the draft does not post, the result
+says that the draft still waits for its open questions. After a post of the case of
+[The count of reviews](#the-count-of-reviews), the result says that the draft posted, and it names each question about
+the remaining findings of the draft as moot, each with its question id. Step 5 of [The result](#the-result) gives the
+work of the orchestrator for these questions.
 
 ### The decided choices
 
@@ -1124,9 +1126,10 @@ facts. The count starts again for the change, and one of two cases follows.
   2, and the remaining findings after review 3. The draft keeps its open question. The new findings go in the result as
   a new question, as [A draft that needs the user](#a-draft-that-needs-the-user) says.
 
-For this case, this rule wins over two rules: the sentence "A review with no new finding approves the draft.", and the
-ban of [The order of the work on a draft](#the-order-of-the-work-on-a-draft) on an issue-post subagent for a draft that
-waits for a decision of the user. The changed match draft must not post while any review finding remains.
+For this case, this rule wins over three rules: the sentence "A review with no new finding approves the draft.", the ban
+of [The order of the work on a draft](#the-order-of-the-work-on-a-draft) on an issue-post subagent for a draft that
+waits for a decision of the user, and the same ban in keep 5. The changed match draft must not post while any review
+finding remains.
 
 A finding of one of the six kinds that the next paragraph names still sends the draft to the escape hatch. In each other
 case, a changed match draft posts nothing.
