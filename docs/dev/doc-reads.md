@@ -613,13 +613,30 @@ under [the tracked-change rule](rules.md#changes) and no write action of a quest
 
 This step runs after step 1 passed.
 
+Before the first Read call on a covered doc, you can run `wc -l <path>` in the local clone. A count above 700 lines
+makes the doc long. For a long doc, start at line 1 with `limit` at or below 700. Use `limit` on each piece, then
+continue with `offset` and `limit` under item 1. A count of 700 or fewer skips this starting hint. Items 1 to 5 still
+govern every piece, and another `limit` still follows those items.
+
+If you skip the count, the command fails, or the command is denied, the length is unknown. Read in pieces under item 1.
+You can use 700 for the first `limit` if this hint covers the read. Without a count, item 2 ends the read only when the
+last piece returns fewer lines than its `limit` and has no partial-view notice. The other way to end the read in item 2
+still applies.
+
+This hint covers a Read-tool read only when that read starts after the first Read-tool read of this page reaches Ended.
+That first read follows the start prompt and items 1 to 5. A read already in progress stays outside this hint until it
+ends. A later read of this page can use the hint. A read with `git show` keeps the old read procedure.
+
 1. Read each doc with the Read tool on the file in the local clone. `<path>` is the path of the doc from the root of the
    repo, for example `docs/dev/limits.md`. Read in pieces with `offset` and `limit`, from line 1.
 2. The read reaches the end when the last piece returns fewer lines than its `limit` and the result is not a partial
-   view. It also reaches the end when the pieces reach the count of `wc -l <path>`.
-3. If a call is refused for too many tokens, halve `limit` and read again from the same `offset`. A piece before the end
-   is not a complete read, and a refused call is not a read. Item 5 also names a partial view as a result that is not a
-   complete read.
+   view. It also reaches the end when the pieces reach the known count from `wc -l <path>`.
+3. A call refused with `File content (<size>) exceeds maximum allowed size (<cap>)` or
+   `File content (<n> tokens) exceeds maximum allowed tokens (<cap>)` gives no read. The refused call puts the read in
+   Running. If the call supplied `limit`, halve it and retry at the same `offset`. If the call had no `limit`, retry at
+   its original `offset`, or at line 1 if it supplied none. Use the 700-line hint for that retry when this read is
+   covered. In other reads, choose a `limit` and follow this item. A piece before the end is not a complete read. Item 5
+   also names a partial view as a result that is not a complete read.
 4. After the last piece of a doc, run `git -C <local clone> rev-parse --verify HEAD` and the clean-tree check. If the
    hash is not `<head>` or the tree is not clean, read that doc again with the old read.
 
@@ -634,8 +651,7 @@ This step runs after step 1 passed.
    shows fewer lines than the `limit` of its call.
 
    This item holds for a Read call with a `limit` and for a Read call with no `limit`. It also holds for each piece of
-   the read, not only for the first piece. A session can make a call with no `limit`, for example the read that a start
-   prompt asks for. Such a call is outside item 1.
+   the read, not only for the first piece. A session can make a call with no `limit`. Such a call is outside item 1.
 
    The read of one doc has these states:
 
@@ -646,7 +662,8 @@ This step runs after step 1 passed.
    - (c) Ended: the read reached the end of item 2. Then the read of the pieces is complete, and the session does
      item 4.
 
-   This item gives no piece size, as Step 2 gives none. It changes no rule of item 3 for a refused call.
+   In Not started, the long-doc hint can guide the first call. In Running, items 3 and 5 give the next call. The hint
+   supplies the next `limit` only when item 3 retries a call that had no `limit`. In Ended, the hint gives no action.
 
 On 2026-11-20, with Claude Code 2.1.330, one Read call with `limit: 2000` on `docs/dev/pick-the-tickets.md` failed. At
 commit `507bcddb`, that file had 1077 lines and 91,959 bytes. The error was "File content (31880 tokens) exceeds maximum
@@ -655,9 +672,18 @@ allowed tokens (25000)". So the doc was above 25000 tokens.
 A Read call on `docs/dev/doc-reads.md` returned all its lines. At commit `507bcddb`, that file had 258 lines. At commit
 `507bcddb`, no doc under `docs/` was longer than 2000 lines. The longest was `docs/dev/assistants.md`, with 1804 lines.
 
+On 2026-11-25, `docs/dev/question-pane.md` had 2,307 lines at `09a765a9`. A Read call without a `limit` showed lines 1
+through 767 and reported `(63876 tokens, cap 25000)`. A call at `offset` 1468 with `limit` 850 got
+`File content (28214 tokens) exceeds maximum allowed tokens (25000)`. Pieces of 700, 425, and 420 lines then let the
+session finish the read.
+
+On 2026-11-26, `docs/dev/question-pane.md` had 2,512 lines and `docs/dev/doc-reads.md` had 741 lines at `72088299`. A
+Read call on the question-pane doc without a `limit` got `File content (256KB) exceeds maximum allowed size (256KB)`. At
+`offset` 1 with `limit` 2600, it got `File content (68720 tokens) exceeds maximum allowed tokens (25000)`. At `offset`
+1468 with `limit` 850, it got `File content (28146 tokens) exceeds maximum allowed tokens (25000)`.
+
 At commit `941a4f88`, `docs/dev/pick-the-tickets.md` had 1236 lines and 103,281 bytes. The longest doc under `docs/` was
-still `docs/dev/assistants.md`, with 1821 lines. Each count is a fact of its commit. No one measured which doc the Read
-tool refuses in one call. So this rule gives the pieces rule and no piece size.
+still `docs/dev/assistants.md`, with 1821 lines. Each count is a fact of its commit.
 
 A missing doc is an answer, not a failure. With the old read, the two `fatal:` texts below are the answer. With the Read
 tool, an error that starts "File does not exist." is the answer. On 2026-11-21, with Claude Code 2.1.330, a Read call on
