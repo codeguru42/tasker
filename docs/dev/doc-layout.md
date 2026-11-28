@@ -85,7 +85,7 @@ Move one folder of docs in each coherent change, under
 - Each relative link inside the moved doc. For example, `../orchestrator.md` becomes `../../orchestrator.md`.
 - Each anchor if the move changes or removes a heading.
 
-Measure references again before the move. Use `git grep -n -F '<file name>'` and [the doc-search rule](rules.md#docs).
-For open issue bodies, follow the bullet “A ticket that renames a doc” in
-[the blocked-by links](issue-subagents.md#the-blocked-by-links). This doc names no issue and no order of steps, as
-[the short-exception rule](rules.md#docs) requires.
+A dated record of a past event keeps the path of its time. Measure references again before the move. Use
+`git grep -n -F '<file name>'` and [the doc-search rule](rules.md#docs). For open issue bodies, follow the bullet “A
+ticket that renames a doc” in [the blocked-by links](issue-subagents.md#the-blocked-by-links). This doc names no issue
+and no order of steps, as [the short-exception rule](rules.md#docs) requires.
