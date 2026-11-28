@@ -32,6 +32,7 @@ const sample: Record<string, string> = {
   MODEL_ISSUE_DRAFT: ENTRY,
   MODEL_ISSUE_REVIEW: "none",
   MODEL_ISSUE_POST: "none",
+  MATCH_STATES: "plan-3-rules.md: waits for a decision of the user",
 };
 
 const DOCS_NONE =
@@ -56,6 +57,7 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
       "MODEL_ISSUE_DRAFT",
       "MODEL_ISSUE_REVIEW",
       "MODEL_ISSUE_POST",
+      "MATCH_STATES",
     ]);
   });
 
@@ -104,6 +106,32 @@ describe("prompt-templates/planner/planner-subagent.md", () => {
     const filled = fillPlannerTemplate("planner-subagent", { ...sample, [placeholder]: "none" });
     expect(filled).toContain(`Entry of sessions.models.${kind}: none`);
     expect(filled).toContain(ENTRY_SENTENCE);
+  });
+
+  it("gives the state of each match of the item", () => {
+    const filled = fillPlannerTemplate("planner-subagent", sample);
+    expect(filled).toContain("State of each match of the item, one match on each line:");
+    expect(filled).toContain(sample.MATCH_STATES);
+    expect(filled).not.toContain("{{");
+  });
+
+  it("says what to do when a state of a match is not known", () => {
+    expect(plannerTemplateBody("planner-subagent")).toContain(
+      "If a state is not known, change no draft and make no new draft for this item. Name that match in your result.",
+    );
+  });
+
+  it("gives the match states before the item", () => {
+    const filled = fillPlannerTemplate("planner-subagent", sample);
+    const states = filled.indexOf("State of each match of the item");
+    expect(states).toBeGreaterThan(-1);
+    expect(states).toBeLessThan(filled.indexOf("Sender of the item:"));
+  });
+
+  it("says that a joined item gives the words of each of its items", () => {
+    expect(plannerTemplateBody("planner-subagent")).toContain(
+      "A joined item gives the words of each of its items, each with its own sender, date and sources.",
+    );
   });
 
   it("holds the item with its sender, its date and its sources", () => {
