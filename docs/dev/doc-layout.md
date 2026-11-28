@@ -55,9 +55,9 @@ split.
 
 ## A doc of a deprecated role
 
-A doc of a deprecated role, such as `docs/dev/planner.md`, keeps its path until a later issue changes it. It gets no new
-home. If parts remain after that change, the change places them by this rule. `docs/planner.md` also keeps its path and
-gets no new home.
+A doc of a deprecated role, such as `docs/dev/planner.md`, keeps its path until a later issue removes the doc or the
+role. It gets no new home. If parts remain after that change, the change places them by this rule. `docs/planner.md`
+also keeps its path and gets no new home.
 
 ## The orchestrator index
 
