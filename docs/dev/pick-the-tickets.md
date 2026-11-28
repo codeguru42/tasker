@@ -158,22 +158,19 @@ The orchestrator does all the steps of this section.
 
   Within one repo, the orchestrator uses blocker preference within the group with `P1`, the group with no priority, and
   the group with `P2`. A ticket comes first when it blocks at least one other open issue in the scope. The ticket and
-  the blocked issue must both belong to the scope, as [The scope](../orchestrator.md#the-scope) defines it. Use the
-  blocked issue's blocked-by links. A link counts when it names the ticket's repo and issue number. One link is enough,
-  regardless of other blockers or the number of qualifying links. Count open issues outside Todo too. If both tickets
-  block another open issue in the scope, or neither does, the lower issue number comes first. The request put all
-  eligible `P0` tickets first in their existing order, so blocker preference does not apply to `P0`. Among `P0` tickets
-  in one repo, the lower issue number comes first regardless of which ticket blocks others. On 2026-11-25, the user
-  said: “Preferring tickets that block others is fine”. Work that other tickets need lands earlier, so more tickets can
-  start sooner. This preference adds no issue or board read. For a milestone scope, use the blocked-by links from the
-  last read of open blockers in the outside-Todo find, and keep those links until that read supplies new links. A link
-  counts only while the current board read shows that its blocked issue is open and in the scope. If the board shows
-  that the issue closed or left the scope, stop counting the link at that read. A link added or removed while the
-  blocked issue stays open and in scope takes effect at the next successful milestone blocker read or the next set board
-  read, as applicable. If no milestone blocker read of the find has worked yet,
-  [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket until the read works. A
-  successful milestone blocker read with no links is enough to start. For a set scope, use the blocked-by links from the
-  current board read. Apply the full priority rule again at each existing board read.
+  the blocked issue must both belong to the scope, as [The scope](../orchestrator.md#the-scope) defines it. Use the open
+  issue list and blocked-by links from the same board read described in the next bullet. A link counts when the blocked
+  issue is in that open issue list and the link names this ticket's repo and issue number. An open issue of the scope
+  with the label `on hold` counts for this test. One link is enough, regardless of other blockers or the number of
+  qualifying links. Count open issues outside Todo too. If both tickets block another open issue in the scope, or
+  neither does, the lower issue number comes first. The request put all eligible `P0` tickets first in their existing
+  order, so blocker preference does not apply to `P0`. Among `P0` tickets in one repo, the lower issue number comes
+  first regardless of which ticket blocks others. On 2026-11-25, the user said: “Preferring tickets that block others is
+  fine”. Work that other tickets need lands earlier, so more tickets can start sooner. This preference adds no issue or
+  board read. For a milestone scope, use the links from the last board read that supplied them, with the open issue list
+  from that same read. An added or removed link affects the preference at the next read that supplies links. For a set
+  scope, use the blocked-by links from the current board read. Apply the full priority rule again at each existing board
+  read.
 
   These rules order tickets in one repo. They apply to both a milestone scope and a set scope. In a set scope, an
   issue's milestone does not change its place in the order. The tie breaker uses issue number, not creation date.
@@ -214,12 +211,14 @@ The orchestrator does all the steps of this section.
   The ticket of a parked task can come back to Todo in the scope (see [the defer rule](#the-defer-rule)). Such a ticket
   takes its place under the full priority rule. Each time the orchestrator reads the board, it applies the rule again.
 
-- Each time a ticket lands, read the board again. Use the open issues of the scope and the issues that block them. For
-  milestone blocker links, use [the outside-Todo find](#pick-the-tickets). For a set scope, run one read for each issue
-  of the set: `gh issue view <number> -R <repo> --json state,projectItems,milestone,blockedBy`. Take the state from
-  `.state`, the column from `.projectItems[].status.name`, and the milestone from `.milestone.title`. Take the open
-  blockers from the nodes of `.blockedBy.nodes` with the state `OPEN`. The milestone is empty for an issue with no
-  milestone. On 2026-11-20, with gh 2.102.1,
+- Each time a ticket lands, read the board again. Use the open issues of the scope and the issues that block them. For a
+  milestone scope, read the open issues and blocked-by links with
+  `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number,blockedBy`. This supplies the open
+  issue list and links for this board read and [the outside-Todo find](#pick-the-tickets). For a set scope, run one read
+  for each issue of the set: `gh issue view <number> -R <repo> --json state,projectItems,milestone,blockedBy`. Take the
+  state from `.state`, the column from `.projectItems[].status.name`, and the milestone from `.milestone.title`. Take
+  the open blockers from the nodes of `.blockedBy.nodes` with the state `OPEN`. The milestone is empty for an issue with
+  no milestone. On 2026-11-20, with gh 2.102.1,
   `gh issue view 964 -R codeguru42/tasker --json state,projectItems,milestone,blockedBy` gave `OPEN`, `Todo`, the
   milestone title and the open blocker 963. A new issue can join a milestone while a run is in progress. An open issue
   can also lose its last open blocker while no ticket lands. In one milestone, a new issue stayed in Todo for hours,
@@ -234,14 +233,14 @@ The orchestrator does all the steps of this section.
   a new issue in the milestone of an issue of the set starts no read. A message of another session never adds an issue
   to the set. No peer sends such a message, as [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message)
   says. If a read of the board fails, [the failure rule](limits.md#the-failure-rule) applies. The orchestrator starts no
-  ticket that the read covers until a later read works. This covers a message of each session on purpose. Each
-  orchestrator also reads the board with its board watch job while no ticket of its scope waits for a slot, as
-  [the board watch rule](../orchestrator.md#the-board-watch-job) says. Each read of the board that does not come at a
-  landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts "at its next
-  read of the board" or "each time it reads the board". So the full priority rule applies to each start after such a
-  read. It does not count for a read that a rule ties to a landing, for example the read of the parent issue in
-  [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins, for example the ban of
-  [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
+  ticket that the read covers until a later read works. A failed milestone link read is a failed board read. This covers
+  a message of each session on purpose. Each orchestrator also reads the board with its board watch job while no ticket
+  of its scope waits for a slot, as [the board watch rule](../orchestrator.md#the-board-watch-job) says. Each read of
+  the board that does not come at a landing is a read of the board, but it is not a landing. It counts for each rule of
+  this page that acts "at its next read of the board" or "each time it reads the board". So the full priority rule
+  applies to each start after such a read. It does not count for a read that a rule ties to a landing, for example the
+  read of the parent issue in [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins,
+  for example the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
 
   The orchestrator also reads the board after a defer and after the end of a hold of
   [the parent-hold rule](#the-parent-hold-rule). It also reads the board after a stop of a task subagent whose slot it
