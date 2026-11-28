@@ -175,8 +175,7 @@ The orchestrator does all the steps of this section.
   read. Apply the full priority rule again at each existing board read.
 
   These rules order tickets in one repo. They apply to both a milestone scope and a set scope. In a set scope, an
-  issue's milestone does not change its place in the order. The tie breaker uses issue number, not creation date. It
-  gives a known order to tickets that remain tied after the blocker preference.
+  issue's milestone does not change its place in the order. The tie breaker uses issue number, not creation date.
 
   The tie breaker adds no read of an issue and no read of the board. The reads of the board that this section already
   does give the number of each ticket. This page gives no order of two tickets of different repos. The reason for the
