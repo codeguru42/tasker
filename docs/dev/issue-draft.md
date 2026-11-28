@@ -198,9 +198,11 @@ the issue-draft subagent ends, and its report says so.
 A body edit is a draft change to the body of an open issue. The rules below hold for each body edit, with or without a
 start hash.
 
-A claim is a fact with a test date, a source commit hash, or both. A claim can have these values on its own or share a
-line that gives them for several facts. To test a claim again, read its source again and compare the claim with that
-read.
+In this section, a claim for the date and hash rules is a fact with a test date, a source commit hash, or both. A claim
+can have these values on its own or share a line that gives them for several facts. To test a claim again, read its
+source again and compare the claim with that read.
+
+Each other rule of this page that names a claim covers each fact of the draft, as before.
 
 These rules add no command and no read. A new test of a claim uses the reads that the list of the issue-draft subagent
 already holds. A read at a gap of its list follows the existing rules for the lists. No list of allowed commands and no
