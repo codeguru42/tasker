@@ -58,6 +58,9 @@ a comment draft. Each other rule of this page holds for it as well, unless this 
 - The kind of the comment gives the rule of the draft. For the comment rule, the rule is the fourth bullet of
   [The order of the work](planner.md#the-order-of-the-work) of planner.md. For a recurrence comment, the rule is
   [A recurrence](issues.md#a-recurrence) of issues.md.
+- The draft contains only the facts that its source in the prompt or its comment rule calls for. Put each extra fact in
+  its own new item in the report, using the existing route to the session that started the draft. This rule holds for
+  both kinds of comment. For a recurrence comment, the comment still gives the ticket, date and facts of the new case.
 - The count of [The size of a draft](#the-size-of-a-draft) runs, so the report gives the number of characters. No cut
   runs, because the size target does not bind a comment. A count over the limit of
   [The count of the body](issue-post.md#the-count-of-the-body) still stops the post.
@@ -183,6 +186,26 @@ is not part of the dismissed findings or of the findings of a kind of the escape
 
 ## A change of an open issue
 
-An issue-draft subagent of a change of an open issue with no start hash first reads the issue, as
-[Before a post](issues.md#before-a-post) says. It then writes its draft file from that read and the change. If the read
-fails, the issue-draft subagent ends, and its report says so.
+An issue-draft subagent of a change of an open issue first reads the issue, as [Before a post](issues.md#before-a-post)
+says, if the change has no start hash. It then writes its draft file from that read and the change. If the read fails,
+the issue-draft subagent ends, and its report says so.
+
+A body edit is a draft change to the body of an open issue. The rules below hold for each body edit, with or without a
+start hash.
+
+A claim is a fact with a test date, a source commit hash, or both. A claim can have these values on its own or share a
+line that gives them for several facts. To test a claim again, read its source again and compare the claim with that
+read.
+
+- Keep the existing date and hash for each claim that the draft does not test again. Keep a date even if the claim has
+  no hash, and keep a hash even if it has no date.
+- For each claim that the draft tests again, give the new test date. If the claim already has a hash, also give the hash
+  of the new read. If the draft tests only some facts on a shared line, put the new values on those facts. Keep the
+  shared line and its values for the other facts.
+
+The date and hash show when and against which source the last test took place.
+
+Keep every existing item number in each numbered list, including nested lists. Add a new item at the end of its own list
+with the next number. If the edit removes an item, keep its number and replace its text with a short notice, such as
+`A body edit removed this item.` Keep the numbers of later items. Citations within and across issues rely on item
+numbers. The notice tells readers what happened when a citation points to a removed item.
