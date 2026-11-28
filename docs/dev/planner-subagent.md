@@ -467,6 +467,9 @@ The orchestrator handles a result in this way:
 4. Take each answer of the user and each settled answer as part of an item of planning work. A draft with two or more
    questions and an answer that drops a draft are exceptions, as
    [A draft that needs the user](#a-draft-that-needs-the-user) says.
+5. If the result says that a question of a posted match draft is moot, drop that question as moot work, as
+   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The text of that question in a pane
+   does not change.
 
 The new planner subagent of such an item follows change 6.
 
@@ -729,6 +732,54 @@ cases, [the failure rule](limits.md#the-failure-rule) or [the tool-block rule](t
 applies. The planner subagent changes no draft and makes no new draft for the whole item. A failed read is never a
 missing, dropped or waiting draft. For the bar, see
 [A failed call on a file of a draft](#a-failed-call-on-a-file-of-a-draft).
+
+### The result for each match
+
+For each match of an item, the result gives these facts:
+
+- The path of the match.
+- The cover: in full, in part or none.
+- The action. It is one of these: no change, the changed match draft, the change of an open issue with its key, a new
+  draft, a post after the case of [The count of reviews](#the-count-of-reviews), or nothing after a failed read.
+- The reason for the action.
+
+For a changed match draft, the result also gives a short summary of the change. It says that the draft still waits for
+its open questions. After a post of that case, the result names the question about the remaining findings as moot, with
+its question id. Step 5 of [The result](#the-result) gives the work of the orchestrator for that question.
+
+### The decided choices
+
+The user decided four choices for this section. The source is an answer in a question pane, relayed in the feedback of
+plan v1 of #1097. The date is 2026-11-26.
+
+- OD1, the state of a match. The answer is "a". The orchestrator gives the state of each match in the prompt. The cost:
+  new reads and new facts in the prompt. After a compaction, the session can lack a post or a drop.
+- OD2, part cover of a match with no draft yet. The answer is "b". The orchestrator joins the two items before a start.
+  The cost: a new write of the orchestrator into the proposal file of another item, and a change in the order of the
+  work of the matched item.
+- OD3, the planning request of late matches. The answer is "b". The orchestrator joins the late matches with the item of
+  the proposal. The cost: new reads and writes of the orchestrator. The orchestrator must tie a proposal of a report to
+  its proposal file.
+- OD4, a match draft that waits only for the question about the remaining findings. The answer is "2 b", and it is
+  narrow. The planner subagent posts the draft only if the new reviews find nothing new. The cost: a post before the
+  answer to a question that the user saw. The orchestrator drops a question of another draft from a result.
+
+### The known limits of a match
+
+These known limits hold:
+
+- Two planner subagents can still write one match draft, for example when a planner subagent that a late report starts
+  again holds no place in the count.
+- The cover is a judgment of the planner subagent, so two planner subagents can judge it in two ways.
+- A match can change after the check of the pane owner, and the state in the prompt can be old. After a compaction, the
+  session of the orchestrator can lack a post or a drop.
+- A failed read of one match stops the whole item, also when the other matches are good.
+- The planner subagent reads no proposal file, so it takes the cover of such a match from the item.
+- The question about the remaining findings in a pane keeps its text, also after a post that makes it moot.
+
+The join adds these limits. A joined item can be large, so one planner subagent works longer and the wait of other items
+for its paths grows. A wrong tie of a late-match request to its proposal file joins the wrong items. OD4 lapses if
+another change removes the wait for the remaining findings before this work lands.
 
 ## No metadata
 
