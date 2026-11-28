@@ -469,8 +469,12 @@ A pi session has these limits:
 
 - The shell tool of pi runs with the rights of the user. No guard extension and no sandbox of tasker applies.
 - The start gives no permission flag, because no one measured a permission mode.
-- The measured sessions showed no question before a tool call. They started with `--no-approve`, so no one tested a
-  start without it.
+- The start command for the trace test sessions included `--no-approve`. In the trace, pi showed no prompt of trust and
+  no question before a tool call. For K1 to K4, the record lists `--tools bash --no-mcp`. The record gives no
+  information about `--no-approve` for these runs. It does not say whether pi showed a question before a tool call. No
+  record shows whether pi asks before a tool call after a start without `--no-approve`. See
+  [the trace](dev/pi-sessions.md#the-start-and-the-send) and
+  [the records for K1 to K4](dev/pi-sessions.md#the-start-flags-and-the-own-name).
 - The default tool set of pi is not measured. The measured sessions had only the tool `bash`.
 - A valid kind does not show that each procedure after the start supports the kind. For example, the messages outside a
   question pane, the session list and the closure of a session are not shown for `pi`.
