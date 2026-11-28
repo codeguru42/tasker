@@ -57,6 +57,10 @@ describe("prompt template subagents/task", () => {
     expect(filled).toContain("codeguru42/tasker#108");
   });
 
+  it("names the moved orchestrator handoff doc in the filled prompt", () => {
+    expect(fill()).toContain("docs/dev/orchestrator/handoff-orchestrator.md");
+  });
+
   it("names each path of the base list", () => {
     const filled = fill();
     for (const path of [
