@@ -17,6 +17,7 @@ follows for a step is a doc read, as [the doc-read rule](docs/dev/doc-reads.md#t
   session, two sessions with one name and a blocked session.
 - [docs/dev/GLOSSARY.md](docs/dev/GLOSSARY.md): the terms that the sessions use.
 - [docs/dev/rules.md](docs/dev/rules.md): the rules of the repo.
+- [docs/dev/doc-layout.md](docs/dev/doc-layout.md): the folders of the docs and the rule for a new doc or a move.
 - [CONTRIBUTING.md](CONTRIBUTING.md): how a contributor starts work.
 - [docs/dev/code-conventions.md](docs/dev/code-conventions.md): the conventions of the code.
 - [docs/config.md](docs/config.md): the configuration.

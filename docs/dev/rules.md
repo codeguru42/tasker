@@ -312,5 +312,6 @@ skill is about the work on the repo, not about tasker, so tasker does not ship i
   need not list each command or each section of its file.
 - The only rule text in `AGENTS.md` is its read rule, which says which docs a session reads at its start and after it.
   The reason: each session reads `AGENTS.md` before any other doc.
-- To add a topic, put its details in its own file under `docs/`. Then add one entry to `AGENTS.md`.
+- To add a topic, put its details in its own file under `docs/`, in the folder that
+  [the doc layout](doc-layout.md#a-new-doc) gives. Then add one entry to `AGENTS.md`.
 - `CLAUDE.md` has one line, `@AGENTS.md`, and nothing else.
