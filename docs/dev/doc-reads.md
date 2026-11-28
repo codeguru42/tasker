@@ -625,8 +625,9 @@ still applies. A failed or denied count does not count as a failed command of th
 failure paths of the re-read rule or the old read.
 
 This hint covers a Read-tool read only when that read starts after the first Read-tool read of this page reaches Ended.
-That first read follows the start prompt and items 1 to 5. A read already in progress stays outside this hint until it
-ends. A later read of this page can use the hint. A read with `git show` keeps the old read procedure.
+That first read follows the start prompt and items 1 to 5. A read that started before that end stays outside this hint
+until it ends. A read keeps the hint coverage it had at its start. A later read of this page can use the hint. A read
+with `git show` keeps the old read procedure.
 
 1. Read each doc with the Read tool on the file in the local clone. `<path>` is the path of the doc from the root of the
    repo, for example `docs/dev/limits.md`. Read in pieces with `offset` and `limit`, from line 1.
