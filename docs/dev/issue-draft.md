@@ -202,9 +202,9 @@ A claim is a fact with a test date, a source commit hash, or both. A claim can h
 line that gives them for several facts. To test a claim again, read its source again and compare the claim with that
 read.
 
-These rules add no command or read. Use the existing command lists and permission rows. A new claim test uses the
-evidence path already named in the draft. Use a listed read on its existing path. If a read needs a read-only command
-that the list does not name, follow the existing rules for a gap. Keep the existing read bans and failed-read cases.
+These rules add no command and no read. A new test of a claim uses the reads that the list of the issue-draft subagent
+already holds. A read at a gap of its list follows the existing rules for the lists. No list of allowed commands and no
+row of the permission table changes.
 
 - Keep the existing date and hash for each claim that the draft does not test again. Keep a date even if the claim has
   no hash, and keep a hash even if it has no date.
