@@ -157,29 +157,33 @@ The orchestrator does all the steps of this section.
   covers the tickets of the scope.
 
   Within one repo, the orchestrator uses blocker preference within the group with `P1`, the group with no priority, and
-  the group with `P2`. A ticket comes first when it blocks at least one other open issue in the scope. The ticket and
-  the blocked issue must both belong to the scope, as [The scope](../orchestrator.md#the-scope) defines it. Use the open
-  issue list and blocked-by links from the same board read described in the next bullet. A link counts when the blocked
-  issue is in that open issue list and the link names this ticket's repo and issue number. An open issue of the scope
-  Under [A ticket on hold](#a-ticket-on-hold), an issue with the label `on hold` does not count as a blocked issue for
-  this test. One link is enough, regardless of other blockers or the number of qualifying links. Count open issues
-  outside Todo when they meet the same test. If both tickets block another open issue in the scope, or neither does, the
-  lower issue number comes first. The request put all eligible `P0` tickets first in their existing order, so blocker
-  preference does not apply to `P0`. Among `P0` tickets in one repo, the lower issue number comes first regardless of
-  which ticket blocks others. On 2026-11-25, the user said: “Preferring tickets that block others is fine”. Work that
-  other tickets need lands earlier, so more tickets can start sooner. This preference adds no issue or board read. For a
-  milestone scope, use the links from the last board read that supplied them, with the open issue list from that same
-  read. An added or removed link affects the preference at the next read that supplies links. For a set scope, use the
-  blocked-by links from the current board read. Apply the full priority rule again at each existing board read.
+  the group with `P2`. Within each group, a ticket with a qualifying link comes before a ticket with no qualifying link.
+  A qualifying link shows that the ticket blocks at least one other open issue in the scope. The ticket and the blocked
+  issue must both belong to the scope, as [The scope](../orchestrator.md#the-scope) defines it. Use the open issue list
+  and blocked-by links from the same board read described in the next bullet. A link counts when the blocked issue is in
+  that open issue list and the link names this ticket's repo and issue number. Under
+  [A ticket on hold](#a-ticket-on-hold), an issue with the label `on hold` does not count as a blocked issue for this
+  test. One link is enough, regardless of other blockers or the number of qualifying links. Count open issues outside
+  Todo when they meet the same test. If both tickets block another open issue in the scope, or neither does, the lower
+  issue number comes first. This is the tie breaker, and it also applies to tickets with no priority. The request put
+  all eligible `P0` tickets first in their existing order, so blocker preference does not apply to `P0`. Among `P0`
+  tickets in one repo, the lower issue number comes first regardless of which ticket blocks others. On 2026-11-25, the
+  user said: “Preferring tickets that block others is fine”. Work that other tickets need lands earlier, so more tickets
+  can start sooner. This preference adds no issue or board read. For a milestone scope, use the links from the last
+  board read that supplied them, with the open issue list from that same read. An added or removed link affects the
+  preference at the next read that supplies links. For a set scope, use the blocked-by links from the current board
+  read. Apply the full priority rule again at each existing board read.
 
   These rules order tickets in one repo. They apply to both a milestone scope and a set scope. In a set scope, an
-  issue's milestone does not change its place in the order. The tie breaker uses issue number, not creation date.
+  issue's milestone does not change its place in the order. The tie breaker uses issue number, not creation date. It
+  gives a known order to tickets that remain tied after the blocker preference.
 
   The tie breaker adds no read of an issue and no read of the board. The reads of the board that this section already
   does give the number of each ticket. This page gives no order of two tickets of different repos. The reason for the
-  tie breaker: the start order of the tickets is known in advance. An older issue most often holds the older decision,
-  and a later issue builds on it. In this repo, GitHub gives the issues their numbers in the order of creation, so the
-  lower number is the older issue.
+  tie breaker: the board reads already give each ticket's number, so issue numbers give a known order to tickets that
+  remain tied after the blocker preference. An older issue most often holds the older decision, and a later issue builds
+  on it. In this repo, GitHub gives the issues their numbers in the order of creation, so the lower number is the older
+  issue.
 
   For a milestone scope, read the priorities with
   `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .milestone.title == "<milestone>" and .priority != null) | "\(.content.number) \(.priority)"'`.
