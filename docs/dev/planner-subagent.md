@@ -735,15 +735,17 @@ Follow these steps in this order.
 4. For part cover of a match draft that waits, start an issue-draft subagent with the match draft and the change. The
    planner subagent does not change the draft itself. The rule of one ticket is in
    [The scope of a ticket](issue-subagents.md#the-scope-of-a-ticket). The count of reviews starts again, as
-   [The count of reviews](#the-count-of-reviews) says. The planner subagent posts nothing. A new question of the reviews
-   goes in the result.
+   [The count of reviews](#the-count-of-reviews) says. The planner subagent posts nothing, except that a match draft
+   that waits only for the question about the remaining findings posts after a review with no finding at all, as
+   [The count of reviews](#the-count-of-reviews) says. A new question of the reviews goes in the result.
 5. For part cover of a posted match, follow [The post of a draft](planner.md#the-post-of-a-draft). It gives the cases of
    an open issue with no task, an issue in flight and a closed issue.
 6. Read the state of the match for this step, not the words of the item. If the state is "joined into this item", the
    planner subagent works on both items, as [The proposal file](#the-proposal-file) says. The kept file holds the words
    of the other item, with its reference to the matched proposal file. If the match has no draft yet, has part cover,
    and has another state, the join did not happen. Then the planner subagent makes a new draft and names the match in
-   its result.
+   its result. The new draft covers only the part of the change that no other match takes, as step 2 says. If a waiting
+   match draft takes the whole change, step 6 makes no new draft.
 7. A new draft names each posted match with full or part cover by its issue key and the overlap. It names no draft file
    and no proposal file.
 
