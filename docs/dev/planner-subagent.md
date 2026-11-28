@@ -364,12 +364,21 @@ for it.
 - The late matches. At the arrival of a planning request of late matches, the orchestrator ties it to the item of its
   proposal. Three cases follow, and a fourth case covers a failed tie.
   - If that item still waits, the orchestrator joins the late matches with it.
-  - If its planner subagent runs, the late-match item waits for its result. The late-match file names the planner
-    subagent that it waits for, and it is not an item that waits until that result. After the result, the orchestrator
-    writes the draft path or the issue key of the result into the late-match file as one more match. Then the item waits
-    as each other item.
+  - If its planner subagent runs, the late-match item waits for its result. The late-match file names the item by its
+    proposal number and names the planner subagent that runs for the item. If that planner subagent ends with no report,
+    the orchestrator starts one new planner subagent for the same item, as
+    [The life of a planner subagent](#the-life-of-a-planner-subagent) says. The new planner subagent takes the place of
+    the first one, and the orchestrator writes its name into the late-match file. The result of the replacement releases
+    the file, as the result of the first planner subagent does. If the write of the new name fails,
+    [the failure rule](limits.md#the-failure-rule), [the tool-block rule](tasker-commands.md#the-tool-block-rule) and
+    the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) apply. Then the late matches wait for a
+    decision of the user. After the result, the orchestrator writes the draft path or the issue key of the result into
+    the late-match file as one more match. Then the item waits as each other item.
   - If its planner subagent already ended, the orchestrator takes the draft path or the issue key from that result in
     its session and writes it into the late-match file.
+  - If the result gives two or more draft paths or issue keys, the orchestrator writes the one that holds the part of
+    the proposal that the late match names. If it cannot tell which one, it writes each of them as a match. The planner
+    subagent judges the cover of each, as [The cover of a match](#the-cover-of-a-match) says.
   - In either case above, if the result gave no draft and no issue, for example after a drop, the orchestrator writes
     that fact as the state of that match. The item then waits as each other item.
   - If the tie fails, or the session lacks the result, the late matches wait for a decision of the user. The
