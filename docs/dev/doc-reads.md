@@ -621,7 +621,8 @@ govern every piece, and another `limit` still follows those items.
 If you skip the count, the command fails, or the command is denied, the length is unknown. Read in pieces under item 1.
 You can use 700 for the first `limit` if this hint covers the read. Without a count, item 2 ends the read only when the
 last piece returns fewer lines than its `limit` and has no partial-view notice. The other way to end the read in item 2
-still applies.
+still applies. A failed or denied count does not count as a failed command of the doc-read rule and does not trigger the
+failure paths of the re-read rule or the old read.
 
 This hint covers a Read-tool read only when that read starts after the first Read-tool read of this page reaches Ended.
 That first read follows the start prompt and items 1 to 5. A read already in progress stays outside this hint until it
@@ -634,9 +635,9 @@ ends. A later read of this page can use the hint. A read with `git show` keeps t
 3. A call refused with `File content (<size>) exceeds maximum allowed size (<cap>)` or
    `File content (<n> tokens) exceeds maximum allowed tokens (<cap>)` gives no read. The refused call puts the read in
    Running. If the call supplied `limit`, halve it and retry at the same `offset`. If the call had no `limit`, retry at
-   its original `offset`, or at line 1 if it supplied none. Use the 700-line hint for that retry when this read is
-   covered. In other reads, choose a `limit` and follow this item. A piece before the end is not a complete read. Item 5
-   also names a partial view as a result that is not a complete read.
+   its original `offset`, or at line 1 if it supplied none. If this read is covered by the hint, retry with `limit` 700.
+   In other reads, choose a `limit` and follow this item. A piece before the end is not a complete read. Item 5 also
+   names a partial view as a result that is not a complete read.
 4. After the last piece of a doc, run `git -C <local clone> rev-parse --verify HEAD` and the clean-tree check. If the
    hash is not `<head>` or the tree is not clean, read that doc again with the old read.
 
