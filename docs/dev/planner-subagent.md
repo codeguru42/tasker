@@ -338,6 +338,14 @@ file again. The user decides.
 A file can still stay in `proposals/` at the write of the handoff file, for example a kept file of a failed start. Such
 a file stays in the folder, and the new orchestrator finds it at the end of its start steps.
 
+These known limits hold:
+
+- After a compaction or a handoff, an item of planning work that a stop of the queue held can get a planner subagent
+  again. This also holds for an item of planning work whose proposal file stayed after a failed delete.
+- A planner subagent that runs again for a kept proposal file can post a duplicate issue on GitHub. Right before each
+  post, the search of [Before a post](issues.md#before-a-post) looks for the same change in all the issues of the repo,
+  open and closed. This search lowers the risk.
+
 #### A joined item
 
 A joined item is one item that the orchestrator made from two items before a planner subagent starts. These rules hold
@@ -391,14 +399,6 @@ The cost of the part-cover join is a new write of the orchestrator into the prop
 in the order of the work of the matched item. The cost of the late-match join is new reads and writes of the
 orchestrator, and the tie of a proposal of a report to its proposal file. A wrong tie joins the wrong items. The user
 sees the join in the result.
-
-These known limits hold:
-
-- After a compaction or a handoff, an item of planning work that a stop of the queue held can get a planner subagent
-  again. This also holds for an item of planning work whose proposal file stayed after a failed delete.
-- A planner subagent that runs again for a kept proposal file can post a duplicate issue on GitHub. Right before each
-  post, the search of [Before a post](issues.md#before-a-post) looks for the same change in all the issues of the repo,
-  open and closed. This search lowers the risk.
 
 ## The prompt
 
@@ -792,14 +792,21 @@ plan v1 of #1097. The date is 2026-11-26.
 
 These known limits hold:
 
-- Two planner subagents can still write one match draft, for example when a planner subagent that a late report starts
-  again holds no place in the count.
+- A planner subagent that a late report starts again makes no path busy. A planner subagent whose wait a word of the
+  user ended in a handoff also makes no path busy. In either case, two planner subagents can overwrite the draft file
+  and the record file of each other.
 - The cover is a judgment of the planner subagent, so two planner subagents can judge it in two ways.
 - A match can change after the check of the pane owner, and the state in the prompt can be old. After a compaction, the
   session of the orchestrator can lack a post or a drop.
 - A failed read of one match stops the whole item, also when the other matches are good.
 - The planner subagent reads no proposal file, so it takes the cover of such a match from the item.
 - The question about the remaining findings in a pane keeps its text, also after a post that makes it moot.
+- After full cover, the user can later drop the match draft. The change then goes with it. The result named the match,
+  so the user saw this before the drop.
+- After full cover of a match with no draft yet, the planner subagent of the matched item can later drop or change its
+  work. The change then goes with it. The result named the match.
+- A new draft of step 2 beside a match draft that waits names no draft file, as step 7 says. So after a later post of
+  the match draft, neither issue names the overlap. The result named the match, so the user saw the overlap.
 
 The join adds these limits. A joined item can be large, so one planner subagent works longer and the wait of other items
 for its paths grows. A wrong tie of a late-match request to its proposal file joins the wrong items. OD4 lapses if
