@@ -412,6 +412,16 @@ The prompt of a planner subagent gives these facts:
 - The list of the planner subagent in [the allowed commands](allowed-commands.md#the-planner-subagent).
 - The entries `sessions.models.issue-draft`, `sessions.models.issue-review` and `sessions.models.issue-post`, or the
   fact that a key has no entry. [The start of an issue subagent](#the-start-of-an-issue-subagent) uses them.
+- The state of each match of the item. The state is one of these five: the match draft waits for a decision of the user,
+  with the kind and the id of each open question and the fact that an answer of the draft waits or not. The match is
+  posted, with its issue key. The user dropped it. Its file no longer exists. Or it does not exist yet. A matched
+  proposal file that is gone after the result of its planner subagent also gives the draft path or the issue key of that
+  result. The orchestrator takes each state from its proposal files, its question files and its session. A failed or
+  denied read follows [the failure rule](limits.md#the-failure-rule),
+  [the tool-block rule](tasker-commands.md#the-tool-block-rule) and the fallback of
+  [The orchestrator folder](limits.md#the-orchestrator-folder). Then the state is `not known`. The known limit: after a
+  compaction, the session can lack a post or a drop. For a joined item, the prompt gives the words of each item, with
+  its sender, its date and its sources.
 - The ask for the result through the tool `SubagentHandback`.
 
 The words of this prompt stand in the file
