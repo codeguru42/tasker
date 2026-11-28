@@ -190,8 +190,8 @@ on that open issue that gives the new case. This section covers each session, al
 
 - A session that finds a recurrence and is not the planner sends the recurrence to the planner, as each lesson goes. The
   message names the open issue. For the orchestrator, the planner bullet of
-  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) of pick-the-tickets.md gives the
-  message.
+  [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) of pick-the-tickets.md
+  gives the message.
 - The planner drafts the recurrence comment. The comment gives the ticket, the date and the facts of the new case. The
   planner shows the draft to the user, as [Before a post](#before-a-post) says. The planner posts the comment after the
   approval.
@@ -249,11 +249,12 @@ The commands below work with gh 2.101.0:
 ## Milestones
 
 [The milestone of an issue](issue-subagents.md#the-milestone-of-an-issue) of issue-subagents.md gives the milestone of
-each issue. The start of [The close of a milestone](milestone-close.md#the-start-and-the-authority) is the authority for
-the GitHub milestone closure of a milestone with no work left. The session that closes the milestone needs no other word
-of the user for it. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) of pick-the-tickets.md
-gives the report of an orchestrator when its milestone is done. This section gives the reads and the write of the
-session that closes a milestone. That session is the orchestrator of the kind `claude` at its end.
+each issue. The start of [The close of a milestone](orchestrator/milestone-close.md#the-start-and-the-authority) is the
+authority for the GitHub milestone closure of a milestone with no work left. The session that closes the milestone needs
+no other word of the user for it.
+[The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) of pick-the-tickets.md gives
+the report of an orchestrator when its milestone is done. This section gives the reads and the write of the session that
+closes a milestone. That session is the orchestrator of the kind `claude` at its end.
 
 First, the session reads the milestone with `gh api repos/codeguru42/tasker/milestones/<number>`. The read gives the
 title, the state and the description of the milestone. If the state is `closed`, the session reports that state. It does
@@ -271,7 +272,7 @@ task, the session takes the issue number from the issue key of the task. It read
 milestone of the close.
 
 If new work belongs to the milestone, the milestone stays open. For the orchestrator,
-[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the next step.
+[The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) gives the next step.
 
 If the reads work and no work is left, the session runs
 `gh api -X PATCH repos/codeguru42/tasker/milestones/<number> -f state=closed`. If a read, the match or the command

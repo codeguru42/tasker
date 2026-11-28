@@ -45,7 +45,7 @@ in the task worktree, after [the update rule](limits.md#the-update-rule).
 
 If no refine runs before the first `tasker approve`, the task subagent does the fact test before it. The task subagent
 then adds the commands and their results to the list of files that it sends after `tasker approve`, as
-[Land the work](land-the-work.md#land-the-work) says. It also puts them in the comment of step 11 of
+[Land the work](orchestrator/land-the-work.md#land-the-work) says. It also puts them in the comment of step 11 of
 [Run one ticket](run-one-ticket.md#run-one-ticket). The reason: the plan session cannot do a test that reads outside the
 worktree, because [the repo-files rule](#the-repo-files-rule) bans such a command.
 
@@ -315,17 +315,17 @@ these cases:
   or tracked Markdown. Without that support, it is an unresolved design choice.
 - The plan has a security gap.
 - The plan changes a file that the issue does not name, and another task in progress also changes that file. For
-  example, `tasker refine` prints a warning for such a file (see ["Land the work"](land-the-work.md#land-the-work)). If
-  the orchestrator already set a landing order for that file, or told the task subagent that the file has no landing
-  order, this case does not apply.
+  example, `tasker refine` prints a warning for such a file (see
+  ["Land the work"](orchestrator/land-the-work.md#land-the-work)). If the orchestrator already set a landing order for
+  that file, or told the task subagent that the file has no landing order, this case does not apply.
 
   For each task of the overlap warning, the task subagent reads the milestone of its issue with
   `gh issue view <issue> --json milestone -q '.milestone.title'`. `<issue>` is the number of the issue key on the line
   of the task in the warning. The task subagent knows the milestone of its own ticket from its prompt (see
-  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent)). This case does not count a task
-  of another milestone. A task of another milestone is a task whose issue has another milestone than the ticket of the
-  task subagent, and both have a milestone. For such a task, [the Docs rule](land-the-work.md#the-docs-rule) covers the
-  shared file.
+  [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent)). This case does not
+  count a task of another milestone. A task of another milestone is a task whose issue has another milestone than the
+  ticket of the task subagent, and both have a milestone. For such a task,
+  [the Docs rule](orchestrator/land-the-work.md#the-docs-rule) covers the shared file.
 
   This case still applies to a file when the warning also lists that file for another task that the case counts. For
   example, the ticket of the task subagent is of "Docs". The warning lists a file for a task of "M19 — Polish" and for a
@@ -335,9 +335,9 @@ these cases:
 
   If a read fails, the case counts the task. An example of a failed read is exit code 1 with
   `GraphQL: Could not resolve to an issue or pull request ...`. The case also counts a task of the same milestone. For
-  the parent of a stacked ticket, [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) gives the
-  exception. If the plan does not need the edit, the task subagent removes it in a refine of step 4, as "Land the work"
-  says, and does not stop.
+  the parent of a stacked ticket, [the stacked-ticket rule](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule)
+  gives the exception. If the plan does not need the edit, the task subagent removes it in a refine of step 4, as "Land
+  the work" says, and does not stop.
 
 - A claim of the issue is no longer true, or a requirement of the issue is a conflict, and this changes what the ticket
   must do (see [the issue check](#the-issue-check)). This case does not apply when the orchestrator already answered for
@@ -355,14 +355,14 @@ In each case, the task subagent reports the case. The design-gap rule says who a
 fourth case (a shared file), "Land the work" gives the steps. For the fifth case (a false claim or a conflict), the
 orchestrator asks the user, because only the user changes the scope of a ticket. If the user changes the scope, the
 orchestrator posts [a change-of-scope comment](#the-change-of-scope-comment) and sends its link to the task subagent in
-the answer. The bullet of [Land the work](land-the-work.md#land-the-work) about the state read covers that answer. The
-task subagent follows the steps of the section "The change-of-scope comment". For the sixth case (two reviews with a new
-edge case each), the orchestrator does one of two things. It gives the user the simpler rule as the first choice, as
-[Simplify over special rules](working-with-the-user.md#simplify-over-special-rules) says, and it sends the decision of
-the user to the task subagent. Or it finds that the two reviews are no such case, and it tells the task subagent to go
-on. After the answer, the task subagent puts the answer in the feedback text of the refine of step 4. Then the task
-subagent continues with step 4 and runs `tasker approve` in step 5. An answer before `tasker approve` costs no review
-loop, but a later answer costs one or more review loops. The quote check and the security report of
+the answer. The bullet of [Land the work](orchestrator/land-the-work.md#land-the-work) about the state read covers that
+answer. The task subagent follows the steps of the section "The change-of-scope comment". For the sixth case (two
+reviews with a new edge case each), the orchestrator does one of two things. It gives the user the simpler rule as the
+first choice, as [Simplify over special rules](working-with-the-user.md#simplify-over-special-rules) says, and it sends
+the decision of the user to the task subagent. Or it finds that the two reviews are no such case, and it tells the task
+subagent to go on. After the answer, the task subagent puts the answer in the feedback text of the refine of step 4.
+Then the task subagent continues with step 4 and runs `tasker approve` in step 5. An answer before `tasker approve`
+costs no review loop, but a later answer costs one or more review loops. The quote check and the security report of
 ["Review findings"](review-findings.md#review-findings) give more cases that stop before `tasker approve`.
 
 ## The change-of-scope comment
@@ -371,7 +371,7 @@ If the user changes the scope of a ticket, the orchestrator posts the change as 
 starts with `## Change of scope`. Such a comment can come after a stop of the fifth case of
 [the stop rule](#the-stop-rule). It can also come after the security report of
 ["Review findings"](review-findings.md#review-findings). It can also come after a correction of the bullet of
-[Land the work](land-the-work.md#land-the-work) that covers a change to an issue in flight.
+[Land the work](orchestrator/land-the-work.md#land-the-work) that covers a change to an issue in flight.
 
 The comment says which requirements change and how, and which items of the issue body no longer apply. The orchestrator
 does not edit the issue body for a change of scope. The orchestrator owns the issue bodies, and the task subagent does
@@ -388,14 +388,14 @@ Before such a comment fixes an order of steps, the orchestrator also searches
 [the orchestration pages](../orchestrator.md) for each other sentence that gives an order of the same steps. The comment
 fixes each of them. The search follows [the doc-search rule](rules.md#docs). On #272, the first comment fixed the order
 of the landing steps. [The issue check](#the-issue-check) of the task subagent then found two sentences with the
-opposite order, in [Pick the tickets](pick-the-tickets.md#pick-the-tickets) and in
+opposite order, in [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets) and in
 [the re-read rule](doc-reads.md#the-re-read-rule). A second comment fixed them.
 
 The orchestrator sends the link of the comment to the task subagent before the next refine of the task subagent, as the
-bullet "When the orchestrator edits an issue body" of [Land the work](land-the-work.md#land-the-work) says. After each
-such comment, the task subagent does [the issue check](#the-issue-check) again for the claims and the requirements of
-the changed scope. The task subagent does it before the refine, or the `tasker review <issue> "<feedback>"`, that sends
-the answer or the text of the comment.
+bullet "When the orchestrator edits an issue body" of [Land the work](orchestrator/land-the-work.md#land-the-work) says.
+After each such comment, the task subagent does [the issue check](#the-issue-check) again for the claims and the
+requirements of the changed scope. The task subagent does it before the refine, or the
+`tasker review <issue> "<feedback>"`, that sends the answer or the text of the comment.
 
 The task subagent copies the full text of each comment whose link the orchestrator sent. For a comment that starts with
 `## Change of scope`, the task subagent makes the copy after the issue check of the paragraph above. The same copy step
@@ -427,9 +427,10 @@ milestone item is the last item.
 Before the post of the note, the orchestrator also follows [the self-check rule](rules.md#docs) of rules.md.
 
 The orchestrator does not edit the body of the issue for this note. The orchestrator also does not decide the answer. An
-issue with a task in flight gets no note from this rule. The bullet of [Land the work](land-the-work.md#land-the-work)
-that covers a change to an issue in flight applies to such an issue. A failed read or a failed post of the orchestrator
-for this note is a case of [the failure rule](limits.md#the-failure-rule).
+issue with a task in flight gets no note from this rule. The bullet of
+[Land the work](orchestrator/land-the-work.md#land-the-work) that covers a change to an issue in flight applies to such
+an issue. A failed read or a failed post of the orchestrator for this note is a case of
+[the failure rule](limits.md#the-failure-rule).
 
 On 2026-10-17, the change of scope of #273 made the `revision` of the `base` event a ref, not a commit id. The Terms of
 #276 define the stored base revision as that value and replay the commits after it. The orchestrator named the gap only

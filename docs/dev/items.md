@@ -33,15 +33,16 @@ This page uses these terms for the questions to the user.
     the state of the user.
   - A choice of the fifth case of [the stop rule](plan-review.md#the-stop-rule).
   - A choice of the security report of [Review findings](review-findings.md#review-findings).
-  - A choice of the earlier-blocker offer in [Pick the tickets](pick-the-tickets.md#pick-the-tickets): the orchestrator
-    runs a blocker of an earlier milestone only on the word of the user.
-  - A choice of the state `awaiting_quota_approval` in [Quota](quota.md#quota).
-  - A choice of the question of a full stop of [the pi wait](quota.md#the-pi-wait): the resume of a task or another
-    step.
-  - A choice of a hold of [the hold rule](land-the-work.md#the-hold-rule) that stays until the user decides.
+  - A choice of the earlier-blocker offer in [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets): the
+    orchestrator runs a blocker of an earlier milestone only on the word of the user.
+  - A choice of the state `awaiting_quota_approval` in [Quota](orchestrator/quota.md#quota).
+  - A choice of the question of a full stop of [the pi wait](orchestrator/quota.md#the-pi-wait): the resume of a task or
+    another step.
+  - A choice of a hold of [the hold rule](orchestrator/land-the-work.md#the-hold-rule) that stays until the user
+    decides.
   - A choice of the bullet "Only the user changes a landing order of the overlap rule" of
-    [Land the work](land-the-work.md#land-the-work), with its relay confirm.
-  - A choice of [the stuck-task rule](land-the-work.md#the-stuck-task-rule).
+    [Land the work](orchestrator/land-the-work.md#land-the-work), with its relay confirm.
+  - A choice of [the stuck-task rule](orchestrator/land-the-work.md#the-stuck-task-rule).
   - A choice of each other rule that says that only the user does an action.
   - A tool block, as [the tool-block rule](tasker-commands.md#the-tool-block-rule) says.
 - A partial answer is an answer of the user to some questions of one session that asks, but not to each question.
@@ -51,8 +52,8 @@ This page uses these terms for the questions to the user.
 - An answered question is a question with an answer of the user that the pane owner did not send yet.
 - A sent question is a question whose answer the pane owner sent to the session that asks.
 - A moved question is a question that the report of a done milestone names as moved to a hold comment. A hold comment is
-  a comment on a ticket on hold, as [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) says. A moved question
-  needs no send.
+  a comment on a ticket on hold, as [A ticket on hold](orchestrator/pick-the-tickets.md#a-ticket-on-hold) says. A moved
+  question needs no send.
 
 ## The answer
 
@@ -89,7 +90,7 @@ This page uses these terms for the questions to the user.
   another session. A question of another message waits for the answer of its own message. A planner that wants to apply
   the answer to a question that no message asked asks that question first in a new message. An orchestrator asks it in
   its question pane at the time that the rules of that question give, for example
-  [the open-question rule](pick-the-tickets.md#the-open-question-rule).
+  [the open-question rule](orchestrator/pick-the-tickets.md#the-open-question-rule).
 
   On 2026-11-07, the user answered "a" to a question of item orchestrator-m16-5. planner-m16 also applied that "a" to a
   separate question in a comment on #723. That question had its own choices a and b, and it had no answer of the user.

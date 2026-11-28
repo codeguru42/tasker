@@ -7,13 +7,13 @@ command of this page that uses `origin/<base branch>`.
 
 This rule applies to each `tasker verify` on [the orchestration pages](../orchestrator.md), in step 5 of
 [Run one ticket](run-one-ticket.md#run-one-ticket), in step 9 and after `tasker update-branch` in
-["Land the work"](land-the-work.md#land-the-work). If `tasker verify` fails, the task goes to `failed`. In `failed`,
-`tasker show <issue>` lists `refine`, `update-branch`, `retry` and `abort`. A fix of a failed `tasker verify` does not
-count as a loop of ["Review findings"](review-findings.md#review-findings). The limits of this rule count each refine
-and each retry after the last `tasker verify` that passed, for any cause. If the task is in `failed` after a command
-other than `tasker verify` or `tasker retry`, this rule does not apply. In that case, the task subagent follows the
-paragraph after this list, which starts "If a command fails". The task subagent reads the output of `tasker verify` and
-finds the cause of the failure. Then the task subagent does the first case of this list that applies:
+["Land the work"](orchestrator/land-the-work.md#land-the-work). If `tasker verify` fails, the task goes to `failed`. In
+`failed`, `tasker show <issue>` lists `refine`, `update-branch`, `retry` and `abort`. A fix of a failed `tasker verify`
+does not count as a loop of ["Review findings"](review-findings.md#review-findings). The limits of this rule count each
+refine and each retry after the last `tasker verify` that passed, for any cause. If the task is in `failed` after a
+command other than `tasker verify` or `tasker retry`, this rule does not apply. In that case, the task subagent follows
+the paragraph after this list, which starts "If a command fails". The task subagent reads the output of `tasker verify`
+and finds the cause of the failure. Then the task subagent does the first case of this list that applies:
 
 - If the failure comes from the code and the task subagent already sent the refine of the next case, the task subagent
   [stops](limits.md#the-answer-wait-rule).
@@ -41,8 +41,8 @@ finds the cause of the failure. Then the task subagent does the first case of th
   command is `tasker review`.
 
 If a command fails or the task is in another state, run `tasker show <issue>` and follow the commands that it prints. If
-the task is a possible Codex limit, do the steps of [A Codex limit](quota.md#a-codex-limit) before a command that
-`tasker show <issue>` prints. For a timeout of `tasker execute`, follow the paragraph of
+the task is a possible Codex limit, do the steps of [A Codex limit](orchestrator/quota.md#a-codex-limit) before a
+command that `tasker show <issue>` prints. For a timeout of `tasker execute`, follow the paragraph of
 [the run times](tasker-commands.md#the-run-times) that starts "If `tasker execute` fails with a timeout".
 
 To find the next command, use these:
@@ -202,9 +202,9 @@ passes, the task subagent does the commit check before `tasker review`, unless t
 `tasker update-branch` after the failed `tasker verify`. This check runs only because a `tasker verify` failed before
 the fix. When `tasker verify` passes and no failed `tasker verify` came before it, the task subagent runs no commit
 check. After `tasker update-branch`, the task subagent runs no commit check until `tasker verify` fails. `tasker verify`
-runs after `tasker update-branch` as step 9 and ["Land the work"](land-the-work.md#land-the-work) say. If the commit
-check fails, the task subagent stops and reports the list of broken commits. The task subagent does not run another
-refine, because the verify-failure rule permits one refine.
+runs after `tasker update-branch` as step 9 and ["Land the work"](orchestrator/land-the-work.md#land-the-work) say. If
+the commit check fails, the task subagent stops and reports the list of broken commits. The task subagent does not run
+another refine, because the verify-failure rule permits one refine.
 
 The pushed-branch rule covers a task whose task branch was pushed to `origin` at step 9 of
 [docs/dev/rebase-conflicts.md](rebase-conflicts.md). After that push, a fixup commit and an autosquash rebase change the

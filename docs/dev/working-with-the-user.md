@@ -23,11 +23,12 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   each link itself. It shows the progress report at the step that the rule of the report gives. A progress report starts
   no wait. It gets no question pane and no `herdr notification show`. A text that waits for a word of the user is not a
   progress report. It is an open question, and it goes to the question pane. During a handoff of the orchestrator, each
-  such text of [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) goes in the tab, as that
-  section says. This rule holds for each kind of orchestrator, `claude` and `pi`. The reports of the close in
-  [The start and the authority](milestone-close.md#the-start-and-the-authority) and
-  [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) are progress reports of this bullet. The
-  reports of [the hold before an install](release.md#the-hold-before-an-install) are peer messages of kind 6.
+  such text of [the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case) goes in the tab,
+  as that section says. This rule holds for each kind of orchestrator, `claude` and `pi`. The reports of the close in
+  [The start and the authority](orchestrator/milestone-close.md#the-start-and-the-authority) and
+  [The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) are progress reports of this
+  bullet. The reports of [the hold before an install](release.md#the-hold-before-an-install) are peer messages of
+  kind 6.
 - A message of the orchestrator that starts with "From the user:" is a word of the user for the rules of the docs. The
   quoted words of an accepted message of a question session are a word of the user for the orchestrator. A word that the
   user types in the tab of the orchestrator is also a word of the user.
@@ -46,8 +47,8 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   next to each fact that it did not measure, it says so.
 
   This bullet also covers a question to the user about a fact, for example whether a gap is a
-  [live security gap](pick-the-tickets.md#pick-the-tickets). A cheap read-only measure comes before such a question.
-  Whether a measure is cheap is a judgment of the session, open on purpose.
+  [live security gap](orchestrator/pick-the-tickets.md#pick-the-tickets). A cheap read-only measure comes before such a
+  question. Whether a measure is cheap is a judgment of the session, open on purpose.
 
   A measure that changes [the state of the user](planner.md#the-state-of-the-user) waits for the word of the user. The
   recommendation mode of this section does not cover such a measure.
@@ -103,10 +104,10 @@ planner.md says. For this reason, these rules are in the repo and not in the not
 
   A rule can keep a choice or an approval for the user. Examples are a
   [question for the user alone](items.md#the-terms-of-the-questions) and "Only the user changes a landing order of the
-  overlap rule" (see [Land the work](land-the-work.md#land-the-work)). Then the session still asks the user, because
-  that rule gives the answer. This bullet does not cover an open question of an issue, which
-  [the open-question rule](pick-the-tickets.md#the-open-question-rule) covers. It does not cover a change of a rule of
-  the docs. A session that wants such a change still asks the user or drafts an issue.
+  overlap rule" (see [Land the work](orchestrator/land-the-work.md#land-the-work)). Then the session still asks the
+  user, because that rule gives the answer. This bullet does not cover an open question of an issue, which
+  [the open-question rule](orchestrator/pick-the-tickets.md#the-open-question-rule) covers. It does not cover a change
+  of a rule of the docs. A session that wants such a change still asks the user or drafts an issue.
 
   The hold record of the GitHub milestone M24 stood at the end of its description. Rule 2 of
   [A milestone hold](#a-milestone-hold) puts the hold record at the start. Rule 3 makes the word of the user for the
@@ -177,15 +178,16 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   that #98 was "in `executed`" and "close to landing". The user did not see that #98 was minutes from its merge, and
   later said that #98 was the right ticket to land first.
 - This bullet covers a decision of the user that another orchestrator relays (see the bullet "Only the user changes a
-  landing order of the overlap rule" of [Land the work](land-the-work.md#land-the-work) of land-the-work.md). When the
-  relayed decision differs from an answer that the user gave this session, the session starts the question with one
-  line. The line says that the two answers differ and names both. Then the session gives the options. The bullet also
-  covers an answer that the user gave an earlier session of the same role. That answer counts when the
-  [handoff file](handoff.md#the-items-of-a-handoff-file) that the session works from lists it under the decisions of the
-  user. The answer also counts when the file gives it through the number of an open issue. The session then reads that
-  issue. After the issue lands, the file no longer lists the answer. In the first line of its question, the session
-  names that handoff file as the source. In one case (2026-10-17), the session started the question with the relay. The
-  user read the question as a confirmation of the earlier answer and asked "I already told you to land #182, right?".
+  landing order of the overlap rule" of [Land the work](orchestrator/land-the-work.md#land-the-work) of
+  land-the-work.md). When the relayed decision differs from an answer that the user gave this session, the session
+  starts the question with one line. The line says that the two answers differ and names both. Then the session gives
+  the options. The bullet also covers an answer that the user gave an earlier session of the same role. That answer
+  counts when the [handoff file](handoff.md#the-items-of-a-handoff-file) that the session works from lists it under the
+  decisions of the user. The answer also counts when the file gives it through the number of an open issue. The session
+  then reads that issue. After the issue lands, the file no longer lists the answer. In the first line of its question,
+  the session names that handoff file as the source. In one case (2026-10-17), the session started the question with the
+  relay. The user read the question as a confirmation of the earlier answer and asked "I already told you to land #182,
+  right?".
 - When the session reminds the user of a decision that still waits, the session gives the question again in short, with
   its choices. A line such as "A or B still waits" is not enough. In one case (2026-10-18), a reminder of
   orchestrator-m13 said only "still waits for your choice: A or B", and the user asked "what are the open questions?"
@@ -265,7 +267,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   over each rule that sends such a choice to the user, for example
   [the design-gap rule](plan-review.md#the-design-gap-rule). The mode does not cover a rule that says that only the user
   does an action, for example "Only the user changes a landing order of the overlap rule" (see
-  [Land the work](land-the-work.md#land-the-work)).
+  [Land the work](orchestrator/land-the-work.md#land-the-work)).
 
   Some kinds of choice still go to the user first. These kinds are a security gap, a change of scope, a landing order
   across milestones and an extra review loop. They also include a request of the seventh kind of
@@ -286,7 +288,7 @@ planner.md says. For this reason, these rules are in the repo and not in the not
   user. In its next reply to the user, it names the dropped work and gives the reason. The reason names the fact that
   the session read.
 - The two bullets before this one do not cover an action that a doc keeps for the user alone. An example is "Only the
-  user changes a landing order of the overlap rule" (see [Land the work](land-the-work.md#land-the-work)).
+  user changes a landing order of the overlap rule" (see [Land the work](orchestrator/land-the-work.md#land-the-work)).
 - A question of the user about a decision of the session asks for the reasoning. The session answers the question, and
   it does not treat the decision as wrong unless the user says so. On 2026-10-30, a session dropped seven planned edits
   of issue bodies after #536 landed. The user asked why, and the session said that the drop needed a question. The user
@@ -523,9 +525,10 @@ user meant a note for later. orchestrator-m22 read it as "now" and sent an item 
 The user can put a whole milestone on hold. The terms of this section:
 
 - A milestone hold is a hold of a whole open milestone on the word of the user. It is none of these holds:
-  [The hold before an install](release.md#the-hold-before-an-install), [the hold rule](land-the-work.md#the-hold-rule),
-  [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule),
-  [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold).
+  [The hold before an install](release.md#the-hold-before-an-install),
+  [the hold rule](orchestrator/land-the-work.md#the-hold-rule),
+  [the parent-hold rule](orchestrator/pick-the-tickets.md#the-parent-hold-rule),
+  [A ticket on hold](orchestrator/pick-the-tickets.md#a-ticket-on-hold).
 - A held milestone is a milestone with a milestone hold.
 - The held sessions are the sessions of the slug of a held milestone, as [sessions.md](../sessions.md) defines them:
   `planner-<slug>` and `orchestrator-<slug>`.
@@ -556,7 +559,8 @@ The rules of a milestone hold:
    For an orchestrator, this item has a change that wins over the text above. An orchestrator writes and removes no hold
    record. At the word to start a hold, it tells the user in its own tab to write the record. At the word to end a hold,
    it tells the user in its own tab to remove the record. Up to the removal, it keeps the milestone open and does no
-   close, as the held milestone of [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says.
+   close, as the held milestone of
+   [The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) says.
 
 4. During a milestone hold, a session of another slug sends no message to a held session. This covers each message with
    `SendMessage`, for example these messages:
@@ -598,7 +602,8 @@ The rules of a milestone hold:
    - A held orchestrator does the steps of [The re-read rule](doc-reads.md#the-re-read-rule). Its last read covers each
      doc change that it missed. It then sends a task subagent notice to its task subagents in flight.
      [The task subagent notice](doc-reads.md#the-task-subagent-notice) gives its form for the end of a milestone hold.
-     Then the orchestrator reads the board, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says.
+     Then the orchestrator reads the board, as [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets)
+     says.
    - A held planner does nothing more.
 
    The user can also end the hold in the pane or the tab of the held orchestrator. Then the held orchestrator gets the
@@ -684,8 +689,8 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
 - A root cause can be in an outside tool, for example Claude Code, `gh` or GitHub. Then the repo cannot fix that cause.
   The session records the measured fact of the fault in a doc or an issue. A workaround for that fault names the fact.
 - The rule covers each session that the intro of this page covers. It also covers each task subagent, because
-  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) names this page. It does not cover
-  the sessions that tasker starts for plan, execute and review.
+  [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) names this page. It
+  does not cover the sessions that tasker starts for plan, execute and review.
 - The rule says how a session fixes a fault, not when. [Core features first](#core-features-first) still decides when. A
   fault of an edge case still waits until later. Its issue asks for a fix of the root cause, not for a workaround.
 - Some sessions do not fix a fault themselves, for example an orchestrator or a planner. Such a session files an issue
@@ -722,10 +727,11 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
 - A watch, a monitor or a scheduled job that the user asks for covers only the items that the user named. It also serves
   only the purpose that the user named. The session does not widen it to other items. The session stops it when its
   purpose ends, and it tells the user. This rule covers only a watch, a monitor or a scheduled job that the user asks
-  for. It does not cover a job that a doc tells the session to schedule, for example a job of [Quota](quota.md#quota).
-  In one case (2026-10-17), the user asked orchestrator-m13 to watch the tasks of M9 and to tell the user when #274 was
-  ready to land. The orchestrator widened the watch to each later ticket of M13 and ran it each 30 minutes. On
-  2026-10-18, the user stopped it and said: "the current use isn't even close to the original intent."
+  for. It does not cover a job that a doc tells the session to schedule, for example a job of
+  [Quota](orchestrator/quota.md#quota). In one case (2026-10-17), the user asked orchestrator-m13 to watch the tasks of
+  M9 and to tell the user when #274 was ready to land. The orchestrator widened the watch to each later ticket of M13
+  and ran it each 30 minutes. On 2026-10-18, the user stopped it and said: "the current use isn't even close to the
+  original intent."
 
 - A session with no role that works with the user directly and runs tickets through subagents gives all its work to
   subagents. This bullet does not cover an orchestrator or a planner. The main session is the top-level session where
@@ -739,8 +745,8 @@ The reason for the content: on 2026-11-14, the first reply of the question pane 
 
   Second, the main session does a step that needs a tool that a subagent does not have. If a subagent lacks a tool that
   a step needs, it tells the main session. The main session then does only that step. For example, it creates a
-  scheduled resume job because [Do not use these](quota.md#do-not-use-these) says that a subagent cannot make a job. A
-  subagent does each other part of a watch, a monitor or a scheduled job that the user asks for.
+  scheduled resume job because [Do not use these](orchestrator/quota.md#do-not-use-these) says that a subagent cannot
+  make a job. A subagent does each other part of a watch, a monitor or a scheduled job that the user asks for.
 
   Third, the main session runs a call that the classifier of auto mode denied to its subagent. It runs the call only on
   a direct word of the user. The subagent stops and reports the exact call, the exact text of the denial and the purpose

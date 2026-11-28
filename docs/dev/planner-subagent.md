@@ -21,8 +21,8 @@ as the work needs. An issue subagent on this page is one of these subagents.
 - A settled question is a question of a result that a rule of the docs or a fact of the code on `origin/main` answers.
   [A settled question](#a-settled-question) gives the rules. A settled answer is its answer, with its reason. On this
   page, a settled answer comes from a rule of the docs or a fact of the code. It is never a word of the user. In
-  [question-pane.md](question-pane.md) and [handoff-orchestrator.md](handoff-orchestrator.md), the term "settled answer"
-  means an answer of the user that the pane owner accepted. This page does not change those uses.
+  [question-pane.md](question-pane.md) and [handoff-orchestrator.md](orchestrator/handoff-orchestrator.md), the term
+  "settled answer" means an answer of the user that the pane owner accepted. This page does not change those uses.
 - A kept rule is a rule of the docs that the planner subagent follows. [The kept rules](#the-kept-rules) gives them.
 - On this page, keep N is item N of The kept rules. Change N is item N of [The changed rules](#the-changed-rules). Drop
   N is item N of [The dropped rules](#the-dropped-rules).
@@ -38,9 +38,9 @@ orchestrator has native subagent tools, but no one measured its start of a plann
 
 Each send of the docs to the planner of the orchestrator is a planning request. These rules give such a send:
 
-- The planner bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent), and each
-  rule that sends work to the planner as that bullet says.
-- [The capture and the next step](quota.md#the-capture-and-the-next-step) of quota.md.
+- The planner bullet of [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent),
+  and each rule that sends work to the planner as that bullet says.
+- [The capture and the next step](orchestrator/quota.md#the-capture-and-the-next-step) of quota.md.
 - The paragraph of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) about an old orchestrator.
 - Each relay, request, open finding, accepted proposal and recurrence that a
   [question pane](question-pane.md#a-question-pane) sends to the planner of the orchestrator.
@@ -86,7 +86,7 @@ the subagent types gave "Tools: \*" for `general-purpose`. So its tool list hold
 
 If the Agent call fails, the start failed. A refused Agent call is also a failed start. After a failed start, the
 orchestrator asks the user in its question pane, as the planner bullet of
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+[The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 ### The count of planner subagents
 
@@ -273,8 +273,9 @@ name.
 
 The name of each issue subagent of a planner subagent starts with the name of the planner subagent and `-`.
 [The start of an issue subagent](#the-start-of-an-issue-subagent) gives the rules of these names. The Agent tool refuses
-a name of more than 64 characters, as [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent)
-says. The limit of 12 characters keeps room for the rest of each such name.
+a name of more than 64 characters, as
+[The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The limit of 12
+characters keeps room for the rest of each such name.
 
 ### The proposal file
 
@@ -414,9 +415,9 @@ for it.
   other file only after it finds that file in `proposals/`, as The join itself says.
 - The planner subagent reads no proposal file. The prompt gives the words of each joined item.
 
-These rules need no change in [limits.md](limits.md), [allowed-commands.md](allowed-commands.md) or
-[permissions.md](permissions.md). The planner subagent gets no new command. A join is a call of the orchestrator on its
-own three folders, and The orchestrator folder already covers each such call.
+These rules need no change in [limits.md](limits.md), [allowed-commands.md](orchestrator/allowed-commands.md) or
+[permissions.md](orchestrator/permissions.md). The planner subagent gets no new command. A join is a call of the
+orchestrator on its own three folders, and The orchestrator folder already covers each such call.
 
 The cost of the part-cover join is a new write of the orchestrator into the proposal file of another item, and a change
 in the order of the work of the matched item. The cost of the late-match join is new reads and writes of the
@@ -428,7 +429,8 @@ sees the join in the result.
 The prompt of a planner subagent gives these facts:
 
 - The item of planning work word for word, with its sender and its date. The prompt names the source of each fact, as
-  the source bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+  the source bullet of [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent)
+  says.
 - The own name and the scope of the orchestrator.
 - The folder of the draft files. It is the absolute path of `drafts/` of
   [the orchestrator folder](limits.md#the-orchestrator-folder), from the read of the data root, with no `$HOME` and no
@@ -441,7 +443,7 @@ The prompt of a planner subagent gives these facts:
 - The docs to read: this page and [planner.md](planner.md). The planner subagent reads each other doc of a kept rule
   only for a step that needs it. It reads each doc with the commands of
   [the doc-read rule](doc-reads.md#the-doc-read-rule).
-- The list of the planner subagent in [the allowed commands](allowed-commands.md#the-planner-subagent).
+- The list of the planner subagent in [the allowed commands](orchestrator/allowed-commands.md#the-planner-subagent).
 - The entries `sessions.models.issue-draft`, `sessions.models.issue-review` and `sessions.models.issue-post`, or the
   fact that a key has no entry. [The start of an issue subagent](#the-start-of-an-issue-subagent) uses them.
 - The state of each match of the item. The state is one of these six: the match draft waits for a decision of the user,
@@ -462,8 +464,8 @@ The words of this prompt stand in the file
 [`prompt-templates/planner/planner-subagent.md`](../../prompt-templates/planner/planner-subagent.md). The orchestrator
 reads that file as [the doc-read rule](doc-reads.md#the-doc-read-rule) says, and fills each placeholder. An absent fact
 has the value `none`, for example a key with no entry. The file holds the list of the planner subagent in the allowed
-commands as fixed words, so a change of [that list](allowed-commands.md#the-planner-subagent) also changes the file. The
-facts of each answer go in the item of planning work.
+commands as fixed words, so a change of [that list](orchestrator/allowed-commands.md#the-planner-subagent) also changes
+the file. The facts of each answer go in the item of planning work.
 
 The reason for the folder: a file of the orchestrator folder stays through a reboot, and a reboot clears `/tmp`. A draft
 that waits for the user is then not lost. No planner session writes in `drafts/`, so a draft of a planner session never
@@ -933,8 +935,9 @@ The planner subagent keeps these rules:
 13. The first bullet of [Working with the user](planner.md#working-with-the-user), which links to A decision of the
     user. The question goes in the result, in the form of that section.
 14. The terms of the intro of [planner.md](planner.md): the planner and the blocked-by link.
-15. The source bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent). The prompt
-    of a planner subagent names the source of each fact, as [The prompt](#the-prompt) says.
+15. The source bullet of
+    [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent). The prompt of a
+    planner subagent names the source of each fact, as [The prompt](#the-prompt) says.
 16. [Wrong text of an open issue](planner.md#wrong-text-of-an-open-issue): the change of the body of an open issue with
     wrong text and no task. Change 8 gives the actor of the post and of its reads.
 
@@ -1037,14 +1040,14 @@ new title or body of an open issue, each add or removal of a blocked-by link, an
 subagent posts no comment itself. Change 9 gives the actors of a comment. A planner subagent starts an issue-post
 subagent for a comment post. A planner session keeps its own comments, as the rules of the planner say. No metadata
 already gives each write of a post to the issue-post subagent. The row of the planner subagent in
-[the table](permissions.md#the-table) gives it no `gh` write.
+[the table](orchestrator/permissions.md#the-table) gives it no `gh` write.
 
 The reason: among the three kinds, only an issue-post subagent writes to GitHub, as
 [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says. So the work of the planner subagent has the
 same single writer for an issue and its links.
 
-The list of the planner subagent in [allowed-commands.md](allowed-commands.md#the-planner-subagent) gives the commands
-that it can run.
+The list of the planner subagent in [allowed-commands.md](orchestrator/allowed-commands.md#the-planner-subagent) gives
+the commands that it can run.
 
 ### The order of the work on a draft
 
@@ -1410,9 +1413,9 @@ of the planner subagent as a result. The second result deletes no proposal file,
 ### The wait before a handoff
 
 A planner subagent runs inside the session of the orchestrator. This wait is a part of step 4 of
-[The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator), after the send, as
-[The wait before the handoff file](handoff-orchestrator.md#the-wait-before-the-handoff-file) says. So an old
-orchestrator does these steps before it writes its handoff file:
+[The steps of the old orchestrator](orchestrator/handoff-orchestrator.md#the-steps-of-the-old-orchestrator), after the
+send, as [The wait before the handoff file](orchestrator/handoff-orchestrator.md#the-wait-before-the-handoff-file) says.
+So an old orchestrator does these steps before it writes its handoff file:
 
 1. Wait for the result of each planner subagent that runs. This includes the planner subagents of the items of planning
    work of the facts and lessons of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file).
@@ -1426,17 +1429,19 @@ lesson of a late report. Then the wait runs again for the items of that request.
 
 The old orchestrator writes its handoff file only after the result of the last planner subagent. The wait for one
 planner subagent can also end in the other ways that
-[The end of the wait for one subagent](handoff-orchestrator.md#the-end-of-the-wait-for-one-subagent) gives.
+[The end of the wait for one subagent](orchestrator/handoff-orchestrator.md#the-end-of-the-wait-for-one-subagent) gives.
 
 If a planner subagent sends no report and gets no end notification, only a word of the user ends the wait for it. The
-steps of [The end of the wait for one subagent](handoff-orchestrator.md#the-end-of-the-wait-for-one-subagent) hold. For
-a planner subagent, these rules also hold:
+steps of
+[The end of the wait for one subagent](orchestrator/handoff-orchestrator.md#the-end-of-the-wait-for-one-subagent) hold.
+For a planner subagent, these rules also hold:
 
 - Its proposal file stays. The planner wait starts no planner subagent from that file. The new orchestrator finds the
   file at its start and can start a planner subagent for the same item of planning work.
-- Its state for the wait is ended, as [The terms of the wait](handoff-orchestrator.md#the-terms-of-the-wait) say. It
-  holds no place in the count of [The count of planner subagents](#the-count-of-planner-subagents). The reason: its
-  report can never come, so a place that it holds can stop the planner wait for good.
+- Its state for the wait is ended, as
+  [The terms of the wait](orchestrator/handoff-orchestrator.md#the-terms-of-the-wait) say. It holds no place in the
+  count of [The count of planner subagents](#the-count-of-planner-subagents). The reason: its report can never come, so
+  a place that it holds can stop the planner wait for good.
 - A result of it after the write of the handoff file deletes no proposal file. It reaches only the tab of the old
   orchestrator. The reason: the new orchestrator can already run a planner subagent from that file.
 

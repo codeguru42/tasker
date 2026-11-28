@@ -28,12 +28,12 @@ working-with-the-user.md says how "tell the user" or "ask the user" reads. A rep
 rule of the orchestration pages calls a reply follows the same split: a progress report shows in the tab, and a question
 goes to the pane. When a rule waits for the user, the answer of the question that the rule waits for ends the wait. The
 orchestrator gives each lesson, each finding of a session review, each recurrence and each proposed issue to its
-planner. The planner bullet of [The prompt of a task subagent](dev/pick-the-tickets.md#the-prompt-of-a-task-subagent)
-gives the steps. For an orchestrator of the kind `claude`, the planner is a new
-[planner subagent](dev/planner-subagent.md) for each [item of planning work](dev/planner-subagent.md#the-start). An
-orchestrator sends a peer only the seven kinds of [The kinds of peer message](#the-kinds-of-peer-message).
-[The request rule](#the-request-rule) gives the seventh kind, the request for a decision of the user that needs a peer
-to act.
+planner. The planner bullet of
+[The prompt of a task subagent](dev/orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the steps. For
+an orchestrator of the kind `claude`, the planner is a new [planner subagent](dev/planner-subagent.md) for each
+[item of planning work](dev/planner-subagent.md#the-start). An orchestrator sends a peer only the seven kinds of
+[The kinds of peer message](#the-kinds-of-peer-message). [The request rule](#the-request-rule) gives the seventh kind,
+the request for a decision of the user that needs a peer to act.
 
 tasker also starts its own sessions for plan, execute and review. They run in a worktree of the tasker clone. They are
 not task subagents and they do not run the steps on [the orchestration pages](orchestrator.md).
@@ -42,7 +42,7 @@ The orchestrator and its task subagents run tasker from the local clone of the o
 subagent of that ticket is the driver that [docs/dev/rebase-conflicts.md](dev/rebase-conflicts.md) names. The
 orchestrator runs only read-only `tasker` commands itself, and a task subagent runs each command that changes a task, as
 [the orchestrator-command rule](dev/tasker-commands.md#the-orchestrator-command-rule) says. The orchestrator looks up
-the commands that it sends to each actor in [the allowed commands](dev/allowed-commands.md).
+the commands that it sends to each actor in [the allowed commands](dev/orchestrator/allowed-commands.md).
 
 Every `tasker` command on [the orchestration pages](orchestrator.md) is the installed `tasker`: the `tasker` command on
 the PATH from a global install. When
@@ -71,9 +71,9 @@ sections of its page. The orchestrator uses the list to find the page that a ste
 [The start reads](#the-start-reads) says.
 
 - [docs/dev/question-pane.md](dev/question-pane.md): "A question pane", "The question file" and "The pane handoff".
-- [docs/dev/pick-the-tickets.md](dev/pick-the-tickets.md): "Pick the tickets", the stacking rule, the stacked-ticket
-  rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket on hold", "The end of an
-  orchestrator", "The prompt of a task subagent" and "The start of a task subagent".
+- [docs/dev/orchestrator/pick-the-tickets.md](dev/orchestrator/pick-the-tickets.md): "Pick the tickets", the stacking
+  rule, the stacked-ticket rule, the parent-hold rule, the link offer, the open-question rule, the defer rule, "A ticket
+  on hold", "The end of an orchestrator", "The prompt of a task subagent" and "The start of a task subagent".
 - [docs/dev/doc-reads.md](dev/doc-reads.md): the re-read rule, the notice rule, the task subagent notice and the
   doc-read rule.
 - [docs/dev/run-one-ticket.md](dev/run-one-ticket.md): "Run one ticket", the final report, the comeback rule, the base
@@ -82,27 +82,28 @@ sections of its page. The orchestrator uses the list to find the page that a ste
   needed-doc-change rule, the stop rule, the change-of-scope comment, the design-gap rule and the quote check.
 - [docs/dev/tasker-commands.md](dev/tasker-commands.md): the plain-form rule, the orchestrator-command rule, the
   tool-block rule, "A denied command", the command rules, the facts of the installed tasker and the run times.
-- [docs/dev/milestone-close.md](dev/milestone-close.md): the shared parts of the close of a milestone and the
-  own-session closure.
+- [docs/dev/orchestrator/milestone-close.md](dev/orchestrator/milestone-close.md): the shared parts of the close of a
+  milestone and the own-session closure.
 - [docs/dev/items.md](dev/items.md): the form of a message, the terms of the questions and the answer.
 - [docs/dev/verify-failures.md](dev/verify-failures.md): the verify-failure rule, bisect diagnosis, the broken-commit
   steps, the session check, the manual fix and the commit check.
 - [docs/dev/ci-wait.md](dev/ci-wait.md): the CI wait and "A failed CI run".
 - [docs/dev/review-findings.md](dev/review-findings.md): "Review findings" and the docs-only update.
-- [docs/dev/land-the-work.md](dev/land-the-work.md): "Land the work", the overlap rule, the Docs rule, the hold rule and
-  the stuck-task rule.
-- [docs/dev/quota.md](dev/quota.md): "Quota", "Terms", "The delay of each task subagent", "Schedule a job when a task
-  subagent starts", the seven-day rule, "When there is no reset time yet", "When the job fires", "The next job", "What
-  the task subagent does", "A pi stop", "The pi wait", "A Codex limit", "Delete the job" and "Do not use these".
+- [docs/dev/orchestrator/land-the-work.md](dev/orchestrator/land-the-work.md): "Land the work", the overlap rule, the
+  Docs rule, the hold rule and the stuck-task rule.
+- [docs/dev/orchestrator/quota.md](dev/orchestrator/quota.md): "Quota", "Terms", "The delay of each task subagent",
+  "Schedule a job when a task subagent starts", the seven-day rule, "When there is no reset time yet", "When the job
+  fires", "The next job", "What the task subagent does", "A pi stop", "The pi wait", "A Codex limit", "Delete the job"
+  and "Do not use these".
 - [docs/dev/handoff.md](dev/handoff.md): "The suggestion of a handoff", "The handoff file", "The items of a handoff
   file", "The last item id", "The check of the handoff folder", "The end of a handoff", "The stop and the start" and "A
   topic handoff".
-- [docs/dev/handoff-orchestrator.md](dev/handoff-orchestrator.md): "The long-running orchestrator", "The landing count",
-  "The steps of the old orchestrator", "The wait for the subagents", "The terms of the wait", "The wait before the
-  start", "The wait before the handoff file", "The end of the wait for one subagent", "The reports during the handoff",
-  "The kinds of orchestrator", "The stopping-point case", "The handoff file of the orchestrator", "The task list", "The
-  open peer requests", "The start of the new orchestrator", "The report of the questions with no automatic start" and
-  "The steps for the open peer requests".
+- [docs/dev/orchestrator/handoff-orchestrator.md](dev/orchestrator/handoff-orchestrator.md): "The long-running
+  orchestrator", "The landing count", "The steps of the old orchestrator", "The wait for the subagents", "The terms of
+  the wait", "The wait before the start", "The wait before the handoff file", "The end of the wait for one subagent",
+  "The reports during the handoff", "The kinds of orchestrator", "The stopping-point case", "The handoff file of the
+  orchestrator", "The task list", "The open peer requests", "The start of the new orchestrator", "The report of the
+  questions with no automatic start" and "The steps for the open peer requests".
 - [docs/dev/limits.md](dev/limits.md): "Limits", the own-worktree rule, "The orchestrator folder", the update rule, the
   local-commit rule, the shared-clone rule, the address rule, the answer-wait rule and the failure rule.
 - [docs/dev/planner-subagent.md](dev/planner-subagent.md): "The kind of the orchestrator", "The planning requests", "The
@@ -184,10 +185,10 @@ The user stops an orchestrator that the user starts. The user asks the orchestra
 user waits for the report of the rounds in the tab, and then closes the tab. If the user closes the tab with no rounds,
 the open findings of the session are lost. [A stop with no handoff](#a-stop-with-no-handoff) gives the other results of
 a stop. In a handoff, the old orchestrator closes its own tab, as
-[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
+[The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
 
 In a handoff, the old orchestrator starts the new orchestrator, as
-[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
+[The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
 
 ### A stop with no handoff
 
@@ -231,8 +232,9 @@ reads, in order:
    [The old read](dev/doc-reads.md#the-old-read) says.
 2. A complete read of each start doc.
 3. A complete read of each doc that the first prompt names. This covers each extra doc of a handoff prompt, as
-   [The handoff file of the orchestrator](dev/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) defines it.
-   If the prompt names a page of the list "The pages", that page also gets a complete read in the start reads.
+   [The handoff file of the orchestrator](dev/orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator)
+   defines it. If the prompt names a page of the list "The pages", that page also gets a complete read in the start
+   reads.
 
 The start reads read no other page. A step of the start can still need a page, for example a step of
 [the start checks](#the-start-checks) or a [start duty](#the-start-duties). Such a step reads the page as a read on
@@ -296,8 +298,8 @@ A new orchestrator after a handoff follows the same order: the complete start re
 work. A new orchestrator after a handoff is an orchestrator whose first prompt is the prompt of a handoff of an
 orchestrator. The prompt read of the handoff prompt is part of its start reads, and it does the start reads one time. It
 does the check of the handoff folder only after all these steps pass.
-[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives its order. The
-new session of a topic handoff is not a new orchestrator after a handoff, also for the role orchestrator.
+[The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives
+its order. The new session of a topic handoff is not a new orchestrator after a handoff, also for the role orchestrator.
 [The check of the handoff folder](dev/handoff.md#the-check-of-the-handoff-folder) gives the place of the check for that
 session.
 
@@ -357,14 +359,14 @@ The failed session does none of these steps:
 - The pick of a ticket.
 - An open question of the handoff file, and each question pane.
 - The steps for an open peer request of the handoff file. See
-  [The steps for the open peer requests](dev/handoff-orchestrator.md#the-steps-for-the-open-peer-requests).
+  [The steps for the open peer requests](dev/orchestrator/handoff-orchestrator.md#the-steps-for-the-open-peer-requests).
 
 The failed session changes or deletes no handoff file and no [question file](dev/question-pane.md#the-question-file).
 
 The message gives the path and the way on for these reasons:
 
 - The old orchestrator does not wait for the start checks of the new orchestrator, and it does not act on their result.
-  See [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator).
+  See [The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator).
 - The handoff file and the question files are the only source of the open questions and the other state of the old
   session.
 - A new start with no handoff file loses that state, as [A stop with no handoff](#a-stop-with-no-handoff) says.
@@ -397,11 +399,11 @@ session of the start checks does no start duty. The start duties are:
 - The first free item id from `questions/` at a start with no handoff file, as [Terms](dev/question-pane.md#terms) says.
 - The label check of the broken-test ban, as [A failed CI run](dev/ci-wait.md#a-failed-ci-run) says. It runs at the
   start of the session and before each start of a ticket. So it runs before the start of the first ticket.
-- The outside-Todo find of [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets). It runs after the start reads
-  and before the pick of the first ticket. The find also reads the label `on hold`, as
-  [A ticket on hold](dev/pick-the-tickets.md#a-ticket-on-hold) says. After a handoff,
-  [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the place of
-  the find and the read of its record.
+- The outside-Todo find of [Pick the tickets](dev/orchestrator/pick-the-tickets.md#pick-the-tickets). It runs after the
+  start reads and before the pick of the first ticket. The find also reads the label `on hold`, as
+  [A ticket on hold](dev/orchestrator/pick-the-tickets.md#a-ticket-on-hold) says. After a handoff,
+  [The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives
+  the place of the find and the read of its record.
 - The start of the planner subagents of the items that wait, as
   [The proposal file](dev/planner-subagent.md#the-proposal-file) says. The orchestrator starts them at the end of its
   start steps. The start depends on the list of `proposals/` of the first duty. At a start with no handoff file, no file
@@ -409,11 +411,12 @@ session of the start checks does no start duty. The start duties are:
   says. At such a start, this duty starts no planner subagent from those files.
 
 This section gives no order between the start duties and the board watch job. After a handoff,
-[The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives that order.
+[The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives
+that order.
 
 The search for start duties found only these duties outside the pages that the handoff prompt names. The duties of a
-start after a handoff are in `docs/dev/handoff-orchestrator.md`, which that prompt names. They are the read of
-`tasker status`, the read of `ListAgents`, the task list and the open peer requests.
+start after a handoff are in `docs/dev/orchestrator/handoff-orchestrator.md`, which that prompt names. They are the read
+of `tasker status`, the read of `ListAgents`, the task list and the open peer requests.
 
 ### The states of a start
 
@@ -441,9 +444,9 @@ With a first prompt that names a handoff file, the message of a failed start che
 Each orchestrator reads the board with one recurring job, the board watch job, while no ticket of its scope waits for a
 slot. [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot) gives the term and the delete of the job. The
 rule covers an orchestrator of a numbered milestone, an orchestrator of a [set scope](#the-scope) and a
-[long-running orchestrator](dev/handoff-orchestrator.md#the-long-running-orchestrator). For each kind of scope, a new
-issue can arrive at a time with no running ticket of the scope. Then no landing comes, and no read of the board follows.
-On 2026-10-25, orchestrator-docs read the board with a job at minute 7 and minute 37 of each hour.
+[long-running orchestrator](dev/orchestrator/handoff-orchestrator.md#the-long-running-orchestrator). For each kind of
+scope, a new issue can arrive at a time with no running ticket of the scope. Then no landing comes, and no read of the
+board follows. On 2026-10-25, orchestrator-docs read the board with a job at minute 7 and minute 37 of each hour.
 
 The rule names no kind of session, so it covers each kind. No one measured a tool for a recurring job in a session of
 the kind `pi`. If a pi orchestrator cannot make the job, the bullet "If CronList or CronCreate fails" of this section
@@ -480,28 +483,31 @@ The board watch rule has these parts:
   `proposals/` at the end of the start steps, and before the pick of its first ticket. A new orchestrator after
   [a stop with no handoff](#a-stop-with-no-handoff) starts in this way. On a start after a handoff, it makes the job
   after `ListAgents`, as
-  [The start of the new orchestrator](dev/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The cron
-  fires two times each hour, for example `7,37 * * * *`. Each read of the board after this make follows
+  [The start of the new orchestrator](dev/orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says.
+  The cron fires two times each hour, for example `7,37 * * * *`. Each read of the board after this make follows
   [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot). So the first read of the board can delete the job.
 - The prompt of the job starts with "Board watch:" and names
-  [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets). At the CronCreate of the job, the orchestrator reads
-  [`prompt-templates/jobs/board-watch.md`](../prompt-templates/jobs/board-watch.md) and gives its body as the prompt.
+  [Pick the tickets](dev/orchestrator/pick-the-tickets.md#pick-the-tickets). At the CronCreate of the job, the
+  orchestrator reads [`prompt-templates/jobs/board-watch.md`](../prompt-templates/jobs/board-watch.md) and gives its
+  body as the prompt.
 - When the job fires, the orchestrator reads the board as the prompt says. It starts each ticket that the rules of Pick
   the tickets allow. It reads the issue of a ticket only right before its start, as
-  [the open-question rule](dev/pick-the-tickets.md#the-open-question-rule) says. The job changes none of these rules.
+  [the open-question rule](dev/orchestrator/pick-the-tickets.md#the-open-question-rule) says. The job changes none of
+  these rules.
 - A read by the job is a read of the board that does not come at a landing. The general rule of the bullet "Each time a
-  ticket lands, read the board again" of [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets) applies to it. A
-  read by the job can also come during the close of a milestone. Then it follows the same rules as a read of the board
-  on a message of another session.
+  ticket lands, read the board again" of [Pick the tickets](dev/orchestrator/pick-the-tickets.md#pick-the-tickets)
+  applies to it. A read by the job can also come during the close of a milestone. Then it follows the same rules as a
+  read of the board on a message of another session.
 - Each rule that stops a start wins over the job. Examples are the ban of
   [A failed CI run](dev/ci-wait.md#a-failed-ci-run), a hold of the user and step 1 of
-  [The steps of the old orchestrator](dev/handoff-orchestrator.md#the-steps-of-the-old-orchestrator). Another example is
-  the ban on a new ticket after the suggestion of a handoff in
-  [The landing count](dev/handoff-orchestrator.md#the-landing-count). Other examples are the hold before an install in
-  [The hold before an install](dev/release.md#the-hold-before-an-install) and the pi gate. While such a rule holds, the
-  job still fires, and it starts no ticket. A ticket that such a rule holds back does not wait for a slot. So while such
-  a rule holds back each ticket, the job stays, as [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot)
-  says. A failed start check is not such a rule, because no job exists after it, as the first bullet says.
+  [The steps of the old orchestrator](dev/orchestrator/handoff-orchestrator.md#the-steps-of-the-old-orchestrator).
+  Another example is the ban on a new ticket after the suggestion of a handoff in
+  [The landing count](dev/orchestrator/handoff-orchestrator.md#the-landing-count). Other examples are the hold before an
+  install in [The hold before an install](dev/release.md#the-hold-before-an-install) and the pi gate. While such a rule
+  holds, the job still fires, and it starts no ticket. A ticket that such a rule holds back does not wait for a slot. So
+  while such a rule holds back each ticket, the job stays, as
+  [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot) says. A failed start check is not such a rule,
+  because no job exists after it, as the first bullet says.
 - The orchestrator has at most one board watch job. It keeps the id of the job and the time of its CronCreate. Before it
   makes the job, it lists its jobs with CronList. CronList also comes before each CronDelete of
   [A ticket that waits for a slot](#a-ticket-that-waits-for-a-slot). If the list holds the kept id, it makes no second
@@ -514,8 +520,8 @@ The board watch rule has these parts:
   no board watch job. At each later read of the board after which no ticket waits, and at each failed read of the board,
   it tries again, CronList and then CronCreate, until it has a board watch job. The read of the board after a landing is
   one such read when no ticket waits after it, as the bullet "Each time a ticket lands, read the board again" of
-  [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets) says. With no board watch job, it reads the board at the
-  other moments that the docs give, for example after each landing.
+  [Pick the tickets](dev/orchestrator/pick-the-tickets.md#pick-the-tickets) says. With no board watch job, it reads the
+  board at the other moments that the docs give, for example after each landing.
 - If the orchestrator keeps an id and the kept time is 6 days or more old, the renewal runs at a read after which no
   ticket waits and at a failed read of the board. It runs CronList. If the list does not hold the id, the orchestrator
   drops the id and the time, and then it runs CronCreate with no second CronList. If the list holds the id, it runs
@@ -536,25 +542,27 @@ The board watch rule has these parts:
   close of a milestone, the user ends a handoff that started, as
   [The suggestion of a handoff](dev/handoff.md#the-suggestion-of-a-handoff) says. The new orchestrator makes its own job
   at its make point, as the make bullet says. A session that ends with no handoff loses the job with the session. So the
-  job keeps firing during the wait of [The end of an orchestrator](dev/pick-the-tickets.md#the-end-of-an-orchestrator),
-  and the own close of the orchestrator ends it. In that wait the scope has no live task, so each slot is free and no
-  ticket waits for a slot.
-- The board watch job is not a job of [Quota](dev/quota.md#quota). [Delete the job](dev/quota.md#delete-the-job) does
-  not cover it. The step "delete the jobs" of step 2 of The steps of the old orchestrator does not cover it either. The
-  job takes no slot.
+  job keeps firing during the wait of
+  [The end of an orchestrator](dev/orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator), and the own close of
+  the orchestrator ends it. In that wait the scope has no live task, so each slot is free and no ticket waits for a
+  slot.
+- The board watch job is not a job of [Quota](dev/orchestrator/quota.md#quota).
+  [Delete the job](dev/orchestrator/quota.md#delete-the-job) does not cover it. The step "delete the jobs" of step 2 of
+  The steps of the old orchestrator does not cover it either. The job takes no slot.
 
 ### A ticket that waits for a slot
 
 These two facts make a ticket that waits for a slot:
 
-- It is a ticket that can start, as the fill rule of [Pick the tickets](dev/pick-the-tickets.md#pick-the-tickets)
-  defines it. That is each fact of "A ticket that can start now" of
-  [the open-question rule](dev/pick-the-tickets.md#the-open-question-rule) except the slot fact.
+- It is a ticket that can start, as the fill rule of
+  [Pick the tickets](dev/orchestrator/pick-the-tickets.md#pick-the-tickets) defines it. That is each fact of "A ticket
+  that can start now" of [the open-question rule](dev/orchestrator/pick-the-tickets.md#the-open-question-rule) except
+  the slot fact.
 - No slot is free, and the orchestrator keeps no slot for it.
 
-For this term, the slot fact of [the stacking rule](dev/pick-the-tickets.md#the-stacking-rule) does not count. The check
-of the tip of the base of the parent does not count either, because that check runs only before a start. The other wait
-cases of the stacking rule and the wait for a fix round of the parent still hold the ticket back.
+For this term, the slot fact of [the stacking rule](dev/orchestrator/pick-the-tickets.md#the-stacking-rule) does not
+count. The check of the tip of the base of the parent does not count either, because that check runs only before a
+start. The other wait cases of the stacking rule and the wait for a fix round of the parent still hold the ticket back.
 
 The judgment uses only the facts after the read of the board. These are the board, the kept results of a read, the
 states of the stacking rule and the states of the session, for example a hold of the user and the CI ban. A ticket that
@@ -611,8 +619,8 @@ reads the board. A ticket can stop its wait with no read, for example when the u
 until the next read. No start is lost, because each slot stays in use or kept until an event that reads the board.
 
 While a ticket waits, a rule that acts "at the next read of the board" or "each time it reads the board" acts at the
-next read, not at the next fire. Examples in `docs/dev/pick-the-tickets.md` are the notice of a moved held issue of a
-set scope, the first offer and the new try of the earlier-blocker offer and of the outside-blocker offer, the
+next read, not at the next fire. Examples in `docs/dev/orchestrator/pick-the-tickets.md` are the notice of a moved held
+issue of a set scope, the first offer and the new try of the earlier-blocker offer and of the outside-blocker offer, the
 outside-Todo find after a failed find, and the check of a kept result of the open-question rule. The list is open on
 purpose. Each change between "a ticket waits" and "no ticket waits" costs a CronList and a CronDelete or a CronCreate.
 
@@ -647,13 +655,15 @@ An orchestrator sends a peer only these seven kinds of message:
 1. The doc notice of [the notice rule](dev/doc-reads.md#the-notice-rule): the notice of a landing.
 2. The broken-test notice of [A failed CI run](dev/ci-wait.md#a-failed-ci-run): the notice with the number of the
    broken-test issue.
-3. The hold of [the hold rule](dev/land-the-work.md#the-hold-rule): the request for reports, and each report of a state
-   or of a close. [The stacked-ticket rule](dev/pick-the-tickets.md#the-stacked-ticket-rule) uses them.
-4. The landing order of [the overlap rule](dev/land-the-work.md#the-overlap-rule): the landing order, the relay of a
-   change, the answer that accepts or rejects the change, and the notice of a postpone. The bullet "Only the user
-   changes a landing order of the overlap rule" of [Land the work](dev/land-the-work.md#land-the-work) gives the relay.
-5. The change to an issue in flight of [Land the work](dev/land-the-work.md#land-the-work): the link of the comment, and
-   the answer that no step takes the correction.
+3. The hold of [the hold rule](dev/orchestrator/land-the-work.md#the-hold-rule): the request for reports, and each
+   report of a state or of a close.
+   [The stacked-ticket rule](dev/orchestrator/pick-the-tickets.md#the-stacked-ticket-rule) uses them.
+4. The landing order of [the overlap rule](dev/orchestrator/land-the-work.md#the-overlap-rule): the landing order, the
+   relay of a change, the answer that accepts or rejects the change, and the notice of a postpone. The bullet "Only the
+   user changes a landing order of the overlap rule" of [Land the work](dev/orchestrator/land-the-work.md#land-the-work)
+   gives the relay.
+5. The change to an issue in flight of [Land the work](dev/orchestrator/land-the-work.md#land-the-work): the link of the
+   comment, and the answer that no step takes the correction.
 6. The install hold of [the hold before an install](dev/release.md#the-hold-before-an-install): the request of the hold,
    each report of the state of the tasks, a "no" of the user and the end of the hold.
 7. The request of [the request rule](#the-request-rule): the request, and the answer with the decision of the user. The
@@ -667,7 +677,7 @@ peer act.
 ### The orchestrator of a task
 
 The rules that send a peer message about one task use this find: the hold rule, the stacked-ticket rule, the landing
-order of the overlap rule, the requester bullet of [Land the work](dev/land-the-work.md#land-the-work) and
+order of the overlap rule, the requester bullet of [Land the work](dev/orchestrator/land-the-work.md#land-the-work) and
 [the request rule](#the-request-rule).
 
 1. The sender reads the milestone of the issue with `gh issue view <number> --json milestone -q '.milestone.title'`.
@@ -753,25 +763,27 @@ The rules:
   that sends it.
 - When the sending orchestrator sends a request that needs a decision of the user, it also shows one report for that
   request as text in its own tab. The same holds for each relayed change of a landing order under the bullet "Only the
-  user changes a landing order of the overlap rule" of [Land the work](dev/land-the-work.md#land-the-work).
+  user changes a landing order of the overlap rule" of [Land the work](dev/orchestrator/land-the-work.md#land-the-work).
 - At a handoff of either side, the old orchestrator records each open request in its handoff file, as
-  [The open peer requests](dev/handoff-orchestrator.md#the-open-peer-requests) says. The new orchestrator follows
-  [The steps for the open peer requests](dev/handoff-orchestrator.md#the-steps-for-the-open-peer-requests). The matching
-  step of the sending orchestrator follows this rule:
+  [The open peer requests](dev/orchestrator/handoff-orchestrator.md#the-open-peer-requests) says. The new orchestrator
+  follows
+  [The steps for the open peer requests](dev/orchestrator/handoff-orchestrator.md#the-steps-for-the-open-peer-requests).
+  The matching step of the sending orchestrator follows this rule:
   - A matching step that sends a message to a task subagent of the old orchestrator no longer applies after a handoff.
     This covers a task that landed before the write, a parked task, and in the stopping-point case a task of
-    [the task list](dev/handoff-orchestrator.md#the-task-list). The new orchestrator does not send the step to the new
-    task subagent of the same ticket either. Such a step needs its own context and its own rule, and this page gives
-    none.
-  - A [parked task](dev/pick-the-tickets.md#the-defer-rule) still exists after the handoff, and the new orchestrator
-    reads it with `tasker status`. So a matching step for a parked task that sends no message to its task subagent can
-    still apply. In each other case, whether a step still applies is a judgment of the new orchestrator. This judgment
-    is open on purpose.
+    [the task list](dev/orchestrator/handoff-orchestrator.md#the-task-list). The new orchestrator does not send the step
+    to the new task subagent of the same ticket either. Such a step needs its own context and its own rule, and this
+    page gives none.
+  - A [parked task](dev/orchestrator/pick-the-tickets.md#the-defer-rule) still exists after the handoff, and the new
+    orchestrator reads it with `tasker status`. So a matching step for a parked task that sends no message to its task
+    subagent can still apply. In each other case, whether a step still applies is a judgment of the new orchestrator.
+    This judgment is open on purpose.
   - If the step no longer applies, the new orchestrator tells its own user in its own tab and names the step.
   - The reason: step 2 of
-    [the steps of the old orchestrator](dev/handoff-orchestrator.md#the-steps-of-the-old-orchestrator) waits until each
-    task in flight lands, a parked task ended at [the defer rule](dev/pick-the-tickets.md#the-defer-rule), and
-    [the task list](dev/handoff-orchestrator.md#the-task-list) bans a message to a task subagent of the old
+    [the steps of the old orchestrator](dev/orchestrator/handoff-orchestrator.md#the-steps-of-the-old-orchestrator)
+    waits until each task in flight lands, a parked task ended at
+    [the defer rule](dev/orchestrator/pick-the-tickets.md#the-defer-rule), and
+    [the task list](dev/orchestrator/handoff-orchestrator.md#the-task-list) bans a message to a task subagent of the old
     orchestrator.
   - The cost: an accepted step is lost, and the user does it again by hand.
 

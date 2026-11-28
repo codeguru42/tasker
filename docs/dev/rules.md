@@ -178,7 +178,7 @@ task.
 
   The session judges only from links that it sees in files that it reads for its change. This rule asks for no new
   search. It changes no read gate of [The installed skill](#the-installed-skill) and no list of
-  [the allowed commands](allowed-commands.md).
+  [the allowed commands](orchestrator/allowed-commands.md).
 
   In a ticket, the task subagent makes the judgment. The sessions that tasker starts for plan and execute have no path
   for a new issue. If the session judges that a split is worth it, it asks for an issue through its existing path.

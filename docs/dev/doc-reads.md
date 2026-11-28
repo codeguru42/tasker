@@ -31,8 +31,8 @@ orchestrator makes its start reads, as [The start reads](../orchestrator.md#the-
 no other page.
 
 Each time a ticket lands, the orchestrator does these steps. They are at the place that the bullet "When the final
-report of the task subagent of a ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work)
-gives. The steps change no task.
+report of the task subagent of a ticket says that the ticket landed" of
+[Land the work](orchestrator/land-the-work.md#land-the-work) gives. The steps change no task.
 
 1. Do step 1 of [the doc-read rule](#the-doc-read-rule).
 2. Set `<tip>` to `<head>`. If step 1 did not pull, run `git -C <local clone> rev-parse --verify origin/main` one time
@@ -47,8 +47,9 @@ gives. The steps change no task.
    each new start doc that it names, with the same read. A new page of the list "The pages" gets no read at the landing.
    Then `<tip>` is the new last read.
 
-The memory step of [Land the work](land-the-work.md#land-the-work) stays. Its read of the landed docs can cover a page
-that is not a re-read doc. That read is a read on need for the memory step, so the page then counts as read.
+The memory step of [Land the work](orchestrator/land-the-work.md#land-the-work) stays. Its read of the landed docs can
+cover a page that is not a re-read doc. That read is a read on need for the memory step, so the page then counts as
+read.
 
 A read on need does step 1 of [the doc-read rule](#the-doc-read-rule), and step 1 can pull a newer commit. The last read
 stays. So the start docs can be of an older commit than a page that the orchestrator read on need. The next run of the
@@ -94,7 +95,7 @@ The orchestrator of the ticket does these steps:
    from the same report. The notice names them in one or two lines.
 
    For example: Landed `<commit>` on `main`. `docs/dev/run-one-ticket.md` changed in "Run one ticket", and
-   `docs/dev/land-the-work.md` changed in "Land the work".
+   `docs/dev/orchestrator/land-the-work.md` changed in "Land the work".
 
 The notice does not depend on the re-read rule. If the re-read rule fails at this landing, the orchestrator of the
 ticket still sends the notice, and [the failure rule](limits.md#the-failure-rule) applies, as the re-read rule says. If
@@ -125,9 +126,10 @@ landed while #486 ran and changed the order of the same-patch reads before `task
 #486 read the diff of the docs on its own, with no rule that asked it to.
 
 The docs of a task subagent are the docs that its prompt names for all the rules and for the change of its ticket, as
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) of `docs/dev/pick-the-tickets.md`
-says. These are the docs of "[the base list](pick-the-tickets.md#the-prompt-of-a-task-subagent)" and each file that the
-prompt names because the ticket changes it. Such a file can be under `skills/`. The base list lives in
+[The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) of
+`docs/dev/orchestrator/pick-the-tickets.md` says. These are the docs of
+"[the base list](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent)" and each file that the prompt names
+because the ticket changes it. Such a file can be under `skills/`. The base list lives in
 [`prompt-templates/subagents/task.md`](../../prompt-templates/subagents/task.md).
 
 A file that the prompt names for another reason, for example as the source of a fact of a hint, is not a doc of the task
@@ -135,12 +137,13 @@ subagent. Each task subagent has its own docs, because each prompt names its own
 of a task subagent from the prompt that it wrote for that task subagent.
 
 A task subagent in flight is a task subagent of the orchestrator from its start until its
-[final report](run-one-ticket.md#the-final-report) arrives. The term "running" of ["Terms"](quota.md#terms) in
-`docs/dev/quota.md` keeps its own meaning. A task subagent in flight can be running or ended in the meaning of that
-page.
+[final report](run-one-ticket.md#the-final-report) arrives. The term "running" of ["Terms"](orchestrator/quota.md#terms)
+in `docs/dev/orchestrator/quota.md` keeps its own meaning. A task subagent in flight can be running or ended in the
+meaning of that page.
 
 The task subagent notice covers each landing of a ticket of the orchestrator. The steps of the orchestrator come right
-after the steps of [the notice rule](#the-notice-rule), as [Land the work](land-the-work.md#land-the-work) says.
+after the steps of [the notice rule](#the-notice-rule), as [Land the work](orchestrator/land-the-work.md#land-the-work)
+says.
 
 1. When the final report of the task subagent says that the ticket landed, the orchestrator reads the files that landed
    in that report.
@@ -175,7 +178,8 @@ the named docs again before its next read of the state. The limit of the wait do
 
 A task subagent can also wait with its turn ended. Examples are a wait for an answer under
 [the answer-wait rule](limits.md#the-answer-wait-rule) of `docs/dev/limits.md`, and a wait in `quota_blocked` or
-`interrupted`, as ["What the task subagent does"](quota.md#what-the-task-subagent-does) of `docs/dev/quota.md` says.
+`interrupted`, as ["What the task subagent does"](orchestrator/quota.md#what-the-task-subagent-does) of
+`docs/dev/orchestrator/quota.md` says.
 
 If the last report of the task subagent is an interim final answer, the task subagent waits with its turn ended. If the
 orchestrator sent an answer, a next step or a resume message after that report, this wait ended. In each other case, the
@@ -224,7 +228,7 @@ come from `origin/main`, not from that checkout. A covered session pulls `main` 
 tree and the hash checks protect the read.
 
 This section is the only home of the read steps. Each other doc links here. The exceptions are the start prompts and the
-lists of [the allowed commands](allowed-commands.md).
+lists of [the allowed commands](orchestrator/allowed-commands.md).
 
 ### The covered sessions
 
@@ -604,7 +608,7 @@ No one measured these facts of case H:
 
 `--ff-only` changes nothing when it cannot fast-forward. `.claude/settings.json` has no rule for the pull, so the
 classifier of auto mode decides each call that no rule matches. The commands of this rule stand in the lists of
-[the allowed commands](allowed-commands.md).
+[the allowed commands](orchestrator/allowed-commands.md).
 
 A pull brings only commits that landed on `origin/main`, and it changes no tracked file of its own. So it is no change
 under [the tracked-change rule](rules.md#changes) and no write action of a question pane.
@@ -731,8 +735,8 @@ the orchestrator, [the re-read rule](#the-re-read-rule) gives the failure path.
 
 A link in a doc that the reader follows is also a doc read. The reader drops the part from `#` (the anchor). It resolves
 the path against the folder of the doc. For example, the link `limits.md#the-failure-rule` in `docs/dev/doc-reads.md`
-gives `docs/dev/limits.md`, and the link `../../README.md#install` in `docs/dev/setup.md` gives `README.md`. With the
-Read tool, `..` works. The `..` failure of `git show` applies only to the old read.
+gives `docs/dev/limits.md`, and the link `../../README.md#install` in `docs/dev/orchestrator/setup.md` gives
+`README.md`. With the Read tool, `..` works. The `..` failure of `git show` applies only to the old read.
 
 ### The start prompts
 

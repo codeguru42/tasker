@@ -71,9 +71,9 @@ Each of the three kinds follows these bans:
 - Only an issue-post subagent writes to GitHub. An issue-draft subagent and an issue-review subagent post nothing. They
   change no issue, no card, no label and no milestone.
 
-The rows of the issue-draft, issue-review and issue-post subagents in [the table](permissions.md#the-table) give the
-kinds of command of the list of each of them. A read at a gap follows
-[the rules for the lists](allowed-commands.md#the-rules-for-the-lists).
+The rows of the issue-draft, issue-review and issue-post subagents in [the table](orchestrator/permissions.md#the-table)
+give the kinds of command of the list of each of them. A read at a gap follows
+[the rules for the lists](orchestrator/allowed-commands.md#the-rules-for-the-lists).
 
 ## Text as data
 
@@ -196,7 +196,7 @@ planner links two issues when one issue needs", which names the planner.
 
   A link stays for a real need, as the bullet that starts "The planner links two issues when one issue needs" says. A
   real need is a need of one issue for the code or the docs that the other issue makes. The two tests are in
-  [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) and in the last paragraph of
+  [A ticket on hold](orchestrator/pick-the-tickets.md#a-ticket-on-hold) and in the last paragraph of
   [the design-gap rule](plan-review.md#the-design-gap-rule). In the first test, the blocked issue cannot start before
   the other issue lands. In the second test, the body of the blocked issue is false at a start before the other issue
   lands. A link for a real need and the link of the bullet "A ticket that renames a doc ..." can join two issues of
@@ -204,15 +204,16 @@ planner links two issues when one issue needs", which names the planner.
   reasons, so they are not links only for a shared file.
 
   A word of the user still adds a link that it asks for, also a link only for a shared file. Two cases exist: a yes of
-  the user to [the link offer](pick-the-tickets.md#the-link-offer), and the direct word of the user to add a soft
-  blocker in [The reads before the write](issues.md#the-reads-before-the-write). Before such a link, the session does
-  the label read of the bullet "A ticket on hold gets no new same-file link". That read wins over the word of the user.
+  the user to [the link offer](orchestrator/pick-the-tickets.md#the-link-offer), and the direct word of the user to add
+  a soft blocker in [The reads before the write](issues.md#the-reads-before-the-write). Before such a link, the session
+  does the label read of the bullet "A ticket on hold gets no new same-file link". That read wins over the word of the
+  user.
 
   The orchestrator sets the order of two tickets that share a file. It uses the shared-file bullet of
-  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) for two tickets of its scope. It uses
-  [the overlap rule](land-the-work.md#the-overlap-rule) and [the Docs rule](land-the-work.md#the-docs-rule) for two
-  tickets in flight. Among the tickets of one scope, the order of the picks of Pick the tickets decides which ticket
-  starts first.
+  [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets) for two tickets of its scope. It uses
+  [the overlap rule](orchestrator/land-the-work.md#the-overlap-rule) and
+  [the Docs rule](orchestrator/land-the-work.md#the-docs-rule) for two tickets in flight. Among the tickets of one
+  scope, the order of the picks of Pick the tickets decides which ticket starts first.
 
   The reason: a same-file link adds a second wait to that order. It can stall a ticket, for example behind a ticket on
   hold or a ticket of a milestone that makes no progress. On 2026-11-07, the user chose to handle a shared file between
@@ -273,27 +274,29 @@ planner links two issues when one issue needs", which names the planner.
   2 of the opener prompt of #893 read the old doc to find the session block. Requirement 6 of #894 linked to
   `operator-conversations.md#start`. Then planner-docs changed 5 lines of #893 and 4 lines of #894 to the new doc.
 
-- A ticket on hold gets no new same-file link as the blocker. [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold)
-  defines a ticket on hold and a same-file link. Before a session adds a same-file link, it reads the labels of the
-  blocker with `gh issue view <blocker> -R <repo> --json labels -q '.labels[].name'`. This read comes before the reads
-  of [The reads before the write](issues.md#the-reads-before-the-write). If the output has the line `on hold`, the
-  session adds no such link. If the read fails, the session adds no such link, and it tells the user.
+- A ticket on hold gets no new same-file link as the blocker.
+  [A ticket on hold](orchestrator/pick-the-tickets.md#a-ticket-on-hold) defines a ticket on hold and a same-file link.
+  Before a session adds a same-file link, it reads the labels of the blocker with
+  `gh issue view <blocker> -R <repo> --json labels -q '.labels[].name'`. This read comes before the reads of
+  [The reads before the write](issues.md#the-reads-before-the-write). If the output has the line `on hold`, the session
+  adds no such link. If the read fails, the session adds no such link, and it tells the user.
 
   This bullet wins over a word of the user that asks for a same-file link. If the read prints `on hold` or fails, the
   session adds no such link. At the start of a hold, the orchestrator removes each same-file link of the ticket. At the
   end of the hold, no session adds the link again.
 
 - A ticket that closes a live security gap starts as the order of a live security gap in
-  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. This bullet adds no link and removes no link.
+  [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets) says. This bullet adds no link and removes no
+  link.
 - Before the planner starts the issue-draft subagents of a milestone, it makes a table of the needs and the likely files
   of each issue. It gives the links of the table to the issue-post subagent, which posts the issues, as
   [The prompt of an issue subagent](planner-subagent.md#the-prompt-of-an-issue-subagent) says. The bullet of a real
   need, the bullet of the form and the bullet of a rename use the likely files of the table.
 - A ticket with its own folder runs in parallel and gets a blocked-by link only for a real need.
 - The planner gives each parallel line of work its own dev doc. With no shared doc, the orchestrator can run the lines
-  at the same time, and no shared-file wait of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) holds them back.
-  The planner prefers parallel lines of tickets over one chain. The planner names the risk of a conflict in the chat
-  with the user.
+  at the same time, and no shared-file wait of [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets)
+  holds them back. The planner prefers parallel lines of tickets over one chain. The planner names the risk of a
+  conflict in the chat with the user.
 
   The user wants the tickets of a milestone to run in parallel where possible. On 2026-10-18, for M13, the user chose
   two parallel lines over one chain of six tickets. On 2026-11-12, the user widened the case of different places of the
@@ -305,7 +308,7 @@ planner links two issues when one issue needs", which names the planner.
   into another milestone before its work starts. This bullet wins over each other bullet of this page that adds a link.
   For a ticket of the bullet "A ticket that renames a doc ...", the planner still edits the body of such an issue. The
   session that moves an issue into "Future" removes each link of the issue to an open issue in the same step. It uses
-  the commands of step 7 of [the defer rule](pick-the-tickets.md#the-defer-rule).
+  the commands of step 7 of [the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule).
 - The planner gives the reasons for the links in the chat with the user, not in the issue.
 
 ## The milestone of an issue
@@ -321,7 +324,8 @@ planner links two issues when one issue needs", which names the planner.
   Also on 2026-10-25, planner-docs posted #490 and #493 in "M22 — Operator". The reason of the user was: "Note: issues
   involving operators belong in M22, not docs. They can be planned here, but they go to that milestone." In the plan and
   in the landing, the tickets of "Docs" have no order with the numbered milestones. The start order of the tickets that
-  can start comes from [the priority rule](pick-the-tickets.md#pick-the-tickets), and a milestone does not change it.
+  can start comes from [the priority rule](orchestrator/pick-the-tickets.md#pick-the-tickets), and a milestone does not
+  change it.
 - GitHub holds the state of each issue and each piece of pending work. If the planner defers a fix, it writes the fix as
   an issue in its later milestone at once.
 

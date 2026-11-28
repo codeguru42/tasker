@@ -134,24 +134,25 @@ CI wait. Other task subagents can land on `main` during the wait. The task subag
 landed commit, and the queued case of step 5 only reads a later run. If a git command of the CI wait fails, the task
 subagent stops and reports the error. Without a pass through the queued case of step 5, a stop also skips steps 10 and
 11 of "Run one ticket". The wait of step 11 of the CI wait is not a stop. If the task subagent gets a resume message
-while the task is in `landed` (see ["When the job fires"](quota.md#when-the-job-fires) and
-["What the task subagent does"](quota.md#what-the-task-subagent-does) in ["Quota"](quota.md#quota)), the rule depends on
-what the task subagent did before. If the task subagent did not run `gh run rerun` yet, it does the CI wait again from
-step 1 of the CI wait. If it ran `gh run rerun` and did not send the report of step 11 yet, it does not run
-`gh run rerun` again. If the rerun did not start, it goes to step 10 of the CI wait with the result "did not start".
-Otherwise, it waits for the rerun as step 9 says, with a new 30-minute limit from its first `gh run watch` after the
-resume. Then it goes on with step 10. If it sent the report of step 11, it does not do the CI wait again. It waits for
-the answer of the orchestrator, as [the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of
-the new issue, it goes on with step 12 of the CI wait.
+while the task is in `landed` (see ["When the job fires"](orchestrator/quota.md#when-the-job-fires) and
+["What the task subagent does"](orchestrator/quota.md#what-the-task-subagent-does) in
+["Quota"](orchestrator/quota.md#quota)), the rule depends on what the task subagent did before. If the task subagent did
+not run `gh run rerun` yet, it does the CI wait again from step 1 of the CI wait. If it ran `gh run rerun` and did not
+send the report of step 11 yet, it does not run `gh run rerun` again. If the rerun did not start, it goes to step 10 of
+the CI wait with the result "did not start". Otherwise, it waits for the rerun as step 9 says, with a new 30-minute
+limit from its first `gh run watch` after the resume. Then it goes on with step 10. If it sent the report of step 11, it
+does not do the CI wait again. It waits for the answer of the orchestrator, as
+[the answer-wait rule](limits.md#the-answer-wait-rule) says. If it got the number of the new issue, it goes on with step
+12 of the CI wait.
 
 ## A failed CI run
 
 This section gives the steps of the orchestrator after a task subagent reports a failed run in step 11 of
 [the CI wait](#the-ci-wait). The orchestrator does all the steps for each failed run that a task subagent reports. An
 issue of a failed CI run gets the priority `P0`. The priority rule of
-[Pick the tickets](pick-the-tickets.md#pick-the-tickets) makes that issue start before the tickets with a lower
-priority. [The project board](issues.md#the-project-board) gives the commands of the priority. The repo has the label
-`broken-test`.
+[Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets) makes that issue start before the tickets with a
+lower priority. [The project board](issues.md#the-project-board) gives the commands of the priority. The repo has the
+label `broken-test`.
 
 1. The orchestrator makes the body file in its own step.
 
@@ -162,11 +163,12 @@ priority. [The project board](issues.md#the-project-board) gives the commands of
    `gh issue create --title '<title>' --body-file <absolute path of the body file> --milestone "<milestone in progress>"`.
    Write each single quote of the title as `'\''`, as [The reads before the write](issues.md#the-reads-before-the-write)
    says. The milestone in progress is the current milestone of
-   ["Pick the tickets"](pick-the-tickets.md#pick-the-tickets). If the verdict is broken, also add `--label broken-test`
-   to the command. The body gives the run URL, the failed tests, the verdict and the evidence of the task subagent (the
-   result of the rerun and of the local run). The body asks for the cause and a fix. It must not ask only for a retry or
-   a longer timeout. If `gh issue create` fails, no issue exists, and [the failure rule](limits.md#the-failure-rule)
-   applies. The task subagent keeps waiting, and the task stays in `landed`.
+   ["Pick the tickets"](orchestrator/pick-the-tickets.md#pick-the-tickets). If the verdict is broken, also add
+   `--label broken-test` to the command. The body gives the run URL, the failed tests, the verdict and the evidence of
+   the task subagent (the result of the rerun and of the local run). The body asks for the cause and a fix. It must not
+   ask only for a retry or a longer timeout. If `gh issue create` fails, no issue exists, and
+   [the failure rule](limits.md#the-failure-rule) applies. The task subagent keeps waiting, and the task stays in
+   `landed`.
 
    If `gh issue create` worked, set the priority `P0` on the card of the new issue. First, wait for the card:
    `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`.
@@ -184,12 +186,14 @@ priority. [The project board](issues.md#the-project-board) gives the commands of
 2. If the verdict is broken, the new issue blocks all further work. Send the broken-test notice to each other
    orchestrator, as the broken-test rule says. Add no blocked-by link to the other issues. Tell the user at once. If a
    handoff starts while the issue is open, name the issue in the handoff file, as
-   [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The reason
-   for no blocked-by link is a decision of the user. On 2026-10-17, the user decided this for #287, the broken-test
-   issue of #273, with the words "we don't need blocked-by links as long as all other orchestrators know to wait".
+   [The handoff file of the orchestrator](orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator)
+   says. The reason for no blocked-by link is a decision of the user. On 2026-10-17, the user decided this for #287, the
+   broken-test issue of #273, with the words "we don't need blocked-by links as long as all other orchestrators know to
+   wait".
 3. If the verdict is flaky, the new issue blocks nothing.
-4. Send the task subagent the number of the new issue. The bullet of ["Land the work"](land-the-work.md#land-the-work)
-   that reads the state with `tasker show <issue>` first applies to this message.
+4. Send the task subagent the number of the new issue. The bullet of
+   ["Land the work"](orchestrator/land-the-work.md#land-the-work) that reads the state with `tasker show <issue>` first
+   applies to this message.
 
 The broken-test rule: a broken-test issue is the new issue of step 1 when the verdict is broken. It has the label
 `broken-test`. The rule has two actors: the orchestrator that files the broken-test issue, and each other orchestrator.

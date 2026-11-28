@@ -17,13 +17,13 @@ third job, the pi job. [A pi stop](#a-pi-stop) and [The pi wait](#the-pi-wait) g
 
 - The reset time is the time when the quota of the account becomes available again. The quota resets at the exact reset
   time.
-- A cron job (a job, on [the orchestration pages](../orchestrator.md)) is a prompt that the orchestrator schedules for a
-  time. A one-shot job fires one time and then deletes itself. A job fires only while the orchestrator is idle. A job
-  lives only in the session of the orchestrator. The board watch job of an orchestrator is not a job of these rules (see
-  [the board watch rule](../orchestrator.md#the-board-watch-job)).
+- A cron job (a job, on [the orchestration pages](../../orchestrator.md)) is a prompt that the orchestrator schedules
+  for a time. A one-shot job fires one time and then deletes itself. A job fires only while the orchestrator is idle. A
+  job lives only in the session of the orchestrator. The board watch job of an orchestrator is not a job of these rules
+  (see [the board watch rule](../../orchestrator.md#the-board-watch-job)).
 - The five-hour job is the job for the five-hour reset time, or the job of
   [the interrupted rule](#when-there-is-no-reset-time-yet). The seven-day job is the job for the seven-day reset time.
-  On [the orchestration pages](../orchestrator.md), "a task subagent has a job", "has no job" and "a task subagent
+  On [the orchestration pages](../../orchestrator.md), "a task subagent has a job", "has no job" and "a task subagent
   without a job" mean the five-hour job. With no five-hour window (see the bullet below that starts "The case of the
   account"), a seven-day job that has not fired also counts as the job. In the other two cases, a seven-day job alone
   does not count.
@@ -140,7 +140,7 @@ of the task subagent for that reset. The delays prevent a resume of all the task
   that seven-day job. The step has no third run. The rules of that case apply, as each place says.
 
   The rule acts on one job at a time. The other jobs of the step that have a job time in the future get their job. If
-  the second `tasker show-quota` fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator
+  the second `tasker show-quota` fails, [the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator
   schedules no further job of that step.
 
 - The step that read the reset time is one of three. The first is step 1 of this section, with steps 2 to 4. The second
@@ -165,10 +165,10 @@ of the task subagent for that reset. The delays prevent a resume of all the task
   and the job did not fire (#431).
 - When the orchestrator schedules a job, the prompt of the job names the issue, the task subagent and
   [When the job fires](#when-the-job-fires). At the step that makes a five-hour job, the orchestrator reads
-  [`prompt-templates/jobs/quota-five-hour.md`](../../prompt-templates/jobs/quota-five-hour.md). At the step that makes a
-  seven-day job, it reads [`prompt-templates/jobs/quota-seven-day.md`](../../prompt-templates/jobs/quota-seven-day.md).
-  It fills `{{ISSUE}}` and `{{TASK_SUBAGENT}}` and gives the filled text as the prompt. [A pi stop](#a-pi-stop) gives
-  the file of the pi job.
+  [`prompt-templates/jobs/quota-five-hour.md`](../../../prompt-templates/jobs/quota-five-hour.md). At the step that
+  makes a seven-day job, it reads
+  [`prompt-templates/jobs/quota-seven-day.md`](../../../prompt-templates/jobs/quota-seven-day.md). It fills `{{ISSUE}}`
+  and `{{TASK_SUBAGENT}}` and gives the filled text as the prompt. [A pi stop](#a-pi-stop) gives the file of the pi job.
 - The orchestrator must keep the id of each job of a ticket. A ticket has at most one five-hour job, one seven-day job
   and one [pi job](#a-pi-stop).
 - For a seven-day job, the orchestrator must keep the seven-day reset time of the job with its id.
@@ -191,7 +191,7 @@ also reads the seven-day reset time and applies this rule. This holds whether or
   schedules the job at the first read that gives the time.
 - The prompt of the job names the issue, the task subagent, the window `seven_day` and
   [When the job fires](#when-the-job-fires).
-  [`prompt-templates/jobs/quota-seven-day.md`](../../prompt-templates/jobs/quota-seven-day.md) gives its words.
+  [`prompt-templates/jobs/quota-seven-day.md`](../../../prompt-templates/jobs/quota-seven-day.md) gives its words.
 - If the ticket has a seven-day job that has not fired, and the seven-day reset time did not change, the orchestrator
   schedules no second one. To compare, the orchestrator uses the seven-day reset time that it stored with the job id.
 - If the seven-day reset time changed, the orchestrator first applies the
@@ -202,7 +202,7 @@ also reads the seven-day reset time and applies this rule. This holds whether or
 The rule has three failure cases:
 
 - If `tasker show-quota` fails, or the `jq` read of `seven_day` gives `null`, there is no seven-day reset time yet. No
-  seven-day job changes. If `tasker show-quota` itself fails, [the failure rule](limits.md#the-failure-rule) applies.
+  seven-day job changes. If `tasker show-quota` itself fails, [the failure rule](../limits.md#the-failure-rule) applies.
 - If CronCreate of a seven-day job fails, the failure rule applies. The task subagent has no seven-day job. The next
   read tries again, because the rule schedules a seven-day job for each task subagent that has none.
 - If CronDelete of the old seven-day job fails, the failure rule applies. The old job and its id stay. The orchestrator
@@ -257,7 +257,7 @@ The rule has three failure cases:
   - In each other case, nothing changes.
 - The interrupted rule applies to each report that a `tasker` command stopped in `interrupted`, while the seven-day job
   of the task subagent counts as the job. The report can be the final answer that ends the turn of the task subagent.
-  The orchestrator runs `tasker show <issue>`. If `tasker show` fails, [the failure rule](limits.md#the-failure-rule)
+  The orchestrator runs `tasker show <issue>`. If `tasker show` fails, [the failure rule](../limits.md#the-failure-rule)
   applies, and the orchestrator goes on as if the task is in `interrupted`. If the task is not in `interrupted`, nothing
   changes. If the ticket has a five-hour job that has not fired, the orchestrator schedules no second one.
 
@@ -297,7 +297,7 @@ the ticket whose time is in the past. After the delete, the ticket has no job of
 the orchestrator does the steps of this section one time. The reason is that the time of such a job can fall inside a
 stop of the seven-day window. No session has tokens then, so the job does not fire. Such a job can fire late, next to
 the seven-day job, and send a second resume message. If CronList or CronDelete fails,
-[the failure rule](limits.md#the-failure-rule) applies. Then the orchestrator does the steps of this section.
+[the failure rule](../limits.md#the-failure-rule) applies. Then the orchestrator does the steps of this section.
 
 When a job of a ticket fires, a five-hour job, a seven-day job or a [pi job](#a-pi-stop), the orchestrator runs
 `tasker status --issue <issue>` and `tasker show <issue>`. Apart from the CronList step of the paragraph above, the
@@ -336,14 +336,14 @@ steps are the same for each kind of job. Then exactly one of these cases applies
   stays in `interrupted` until the task subagent runs `tasker resume`.
 - If the task is in `awaiting_quota_approval`, the quota use passed the approval threshold. The orchestrator tells the
   user and does not resume the task. The orchestrator does not run `tasker approve-credits` (see
-  ["Limits"](limits.md#limits)). The orchestrator does not schedule another job for that task. The task stays in
+  ["Limits"](../limits.md#limits)). The orchestrator does not schedule another job for that task. The task stays in
   `awaiting_quota_approval` until the user decides.
 - If the task is in `failed` or `landed`, the orchestrator reads the last report of the task subagent. In `landed`, the
-  task subagent does [the CI wait](ci-wait.md#the-ci-wait). If that report does not say that the task subagent stopped,
-  the orchestrator schedules the next job, as [The next job](#the-next-job) says. The task subagent keeps its slot. A
-  report of a failed run (step 11 of the CI wait) is not a stop, so the task subagent keeps its slot also then. If the
-  task subagent stopped, the orchestrator schedules no new job and tells the user. The orchestrator frees the slot only
-  in a case of "Delete the job".
+  task subagent does [the CI wait](../ci-wait.md#the-ci-wait). If that report does not say that the task subagent
+  stopped, the orchestrator schedules the next job, as [The next job](#the-next-job) says. The task subagent keeps its
+  slot. A report of a failed run (step 11 of the CI wait) is not a stop, so the task subagent keeps its slot also then.
+  If the task subagent stopped, the orchestrator schedules no new job and tells the user. The orchestrator frees the
+  slot only in a case of "Delete the job".
 - If the task is in `finishing`, `cleanup_failed`, `finished` or `cancelled`, or `tasker status --issue <issue>` lists
   no task, the orchestrator schedules no new job. The orchestrator frees the slot of the task subagent, as "Delete the
   job" says. By default, `tasker status` lists only the tasks in flight, so it does not list a `finished` or `cancelled`
@@ -378,7 +378,7 @@ reason: after a resume message, this section schedules the next job, so an older
 resume message. Review 1 of #249 found that a late five-hour job can resume the task subagent before the seven-day job,
 which then sends a second resume message. The CronList step of the first paragraph of "When the job fires" covers the
 fire of a seven-day job, and this step covers each job. If CronDelete fails,
-[the failure rule](limits.md#the-failure-rule) applies, and the job and its id stay.
+[the failure rule](../limits.md#the-failure-rule) applies, and the job and its id stay.
 
 Then the orchestrator schedules the next job: it runs `tasker show-quota` and reads the reset time, as [Terms](#terms)
 says. The orchestrator also applies [the seven-day rule](#the-seven-day-rule). If there is a reset time, the
@@ -393,14 +393,14 @@ not tell the task subagent that it has no job.
 
 - If a tasker command of the task subagent stops in `quota_blocked` or `interrupted`, the task subagent ends its turn.
   The task subagent does not wait, sleep or schedule anything. The task stays in that state. This end of the turn is a
-  wait point of [the answer-wait rule](limits.md#the-answer-wait-rule).
+  wait point of [the answer-wait rule](../limits.md#the-answer-wait-rule).
 - If the orchestrator tells the task subagent to resume, the task subagent runs `tasker status --issue <issue>`.
 - If the task is in `quota_blocked` or `interrupted`, the task subagent runs `tasker resume <issue>`. The task goes back
   to the state before the run that stopped, and tasker runs the same command again. After that command, the task reaches
-  the state that ["Run one ticket"](run-one-ticket.md#run-one-ticket) gives for its step. Then the task subagent
+  the state that ["Run one ticket"](../run-one-ticket.md#run-one-ticket) gives for its step. Then the task subagent
   continues with the next step of "Run one ticket".
 - If the task is in `awaiting_quota_approval`, the task subagent does not run `tasker resume` or
-  `tasker approve-credits`. The task subagent [stops](limits.md#the-answer-wait-rule).
+  `tasker approve-credits`. The task subagent [stops](../limits.md#the-answer-wait-rule).
 - If the task is in a different state, the task subagent does not run `tasker resume`. The task subagent continues from
   that state.
 
@@ -419,9 +419,9 @@ tasker show-config --repo <repo> | jq -r '.assistant.provider'
 ```
 
 Each rule of this page that names a pi stop uses this test. If a read of the test fails,
-[the failure rule](limits.md#the-failure-rule) applies, and the orchestrator goes on as for a full stop. The test reads
-the provider of the configuration, not the provider of the stopped run. If the user changed `assistant.provider` after
-the start of the session of the run, the two can differ, because a continued session keeps its provider.
+[the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator goes on as for a full stop. The test
+reads the provider of the configuration, not the provider of the stopped run. If the user changed `assistant.provider`
+after the start of the session of the run, the two can differ, because a continued session keeps its provider.
 
 A pi stop has one of two kinds. At the report, right after the test, the orchestrator reads the current time with
 `date`. A timed stop is a pi stop whose `resets at:` time is later than that time. A full stop is each other pi stop,
@@ -442,8 +442,8 @@ not later than the `date` read of that rule, the orchestrator schedules no pi jo
 
 If the ticket has a pi job that has not fired, the orchestrator schedules no second one. The prompt of the job names the
 issue, the task subagent, the words "pi job" and [When the job fires](#when-the-job-fires). At the CronCreate of the pi
-job, the orchestrator reads [`prompt-templates/jobs/quota-pi.md`](../../prompt-templates/jobs/quota-pi.md), fills it and
-gives the filled text as the prompt.
+job, the orchestrator reads [`prompt-templates/jobs/quota-pi.md`](../../../prompt-templates/jobs/quota-pi.md), fills it
+and gives the filled text as the prompt.
 
 At a full stop, the orchestrator schedules no job. The task stays in `quota_blocked` until the word of the user, as
 [The pi wait](#the-pi-wait) says.
@@ -468,15 +468,15 @@ orchestrator frees it, as [The delay of each task subagent](#the-delay-of-each-t
 
 A task of a timed stop leaves the pi wait at its resume message from the case of a pi stop in
 [When the job fires](#when-the-job-fires). A task of a full stop leaves the pi wait on
-[the word of the user](working-with-the-user.md#reports-and-questions-of-a-session). The word of the user can also end
-the pi wait of a task of a timed stop before its reset. A task also leaves the pi wait in each case of
+[the word of the user](../working-with-the-user.md#reports-and-questions-of-a-session). The word of the user can also
+end the pi wait of a task of a timed stop before its reset. A task also leaves the pi wait in each case of
 [Delete the job](#delete-the-job). After the last task leaves the pi wait, the pi wait ends. Then the orchestrator does
 the steps of [Pick the tickets](pick-the-tickets.md#pick-the-tickets) again.
 
 At each stop of the pi wait, the orchestrator shows a report as text in its own tab, the report of the stop. The report
 names each waiting task. A full stop also gives one question, for its own task. The orchestrator asks it in its question
-pane, as [Start](question-pane.md#start) says. A timed stop gives no question, so the report is all of it. Each earlier
-question stays open.
+pane, as [Start](../question-pane.md#start) says. A timed stop gives no question, so the report is all of it. Each
+earlier question stays open.
 
 For each waiting task, the report names the issue key and the `paused from:` and `resets at:` values. It also names the
 upstreams of the repo of that task. The orchestrator reads the upstreams with this command:
@@ -498,8 +498,8 @@ An answer of the user to the question of a task has one of these outcomes:
 - Resume: the orchestrator sends the resume message, as [A pi stop](#a-pi-stop) says. The task leaves the pi wait.
 - Another step, for example a defer: the rule of that step applies, for example
   [the defer rule](pick-the-tickets.md#the-defer-rule) with its delete of the jobs. The task leaves the pi wait.
-- Words that pick no choice: the question stays open, as [The answer](items.md#the-answer) says. The task stays in the
-  pi wait.
+- Words that pick no choice: the question stays open, as [The answer](../items.md#the-answer) says. The task stays in
+  the pi wait.
 
 ### A Codex limit
 
@@ -519,17 +519,18 @@ report is no longer a possible Codex limit for that failure.
 Before any `tasker` command that changes the task, keep the `repo:`, `attempt:`, `failed in:`, and `error:` lines from
 `tasker show <issue>`. Run `date -u +%FT%TZ` and `codex --version`. Keep each output, or the name of a failed read. Send
 the lines and outputs to the orchestrator with the words "a possible Codex limit." Wait under the
-[answer-wait rule](limits.md#the-answer-wait-rule). The task stays in `failed`.
+[answer-wait rule](../limits.md#the-answer-wait-rule). The task stays in `failed`.
 
-These steps take priority over retry instructions in [verify failures](verify-failures.md),
-[tasker commands](tasker-commands.md), and the comeback rule of [Run one ticket](run-one-ticket.md#the-comeback-rule). A
-retry can append a new run to the same transcript. On the orchestrator's answer, follow the existing "If a command
-fails" paragraph, wait, or run `tasker retry <issue>`, as directed. Keep the slot while waiting.
+These steps take priority over retry instructions in [verify failures](../verify-failures.md),
+[tasker commands](../tasker-commands.md), and the comeback rule of
+[Run one ticket](../run-one-ticket.md#the-comeback-rule). A retry can append a new run to the same transcript. On the
+orchestrator's answer, follow the existing "If a command fails" paragraph, wait, or run `tasker retry <issue>`, as
+directed. Keep the slot while waiting.
 
 #### The orchestrator's data root and questions
 
 1. Read the data root with `tasker show-config | jq -r '.dataRoot'`.
-2. Ask the user two questions in the question pane, one after the other, as [Start](question-pane.md#start) says. The
+2. Ask the user two questions in the question pane, one after the other, as [Start](../question-pane.md#start) says. The
    first question asks whether the run stopped at a Codex usage limit. The choices are (a) yes, (b) no and (c) not
    known.
 3. The second question asks for the permission to read the transcript of the failed run. It gives the path of the
@@ -584,8 +585,8 @@ that issue was #662. Otherwise give the capture to the planner as a proposed iss
 
 If the issue-state read fails, post nothing, tell the user, and keep the capture only in the report in the tab. Ask the
 approval of the comment draft in the pane. Before the ask and before the post, follow
-[the self-check rule](rules.md#docs) of rules.md. Post only after user approval, using any changes the user requests. If
-the user rejects or drops it, post nothing and keep it only in the report in the tab.
+[the self-check rule](../rules.md#docs) of rules.md. Post only after user approval, using any changes the user requests.
+If the user rejects or drops it, post nothing and keep it only in the report in the tab.
 
 Do not edit a document to claim the form of the stop; the later quota-outcome issue owns that work. An answer of (b) no
 is not a capture, so this paragraph does not apply to that answer. For a capture, keep this task in `failed`. The reset
@@ -597,7 +598,8 @@ only on the word of the user. Say this in the report of the capture.
 - When the task subagent reports that it ran `tasker finish`, for example in its final report, the orchestrator must
   delete each job of that ticket whose id still lives with CronDelete. A task in `landed` keeps its jobs and its slot
   until then, unless another bullet of this section applies, for example after a stop in
-  [the CI wait](ci-wait.md#the-ci-wait). A report of a failed run is not a stop, so the jobs stay until `tasker finish`.
+  [the CI wait](../ci-wait.md#the-ci-wait). A report of a failed run is not a stop, so the jobs stay until
+  `tasker finish`.
 - When the orchestrator cancels a task subagent, the orchestrator must delete each job of that task subagent whose id
   still lives with CronDelete.
 - If a task subagent stops for another reason and the orchestrator does not start it again, the orchestrator must delete
@@ -625,7 +627,7 @@ only on the word of the user. Say this in the report of the capture.
 - The bullet before this one does not apply to a new task subagent of an entry of
   [the task list](handoff-orchestrator.md#the-task-list). The old jobs and the old slot end with the old orchestrator.
   The new task subagent gets its own jobs and its own slot at its start.
-- If CronDelete fails, [the failure rule](limits.md#the-failure-rule) applies. The job stays. When the job fires, the
+- If CronDelete fails, [the failure rule](../limits.md#the-failure-rule) applies. The job stays. When the job fires, the
   case of "When the job fires" for its state applies. An example is the case of a finished task, which schedules
   nothing.
 

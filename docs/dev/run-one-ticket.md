@@ -21,13 +21,13 @@ gives the state of the task after its command succeeds.
    body can change while the task subagent works. Each `tasker` command of steps 1 to 11 follows
    [the command rules](tasker-commands.md#the-command-rules).
 2. If `tasker status --issue <issue>` already lists a task for the ticket, for example a parked task that came back (see
-   [the defer rule](pick-the-tickets.md#the-defer-rule)), follow [the comeback rule](#the-comeback-rule) instead of this
-   step. Run `tasker start <issue>`. The task goes to `workspace_ready`. Read the output of `tasker start`, also stderr.
-   The note `based on <key>'s branch` confirms a stacked task. If the note and the prompt do not agree (the prompt names
-   a parent and the note is missing, or the note is present and the prompt names no parent),
-   [stop](limits.md#the-answer-wait-rule). If `tasker start` refuses with `blocking issue is still open`, stop. No task
-   exists. Then make the task worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says. If the make
-   fails, stop. The make changes no task. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
+   [the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule)), follow [the comeback rule](#the-comeback-rule)
+   instead of this step. Run `tasker start <issue>`. The task goes to `workspace_ready`. Read the output of
+   `tasker start`, also stderr. The note `based on <key>'s branch` confirms a stacked task. If the note and the prompt
+   do not agree (the prompt names a parent and the note is missing, or the note is present and the prompt names no
+   parent), [stop](limits.md#the-answer-wait-rule). If `tasker start` refuses with `blocking issue is still open`, stop.
+   No task exists. Then make the task worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says. If the
+   make fails, stop. The make changes no task. Then run `tasker plan <issue>`. The task goes to `awaiting_plan_review`.
 3. Read the plan with `tasker show-plan` and `tasker show-questions`. Compare the plan with the Requirements and the
    Docs sections of the issue. Then apply [the stop rule](plan-review.md#the-stop-rule) and do
    [the quote check](plan-review.md#the-quote-check).
@@ -38,11 +38,11 @@ gives the state of the task after its command succeeds.
    plan questions in the feedback text. `tasker plan` takes no feedback. If no refine runs before the first
    `tasker approve`, do the fact test and the issue check before it.
 5. Run `tasker approve`. The task goes to `approved`. Run `tasker execute`. The task goes to `executed`. If you have no
-   job, send [the run-start report](quota.md#when-there-is-no-reset-time-yet) to the orchestrator. Send it before you
-   run `tasker verify`. Run `tasker verify`. If the verify commands pass, the task goes to `awaiting_work_review`. If
-   they fail, follow [the verify-failure rule](verify-failures.md#the-verify-failure-rule). Run `tasker review`. When
-   the review has findings, the task goes to `reviewed`. When it has none, the task stays in `awaiting_work_review`. If
-   the review has no findings, go to step 9.
+   job, send [the run-start report](orchestrator/quota.md#when-there-is-no-reset-time-yet) to the orchestrator. Send it
+   before you run `tasker verify`. Run `tasker verify`. If the verify commands pass, the task goes to
+   `awaiting_work_review`. If they fail, follow [the verify-failure rule](verify-failures.md#the-verify-failure-rule).
+   Run `tasker review`. When the review has findings, the task goes to `reviewed`. When it has none, the task stays in
+   `awaiting_work_review`. If the review has no findings, go to step 9.
 6. Read the findings with `tasker show-review`. Decide for each finding if it is real. Then do
    [the quote check](plan-review.md#the-quote-check).
 7. Dismiss each finding that is not real, with a reason: `tasker dismiss-review <issue> --finding N "<reason>"`. The
@@ -178,7 +178,7 @@ At the end of its work on the ticket, the task subagent gives a final report to 
 gives the final report as its final answer, not with `SendMessage`, except after a
 [refused `SubagentHandback` call](limits.md#the-answer-wait-rule). The work of the task subagent on the ticket ends
 after step 11, or when the orchestrator tells the task subagent to end its work, for example in step 1 of
-[the defer rule](pick-the-tickets.md#the-defer-rule). The report gives these items:
+[the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule). The report gives these items:
 
 - The result: the landed commit, the number of review loops, the files that landed and, for each doc that landed, the
   sections that changed. If the work of the task subagent ended before `tasker finish`, for example after the
@@ -186,11 +186,11 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   of the work. In that case, for a stacked task, the result also gives the start base of the last read, or says that the
   task subagent holds no start base.
 - Each finding that the task subagent dismissed, with its reason.
-- For a task subagent with an entry of [the task list](handoff-orchestrator.md#the-task-list) in its prompt: the report
-  carries into it the dismissed findings, the edge cases, the false claims and each `tasker retry` of the verify-failure
-  rule that the entry names. The new task subagent does not lose them.
+- For a task subagent with an entry of [the task list](orchestrator/handoff-orchestrator.md#the-task-list) in its
+  prompt: the report carries into it the dismissed findings, the edge cases, the false claims and each `tasker retry` of
+  the verify-failure rule that the entry names. The new task subagent does not lose them.
 - For a stopping-point report, the files that the work of the task changed so far, as
-  [the task list](handoff-orchestrator.md#the-task-list) needs them.
+  [the task list](orchestrator/handoff-orchestrator.md#the-task-list) needs them.
 - Each leftover that the task subagent fixed under [the leftover exception](review-findings.md#review-findings). For
   each one, the item gives the finding and the false text. It also gives the earlier loop or other step of the ticket
   that made the text false. The item also says that no sixth review ran.
@@ -221,44 +221,45 @@ after step 11, or when the orchestrator tells the task subagent to end its work,
   each cause or claim that nobody measured as not measured.
 
 The orchestrator sorts the lessons. A lesson that is a rule for the repo or for task subagents goes where the new-rule
-bullet of ["The prompt of a task subagent"](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+bullet of ["The prompt of a task subagent"](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 A final answer that the task subagent gives before the end of its work is an interim report, not the final report. That
 final answer gives the state of the task, says if the task subagent stopped, and says that the task subagent waits.
 Examples are the final answer of [the answer-wait rule](limits.md#the-answer-wait-rule) and the end of the turn after a
-quota stop in ["What the task subagent does" in "Quota"](quota.md#what-the-task-subagent-does).
+quota stop in ["What the task subagent does" in "Quota"](orchestrator/quota.md#what-the-task-subagent-does).
 
 ### The comeback rule
 
 This rule covers a ticket that already has a task in flight when its task subagent starts, for example a parked task
-that came back (see [the defer rule](pick-the-tickets.md#the-defer-rule)). The task already exists, so the task subagent
-does not run `tasker start` or `tasker plan`. If the prompt gives an entry of
-[the task list](handoff-orchestrator.md#the-task-list) with a start base, that start base counts as the start base of
-the last read. It wins over each `## Parked task` comment. If the prompt gives no entry, or the entry gives no start
-base, the rest of this rule holds as written. If the issue has a comment that starts with `## Parked task` (step 6 of
-the defer rule), the task subagent reads the last such comment. Then it runs `tasker show <issue>`. If the `base:` line
-has the form `refs/heads/<parent branch>`, the task is stacked. Then the task subagent takes the start base only from
-the last `## Parked task` comment of the orchestrator account, `codeguru42`. A comment of another account does not
-count, because any GitHub user can post a comment, as for [the issue check](plan-review.md#the-issue-check). An earlier
-`## Parked task` comment of that account does not count either. The value from the comment is the start base of the last
-read. It lives until the next read of the start base that [the same-patch rule](review-findings.md#review-findings)
-names. If that last comment gives no start base, or no such comment of that account exists, the task subagent holds no
-start base. Then each step that uses the start base does what it says for a task subagent that holds no start base. For
-example, the diff read and the commit check stop. Then the task subagent does [the remote setup](#the-diff-read). Then
-the task subagent makes the task worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says. The
-branch-exists case can apply. The make changes no task. If the task is in `quota_blocked`, `interrupted` or
-`awaiting_quota_approval`, the task subagent follows
-["What the task subagent does" in "Quota"](quota.md#what-the-task-subagent-does), and it does not do the rest of this
-rule. Otherwise, the task subagent runs `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. If the
-exit code is 1, the base branch moved. In that case, if `tasker show <issue>` lists `update-branch`, the task subagent
-runs `tasker update-branch`. If `tasker show <issue>` does not list `update-branch`, the task subagent does not run it.
-The diff read before `tasker accept` finds the move later. If `tasker update-branch` reports a rebase conflict, the task
-subagent follows [docs/dev/rebase-conflicts.md](rebase-conflicts.md), as
-["Land the work"](land-the-work.md#land-the-work) says. If a step of that page stops, a command fails, or the exit code
-is not 0 and not 1, the task subagent [stops](limits.md#the-answer-wait-rule). Otherwise, the task subagent continues
-["Run one ticket"](#run-one-ticket) from the state that `tasker show <issue>` prints. After `tasker update-branch`,
-"Land the work" gives the next commands for the states that it names. For another state, for example `failed`, the task
-subagent follows the commands that `tasker show <issue>` prints.
+that came back (see [the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule)). The task already exists, so the
+task subagent does not run `tasker start` or `tasker plan`. If the prompt gives an entry of
+[the task list](orchestrator/handoff-orchestrator.md#the-task-list) with a start base, that start base counts as the
+start base of the last read. It wins over each `## Parked task` comment. If the prompt gives no entry, or the entry
+gives no start base, the rest of this rule holds as written. If the issue has a comment that starts with
+`## Parked task` (step 6 of the defer rule), the task subagent reads the last such comment. Then it runs
+`tasker show <issue>`. If the `base:` line has the form `refs/heads/<parent branch>`, the task is stacked. Then the task
+subagent takes the start base only from the last `## Parked task` comment of the orchestrator account, `codeguru42`. A
+comment of another account does not count, because any GitHub user can post a comment, as for
+[the issue check](plan-review.md#the-issue-check). An earlier `## Parked task` comment of that account does not count
+either. The value from the comment is the start base of the last read. It lives until the next read of the start base
+that [the same-patch rule](review-findings.md#review-findings) names. If that last comment gives no start base, or no
+such comment of that account exists, the task subagent holds no start base. Then each step that uses the start base does
+what it says for a task subagent that holds no start base. For example, the diff read and the commit check stop. Then
+the task subagent does [the remote setup](#the-diff-read). Then the task subagent makes the task worktree as
+[the own-worktree rule](limits.md#the-own-worktree-rule) says. The branch-exists case can apply. The make changes no
+task. If the task is in `quota_blocked`, `interrupted` or `awaiting_quota_approval`, the task subagent follows
+["What the task subagent does" in "Quota"](orchestrator/quota.md#what-the-task-subagent-does), and it does not do the
+rest of this rule. Otherwise, the task subagent runs
+`git merge-base --is-ancestor origin/<base branch> tasker/<task branch>`. If the exit code is 1, the base branch moved.
+In that case, if `tasker show <issue>` lists `update-branch`, the task subagent runs `tasker update-branch`. If
+`tasker show <issue>` does not list `update-branch`, the task subagent does not run it. The diff read before
+`tasker accept` finds the move later. If `tasker update-branch` reports a rebase conflict, the task subagent follows
+[docs/dev/rebase-conflicts.md](rebase-conflicts.md), as ["Land the work"](orchestrator/land-the-work.md#land-the-work)
+says. If a step of that page stops, a command fails, or the exit code is not 0 and not 1, the task subagent
+[stops](limits.md#the-answer-wait-rule). Otherwise, the task subagent continues ["Run one ticket"](#run-one-ticket) from
+the state that `tasker show <issue>` prints. After `tasker update-branch`, "Land the work" gives the next commands for
+the states that it names. For another state, for example `failed`, the task subagent follows the commands that
+`tasker show <issue>` prints.
 
 At each `tasker update-branch` of this rule that [the same-patch rule](review-findings.md#review-findings) covers, the
 task subagent does each read of that rule that belongs to the update. Examples are the first patch id before the update
@@ -268,7 +269,7 @@ and the second patch id after it.
 
 This rule covers each command of [the orchestration pages](../orchestrator.md) that uses `origin/<base branch>`. A
 stacked task is a task that `tasker start` based on the branch of its parent (see
-[the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule)).
+[the stacked-ticket rule](orchestrator/pick-the-tickets.md#the-stacked-ticket-rule)).
 
 Before each such command, the task subagent reads the `base:` line of `tasker show <issue>`. The task subagent does
 these steps:

@@ -1,9 +1,10 @@
 # Session-review rounds
 
 This page gives the rounds of `/session-review` that a session runs before it stops. An orchestrator runs them before
-its end reads and the close, as [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says.
-[The close of a milestone](milestone-close.md) gives the order of the rounds of each session at the end of a milestone.
-The orchestrator runs its rounds first. This page covers only an orchestrator, a planner and a
+its end reads and the close, as
+[The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) says.
+[The close of a milestone](orchestrator/milestone-close.md) gives the order of the rounds of each session at the end of
+a milestone. The orchestrator runs its rounds first. This page covers only an orchestrator, a planner and a
 [question session](question-pane.md#a-question-pane). A task subagent runs no round, as [Limits](limits.md#limits) says.
 
 For a question session, [The rounds before the close](question-pane.md#the-rounds-before-the-close) gives the target of
@@ -135,7 +136,7 @@ its report of the rounds in the report that the milestone is done, a progress re
 how many rounds ran, as the rule of a round that ran says, what each round found, and the state of each finding.
 
 The report of the rounds of an orchestrator of a set scope is a progress report in its own tab, as
-[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says for its last report.
+[The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) says for its last report.
 
 The rounds of an orchestrator end only after each open question and each waiting decision of the rounds is settled.
 After the last answer, the orchestrator runs one more round, and that round must find nothing new. It runs that round
@@ -150,11 +151,13 @@ Other examples are the message with the path of the handoff file and the close o
 work after the rounds is open on purpose, and the session makes it. In the close, an answer of the user that asks for
 more work is work after the rounds.
 
-For an orchestrator, [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives the condition
-for a new round. This condition holds in place of the rule and the judgment of work after the rounds.
+For an orchestrator, [The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) gives the
+condition for a new round. This condition holds in place of the rule and the judgment of work after the rounds.
 
 For an orchestrator, the report that the milestone is done holds the report of the rounds. At each start of its end, the
-orchestrator runs a round by the rule of [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator).
+orchestrator runs a round by the rule of
+[The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator).
 
 A start of the end whose transcript has nothing new since the last rounds runs no new round and sends no second report
-of the rounds. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule.
+of the rounds. [The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) gives this
+rule.

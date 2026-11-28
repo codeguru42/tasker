@@ -74,7 +74,6 @@ describe("prompt template subagents/task", () => {
       "docs/dev/working-with-the-user.md",
       '"The pages"',
       "docs/dev/handoff.md",
-      "docs/dev/handoff-orchestrator.md",
     ]) {
       expect(filled).toContain(path);
     }

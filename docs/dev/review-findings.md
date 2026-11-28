@@ -119,9 +119,9 @@ The readers of this page are the task subagent of a ticket, and the orchestrator
   the task keeps its state. The work changes between `tasker update-branch` and the review, for example with a refine
   after a failed `tasker verify`.
 - The limit of 5 loops counts all other reviews, as before. For a task in `reviewed`, the bullet of
-  ["Land the work"](land-the-work.md#land-the-work) that starts "If the task was in `reviewed`" gives the count. On #92,
-  `main` moved two times during the review loops. Each `tasker update-branch` from `awaiting_work_review` forced a new
-  review, and each review counted as a loop. As a result, 2 of the 5 loops had no change to the work.
+  ["Land the work"](orchestrator/land-the-work.md#land-the-work) that starts "If the task was in `reviewed`" gives the
+  count. On #92, `main` moved two times during the review loops. Each `tasker update-branch` from `awaiting_work_review`
+  forced a new review, and each review counted as a loop. As a result, 2 of the 5 loops had no change to the work.
 - The early update: this rule covers a task in `reviewed` when the earlier ticket of a landing order shares a file with
   the task. Before each refine of step 8, the later task subagent reads the state of the earlier task one time on the
   `state:` line of `tasker show <earlier issue>`. If the earlier task is in `landed`, `finishing` or `finished`, and the
@@ -259,7 +259,7 @@ later, the fix goes to the first place of this list that applies:
    its task subagent to add the fix to its next refine. For a ticket that has not started, the orchestrator edits its
    issue body.
 3. If no such ticket exists, the orchestrator sends the finding to the planner, as the planner bullet of
-   [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
+   [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says.
 
 ### The docs-only update
 

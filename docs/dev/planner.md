@@ -127,8 +127,9 @@ The change passes each gate of a change of the body of an open issue:
 - The post with no approval of the user, under [The post of a draft](#the-post-of-a-draft).
 - [The escape hatch](#the-escape-hatch). For example, a change of a behavior that a user sees waits for a decision of
   the user, unless the source of the change holds the behavior.
-- The lists of the issue-post subagent and of the planner subagent in [allowed-commands.md](allowed-commands.md) and
-  their rows in [permissions.md](permissions.md).
+- The lists of the issue-post subagent and of the planner subagent in
+  [allowed-commands.md](orchestrator/allowed-commands.md) and their rows in
+  [permissions.md](orchestrator/permissions.md).
 
 The rule adds no item to a list of allowed commands.
 
@@ -137,7 +138,8 @@ The rule gives a different result in each state of the issue:
 - Not started: the issue is open, and `tasker status` lists no task for it. The rule applies.
 - Running: the issue is open, and `tasker status` lists a task for it, so the issue is in flight. The reads skip the
   write, and the planner tells the user. The rule does not apply. The bullet for an issue in flight of
-  [land-the-work.md](land-the-work.md) and the case "A change of scope of an issue in flight" of the escape hatch stay.
+  [land-the-work.md](orchestrator/land-the-work.md) and the case "A change of scope of an issue in flight" of the escape
+  hatch stay.
 - Ended and closed: the reads skip the write, and the planner tells the user. The rule does not apply. The bullet of
   [The order of the work](#the-order-of-the-work) that starts "If a ticket that landed needs a change" applies: a
   comment with the approval of the user, and no change of the body.
@@ -224,8 +226,8 @@ The planner session runs `tasker show-config --repo <key>` and reads the entries
 `sessions.models.issue-review` and `sessions.models.issue-post`. It maps each entry as
 [The model of the start](planner-subagent.md#the-model-of-the-start) says.
 
-The planner session gives each issue subagent the list of its kind from [allowed-commands.md](allowed-commands.md). It
-fills the prompt templates as the planner subagent does, as
+The planner session gives each issue subagent the list of its kind from
+[allowed-commands.md](orchestrator/allowed-commands.md). It fills the prompt templates as the planner subagent does, as
 [The prompt of an issue subagent](planner-subagent.md#the-prompt-of-an-issue-subagent) says.
 
 Before a planner subagent starts the first issue-draft subagent for a lesson or a proposed issue, it decides on a drop,
@@ -274,8 +276,8 @@ tool. [The start of an issue subagent](planner-subagent.md#the-start-of-an-issue
 `<own name>` is the own name of the planner, as [docs/dev/GLOSSARY.md](GLOSSARY.md) defines it.
 
 The fact of the first sentence of the bullet that starts "The list of the options of the Agent tool" in
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) also holds for the Agent tool of a
-subagent of a planner. On 2026-11-04, planner-m16-ticket-name-option-1, a subagent of planner-m16, passed
+[The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) also holds for the Agent
+tool of a subagent of a planner. On 2026-11-04, planner-m16-ticket-name-option-1, a subagent of planner-m16, passed
 `name: "planner-m16-ticket-name-option-1-review-1"`, and the report of the subagent that it started came from that name.
 On the same day, four subagents of planner-m16 did not see `name` in the list of the options of their Agent tool. They
 put the name of each subagent that they started only in its description and its prompt. The prompt of an issue subagent
@@ -293,9 +295,9 @@ message from `adhoc-857-name-test-1`.
 
 The planner gives each draft file a name of at most 24 characters, of lowercase letters, digits and `-`. The Agent tool
 refuses a name of more than 64 characters, and other names, as
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If the Agent tool refuses a
-name, the planner gives the draft file a shorter name. A subagent is not a session of a role, so its name gives no role
-and no slug in the sense of [docs/dev/GLOSSARY.md](GLOSSARY.md).
+[The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. If the Agent tool
+refuses a name, the planner gives the draft file a shorter name. A subagent is not a session of a role, so its name
+gives no role and no slug in the sense of [docs/dev/GLOSSARY.md](GLOSSARY.md).
 
 An ad hoc planner uses an ad hoc name in two places. The ad hoc name takes the place of `<slug>` in the path of each
 draft file. It also takes the place of `<own name>` in the name of each issue subagent. On 2026-11-11, `ListAgents` gave
@@ -513,8 +515,8 @@ Each planner goes on with the other drafts.
 The post of a draft by each planner with no approval of the user does not cover these rules:
 
 - The close of a milestone, in [Milestones](issues.md#milestones). The start of
-  [The start and the authority](milestone-close.md#the-start-and-the-authority) gives the authority for the GitHub
-  milestone closure. The escape hatch does not cover it.
+  [The start and the authority](orchestrator/milestone-close.md#the-start-and-the-authority) gives the authority for the
+  GitHub milestone closure. The escape hatch does not cover it.
 - The start of a milestone and the question about the kinds of GitHub objects, in
   [The order of the work](#the-order-of-the-work). The escape hatch does not cover them. They stay with the user.
 - A comment on an issue. It is not a draft of this section, so it still needs the approval of the user.
@@ -538,7 +540,7 @@ The initial planner starts the issue subagents of each draft, as
   and the test of each step. A root issue is an issue with no open blocker in its milestone. The manual-steps issue is a
   root issue, and it blocks each other root issue of its milestone. The reason: an assistant session cannot do these
   steps, so a step inside another ticket stops that ticket at its start.
-  [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says what the orchestrator does with the issue.
+  [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets) says what the orchestrator does with the issue.
 
 - If the user states a design fact or a rule, the planner puts it in a doc of the repo. This doc change follows
   [the tracked-change rule](rules.md#changes) of rules.md. The change goes in the plan of a ticket in progress, before

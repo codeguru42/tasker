@@ -1,10 +1,10 @@
 # Tasker commands
 
 The readers of this page are the task subagent of a ticket, and the orchestrator for the plain-form rule, the
-orchestrator-command rule and the tool-block rule. Each other actor of [the table](permissions.md#the-table) also reads
-the tool-block rule: the planner subagent, the issue-draft, issue-review and issue-post subagents, the write subagent,
-the opener subagent, the reuse subagent and a question session. The planner also reads it. The orchestrator also reads
-[A denied command](#a-denied-command).
+orchestrator-command rule and the tool-block rule. Each other actor of
+[the table](orchestrator/permissions.md#the-table) also reads the tool-block rule: the planner subagent, the
+issue-draft, issue-review and issue-post subagents, the write subagent, the opener subagent, the reuse subagent and a
+question session. The planner also reads it. The orchestrator also reads [A denied command](#a-denied-command).
 
 ## The plain-form rule
 
@@ -33,7 +33,7 @@ The plain-form rule does not cover these:
 - A read-only `tasker` command, which does not change a task. Examples are `tasker show`, `tasker status`,
   `tasker show-plan`, `tasker show-review`, `tasker show-quota` and `tasker doctor`.
   [The orchestrator-command rule](#the-orchestrator-command-rule) gives the list of read-only commands. Such a command
-  can have a pipe, for example `tasker show-quota | jq` in ["Quota"](quota.md#quota).
+  can have a pipe, for example `tasker show-quota | jq` in ["Quota"](orchestrator/quota.md#quota).
 - A change to `.claude/settings.json`. The rule does not change the permission rules of the repo.
 
 ## The orchestrator-command rule
@@ -44,7 +44,7 @@ subagent of a task is the task subagent that the orchestrator started for the ti
 
 The orchestrator runs only read-only commands itself. A task subagent runs each task change. The reason: the
 [plain-form rule](#the-plain-form-rule) and the command rules cover the task subagent. So does
-["What the task subagent does"](quota.md#what-the-task-subagent-does).
+["What the task subagent does"](orchestrator/quota.md#what-the-task-subagent-does).
 
 These commands are read-only:
 
@@ -79,13 +79,13 @@ The rule covers only `tasker` commands. The `gh`, `git` and `herdr` commands kee
 
 To run a task change, the orchestrator sends the command to the task subagent of the task. The task subagent runs it
 under the plain-form rule and the command rules, and it reports the result. An ended task subagent gets the command in a
-message, because a message starts it again, as ["Terms" in "Quota"](quota.md#terms) says. A task with no task subagent
-of this orchestrator gets a new task subagent for this one task change. An example is a parked task of an earlier
-session. [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) gives the prompt for this
-task subagent. Each step after a task change stays. An example is [Delete the job](quota.md#delete-the-job) after the
-final report of an abort. If the send or the start fails, [the failure rule](limits.md#the-failure-rule) applies. The
-command did not run, and the orchestrator does not run it itself. The write subagent of a question pane runs no `tasker`
-command.
+message, because a message starts it again, as ["Terms" in "Quota"](orchestrator/quota.md#terms) says. A task with no
+task subagent of this orchestrator gets a new task subagent for this one task change. An example is a parked task of an
+earlier session. [The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) gives
+the prompt for this task subagent. Each step after a task change stays. An example is
+[Delete the job](orchestrator/quota.md#delete-the-job) after the final report of an abort. If the send or the start
+fails, [the failure rule](limits.md#the-failure-rule) applies. The command did not run, and the orchestrator does not
+run it itself. The write subagent of a question pane runs no `tasker` command.
 
 The orchestrator never runs a denied task change. On the word of the user, the task subagent runs the call again in the
 form that the user names. Or the user runs the exact call. [The tool-block rule](#the-tool-block-rule) links here.
@@ -95,8 +95,8 @@ form that the user names. Or the user runs the exact call. [The tool-block rule]
 A tool block is a denial of a tool call. The permission rules, the classifier of auto mode or the user can deny a call.
 The user denies a call when the user declines it at a permission prompt.
 
-Each actor of [the table](permissions.md#the-table) follows these steps for a denial.
-[The report chain](permissions.md#the-report-chain) gives the path of each report.
+Each actor of [the table](orchestrator/permissions.md#the-table) follows these steps for a denial.
+[The report chain](orchestrator/permissions.md#the-report-chain) gives the path of each report.
 
 1. After a denial, the actor runs the denied action in no other form and no part of it. It stops that step. It reports
    the exact call, the exact text of the denial, the folder of the call, the step and the purpose to its starter. In
@@ -128,9 +128,9 @@ report and a reply. It covers an ordinary denial, a check failure and a denied `
 [The denial records](#the-denial-records). A check failure is no exception. The reason is the word of the user: "I
 prefer to never run a command manually with !". The user can still choose a manual run. The user runs the command and
 gives the exit code and the output. That choice comes from the user. It is not an offer of a session. The result goes,
-with the word of the user, through [the report chain](permissions.md#the-report-chain) to the actor whose step waits. If
-the command ran, the actor follows its steps after a run. If the command did not run, or no result reaches the actor,
-the step stays open. The actor then runs the action in no other form without a new word of the user.
+with the word of the user, through [the report chain](orchestrator/permissions.md#the-report-chain) to the actor whose
+step waits. If the command ran, the actor follows its steps after a run. If the command did not run, or no result
+reaches the actor, the step stays open. The actor then runs the action in no other form without a new word of the user.
 
 A task subagent runs a git command in the local clone of the orchestrator with `git -C <clone>`, not with
 `cd <clone> && git ...` in a chain.
@@ -230,11 +230,11 @@ orchestrator asks in its [question pane](question-pane.md#start). It gives the c
 [A denied command](#a-denied-command), with no `!` run. If the user chooses a manual run, the user gives the exit code
 and the output to the question session in the pane. That session sends them in its decision message, as
 [Send a decision](question-pane.md#send-a-decision) says. An issue subagent reports through its planner subagent, as
-[the report chain](permissions.md#the-report-chain) says. A subagent of a session with no role reports to its main
-session instead. The main session gives the user the facts, as the paragraph that starts "Third, the main session runs a
-call" under [The tools of a session](working-with-the-user.md#the-tools-of-a-session) says. If the user chooses a manual
-run on that path, the user gives the exit code and the output to the main session, and the main session sends them to
-its subagent.
+[the report chain](orchestrator/permissions.md#the-report-chain) says. A subagent of a session with no role reports to
+its main session instead. The main session gives the user the facts, as the paragraph that starts "Third, the main
+session runs a call" under [The tools of a session](working-with-the-user.md#the-tools-of-a-session) says. If the user
+chooses a manual run on that path, the user gives the exit code and the output to the main session, and the main session
+sends them to its subagent.
 
 The message to the planner subagent gives the output of the command, or says that the command did not run. The output
 goes with the words of the user. If the command ran, the planner subagent goes on with its work. If it did not run, the
@@ -342,8 +342,8 @@ name a list `form.kinds` or a write key. It names no write key of a record with 
 
 This section covers a [tool block](#the-tool-block-rule) of a call of a [write subagent](question-pane.md#terms), as
 [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision) says. It also covers each chain
-of the orchestrator: a denied call of the orchestrator and of each actor of [the table](permissions.md#the-table). A
-denied command of another session stays with the tool-block rule.
+of the orchestrator: a denied call of the orchestrator and of each actor of
+[the table](orchestrator/permissions.md#the-table). A denied command of another session stays with the tool-block rule.
 
 The choices that the orchestrator gives hold no `!` run, as the paragraph that starts "No session offers the user a
 command" says. A check failure keeps its own steps, as [the tool-block rule](#the-tool-block-rule) says. The first
@@ -354,8 +354,9 @@ choice depends on the actor that got the denial:
 - Write subagent: The steps of the paragraph of [the question pane](question-pane.md#the-pane-owner-handles-a-decision)
   that starts "The commands after the denied call wait" apply.
 - Planner subagent, issue subagent, opener subagent, reuse subagent and question session: the orchestrator gives the
-  word to the actor that got the denial, through its starter where [the report chain](permissions.md#the-report-chain)
-  says so. The orchestrator never runs that call itself.
+  word to the actor that got the denial, through its starter where
+  [the report chain](orchestrator/permissions.md#the-report-chain) says so. The orchestrator never runs that call
+  itself.
 - The orchestrator itself, also for a `git` write in its local clone: the orchestrator runs the call again one time on
   the word of the user.
 
@@ -428,7 +429,8 @@ plain-form rule and do not change it.
   `timeout 100 bash -c 'while :; do sleep 15; done'`. This call always exits with 124. If no report came, the task
   subagent runs the same wait again. After the report, the task subagent reads the state with `tasker show <issue>`.
   When the orchestrator starts the task subagent again, the task subagent follows
-  ["What the task subagent does"](quota.md#what-the-task-subagent-does) in ["Quota"](quota.md#quota).
+  ["What the task subagent does"](orchestrator/quota.md#what-the-task-subagent-does) in
+  ["Quota"](orchestrator/quota.md#quota).
 - Do not wait for a process with `pgrep -f`.
 - Start a `tasker` command that reads a feedback file only after the result of the last write of that file. A feedback
   file holds the feedback text of a `tasker` command in the form `"$(cat <absolute path of the file>)"` of
@@ -487,8 +489,9 @@ no fact of the list. As a result, the rule that the task subagent first does the
   tracker, and it closes the issue.
 - `tasker start` can print a GraphQL warning that the assign of the issue on the tracker failed. The warning does no
   harm.
-- `tasker start` refuses a ticket whose parent is not [ready to stack](pick-the-tickets.md#the-stacking-rule). It exits
-  with 1 and prints `<parent issue key>: blocking issue is still open`. No task exists after the refusal.
+- `tasker start` refuses a ticket whose parent is not
+  [ready to stack](orchestrator/pick-the-tickets.md#the-stacking-rule). It exits with 1 and prints
+  `<parent issue key>: blocking issue is still open`. No task exists after the refusal.
 - `tasker refine`, `tasker execute`, `tasker verify`, `tasker review` and `tasker accept` refuse a stacked task whose
   parent has landed. They print
   `the parent <parent key> of <issue key> has landed; run tasker update-branch <issue key> to move the task onto <base that the walk ends on> first`.

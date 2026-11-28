@@ -73,6 +73,6 @@ the slug of a milestone. The slug is not the path slug or the title slug of the 
 `uds:/run/user/30033/cc-socks/2406691.sock`. After a handoff of the session, its socket address is stale.
 
 **Task subagent**: A subagent that the orchestrator starts for one ticket, or for one task change of a task, with the
-[native subagent tools](pick-the-tickets.md#the-prompt-of-a-task-subagent) of its session. _Avoid_: Agent
+[native subagent tools](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) of its session. _Avoid_: Agent
 
 **User**: The person who works with the sessions.

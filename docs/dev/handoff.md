@@ -1,7 +1,8 @@
 # Handoff
 
 The readers of this page are a long-running orchestrator and the session of [a topic handoff](#a-topic-handoff), which
-can be a session of any role. The role page of the orchestrator is [The orchestrator](handoff-orchestrator.md).
+can be a session of any role. The role page of the orchestrator is
+[The orchestrator](orchestrator/handoff-orchestrator.md).
 
 ## The suggestion of a handoff
 
@@ -16,18 +17,18 @@ pane holds it.
 For an orchestrator, the go is the word of the user that starts a handoff: the go in the decision message of the go
 question, or a request of the user for a handoff. Step 1 of the steps of the old orchestrator holds from the go, also
 during the rounds before the close of the go pane. The handoff starts after step 2, as
-[The wait before the start](handoff-orchestrator.md#the-wait-before-the-start) says.
+[The wait before the start](orchestrator/handoff-orchestrator.md#the-wait-before-the-start) says.
 
 After the go, the old orchestrator does
-[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator). These steps hold the
-finish of its current tasks, or their stopping point in
-[the stopping-point case](handoff-orchestrator.md#the-stopping-point-case). Then the stop and the start of
+[the steps of the old orchestrator](orchestrator/handoff-orchestrator.md#the-steps-of-the-old-orchestrator). These steps
+hold the finish of its current tasks, or their stopping point in
+[the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case). Then the stop and the start of
 [The stop and the start](#the-stop-and-the-start) follow.
 
 The old session can suggest a handoff to the user. The old session counts the events that its role page names:
-[the landing count of the orchestrator](handoff-orchestrator.md#the-landing-count). Each role page gives the count at
-which the old session suggests a handoff, the count of a suggestion. The role page says in which reply or at which
-event.
+[the landing count of the orchestrator](orchestrator/handoff-orchestrator.md#the-landing-count). Each role page gives
+the count at which the old session suggests a handoff, the count of a suggestion. The role page says in which reply or
+at which event.
 
 The reason: the old session does not see its own status line, and no rule tells it to read its context use. The count of
 the role page stands in for that read.
@@ -44,18 +45,19 @@ In each list of open questions that the old session gives the user, the old sess
 [The form of a reply](working-with-the-user.md#the-form-of-a-reply) gives the form of these lists. The recommendation
 says "hand off now" or "not yet", with its reason. The reason gives the count of the session and the count of a
 suggestion of the role page of the session. The count of the session is
-[the landing count](handoff-orchestrator.md#the-landing-count) of the orchestrator. For an orchestrator, a list of open
-questions that it shows in its own tab is a progress report of
+[the landing count](orchestrator/handoff-orchestrator.md#the-landing-count) of the orchestrator. For an orchestrator, a
+list of open questions that it shows in its own tab is a progress report of
 [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session), and it carries no
 handoff recommendation. The go question in its question pane carries the recommendation, as
-[the landing count](handoff-orchestrator.md#the-landing-count) says.
+[the landing count](orchestrator/handoff-orchestrator.md#the-landing-count) says.
 
 When the count of the session reaches the count of a suggestion, the recommendation is "hand off now", also in an answer
 to [a question of the user](working-with-the-user.md#a-question-of-the-user). For an orchestrator, the recommendation
 "hand off now" is the go question in its question pane, at the event that brings the count to the count of a suggestion,
-as [the landing count](handoff-orchestrator.md#the-landing-count) says. No progress report of an orchestrator carries a
-handoff recommendation, also not an answer to a question of the user. A recommendation "hand off now" is a suggestion of
-a handoff, and the handoff then starts as [The suggestion of a handoff](#the-suggestion-of-a-handoff) says.
+as [the landing count](orchestrator/handoff-orchestrator.md#the-landing-count) says. No progress report of an
+orchestrator carries a handoff recommendation, also not an answer to a question of the user. A recommendation "hand off
+now" is a suggestion of a handoff, and the handoff then starts as
+[The suggestion of a handoff](#the-suggestion-of-a-handoff) says.
 
 On 2026-10-24, the user asked planner-docs to keep a handoff recommendation in each list of open questions.
 
@@ -67,13 +69,14 @@ handoff still works, and a handoff that already started goes on.
 From the start of the close of a milestone, each session of its slug suggests no handoff, starts no handoff and writes
 no handoff file. The reason: the session stops soon after the close, so a handoff file only costs tokens.
 
-[The start and the authority](milestone-close.md#the-start-and-the-authority) gives the start for each session. For the
-orchestrator, it is the report of the orchestrator that the close started. The rule lasts until the session ends.
+[The start and the authority](orchestrator/milestone-close.md#the-start-and-the-authority) gives the start for each
+session. For the orchestrator, it is the report of the orchestrator that the close started. The rule lasts until the
+session ends.
 
 For the orchestrator, the report that the close started comes only after end reads that find no open issue.
-[The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule. A wait or a return to work
-before that report keeps each handoff rule of the orchestrator. An orchestrator of a set scope sends no such report, so
-its handoff rules hold until its own close.
+[The end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule. A wait or a
+return to work before that report keeps each handoff rule of the orchestrator. An orchestrator of a set scope sends no
+such report, so its handoff rules hold until its own close.
 
 This rule wins over each rule that makes a session suggest or start a handoff. Each recommendation of a handoff is then
 "not yet", and its reason is the close. If the user asks for a handoff during the close, the session tells the user that
@@ -100,12 +103,12 @@ folder. No file of the shared handoff folder moves.
 The handoff file holds only the parts of this list and the parts of the role page. It holds no other part, for example a
 history of the session, the closed questions or the measured facts. The task list of the orchestrator is the one
 exception to the measured facts, because its entries give the facts of the stopping-point reports, as
-[The task list](handoff-orchestrator.md#the-task-list) says. The rule is the list, not these examples:
+[The task list](orchestrator/handoff-orchestrator.md#the-task-list) says. The rule is the list, not these examples:
 
 - The prompt for the new session, in a code block.
   - The prompt names the section of the role page for its start, for example
-    [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator). It does not copy the
-    steps of that section.
+    [The start of the new orchestrator](orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator). It does
+    not copy the steps of that section.
   - Under `pi`, the name comes from `-n` and the session reads it before its role work, so the prompt holds no name
     step.
   - The prompt holds only the facts of this handoff, for example the path of the file, the session name and the first
@@ -117,20 +120,20 @@ exception to the measured facts, because its entries give the facts of the stopp
     no rule in the handoff file." [The doc-read rule](doc-reads.md#the-doc-read-rule) gives the reason.
   - For an orchestrator, the prompt is the filled template
     [`prompt-templates/handoff/orchestrator.md`](../../prompt-templates/handoff/orchestrator.md), as
-    [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The
-    template holds the prompt read with `docs/orchestrator.md` as the role index.
+    [The handoff file of the orchestrator](orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator)
+    says. The template holds the prompt read with `docs/orchestrator.md` as the role index.
 - Each open question with its id, as [The form of a message](items.md#the-form-of-a-message) gives the id.
 - Each question to the user that has no answer yet, with its full text and its choices, as
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. For an orchestrator, this bullet
   covers only a question with no question file, as
-  [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. A link to a
-  pane handoff file stands next to the id of its open question, as that section says.
+  [The handoff file of the orchestrator](orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator)
+  says. A link to a pane handoff file stands next to the id of its open question, as that section says.
 - Each note for later that a message carried and that the session still keeps, with its trigger, as
   [A note for later](working-with-the-user.md#a-note-for-later) says.
 - Each decision of the user that still applies and that no doc and no open issue holds. This covers the old session and
   the earlier handoff file of the role. As a result, such a decision survives more than one handoff. A decision that an
-  entry of [The open peer requests](handoff-orchestrator.md#the-open-peer-requests) gives stands only in that entry, so
-  the file holds no second record of it.
+  entry of [The open peer requests](orchestrator/handoff-orchestrator.md#the-open-peer-requests) gives stands only in
+  that entry, so the file holds no second record of it.
 - For a decision that an open issue holds, the file gives only the number of that issue. After the issue lands, the
   decision leaves the next handoff file. The bullet of a relayed decision in
   [A decision of the user](working-with-the-user.md#a-decision-of-the-user) uses the decisions of this entry and of the
@@ -145,10 +148,11 @@ The old session puts no rule in the handoff file. The rules stay in the docs, an
 An old orchestrator of the kind `claude` starts a [planner subagent](planner-subagent.md) for each measured fact and
 each lesson. Each one is one [item of planning work](planner-subagent.md#the-start), with its own proposal file. After a
 failed start of any one of these planner subagents, an old orchestrator asks the user, as the planner bullet of
-[The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The old orchestrator waits for
-the result of each one, as [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says. A fact or a
-lesson that reaches the old orchestrator after the send becomes a planning request, and its items of planning work wait,
-as [The reports during the handoff](handoff-orchestrator.md#the-reports-during-the-handoff) says.
+[The prompt of a task subagent](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The old
+orchestrator waits for the result of each one, as
+[The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) says. A fact or a lesson that reaches the old
+orchestrator after the send becomes a planning request, and its items of planning work wait, as
+[The reports during the handoff](orchestrator/handoff-orchestrator.md#the-reports-during-the-handoff) says.
 
 The handoff file names each session other than the new session by its name, also in the prompt. It gives no
 [session ref and no socket address](GLOSSARY.md) of such a session. `ListAgents` gives the current name and session ref
@@ -171,18 +175,19 @@ session, the new session takes the message of that id from the handoff file. The
 planner-docs-5" can read as "start at planner-docs-5".
 
 When an answer names an id of the old session, a new orchestrator first takes a question of that id from its question
-file. [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives the steps.
+file. [The start of the new orchestrator](orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) gives
+the steps.
 
 ## The check of the handoff folder
 
 The new session does this check right after the prompt read, before each other step of the prompt. A new orchestrator
 after a handoff is the one exception. It does this check after all its
 [start checks](../orchestrator.md#the-start-checks) pass, as
-[The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The new session of
-a topic handoff is not a new orchestrator after a handoff, also for the role orchestrator. The new session lists the
-shared handoff folder `$HOME/Documents/tasker/handoff/` with `ls`. A new orchestrator lists its own handoff folder in
-its place, as [The handoff file](#the-handoff-file) says. Before that list, it reads the data root and runs `mkdir -p`,
-as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
+[The start of the new orchestrator](orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The
+new session of a topic handoff is not a new orchestrator after a handoff, also for the role orchestrator. The new
+session lists the shared handoff folder `$HOME/Documents/tasker/handoff/` with `ls`. A new orchestrator lists its own
+handoff folder in its place, as [The handoff file](#the-handoff-file) says. Before that list, it reads the data root and
+runs `mkdir -p`, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
 
 The files of its role are the files whose names [The handoff file](#the-handoff-file) gives for that role. A file with a
 later date and time in its name is newer.
@@ -218,19 +223,19 @@ file of 09:09 for the same role existed. Most issues of the table of the old fil
 ## The end of a handoff
 
 In a handoff of an orchestrator, the handoff ends after step 6 of
-[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator).
+[the steps of the old orchestrator](orchestrator/handoff-orchestrator.md#the-steps-of-the-old-orchestrator).
 
 The rule of the user of 2026-10-25 is the request of the user for these steps: "Then stop the orchestrator and start a
 new one."
 
 Until the end, the old session starts no new work. The role page names that work:
-[the steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator).
+[the steps of the old orchestrator](orchestrator/handoff-orchestrator.md#the-steps-of-the-old-orchestrator).
 
 ## The stop and the start
 
 In a handoff of an orchestrator, the old orchestrator starts the new orchestrator and closes its own tab, as
-[The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The first message
-of the new orchestrator is the prompt of the handoff file, and it names the path of the handoff file.
+[The start of the new orchestrator](orchestrator/handoff-orchestrator.md#the-start-of-the-new-orchestrator) says. The
+first message of the new orchestrator is the prompt of the handoff file, and it names the path of the handoff file.
 
 ## A topic handoff
 

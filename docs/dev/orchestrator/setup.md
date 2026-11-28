@@ -2,7 +2,7 @@
 
 This page gives the steps to set up a new machine, so that an orchestrator session can run the tickets of
 codeguru42/tasker there. The user is the person who sets up the machine. The user does each step of this page. The local
-clone is `$HOME/src/mine/tasker`. The configuration file is the file of tasker that [docs/config.md](../config.md)
+clone is `$HOME/src/mine/tasker`. The configuration file is the file of tasker that [docs/config.md](../../config.md)
 describes.
 
 ## The tools
@@ -11,11 +11,11 @@ On 2026-10-18, the machine used Node 26.7.0, git 2.47.3, gh 2.101.0 and Claude C
 
 1. Install git, gh, Claude Code and nvm.
 2. Log in to gh as the account `codeguru42`: `gh auth login --hostname github.com --scopes project`. The scope `project`
-   is for the project board. [The token scopes of docs/config.md](../config.md#token-scopes) give the scope that tasker
-   needs. If a command of the project board fails for a missing scope, follow the fix in
-   [The project board](issues.md#the-project-board).
+   is for the project board. [The token scopes of docs/config.md](../../config.md#token-scopes) give the scope that
+   tasker needs. If a command of the project board fails for a missing scope, follow the fix in
+   [The project board](../issues.md#the-project-board).
 3. Make sure that the ssh key of the account reaches `git@github.com`, because the remote of the repo uses ssh:
-   `ssh -T git@github.com`. [Facts about outside tools](version-control.md#facts-about-outside-tools) gives the exit
+   `ssh -T git@github.com`. [Facts about outside tools](../version-control.md#facts-about-outside-tools) gives the exit
    codes of this command. If the exit code shows a wrong key, fix the ssh key of the account. Then run the command
    again.
 
@@ -24,18 +24,18 @@ On 2026-10-18, the machine used Node 26.7.0, git 2.47.3, gh 2.101.0 and Claude C
 1. Clone the repo to the local clone: `git clone git@github.com:codeguru42/tasker.git $HOME/src/mine/tasker`. The
    orchestrator and its task subagents run git and `tasker` from this clone.
 2. In the local clone, run `nvm install`, so that the clone uses the Node version of step 1 of
-   [Set up a working copy](../../CONTRIBUTING.md#set-up-a-working-copy).
-3. [The folder bullet of Limits](limits.md#limits) gives the place of the task worktree. Do not change the other entries
-   of `$HOME/src/mine/tasker-worktrees/`. They belong to other work.
+   [Set up a working copy](../../../CONTRIBUTING.md#set-up-a-working-copy).
+3. [The folder bullet of Limits](../limits.md#limits) gives the place of the task worktree. Do not change the other
+   entries of `$HOME/src/mine/tasker-worktrees/`. They belong to other work.
 
 ## The installed tasker
 
-The orchestrator runs the tickets with the installed `tasker`, as [docs/orchestrator.md](../orchestrator.md) says.
+The orchestrator runs the tickets with the installed `tasker`, as [docs/orchestrator.md](../../orchestrator.md) says.
 
 1. Set up the configuration file:
-   - Open the configuration file. [Where the file is](../config.md#where-the-file-is) gives its place.
+   - Open the configuration file. [Where the file is](../../config.md#where-the-file-is) gives its place.
    - If the configuration file does not exist, make it with the top-level keys of
-     [the example of docs/config.md](../config.md#example), for example `dataRoot`, `skillsDirs` and `limits`.
+     [the example of docs/config.md](../../config.md#example), for example `dataRoot`, `skillsDirs` and `limits`.
    - Under `repos`, add this entry. In a new file, it is the only entry under `repos`:
 
    ```json
@@ -62,19 +62,19 @@ The orchestrator runs the tickets with the installed `tasker`, as [docs/orchestr
    }
    ```
 
-2. In the local clone, do the steps of [the Install section of README.md](../../README.md#install). The steps run
+2. In the local clone, do the steps of [the Install section of README.md](../../../README.md#install). The steps run
    `npm run install:global`. The script never checks out another commit. The script runs `tasker install-skills`. That
    command copies the skills of the installed tasker into each folder of `skillsDirs`. These skills come from the folder
    `skills/` of the repo. That command needs the configuration file.
 3. Run `tasker doctor`. It must pass. If a check fails, fix the cause that the check names. Then run `tasker doctor`
    again.
 4. If the tasker clone does not exist yet, run `tasker start` for one issue first. Then, in the local clone, add the
-   read-only `tasker` remote, as steps 1 and 2 of [docs/dev/rebase-conflicts.md](rebase-conflicts.md#procedure) say.
+   read-only `tasker` remote, as steps 1 and 2 of [docs/dev/rebase-conflicts.md](../rebase-conflicts.md#procedure) say.
 
 ## Claude Code
 
-The repo file `.claude/settings.json` needs no change, as [the plain-form rule](tasker-commands.md#the-plain-form-rule)
-says.
+The repo file `.claude/settings.json` needs no change, as
+[the plain-form rule](../tasker-commands.md#the-plain-form-rule) says.
 
 The permission rules of the actors of the orchestration live in the docs. See [the permission model](permissions.md).
 The exception is the ask rules of the steps below. They live in the user file and reach each actor.

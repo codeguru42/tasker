@@ -78,9 +78,9 @@ installing session tells its own user, and that user decides whether to wait or 
 In each case, the installing session installs only when no run is in progress, as the paragraph that starts "No run is
 in progress" says. The rule that an orchestrator acts on a relayed hold at once is an exception for a hold before an
 install only. The bullet "Only the user changes a landing order of the overlap rule" of
-[Land the work](land-the-work.md#land-the-work) stays as it is, with its sentences on a relayed change. The bullet on a
-relayed decision in [A decision of the user](working-with-the-user.md#a-decision-of-the-user) also stays as it is. The
-reason for this exception: a hold only delays work. The user decided this on 2026-10-25.
+[Land the work](orchestrator/land-the-work.md#land-the-work) stays as it is, with its sentences on a relayed change. The
+bullet on a relayed decision in [A decision of the user](working-with-the-user.md#a-decision-of-the-user) also stays as
+it is. The reason for this exception: a hold only delays work. The user decided this on 2026-10-25.
 
 After the end of the hold, each orchestrator loads the tasker skill again with the Skill tool, before its next `tasker`
 command. The installing session also does this. Each orchestrator tells each of its task subagents that the hold ended.

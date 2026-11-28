@@ -1,11 +1,11 @@
 # Landing order
 
-The readers of this page are the orchestrator and the task subagents. [The base rule](run-one-ticket.md#the-base-rule)
-covers each command of this page that uses `origin/<base branch>`.
+The readers of this page are the orchestrator and the task subagents.
+[The base rule](../run-one-ticket.md#the-base-rule) covers each command of this page that uses `origin/<base branch>`.
 
 ## Land the work
 
-The steps to land a ticket are in ["Run one ticket"](run-one-ticket.md#run-one-ticket). This section gives the rules
+The steps to land a ticket are in ["Run one ticket"](../run-one-ticket.md#run-one-ticket). This section gives the rules
 between tickets. The wait rules are the bullets of [Land the work](#land-the-work) from "The later task subagent does
 the steps of ..." to "If the orchestrator changes the landing order", [the hold rule](#the-hold-rule) and
 [the stuck-task rule](#the-stuck-task-rule). These bullets include the start-state bullet ("The start state is ..."),
@@ -26,7 +26,7 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   reads it before each wait, also before a new wait. If the earlier task is far from landing, for example in
   `awaiting_plan_review`, the orchestrator tells the user. If the start state is before `awaiting_work_review`,
   [the hold rule](#the-hold-rule) also applies. If `tasker show <issue>` fails,
-  [the failure rule](limits.md#the-failure-rule) applies, and the start state is unknown.
+  [the failure rule](../limits.md#the-failure-rule) applies, and the start state is unknown.
 - To wait, the later task subagent reads the state of the issue of the earlier ticket one time:
   `gh issue view <number> --json state -q .state`. If the state is `OPEN`, the later task subagent reads it again every
   30 seconds until it is `CLOSED`. The later task subagent waits at most 60 minutes from the first read. With each read
@@ -38,11 +38,11 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   no more task states in this wait, and it waits for the close of the issue.
 - If the state is still `OPEN` 60 minutes after the first read, the later task subagent stops waiting. To stop waiting
   means that the later task subagent stops reading the issue state and the state of the earlier task.
-- If the earlier task subagent [stops](limits.md#the-answer-wait-rule) or ends its work before the issue of the earlier
-  ticket closes, the orchestrator tells the later task subagent to stop waiting. Then the later task subagent stops
-  waiting. For example, the earlier task subagent stops after its last loop of
-  ["Review findings"](review-findings.md#review-findings). Or it reports a rebase conflict that it does not fix (see
-  [docs/dev/rebase-conflicts.md](rebase-conflicts.md)). Or it stops in [the CI wait](ci-wait.md#the-ci-wait), for
+- If the earlier task subagent [stops](../limits.md#the-answer-wait-rule) or ends its work before the issue of the
+  earlier ticket closes, the orchestrator tells the later task subagent to stop waiting. Then the later task subagent
+  stops waiting. For example, the earlier task subagent stops after its last loop of
+  ["Review findings"](../review-findings.md#review-findings). Or it reports a rebase conflict that it does not fix (see
+  [docs/dev/rebase-conflicts.md](../rebase-conflicts.md)). Or it stops in [the CI wait](../ci-wait.md#the-ci-wait), for
   example when no run showed.
 - This bullet covers two tickets of the orchestrator. If the earlier task subagent stops to wait for a decision of the
   user, the orchestrator changes the landing order at once. It changes the order as the bullet "If the orchestrator
@@ -72,15 +72,15 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   the orchestrator of the earlier ticket can get the words of the user. Another orchestrator can relay a change of a
   landing order from the user. The orchestrator that relays the change also shows one progress report as text in its own
   tab. Then the orchestrator that gets the relay asks its own user to confirm the change before it tells its task
-  subagent, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. Until the user confirms,
-  the old order stays: the landing order before the relay. The reason: a message from another session is not an answer
-  of the user. The relayed order can also differ from an answer that the user gave before to the orchestrator that gets
-  the relay. When the user confirms, the orchestrator that gets the relay tells its task subagent the new order, as the
-  overlap rule says. The orchestrator that gets the relay also tells the other orchestrator with `SendMessage` that its
-  user confirmed. The orchestrator that relays the change does not tell its own task subagent the new order until the
-  other orchestrator reports that its user confirmed. Otherwise the two task subagents follow opposite orders for a
-  time. If the user of the orchestrator that gets the relay rejects the change, that orchestrator tells the other
-  orchestrator with `SendMessage`. Then the old order stays for both orchestrators.
+  subagent, as [A decision of the user](../working-with-the-user.md#a-decision-of-the-user) says. Until the user
+  confirms, the old order stays: the landing order before the relay. The reason: a message from another session is not
+  an answer of the user. The relayed order can also differ from an answer that the user gave before to the orchestrator
+  that gets the relay. When the user confirms, the orchestrator that gets the relay tells its task subagent the new
+  order, as the overlap rule says. The orchestrator that gets the relay also tells the other orchestrator with
+  `SendMessage` that its user confirmed. The orchestrator that relays the change does not tell its own task subagent the
+  new order until the other orchestrator reports that its user confirmed. Otherwise the two task subagents follow
+  opposite orders for a time. If the user of the orchestrator that gets the relay rejects the change, that orchestrator
+  tells the other orchestrator with `SendMessage`. Then the old order stays for both orchestrators.
 
   The user decided the set rule on 2026-10-31: one confirmation of the user covered a named set of tickets. Its case on
   record was a set of pairs of two numbered milestones: #550 of M14 with #658 and #659 of M27. On 2026-11-07, the user
@@ -97,7 +97,7 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   task subagent. From then on, "earlier" and "later" name the roles in the new landing order. If the new earlier task
   subagent waits before `tasker accept`, its task is in `awaiting_work_review`, and it continues step 9 of "Run one
   ticket" from `tasker accept`. Otherwise, it continues its steps of "Run one ticket", and it does not wait before
-  `tasker accept`. Step 9 of [Run one ticket](run-one-ticket.md#run-one-ticket) gives the state after each command.
+  `tasker accept`. Step 9 of [Run one ticket](../run-one-ticket.md#run-one-ticket) gives the state after each command.
   Before the new later task subagent runs `tasker accept` in step 9, it follows the wait rules of this section, from the
   bullet "The later task subagent does the steps of ...". The orchestrator changes a landing order only between two of
   its own tickets. For a landing order of the overlap rule, the bullet "Only the user changes a landing order of the
@@ -108,28 +108,28 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   `tasker finish` of the earlier task subagent can still take up to 30 minutes. On 2026-10-17, the user told the task
   subagent of #231 to run `tasker update-branch` while the task of its parent #229 was in `landed` and waited for its CI
   run. The task goes from `awaiting_work_review` to `executed`. For a stacked task,
-  [the base rule](run-one-ticket.md#the-base-rule) says what this update does. The later task subagent then reads the
-  `base:` line again, as [the base rule](run-one-ticket.md#the-base-rule) says. Then the later task subagent continues
-  step 9 of "Run one ticket" from its `tasker verify`. If `tasker verify` fails, the later task subagent follows
-  [the verify-failure rule](verify-failures.md#the-verify-failure-rule). If the issue of the earlier ticket is still
-  open when the later task subagent reaches `tasker accept`, the later task subagent waits for the close, as the bullet
-  "To wait" says. If the later task subagent did not start that wait yet, for example under the hold rule, it starts the
-  wait. If the later task subagent already ran `tasker update-branch` after the earlier ticket landed, the sentences
-  above do not apply. The later task subagent runs no second `tasker update-branch` and continues step 9 of "Run one
-  ticket" from `tasker accept`. The `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>` of
-  [the diff read](run-one-ticket.md#the-diff-read) right before `tasker accept` finds a later move of the base branch.
-  On 2026-10-17, the task subagent of #248 updated its branch from `executed` after its parent #252 landed, and then
-  asked the orchestrator about a second update.
+  [the base rule](../run-one-ticket.md#the-base-rule) says what this update does. The later task subagent then reads the
+  `base:` line again, as [the base rule](../run-one-ticket.md#the-base-rule) says. Then the later task subagent
+  continues step 9 of "Run one ticket" from its `tasker verify`. If `tasker verify` fails, the later task subagent
+  follows [the verify-failure rule](../verify-failures.md#the-verify-failure-rule). If the issue of the earlier ticket
+  is still open when the later task subagent reaches `tasker accept`, the later task subagent waits for the close, as
+  the bullet "To wait" says. If the later task subagent did not start that wait yet, for example under the hold rule, it
+  starts the wait. If the later task subagent already ran `tasker update-branch` after the earlier ticket landed, the
+  sentences above do not apply. The later task subagent runs no second `tasker update-branch` and continues step 9 of
+  "Run one ticket" from `tasker accept`. The `git merge-base --is-ancestor origin/<base branch> tasker/<task branch>` of
+  [the diff read](../run-one-ticket.md#the-diff-read) right before `tasker accept` finds a later move of the base
+  branch. On 2026-10-17, the task subagent of #248 updated its branch from `executed` after its parent #252 landed, and
+  then asked the orchestrator about a second update.
 - The later task subagent of a stacked task never runs `tasker merge` or `tasker mark-landed` before the issue of the
   parent is closed, because the landing guard refuses a stacked task whose parent did not land and whose task did not
-  move (see [the stacked-task guards](workspaces.md#stacked-task)).
+  move (see [the stacked-task guards](../workspaces.md#stacked-task)).
 - If a refine, or the `tasker review <issue> "<feedback>"` of the add-work rule, must change a file that another ticket
   changed and landed after this task started, the task subagent runs `tasker update-branch` first. Otherwise the new
   work uses the old text of the file, and the rebase at landing can conflict.
 - If the task is in `reviewed` (a refine of step 8) or in `awaiting_work_review` (work for the add-work rule),
   `tasker update-branch` moves the task to `executed`. Then the task subagent runs `tasker verify`. If the verify
   passes, the task goes to `awaiting_work_review`, and the task subagent runs `tasker review`. If it fails, the task
-  subagent follows [the verify-failure rule](verify-failures.md#the-verify-failure-rule).
+  subagent follows [the verify-failure rule](../verify-failures.md#the-verify-failure-rule).
 - The new review is a full review pass. It reports the open findings again as still open, and it can also report new
   findings.
 - If the new review has findings, the task goes to `reviewed`, and the task subagent goes to step 6. Steps 6 to 8 then
@@ -139,7 +139,7 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   follows the add-work rule instead of going to step 9.
 - If the new review has no findings, the task stays in `awaiting_work_review`, and `tasker refine` refuses to run. In
   that case, if the task subagent still must make the change, it follows
-  [the add-work rule](run-one-ticket.md#the-add-work-rule). Otherwise, the task subagent goes to step 9.
+  [the add-work rule](../run-one-ticket.md#the-add-work-rule). Otherwise, the task subagent goes to step 9.
 - If the task was in `reviewed`, the review before `tasker update-branch` and the review after it count as one loop of
   "Review findings".
 - If the task is in `awaiting_plan_review` (a refine of step 4), `tasker update-branch` keeps the task in
@@ -150,7 +150,7 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   head of the task did not move, so no demotion happened. The task stayed in `approved` with its approval, and no refine
   was needed.
 - If `tasker update-branch` reports a rebase conflict, the task subagent follows
-  [docs/dev/rebase-conflicts.md](rebase-conflicts.md). The task subagent does not copy that procedure.
+  [docs/dev/rebase-conflicts.md](../rebase-conflicts.md). The task subagent does not copy that procedure.
 - Before the orchestrator sends added work or an answer to a task subagent, the orchestrator reads the state of the task
   with `tasker show <issue>`. The orchestrator runs this command itself. It does not send a message to the task subagent
   only to learn the state, because a message to a task subagent that has ended starts the task subagent again (see
@@ -161,24 +161,24 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   `## Design gap`, while the task subagent of that ticket runs, the orchestrator sends all the changes together, before
   the next refine of the task subagent. On #117, edits that arrived one by one cost extra refines. After a comment that
   starts with `## Change of scope`, the orchestrator also posts the open-question note of
-  [the change-of-scope comment](plan-review.md#the-change-of-scope-comment) on each open issue with no task that names
-  the changed fact. Before each such edit or post, the orchestrator follows [the self-check rule](rules.md#docs) of
-  rules.md.
+  [the change-of-scope comment](../plan-review.md#the-change-of-scope-comment) on each open issue with no task that
+  names the changed fact. Before each such edit or post, the orchestrator follows
+  [the self-check rule](../rules.md#docs) of rules.md.
 - This bullet covers a change to an issue in flight by an orchestrator. The requester is the orchestrator that wants the
   change. The requester does not edit the body. The orchestrator of the task is the orchestrator of the milestone of the
-  issue, found as [The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) says, except in the cases
-  below. Before it changes an issue, the requester first runs `tasker status` and looks for the full issue key in the
-  output. The requester counts the issue as in flight when the output lists a task for it. If the output lists no task
-  for the issue, the requester does not follow this bullet. If `tasker status` fails, the failure rule applies. The
+  issue, found as [The orchestrator of a task](../../orchestrator.md#the-orchestrator-of-a-task) says, except in the
+  cases below. Before it changes an issue, the requester first runs `tasker status` and looks for the full issue key in
+  the output. The requester counts the issue as in flight when the output lists a task for it. If the output lists no
+  task for the issue, the requester does not follow this bullet. If `tasker status` fails, the failure rule applies. The
   requester posts no comment, sends nothing to the planner and leaves the body as it is. If the issue is in flight, the
   requester chooses by the kind of change: it puts a correction of what the ticket builds in a comment on the issue, and
   it sends a new requirement to the planner. For a correction, the requester first asks its user, as
-  [the stop rule](plan-review.md#the-stop-rule) says. Then the requester posts
-  [a change-of-scope comment](plan-review.md#the-change-of-scope-comment). Then the requester reads the milestone of the
-  issue with `gh issue view <number> --json milestone -q '.milestone.title'`. If `gh issue view` fails, the failure rule
-  applies, and the requester leaves the comment on the issue and the body as it is. If the command prints an empty line
-  (the issue has no milestone), the requester leaves the comment on the issue and the body as it is, and it tells the
-  user. The requester runs the task when the task subagent of the task is a task subagent of the requester. If the
+  [the stop rule](../plan-review.md#the-stop-rule) says. Then the requester posts
+  [a change-of-scope comment](../plan-review.md#the-change-of-scope-comment). Then the requester reads the milestone of
+  the issue with `gh issue view <number> --json milestone -q '.milestone.title'`. If `gh issue view` fails, the failure
+  rule applies, and the requester leaves the comment on the issue and the body as it is. If the command prints an empty
+  line (the issue has no milestone), the requester leaves the comment on the issue and the body as it is, and it tells
+  the user. The requester runs the task when the task subagent of the task is a task subagent of the requester. If the
   requester runs the task, the requester is the orchestrator of the task. This case also covers a blocker that the
   requester runs under [the earlier-blocker offer](pick-the-tickets.md#pick-the-tickets). In that case, the orchestrator
   of the task sends no message. If the issue is of the own milestone of the requester and the requester does not run the
@@ -186,49 +186,49 @@ the bullet "To wait" and the bullet "Only the user changes a landing order of th
   orchestrator runs the task, and no rule finds which one. If the task is a parked task, no orchestrator runs it. In
   each other case, the requester sends the orchestrator of the task one message with `SendMessage` that gives the link
   of the comment. The requester sends the message to the session that
-  [The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) finds, of the form `orchestrator-<slug>`.
-  The requester counts a missing session with the name of the milestone as a failed message. If `SendMessage` fails, the
-  failure rule applies, and the requester leaves the comment on the issue and the body as it is. Before the orchestrator
-  of the task sends the link of the comment, the orchestrator of the task reads the state of the task with
-  `tasker show <issue>`, as the bullet "Before the orchestrator sends added work or an answer to a task subagent" of
-  [Land the work](#land-the-work) says. If `tasker show <issue>` fails, the failure rule applies to the orchestrator of
-  the task. The orchestrator of the task sends no link to its task subagent. The comment stays on the issue. If the task
-  is in `accepted` or a later state (`merging`, `landed`, `finishing`, `cleanup_failed` or `finished`), the orchestrator
-  of the task sends no link to its task subagent. The orchestrator of the task tells the user and the requester that no
-  step takes the correction. If the requester is the orchestrator of the task, the two orchestrators are one session,
-  and the orchestrator of the task tells only the user. If the two orchestrators are not one session, the orchestrator
-  of the task tells the requester with `SendMessage`, to the session of the requester. If `SendMessage` fails, the
-  failure rule applies to the orchestrator of the task. The comment stays on the issue, and the body stays as it is. The
-  user decides the next step, for example a new issue after the landing. Otherwise, the orchestrator of the task sends
-  the link of the comment to its task subagent, and the task subagent of the task follows the steps of the section "The
-  change-of-scope comment" of plan-review.md. The orchestrator of the task makes no decision about an edit. For a new
-  requirement, the requester sends the requirement to the planner, as the planner bullet of
-  [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The requester sends no
-  message to the orchestrator of the task for a new requirement. On 2026-10-15, orchestrator-m8 edited one bullet of the
-  body of #194 (Docs) while the task of #194 was in review loop 1, and orchestrator-docs learned of the edit only from a
-  later message.
+  [The orchestrator of a task](../../orchestrator.md#the-orchestrator-of-a-task) finds, of the form
+  `orchestrator-<slug>`. The requester counts a missing session with the name of the milestone as a failed message. If
+  `SendMessage` fails, the failure rule applies, and the requester leaves the comment on the issue and the body as it
+  is. Before the orchestrator of the task sends the link of the comment, the orchestrator of the task reads the state of
+  the task with `tasker show <issue>`, as the bullet "Before the orchestrator sends added work or an answer to a task
+  subagent" of [Land the work](#land-the-work) says. If `tasker show <issue>` fails, the failure rule applies to the
+  orchestrator of the task. The orchestrator of the task sends no link to its task subagent. The comment stays on the
+  issue. If the task is in `accepted` or a later state (`merging`, `landed`, `finishing`, `cleanup_failed` or
+  `finished`), the orchestrator of the task sends no link to its task subagent. The orchestrator of the task tells the
+  user and the requester that no step takes the correction. If the requester is the orchestrator of the task, the two
+  orchestrators are one session, and the orchestrator of the task tells only the user. If the two orchestrators are not
+  one session, the orchestrator of the task tells the requester with `SendMessage`, to the session of the requester. If
+  `SendMessage` fails, the failure rule applies to the orchestrator of the task. The comment stays on the issue, and the
+  body stays as it is. The user decides the next step, for example a new issue after the landing. Otherwise, the
+  orchestrator of the task sends the link of the comment to its task subagent, and the task subagent of the task follows
+  the steps of the section "The change-of-scope comment" of plan-review.md. The orchestrator of the task makes no
+  decision about an edit. For a new requirement, the requester sends the requirement to the planner, as the planner
+  bullet of [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The requester sends
+  no message to the orchestrator of the task for a new requirement. On 2026-10-15, orchestrator-m8 edited one bullet of
+  the body of #194 (Docs) while the task of #194 was in review loop 1, and orchestrator-docs learned of the edit only
+  from a later message.
 - When the final report of the task subagent of a ticket says that the ticket landed, the orchestrator of the ticket
   does these steps in this order. The final report says this when the task subagent ran `tasker finish`, which closes
   the issue. First, the orchestrator deletes the jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says.
-  Then the orchestrator does [the re-read rule](doc-reads.md#the-re-read-rule). Then the orchestrator does the memory
-  step. Then the orchestrator does [the notice rule](doc-reads.md#the-notice-rule). Then the orchestrator does
-  [the task subagent notice](doc-reads.md#the-task-subagent-notice). Last, the orchestrator reads the board for the next
-  ticket, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. In the memory step, the orchestrator
+  Then the orchestrator does [the re-read rule](../doc-reads.md#the-re-read-rule). Then the orchestrator does the memory
+  step. Then the orchestrator does [the notice rule](../doc-reads.md#the-notice-rule). Then the orchestrator does
+  [the task subagent notice](../doc-reads.md#the-task-subagent-notice). Last, the orchestrator reads the board for the
+  next ticket, as [Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. In the memory step, the orchestrator
   searches its memory files for the number of the issue. If the search finds no file with the number, the memory step is
   complete. In each file that names the issue, the orchestrator deletes the lines that the landed docs now hold. After
-  the re-read rule, the orchestrator reads the landed docs as [the doc-read rule](doc-reads.md#the-doc-read-rule) says.
-  If no line is left besides the frontmatter and the links, the orchestrator deletes the file and its line in the index
-  of the memory. If a search, an edit or a delete of a memory file fails, the orchestrator tells the user the step and
-  the error. The memory file then stays as it was, and the orchestrator continues with the next step of the order. The
-  orchestrator does these steps for each ticket, also for a ticket of the milestone "Docs". The user decided the memory
-  step on 2026-10-17 and the order on 2026-10-18.
+  the re-read rule, the orchestrator reads the landed docs as [the doc-read rule](../doc-reads.md#the-doc-read-rule)
+  says. If no line is left besides the frontmatter and the links, the orchestrator deletes the file and its line in the
+  index of the memory. If a search, an edit or a delete of a memory file fails, the orchestrator tells the user the step
+  and the error. The memory file then stays as it was, and the orchestrator continues with the next step of the order.
+  The orchestrator does these steps for each ticket, also for a ticket of the milestone "Docs". The user decided the
+  memory step on 2026-10-17 and the order on 2026-10-18.
 - A live test is a test of the work of a ticket on a real outside system or with an account of the user. An example is a
   real Jira site of the user. No session runs a live test.
 
   A ticket that needs a live test does not wait for it. The orchestrator judges whether a ticket needs a live test, and
   this judgment is open on purpose. If the task subagent asks whether the ticket waits, the orchestrator tells it to go
-  on with the steps of ["Run one ticket"](run-one-ticket.md#run-one-ticket). A word of the user can still put the ticket
-  on hold, as [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) says.
+  on with the steps of ["Run one ticket"](../run-one-ticket.md#run-one-ticket). A word of the user can still put the
+  ticket on hold, as [A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) says.
 
   The orchestrator asks the user nothing about the live test before the landing. If the user asks whether the ticket
   waits for its live test, the orchestrator recommends the landing. When the orchestrator tells the user that the ticket
@@ -260,9 +260,9 @@ warning of `tasker approve` named the right files.
 The orchestrator that does the compare runs each git command of the compare in its local clone. First, the orchestrator
 that does the compare runs `git fetch --multiple tasker origin`. Right after the fetch, the orchestrator that does the
 compare runs `git diff --name-only origin/<base branch>...tasker/<task branch>` for each task in flight. The `branch:`
-line of `tasker show <issue>` gives the task branch, and [the base rule](run-one-ticket.md#the-base-rule) gives the
+line of `tasker show <issue>` gives the task branch, and [the base rule](../run-one-ticket.md#the-base-rule) gives the
 base. Each diff uses each remote-tracking ref in only one command, so the diff needs no hash read of its own, as
-[the shared-clone rule](limits.md#the-shared-clone-rule) says. For a stacked task, steps 3 and 4 of the base rule
+[the shared-clone rule](../limits.md#the-shared-clone-rule) says. For a stacked task, steps 3 and 4 of the base rule
 already give the base as a hash.
 
 If `git diff` exits with 0, the output gives one path on each line. If the output is empty, the diff lists no file. Then
@@ -270,7 +270,7 @@ the orchestrator that does the compare takes the files of the task from its plan
 
 Any other exit code of `git fetch` or `git diff` is a failure. For example, `git fetch` exits with 128 in a clone with
 no `tasker` remote. `git diff` exits with 128 when the task branch is not on the `tasker` remote. If a command of the
-compare fails, [the failure rule](limits.md#the-failure-rule) applies.
+compare fails, [the failure rule](../limits.md#the-failure-rule) applies.
 
 For a shared file, the overlap rule sets no landing order, except for a real need. Each ticket lands as soon as it is
 ready, so the first ticket that is ready lands first. The list of [the Docs rule](#the-docs-rule) applies to the shared
@@ -283,9 +283,9 @@ this judgment is open on purpose. For a real need, the overlap rule sets a landi
 or of no milestone then follows the bullets of [Land the work](#land-the-work). Each orchestrator tells its own task
 subagent the landing order, also for the ticket that lands first. If a peer runs the other ticket, the orchestrator that
 does the compare sends the landing order to that peer, found as
-[The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) says. If the orchestrator runs the other
+[The orchestrator of a task](../../orchestrator.md#the-orchestrator-of-a-task) says. If the orchestrator runs the other
 ticket itself, for example when the slug of its milestone is the own slug or when the ticket is of the own set scope, no
-message goes out. If a peer runs the other ticket and the find fails, [the failure rule](limits.md#the-failure-rule)
+message goes out. If a peer runs the other ticket and the find fails, [the failure rule](../limits.md#the-failure-rule)
 applies.
 
 For two tickets of different milestones, [the Docs rule](#the-docs-rule) applies instead of the two paragraphs before
@@ -309,24 +309,24 @@ ticket that is ready lands first. For these two tickets and the shared file, the
 
 - The compare of [the overlap rule](#the-overlap-rule). The orchestrator of each ticket still does the compare.
 - The landing check. Ready to land means that the task subagent of a ticket reaches `tasker accept` in step 9 of
-  [Run one ticket](run-one-ticket.md#run-one-ticket). The landing check is the last check of the base branch in
-  [the diff read](run-one-ticket.md#the-diff-read), right before `tasker accept`. The task subagent runs the landing
+  [Run one ticket](../run-one-ticket.md#run-one-ticket). The landing check is the last check of the base branch in
+  [the diff read](../run-one-ticket.md#the-diff-read), right before `tasker accept`. The task subagent runs the landing
   check, and the orchestrators send no message about it.
 - The update of the diff read after a landing of the other ticket. If the other ticket lands first, the task subagent of
-  the ticket that lands second runs `tasker update-branch` as [the diff read](run-one-ticket.md#the-diff-read) says.
+  the ticket that lands second runs `tasker update-branch` as [the diff read](../run-one-ticket.md#the-diff-read) says.
 
 For these two tickets, the Docs rule wins over the second sentence of the bullet "If the edit of a shared file is not
 required". The first sentence of that bullet still applies. No rule of a landing order applies between these two
 tickets, because they have no landing order. An example is the wait rules of [Land the work](#land-the-work). A rule of
 a landing order is a rule that applies only when a landing order exists. The user decided this rule on 2026-10-15. The
 task subagent finds such a shared file itself. It reads the milestones of the other tasks, and the fourth case of
-[the stop rule](plan-review.md#the-stop-rule) does not count a task of another milestone. As a result, the orchestrator
-sends the task subagent no message about such a file, and the task subagent does not stop because of a task of another
-milestone. The reason: before this change, the orchestrator told its task subagent about each such file, but only about
-the tasks in flight that the orchestrator knew of. On 2026-10-24, the prompt of #401 named the Docs tasks in flight at
-its start, #388 and #413. Later, `tasker refine` showed shared files with #417 after plan v1, and with #387 after the
-add-work run. Both tasks started after the prompt. Each time, the task subagent stopped under the fourth case, and the
-answer was the Docs rule. For a stacked ticket and its parent,
+[the stop rule](../plan-review.md#the-stop-rule) does not count a task of another milestone. As a result, the
+orchestrator sends the task subagent no message about such a file, and the task subagent does not stop because of a task
+of another milestone. The reason: before this change, the orchestrator told its task subagent about each such file, but
+only about the tasks in flight that the orchestrator knew of. On 2026-10-24, the prompt of #401 named the Docs tasks in
+flight at its start, #388 and #413. Later, `tasker refine` showed shared files with #417 after plan v1, and with #387
+after the add-work run. Both tasks started after the prompt. Each time, the task subagent stopped under the fourth case,
+and the answer was the Docs rule. For a stacked ticket and its parent,
 [the stacked-ticket rule](pick-the-tickets.md#the-stacked-ticket-rule) wins over this rule.
 
 On 2026-11-07, the user widened this rule to any two tickets of different milestones. Before that day, the rule covered
@@ -340,14 +340,14 @@ The rule keeps its name from its first case, a ticket of "Docs" and a ticket of 
 This rule covers a landing order of the overlap rule when the start state is before `awaiting_work_review`, for example
 `awaiting_plan_review` or `executing`. The later orchestrator is the orchestrator of the later ticket. The later
 orchestrator tells the later task subagent not to start the wait of the "To wait" bullet. The later task subagent
-[stops](limits.md#the-answer-wait-rule) before `tasker accept`. When the hold starts, the later orchestrator sends one
-message with `SendMessage` to the orchestrator of the earlier ticket. The later orchestrator finds that orchestrator as
-[The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) says. If the find fails,
-[the failure rule](limits.md#the-failure-rule) applies, the later orchestrator sends no message of this rule for that
+[stops](../limits.md#the-answer-wait-rule) before `tasker accept`. When the hold starts, the later orchestrator sends
+one message with `SendMessage` to the orchestrator of the earlier ticket. The later orchestrator finds that orchestrator
+as [The orchestrator of a task](../../orchestrator.md#the-orchestrator-of-a-task) says. If the find fails,
+[the failure rule](../limits.md#the-failure-rule) applies, the later orchestrator sends no message of this rule for that
 task, and it tells the user. The message asks for a report when the earlier task reaches `awaiting_work_review` or a
 later state, and when the issue of the earlier ticket closes. The orchestrator of the earlier ticket sends each of these
 reports to the later orchestrator with `SendMessage`, to the session of the later orchestrator. If a message of this
-rule fails, [the failure rule](limits.md#the-failure-rule) applies to the orchestrator that sends it. The later
+rule fails, [the failure rule](../limits.md#the-failure-rule) applies to the orchestrator that sends it. The later
 orchestrator reads the state of the earlier task again with `tasker show <issue>` when the orchestrator of the earlier
 ticket or the user reports a change. It also reads it each time it reads the board after a landing
 ([Pick the tickets](pick-the-tickets.md#pick-the-tickets)). When the earlier task is in `awaiting_work_review` or a

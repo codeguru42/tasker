@@ -6,9 +6,9 @@ The readers of this page are the orchestrator and the task subagents.
 
 These limits apply to the orchestrator and to the task subagents, except where a bullet or a rule names one actor.
 
-The row of the orchestrator and the rows of the task subagents in [the table](permissions.md#the-table) give the kinds
-of command of the list of each of them. A read at a gap follows
-[the rules for the lists](allowed-commands.md#the-rules-for-the-lists).
+The row of the orchestrator and the rows of the task subagents in [the table](orchestrator/permissions.md#the-table)
+give the kinds of command of the list of each of them. A read at a gap follows
+[the rules for the lists](orchestrator/allowed-commands.md#the-rules-for-the-lists).
 
 - The task subagent reads the output of a task with the `tasker show` commands, for example `tasker show`,
   `tasker show-plan`, `tasker show-verify` and `tasker show-review`. [The own-worktree rule](#the-own-worktree-rule)
@@ -49,9 +49,9 @@ of command of the list of each of them. A read at a gap follows
   commands of the steps on [the orchestration pages](../orchestrator.md), for example `tasker merge` and the delete of
   the task branch in step 10. On GitHub Actions, the rerun of step 9 of [the CI wait](ci-wait.md#the-ci-wait)
   (`gh run rerun <run id> --failed`) is the only write of the task subagent.
-- If tasker stops for a quota, follow ["Quota"](quota.md#quota). Never run `tasker approve-credits`.
+- If tasker stops for a quota, follow ["Quota"](orchestrator/quota.md#quota). Never run `tasker approve-credits`.
 - If a `tasker` run fails and the task is a possible Codex limit, do the steps of
-  [A Codex limit](quota.md#a-codex-limit). Do them before any `tasker` command that changes the task.
+  [A Codex limit](orchestrator/quota.md#a-codex-limit). Do them before any `tasker` command that changes the task.
 - Do not install `tasker` from a task worktree, also not with `npm link`. Install `tasker` with
   `npm run install:global`, as [the Install section of README.md](../../README.md#install) says. The install runs in the
   current clone, on the commit that is checked out. The installed `tasker` runs the tickets, and an install replaces it.
@@ -59,30 +59,31 @@ of command of the list of each of them. A read at a gap follows
   that two task subagents do not change the same file. Task subagents report what they learn to the orchestrator in
   their final report (see [the final report](run-one-ticket.md#the-final-report)). A task subagent does not run
   `/session-review`, because the skill deletes memory notes. The bullet "When the final report of the task subagent of a
-  ticket says that the ticket landed" of [Land the work](land-the-work.md#land-the-work) says when the orchestrator
-  deletes a note.
+  ticket says that the ticket landed" of [Land the work](orchestrator/land-the-work.md#land-the-work) says when the
+  orchestrator deletes a note.
 - The orchestrator and each task subagent load the simple-english skill and follow the simple-english bullet of
   [Docs](rules.md#docs) of rules.md.
 - The folder of a task subagent is `$HOME/Documents/tasker/agents/<session name>`. The session name is the name of the
   session of the task subagent from
-  ["The prompt of a task subagent"](pick-the-tickets.md#the-prompt-of-a-task-subagent), for example
+  ["The prompt of a task subagent"](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent), for example
   `codeguru42-tasker-43`. The task worktree of [the own-worktree rule](#the-own-worktree-rule) is
   `../tasker-worktrees/<session name>`, relative to the root of the local clone of the orchestrator. That path is a
   folder with the session name in the folder `tasker-worktrees`, next to the local clone of the orchestrator. The task
   worktree is not in the folder of the task subagent and not in the clone. The orchestrator makes the folder of the task
   subagent before the task subagent starts, as
-  ["The prompt of a task subagent"](pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The task subagent keeps
-  each other file that it writes in the folder of the task subagent, for example the feedback files and the notes. Two
-  task subagents that run at the same time keep their files in different folders. The task subagent does not write a
-  file in the scratchpad folder that Claude Code names in the system prompt of the task subagent. The reason: each task
-  subagent of one orchestrator gets the same scratchpad folder as the orchestrator. This rule wins over the instruction
-  of the system prompt of the task subagent to use the scratchpad folder for temporary files. For example, on #519
-  (2026-10-25), the task subagent wrote two files in the scratchpad folder and then moved them to the folder of the task
-  subagent. It overwrote nothing. Before a task subagent runs `tasker refine` or `tasker review <issue> "<feedback>"`
-  with feedback text from a file, the task subagent makes sure that the file holds the text for its own ticket.
-  [The plain-form rule](tasker-commands.md#the-plain-form-rule) gives the form of the command. If two task subagents use
-  the same file name, the refine or the review of one ticket can send the text of another ticket. The folder of the task
-  subagent stays after the work. The task subagent removes only the task worktree, as the own-worktree rule says.
+  ["The prompt of a task subagent"](orchestrator/pick-the-tickets.md#the-prompt-of-a-task-subagent) says. The task
+  subagent keeps each other file that it writes in the folder of the task subagent, for example the feedback files and
+  the notes. Two task subagents that run at the same time keep their files in different folders. The task subagent does
+  not write a file in the scratchpad folder that Claude Code names in the system prompt of the task subagent. The
+  reason: each task subagent of one orchestrator gets the same scratchpad folder as the orchestrator. This rule wins
+  over the instruction of the system prompt of the task subagent to use the scratchpad folder for temporary files. For
+  example, on #519 (2026-10-25), the task subagent wrote two files in the scratchpad folder and then moved them to the
+  folder of the task subagent. It overwrote nothing. Before a task subagent runs `tasker refine` or
+  `tasker review <issue> "<feedback>"` with feedback text from a file, the task subagent makes sure that the file holds
+  the text for its own ticket. [The plain-form rule](tasker-commands.md#the-plain-form-rule) gives the form of the
+  command. If two task subagents use the same file name, the refine or the review of one ticket can send the text of
+  another ticket. The folder of the task subagent stays after the work. The task subagent removes only the task
+  worktree, as the own-worktree rule says.
 - If a `gh issue`, `gh label` or `gh run` command runs outside a git repo with no `-R` flag and no issue URL, it fails.
   The error holds `fatal: not a git repository`. The folder of a task subagent is outside a git repo. As a result, the
   task subagent adds `-R <owner>/<repo>` to each such command that it runs in its folder. `<owner>/<repo>` is the
@@ -207,9 +208,9 @@ and gives no new question id.
 
 Before its first call on the three folders in a session, the orchestrator reads the data root with
 `tasker show-config | jq -r '.dataRoot'`. This read is a K1 command. Step 1 of
-[The orchestrator's data root and questions](quota.md#the-orchestrators-data-root-and-questions) uses the same read. An
-empty output or the output `null` is a failed read. The form with `--repo` prints `null`, because its output holds only
-the keys of the repo.
+[The orchestrator's data root and questions](orchestrator/quota.md#the-orchestrators-data-root-and-questions) uses the
+same read. An empty output or the output `null` is a failed read. The form with `--repo` prints `null`, because its
+output holds only the keys of the repo.
 
 Before its first list or write of one of the three folders in a session, the orchestrator makes that folder with
 `mkdir -p`. On 2026-11-22, with GNU coreutils 9.7, a measure in a folder under `/tmp` gave these results. A `mkdir -p`
@@ -219,8 +220,8 @@ question with a file exists.
 
 Each call on the three folders uses the absolute path of the file or the folder. The path starts with the data root as
 the read printed it, with no `$HOME` and no `~`. No call uses `cd`. The reasons: the Read tool and the Write tool take
-an absolute path. Also, the ask rule `Bash(cd $HOME/.local/share/tasker/*)` of [Claude Code](setup.md#claude-code) asks
-the user at a `cd` into the data root.
+an absolute path. Also, the ask rule `Bash(cd $HOME/.local/share/tasker/*)` of
+[Claude Code](orchestrator/setup.md#claude-code) asks the user at a `cd` into the data root.
 
 The forms of the calls for the kind `claude`:
 
@@ -256,8 +257,8 @@ orchestrator reads it first, as for the three folders.
 
 The orchestrator runs no other call on `drafts/`, except the read-only calls of
 [the check of the pane owner](question-pane.md#the-check-of-the-pane-owner). These calls are no git command and no `cd`
-command, so no ask rule of [Claude Code](setup.md#claude-code) matches them. No one measured them on a file under the
-data root.
+command, so no ask rule of [Claude Code](orchestrator/setup.md#claude-code) matches them. No one measured them on a file
+under the data root.
 
 For the planner subagents, the issue subagents and a question session, none of their calls on `drafts/` is a git command
 or a `cd` command, so no ask rule matches them. No one measured whether Claude Code asks a permission prompt for them or
@@ -411,8 +412,9 @@ The task subagent sends each message to the orchestrator with `SendMessage` and 
 `"main"` in the `to` option of `SendMessage`, not in the text of the message. The session name of the orchestrator, for
 example `orchestrator-m8`, is not the address. The rule covers each message that the task subagent sends while it works.
 Examples are the run-start and run-end reports of
-["When there is no reset time yet"](quota.md#when-there-is-no-reset-time-yet) in ["Quota"](quota.md#quota), the reports
-of the stop cases, the list of files after `tasker approve` and the questions.
+["When there is no reset time yet"](orchestrator/quota.md#when-there-is-no-reset-time-yet) in
+["Quota"](orchestrator/quota.md#quota), the reports of the stop cases, the list of files after `tasker approve` and the
+questions.
 
 The rule does not cover the final report (see [the final report](run-one-ticket.md#the-final-report)), except after a
 [refused `SubagentHandback` call](#the-answer-wait-rule). The task subagent of #153 learned this rule on 2026-10-15.
@@ -424,10 +426,10 @@ or its question with `SendMessage`, as [the address rule](#the-address-rule) say
 final answer, which ends its turn. This final answer is an interim report (see
 [the final report](run-one-ticket.md#the-final-report)). The task subagent does not wait in a loop. The message of the
 orchestrator with the answer or the next step starts the task subagent again. The reason: a message to a task subagent
-that has ended starts the task subagent again, and the task subagent keeps its context (see ["Terms"](quota.md#terms) in
-["Quota"](quota.md#quota)). On #153, the task subagent waited about 25 minutes in a loop for an answer, then ended its
-turn with a stop report. The message with the answer started the task subagent again, and the task subagent went on with
-its work.
+that has ended starts the task subagent again, and the task subagent keeps its context (see
+["Terms"](orchestrator/quota.md#terms) in ["Quota"](orchestrator/quota.md#quota)). On #153, the task subagent waited
+about 25 minutes in a loop for an answer, then ended its turn with a stop report. The message with the answer started
+the task subagent again, and the task subagent went on with its work.
 
 In Claude Code 2.1.314, a subagent gives its final answer with the tool `SubagentHandback`. The text of the tool says
 that plain text at the end of a turn does not reach the orchestrator. It also says "Use it once", "The call ends your
@@ -475,9 +477,9 @@ stays behind, or a report to someone other than the orchestrator. When a step of
 [the orchestration pages](../orchestrator.md) sends the task subagent to
 [docs/dev/rebase-conflicts.md](rebase-conflicts.md), each stop of its procedure is a stop.
 
-For a resume message during the wait, see [the resume rule](quota.md#the-next-job) in
-["When the job fires"](quota.md#when-the-job-fires). The rule does not cover a wait that reads a state, for example the
-"To wait" bullet of ["Land the work"](land-the-work.md#land-the-work) or the wait bullet of
+For a resume message during the wait, see [the resume rule](orchestrator/quota.md#the-next-job) in
+["When the job fires"](orchestrator/quota.md#when-the-job-fires). The rule does not cover a wait that reads a state, for
+example the "To wait" bullet of ["Land the work"](orchestrator/land-the-work.md#land-the-work) or the wait bullet of
 [the command rules](tasker-commands.md#the-command-rules).
 
 A wait point is a place where the task subagent waits for an answer or a next step from the orchestrator. Each stop is a
@@ -488,9 +490,10 @@ that the report is not the final report. That line also names what the task suba
 
 The orchestrator does not treat an interim report as the end of the ticket. For an interim report alone, the
 orchestrator does not free the slot, delete a quota job or read the board for the ticket. The orchestrator still follows
-the bullets of [Delete the job](quota.md#delete-the-job). The orchestrator still does each read that a rule gives after
-a report of a task subagent, for example in [the parent-hold rule](pick-the-tickets.md#the-parent-hold-rule). On #160,
-#161 and #221, the task subagents ended their turns at a wait point, and a message of the orchestrator resumed each one.
+the bullets of [Delete the job](orchestrator/quota.md#delete-the-job). The orchestrator still does each read that a rule
+gives after a report of a task subagent, for example in
+[the parent-hold rule](orchestrator/pick-the-tickets.md#the-parent-hold-rule). On #160, #161 and #221, the task
+subagents ended their turns at a wait point, and a message of the orchestrator resumed each one.
 
 ### The failure rule
 

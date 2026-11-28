@@ -47,7 +47,7 @@ which commands each agent can perform. It should not restrict those commands in 
    - At a gap of each other command, the list and its limit words win. The actor runs nothing that the list does not
      permit, and it reports the gap.
    - Each ban and each limit of a rule page wins over part 4. For example, a question session runs no `herdr` read (K8)
-     at a gap, because [The question session](question-pane.md#the-question-session) gives it only the read-only
+     at a gap, because [The question session](../question-pane.md#the-question-session) gives it only the read-only
      commands other than `herdr` commands.
    - The orchestrator has no result, so it reports a gap to the user in its question pane, as
      [the report chain](permissions.md#the-report-chain) says.
@@ -57,11 +57,11 @@ These terms hold for the rule:
 
 - A job is a step or a read that the rules of the actor give to it.
 - A read-only command: a command of the kinds K1, K3, K5 or K8 of
-  "[The kinds of command](permissions.md#the-kinds-of-command)" of docs/dev/permissions.md. A Read call that is not of
-  the kind K15 is also a read-only command. A named other command that only reads is one too, for example
+  "[The kinds of command](permissions.md#the-kinds-of-command)" of docs/dev/orchestrator/permissions.md. A Read call
+  that is not of the kind K15 is also a read-only command. A named other command that only reads is one too, for example
   `wc -l <path>`. A `git fetch` and a `git pull` are of the kind K4, so they are not read-only commands. This meaning is
   not the meaning of "read-only command" in
-  [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule).
+  [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule).
 - Each other command is a command that is not a read-only command, for example a write, a `git fetch` or a read of the
   kind K15.
 - A limit word is a word of a list that limits a command, for example "only", "asks the user", "for each doc that it
@@ -71,28 +71,28 @@ These terms hold for the rule:
 
 ## The orchestrator
 
-Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule),
-[the hold before an install](release.md#the-hold-before-an-install),
-[Install a pre-release](release.md#install-a-pre-release), [the doc-read rule](doc-reads.md#the-doc-read-rule),
-[the re-read rule](doc-reads.md#the-re-read-rule), [Pick the tickets](pick-the-tickets.md),
-[Land the work](land-the-work.md), [the CI wait](ci-wait.md#the-ci-wait),
-[The actor of each write action](question-pane.md#the-actor-of-each-write-action),
-[The herdr path](question-pane.md#terms), [Start](question-pane.md#start),
-[The question file](question-pane.md#the-question-file), [The handoff file](handoff.md#the-handoff-file),
-[The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder),
+Sources: [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule),
+[the hold before an install](../release.md#the-hold-before-an-install),
+[Install a pre-release](../release.md#install-a-pre-release), [the doc-read rule](../doc-reads.md#the-doc-read-rule),
+[the re-read rule](../doc-reads.md#the-re-read-rule), [Pick the tickets](pick-the-tickets.md),
+[Land the work](land-the-work.md), [the CI wait](../ci-wait.md#the-ci-wait),
+[The actor of each write action](../question-pane.md#the-actor-of-each-write-action),
+[The herdr path](../question-pane.md#terms), [Start](../question-pane.md#start),
+[The question file](../question-pane.md#the-question-file), [The handoff file](../handoff.md#the-handoff-file),
+[The check of the handoff folder](../handoff.md#the-check-of-the-handoff-folder),
 [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator),
 [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator),
 [The steps for the open peer requests](handoff-orchestrator.md#the-steps-for-the-open-peer-requests),
-[The proposal file](planner-subagent.md#the-proposal-file), [Limits](limits.md#limits),
-[the own-worktree rule](limits.md#the-own-worktree-rule),
-[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner),
-[The board watch job](../orchestrator.md#the-board-watch-job), [Terms](quota.md#terms),
+[The proposal file](../planner-subagent.md#the-proposal-file), [Limits](../limits.md#limits),
+[the own-worktree rule](../limits.md#the-own-worktree-rule),
+[The check of the pane owner](../question-pane.md#the-check-of-the-pane-owner),
+[The board watch job](../../orchestrator.md#the-board-watch-job), [Terms](quota.md#terms),
 [Schedule a job when a task subagent starts](quota.md#schedule-a-job-when-a-task-subagent-starts),
 [When the job fires](quota.md#when-the-job-fires), [A pi stop](quota.md#a-pi-stop),
-[A failed CI run](ci-wait.md#a-failed-ci-run) and [The orchestrator folder](limits.md#the-orchestrator-folder).
+[A failed CI run](../ci-wait.md#a-failed-ci-run) and [The orchestrator folder](../limits.md#the-orchestrator-folder).
 
 - K1: the read-only `tasker` commands of
-  [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule). They are `show-config`,
+  [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule). They are `show-config`,
   `show-config-schema`, `show-quota`, `status`, `doctor`, the `show` commands for one task, `model` with no new model
   and no `--effort`, `--version`, `--help` and `help`.
 - K2: `tasker model` with a new model or with `--effort`. Asks the user, in a settled decision message of its question
@@ -104,9 +104,10 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   `git checkout <commit>` and `git checkout main` for the release steps.
 - K5: `gh issue view`, `gh issue list`, `gh run list`, `gh run view`, `gh run watch`, `gh project item-list` and the
   read forms of `gh api`.
-- K6: `gh issue create`, only for the issue of a failed CI run, as [A failed CI run](ci-wait.md#a-failed-ci-run) says.
+- K6: `gh issue create`, only for the issue of a failed CI run, as [A failed CI run](../ci-wait.md#a-failed-ci-run)
+  says.
 - K7: `gh issue edit` for a milestone, a label or a blocked-by link, as [Pick the tickets](pick-the-tickets.md) says,
-  and `gh project item-edit` for the field `Priority`, as [The project board](issues.md#the-project-board) says.
+  and `gh project item-edit` for the field `Priority`, as [The project board](../issues.md#the-project-board) says.
 - K8: `herdr agent list`, `herdr agent get`, `herdr agent wait`, `herdr pane read`, `herdr pane get`,
   `herdr pane current` and `herdr tab get`.
 - K9: `herdr agent start`, `herdr pane split`, `herdr pane send-text`, `herdr pane send-keys`, `herdr tab create`,
@@ -122,12 +123,12 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   - `mkdir -p` on its own three folders
   - `mkdir -p <drafts>`, on `drafts/`
 
-  The three folders and `drafts/` of the [orchestrator folder](limits.md#the-orchestrator-folder), and the parent
+  The three folders and `drafts/` of the [orchestrator folder](../limits.md#the-orchestrator-folder), and the parent
   folders that `mkdir -p` makes for them, count as the folder of the orchestrator for K12.
 
 - K13 to K15: no list.
 - Named other commands: `npm run install:global` (an installing orchestrator only, as the hold before an install says),
-  `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](question-pane.md#terms)), a Read call on a file of the
+  `timeout 20 bash -c 'sleep 1'` (the wait of [the herdr path](../question-pane.md#terms)), a Read call on a file of the
   local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'`, a Read call on the saved output of its own tool call,
   `ls` on its own three folders and a Read call on a file of its own three folders. It also runs the count read
   `ls <drafts> | sed -n -E 's/^plan-([0-9]+)-.*/\1/p' | sort -n | tail -n 1`, with the absolute path of `drafts/`. For
@@ -142,33 +143,33 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
   - The tool call `CronList`, for the list of its jobs
   - The list `ls $HOME/Documents/tasker/handoff/` and a Read call on a handoff file there, for the check of the handoff
     folder
-  - The card wait of [A failed CI run](ci-wait.md#a-failed-ci-run),
+  - The card wait of [A failed CI run](../ci-wait.md#a-failed-ci-run),
     `timeout 90 bash -c 'while :; do s=$(gh issue view <number> --json projectItems -q ".projectItems[].status.name") || exit 2; [ -n "$s" ] && exit 0; sleep 15; done'`
   - A read of the variables `HERDR_TAB_ID` and `HERDR_PANE_ID`, for the close of its tab or pane
 
-This list gives the forms of the kind `claude`. [The orchestrator folder](limits.md#the-orchestrator-folder) gives the
-forms of the kinds `pi` and `codex`, and no one measured them.
+This list gives the forms of the kind `claude`. [The orchestrator folder](../limits.md#the-orchestrator-folder) gives
+the forms of the kinds `pi` and `codex`, and no one measured them.
 
 ## A task subagent for a whole ticket
 
-Sources: [Limits](limits.md#limits), [the own-worktree rule](limits.md#the-own-worktree-rule),
-[the plain-form rule](tasker-commands.md#the-plain-form-rule), [Run one ticket](run-one-ticket.md#run-one-ticket),
-[the CI wait](ci-wait.md#the-ci-wait), [The issue check](plan-review.md#the-issue-check),
-[The patch check](rebase-conflicts.md#the-patch-check), [Review findings](review-findings.md#review-findings),
-[The docs-only update](review-findings.md#the-docs-only-update),
-[The broken-commit steps](verify-failures.md#the-broken-commit-steps),
-[The commit check](verify-failures.md#the-commit-check), [the doc-read rule](doc-reads.md#the-doc-read-rule) and the ask
-rules of [Claude Code](setup.md#claude-code).
+Sources: [Limits](../limits.md#limits), [the own-worktree rule](../limits.md#the-own-worktree-rule),
+[the plain-form rule](../tasker-commands.md#the-plain-form-rule), [Run one ticket](../run-one-ticket.md#run-one-ticket),
+[the CI wait](../ci-wait.md#the-ci-wait), [The issue check](../plan-review.md#the-issue-check),
+[The patch check](../rebase-conflicts.md#the-patch-check), [Review findings](../review-findings.md#review-findings),
+[The docs-only update](../review-findings.md#the-docs-only-update),
+[The broken-commit steps](../verify-failures.md#the-broken-commit-steps),
+[The commit check](../verify-failures.md#the-commit-check), [the doc-read rule](../doc-reads.md#the-doc-read-rule) and
+the ask rules of [Claude Code](setup.md#claude-code).
 
 - K1: `tasker show`, `tasker show-plan`, `tasker show-verify`, `tasker show-review` and the other read-only commands of
-  [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule).
+  [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule).
 - K2: each task change of that rule, in the plain form, for example `tasker start`, `tasker plan`, `tasker approve`,
   `tasker execute`, `tasker verify`, `tasker review`, `tasker accept`, `tasker merge` and `tasker finish`. It never runs
   `tasker approve-credits`. `tasker abort` and `tasker update-branch` with `--undo` ask the user. The K2 cell says
   "runs", because most task changes run with no word of the user. A cell says "asks the user" only when each command of
   the list asks.
 - K3: `git log`, `git show` and `git diff` on `tasker/<task branch>`, `git show origin/main:<path>`, and the other `git`
-  reads of [Limits](limits.md#limits). It also has these reads, each named by its source:
+  reads of [Limits](../limits.md#limits). It also has these reads, each named by its source:
   - The base check `git cat-file -e <base commit>^{commit}`
   - The merge-base reads `git merge-base tasker/<task branch> origin/<base branch>`,
     `git merge-base tasker/<task branch> tasker/<parent branch>` and `git merge-base HEAD origin/<base branch>`
@@ -183,7 +184,7 @@ rules of [Claude Code](setup.md#claude-code).
     `set -o pipefail; git diff -U0 origin/<base branch>...tasker/<task branch> | grep -v -e '^index ' -e '^@@' | git hash-object --stdin`
   - The state read `git -C <path> status` after a failed `git rebase --abort` of the commit check
 - K4: `git fetch tasker`, `git fetch origin`, `git worktree add`, `git worktree remove` and `git reset --keep`, as the
-  own-worktree rule and [Limits](limits.md#limits) say.
+  own-worktree rule and [Limits](../limits.md#limits) say.
 - K5: `gh run list`, `gh run view`, `gh run watch` and `gh issue view`.
 - K6: the comment of step 11 of "Run one ticket". It is the only write of the text of an issue.
 - K12 and K14: files of its own task worktree.
@@ -199,12 +200,12 @@ rules of [Claude Code](setup.md#claude-code).
 
 ## A task subagent for one task change
 
-Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule),
+Sources: [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule),
 [The prompt of a task subagent](pick-the-tickets.md#the-prompt-of-a-task-subagent) and
-[the doc-read rule](doc-reads.md#the-doc-read-rule).
+[the doc-read rule](../doc-reads.md#the-doc-read-rule).
 
 - K2: the one `tasker` command that the orchestrator sent, in the plain form of
-  [the plain-form rule](tasker-commands.md#the-plain-form-rule).
+  [the plain-form rule](../tasker-commands.md#the-plain-form-rule).
 - K3: `git show origin/main:<path>`.
 - K4: `git fetch origin`.
 - Named other commands: a Read call on a saved output of its own tool call, and `timeout 20 bash -c 'sleep 5'`.
@@ -212,29 +213,31 @@ Sources: [the orchestrator-command rule](tasker-commands.md#the-orchestrator-com
 
 ## The planner subagent
 
-Sources: [Sessions](../config.md#sessions), [the doc-read rule](doc-reads.md#the-doc-read-rule),
-[The result](planner-subagent.md#the-result), [The record file](planner-subagent.md#the-record-file),
-[No metadata](planner-subagent.md#no-metadata), [The reads before the write](issues.md#the-reads-before-the-write),
-[The project board](issues.md#the-project-board), [The blocked-by links](issues.md#the-blocked-by-links),
-[The post of a draft](planner.md#the-post-of-a-draft), [The body of an issue](issue-subagents.md#the-body-of-an-issue),
-[The blocked-by links](issue-subagents.md#the-blocked-by-links), [Docs](rules.md#docs) and
-[The orchestrator folder](limits.md#the-orchestrator-folder). The section Sessions says that the planner subagent starts
-the draft, review and post subagents. The planner subagent keeps the record of the findings of each draft in the record
-file.
+Sources: [Sessions](../../config.md#sessions), [the doc-read rule](../doc-reads.md#the-doc-read-rule),
+[The result](../planner-subagent.md#the-result), [The record file](../planner-subagent.md#the-record-file),
+[No metadata](../planner-subagent.md#no-metadata),
+[The reads before the write](../issues.md#the-reads-before-the-write),
+[The project board](../issues.md#the-project-board), [The blocked-by links](../issues.md#the-blocked-by-links),
+[The post of a draft](../planner.md#the-post-of-a-draft),
+[The body of an issue](../issue-subagents.md#the-body-of-an-issue),
+[The blocked-by links](../issue-subagents.md#the-blocked-by-links), [Docs](../rules.md#docs) and
+[The orchestrator folder](../limits.md#the-orchestrator-folder). The section Sessions says that the planner subagent
+starts the draft, review and post subagents. The planner subagent keeps the record of the findings of each draft in the
+record file.
 
 - K1: `tasker status`, before a question of its result about a write that the reads before the write can skip.
 - K3: `git -C <local clone> show origin/main:<path>`, for each doc that it reads. Also
   `git -C <local clone> grep -n -E '<pattern>' origin/main -- <paths>` for a search of doc words, and
   `git -C <local clone> log origin/main` and `git -C <local clone> show <commit>` for what a closed issue of a match
   landed. Also `git -C <local clone> grep -n -A1 -E '<pattern>' origin/main -- <paths>`, for the end of a line in a
-  search of doc words, as [the doc-search rule](rules.md#docs) says.
+  search of doc words, as [the doc-search rule](../rules.md#docs) says.
 - K4: `git -C <local clone> fetch origin`, before its first doc read.
 - K5: these reads:
   - The state read `gh issue view <number> --json state -q .state`
   - The read of a closed issue of a match, `gh issue view <number> -R <repo> --json title,body,state`
   - `gh issue list --milestone "<milestone>" --state open --limit 1000 --json number` and
     `gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocked_by`, for the blocked-by links of both milestones
-  - The reads of [The project board](issues.md#the-project-board):
+  - The reads of [The project board](../issues.md#the-project-board):
     `gh project item-list 3 --owner codeguru42 --limit 1000 --format json` with its `--jq` filter, and
     `gh issue view <number> --json projectItems`
 - K12: the record file `<file>.findings.md` of each draft, next to its draft file, in `drafts/` or in the old folder.
@@ -248,24 +251,26 @@ file.
 
 ## The issue-draft subagent
 
-Sources: [The draft file](issue-draft.md#the-draft-file), [The size of a draft](issue-draft.md#the-size-of-a-draft),
-[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent),
-[the doc-read rule](doc-reads.md#the-doc-read-rule), [The self-check](issue-draft.md#the-self-check),
-[The steps before a post](issue-draft.md#the-steps-before-a-post),
-[The findings and the edge cases](issue-draft.md#the-findings-and-the-edge-cases),
-[A change of an open issue](issue-draft.md#a-change-of-an-open-issue), [Before a post](issues.md#before-a-post),
-[The blocked-by links](issues.md#the-blocked-by-links), [The body of an issue](issue-subagents.md#the-body-of-an-issue),
-[The blocked-by links](issue-subagents.md#the-blocked-by-links), [Docs](rules.md#docs) and
-[The orchestrator folder](limits.md#the-orchestrator-folder).
+Sources: [The draft file](../issue-draft.md#the-draft-file),
+[The size of a draft](../issue-draft.md#the-size-of-a-draft),
+[The bans of a subagent](../issue-subagents.md#the-bans-of-a-subagent),
+[the doc-read rule](../doc-reads.md#the-doc-read-rule), [The self-check](../issue-draft.md#the-self-check),
+[The steps before a post](../issue-draft.md#the-steps-before-a-post),
+[The findings and the edge cases](../issue-draft.md#the-findings-and-the-edge-cases),
+[A change of an open issue](../issue-draft.md#a-change-of-an-open-issue), [Before a post](../issues.md#before-a-post),
+[The blocked-by links](../issues.md#the-blocked-by-links),
+[The body of an issue](../issue-subagents.md#the-body-of-an-issue),
+[The blocked-by links](../issue-subagents.md#the-blocked-by-links), [Docs](../rules.md#docs) and
+[The orchestrator folder](../limits.md#the-orchestrator-folder).
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor`, `git show origin/main:<path>`, `git grep -n -E '<pattern>' -- <paths>` in the local
   clone, and `git grep -n -E '<pattern>' origin/main -- <paths>` after the old read. Also
   `git grep -n -A1 -E '<pattern>' -- <paths>` in the local clone and
   `git grep -n -A1 -E '<pattern>' origin/main -- <paths>` after the old read, for the end of a line in a search of doc
-  words, as [the doc-search rule](rules.md#docs) says.
+  words, as [the doc-search rule](../rules.md#docs) says.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
-  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+  [The bans of a subagent](../issue-subagents.md#the-bans-of-a-subagent) says.
 - K5: the start read `gh issue view <number> --json title,body`, `gh issue list` and `gh issue view` of the open issues,
   the links read `gh api repos/<owner>/<repo>/issues/<number>/dependencies/blocked_by` and the label read
   `gh issue view <blocker> -R <repo> --json labels -q '.labels[].name'`.
@@ -281,23 +286,24 @@ Sources: [The draft file](issue-draft.md#the-draft-file), [The size of a draft](
 
 ## The issue-review subagent
 
-Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-issue-review-subagent),
-[The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent),
-[the doc-read rule](doc-reads.md#the-doc-read-rule), [The context of a review](issue-review.md#the-context-of-a-review),
-[The tests of a draft](issue-review.md#the-tests-of-a-draft),
-[The body of an issue](issue-subagents.md#the-body-of-an-issue), [Docs](rules.md#docs) and
-[The orchestrator folder](limits.md#the-orchestrator-folder).
+Sources: [The bans of an issue-review subagent](../issue-review.md#the-bans-of-an-issue-review-subagent),
+[The bans of a subagent](../issue-subagents.md#the-bans-of-a-subagent),
+[the doc-read rule](../doc-reads.md#the-doc-read-rule),
+[The context of a review](../issue-review.md#the-context-of-a-review),
+[The tests of a draft](../issue-review.md#the-tests-of-a-draft),
+[The body of an issue](../issue-subagents.md#the-body-of-an-issue), [Docs](../rules.md#docs) and
+[The orchestrator folder](../limits.md#the-orchestrator-folder).
 
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor`, `git show origin/main:<path>`, `git grep -n -E '<pattern>' -- <paths>` in the local
   clone, and `git grep -n -E '<pattern>' origin/main -- <paths>` after the old read. Also
   `git grep -n -A1 -E '<pattern>' -- <paths>` in the local clone and
   `git grep -n -A1 -E '<pattern>' origin/main -- <paths>` after the old read, for the end of a line in a search of doc
-  words, as [the doc-search rule](rules.md#docs) says.
+  words, as [the doc-search rule](../rules.md#docs) says.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
-  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
+  [The bans of a subagent](../issue-subagents.md#the-bans-of-a-subagent) says.
 - K5: `gh issue list ... | jq ...` and the other `gh` reads of the open and closed issues. It writes no file.
-  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) gives the one case of the pull.
+  [The bans of a subagent](../issue-subagents.md#the-bans-of-a-subagent) gives the one case of the pull.
 - Named other commands: a Read call on a file of the local clone, `wc -l <path>`, `timeout 20 bash -c 'sleep 5'`, a Read
   call on the saved output of its own tool call, the join forms `tr '\n' ' ' < <path> | grep -o -E '<pattern>'` and
   `git show origin/main:<path> | tr '\n' ' ' | grep -o -E '<pattern>'`, and a Read call on the draft file of its review,
@@ -306,21 +312,23 @@ Sources: [The bans of an issue-review subagent](issue-review.md#the-bans-of-an-i
 
 ## The issue-post subagent
 
-Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-issue-post-subagent),
-[The count of the body](issue-post.md#the-count-of-the-body), [A comment post](issue-post.md#a-comment-post),
-[the doc-read rule](doc-reads.md#the-doc-read-rule), [The steps of a post](issue-post.md#the-steps-of-a-post),
-[Before a post](issues.md#before-a-post), [The reads before the write](issues.md#the-reads-before-the-write),
-[The blocked-by links](issues.md#the-blocked-by-links), [The blocked-by links](issue-subagents.md#the-blocked-by-links),
-[The last steps of a post](issue-post.md#the-last-steps-of-a-post),
-[The result of an issue-post subagent](issue-post.md#the-result-of-an-issue-post-subagent),
-[the defer rule](pick-the-tickets.md#the-defer-rule) and [The orchestrator folder](limits.md#the-orchestrator-folder).
+Sources: [The writes of an issue-post subagent](../issue-post.md#the-writes-of-an-issue-post-subagent),
+[The count of the body](../issue-post.md#the-count-of-the-body), [A comment post](../issue-post.md#a-comment-post),
+[the doc-read rule](../doc-reads.md#the-doc-read-rule), [The steps of a post](../issue-post.md#the-steps-of-a-post),
+[Before a post](../issues.md#before-a-post), [The reads before the write](../issues.md#the-reads-before-the-write),
+[The blocked-by links](../issues.md#the-blocked-by-links),
+[The blocked-by links](../issue-subagents.md#the-blocked-by-links),
+[The last steps of a post](../issue-post.md#the-last-steps-of-a-post),
+[The result of an issue-post subagent](../issue-post.md#the-result-of-an-issue-post-subagent),
+[the defer rule](pick-the-tickets.md#the-defer-rule) and
+[The orchestrator folder](../limits.md#the-orchestrator-folder).
 
 - K1: `tasker status`, in the reads before the write and in the in-flight check.
 - K3: `git branch --show-current`, `git status --porcelain --untracked-files=no`, `git rev-parse --verify`,
   `git merge-base --is-ancestor` and `git show origin/main:<path>`.
 - K4: `git pull --ff-only origin main` and `git fetch origin`, in the local clone. The pull is no write of a file, as
-  [The bans of a subagent](issue-subagents.md#the-bans-of-a-subagent) says.
-- K5: the `gh` reads of [Before a post](issues.md#before-a-post), and
+  [The bans of a subagent](../issue-subagents.md#the-bans-of-a-subagent) says.
+- K5: the `gh` reads of [Before a post](../issues.md#before-a-post), and
   `gh issue view <number> -R <repo> --json comments`, the read of the comments of the target issue for the search and
   the compare of a comment post. It also has these reads, each named by its source:
   - The duplicate search `gh issue list --state all --search "<words> in:title,body" --limit 1000`
@@ -347,9 +355,9 @@ Sources: [The writes of an issue-post subagent](issue-post.md#the-writes-of-an-i
 
 ## The write subagent of the orchestrator
 
-Sources: [The actor of each write action](question-pane.md#the-actor-of-each-write-action),
-[The reads before the write](issues.md#the-reads-before-the-write), [Terms](question-pane.md#terms) and
-[Send a decision](question-pane.md#send-a-decision).
+Sources: [The actor of each write action](../question-pane.md#the-actor-of-each-write-action),
+[The reads before the write](../issues.md#the-reads-before-the-write), [Terms](../question-pane.md#terms) and
+[Send a decision](../question-pane.md#send-a-decision).
 
 - K5: the reads before the write, for example `gh issue view`.
 - K7: a change of the metadata of an issue with `gh issue edit`, and the link-removal commands of step 7 of
@@ -364,8 +372,8 @@ Sources: [The actor of each write action](question-pane.md#the-actor-of-each-wri
 ## The opener subagent
 
 Source: the opener prompt in
-[`prompt-templates/question-pane/opener.md`](../../prompt-templates/question-pane/opener.md), as
-[The prompts](question-pane.md#the-prompts) gives it. The prompt gives each command word for word.
+[`prompt-templates/question-pane/opener.md`](../../../prompt-templates/question-pane/opener.md), as
+[The prompts](../question-pane.md#the-prompts) gives it. The prompt gives each command word for word.
 
 - K1: `tasker show-config --repo <repo key>`.
 - K3: `git -C <local clone> show origin/main:prompt-templates/question-pane/session.md`.
@@ -377,8 +385,9 @@ Source: the opener prompt in
 
 ## The reuse subagent
 
-Source: the reuse prompt in [`prompt-templates/question-pane/reuse.md`](../../prompt-templates/question-pane/reuse.md),
-as [The prompts](question-pane.md#the-prompts) gives it. The prompt gives each command word for word.
+Source: the reuse prompt in
+[`prompt-templates/question-pane/reuse.md`](../../../prompt-templates/question-pane/reuse.md), as
+[The prompts](../question-pane.md#the-prompts) gives it. The prompt gives each command word for word.
 
 - K3: `git -C <local clone> show origin/main:prompt-templates/question-pane/session.md`.
 - K4: `git -C <local clone> fetch origin`.
@@ -389,16 +398,17 @@ as [The prompts](question-pane.md#the-prompts) gives it. The prompt gives each c
 
 ## A question session
 
-Sources: [The question session](question-pane.md#the-question-session), [The herdr path](question-pane.md#terms),
-[Send a decision](question-pane.md#send-a-decision),
-[The check of the pane owner](question-pane.md#the-check-of-the-pane-owner),
-[the doc-read rule](doc-reads.md#the-doc-read-rule) and [The orchestrator folder](limits.md#the-orchestrator-folder).
+Sources: [The question session](../question-pane.md#the-question-session), [The herdr path](../question-pane.md#terms),
+[Send a decision](../question-pane.md#send-a-decision),
+[The check of the pane owner](../question-pane.md#the-check-of-the-pane-owner),
+[the doc-read rule](../doc-reads.md#the-doc-read-rule) and
+[The orchestrator folder](../limits.md#the-orchestrator-folder).
 
 - K1, K3 and K5: the read-only commands, other than `herdr` commands.
 - K4: `git fetch origin` and `git pull --ff-only origin main`, in its local clone.
 - K9 and K10: only the herdr path to its pane owner, for the messages that
-  [Send a decision](question-pane.md#send-a-decision) gives, and for the check request of
-  [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner).
+  [Send a decision](../question-pane.md#send-a-decision) gives, and for the check request of
+  [The check of the pane owner](../question-pane.md#the-check-of-the-pane-owner).
 - Named other commands: `timeout 20 bash -c 'sleep 1'`, a Read call on a file of the local clone, `wc -l <path>`,
   `timeout 20 bash -c 'sleep 5'` and a Read call on the saved output of its own tool call. It also has these reads, each
   named by its source:
@@ -406,6 +416,6 @@ Sources: [The question session](question-pane.md#the-question-session), [The her
   - The start hash `sha256sum <path>` of a user-level file
   - A Read call on the whole configuration file of tasker, before a write of that user-level file
   - The JSON test `printf '%s' '<new text>' | jq -s -e 'length == 1 and (.[0] | type == "object")'`
-  - The start read of [Before a post](issues.md#before-a-post),
+  - The start read of [Before a post](../issues.md#before-a-post),
     `json=$(gh issue view <number> --json title,body) && printf '%s\n' "$json" | sha256sum && printf '%s\n' "$json" | jq -r '.title, .body'`
 - Each other kind: no list. It sends each write action back to its pane owner.

@@ -34,7 +34,7 @@ Hints for the first refine, each with its source, one on each line, or none:
 {{HINTS}}
 For all the rules, read the docs of this base list with the steps of the doc-read rule:
 - `AGENTS.md`
-- `docs/orchestrator.md` and the pages of its list "The pages", except `docs/dev/handoff.md` and `docs/dev/handoff-orchestrator.md`
+- `docs/orchestrator.md` and the pages of its list "The pages", except `docs/dev/handoff.md` and `docs/dev/orchestrator/handoff-orchestrator.md`
 - `docs/sessions.md`
 - `docs/dev/GLOSSARY.md`
 - `docs/dev/rules.md`

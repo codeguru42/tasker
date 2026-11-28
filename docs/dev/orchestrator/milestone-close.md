@@ -3,7 +3,7 @@
 This page gives the parts of the close of a milestone that the orchestrator uses.
 
 This page gives the close. The close is the set of steps at the end of a milestone. The orchestrator ends first. A round
-and the end of the rounds work as [Session-review rounds](session-review-rounds.md) says.
+and the end of the rounds work as [Session-review rounds](../session-review-rounds.md) says.
 
 These terms apply on this page:
 
@@ -12,11 +12,11 @@ These terms apply on this page:
 - A GitHub milestone closure changes the state of the milestone on GitHub to `closed`.
 - An own-session closure is a session closure that a session runs on its own herdr tab.
 - In the close, an open question is an open question of
-  [The terms of the questions](items.md#the-terms-of-the-questions). It is also an open question of step 7 of
-  [the session-review skill](../../.claude/skills/session-review/SKILL.md).
+  [The terms of the questions](../items.md#the-terms-of-the-questions). It is also an open question of step 7 of
+  [the session-review skill](../../../.claude/skills/session-review/SKILL.md).
 - An open decision is a decision that waits for the user. It is a waiting decision of step 7 of
-  [the session-review skill](../../.claude/skills/session-review/SKILL.md) whose wait did not end. It is also a proposal
-  or a draft that waits for a decision of the user.
+  [the session-review skill](../../../.claude/skills/session-review/SKILL.md) whose wait did not end. It is also a
+  proposal or a draft that waits for a decision of the user.
 
 The end of a role, a session closure and a GitHub milestone closure are separate outcomes.
 
@@ -25,8 +25,8 @@ The end of a role, a session closure and a GitHub milestone closure are separate
 The close starts only after the end reads of the orchestrator find no open issue of the milestone. A ticket on hold
 counts as an open issue. The orchestrator runs its rounds and its end reads first, and then it shows a report that the
 close started. [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives these steps.
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) keeps these reports as the start of the close for
-each session.
+[The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff) keeps these reports as the start of the close
+for each session.
 
 The start of the close is the authority for the end of each role of the close and for the GitHub milestone closure.
 These steps of the close need no other word of the user:
@@ -38,10 +38,10 @@ For the orchestrator of the kind `claude`, the start of the close is the authori
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) gives this rule.
 
 The user still gives each approval that only the user gives: new scope, a security decision, a permission prompt and a
-failed operation. [A question pane](question-pane.md#a-question-pane) holds the start of the close. The state table of
-that section has the rows "A handoff or a close of the milestone is due while a pane is open" and "A handoff or a close
-of the milestone is due while a write subagent runs". These rows win over the rule that the steps of the close need no
-other word of the user.
+failed operation. [A question pane](../question-pane.md#a-question-pane) holds the start of the close. The state table
+of that section has the rows "A handoff or a close of the milestone is due while a pane is open" and "A handoff or a
+close of the milestone is due while a write subagent runs". These rows win over the rule that the steps of the close
+need no other word of the user.
 
 Use this order only for the close of a milestone. A handoff, the end of the initial planning and each other stop of a
 session keep their own procedures. During the close, no session starts a new session of a role or a next milestone on
@@ -57,7 +57,7 @@ The user stops a running pi orchestrator, and an orchestrator of the kind `claud
 
 The orchestrator of the kind `claude` uses this procedure after its last report, with no approval, as
 [The end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator) says.
-[Own-session closure](codex-sessions.md#own-session-closure) records the measured facts.
+[Own-session closure](../codex-sessions.md#own-session-closure) records the measured facts.
 
 - A session that the user resumed, restarted, or opened in a pane cannot close itself. It also cannot close if it cannot
   establish its own pane, tab, and one-pane tab. Whether the session knows that the user resumed, restarted or opened it

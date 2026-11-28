@@ -221,8 +221,8 @@ A post is complete after these steps:
 - The issue-post subagent runs each link command of the post, as [The blocked-by links](issues.md#the-blocked-by-links)
   of issues.md says.
 - For a new issue or an issue moved into a milestone, the issue-post subagent reads the column of the card with the
-  command of [the defer rule](pick-the-tickets.md#the-defer-rule). If the output is not `Todo`, it waits one minute with
-  `timeout 60 tail -f /dev/null` in its own call and reads again, because
+  command of [the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule). If the output is not `Todo`, it waits
+  one minute with `timeout 60 tail -f /dev/null` in its own call and reads again, because
   [the workflow of the board](issues.md#the-project-board) adds a new issue within a minute.
 
 If a link command fails, a read of the column fails, or the second read does not print `Todo`, the post is not complete.
@@ -302,4 +302,4 @@ of [The project board](issues.md#the-project-board) that starts "A workflow of t
 bullet of [The body of an issue](issue-subagents.md#the-body-of-an-issue) that starts "When the planner plans an issue"
 says. It posts a comment only in a comment post. It edits and deletes no comment, and it closes and reopens no issue.
 
-The row of the issue-post subagent in [the table](permissions.md#the-table) gives its kinds of command.
+The row of the issue-post subagent in [the table](orchestrator/permissions.md#the-table) gives its kinds of command.

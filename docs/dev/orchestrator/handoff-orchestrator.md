@@ -1,21 +1,21 @@
 # Handoff of the orchestrator
 
-[docs/dev/handoff.md](handoff.md) gives the common steps of a handoff. This page gives only what differs for the
+[docs/dev/handoff.md](../handoff.md) gives the common steps of a handoff. This page gives only what differs for the
 orchestrator.
 
 ## The long-running orchestrator
 
 A long-running orchestrator is the orchestrator of a milestone that stays open while other sessions add issues to it,
-for example "Docs" (see [docs/dev/issue-subagents.md](issue-subagents.md)). In a handoff, the old orchestrator gives its
-work to a new orchestrator in a new session.
+for example "Docs" (see [docs/dev/issue-subagents.md](../issue-subagents.md)). In a handoff, the old orchestrator gives
+its work to a new orchestrator in a new session.
 
 The rules of this page cover only a long-running orchestrator. An orchestrator of a numbered milestone stops at the stop
 of the orchestrator in [The close of a milestone](milestone-close.md). The rules of this page do not cover it. A
 long-running orchestrator stops there too. A stop with no handoff is not a handoff, and the rules of this page do not
-cover it, as [A stop with no handoff](../orchestrator.md#a-stop-with-no-handoff) says.
+cover it, as [A stop with no handoff](../../orchestrator.md#a-stop-with-no-handoff) says.
 
 The rules of this page also cover an orchestrator of a set scope, with the same landing count.
-[The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator) defines a set scope.
+[The start of an orchestrator](../../orchestrator.md#the-start-of-an-orchestrator) defines a set scope.
 
 ## The landing count
 
@@ -32,9 +32,9 @@ landing starts no new ticket. For a decision of the user that takes several ques
 ends the decision brings the count up.
 
 At the event that brings the count to 12, the old orchestrator asks the go question of a handoff in its question pane,
-as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. For a landing, it also shows its landing
-report in its own tab. A landing report is the progress report in which the old orchestrator tells the user that a
-ticket landed. A landing report carries no suggestion and no "hand off now", and it starts no handoff. If a counted
+as [The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff) says. For a landing, it also shows its
+landing report in its own tab. A landing report is the progress report in which the old orchestrator tells the user that
+a ticket landed. A landing report carries no suggestion and no "hand off now", and it starts no handoff. If a counted
 event that is not a landing brings the count to 12, for example a quota resume, the old orchestrator asks the go
 question at that event. No progress report carries the suggestion.
 
@@ -43,19 +43,19 @@ a stacked ticket is also the start of a new ticket. The tasks in flight continue
 in flight are not a new ticket.
 
 Below the count of 12, the landing count bans no new ticket. While the rule of
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) that starts "If the user says that no more
+[The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff) that starts "If the user says that no more
 handoffs come" lasts, the landing count bans no new ticket, at any count. A handoff can start below the count of 12, for
-example at [a request of the user](handoff.md#the-suggestion-of-a-handoff). From the count of 12, the ban holds also
+example at [a request of the user](../handoff.md#the-suggestion-of-a-handoff). From the count of 12, the ban holds also
 before the suggestion of a handoff. The suggestion comes as a question in the question pane of the orchestrator, as
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. The go of the user then comes in a decision
-of that pane, and the wait of step 2 starts after the close of the pane.
+[The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff) says. The go of the user then comes in a
+decision of that pane, and the wait of step 2 starts after the close of the pane.
 
 During the close of a milestone, the landing count bans no new ticket, at any count. The reason:
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) bans each handoff during the close, so the ban of
-the landing count has no end. For the orchestrator, the close starts with its report that the close started, as
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says.
+[The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff) bans each handoff during the close, so the ban
+of the landing count has no end. For the orchestrator, the close starts with its report that the close started, as
+[The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff) says.
 
-The ban on a new ticket holds until the go, as [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff)
+The ban on a new ticket holds until the go, as [The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff)
 says. From the go, step 1 of [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator) and the paragraph
 after the steps hold. The reason for this ban in the wait case: each task in flight, except a parked task, must land
 before the handoff file. Step 2 of "The steps of the old orchestrator" says this. So a new ticket delays the handoff. In
@@ -74,10 +74,10 @@ doc reads at the start, and about 400k after 15 landings (about 15k for a quiet 
 resume, the filing of one issue and several question rounds brought it to about 507k (about 30k for a busy landing). An
 automatic compaction ran right after, and the session review and the handoff file then used about 30k to 50k tokens.
 
-The old orchestrator shows each answer to [a question of the user](working-with-the-user.md#a-question-of-the-user) as a
-progress report in its own tab. This also covers a question that reaches it with `From the user:`. The answer carries no
-"hand off now", also at the count of 12. At that count, the go question of the paragraph that starts "At the event that
-brings the count to 12" carries the suggestion. A landing report is not such an answer.
+The old orchestrator shows each answer to [a question of the user](../working-with-the-user.md#a-question-of-the-user)
+as a progress report in its own tab. This also covers a question that reaches it with `From the user:`. The answer
+carries no "hand off now", also at the count of 12. At that count, the go question of the paragraph that starts "At the
+event that brings the count to 12" carries the suggestion. A landing report is not such an answer.
 
 ## The steps of the old orchestrator
 
@@ -90,11 +90,11 @@ after the close of that pane. Each step has one purpose and its own number, so t
    says. This wait includes the wait until each task in flight lands. The wait for a landing leaves out a parked task,
    because a parked task is not a task in flight. The task subagent of a parked task still stays a subagent of the wait,
    as [The wait before the start](#the-wait-before-the-start) says. For each landing, do the usual steps: delete the
-   jobs (see [Delete the job](quota.md#delete-the-job)), do [the re-read rule](doc-reads.md#the-re-read-rule), do the
+   jobs (see [Delete the job](quota.md#delete-the-job)), do [the re-read rule](../doc-reads.md#the-re-read-rule), do the
    memory step of the bullet "When the final report of the task subagent of a ticket says that the ticket landed" of
-   [Land the work](land-the-work.md#land-the-work), do [the notice rule](doc-reads.md#the-notice-rule) and do
-   [the task subagent notice](doc-reads.md#the-task-subagent-notice). The reason: a job lives only in the session of the
-   orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task is still in flight at the handoff,
+   [Land the work](land-the-work.md#land-the-work), do [the notice rule](../doc-reads.md#the-notice-rule) and do
+   [the task subagent notice](../doc-reads.md#the-task-subagent-notice). The reason: a job lives only in the session of
+   the orchestrator (see [Terms](quota.md#terms)). If a task other than a parked task is still in flight at the handoff,
    nobody resumes it after a quota stop.
 
    In the stopping-point case, step 2 sends the stopping-point message in place of the wait for a landing, as
@@ -106,21 +106,21 @@ after the close of that pane. Each step has one purpose and its own number, so t
    orchestrator also waits for each open pane and each write subagent, as
    [The panes and the write subagents](#the-panes-and-the-write-subagents) says.
 
-3. Run the rounds of [Session-review rounds](session-review-rounds.md). The user asked for this rule on 2026-10-17.
+3. Run the rounds of [Session-review rounds](../session-review-rounds.md). The user asked for this rule on 2026-10-17.
 4. After step 3 ended with a round that found nothing new, send each fact and each lesson, as the paragraph that starts
    "An old orchestrator of the kind `claude` starts a planner subagent" of
-   [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. Before the send, wait as
+   [The items of a handoff file](../handoff.md#the-items-of-a-handoff-file) says. Before the send, wait as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. Then, for an orchestrator of the kind
-   `claude`, do the steps of [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff). Before the
+   `claude`, do the steps of [The wait before a handoff](../planner-subagent.md#the-wait-before-a-handoff). Before the
    write, wait until no subagent is in the state running and no item of planning work waits, as
    [The wait before the handoff file](#the-wait-before-the-handoff-file) says. That wait does not count an item that a
    stop of the queue holds. It also does not count the item of a planner subagent whose wait a word of the user ended.
-   Then write the handoff file in your own handoff folder, as [The handoff file](handoff.md#the-handoff-file) says.
+   Then write the handoff file in your own handoff folder, as [The handoff file](../handoff.md#the-handoff-file) says.
 
    Before the write, read the data root and run `mkdir -p` on the folder, as
-   [The orchestrator folder](limits.md#the-orchestrator-folder) says. If one of these calls or the write fails, follow
-   [the failure rule](limits.md#the-failure-rule). Then start no new orchestrator, keep your tab open and tell the user.
-   While the bar of the fallback holds, wait for the next word of the user before the write.
+   [The orchestrator folder](../limits.md#the-orchestrator-folder) says. If one of these calls or the write fails,
+   follow [the failure rule](../limits.md#the-failure-rule). Then start no new orchestrator, keep your tab open and tell
+   the user. While the bar of the fallback holds, wait for the next word of the user before the write.
 
 5. After step 4 wrote the file, start the new orchestrator, as
    [The start of the new orchestrator](#the-start-of-the-new-orchestrator) says. That section also covers a failed
@@ -146,7 +146,7 @@ handoff file. In both cases, the new orchestrator never gets it.
 
 - The go is the request of the user for a handoff, or the go of the user to the go question. If the go comes in a
   decision message, step 2 starts after the close of its pane, as
-  [Close and continue](question-pane.md#close-and-continue) says.
+  [Close and continue](../question-pane.md#close-and-continue) says.
 - The start of the handoff is the start of step 3 of
   [The steps of the old orchestrator](#the-steps-of-the-old-orchestrator).
 - A subagent of the old orchestrator is a task subagent for a whole ticket or for one task change, a planner subagent, a
@@ -160,13 +160,13 @@ handoff file. In both cases, the new orchestrator never gets it.
   message. Before the write, that report gets the steps of
   [The reports during the handoff](#the-reports-during-the-handoff).
 - A report is the `SubagentHandback` text of a subagent, or an interim report of
-  [the answer-wait rule](limits.md#the-answer-wait-rule). After a refused `SubagentHandback` call, the message of the
+  [the answer-wait rule](../limits.md#the-answer-wait-rule). After a refused `SubagentHandback` call, the message of the
   subagent with the same report is the report.
 - The wait notification and the end notification are the notifications that
-  [The wait for a report](planner.md#the-wait-for-a-report) defines. Neither is a report.
+  [The wait for a report](../planner.md#the-wait-for-a-report) defines. Neither is a report.
 - The send is the send of each fact and each lesson, as the paragraph that starts "An old orchestrator of the kind
-  `claude` starts a planner subagent" of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says.
-- The planner wait is [The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff).
+  `claude` starts a planner subagent" of [The items of a handoff file](../handoff.md#the-items-of-a-handoff-file) says.
+- The planner wait is [The wait before a handoff](../planner-subagent.md#the-wait-before-a-handoff).
 - A task in flight is a task that did not land. A parked task is not a task in flight.
 
 ### The wait before the start
@@ -199,14 +199,14 @@ joins the wait:
 The rules that limit the start of a handoff, of a ticket and of a pane stay:
 
 - Until the end of a handoff, the old session starts no new work and no new ticket, as
-  [The end of a handoff](handoff.md#the-end-of-a-handoff) says.
+  [The end of a handoff](../handoff.md#the-end-of-a-handoff) says.
 - While a handoff of the orchestrator is due or runs, no question pane gets an automatic start or a reuse. The question
   that asks the user for the go of a suggested handoff of the orchestrator can get an automatic start, although the
-  handoff is due. It is the only such question, as [Start](question-pane.md#start) says. A word of the user still starts
-  a pane.
+  handoff is due. It is the only such question, as [Start](../question-pane.md#start) says. A word of the user still
+  starts a pane.
 - While a pane is open or a write subagent runs, the orchestrator starts no handoff, as
-  [Close and continue](question-pane.md#close-and-continue) says. The stopping-point case is the exception for an open
-  pane, with the pane handoff of [The panes and the write subagents](#the-panes-and-the-write-subagents).
+  [Close and continue](../question-pane.md#close-and-continue) says. The stopping-point case is the exception for an
+  open pane, with the pane handoff of [The panes and the write subagents](#the-panes-and-the-write-subagents).
 
 ### The wait before the handoff file
 
@@ -227,7 +227,7 @@ wait starts a planner subagent for each item, or runs again for it.
 Before the write of the handoff file, wait until no subagent is in the state running and no item of planning work waits.
 Two items do not count: an item that a stop of the queue holds, and the item of a planner subagent whose wait a word of
 the user ended. Each such file stays in `proposals/` at the write, as the planner wait and
-[The proposal file](planner-subagent.md#the-proposal-file) say. The planner wait keeps its rule. This section copies
+[The proposal file](../planner-subagent.md#the-proposal-file) say. The planner wait keeps its rule. This section copies
 none of its steps. The exception of [The end of the wait for one subagent](#the-end-of-the-wait-for-one-subagent) holds.
 
 ### The end of the wait for one subagent
@@ -264,7 +264,7 @@ in flight keeps the rules of [The end with no report](#the-end-with-no-report) a
   the old orchestrator. This is a known limit.
 
 For a planner subagent whose wait a word of the user ended,
-[The wait before a handoff](planner-subagent.md#the-wait-before-a-handoff) gives the other steps.
+[The wait before a handoff](../planner-subagent.md#the-wait-before-a-handoff) gives the other steps.
 
 ### The reports during the handoff
 
@@ -300,10 +300,10 @@ The terms of this case are:
 
 - A stopping point of a task subagent is step 1 of [the defer rule](pick-the-tickets.md#the-defer-rule). The task
   subagent ends its work after its current `tasker` command ends and runs no other `tasker` command. It removes the task
-  worktree as [the own-worktree rule](limits.md#the-own-worktree-rule) says, and the task keeps its state. Then it gives
-  its final report. The case reuses step 1 because that step ends the work and keeps the task in its state, and
-  [the comeback rule](run-one-ticket.md#the-comeback-rule) starts from that state.
-- A stopping point is not a stop of [the answer-wait rule](limits.md#the-answer-wait-rule), because after a stopping
+  worktree as [the own-worktree rule](../limits.md#the-own-worktree-rule) says, and the task keeps its state. Then it
+  gives its final report. The case reuses step 1 because that step ends the work and keeps the task in its state, and
+  [the comeback rule](../run-one-ticket.md#the-comeback-rule) starts from that state.
+- A stopping point is not a stop of [the answer-wait rule](../limits.md#the-answer-wait-rule), because after a stopping
   point the task subagent waits for no answer.
 - The stopping-point message is the message of the old orchestrator that asks a task subagent to come to its stopping
   point.
@@ -329,7 +329,7 @@ for example a task subagent for one task change, a planner subagent and a write 
 subagent, as [The wait before the start](#the-wait-before-the-start) says.
 
 A request for a handoff at the close of a milestone follows
-[The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff). Its close rule also holds for a word of the
+[The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff). Its close rule also holds for a word of the
 stopping-point case. The rules of this case hold for each kind of orchestrator that hands off. No one measured the
 message to a task subagent for a Codex or a pi orchestrator, as the next sections say. With no open pane, the pane
 handoff has nothing to do.
@@ -355,8 +355,8 @@ message starts an ended Codex task subagent again. No one measured the task suba
 
 The old orchestrator waits for the stopping-point report of each task subagent with no time limit, as for a landing. An
 interim report does not end the wait, apart from the interim report of the next paragraph. For each other interim
-report, the old orchestrator frees no slot and deletes no job, as [the answer-wait rule](limits.md#the-answer-wait-rule)
-says.
+report, the old orchestrator frees no slot and deletes no job, as
+[the answer-wait rule](../limits.md#the-answer-wait-rule) says.
 
 A step of the stopping point can stop, for example a failed remove of the task worktree or a failed delete of the local
 task branch, at which the own-worktree rule stops. That interim report names the stopping point, ends the wait and
@@ -375,7 +375,7 @@ orchestrator is idle, and a resume message starts the task subagent again after 
 
 Each fact and each lesson of a stopping-point report goes to the send of the paragraph that starts "An old orchestrator
 of the kind `claude` starts a planner subagent" of
-[The items of a handoff file](handoff.md#the-items-of-a-handoff-file), as for each final report. The task keeps its
+[The items of a handoff file](../handoff.md#the-items-of-a-handoff-file), as for each final report. The task keeps its
 state, and the old orchestrator sends no task change for it.
 
 From the send of the message on, the old orchestrator sends no answer and no next step to that task subagent. A settled
@@ -387,7 +387,7 @@ message starts the task subagent again, and it can then act on the answer after 
 
 A task subagent can end with no stopping-point report, or no report can come at all. In Claude Code, the old
 orchestrator learns of an end with no report from the end notification of Claude Code.
-[The wait for a report](planner.md#the-wait-for-a-report) defines that notification for an agent that a planner or a
+[The wait for a report](../planner.md#the-wait-for-a-report) defines that notification for an agent that a planner or a
 subagent of a planner starts. No one measured it for a task subagent of an orchestrator, or for a Codex or a pi
 orchestrator.
 
@@ -401,14 +401,14 @@ new task subagent of that entry follows the comeback rule from `tasker show <iss
 
 Each pane of the old orchestrator that is open before step 3 gets its pane handoff or its usual close before step 3.
 This also holds for a pane that a word of the user starts during step 2. The pane handoff is the handoff of the pane
-that [The pane handoff](question-pane.md#the-pane-handoff) defines. The stopping-point messages and the pane handoff can
-run at the same time.
+that [The pane handoff](../question-pane.md#the-pane-handoff) defines. The stopping-point messages and the pane handoff
+can run at the same time.
 
 The old orchestrator waits for the report of each write subagent of a decision message that it accepts before the pane
 handoff. If such a write subagent ends with no report, the old orchestrator tells the user that the results are not
-known, as [The pane owner handles a decision](question-pane.md#the-pane-owner-handles-a-decision) gives, and the handoff
-goes on. A task change of such a message for a task after its stopping-point message does not go out. The entry gives it
-with the words of the user, as for an answer. A running write subagent still holds the start of the handoff.
+known, as [The pane owner handles a decision](../question-pane.md#the-pane-owner-handles-a-decision) gives, and the
+handoff goes on. A task change of such a message for a task after its stopping-point message does not go out. The entry
+gives it with the words of the user, as for an answer. A running write subagent still holds the start of the handoff.
 
 The pane must close before step 3. If the close fails with `pane_not_found`, the pane is gone. If the close fails in
 another way, the old orchestrator tells the user in its tab. It starts the new orchestrator only after the user says
@@ -416,12 +416,13 @@ that the pane is closed.
 
 During a handoff, each text of this case that waits for a word of the user goes in the tab of the old orchestrator. It
 does not go to a question pane.
-[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) gives the usual rule.
+[Reports and questions of a session](../working-with-the-user.md#reports-and-questions-of-a-session) gives the usual
+rule.
 
 ### The steps that are not new work
 
 These steps are steps of the handoff, not new work, for the rule of
-[The end of a handoff](handoff.md#the-end-of-a-handoff):
+[The end of a handoff](../handoff.md#the-end-of-a-handoff):
 
 - The stopping-point messages
 - The pane handoff request and the write of the pane handoff file
@@ -431,7 +432,7 @@ These steps are steps of the handoff, not new work, for the rule of
 
 ### The failures
 
-All failures follow [the failure rule](limits.md#the-failure-rule). Each failure has its home:
+All failures follow [the failure rule](../limits.md#the-failure-rule). Each failure has its home:
 
 - The send of a stopping-point message fails. The old orchestrator tells the user. For that task, the wait case holds:
   step 2 waits until the task lands, and the old orchestrator answers the task subagent as today. It sends no second
@@ -441,7 +442,7 @@ All failures follow [the failure rule](limits.md#the-failure-rule). Each failure
 - The delete of a job fails for a task subagent that came to a stopping point. The job stays, as
   [Delete the job](quota.md#delete-the-job) says. If it fires, the rule of
   [The wait and the reports](#the-wait-and-the-reports) applies. The job ends with the session of the old orchestrator.
-- A pane fails. [The pane handoff](question-pane.md#the-pane-handoff) gives these failures. A failed close other than
+- A pane fails. [The pane handoff](../question-pane.md#the-pane-handoff) gives these failures. A failed close other than
   `pane_not_found` is in [The panes and the write subagents](#the-panes-and-the-write-subagents).
 - The new orchestrator fails. [The start of the new orchestrator](#the-start-of-the-new-orchestrator) gives these
   failures.
@@ -469,30 +470,30 @@ All failures follow [the failure rule](limits.md#the-failure-rule). Each failure
 ## The handoff file of the orchestrator
 
 The handoff file of the orchestrator holds the parts of
-[The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The old orchestrator also puts these parts in the
-handoff file:
+[The items of a handoff file](../handoff.md#the-items-of-a-handoff-file). The old orchestrator also puts these parts in
+the handoff file:
 
 - The prompt names the scope, the path of the file, the session name, the first free item id (the number after the last
-  id of a question or a progress report, as [The last item id](handoff.md#the-last-item-id) says) and
+  id of a question or a progress report, as [The last item id](../handoff.md#the-last-item-id) says) and
   [The start of the new orchestrator](#the-start-of-the-new-orchestrator). The first step of the prompt is the prompt
-  read of [The items of a handoff file](handoff.md#the-items-of-a-handoff-file). The prompt also names each extra doc.
-  An extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
-  [the re-read rule](doc-reads.md#the-re-read-rule) does not hold. The fixed list holds each page of the list "The
+  read of [The items of a handoff file](../handoff.md#the-items-of-a-handoff-file). The prompt also names each extra
+  doc. An extra doc is a doc that the prompt of the old orchestrator named and that the fixed list of
+  [the re-read rule](../doc-reads.md#the-re-read-rule) does not hold. The fixed list holds each page of the list "The
   pages". So a page is never an extra doc, also a page that the old orchestrator read on need. The old orchestrator
-  fills [`prompt-templates/handoff/orchestrator.md`](../../prompt-templates/handoff/orchestrator.md). `{{SCOPE}}` is the
-  scope, `{{HANDOFF_PATH}}` the path of the file, `{{SESSION_NAME}}` the session name, `{{FIRST_FREE_ITEM_ID}}` the
+  fills [`prompt-templates/handoff/orchestrator.md`](../../../prompt-templates/handoff/orchestrator.md). `{{SCOPE}}` is
+  the scope, `{{HANDOFF_PATH}}` the path of the file, `{{SESSION_NAME}}` the session name, `{{FIRST_FREE_ITEM_ID}}` the
   first free item id and `{{EXTRA_DOCS}}` the extra docs with the label "Extra docs:", or empty. Then it splits the
   result on newlines, drops each empty line and joins the rest with one space, so that the prompt is one line. An empty
   `{{EXTRA_DOCS}}` or `{{OPEN_ISSUES}}` leaves no word.
 - For a set scope, the prompt names each open issue of the set as it stands at the handoff. `{{OPEN_ISSUES}}` holds the
   open issues with the label "Open issues:", in the form of the first prompt of
-  [The start of an orchestrator](../orchestrator.md#the-start-of-an-orchestrator). It is empty for a milestone scope.
+  [The start of an orchestrator](../../orchestrator.md#the-start-of-an-orchestrator). It is empty for a milestone scope.
 - The number of each open broken-test issue that the old orchestrator knows of (see the broken-test rule in
-  [A failed CI run](ci-wait.md#a-failed-ci-run)).
+  [A failed CI run](../ci-wait.md#a-failed-ci-run)).
 - A table of the open issues of the scope, with the columns issue, topic, blockers and files.
 - The record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets), with one entry for each raised issue.
   Each entry gives the issue and its facts at the raise.
-- Each open finding of the review rounds. A handled finding, as [Session-review rounds](session-review-rounds.md)
+- Each open finding of the review rounds. A handled finding, as [Session-review rounds](../session-review-rounds.md)
   defines it, leaves the file.
 - The name, the tab id and the pane id of the old orchestrator. The tab id is `$HERDR_TAB_ID`, and the pane id is
   `$HERDR_PANE_ID`. The old orchestrator gets the two ids before it writes the file. If it cannot get the pane id, the
@@ -505,33 +506,33 @@ handoff file:
   holds the pane handoff itself in place of the link. Each write action and metadata request of a pane handoff that did
   not run stands in the handoff file with the mark "not run", as a decision of the user that still applies. A question
   with a question file stays in its question file. A question with no file keeps its full text in the handoff file, as
-  [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says.
+  [The items of a handoff file](../handoff.md#the-items-of-a-handoff-file) says.
 - The list of the questions with no automatic start. The list gives the question id and the reason of each open question
-  with no automatic start, as [Terms](question-pane.md#terms) defines it. The reason is the rule that gives the question
-  no automatic start, for example a **No decision** message or a close of the pane with no decision. If a question of
-  the same list in the handoff file of the own start is still open, the list also gives that question. The list gives no
-  text of a question. For a question with no file, the handoff file already holds its full text, and the list adds its
-  reason.
+  with no automatic start, as [Terms](../question-pane.md#terms) defines it. The reason is the rule that gives the
+  question no automatic start, for example a **No decision** message or a close of the pane with no decision. If a
+  question of the same list in the handoff file of the own start is still open, the list also gives that question. The
+  list gives no text of a question. For a question with no file, the handoff file already holds its full text, and the
+  list adds its reason.
 
 The handoff file holds no text and no list of the open questions that have a
-[question file](question-pane.md#the-question-file), apart from two exceptions. The first exception is one list. That
+[question file](../question-pane.md#the-question-file), apart from two exceptions. The first exception is one list. That
 list holds only the question id and the reason of each question with no automatic start. The second exception is the
 entries of [The open peer requests](#the-open-peer-requests). Each entry of a receiving side gives the question id of
 its question and no text of that question. The entry does not copy the question. Its other items, for example the
 requested change, stay as [The open peer requests](#the-open-peer-requests) lists them. The reason: the question stays
-in its question file through the handoff, as [The orchestrator folder](limits.md#the-orchestrator-folder) says. The
+in its question file through the handoff, as [The orchestrator folder](../limits.md#the-orchestrator-folder) says. The
 handoff file holds no list of the items of planning work that have a
-[proposal file](planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It gives
-no path of the three folders and no path of `drafts/`. The new orchestrator makes these paths itself from the data root,
-the repo key and its own slug. A path of a draft file in the text of a question stays as it is.
+[proposal file](../planner-subagent.md#the-proposal-file). It holds the full text of each question with no file. It
+gives no path of the three folders and no path of `drafts/`. The new orchestrator makes these paths itself from the data
+root, the repo key and its own slug. A path of a draft file in the text of a question stays as it is.
 
 After the write of its handoff file, the old orchestrator writes no new file in the three folders and gives no new
 question id. A question that reaches it after the write gets no question file. The old orchestrator shows the full text
 of that question as a report in its tab.
 
 A close of a pane by the old orchestrator is not a close by the user with no decision. An example is the close of a pane
-at its pane handoff, as [The pane handoff](question-pane.md#the-pane-handoff) says. Such a question does not go in the
-list. The mark of no automatic start lives only in the handoff file. No question file and no other record of the
+at its pane handoff, as [The pane handoff](../question-pane.md#the-pane-handoff) says. Such a question does not go in
+the list. The mark of no automatic start lives only in the handoff file. No question file and no other record of the
 questions gets the mark.
 
 The list of the questions with no automatic start follows the time at which a question gets its reason:
@@ -543,7 +544,7 @@ The list of the questions with no automatic start follows the time at which a qu
   as a report in its tab. It does the same for a question that reaches it after the write. The new orchestrator does not
   get this mark, and this is a known limit: such a question gets an automatic start again after the handoff.
 - After the close of the old orchestrator, no orchestrator accepts a decision message of that pane, as
-  [Start](question-pane.md#start) says. Nothing goes in a list, and nobody shows a report.
+  [Start](../question-pane.md#start) says. Nothing goes in a list, and nobody shows a report.
 
 ### The task list
 
@@ -572,16 +573,16 @@ the user see the scope of the work so far. If an entry has no stopping-point rep
 The new orchestrator sends no message to a task subagent of the old orchestrator. Each task subagent of an entry ended
 before the write, or the user told the old orchestrator to go on. An entry names no session. A path of a task worktree
 in an entry is a place in the file system, not a name of a session. A matching step of an open peer request does not go
-to the new task subagent of the same ticket either, as [The request rule](../orchestrator.md#the-request-rule) says.
+to the new task subagent of the same ticket either, as [The request rule](../../orchestrator.md#the-request-rule) says.
 
 ### The open peer requests
 
 An open request of a sending orchestrator is a request that it sent and for which no decision came back yet. An open
 request of a receiving orchestrator is a request whose decision it did not send yet. A request whose send of the
-decision failed is not open, because the first stop point of [The question file](question-pane.md#the-question-file)
+decision failed is not open, because the first stop point of [The question file](../question-pane.md#the-question-file)
 counts that failure. The failure rule then applies, and nobody sends the decision a second time. The terms sending
 orchestrator, receiving orchestrator, requested change and matching step are the terms of
-[The request rule](../orchestrator.md#the-request-rule).
+[The request rule](../../orchestrator.md#the-request-rule).
 
 At the write of the handoff file, the old orchestrator records each request that is still open. It tells no one else.
 
@@ -621,18 +622,20 @@ steps below. Steps 1 to 5 and 8 below are step 5 of The steps of the old orchest
 The steps of the old orchestrator. The steps are:
 
 1. The old orchestrator reads the configuration, as steps 1 to 3 of
-   [The steps of the user](../orchestrator.md#the-steps-of-the-user) say.
+   [The steps of the user](../../orchestrator.md#the-steps-of-the-user) say.
 2. It opens a new herdr tab with `herdr tab create`, as step 2 of
-   [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) says. The label is `orchestrator-<slug>`.
+   [The start of a herdr session](../../sessions.md#the-start-of-a-herdr-session) says. The label is
+   `orchestrator-<slug>`.
 3. It keeps `.result.tab.tab_id` and `.result.root_pane.pane_id` of the output. They are the tab id and the pane id of
    the new orchestrator.
 4. It starts the new orchestrator in the new pane with `herdr agent start`, as step 3 of
-   [The start of a herdr session](../sessions.md#the-start-of-a-herdr-session) says.
+   [The start of a herdr session](../../sessions.md#the-start-of-a-herdr-session) says.
 5. The old orchestrator makes sure that the new orchestrator runs. It runs `herdr pane read <pane id>` with the pane id
    of step 3.
 
-   If the kind is `pi`, run the reads of [The start gate of a pi session](../sessions.md#the-start-gate-of-a-pi-session)
-   after the `herdr pane read`. While the state is Pending, the old orchestrator closes nothing.
+   If the kind is `pi`, run the reads of
+   [The start gate of a pi session](../../sessions.md#the-start-gate-of-a-pi-session) after the `herdr pane read`. While
+   the state is Pending, the old orchestrator closes nothing.
 
 6. If the new orchestrator runs, the old orchestrator runs `herdr tab get "$HERDR_TAB_ID"` in its shell. If
    `.result.tab.pane_count` is 1, it runs `herdr tab close "$HERDR_TAB_ID"`. If the count is more than 1, it closes only
@@ -649,7 +652,7 @@ The steps of the old orchestrator. The steps are:
 
 In step 4, the herdr agent name is `orchestrator-<slug>-<time>`, and `-n` takes `orchestrator-<slug>`. `<time>` is the
 time part of the name of the handoff file.
-[The herdr agent name in a handoff](../sessions.md#the-herdr-agent-name-in-a-handoff) gives this form and its reason.
+[The herdr agent name in a handoff](../../sessions.md#the-herdr-agent-name-in-a-handoff) gives this form and its reason.
 The first prompt is the prompt of the handoff file, in one line. Step 5 uses `herdr pane read` and not `ListAgents`,
 because two sessions have the name.
 
@@ -663,58 +666,61 @@ user opened in a pane. That bullet says that such a session cannot close itself.
 started also closes itself by its tab id.
 
 The new orchestrator is `orchestrator-<slug>`. For each kind, step 1 of
-[the start checks](../orchestrator.md#the-start-checks) reads the own name, so the prompt holds no name step. The new
-orchestrator does [the start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a
-handoff file.
+[the start checks](../../orchestrator.md#the-start-checks) reads the own name, so the prompt holds no name step. The new
+orchestrator does [the start checks](../../orchestrator.md#the-start-checks), with the rule for a first prompt that
+names a handoff file.
 
 The new orchestrator does its start in this order:
 
 1. The start reads. The prompt read of the handoff prompt is their first part. The prompt read does step 1 of
-   [the doc-read rule](doc-reads.md#the-doc-read-rule). Then the new orchestrator makes the rest of its start reads, as
-   [The start reads](../orchestrator.md#the-start-reads) says. The handoff prompt names
-   `docs/dev/handoff-orchestrator.md` and `docs/dev/handoff.md` for its start steps, so both get a complete read. Each
-   extra doc gets one too. No other page gets a complete read. Then the start reads end. The new orchestrator does the
-   start reads one time. It does not do them again after the start checks.
-2. [The start checks](../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff file.
-3. [The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder), only after all start checks pass.
+   [the doc-read rule](../doc-reads.md#the-doc-read-rule). Then the new orchestrator makes the rest of its start reads,
+   as [The start reads](../../orchestrator.md#the-start-reads) says. The handoff prompt names
+   `docs/dev/orchestrator/handoff-orchestrator.md` and `docs/dev/handoff.md` for its start steps, so both get a complete
+   read. Each extra doc gets one too. No other page gets a complete read. Then the start reads end. The new orchestrator
+   does the start reads one time. It does not do them again after the start checks.
+2. [The start checks](../../orchestrator.md#the-start-checks), with the rule for a first prompt that names a handoff
+   file.
+3. [The check of the handoff folder](../handoff.md#the-check-of-the-handoff-folder), only after all start checks pass.
 4. The steps of this section that follow the check of the handoff folder.
 
 This is the order of a first start: the complete start reads, then the start checks, then the role work. The start
 checks need the start docs and the docs that the prompt names. For example, step 1 of the start checks reads the own
-name as [docs/sessions.md](../sessions.md) says, and the prompt read does not read `docs/sessions.md`. The start checks
-decide whether the session does role work. The check of the handoff folder picks the handoff file of the work, and it
-can tell the user about a newer file. So a check before all start checks pass gives work and a message with no use.
+name as [docs/sessions.md](../../sessions.md) says, and the prompt read does not read `docs/sessions.md`. The start
+checks decide whether the session does role work. The check of the handoff folder picks the handoff file of the work,
+and it can tell the user about a newer file. So a check before all start checks pass gives work and a message with no
+use.
 
 If a step of the start checks fails, the new orchestrator is a failed session. An example is a stop by step 3 for a row
 of `herdr agent list` with the own name and a tab id that is not the tab id of the handoff file. The failed session
-gives the message of [the start checks](../orchestrator.md#the-start-checks). After that message, it does none of the
-steps that [the start checks](../orchestrator.md#the-start-checks) list for a failed session. The failed session changes
-no handoff file and no question file. It does none of
+gives the message of [the start checks](../../orchestrator.md#the-start-checks). After that message, it does none of the
+steps that [the start checks](../../orchestrator.md#the-start-checks) list for a failed session. The failed session
+changes no handoff file and no question file. It does none of
 [The steps for the open peer requests](#the-steps-for-the-open-peer-requests). The old orchestrator does not wait for
 this result.
 
 The start checks can read the handoff file of the first message with a Read call. This read can come before the read of
-the data root, as [The orchestrator folder](limits.md#the-orchestrator-folder) says.
+the data root, as [The orchestrator folder](../limits.md#the-orchestrator-folder) says.
 
-After all [the start checks](../orchestrator.md#the-start-checks) pass, the new orchestrator does the check of
-[The check of the handoff folder](handoff.md#the-check-of-the-handoff-folder). Right after that check, at the end of its
-start steps, it lists `questions/` and `proposals/`, as [The orchestrator folder](limits.md#the-orchestrator-folder)
-says. At the end of its start steps, the new orchestrator runs no call on `drafts/`. A session whose start check failed
-does not list these folders. It reads no question file at its start.
+After all [the start checks](../../orchestrator.md#the-start-checks) pass, the new orchestrator does the check of
+[The check of the handoff folder](../handoff.md#the-check-of-the-handoff-folder). Right after that check, at the end of
+its start steps, it lists `questions/` and `proposals/`, as
+[The orchestrator folder](../limits.md#the-orchestrator-folder) says. At the end of its start steps, the new
+orchestrator runs no call on `drafts/`. A session whose start check failed does not list these folders. It reads no
+question file at its start.
 
 After these lists, it reads the tasks in flight with `tasker status`, also
 [the parked tasks](pick-the-tickets.md#the-defer-rule). It reads the other sessions with `ListAgents`. Then, if all
-[the start checks](../orchestrator.md#the-start-checks) passed, it makes its board watch job, as
-[the board watch rule](../orchestrator.md#the-board-watch-job) says. The first read of the board can delete the job, as
-[A ticket that waits for a slot](../orchestrator.md#a-ticket-that-waits-for-a-slot) says. Then, before the pick of the
-first ticket, it reads the record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff file
-and runs that find.
+[the start checks](../../orchestrator.md#the-start-checks) passed, it makes its board watch job, as
+[the board watch rule](../../orchestrator.md#the-board-watch-job) says. The first read of the board can delete the job,
+as [A ticket that waits for a slot](../../orchestrator.md#a-ticket-that-waits-for-a-slot) says. Then, before the pick of
+the first ticket, it reads the record of [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) from the handoff
+file and runs that find.
 
 The record then lives in the session of the new orchestrator. The first find compares each issue outside Todo with that
 record, as [the outside-Todo find](pick-the-tickets.md#pick-the-tickets) says.
 
 If the handoff file holds [the task list](#the-task-list), and all
-[the start checks](../orchestrator.md#the-start-checks) passed, the new orchestrator starts one new task subagent for
+[the start checks](../../orchestrator.md#the-start-checks) passed, the new orchestrator starts one new task subagent for
 each entry. It does this after its start steps and before the pick of its first new ticket. The reason: an orchestrator
 has `maxTaskSubagents` slots, as [The delay of each task subagent](quota.md#the-delay-of-each-task-subagent) says. A
 task of the list already holds work, so a new ticket does not take its slot. The new orchestrator asks the user nothing
@@ -730,12 +736,13 @@ says. The steps are:
    date and the time in the name of the handoff file. An example is `codeguru42-tasker-108-h202611221505`. The prompt
    says that the name has a suffix.
 4. The task worktree of the new name is `../tasker-worktrees/<session name>`, as the folder bullet of
-   [Limits](limits.md#limits) says. Compare it with each path of a task worktree that the entry gives. If two paths are
-   the same, add `-2` to the suffix. The new suffix gives a new name and so a new path. The comeback rule finds a task
-   worktree that stays through the branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule).
+   [Limits](../limits.md#limits) says. Compare it with each path of a task worktree that the entry gives. If two paths
+   are the same, add `-2` to the suffix. The new suffix gives a new name and so a new path. The comeback rule finds a
+   task worktree that stays through the branch-exists case of
+   [the own-worktree rule](../limits.md#the-own-worktree-rule).
 5. Start the task subagent. The prompt gives the context of the first bullet of "The prompt of a task subagent", the
    state from `tasker show <issue>`, the entry and each answer of the entry. The task subagent follows
-   [the comeback rule](run-one-ticket.md#the-comeback-rule). If the base holds a template file for the prompt of a
+   [the comeback rule](../run-one-ticket.md#the-comeback-rule). If the base holds a template file for the prompt of a
    second task subagent for the same ticket, the entry reaches the prompt through that template.
 6. Give the new task subagent the free slot with the lowest number, as "The delay of each task subagent" says. Schedule
    its jobs as [Schedule a job when a task subagent starts](quota.md#schedule-a-job-when-a-task-subagent-starts) says. A
@@ -751,23 +758,23 @@ start yet, its prompt gives the answer. A matching step of an open peer request 
 
 If the entry says "no report", the new task subagent starts from the state that `tasker show <issue>` gives. If the read
 of `tasker status` or of `tasker show <issue>` for an entry fails, the new orchestrator starts no task subagent for that
-entry. It asks the user in its pane whether it starts it, as an open question of [Start](question-pane.md#start). If the
-start of a new task subagent fails, for example a refused Agent call, the task stays in flight with no task subagent.
-The new orchestrator asks the user in its pane whether it starts it again, in the same way.
+entry. It asks the user in its pane whether it starts it, as an open question of [Start](../question-pane.md#start). If
+the start of a new task subagent fails, for example a refused Agent call, the task stays in flight with no task
+subagent. The new orchestrator asks the user in its pane whether it starts it again, in the same way.
 
 If the handoff file links a pane handoff file next to a question id, the question of the pane stays open in its question
 file, or in the handoff file for a question with no file. During the handoff, it gets no automatic start. The new
-orchestrator asks the question in its own pane under the rules of [Start](question-pane.md#start). Before the pane
-start, it reads the pane handoff file. [The pane handoff](question-pane.md#the-pane-handoff) gives the first-reply text.
-If it cannot read the pane handoff file, it starts the pane with the full text from the question file or the handoff
-file. The first-reply text then says that the talk of the old pane is not known.
+orchestrator asks the question in its own pane under the rules of [Start](../question-pane.md#start). Before the pane
+start, it reads the pane handoff file. [The pane handoff](../question-pane.md#the-pane-handoff) gives the first-reply
+text. If it cannot read the pane handoff file, it starts the pane with the full text from the question file or the
+handoff file. The first-reply text then says that the talk of the old pane is not known.
 
 The new orchestrator gives no automatic start to any open question of the list, as the old orchestrator did. A word of
-the user that names such a question still starts its pane. A [start word](question-pane.md#terms) for a ticket that the
-question holds also starts its pane, as [Start](question-pane.md#start) says.
+the user that names such a question still starts its pane. A [start word](../question-pane.md#terms) for a ticket that
+the question holds also starts its pane, as [Start](../question-pane.md#start) says.
 
-An answer can name the id of a question of the old session, as [The last item id](handoff.md#the-last-item-id) says.
-Then the new orchestrator takes the question from its [question file](question-pane.md#the-question-file). A question
+An answer can name the id of a question of the old session, as [The last item id](../handoff.md#the-last-item-id) says.
+Then the new orchestrator takes the question from its [question file](../question-pane.md#the-question-file). A question
 with no file comes from the handoff file. If no question file has that id and the handoff file does not hold it, the
 question is not open. The new orchestrator then tells the user.
 
@@ -777,18 +784,18 @@ the user that it cannot read the question of that id.
 ### The report of the questions with no automatic start
 
 After its start steps, the new orchestrator tells the user about each open question with no automatic start. It does
-this only if each of [the start checks](../orchestrator.md#the-start-checks) passed. A session whose start check failed
-makes no report. The report comes before the first pane start and before the pick of the first ticket. If the
+this only if each of [the start checks](../../orchestrator.md#the-start-checks) passed. A session whose start check
+failed makes no report. The report comes before the first pane start and before the pick of the first ticket. If the
 orchestrator finds no open question with no automatic start, it makes no report.
 
 The report covers each open question of the list of the questions with no automatic start in the handoff file. It also
-covers each other open question with no automatic start that [The question file](question-pane.md#the-question-file)
+covers each other open question with no automatic start that [The question file](../question-pane.md#the-question-file)
 gives. For each question, the report gives the question id, the question in a few words and the reason. If the question
-holds the start of a ticket, the report names that [held ticket](question-pane.md#terms). The report also says that a
+holds the start of a ticket, the report names that [held ticket](../question-pane.md#terms). The report also says that a
 word of the user that names the question starts its pane. A start word for the held ticket also starts it.
 
 The report is a progress report, as
-[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says. The report
+[Reports and questions of a session](../working-with-the-user.md#reports-and-questions-of-a-session) says. The report
 starts no pane and no wait. It does not lift the rule of no automatic start of a question. The report does not name the
 question of a receiving entry that gives a decision of the user, as step 6 of
 [The steps for the open peer requests](#the-steps-for-the-open-peer-requests) says.
@@ -798,21 +805,21 @@ These reads come after its start steps. So they are no exception to the sentence
 start" above. For a question with no file, the orchestrator uses the text of the handoff file. An id of the list that is
 not an open question at the read stays out of the report.
 
-If a read for the report fails, the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) applies.
+If a read for the report fails, the fallback of [The orchestrator folder](../limits.md#the-orchestrator-folder) applies.
 The report then names each question whose read failed, with its id. A failed read drops no question from the report.
 
 The reason: on 2026-11-22, the user asked orchestrator-m31 to start a ticket next. An open question held the start of
 that ticket, and that question got no automatic start. The handoff file of that day named the question as a question
 with no automatic start. But no rule told the new orchestrator to tell the user. So the list alone does not fix the
-case. The case also needs this report and the start-word rule of [Start](question-pane.md#start).
+case. The case also needs this report and the start-word rule of [Start](../question-pane.md#start).
 
 The user said: "oh, I didn't know there was an open question about 973". The user also said: "and you didn't open that
 question first after the handoff...".
 
 ### The steps for the open peer requests
 
-The new orchestrator does these steps only if all [the start checks](../orchestrator.md#the-start-checks) passed. They
-are part of item 4 of the start order above. They come after the check of the handoff folder and after the list of
+The new orchestrator does these steps only if all [the start checks](../../orchestrator.md#the-start-checks) passed.
+They are part of item 4 of the start order above. They come after the check of the handoff folder and after the list of
 `questions/` and `proposals/`. A failed session does none of them and changes no handoff file and no question file. The
 ask in a pane comes after
 [the report of the questions with no automatic start](#the-report-of-the-questions-with-no-automatic-start), because
@@ -821,35 +828,35 @@ that report comes before the first pane start.
 The steps are:
 
 1. The report. Tell the own user in the own tab about each open request that came from the handoff file. This is a
-   progress report, as [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session)
-   says.
+   progress report, as
+   [Reports and questions of a session](../working-with-the-user.md#reports-and-questions-of-a-session) says.
 2. A sending entry. Wait for the decision of the request. The decision comes to the own name, because the new
    orchestrator has the name of the old orchestrator. Take it as the answer to the entry. After a reject, do no matching
    step. After an accept, do the matching step only if it still applies, as
-   [The request rule](../orchestrator.md#the-request-rule) says. If it no longer applies, tell the own user in the own
-   tab and name the step.
+   [The request rule](../../orchestrator.md#the-request-rule) says. If it no longer applies, tell the own user in the
+   own tab and name the step.
 3. The find, for a receiving entry with the state "no decision of the user yet". Find the open question of the question
    id, as the paragraph "An answer can name the id" above says. Keep the link between the entry and the question. If no
    open question has that id, make no change, send nothing for the request, and tell the own user in the own tab. A
    failed or denied list of `questions/` or read of a question file is not a find with no question. Under that failure,
-   the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) and the rule for a failed list of
-   [The question file](question-pane.md#the-question-file) apply. Run the find again after the next list that works.
-4. The ask. Ask that question in the own question pane. The usual rules of [Start](question-pane.md#start) apply.
+   the fallback of [The orchestrator folder](../limits.md#the-orchestrator-folder) and the rule for a failed list of
+   [The question file](../question-pane.md#the-question-file) apply. Run the find again after the next list that works.
+4. The ask. Ask that question in the own question pane. The usual rules of [Start](../question-pane.md#start) apply.
 5. An entry with a decision needs no find. A missing question file or a failed list of `questions/` stops neither its
    change nor its send.
 6. No pane start. The question of an entry with an accept or a reject gets no automatic start, no reuse and no pane
-   start at a word of the user that names it. This step wins over each of them in [Start](question-pane.md#start). Such
-   a question is not a question with no automatic start of [Terms](question-pane.md#terms). So the list of those
+   start at a word of the user that names it. This step wins over each of them in [Start](../question-pane.md#start).
+   Such a question is not a question with no automatic start of [Terms](../question-pane.md#terms). So the list of those
    questions does not hold it, and the report of those questions does not name it. The reason: under the order of the
    request rule, the pane can close before the send, so the question file stays until the send.
 7. The change. If the entry says that the change is done, do not do it again. Else, after an accept, do the requested
    change. After a reject, change nothing.
 8. The send. Send the decision to the sending orchestrator with `SendMessage`. The stop points and the delete of
-   [The question file](question-pane.md#the-question-file) apply. For an entry with a decision, delete the question file
-   right after the send. If `questions/` no longer holds the file, no delete runs. A failed send is also a stop point,
-   and [the failure rule](limits.md#the-failure-rule) applies. The delete follows the calls and the fallback of The
-   orchestrator folder.
+   [The question file](../question-pane.md#the-question-file) apply. For an entry with a decision, delete the question
+   file right after the send. If `questions/` no longer holds the file, no delete runs. A failed send is also a stop
+   point, and [the failure rule](../limits.md#the-failure-rule) applies. The delete follows the calls and the fallback
+   of The orchestrator folder.
 
 The old orchestrator tells no peer about its handoff. The new orchestrator tells no peer that it took a request. Each
 message is the request or the answer of the seventh kind of
-[The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message). The peer gets no report of the handoff.
+[The kinds of peer message](../../orchestrator.md#the-kinds-of-peer-message). The peer gets no report of the handoff.

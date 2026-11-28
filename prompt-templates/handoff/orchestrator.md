@@ -16,4 +16,4 @@ Your session name is {{SESSION_NAME}}.
 Your handoff file is {{HANDOFF_PATH}}.
 Your first free item id is {{FIRST_FREE_ITEM_ID}}.
 {{EXTRA_DOCS}}
-Then do your steps of "The start of the new orchestrator" in docs/dev/handoff-orchestrator.md. Do "The check of the handoff folder" of docs/dev/handoff.md at the time that section gives.
+Then do your steps of "The start of the new orchestrator" in docs/dev/orchestrator/handoff-orchestrator.md. Do "The check of the handoff folder" of docs/dev/handoff.md at the time that section gives.

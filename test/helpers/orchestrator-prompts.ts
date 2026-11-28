@@ -36,8 +36,8 @@ export function orchestratorDocWordRuns(body: string): string[] {
   if (section === undefined) throw new Error("docs/orchestrator.md has no section The board watch job");
   const docs = [
     readFileSync(packagePath("docs/dev/handoff.md"), "utf8"),
-    readFileSync(packagePath("docs/dev/handoff-orchestrator.md"), "utf8"),
-    readFileSync(packagePath("docs/dev/quota.md"), "utf8"),
+    readFileSync(packagePath("docs/dev/orchestrator/handoff-orchestrator.md"), "utf8"),
+    readFileSync(packagePath("docs/dev/orchestrator/quota.md"), "utf8"),
     section,
   ];
   const runs = new Set<string>();

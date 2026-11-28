@@ -7,8 +7,8 @@ The reader of this page is the orchestrator.
 The orchestrator does all the steps of this section.
 
 - Take tickets only from the Todo column of the project board, and only from the scope of the orchestrator. The scope is
-  a milestone scope or a set scope, as [The scope](../orchestrator.md#the-scope) says. An issue of the scope is an issue
-  of the milestone of a milestone scope, or an issue of the set of a set scope.
+  a milestone scope or a set scope, as [The scope](../../orchestrator.md#the-scope) says. An issue of the scope is an
+  issue of the milestone of a milestone scope, or an issue of the set of a set scope.
   - For a milestone scope, take tickets only from the milestone of the scope. Do not start a ticket from a later
     milestone. A new issue can join the milestone during the run. The orchestrator picks it at its next read of the
     board, and it asks the user nothing about it. The fill rule of the bullet "Run at most `maxTaskSubagents` task
@@ -36,16 +36,16 @@ The orchestrator does all the steps of this section.
     move is open. The way that this page names is the compare of the milestone in the set read of
     [the board-read bullet](#pick-the-tickets) with the milestone of the read before. A new orchestrator session does
     not see a move from before its first read. If the read, the session list or the message fails,
-    [the failure rule](limits.md#the-failure-rule) applies. Case: #B of the set moves from M32 to "Future". At the next
-    read of the board, the orchestrator of the set tells the user. If `orchestrator-future` runs, it also tells that
-    session. Before the user answers, a second move of #B gives a second notice, and the orchestrator of the new
+    [the failure rule](../limits.md#the-failure-rule) applies. Case: #B of the set moves from M32 to "Future". At the
+    next read of the board, the orchestrator of the set tells the user. If `orchestrator-future` runs, it also tells
+    that session. Before the user answers, a second move of #B gives a second notice, and the orchestrator of the new
     milestone gets a message. Case: #B of the set has no task, and its card is in Todo. The user moves #B from M32 to
     M30. At the next read of the board, the orchestrator tells the user and does not start #B until the user answers.
 - The earlier-blocker offer: for a milestone scope, a ticket of the milestone can wait on an open blocker of an earlier
   milestone that no orchestrator runs. An earlier milestone is a numbered milestone with a lower number, for example M19
   before M20. The number is the number in the title of the milestone, for example 19 in "M19 — Polish". A blocker of
   "Docs", of "Future" or of no milestone is not of an earlier milestone. Then the orchestrator tells the user and offers
-  to run those blockers, as [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The
+  to run those blockers, as [A decision of the user](../working-with-the-user.md#a-decision-of-the-user) says. The
   orchestrator runs them only on the word of the user. The blockers keep their milestone. For such a blocker, the word
   of the user wins over the words "only from the milestone of the scope" of the first bullet of this section. The
   sentence "Do not start a ticket from a later milestone" does not cover such a blocker, because the blocker is of an
@@ -55,15 +55,15 @@ The orchestrator does all the steps of this section.
   can still ask the orchestrator to run them at any time. No orchestrator runs a blocker when two facts are true. First,
   the output of `tasker status` lists no task for the full issue key of the blocker. Second, the session list of the
   tools, for example `ListAgents`, has no session `orchestrator-<slug>`, with the slug of the milestone of the blocker
-  as [The slug](../orchestrator.md#the-slug) gives it. [The notice rule](doc-reads.md#the-notice-rule) gives the form of
-  the name. `gh issue view <blocker> --json milestone -q '.milestone.title'` gives the milestone of the blocker. A
-  missing match is an answer and not a failure: no task for the key means "no task", and no such session means "no
-  session". If `tasker status` fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator makes
-  no offer at that moment. If the session list fails, the failure rule applies, and the orchestrator makes no offer at
-  that moment. If the read of the milestone fails, the failure rule applies, and the orchestrator makes no offer at that
-  moment. After a failure, the orchestrator does the check again at its next read of the board. On 2026-10-18, each
-  ticket of M20 waited on a ticket of M19 (#137, #61, #63, #47 and #236) that no orchestrator ran, and the user told
-  orchestrator-m20: "Go ahead and work on the issues from M19 that block M20 issues."
+  as [The slug](../../orchestrator.md#the-slug) gives it. [The notice rule](../doc-reads.md#the-notice-rule) gives the
+  form of the name. `gh issue view <blocker> --json milestone -q '.milestone.title'` gives the milestone of the blocker.
+  A missing match is an answer and not a failure: no task for the key means "no task", and no such session means "no
+  session". If `tasker status` fails, [the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator
+  makes no offer at that moment. If the session list fails, the failure rule applies, and the orchestrator makes no
+  offer at that moment. If the read of the milestone fails, the failure rule applies, and the orchestrator makes no
+  offer at that moment. After a failure, the orchestrator does the check again at its next read of the board. On
+  2026-10-18, each ticket of M20 waited on a ticket of M19 (#137, #61, #63, #47 and #236) that no orchestrator ran, and
+  the user told orchestrator-m20: "Go ahead and work on the issues from M19 that block M20 issues."
 - The outside-blocker offer: in a set scope, an issue of the set can wait for an open blocker outside the set that is
   not ready to stack. The set read of the board-read bullet gives the open blockers. The orchestrator does these steps
   for each such blocker:
@@ -73,8 +73,8 @@ The orchestrator does all the steps of this section.
      with a same-file link, as [A ticket on hold](#a-ticket-on-hold) defines it. If the subagent cannot tell the kind,
      the blocker is a logic blocker, the same way as that section judges a link.
   3. For a logic blocker, offer the user to run the blocker, as
-     [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. With a yes of the user, the blocker
-     joins the set.
+     [A decision of the user](../working-with-the-user.md#a-decision-of-the-user) says. With a yes of the user, the
+     blocker joins the set.
   4. For a file-overlap blocker, offer the user two choices: run the blocker, or remove the blocked-by link. With a yes
      for the run, the blocker joins the set.
   5. With a yes for the removal, do steps 3 to 5 of the link removal of a hold in [A ticket on hold](#a-ticket-on-hold)
@@ -82,9 +82,9 @@ The orchestrator does all the steps of this section.
      the write. No removal happens without that yes.
 
   The orchestrator makes one offer for each blocker. If the user says no, it makes no new offer for that blocker. The
-  user can still ask at any time. If the subagent fails or gives no kind, [the failure rule](limits.md#the-failure-rule)
-  applies. The orchestrator makes no offer at that moment, and the issue waits. It starts the subagent again at its next
-  read of the board.
+  user can still ask at any time. If the subagent fails or gives no kind,
+  [the failure rule](../limits.md#the-failure-rule) applies. The orchestrator makes no offer at that moment, and the
+  issue waits. It starts the subagent again at its next read of the board.
 
   This page gives no test of "no orchestrator runs" for a blocker of a set scope. It also gives no order of the
   milestones in a set. Both points are open.
@@ -97,7 +97,7 @@ The orchestrator does all the steps of this section.
 
 - Start a ticket only as [the stacking rule](#the-stacking-rule) says. No orchestrator that knows of an open broken-test
   issue starts a ticket, except that issue itself (see the broken-test rule in
-  [A failed CI run](ci-wait.md#a-failed-ci-run)).
+  [A failed CI run](../ci-wait.md#a-failed-ci-run)).
 - The set-scope status read: an orchestrator of a milestone scope owns each task of an issue of its milestone. An
   orchestrator of a set scope owns each task of an issue of its set. A parked task of an issue of the scope is a task of
   the scope, so the orchestrator owns it. A task of an issue of the scope that another session started is also a task of
@@ -114,7 +114,7 @@ The orchestrator does all the steps of this section.
     - The In progress case: if no task subagent of this orchestrator drives the task, the task is in flight under
       another session. The issue sits in two scopes, for example in the set and in a milestone that another orchestrator
       runs. The orchestrator tells the user and asks the user for a decision, as
-      [A decision of the user](working-with-the-user.md#a-decision-of-the-user) says. The ticket does not start until
+      [A decision of the user](../working-with-the-user.md#a-decision-of-the-user) says. The ticket does not start until
       the user decides. The exception holds only at the start of a new orchestrator, before its first pick. For an entry
       of [the task list](handoff-orchestrator.md#the-task-list) in the handoff file of its first message, the new
       orchestrator starts the task subagent of that entry and asks the user nothing, as
@@ -125,7 +125,7 @@ The orchestrator does all the steps of this section.
 
   The check has a limit. Two orchestrators that read at the same moment can both start. Then `tasker start` prints
   `task already started` (`src/commands/start.ts`), and two task subagents drive one task. If `tasker status` fails,
-  [the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start at that moment.
+  [the failure rule](../limits.md#the-failure-rule) applies, and the ticket does not start at that moment.
 
   Case 1: a set of #A and #B. #A is also in M31, and `orchestrator-m31` runs a task of #A with its card in In progress.
   The orchestrator of the set reads `tasker status --issue` for #A, finds the task, does not start #A and asks the user
@@ -141,27 +141,27 @@ The orchestrator does all the steps of this section.
   [the move paragraph](#pick-the-tickets) says.
 
 - A manual-steps issue is an issue whose body says that no assistant session runs it.
-  [What goes in a ticket](planner.md#what-goes-in-a-ticket) gives its form. The orchestrator starts no task for it and
-  runs no `tasker show` for it. Each ticket that it blocks waits until it closes. While it is open, its milestone is not
-  done. The earlier-blocker offer does not cover such an issue.
+  [What goes in a ticket](../planner.md#what-goes-in-a-ticket) gives its form. The orchestrator starts no task for it
+  and runs no `tasker show` for it. Each ticket that it blocks waits until it closes. While it is open, its milestone is
+  not done. The earlier-blocker offer does not cover such an issue.
 
   For an open issue of this kind, the orchestrator of its milestone asks the user in its question pane, as
-  [Start](question-pane.md#start) says. If an open question of the orchestrator already asks for these steps, the
+  [Start](../question-pane.md#start) says. If an open question of the orchestrator already asks for these steps, the
   orchestrator asks nothing. The question asks the user to do the steps, to close the issue and then to answer the
   question. After the answer, the orchestrator reads the board. If the issue is still open, the orchestrator tells the
-  user that its tickets wait. If the read fails, [the failure rule](limits.md#the-failure-rule) applies.
+  user that its tickets wait. If the read fails, [the failure rule](../limits.md#the-failure-rule) applies.
 
 - The priority rule: among the tickets that can start, the orchestrator starts a ticket with the priority `P0` first.
   Then it starts a ticket with `P1`, then a ticket with no priority, then a ticket with `P2`. The priority of a ticket
-  is the value of the field `Priority` on its card, as [The project board](issues.md#the-project-board) says. The rule
-  covers the tickets of the scope.
+  is the value of the field `Priority` on its card, as [The project board](../issues.md#the-project-board) says. The
+  rule covers the tickets of the scope.
 
   Within one repo, the orchestrator uses blocker preference within the group with `P1`, the group with no priority, and
   the group with `P2`. Within each group, a ticket with a qualifying link comes before a ticket with no qualifying link.
   A qualifying link shows that the ticket blocks at least one other open issue in the scope. The ticket and the blocked
-  issue must both belong to the scope, as [The scope](../orchestrator.md#the-scope) defines it. Use the open issue list
-  and blocked-by links from the same board read described in the next bullet. A link counts when the blocked issue is in
-  that open issue list and the link names this ticket's repo and issue number. Under
+  issue must both belong to the scope, as [The scope](../../orchestrator.md#the-scope) defines it. Use the open issue
+  list and blocked-by links from the same board read described in the next bullet. A link counts when the blocked issue
+  is in that open issue list and the link names this ticket's repo and issue number. Under
   [A ticket on hold](#a-ticket-on-hold), an issue with the label `on hold` does not count as a blocked issue for this
   test. One link is enough, regardless of other blockers or the number of qualifying links. Count open issues outside
   Todo when they meet the same test. If both tickets block another open issue in the scope, or neither does, the lower
@@ -188,11 +188,11 @@ The orchestrator does all the steps of this section.
   `gh project item-list 3 --owner codeguru42 --limit 1000 --format json --jq '.items[] | select(.content.type == "Issue" and .milestone.title == "<milestone>" and .priority != null) | "\(.content.number) \(.priority)"'`.
   Each line of the output gives the number of an issue and its priority, for example `587 P0`. A ticket with no line has
   no priority. For a set scope, read the priority of each issue of the set with the read of one issue in
-  [The project board](issues.md#the-project-board). If a read fails, [the failure rule](limits.md#the-failure-rule)
-  applies, and the orchestrator starts no ticket until the read works.
+  [The project board](../issues.md#the-project-board). If a read fails,
+  [the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator starts no ticket until the read works.
 
   A measure on 2026-11-22, with gh 2.105.0, found no pair of issues of this repo out of the order of creation. The list
-  order of [Start](question-pane.md#start) also uses the lower issue number after the priority.
+  order of [Start](../question-pane.md#start) also uses the lower issue number after the priority.
 
   The rule changes no other rule of this section. The tie breaker is a part of the priority rule, so each rule that wins
   over the priority rule also wins over the tie breaker. A ticket with a priority still waits as
@@ -200,7 +200,7 @@ The orchestrator does all the steps of this section.
   that orders or stops a start still wins. Examples are the pi gate, the bullet of a live security gap,
   [A ticket on hold](#a-ticket-on-hold) and the other gates of the fill rule.
 
-  Other examples are the ban of [A failed CI run](ci-wait.md#a-failed-ci-run), and the ban on a new ticket after the
+  Other examples are the ban of [A failed CI run](../ci-wait.md#a-failed-ci-run), and the ban on a new ticket after the
   suggestion of a handoff in [The landing count](handoff-orchestrator.md#the-landing-count). Step 1 of
   [The steps of the old orchestrator](handoff-orchestrator.md#the-steps-of-the-old-orchestrator) and a hold of the user
   also win. So does a held issue of a set scope, as [the move paragraph](#pick-the-tickets) says. A kept slot of
@@ -234,22 +234,23 @@ The orchestrator does all the steps of this section.
   an added or a removed blocked-by link of an open issue of that milestone, or a move of an issue into that milestone.
   For a set scope, the one change is an added or a removed blocked-by link of an open issue of the set. A message about
   a new issue in the milestone of an issue of the set starts no read. A message of another session never adds an issue
-  to the set. No peer sends such a message, as [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message)
-  says. If a read of the board fails, [the failure rule](limits.md#the-failure-rule) applies. The orchestrator starts no
-  ticket that the read covers until a later read works. A failed milestone link read is a failed board read. This covers
-  a message of each session on purpose. Each orchestrator also reads the board with its board watch job while no ticket
-  of its scope waits for a slot, as [the board watch rule](../orchestrator.md#the-board-watch-job) says. Each read of
-  the board that does not come at a landing is a read of the board, but it is not a landing. It counts for each rule of
-  this page that acts "at its next read of the board" or "each time it reads the board". So the full priority rule
-  applies to each start after such a read. It does not count for a read that a rule ties to a landing, for example the
-  read of the parent issue in [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins,
-  for example the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and a hold of the user.
+  to the set. No peer sends such a message, as
+  [The kinds of peer message](../../orchestrator.md#the-kinds-of-peer-message) says. If a read of the board fails,
+  [the failure rule](../limits.md#the-failure-rule) applies. The orchestrator starts no ticket that the read covers
+  until a later read works. A failed milestone link read is a failed board read. This covers a message of each session
+  on purpose. Each orchestrator also reads the board with its board watch job while no ticket of its scope waits for a
+  slot, as [the board watch rule](../../orchestrator.md#the-board-watch-job) says. Each read of the board that does not
+  come at a landing is a read of the board, but it is not a landing. It counts for each rule of this page that acts "at
+  its next read of the board" or "each time it reads the board". So the full priority rule applies to each start after
+  such a read. It does not count for a read that a rule ties to a landing, for example the read of the parent issue in
+  [the parent-hold rule](#the-parent-hold-rule). Each rule that stops a start still wins, for example the ban of
+  [A failed CI run](../ci-wait.md#a-failed-ci-run) and a hold of the user.
 
   The orchestrator also reads the board after a defer and after the end of a hold of
   [the parent-hold rule](#the-parent-hold-rule). It also reads the board after a stop of a task subagent whose slot it
   frees. It also reads the board after the end of a write subagent that got a link-removal request, as
-  [The read of the board after a removal](question-pane.md#the-read-of-the-board-after-a-removal) says. At each of these
-  reads and after the read at a landing, the fill rule applies the full priority rule. The bullet "Run at most
+  [The read of the board after a removal](../question-pane.md#the-read-of-the-board-after-a-removal) says. At each of
+  these reads and after the read at a landing, the fill rule applies the full priority rule. The bullet "Run at most
   `maxTaskSubagents` task subagents at the same time" gives it.
 
 - The outside-Todo find: no issue of the scope waits out of sight of the user. The pick cannot start an issue that is
@@ -335,12 +336,12 @@ The orchestrator does all the steps of this section.
   Before the question, an agent evaluates the issues of the question. It gives a recommendation for each issue, or it
   names groups of issues that share a trait. The orchestrator adds these results to one question that names all issues
   of the find. It asks the question in its own question pane, in the form of
-  [A decision of the user](working-with-the-user.md#a-decision-of-the-user). The choices of the question are these:
+  [A decision of the user](../working-with-the-user.md#a-decision-of-the-user). The choices of the question are these:
   accept the recommendations, give the decisions of the user, or split the question into smaller batches as follow-up
   questions.
 
   For each issue with the decision "move", the orchestrator moves the card to Todo with the move command of
-  [The project board](issues.md#the-project-board). The issue can then start at the next read of the board.
+  [The project board](../issues.md#the-project-board). The issue can then start at the next read of the board.
 
   The record of the find holds one entry for each raised issue. The entry holds the issue and its facts at the raise.
   The orchestrator keeps the record in its session. It writes no comment, no label and no file for the record, except
@@ -363,7 +364,7 @@ The orchestrator does all the steps of this section.
 
   The record serves only the find. Each other rule keeps its own memory of what it asked.
 
-  If a read of the find fails, [the failure rule](limits.md#the-failure-rule) applies. The find raises nothing and
+  If a read of the find fails, [the failure rule](../limits.md#the-failure-rule) applies. The find raises nothing and
   changes no entry, and it runs again at the next read of the board.
 
   Case 1: the card of #A is in In progress, and `tasker status` lists no task for #A. At the start, after the start
@@ -427,10 +428,10 @@ The orchestrator does all the steps of this section.
   [the parent-hold rule](#the-parent-hold-rule), and at each pick of a slot. One read serves the decisions of one pass.
   A read fails when the exit code is not 0 or when the output is not JSON. It also fails when the output gives a value
   of `.sessions.maxTaskSubagents` that is not a whole number above 0. After a failed read,
-  [the failure rule](limits.md#the-failure-rule) applies. Then the count for that decision is 3. A tasker that is older
-  than the key prints no such value. A missing value is no failed read, and the count is 3. A lower count stops no task
-  subagent that runs. The orchestrator starts no new task subagent until the count of task subagents that hold a slot is
-  under the new count.
+  [the failure rule](../limits.md#the-failure-rule) applies. Then the count for that decision is 3. A tasker that is
+  older than the key prints no such value. A missing value is no failed read, and the count is 3. A lower count stops no
+  task subagent that runs. The orchestrator starts no new task subagent until the count of task subagents that hold a
+  slot is under the new count.
 
   The fill rule is the lower limit for the slots of the quota rules. When no task subagent holds a slot and no hold of
   [the parent-hold rule](#the-parent-hold-rule) keeps it, the slot is free. A ticket that can start is a ticket of the
@@ -447,7 +448,7 @@ The orchestrator does all the steps of this section.
   A rule that stops a start still wins over the fill rule. These are the gates:
 
   - The pi gate
-  - The ban of [A failed CI run](ci-wait.md#a-failed-ci-run)
+  - The ban of [A failed CI run](../ci-wait.md#a-failed-ci-run)
   - The ban on a new ticket after the suggestion of a handoff, in
     [The landing count](handoff-orchestrator.md#the-landing-count)
   - [A ticket on hold](#a-ticket-on-hold)
@@ -464,7 +465,7 @@ The orchestrator does all the steps of this section.
   its place in that order, as that rule says. A ticket that waits for its parent under
   [the stacking rule](#the-stacking-rule) takes no slot. A ticket with no such parent still starts.
 
-  Each question that a gate or another rule of [the orchestration pages](../orchestrator.md) requires stays. The fill
+  Each question that a gate or another rule of [the orchestration pages](../../orchestrator.md) requires stays. The fill
   rule bans only a question that offers a choice among tickets that can start. A question of the bullet of a live
   security gap stays, for a task in flight that holds the shared file. A question about a move of an issue into another
   milestone stays too, as [the move paragraph](#pick-the-tickets) of the first bullet says. While the answer to a
@@ -481,7 +482,7 @@ The orchestrator does all the steps of this section.
 - The pi gate: while [the pi wait](quota.md#the-pi-wait) lasts, start no task subagent for a ticket of a repo whose
   `assistant.provider` is `pi`. A new session for a task of the pi wait is not held back. Read the provider of the repo
   with the command of the test of [A pi stop](quota.md#a-pi-stop). If the read fails,
-  [the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start at that moment. The gate does
+  [the failure rule](../limits.md#the-failure-rule) applies, and the ticket does not start at that moment. The gate does
   not hold back a task subagent for one task change, because the user asked for that command.
 
   The gate wins over each bullet and rule of this page that starts a ticket. These are the earlier-blocker offer, the
@@ -489,8 +490,8 @@ The orchestrator does all the steps of this section.
   ticket that the gate holds back, send no hold of [the parent-hold rule](#the-parent-hold-rule) and make no offer.
 
 - A ticket that closes a live security gap goes first. A live security gap is a
-  [security gap](review-findings.md#review-findings) that exists now on `origin/main` or on the machine. Whether a gap
-  is live is a judgment. The judgment is open on purpose, and the session that orders the tickets makes it.
+  [security gap](../review-findings.md#review-findings) that exists now on `origin/main` or on the machine. Whether a
+  gap is live is a judgment. The judgment is open on purpose, and the session that orders the tickets makes it.
 
   This order holds among the tickets of the scope that can start. It wins over the priority rule and over
   [the link offer](#the-link-offer). When the next bullet lets only one ticket run, this ticket takes the slot. No
@@ -534,11 +535,11 @@ The orchestrator does all the steps of this section.
   applies.
 
   The user decided the case of different places on 2026-11-12. The reason is in the bullet of
-  [The blocked-by links](issue-subagents.md#the-blocked-by-links) that starts "The planner gives each parallel line of
-  work". The cost: a clash of meaning between two places shows late, in the review or the diff read of the ticket that
-  lands second. Two edits on lines next to each other can still give a conflict at `tasker update-branch`.
-  [docs/dev/rebase-conflicts.md](rebase-conflicts.md) gives the steps for such a conflict. Before that day, this bullet
-  counted the whole file.
+  [The blocked-by links](../issue-subagents.md#the-blocked-by-links) that starts "The planner gives each parallel line
+  of work". The cost: a clash of meaning between two places shows late, in the review or the diff read of the ticket
+  that lands second. Two edits on lines next to each other can still give a conflict at `tasker update-branch`.
+  [docs/dev/rebase-conflicts.md](../rebase-conflicts.md) gives the steps for such a conflict. Before that day, this
+  bullet counted the whole file.
 
   #853 edited "The tools of a session" of `docs/dev/working-with-the-user.md`. #822 asked for an edit of "The form of a
   reply" of the same doc. #853 waited until the user gave a one-time exception, because #822 waited for a decision of
@@ -557,13 +558,15 @@ The orchestrator does all the steps of this section.
   gives one exception for a parent.
 - If a task in flight that changes the file of a moving ticket is far from landing, for example in
   `awaiting_plan_review`, the orchestrator asks the user. The user decides whether the orchestrator waits or starts the
-  moving ticket now. The orchestrator follows [A decision of the user](working-with-the-user.md#a-decision-of-the-user).
-  If the user answers "start now", [the overlap rule](land-the-work.md#the-overlap-rule) says whether the moving ticket
-  and that task in flight get a landing order.
+  moving ticket now. The orchestrator follows
+  [A decision of the user](../working-with-the-user.md#a-decision-of-the-user). If the user answers "start now",
+  [the overlap rule](land-the-work.md#the-overlap-rule) says whether the moving ticket and that task in flight get a
+  landing order.
 - When a ticket starts, the orchestrator reads stdout from `tasker start`. If stdout contains
   `moved the card of <issue key> to "<option>" on the tracker`, the orchestrator skips its own move. Otherwise, the
-  orchestrator moves the card to In progress with the move command of [The project board](issues.md#the-project-board).
-  The board moves the card to Done when `tasker finish` closes the issue.
+  orchestrator moves the card to In progress with the move command of
+  [The project board](../issues.md#the-project-board). The board moves the card to Done when `tasker finish` closes the
+  issue.
 - The end: after the last work of the scope, the orchestrator does the steps of
   [The end of an orchestrator](#the-end-of-an-orchestrator). Do not write the issues of the next milestone.
 
@@ -606,16 +609,16 @@ The orchestrator waits in these cases:
 Before the orchestrator starts a stacked ticket, it makes sure that the branch of the parent contains the tip of the
 base of the parent. The orchestrator first runs `git fetch --multiple tasker origin` in its local clone. Then the
 orchestrator reads `<parent tip>` with `git rev-parse --verify tasker/<parent branch>`, as
-[the shared-clone rule](limits.md#the-shared-clone-rule) says. The orchestrator reads `<base tip>` the same way with
-`git rev-parse --verify origin/<base branch>`, with the base of [the base rule](run-one-ticket.md#the-base-rule) for the
-parent. The orchestrator then runs the `git merge-base --is-ancestor` step of
-[the diff read](run-one-ticket.md#the-diff-read) as `git merge-base --is-ancestor <base tip> <parent tip>`.
+[the shared-clone rule](../limits.md#the-shared-clone-rule) says. The orchestrator reads `<base tip>` the same way with
+`git rev-parse --verify origin/<base branch>`, with the base of [the base rule](../run-one-ticket.md#the-base-rule) for
+the parent. The orchestrator then runs the `git merge-base --is-ancestor` step of
+[the diff read](../run-one-ticket.md#the-diff-read) as `git merge-base --is-ancestor <base tip> <parent tip>`.
 
 If the exit code is 1, the orchestrator tells the task subagent of the parent to run `tasker update-branch`.
 
 The commands of the check are the fetch, the two hash reads and `git merge-base --is-ancestor`. If a command of the
 check fails, or the exit code of `git merge-base --is-ancestor` is not 0 and not 1,
-[the failure rule](limits.md#the-failure-rule) applies to the orchestrator. Then the stacked ticket does not start at
+[the failure rule](../limits.md#the-failure-rule) applies to the orchestrator. Then the stacked ticket does not start at
 that moment.
 
 If the review loop 1 of the parent has findings, or the diff read of the parent finds work, the orchestrator waits. It
@@ -626,9 +629,9 @@ the orchestrator starts no stacked ticket on this parent. Other tickets start as
 
 The order of the orchestrator wins over the hold of [the parent-hold rule](#the-parent-hold-rule) for the
 `tasker update-branch` of the check and for the fix round. For the findings of review loop 1, the fix round is the
-refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket). It includes the commands after it, up to the
+refine of step 8 of [Run one ticket](../run-one-ticket.md#run-one-ticket). It includes the commands after it, up to the
 next ready state. For the work of the diff read, the fix round is `tasker review <issue> "<feedback>"` of
-[the add-work rule](run-one-ticket.md#the-add-work-rule) and the commands after it, up to the next ready state. After
+[the add-work rule](../run-one-ticket.md#the-add-work-rule) and the commands after it, up to the next ready state. After
 the next ready state, the hold stays for each later command.
 
 On 2026-10-17, the user decided for #172: "do the `update-branch` before starting stacked children".
@@ -656,8 +659,8 @@ empty, no ticket waits on the task, and the step is complete. For a milestone sc
 milestone of each issue of the list: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. It keeps
 the tickets of its milestone. For a set scope, it keeps the issues of the set. If such a ticket can start by this rule
 and by the other rules of [Pick the tickets](#pick-the-tickets), the orchestrator starts it. If a command fails,
-[the failure rule](limits.md#the-failure-rule) applies. Then no ticket starts at that moment. The tickets wait until the
-next read of the board or the next start.
+[the failure rule](../limits.md#the-failure-rule) applies. Then no ticket starts at that moment. The tickets wait until
+the next read of the board or the next start.
 
 Two exceptions apply to a stacked ticket and its parent:
 
@@ -674,7 +677,7 @@ of the parent.
 
 Before a stacked ticket starts, [the parent-hold rule](#the-parent-hold-rule) can hold the parent. For the output of
 `tasker start` when the parent is not ready to stack, see
-[the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker).
+[the facts of the installed tasker](../tasker-commands.md#the-facts-of-the-installed-tasker).
 
 When a stacked ticket starts, the stacked orchestrator does these steps:
 
@@ -682,7 +685,7 @@ When a stacked ticket starts, the stacked orchestrator does these steps:
    Do this also when the parent belongs to another orchestrator.
 2. Tell the stacked task subagent that the ticket is stacked, and name the parent.
 3. For a file that the parent changes, tell the stacked task subagent that the fourth case of
-   [the stop rule](plan-review.md#the-stop-rule) does not apply, because the stacked task builds on that change.
+   [the stop rule](../plan-review.md#the-stop-rule) does not apply, because the stacked task builds on that change.
 
 These rules apply to a stacked ticket and its parent. The user decided them on 2026-10-16.
 
@@ -695,16 +698,16 @@ These rules apply to a stacked ticket and its parent. The user decided them on 2
 - If the user postpones the parent (see [the defer rule](#the-defer-rule)), the stacked task cannot land. The stacked
   orchestrator then asks the user to choose: wait, or abort the stacked task. On the choice of the abort, the stacked
   orchestrator sends `tasker abort` to the task subagent of the stacked task, as
-  [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says.
+  [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule) says.
 - At the start of a stacked ticket, the parent is in `awaiting_work_review` or a later state, so
   [the hold rule](land-the-work.md#the-hold-rule) does not apply at once. If a refine of step 8 of
-  [Run one ticket](run-one-ticket.md#run-one-ticket) moves the parent back to `awaiting_plan_review`, the hold rule
+  [Run one ticket](../run-one-ticket.md#run-one-ticket) moves the parent back to `awaiting_plan_review`, the hold rule
   applies as written.
 - If the parent belongs to another orchestrator, the stacked orchestrator uses the messages of the hold rule. When the
   stacked ticket starts, the stacked orchestrator sends one message with `SendMessage` to the parent orchestrator, as
   the hold rule does when the hold starts. The stacked orchestrator finds the parent orchestrator as
-  [The orchestrator of a task](../orchestrator.md#the-orchestrator-of-a-task) says. If the find fails,
-  [the failure rule](limits.md#the-failure-rule) applies, no message of the hold rule goes out, and the stacked
+  [The orchestrator of a task](../../orchestrator.md#the-orchestrator-of-a-task) says. If the find fails,
+  [the failure rule](../limits.md#the-failure-rule) applies, no message of the hold rule goes out, and the stacked
   orchestrator tells the user. Then the parent orchestrator sends two reports to the stacked orchestrator with
   `SendMessage`. The first report comes when the parent task is in `awaiting_work_review` or a later state. The second
   report comes when the issue of the parent closes. A refused request or a missing answer is out of scope (#164).
@@ -713,12 +716,12 @@ These rules apply to a stacked ticket and its parent. The user decided them on 2
 
 This rule covers the parent of a stacked ticket before the stacked ticket starts.
 [The stacking rule](#the-stacking-rule) gives the ready states. The task subagent of the parent moves its task out of a
-ready state with the refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket). It also moves its task out
-of a ready state with `tasker review <issue> "<feedback>"` of [the add-work rule](run-one-ticket.md#the-add-work-rule),
-`tasker update-branch` or `tasker merge`. `tasker merge` moves the task from `accepted` to `merging` and `landed`. On
-#215, a refine of step 8 moved the parent out of a ready state before the task subagents of two stacked tickets ran
-`tasker start`. `tasker start` refused both of them (see
-[the facts of the installed tasker](tasker-commands.md#the-facts-of-the-installed-tasker)).
+ready state with the refine of step 8 of [Run one ticket](../run-one-ticket.md#run-one-ticket). It also moves its task
+out of a ready state with `tasker review <issue> "<feedback>"` of
+[the add-work rule](../run-one-ticket.md#the-add-work-rule), `tasker update-branch` or `tasker merge`. `tasker merge`
+moves the task from `accepted` to `merging` and `landed`. On #215, a refine of step 8 moved the parent out of a ready
+state before the task subagents of two stacked tickets ran `tasker start`. `tasker start` refused both of them (see
+[the facts of the installed tasker](../tasker-commands.md#the-facts-of-the-installed-tasker)).
 
 The orchestrator plans to start a stacked ticket on a parent that is not ready yet. It tells the task subagent of the
 parent to hold. The hold of a parent that belongs to another orchestrator is out of scope. The hold lasts until the
@@ -726,7 +729,7 @@ orchestrator tells the task subagent of the parent that the hold ended. A messag
 starts the task subagent again (see ["Terms" in "Quota"](quota.md#terms)). If the task subagent of the parent gets the
 message while a command runs, the task subagent lets the command end and keeps the hold. If the task subagent of the
 parent gets the message while it waits for an answer or a next step, it keeps the hold. Then the task subagent of the
-parent ends its turn again, as [the answer-wait rule](limits.md#the-answer-wait-rule) says.
+parent ends its turn again, as [the answer-wait rule](../limits.md#the-answer-wait-rule) says.
 
 The orchestrator sends the hold only when a [slot](quota.md#the-delay-of-each-task-subagent) is free for the stacked
 ticket. If no slot is free, the orchestrator sends no hold (see the bullet "Run at most `maxTaskSubagents` task
@@ -752,42 +755,43 @@ If no slot is free, the orchestrator keeps no record of the planned start. After
 next read of the states of [the stacking rule](#the-stacking-rule). If the parent is still not ready to stack then, the
 orchestrator sends the hold at that moment.
 
-While the hold runs, the task subagent of the parent continues ["Run one ticket"](run-one-ticket.md#run-one-ticket).
+While the hold runs, the task subagent of the parent continues ["Run one ticket"](../run-one-ticket.md#run-one-ticket).
 After `tasker verify` passes, the task subagent of the parent continues with `tasker review`, because `reviewing` and
 `reviewed` are ready states. The task subagent of the parent also runs `tasker dismiss-review` and `tasker accept`,
 because the task stays in a ready state.
 
 Before a command that moves the task out of a ready state, the task subagent of the parent
-[stops](limits.md#the-answer-wait-rule). The report gives the state of the task and says that the task subagent holds.
-If `SendMessage` fails, the task subagent of the parent puts the report in its final answer.
+[stops](../limits.md#the-answer-wait-rule). The report gives the state of the task and says that the task subagent
+holds. If `SendMessage` fails, the task subagent of the parent puts the report in its final answer.
 
 This report is a report of a ready state of the stacking rule. The orchestrator then does the steps of the paragraph of
 [the stacking rule](#the-stacking-rule) that starts "After a report of a ready state".
 
 While the hold runs, the task subagent of the parent waits in place of the command at each of these places:
 
-- The refine of step 8 of [Run one ticket](run-one-ticket.md#run-one-ticket)
-- `tasker review <issue> "<feedback>"` of the add-work rule, also when [the diff read](run-one-ticket.md#the-diff-read)
-  finds work
+- The refine of step 8 of [Run one ticket](../run-one-ticket.md#run-one-ticket)
+- `tasker review <issue> "<feedback>"` of the add-work rule, also when
+  [the diff read](../run-one-ticket.md#the-diff-read) finds work
 - `tasker update-branch` of step 9 and of the diff read
-- The early update of [Review findings](review-findings.md#review-findings)
+- The early update of [Review findings](../review-findings.md#review-findings)
 - `tasker update-branch` of the bullet of [Land the work](land-the-work.md#land-the-work) that starts "If a refine, or
   the `tasker review <issue> "<feedback>"` of the add-work rule, must change a file"
 - `tasker update-branch` of the bullet "When the issue of the earlier ticket is closed" of Land the work
-- `tasker update-branch` of [the comeback rule](run-one-ticket.md#the-comeback-rule)
+- `tasker update-branch` of [the comeback rule](../run-one-ticket.md#the-comeback-rule)
 - `tasker merge` of step 9
 
 The orchestrator reads `tasker show <stacked issue>` of each stacked ticket after each report of the task subagent of
 that stacked ticket, for example the run-end report of `tasker plan` (see
 ["When there is no reset time yet" in "Quota"](quota.md#when-there-is-no-reset-time-yet)). Before `tasker start`, the
 stacked ticket has no task, so the orchestrator waits for such a report before the read. The read does not follow a stop
-report of step 2 of ["Run one ticket"](run-one-ticket.md#run-one-ticket), because such a report ends the hold at once.
-If `tasker show <stacked issue>` fails, [the failure rule](limits.md#the-failure-rule) applies, and the hold stays.
+report of step 2 of ["Run one ticket"](../run-one-ticket.md#run-one-ticket), because such a report ends the hold at
+once. If `tasker show <stacked issue>` fails, [the failure rule](../limits.md#the-failure-rule) applies, and the hold
+stays.
 
 The orchestrator ends the hold in these cases:
 
 - `tasker show <stacked issue>` of each stacked ticket prints the branch of the parent on its `base:` line, in the form
-  `refs/heads/<parent branch>` of [the base rule](run-one-ticket.md#the-base-rule).
+  `refs/heads/<parent branch>` of [the base rule](../run-one-ticket.md#the-base-rule).
 - The start of a stacked ticket fails. A stop report of step 2 from the task subagent of a stacked ticket counts as a
   failed start. The orchestrator then ends the hold at once, with no read of `tasker show <stacked issue>`. Examples are
   the refusal `blocking issue is still open`, after which no task exists, and a missing `based on <key>'s branch` note,
@@ -809,7 +813,7 @@ of Land the work that starts "Before the orchestrator sends added work or an ans
 `tasker show <parent issue>` fails, the failure rule applies, and the hold stays. Otherwise, the orchestrator tells the
 task subagent of the parent that the hold ended. If the hold ended because the start of a stacked ticket failed, the
 orchestrator also reports the failure to the user. After the message that the hold ended, the task subagent of the
-parent continues ["Run one ticket"](run-one-ticket.md#run-one-ticket) from the command where it stopped.
+parent continues ["Run one ticket"](../run-one-ticket.md#run-one-ticket) from the command where it stopped.
 
 ### The link offer
 
@@ -824,7 +828,7 @@ If the user told the orchestrator that a planner of the scope adds the blocked-b
 offer. The orchestrator also adds no blocked-by link itself. The user can still ask the orchestrator for a link, as the
 decline bullet below says. Then the orchestrator does the steps of the approve bullet, and the bullets for a failed
 `gh issue edit` and for a skipped write also apply. For a ticket in flight,
-[The reads before the write](issues.md#the-reads-before-the-write) gives the override by a word of the user. If the
+[The reads before the write](../issues.md#the-reads-before-the-write) gives the override by a word of the user. If the
 ticket is open, is not in flight and has no link, the orchestrator follows the shared-file bullet of
 [Pick the tickets](#pick-the-tickets).
 
@@ -836,10 +840,10 @@ the board. With a new link, the orchestrator starts the ticket or lets it wait a
 `planning-docs` adds the links.
 
 The orchestrator offers the user a link: the ticket is blocked by the issue of that task. The orchestrator follows
-[A decision of the user](working-with-the-user.md#a-decision-of-the-user).
+[A decision of the user](../working-with-the-user.md#a-decision-of-the-user).
 
 - If the user approves, the orchestrator adds the link as
-  [The reads before the write](issues.md#the-reads-before-the-write) of issues.md says. Its plain write is
+  [The reads before the write](../issues.md#the-reads-before-the-write) of issues.md says. Its plain write is
   `gh issue edit <ticket> -R <repo> --add-blocked-by <issue of the task>`. If `gh issue edit` succeeds, the orchestrator
   reads the states of the blockers of the ticket at once. If the ticket can start by
   [the stacking rule](#the-stacking-rule) and by the other rules of [Pick the tickets](#pick-the-tickets), the
@@ -848,9 +852,9 @@ The orchestrator offers the user a link: the ticket is blocked by the issue of t
   ticket on the task. For that pair, [the stacking rule](#the-stacking-rule) wins over the sentence "Start the second
   ticket after the first one lands." of the shared-file bullet. [The stacked-ticket rule](#the-stacked-ticket-rule) then
   sets the landing order, with the task first.
-- If `gh issue edit` fails, [the failure rule](limits.md#the-failure-rule) applies. The ticket has no new link.
+- If `gh issue edit` fails, [the failure rule](../limits.md#the-failure-rule) applies. The ticket has no new link.
 - If `tasker status`, the read of the state or a read of the walk fails, the ticket has no new link.
-  [The failure rule](limits.md#the-failure-rule) applies, with the command and the error. Then the bullet that starts
+  [The failure rule](../limits.md#the-failure-rule) applies, with the command and the error. Then the bullet that starts
   "If the user declines, or if `gh issue edit` fails" applies, as for a failed `gh issue edit`. As a result, the
   orchestrator makes no new offer for that ticket and that task.
 - If the session skips the write because the walk finds a cycle, the ticket has no new link. The bullet that starts "If
@@ -864,8 +868,8 @@ The orchestrator offers the user a link: the ticket is blocked by the issue of t
 - A task of the ticket can start between the read and the write, and the link can still land. Then the race paragraph of
   The reads before the write applies. The orchestrator removes the link and tells the user one time that the link was a
   race. The success steps of the approve bullet do not run. The ticket is in flight, so the bullet for a ticket in
-  flight or closed applies, with no second message. If the remove fails, [the failure rule](limits.md#the-failure-rule)
-  applies.
+  flight or closed applies, with no second message. If the remove fails,
+  [the failure rule](../limits.md#the-failure-rule) applies.
 - If the user declines, or if `gh issue edit` fails, the shared-file bullet applies, and the ticket starts after the
   task lands. The stacking rule still applies to the other blockers of the ticket. After that answer or that failure,
   the orchestrator makes no new offer for that ticket and that task. The user can still ask for the link at any time.
@@ -882,8 +886,9 @@ stays open.
 
 The orchestrator reads the issue of a ticket right before the start, with
 `gh issue view <number> --json body,comments,updatedAt`. It does this read only for a ticket that can start now. In the
-comments, only a comment of the account of the orchestrator counts, as [the issue check](plan-review.md#the-issue-check)
-says. If the command fails, [the failure rule](limits.md#the-failure-rule) applies, and that ticket does not start.
+comments, only a comment of the account of the orchestrator counts, as
+[the issue check](../plan-review.md#the-issue-check) says. If the command fails,
+[the failure rule](../limits.md#the-failure-rule) applies, and that ticket does not start.
 
 A ticket that can start now is a ticket with each of these facts:
 
@@ -894,7 +899,7 @@ A ticket that can start now is a ticket with each of these facts:
   still counts, as the paragraph of such a question says.
 - Each other rule of the orchestration pages that needs no read of the issue lets the ticket start. Examples are the
   stacking rule, [A ticket on hold](#a-ticket-on-hold), the pi gate and the ban of
-  [A failed CI run](ci-wait.md#a-failed-ci-run).
+  [A failed CI run](../ci-wait.md#a-failed-ci-run).
 
 Until a ticket can start now, the orchestrator reads no body and no comment of its issue for its start. This also holds
 at each read of the board. The order of Pick the tickets uses only the board and the kept results of a read, for example
@@ -913,10 +918,10 @@ keeps the result of the read and the value of `updatedAt`. At each read of the b
 ticket, the orchestrator runs `gh issue view <number> --json updatedAt -q .updatedAt`. If the output is the kept value,
 the orchestrator keeps the result, and a start uses it with no new read. If the output differs, the orchestrator drops
 the kept result, and the next start reads the issue again. If the command fails,
-[the failure rule](limits.md#the-failure-rule) applies, and that ticket does not start.
+[the failure rule](../limits.md#the-failure-rule) applies, and that ticket does not start.
 
 An issue can hold an open question that stops its start. The note of
-[the change-of-scope comment](plan-review.md#the-change-of-scope-comment) that starts
+[the change-of-scope comment](../plan-review.md#the-change-of-scope-comment) that starts
 `## Open question after the change of scope` and the hold comment of [A ticket on hold](#a-ticket-on-hold) are forms of
 such a question. Under the full priority rule, the orchestrator counts such a ticket as a ticket that can start. If that
 ticket is next for a free agent, the orchestrator asks the user about the question. Before that, the orchestrator does
@@ -937,7 +942,7 @@ orchestrator does these steps:
    subagent again (see ["Terms" in "Quota"](quota.md#terms)). The task subagent ends its work after its current `tasker`
    command ends. It runs no other `tasker` command, unless a later message of the orchestrator sends it a task change
    that the user asked for. Before its final report, it removes the task worktree as
-   [the own-worktree rule](limits.md#the-own-worktree-rule) says. The remove changes no task, and the task keeps its
+   [the own-worktree rule](../limits.md#the-own-worktree-rule) says. The remove changes no task, and the task keeps its
    state. Then it gives its final report.
 
    [The stopping-point case](handoff-orchestrator.md#the-stopping-point-case) of a handoff uses step 1 alone. The other
@@ -945,17 +950,17 @@ orchestrator does these steps:
 
 2. Leave the task in its state. Run no `tasker abort` yourself. If the user asks for an abort, send
    `tasker abort <issue>` to the task subagent of the ticket, as
-   [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says.
+   [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule) says.
 3. Delete the jobs of the task subagent, as ["Delete the job" in "Quota"](quota.md#delete-the-job) says.
 4. Move the issue to the milestone that the user names: `gh issue edit <number> --milestone "<milestone>"`.
-5. Move the card of the ticket to Todo, with the move command of [The project board](issues.md#the-project-board). The
-   ticket waits in Todo of its new milestone.
+5. Move the card of the ticket to Todo, with the move command of [The project board](../issues.md#the-project-board).
+   The ticket waits in Todo of its new milestone.
 6. Post a comment on the issue that starts with `## Parked task`, with the findings of the final report. The next task
    subagent can start from them. Examples are the state of the task, the open plan questions, the answers so far and the
    facts that the task subagent tested. For a stacked task, the comment gives the start base of the last read when the
    work of the task subagent ended. The final report gives it, or says that the task subagent held none (see
-   [the comeback rule](run-one-ticket.md#the-comeback-rule)). Before the post, follow
-   [the self-check rule](rules.md#docs) of rules.md.
+   [the comeback rule](../run-one-ticket.md#the-comeback-rule)). Before the post, follow
+   [the self-check rule](../rules.md#docs) of rules.md.
 7. List the open issues that the deferred issue blocks:
    `gh issue view <number> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. For each issue
    of the list, read its milestone: `gh issue view <blocked issue> --json milestone -q '.milestone.title'`. The command
@@ -973,42 +978,42 @@ orchestrator does these steps:
    issue of that list, run `gh issue edit <number> --remove-blocked-by <blocker>`. The reason: an open issue that waits
    for an issue of "Future" waits with no end.
 
-If a `gh` command of these steps fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator
+If a `gh` command of these steps fails, [the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator
 does the other steps. The task keeps its state.
 
 A parked task stays in flight in `tasker status`. A task in flight is a parked task when the card of its ticket is in
 Todo, because the card of a ticket that runs is in In progress. To read the column of the card, run
 `gh issue view <number> --json projectItems -q '.projectItems[].status.name'`. The command prints `Todo` for a parked
 task. [The overlap rule](land-the-work.md#the-overlap-rule), the move rule and the fourth case of
-[the stop rule](plan-review.md#the-stop-rule) leave out a parked task.
+[the stop rule](../plan-review.md#the-stop-rule) leave out a parked task.
 
 When the ticket comes back to the current milestone, the orchestrator starts a new task subagent for it, as
 [Pick the tickets](#pick-the-tickets) says. The task subagent follows
-[the comeback rule](run-one-ticket.md#the-comeback-rule).
+[the comeback rule](../run-one-ticket.md#the-comeback-rule).
 
 ### A ticket on hold
 
 A ticket on hold is an open ticket with the label `on hold`. Only a word of the user puts a ticket on hold or ends the
 hold. The orchestrator adds the label with `gh issue edit <number> --add-label "on hold"`, and it removes the label with
 `gh issue edit <number> --remove-label "on hold"`. If a removal of the label is denied, the orchestrator gives the user
-the choices of [A denied command](tasker-commands.md#a-denied-command). The issue stays in its milestone. At each read
-of the board and before each start, the orchestrator runs
+the choices of [A denied command](../tasker-commands.md#a-denied-command). The issue stays in its milestone. At each
+read of the board and before each start, the orchestrator runs
 `gh issue list --state open --label "on hold" --limit 1000 --json number`. If the read fails,
-[the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket and makes no offer until
-the read works.
+[the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator starts no ticket and makes no offer
+until the read works.
 
-A hold of a whole milestone is another rule, [A milestone hold](working-with-the-user.md#a-milestone-hold).
+A hold of a whole milestone is another rule, [A milestone hold](../working-with-the-user.md#a-milestone-hold).
 
 If the ticket has a task in flight, the orchestrator does the steps of [the defer rule](#the-defer-rule), with two
 changes. Step 4 adds the label, and the milestone stays. In place of step 7, the orchestrator does the link removal of a
 hold below. The task of a ticket on hold is a parked task.
 
-A same-file link is one kind of soft blocker of [The reads before the write](issues.md#the-reads-before-the-write). It
-is a blocked-by link that exists only because both issues edit one file, or one place of a doc. The bullet of
-[The blocked-by links](issue-subagents.md#the-blocked-by-links) that starts "No session adds a blocked-by link" bans new
-such links. Same-file links come from two places: the links that open issues already have, and the links that a word of
-the user adds, as that bullet says. One example is a yes to [the link offer](#the-link-offer). A link for a real need of
-code or docs is not a same-file link. The links of three bullets are also not same-file links: "A ticket that changes
+A same-file link is one kind of soft blocker of [The reads before the write](../issues.md#the-reads-before-the-write).
+It is a blocked-by link that exists only because both issues edit one file, or one place of a doc. The bullet of
+[The blocked-by links](../issue-subagents.md#the-blocked-by-links) that starts "No session adds a blocked-by link" bans
+new such links. Same-file links come from two places: the links that open issues already have, and the links that a word
+of the user adds, as that bullet says. One example is a yes to [the link offer](#the-link-offer). A link for a real need
+of code or docs is not a same-file link. The links of three bullets are also not same-file links: "A ticket that changes
 the form or the layout", "A ticket that renames a doc ..." and "A manual-steps issue gets its links".
 
 GitHub keeps no reason for a link. So the orchestrator judges each link from the Requirements and the Docs sections of
@@ -1025,23 +1030,23 @@ at the word of the user. For a ticket with a task in flight, the steps come in p
    `gh issue view <number> -R <repo> --json blocking -q '.blocking.nodes[] | select(.state == "OPEN") | .number'`. If
    the output is empty, the link removal ends.
 2. Judge the kind of the link of each listed issue.
-3. For each same-file link, do steps 1 and 2 of [The reads before the write](issues.md#the-reads-before-the-write) for
-   the blocked issue. If the blocked issue is in flight or closed, skip its removal.
+3. For each same-file link, do steps 1 and 2 of [The reads before the write](../issues.md#the-reads-before-the-write)
+   for the blocked issue. If the blocked issue is in flight or closed, skip its removal.
 4. Remove each same-file link that step 3 does not skip. Run
    `gh issue edit <blocked issue> -R <repo> --remove-blocked-by <number>` alone in a plain call.
 5. If step 4 removed a link, read the board at once.
 6. Tell the user each removed link and each skipped removal with its reason. If other links exist, ask the user which of
    them to remove. Then remove each link that the user names, and read the board again.
 7. A removed link of step 4 or step 6 can free an issue of another milestone. Send no message about it to a peer, as
-   [The kinds of peer message](../orchestrator.md#the-kinds-of-peer-message) says. The peer finds the freed issue at its
-   next read of the board. An orchestrator has a board watch job while no ticket of its scope waits for a slot, as
-   [the board watch rule](../orchestrator.md#the-board-watch-job) says. So an idle peer finds the freed issue at the
+   [The kinds of peer message](../../orchestrator.md#the-kinds-of-peer-message) says. The peer finds the freed issue at
+   its next read of the board. An orchestrator has a board watch job while no ticket of its scope waits for a slot, as
+   [the board watch rule](../../orchestrator.md#the-board-watch-job) says. So an idle peer finds the freed issue at the
    next fire of its board watch job, or at another read of the board. A peer with no job for a waiting ticket has each
    slot in use or kept. The freed issue can start only after a slot frees, and that event reads the board.
 
-If the list of step 1 fails, [the failure rule](limits.md#the-failure-rule) applies, and no link changes. A later word
-of the user can start the link removal again. If `tasker status` or the read of the state fails, the orchestrator skips
-that removal and tells the user. If a removal fails, the failure rule applies.
+If the list of step 1 fails, [the failure rule](../limits.md#the-failure-rule) applies, and no link changes. A later
+word of the user can start the link removal again. If `tasker status` or the read of the state fails, the orchestrator
+skips that removal and tells the user. If a removal fails, the failure rule applies.
 
 The task of an issue in flight already started, so its link no longer stops a start. A stacked task on the task of the
 ticket on hold follows the postpone bullet of [the stacked-ticket rule](#the-stacked-ticket-rule).
@@ -1067,29 +1072,29 @@ rule that names a parked task or a postponed ticket still applies, for example t
 parent" of the stacked-ticket rule. The report of a done milestone names each ticket on hold.
 
 A waiting question of a ticket on hold is an open question of the orchestrator about that ticket, as
-[Start](question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a done milestone,
-the orchestrator moves each waiting question to a hold comment on its ticket. A hold comment starts with
+[Start](../question-pane.md#start) says. No answer to it reached the orchestrator. Before the report of a done
+milestone, the orchestrator moves each waiting question to a hold comment on its ticket. A hold comment starts with
 `## Open question of a ticket on hold`. It gives the question and its choices word for word, as the question gave them,
 and the question id. It says that the orchestrator asks the question again in its pane at the end of the hold.
 
-At the move, the orchestrator deletes the [question file](question-pane.md#the-question-file) of the question. If the
+At the move, the orchestrator deletes the [question file](../question-pane.md#the-question-file) of the question. If the
 delete fails, the rule of The question file for a failed delete applies.
 
 The orchestrator posts each hold comment at once, with no approval of the user, as it posts the open-question note of
-[the change-of-scope comment](plan-review.md#the-change-of-scope-comment). This rule wins over the approval of a comment
-in [Before a post](issues.md#before-a-post). The report of a done milestone names each question that the orchestrator
-moved. It gives the question id and the link of the hold comment of each such question. If the post of a hold comment
-fails, [the failure rule](limits.md#the-failure-rule) applies, and the report names that question as still open in its
-question.
+[the change-of-scope comment](../plan-review.md#the-change-of-scope-comment). This rule wins over the approval of a
+comment in [Before a post](../issues.md#before-a-post). The report of a done milestone names each question that the
+orchestrator moved. It gives the question id and the link of the hold comment of each such question. If the post of a
+hold comment fails, [the failure rule](../limits.md#the-failure-rule) applies, and the report names that question as
+still open in its question.
 
 An answer can reach the orchestrator after the post of the hold comment. Then the orchestrator acts on the answer and
 posts an answer comment at once, with no approval of the user, as for a hold comment. An answer comment starts with
 `## Answer to an open question of a ticket on hold`, and it gives the answer and the link of its hold comment. A hold
 comment with an answer comment no longer counts. If the post of an answer comment fails,
-[the failure rule](limits.md#the-failure-rule) applies, and the ticket does not start until the post works.
+[the failure rule](../limits.md#the-failure-rule) applies, and the ticket does not start until the post works.
 
 Before the post of each hold comment and each answer comment, the orchestrator follows
-[the self-check rule](rules.md#docs) of rules.md.
+[the self-check rule](../rules.md#docs) of rules.md.
 
 When a hold ends, a ticket with a task in flight comes back as the last paragraph of the defer rule says. A ticket with
 no task starts as any other ticket. The reason for the label: a card in Todo looks like a ticket that can start.
@@ -1099,21 +1104,21 @@ Only a comment of the account of the orchestrator counts, as [the open-question 
 Before it starts any ticket after the word of the user, it asks the user, in its question pane, the question of each
 hold comment with no answer comment. This ask wins over the time of the ask in the open-question rule, and other tickets
 can start while the answer waits. The open-question rule stops the start of the ticket until the answer. If the read of
-the comments fails, [the failure rule](limits.md#the-failure-rule) applies, and the orchestrator starts no ticket until
-the read works.
+the comments fails, [the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator starts no ticket
+until the read works.
 
 At the end of the hold, each question that the orchestrator asks again gets a new question id. It also gets a new
 question file, as a question that arrives.
 
 If no orchestrator of the scope runs, the user starts one, as
-[The steps of the user](../orchestrator.md#the-steps-of-the-user) says. The label `on hold` stays on the ticket. Then
+[The steps of the user](../../orchestrator.md#the-steps-of-the-user) says. The label `on hold` stays on the ticket. Then
 the user gives the word to end the hold to that orchestrator, on a path of the word of the user for an orchestrator, as
-[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says. At the word, the
-orchestrator removes the label and asks the question of each hold comment with no answer comment, as the paragraphs
+[Reports and questions of a session](../working-with-the-user.md#reports-and-questions-of-a-session) says. At the word,
+the orchestrator removes the label and asks the question of each hold comment with no answer comment, as the paragraphs
 above say.
 
 The order matters. A new orchestrator reads the label `on hold` at its start, in the outside-Todo find, a
-[start duty](../orchestrator.md#the-start-duties). It reads the hold comments only at the end of a hold. If the user
+[start duty](../../orchestrator.md#the-start-duties). It reads the hold comments only at the end of a hold. If the user
 removes the label before the start, the new orchestrator sees no ended hold. It then starts the ticket and asks no
 question of its hold comments.
 
@@ -1123,7 +1128,7 @@ If the label is already gone at the word of the user, the orchestrator skips its
 
 The end of an orchestrator is the last part of its work on its scope. The end holds the rounds, the end reads, the wait,
 the close of the milestone, the last report and the own close. The scope, a milestone scope and a set scope keep the
-meaning of [The scope](../orchestrator.md#the-scope).
+meaning of [The scope](../../orchestrator.md#the-scope).
 
 These terms apply in this subsection:
 
@@ -1143,9 +1148,9 @@ ready ticket or a live task sends the orchestrator back to its work.
 
 The end starts at a read of the board that starts no ticket of the scope. At that read, the scope has no live task and
 no ready ticket. While a gate of [the fill rule](#pick-the-tickets) holds a ready ticket back, the end does not start.
-Examples are the pi gate, the ban of [A failed CI run](ci-wait.md#a-failed-ci-run) and
-[the hold before an install](release.md#the-hold-before-an-install). A ticket on hold is not a ready ticket, so the gate
-of a ticket on hold does not stop the end.
+Examples are the pi gate, the ban of [A failed CI run](../ci-wait.md#a-failed-ci-run) and
+[the hold before an install](../release.md#the-hold-before-an-install). A ticket on hold is not a ready ticket, so the
+gate of a ticket on hold does not stop the end.
 
 At each start of its end, the orchestrator runs a round if its transcript has new discussion or other new work since its
 previous round. A new start of a ticket is one example of new work, not the only one. With no previous round in its
@@ -1157,23 +1162,23 @@ This judgment is open on purpose. Only the transcript of the orchestrator counts
 it started do not count, for example a task subagent or a question session. A start of the end that runs no round sends
 no second report of the rounds and no second report that the milestone is done.
 
-The orchestrator runs the rounds of [Session-review rounds](session-review-rounds.md) first. While a question pane of
+The orchestrator runs the rounds of [Session-review rounds](../session-review-rounds.md) first. While a question pane of
 the orchestrator is open or its write subagent runs, no round of the rounds runs, as
-[The gate of the rounds of an orchestrator](question-pane.md#the-gate-of-the-rounds-of-an-orchestrator) says. Each
+[The gate of the rounds of an orchestrator](../question-pane.md#the-gate-of-the-rounds-of-an-orchestrator) says. Each
 finding of the rounds that needs a decision of the user is an open question of the orchestrator, as
-[Terms](question-pane.md#terms) says. So each orchestrator, of a milestone scope or of a set scope, opens a question
+[Terms](../question-pane.md#terms) says. So each orchestrator, of a milestone scope or of a set scope, opens a question
 pane for each such finding. It sends each proposed issue of the rounds to its planner, as the planner bullet of
 [The prompt of a task subagent](#the-prompt-of-a-task-subagent) says. No orchestrator closes until each finding of its
-rounds is handled, as [Session-review rounds](session-review-rounds.md) defines a handled finding.
+rounds is handled, as [Session-review rounds](../session-review-rounds.md) defines a handled finding.
 
 The orchestrator starts the end reads only after the result of each planner subagent of the rounds. A question in such a
-result is an open question of the orchestrator, as [The result](planner-subagent.md#the-result) says.
+result is an open question of the orchestrator, as [The result](../planner-subagent.md#the-result) says.
 
 The end reads read these facts again:
 
 - For a milestone scope, the title, the state and the description of the milestone, with the read of
-  [Milestones](issues.md#milestones). The description holds the hold record of
-  [A milestone hold](working-with-the-user.md#a-milestone-hold).
+  [Milestones](../issues.md#milestones). The description holds the hold record of
+  [A milestone hold](../working-with-the-user.md#a-milestone-hold).
 - The open issues of the scope, with the column of each card, the label `on hold` and the open blockers. The reads are
   the reads of [the outside-Todo find](#pick-the-tickets) for each kind of scope.
 - The tasks in flight of the scope, with `tasker status`.
@@ -1183,14 +1188,14 @@ start of the end or the rounds.
 
 The orchestrator acts on the result of the end reads as this table says. The first row that holds wins.
 
-| Result of the end reads                                                 | What the orchestrator does                                                                                               |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| A read fails                                                            | [The failure rule](limits.md#the-failure-rule) applies. It closes nothing and reads again at its next read of the board. |
-| A live task or a ready ticket exists                                    | It goes back to its work. At the next end, the rule on new transcript decides if the rounds run again.                   |
-| A waiting issue exists                                                  | It waits, as the wait of this subsection says. The milestone and the tab stay open.                                      |
-| The milestone is held                                                   | It waits, as the held milestone of this subsection says. The milestone and the tab stay open.                            |
-| The orchestrator holds a hold before an install, or it is the installer | It waits for the end of the hold. Then it does the end reads again.                                                      |
-| No open issue of the scope is left                                      | It does the close of this subsection.                                                                                    |
+| Result of the end reads                                                 | What the orchestrator does                                                                                                  |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| A read fails                                                            | [The failure rule](../limits.md#the-failure-rule) applies. It closes nothing and reads again at its next read of the board. |
+| A live task or a ready ticket exists                                    | It goes back to its work. At the next end, the rule on new transcript decides if the rounds run again.                      |
+| A waiting issue exists                                                  | It waits, as the wait of this subsection says. The milestone and the tab stay open.                                         |
+| The milestone is held                                                   | It waits, as the held milestone of this subsection says. The milestone and the tab stay open.                               |
+| The orchestrator holds a hold before an install, or it is the installer | It waits for the end of the hold. Then it does the end reads again.                                                         |
+| No open issue of the scope is left                                      | It does the close of this subsection.                                                                                       |
 
 A new issue that a round, a planner subagent or another session puts in the scope is an issue of the scope. So it keeps
 the orchestrator at work. For a set scope, only a word of the user adds an issue, as the first bullet of
@@ -1208,7 +1213,7 @@ raise of that issue. An open question of another rule that names the issue also 
 
 During the wait, the milestone and the own tab stay open. Each read of the board starts each ticket that can start.
 After a read with no start, no live task and no ready ticket, the end starts again. The
-[board watch job](../orchestrator.md#the-board-watch-job) starts a read of the board two times each hour during the
+[board watch job](../../orchestrator.md#the-board-watch-job) starts a read of the board two times each hour during the
 wait. In the wait, the scope has no live task, so no ticket waits for a slot and the orchestrator keeps its job.
 
 At the end of a hold before an install, the orchestrator does the end reads again. When the result of a planner subagent
@@ -1219,35 +1224,35 @@ While a ticket on hold of the scope is open, the end gives no report of a done m
 the answer comment and the moved question keep their words.
 
 The orchestrator closes no held milestone. The hold record is the start of the description, as item 2 of
-[A milestone hold](working-with-the-user.md#a-milestone-hold) says. For a held milestone, the orchestrator tells the
+[A milestone hold](../working-with-the-user.md#a-milestone-hold) says. For a held milestone, the orchestrator tells the
 user one time in its own tab that it waits for the end of the hold. The milestone and the tab stay open. At the end
 message of item 9 of A milestone hold, or at the word of the user to end the hold that it gets itself, the orchestrator
 reads the board. After that read with no start, no live task and no ready ticket, the end starts again.
 
 An orchestrator of a milestone scope sends the report that the close started only after end reads that find no open
 issue of the scope. A ticket on hold counts as an open issue. An orchestrator of a set scope sends no such report,
-because no close of a milestone follows. [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) gives
+because no close of a milestone follows. [The suggestion of a handoff](../handoff.md#the-suggestion-of-a-handoff) gives
 what this report changes for a handoff.
 
 Each orchestrator shows the report that the close started and the report that the milestone is done as progress reports
 in its own tab. Only an orchestrator of a milestone scope and of the kind `claude` closes the GitHub milestone. It does
-the reads and the write of [Milestones](issues.md#milestones). The start of the close is the authority for this write,
-as [The start and the authority](milestone-close.md#the-start-and-the-authority) says. The orchestrator asks the user no
-question and opens no question pane for the close. If the write or the read after it fails,
-[the failure rule](limits.md#the-failure-rule) applies, and the orchestrator keeps its role and does no own close. At
+the reads and the write of [Milestones](../issues.md#milestones). The start of the close is the authority for this
+write, as [The start and the authority](milestone-close.md#the-start-and-the-authority) says. The orchestrator asks the
+user no question and opens no question pane for the close. If the write or the read after it fails,
+[the failure rule](../limits.md#the-failure-rule) applies, and the orchestrator keeps its role and does no own close. At
 its next read of the board, it reads the milestone again and goes on from that state.
 
 After the close, the orchestrator of a milestone scope sends the report that the milestone is done. The report is a
 progress report in its own tab. It also gives the URL of the milestone and the result of the last read of the milestone.
 The orchestrator sends this report before the own close. The row "The survival of a final report" of
-[codex-sessions.md](codex-sessions.md) found no reply after the close of a tab.
+[codex-sessions.md](../codex-sessions.md) found no reply after the close of a tab.
 
 Before the report, the orchestrator runs the environment and agent-list checks of
 [The own-session closure](milestone-close.md#the-own-session-closure). If both pass, the report gives the `pane_id` of
 its row, and otherwise it says that it gives no pane id.
 
 An orchestrator of a set scope closes no milestone. Its last report is a progress report in its own tab, as
-[Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) gives a progress
+[Reports and questions of a session](../working-with-the-user.md#reports-and-questions-of-a-session) gives a progress
 report. That report names each issue of the set and its closed state.
 
 After its last report, the orchestrator of the kind `claude` closes its own tab. It asks the user no question and waits
@@ -1257,8 +1262,8 @@ end reads that find no open issue of the set are the authority.
 The own close has these steps:
 
 1. The orchestrator closes its own question pane, if one is open, as
-   [Close and continue](question-pane.md#close-and-continue) says. The pane splits from the pane of the orchestrator, so
-   it is in the tab of the orchestrator.
+   [Close and continue](../question-pane.md#close-and-continue) says. The pane splits from the pane of the orchestrator,
+   so it is in the tab of the orchestrator.
 2. The orchestrator waits until no subagent of it runs and no hold before an install holds it.
 3. The orchestrator runs the checks of [The own-session closure](milestone-close.md#the-own-session-closure). These
    cover `HERDR_TAB_ID`, `HERDR_PANE_ID`, the row of its own name and the count of the panes of its tab.
@@ -1269,7 +1274,7 @@ its output. The user then closes the tab, and the milestone keeps its state.
 
 A pi orchestrator runs the rounds, the end reads and the wait of this subsection. It does no own close, because no one
 tested the closure of a pi session, as the row "The own-session closure" of
-[docs/dev/pi-sessions.md](pi-sessions.md#own-session-closure) says.
+[docs/dev/pi-sessions.md](../pi-sessions.md#own-session-closure) says.
 
 A pi orchestrator of a milestone scope closes no milestone. After end reads that find no open issue, it sends the report
 that the close started and the report that the milestone is done. Then the user closes its tab.
@@ -1282,12 +1287,12 @@ names each issue of the set and its closed state. Then the user closes its tab.
 
 The orchestrator writes the prompt of each task subagent.
 
-The words of the prompt stand in template files. [`task.md`](../../prompt-templates/subagents/task.md) is for a whole
-ticket, [`task-command.md`](../../prompt-templates/subagents/task-command.md) is for one task change, and
-[`task-restart.md`](../../prompt-templates/subagents/task-restart.md) is for a second session. At the start of each task
-subagent, the orchestrator reads the file as [the doc-read rule](doc-reads.md#the-doc-read-rule) says, at that step
-only. It fills each placeholder and gives the result as the prompt. An absent fact has the value `none`. For a second
-session, the prompt is the filled `task.md` and then the filled `task-restart.md`.
+The words of the prompt stand in template files. [`task.md`](../../../prompt-templates/subagents/task.md) is for a whole
+ticket, [`task-command.md`](../../../prompt-templates/subagents/task-command.md) is for one task change, and
+[`task-restart.md`](../../../prompt-templates/subagents/task-restart.md) is for a second session. At the start of each
+task subagent, the orchestrator reads the file as [the doc-read rule](../doc-reads.md#the-doc-read-rule) says, at that
+step only. It fills each placeholder and gives the result as the prompt. An absent fact has the value `none`. For a
+second session, the prompt is the filled `task.md` and then the filled `task-restart.md`.
 
 A Codex orchestrator starts each task subagent with the native subagent tools of its own session. It does not start a
 ticket driver as a top-level Codex session through herdr.
@@ -1302,35 +1307,36 @@ starts no replacement ticket driver in a herdr tab. The existing ticket selectio
 landing rules still apply.
 
 - The prompt of a task subagent gives only the context of its ticket. The context is the issue key, the milestone of its
-  ticket (see the fourth case of [the stop rule](plan-review.md#the-stop-rule)), the milestones that are off limits for
-  the task subagent, the landing order (see ["Land the work"](land-the-work.md#land-the-work)), for a stacked ticket,
-  its parent (see [the stacked-ticket rule](#the-stacked-ticket-rule)), the quota slot and whether the task subagent has
-  a job (see ["Quota"](quota.md#quota)), the folder of the task subagent for its files (see the folder bullet of
-  ["Limits"](limits.md#limits)), the links of the change-of-scope and design-gap comments of its issue (see the bullet
-  below that starts "If the account of the orchestrator"), the hints for its first refine, and the task worktree with
-  its path, `../tasker-worktrees/<session name>` (see the folder bullet of ["Limits"](limits.md#limits)).
-  [`task.md`](../../prompt-templates/subagents/task.md) has one placeholder for each of these facts.
+  ticket (see the fourth case of [the stop rule](../plan-review.md#the-stop-rule)), the milestones that are off limits
+  for the task subagent, the landing order (see ["Land the work"](land-the-work.md#land-the-work)), for a stacked
+  ticket, its parent (see [the stacked-ticket rule](#the-stacked-ticket-rule)), the quota slot and whether the task
+  subagent has a job (see ["Quota"](quota.md#quota)), the folder of the task subagent for its files (see the folder
+  bullet of ["Limits"](../limits.md#limits)), the links of the change-of-scope and design-gap comments of its issue (see
+  the bullet below that starts "If the account of the orchestrator"), the hints for its first refine, and the task
+  worktree with its path, `../tasker-worktrees/<session name>` (see the folder bullet of
+  ["Limits"](../limits.md#limits)). [`task.md`](../../../prompt-templates/subagents/task.md) has one placeholder for
+  each of these facts.
 
 - The prompt never tells the task subagent to take a path from the `worktree:` line of `tasker show`. The reason: that
-  line prints the worktree of tasker, and [the own-worktree rule](limits.md#the-own-worktree-rule) bans each read and
+  line prints the worktree of tasker, and [the own-worktree rule](../limits.md#the-own-worktree-rule) bans each read and
   each run there. On 2026-10-24 and 2026-10-25, the prompts of orchestrator-m21 for #395, #425 and #418 said "Take your
   task worktree from the `worktree:` line of `tasker show`". The task subagent of #418 followed the own-worktree rule
   and used `../tasker-worktrees/<session name>`.
 - A hint of the orchestrator can resolve a conflict. Before the orchestrator gives such a hint, it compares the hint
   with the Out of scope section of the issue. If the Out of scope section excludes what the hint asks for, the
   orchestrator does not give the hint. Then the task subagent reports the conflict under the fifth case of
-  [the stop rule](plan-review.md#the-stop-rule), and the user decides. On #301, a hint asked the plan to extend another
-  hint of the page, but the Out of scope section excluded "A change of other hints".
+  [the stop rule](../plan-review.md#the-stop-rule), and the user decides. On #301, a hint asked the plan to extend
+  another hint of the page, but the Out of scope section excluded "A change of other hints".
 - The prompt names the source of each fact that it gives. The source is the issue body, a comment with its link, or the
   code. On #274, a hint of the prompt said that the issue body states that the stored base revision is a ref. Only a
   comment on #273 stated it, and the task subagent reported the difference at step 1 of
-  ["Run one ticket"](run-one-ticket.md#run-one-ticket).
+  ["Run one ticket"](../run-one-ticket.md#run-one-ticket).
 
   A hint can give a fact with a file of the repo as its source. Before the orchestrator sends the prompt, it reads that
   fact in the base of the ticket:
 
   - For a plain ticket, the base ref is `origin/<base branch>`, read after `git -C <local clone> fetch origin`.
-    `<base branch>` is the [base hint](workspaces.md#the-resolve) of the issue, else `defaultBaseBranch` of the repo.
+    `<base branch>` is the [base hint](../workspaces.md#the-resolve) of the issue, else `defaultBaseBranch` of the repo.
     The orchestrator does not use the learned default, because that value is a row of the database, and the orchestrator
     does not read the database.
   - For a stacked ticket, the base ref is `tasker/<parent branch>`, read after `git -C <local clone> fetch tasker`. A
@@ -1338,7 +1344,7 @@ landing rules still apply.
     `<parent branch>` is the `branch:` line of `tasker show <parent issue>`.
   - Right after the fetch, the orchestrator reads the hash of the base ref one time with
     `git -C <local clone> rev-parse --verify <base ref>`. Each later command of this step uses that hash, as
-    [the shared-clone rule](limits.md#the-shared-clone-rule) says.
+    [the shared-clone rule](../limits.md#the-shared-clone-rule) says.
   - If the hint names a file, the orchestrator reads the file with `git -C <local clone> show <hash>:<path>` and finds
     the fact in it.
   - If the hint names no file, the orchestrator searches the tree with
@@ -1346,21 +1352,21 @@ landing rules still apply.
 
   If the base does not hold the fact, the prompt drops the fact, or it names the ticket that adds the fact. That ticket
   is this ticket, or a ticket in flight by its issue key. A missing file is such a case. `git show` then exits with 128
-  and prints one of the two texts of [the doc-read rule](doc-reads.md#the-doc-read-rule), and that is an answer, not a
-  failure. The error text decides the answer, not the exit code. Another error of `git show` also exits with 128, and
+  and prints one of the two texts of [the doc-read rule](../doc-reads.md#the-doc-read-rule), and that is an answer, not
+  a failure. The error text decides the answer, not the exit code. Another error of `git show` also exits with 128, and
   that error is a failure. The two texts are an answer because the read of the hash in the step before already found the
   commit. A search with no hit is such a case too: `git grep` exits with 1. If the fetch or the read of the hash fails,
-  or a command fails in another way, [the failure rule](limits.md#the-failure-rule) applies. Then the prompt drops the
-  fact. On #539 (2026-10-25), a hint named a resolve of `TASKER_GH_BIN` in `src/issues/github/run.ts`, and the base held
-  no such name.
+  or a command fails in another way, [the failure rule](../limits.md#the-failure-rule) applies. Then the prompt drops
+  the fact. On #539 (2026-10-25), a hint named a resolve of `TASKER_GH_BIN` in `src/issues/github/run.ts`, and the base
+  held no such name.
 
 - If the account of the orchestrator posted comments on the issue of the task subagent that start with
   `## Change of scope` or `## Design gap`, the prompt links each one. If the issue has no such comment, the prompt does
-  not mention these comments. The reason: [the issue check](plan-review.md#the-issue-check) counts such a comment of the
-  account of the orchestrator as part of the issue only when the orchestrator sends its link. On #395 (2026-10-24), the
-  prompt gave no link to the comment https://github.com/codeguru42/tasker/issues/395#issuecomment-6386939662. The task
-  subagent found the comment at step 1 of ["Run one ticket"](run-one-ticket.md#run-one-ticket). Then the orchestrator
-  had to tell the task subagent that the comment is part of the issue.
+  not mention these comments. The reason: [the issue check](../plan-review.md#the-issue-check) counts such a comment of
+  the account of the orchestrator as part of the issue only when the orchestrator sends its link. On #395 (2026-10-24),
+  the prompt gave no link to the comment https://github.com/codeguru42/tasker/issues/395#issuecomment-6386939662. The
+  task subagent found the comment at step 1 of ["Run one ticket"](../run-one-ticket.md#run-one-ticket). Then the
+  orchestrator had to tell the task subagent that the comment is part of the issue.
 - When the orchestrator starts a task subagent, it names it after the issue key of its ticket. Codex uses the native
   tools and arguments described above. Claude Code uses the `name` argument of its `Agent` tool, for example
   `name: "codeguru42-tasker-108"`.
@@ -1383,16 +1389,16 @@ landing rules still apply.
     messages and the jobs can be matched to the task.
   - One task subagent runs one ticket, so one name belongs to one task. If the orchestrator starts a second session for
     the same ticket, the orchestrator adds a suffix, for example `codeguru42-tasker-108-2`, and says so in the prompt of
-    the new task subagent. [`task-restart.md`](../../prompt-templates/subagents/task-restart.md) gives the words of that
-    prompt. A SendMessage to a task subagent can fail with "No transcript found for agent ID". Then the orchestrator
-    cannot resume that task subagent. In that case, the orchestrator starts a second session for the ticket, with the
-    suffix of this bullet. The Claude Code `SendMessage` failure described above does not define Codex message behavior.
-    The new task subagent follows [the comeback rule](run-one-ticket.md#the-comeback-rule). The prompt of the new task
-    subagent gives the state of the task from `tasker show <issue>`. The prompt gives the task worktree of the new name,
-    as the first bullet of this section says. The comeback rule then finds the old task worktree through the
-    branch-exists case of [the own-worktree rule](limits.md#the-own-worktree-rule). The orchestrator moves the quota
-    jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. On #409 (2026-10-24), a SendMessage failed in
-    this way after a resume of the session of the orchestrator at a `/rename`.
+    the new task subagent. [`task-restart.md`](../../../prompt-templates/subagents/task-restart.md) gives the words of
+    that prompt. A SendMessage to a task subagent can fail with "No transcript found for agent ID". Then the
+    orchestrator cannot resume that task subagent. In that case, the orchestrator starts a second session for the
+    ticket, with the suffix of this bullet. The Claude Code `SendMessage` failure described above does not define Codex
+    message behavior. The new task subagent follows [the comeback rule](../run-one-ticket.md#the-comeback-rule). The
+    prompt of the new task subagent gives the state of the task from `tasker show <issue>`. The prompt gives the task
+    worktree of the new name, as the first bullet of this section says. The comeback rule then finds the old task
+    worktree through the branch-exists case of [the own-worktree rule](../limits.md#the-own-worktree-rule). The
+    orchestrator moves the quota jobs of the ticket, as [Delete the job](quota.md#delete-the-job) says. On #409
+    (2026-10-24), a SendMessage failed in this way after a resume of the session of the orchestrator at a `/rename`.
   - The new task subagent of an entry of [the task list](handoff-orchestrator.md#the-task-list) is also a second session
     for the ticket. Its suffix follows
     [The start of the new orchestrator](handoff-orchestrator.md#the-start-of-the-new-orchestrator). The move of the
@@ -1404,36 +1410,38 @@ landing rules still apply.
     of each message, each resume message and each quota job prompt, in place of the session name. The orchestrator names
     each new task subagent.
 - A task subagent for one task change runs one `tasker` command of a task that has no task subagent of this
-  orchestrator, as [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) says. Its prompt
+  orchestrator, as [the orchestrator-command rule](../tasker-commands.md#the-orchestrator-command-rule) says. Its prompt
   names the issue key, the command, and the words of the user that ask for it.
-  [`task-command.md`](../../prompt-templates/subagents/task-command.md) gives its words. The prompt also names the base
-  list in `task.md` and the quota slot. The task subagent runs only that command and then gives its final report. It
-  runs no step of ["Run one ticket"](run-one-ticket.md#run-one-ticket). ["Quota"](quota.md#quota) covers it as each
-  other task subagent. Its name follows the naming bullet above, with a suffix that no earlier session of the ticket
-  used, and its prompt gives that suffix.
+  [`task-command.md`](../../../prompt-templates/subagents/task-command.md) gives its words. The prompt also names the
+  base list in `task.md` and the quota slot. The task subagent runs only that command and then gives its final report.
+  It runs no step of ["Run one ticket"](../run-one-ticket.md#run-one-ticket). ["Quota"](quota.md#quota) covers it as
+  each other task subagent. Its name follows the naming bullet above, with a suffix that no earlier session of the
+  ticket used, and its prompt gives that suffix.
 - Before the task subagent starts, the orchestrator makes the folder of the task subagent for its files (see the folder
-  bullet of ["Limits"](limits.md#limits)). In one case, a background command of a task subagent wrote into a missing
+  bullet of ["Limits"](../limits.md#limits)). In one case, a background command of a task subagent wrote into a missing
   folder and failed.
 - The orchestrator writes in the prompt that the comment of step 11 of
-  ["Run one ticket"](run-one-ticket.md#run-one-ticket) is the only write of the task subagent on GitHub issues, labels
-  and the project board (see ["Limits"](limits.md#limits)). [`task.md`](../../prompt-templates/subagents/task.md) holds
-  this statement. In one case, a strong "never run a gh write" line in the prompt of a task subagent made the classifier
-  of auto mode block the comment of step 11 (see [the tool-block rule](tasker-commands.md#the-tool-block-rule)).
+  ["Run one ticket"](../run-one-ticket.md#run-one-ticket) is the only write of the task subagent on GitHub issues,
+  labels and the project board (see ["Limits"](../limits.md#limits)).
+  [`task.md`](../../../prompt-templates/subagents/task.md) holds this statement. In one case, a strong "never run a gh
+  write" line in the prompt of a task subagent made the classifier of auto mode block the comment of step 11 (see
+  [the tool-block rule](../tasker-commands.md#the-tool-block-rule)).
 - The prompt tells the task subagent to run `tasker merge` of step 9 of
-  ["Run one ticket"](run-one-ticket.md#run-one-ticket) in [the plain form](tasker-commands.md#the-plain-form-rule), with
-  its issue key. The first bullet of this section limits the prompt to the context of its ticket, and this bullet wins
-  over it. [`task.md`](../../prompt-templates/subagents/task.md) gives the words of the instruction and the words that
-  ask for the report after a denial. [The tool-block rule](tasker-commands.md#the-tool-block-rule) gives this report and
-  the other steps after a denial.
+  ["Run one ticket"](../run-one-ticket.md#run-one-ticket) in
+  [the plain form](../tasker-commands.md#the-plain-form-rule), with its issue key. The first bullet of this section
+  limits the prompt to the context of its ticket, and this bullet wins over it.
+  [`task.md`](../../../prompt-templates/subagents/task.md) gives the words of the instruction and the words that ask for
+  the report after a denial. [The tool-block rule](../tasker-commands.md#the-tool-block-rule) gives this report and the
+  other steps after a denial.
 
   The reason: the classifier of auto mode can deny a call that is not in the plain form, as
-  [the plain-form rule](tasker-commands.md#the-plain-form-rule) says. On 2026-11-03, the report of the task subagent of
-  #563 called the denied call "plain form `tasker merge codeguru42/tasker#563`". The denied call had `2>&1 | tail -6`
+  [the plain-form rule](../tasker-commands.md#the-plain-form-rule) says. On 2026-11-03, the report of the task subagent
+  of #563 called the denied call "plain form `tasker merge codeguru42/tasker#563`". The denied call had `2>&1 | tail -6`
   after the command. The same report gave the text of the denial with "..." in place of its end.
 
 - For all the rules, the prompt names the docs of "the base list". The base list is the list in
-  [`prompt-templates/subagents/task.md`](../../prompt-templates/subagents/task.md). It is the same for the task subagent
-  of each milestone.
+  [`prompt-templates/subagents/task.md`](../../../prompt-templates/subagents/task.md). It is the same for the task
+  subagent of each milestone.
 
   The prompt also names each doc that the ticket changes, for example `docs/dev/planner.md`. These are:
 
@@ -1442,7 +1450,7 @@ landing rules still apply.
   - Each file under `skills/` that the Requirements section, the Docs section or a hint for the first refine asks the
     ticket to change.
 
-  For each other doc, [the intro of `AGENTS.md`](../../AGENTS.md) gives the rule. The reason for the base list:
+  For each other doc, [the intro of `AGENTS.md`](../../../AGENTS.md) gives the rule. The reason for the base list:
   `AGENTS.md` links each doc under `docs/`, so a prompt that names the docs of `AGENTS.md` names all of them. No other
   base prompt exists.
 
@@ -1451,25 +1459,26 @@ landing rules still apply.
   prompt of that ticket.
 - The planner bullet: the orchestrator gives each lesson of a final report, each finding of a session review, each
   recurrence and each proposed issue only to its planner. For an orchestrator of the kind `claude`, the planner is a new
-  [planner subagent](planner-subagent.md) for each item of planning work, as [The start](planner-subagent.md#the-start)
-  of planner-subagent.md says. The prompt gives the lesson, the ticket, the date, and the doc and the section that the
-  lesson fits. For a recurrence, it also names the open issue. The planner drafts and posts the issue, as
-  [The review loop of a draft](planner.md#the-review-loop-of-a-draft) of planner.md says. The orchestrator drafts and
-  files no issue itself. The one exception is the issue of step 1 of [A failed CI run](ci-wait.md#a-failed-ci-run),
-  which the orchestrator files itself. After a failed start of a planner subagent, the orchestrator asks the user in its
-  question pane, as [Start](question-pane.md#start) says. A refused Agent call is a failed start. The question gives the
-  full text of the lesson, the finding, the recurrence or the proposed issue. It has two choices: a new planner subagent
-  for it, or a drop. A progress report starts no step, so a lesson in a report is lost. A question keeps the lesson
-  until the decision of the user. [The life of a planner subagent](planner-subagent.md#the-life-of-a-planner-subagent)
-  gives the wait for a planner subagent. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate
-  each issue draft to the planner.
+  [planner subagent](../planner-subagent.md) for each item of planning work, as
+  [The start](../planner-subagent.md#the-start) of planner-subagent.md says. The prompt gives the lesson, the ticket,
+  the date, and the doc and the section that the lesson fits. For a recurrence, it also names the open issue. The
+  planner drafts and posts the issue, as [The review loop of a draft](../planner.md#the-review-loop-of-a-draft) of
+  planner.md says. The orchestrator drafts and files no issue itself. The one exception is the issue of step 1 of
+  [A failed CI run](../ci-wait.md#a-failed-ci-run), which the orchestrator files itself. After a failed start of a
+  planner subagent, the orchestrator asks the user in its question pane, as [Start](../question-pane.md#start) says. A
+  refused Agent call is a failed start. The question gives the full text of the lesson, the finding, the recurrence or
+  the proposed issue. It has two choices: a new planner subagent for it, or a drop. A progress report starts no step, so
+  a lesson in a report is lost. A question keeps the lesson until the decision of the user.
+  [The life of a planner subagent](../planner-subagent.md#the-life-of-a-planner-subagent) gives the wait for a planner
+  subagent. On 2026-10-17 and 2026-10-18, the user asked the Docs orchestrator to delegate each issue draft to the
+  planner.
 
-  A request of [the user](GLOSSARY.md) to draft an issue, or to change the title or the body of an issue, is a proposed
-  issue of this bullet. [The orchestrator](../orchestrator.md) gives it to its planner with no question to the user, and
-  [tells the user](working-with-the-user.md#reports-and-questions-of-a-session) that it did. The prompt gives the words
-  of the user and the date, and [the ticket](../orchestrator.md) when one exists. On 2026-10-26, the user asked the
-  orchestrator of #391 to draft the issues of a new milestone. The orchestrator drafted and posted 8 issues and 4
-  changes itself, with no review loop. Review loop 1 later found from 9 to 14 findings in each draft.
+  A request of [the user](../GLOSSARY.md) to draft an issue, or to change the title or the body of an issue, is a
+  proposed issue of this bullet. [The orchestrator](../../orchestrator.md) gives it to its planner with no question to
+  the user, and [tells the user](../working-with-the-user.md#reports-and-questions-of-a-session) that it did. The prompt
+  gives the words of the user and the date, and [the ticket](../../orchestrator.md) when one exists. On 2026-10-26, the
+  user asked the orchestrator of #391 to draft the issues of a new milestone. The orchestrator drafted and posted 8
+  issues and 4 changes itself, with no review loop. Review loop 1 later found from 9 to 14 findings in each draft.
 
 - The source bullet: a message of the planner bullet, and the prompt of a planner subagent, names the source of each
   fact of the message or the prompt. Examples of a source are the final report, a comment, a command and its output, a
@@ -1482,13 +1491,13 @@ landing rules still apply.
 An orchestrator of the kind `claude` does these steps at each start of a task subagent with its `Agent` tool:
 
 1. Run `tasker show-config --repo <key>` for the repo of the ticket, and read the entry `sessions.models.task`. See
-   [`sessions`](../config.md#sessions).
-2. If the read fails, follow [the failure rule](limits.md#the-failure-rule). Then pass no `model` and no `effort`, and
-   go on with the start.
+   [`sessions`](../../config.md#sessions).
+2. If the read fails, follow [the failure rule](../limits.md#the-failure-rule). Then pass no `model` and no `effort`,
+   and go on with the start.
 3. If the read gives no entry, pass no `model` and no `effort`.
 4. If the read gives an entry, pass the `effort` of the entry. Pass the `model` that
-   [The model of the start](planner-subagent.md#the-model-of-the-start) gives for the `model` of the entry. If the map
-   gives no model, pass no `model`.
+   [The model of the start](../planner-subagent.md#the-model-of-the-start) gives for the `model` of the entry. If the
+   map gives no model, pass no `model`.
 5. Pass the subagent type `general-purpose`, as the planner subagent start does. Never pass the type `fork`, and never
    leave out the type.
 

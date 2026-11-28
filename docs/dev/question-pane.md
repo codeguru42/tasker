@@ -16,9 +16,9 @@ A [question pane](#a-question-pane) is a herdr pane that an opener subagent open
 holds one [open question](items.md#the-terms-of-the-questions) at a time, even when questions belong to one message or
 concern one action. After a reuse, it holds the next open question.
 
-The rows of the opener subagent, the reuse subagent and the write subagent in [the table](permissions.md#the-table) give
-the kinds of command of the list of each of them. A read at a gap follows
-[the rules for the lists](allowed-commands.md#the-rules-for-the-lists).
+The rows of the opener subagent, the reuse subagent and the write subagent in
+[the table](orchestrator/permissions.md#the-table) give the kinds of command of the list of each of them. A read at a
+gap follows [the rules for the lists](orchestrator/allowed-commands.md#the-rules-for-the-lists).
 
 The pane owner (short form: owner) is the session that starts a question pane. An orchestrator of each kind is a pane
 owner. Each pane owner has at most one open pane.
@@ -27,8 +27,9 @@ An open question of the orchestrator is a question for the user that the orchest
 sessions are, for example, a task subagent. The orchestrator asks it in its own question pane.
 
 Each waiting decision and each open question of the rounds of the orchestrator is also an open question of the
-orchestrator. An example is a finding of [the end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator)
-that needs a decision of the user.
+orchestrator. An example is a finding of
+[the end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator) that needs a decision of the
+user.
 
 The question id is the name of one open question. The orchestrator gives each question the next free item id of its own
 counter, in the form `orchestrator-<slug>-<n>`. Each progress report of
@@ -58,8 +59,8 @@ question gets a new question pane or a reuse of the pane before.
 An automatic start is the start of a question pane with no word of the user, as [Start](#start) says.
 
 The pane handoff is a message of the question session that carries its talk with the user to the old orchestrator. It
-belongs to [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) of a handoff. The marker of the
-pane handoff is the word `PANE-HANDOFF.` right after the header. An example is
+belongs to [the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case) of a handoff. The
+marker of the pane handoff is the word `PANE-HANDOFF.` right after the header. An example is
 `QUESTION-PANE w1:p2 orchestrator-m31-7 m4: PANE-HANDOFF.`
 
 The check request and the check answer of [The check of the pane owner](#the-check-of-the-pane-owner) carry the markers
@@ -305,15 +306,15 @@ the pane owner that it is closed. A pane stays open through each reuse.
 A question with no automatic start is an open question that gets no automatic start by a rule of this page. Examples are
 a question with a **No decision** message and a question whose pane the user closed with no decision.
 [The question file](#the-question-file) gives each such case. The question of a receiving entry with a decision of the
-user, in [The open peer requests](handoff-orchestrator.md#the-open-peer-requests), is not such a question.
+user, in [The open peer requests](orchestrator/handoff-orchestrator.md#the-open-peer-requests), is not such a question.
 
 A held ticket is a ticket of the scope that does not start until the user answers an open question of the orchestrator.
 That open question holds the start of the ticket. One example is a question of
-[the open-question rule](pick-the-tickets.md#the-open-question-rule) that the orchestrator asked in its pane. Another
-example is a question of a hold comment that the orchestrator asks again at the end of a hold, as
-[A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) says. The orchestrator judges whether an open question holds
-the start of a ticket, and this judgment is open on purpose. The issue line of the question file is a hint for this
-judgment, not a test.
+[the open-question rule](orchestrator/pick-the-tickets.md#the-open-question-rule) that the orchestrator asked in its
+pane. Another example is a question of a hold comment that the orchestrator asks again at the end of a hold, as
+[A ticket on hold](orchestrator/pick-the-tickets.md#a-ticket-on-hold) says. The orchestrator judges whether an open
+question holds the start of a ticket, and this judgment is open on purpose. The issue line of the question file is a
+hint for this judgment, not a test.
 
 A start word is a word of the user that asks the orchestrator to start a ticket. An example is "start T next", where T
 names the ticket. The orchestrator judges whether a word is a start word, and this judgment is open on purpose.
@@ -327,7 +328,7 @@ an automatic start each time that all of these hold:
 - No pane of this orchestrator is open.
 - No [stop of a run](#terms) holds.
 - No handoff of the orchestrator is due or running, as
-  [The long-running orchestrator](handoff-orchestrator.md#the-long-running-orchestrator) says.
+  [The long-running orchestrator](orchestrator/handoff-orchestrator.md#the-long-running-orchestrator) says.
 - An open question can get an automatic start.
 
 Each pane owner has at most one open pane. Two orchestrators can each have one open pane. The pane of one orchestrator
@@ -335,17 +336,17 @@ never holds a question of another orchestrator. A pane holds one question at a t
 
 The condition "No handoff of the orchestrator is due or running" holds through the whole handoff. Each open question
 stays open. Its question file stays, and the handoff file holds only a question with no file, as
-[The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. A new pane
-that opens during a handoff can stay open after the close of the old orchestrator. The new orchestrator accepts a
-decision message only from the question session of its own open pane, as
+[The handoff file of the orchestrator](orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says.
+A new pane that opens during a handoff can stay open after the close of the old orchestrator. The new orchestrator
+accepts a decision message only from the question session of its own open pane, as
 [The pane owner handles a decision](#the-pane-owner-handles-a-decision) says. So no orchestrator then accepts the
-decision of that pane. In [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case), no automatic start
-and no reuse happens either. A word of the user can still start a pane.
+decision of that pane. In [the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case), no
+automatic start and no reuse happens either. A word of the user can still start a pane.
 
 After a handoff, the question of a receiving entry with a decision of the user gets no automatic start, no reuse and no
 pane start at a word of the user.
-[The steps for the open peer requests](handoff-orchestrator.md#the-steps-for-the-open-peer-requests) give that rule, and
-it wins over this section.
+[The steps for the open peer requests](orchestrator/handoff-orchestrator.md#the-steps-for-the-open-peer-requests) give
+that rule, and it wins over this section.
 
 The question that asks the user for the go of a suggested handoff of the orchestrator can get an automatic start,
 although the handoff is due. It is the only such question. After the go, until the close of its pane, during the wait
@@ -439,17 +440,17 @@ text follows the state of the handoff:
 
 - A handoff is due and did not start yet. While a pane is open, the orchestrator starts no handoff, as
   [Close and continue](#close-and-continue) and the [State table](#state-table) say. So the handoff waits for the close
-  of the pane of the start word. In [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case), the pane
-  first gets its pane handoff or its usual close. After the close of the pane, the wait of step 2 runs, and then the
-  handoff starts. The text says that a handoff is due and that it waits for the close of the pane. The text names no
-  risk.
+  of the pane of the start word. In
+  [the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case), the pane first gets its pane
+  handoff or its usual close. After the close of the pane, the wait of step 2 runs, and then the handoff starts. The
+  text says that a handoff is due and that it waits for the close of the pane. The text names no risk.
 - A handoff runs. The text says that a handoff runs. It names the risk of a pane that opens during a handoff. After the
   close of the old orchestrator, no orchestrator accepts the decision of that pane.
 
 The text about a start word is a progress report, as
 [Reports and questions of a session](working-with-the-user.md#reports-and-questions-of-a-session) says. It is not an
-open question. The start word changes no gate of [Pick the tickets](pick-the-tickets.md#pick-the-tickets). If a rule of
-that page stops the start, the ticket does not start.
+open question. The start word changes no gate of [Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets).
+If a rule of that page stops the start, the ticket does not start.
 
 If the list of the open questions or the read of a question file fails at a start word, the orchestrator tells the user
 at once. The text says that the read of the open questions for that ticket failed. The fallback of
@@ -457,7 +458,7 @@ at once. The text says that the read of the open questions for that ticket faile
 its session. The failure does not count as a case in which no open question holds the start.
 
 The reason for the rules of a start word is in
-[The report of the questions with no automatic start](handoff-orchestrator.md#the-report-of-the-questions-with-no-automatic-start).
+[The report of the questions with no automatic start](orchestrator/handoff-orchestrator.md#the-report-of-the-questions-with-no-automatic-start).
 
 A reuse for the next open question is an automatic start of the pane of that question. Each rule of this section for a
 pane start or an automatic start holds for it. The new pane, the opener subagent and the condition "No pane of this
@@ -674,8 +675,8 @@ A question stops being open at one of these points:
   the [State table](#state-table) says.
 - For a question of the orchestrator itself, the orchestrator accepts a decision message that settles the question.
 - After a handoff, the new orchestrator sends the decision of a receiving entry with a decision of the user, as
-  [The steps for the open peer requests](handoff-orchestrator.md#the-steps-for-the-open-peer-requests) say. A failed
-  send is also such a point.
+  [The steps for the open peer requests](orchestrator/handoff-orchestrator.md#the-steps-for-the-open-peer-requests) say.
+  A failed send is also such a point.
 - An answer of the user in the tab of the orchestrator settles the question.
 - A word of the user ends or drops the question.
 - The question no longer applies, for example because its sender takes it back, or its ticket landed or was dropped.
@@ -692,16 +693,17 @@ A question with no file is a question that the orchestrator keeps in its session
 with the text from the session. At a handoff, the handoff file holds the full text of each such question, as
 [The items of a handoff file](handoff.md#the-items-of-a-handoff-file) says. The old orchestrator writes no question file
 for a question that reaches it after the write of its handoff file.
-[The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) gives this rule.
-[A ticket on hold](pick-the-tickets.md#a-ticket-on-hold) gives the delete of a question file at a hold.
+[The handoff file of the orchestrator](orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) gives
+this rule. [A ticket on hold](orchestrator/pick-the-tickets.md#a-ticket-on-hold) gives the delete of a question file at
+a hold.
 
 After a compaction of the context of the orchestrator or after a handoff, these known limits hold:
 
 - A question that got a **No decision** message or a close with no decision can get an automatic start again. After a
   compaction of the context, this limit stays, because the question file holds no mark of that rule. After a handoff,
   the list of the questions with no automatic start in
-  [The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) keeps the rule.
-  The limit stays for a question that gets its reason after the write of the handoff file.
+  [The handoff file of the orchestrator](orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator)
+  keeps the rule. The limit stays for a question that gets its reason after the write of the handoff file.
 - A question whose delete failed can get a pane again.
 - A detail of a question that went to the tab of the orchestrator is lost.
 
@@ -716,7 +718,7 @@ gives the question session its own name, the name of the pane owner, the pane id
 It also gives the full question. For a question of a task subagent, the first reply names the ticket and the session
 that asks.
 
-The row of a question session in [the table](permissions.md#the-table) gives its kinds of command.
+The row of a question session in [the table](orchestrator/permissions.md#the-table) gives its kinds of command.
 
 The pane owner gives all offered choices and costs, the recommendation of the sender, and each draft or report path
 named by the question. For a question of the result of a planner subagent, it also gives the kind of the question.
@@ -1438,7 +1440,8 @@ steps of this section, as [The pane handoff](#the-pane-handoff) says.
 A check request is not a decision message. [The check of the pane owner](#the-check-of-the-pane-owner) gives its accept.
 
 A settled decision for a question of a task subagent after its stopping-point message goes into the entry of the task
-list, not to the task subagent, as [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) says.
+list, not to the task subagent, as
+[the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case) says.
 
 If such a read fails, the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) applies, and the pane
 owner uses the text from its session. If the session no longer holds the text, the pane owner still sends the ack for a
@@ -1474,7 +1477,7 @@ Each kind of write or request of [Terms](#terms) has one actor.
 | A change of the metadata of an issue                                           | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | A write of a user-level file                                                   | The write subagent                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | A change of a tracked file of the repo                                         | The planner of the orchestrator, as a request for a new issue                                                                                                                                                                                                                                                                                                                                                                                      |
-| A permission rule of an actor in `$HOME/.claude/settings.json`                 | The planner of the orchestrator, as a request for a new issue. No write subagent starts. See [A change of the rules](permissions.md#a-change-of-the-rules)                                                                                                                                                                                                                                                                                         |
+| A permission rule of an actor in `$HOME/.claude/settings.json`                 | The planner of the orchestrator, as a request for a new issue. No write subagent starts. See [A change of the rules](orchestrator/permissions.md#a-change-of-the-rules)                                                                                                                                                                                                                                                                            |
 | A `tasker` command, also `tasker model`                                        | A read-only command: the orchestrator. A task change: the task subagent of the task, after the orchestrator sends it. A task change of a task of a peer goes to the peer as a request of [the request rule](../orchestrator.md#the-request-rule). `tasker model` with a new model or `--effort`: the orchestrator, only on the words of the settled message. See [the orchestrator-command rule](tasker-commands.md#the-orchestrator-command-rule) |
 | A message to another session                                                   | The orchestrator. A message to a peer is a request of [the request rule](../orchestrator.md#the-request-rule)                                                                                                                                                                                                                                                                                                                                      |
 | A `herdr` command                                                              | The orchestrator                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -1489,9 +1492,9 @@ removal of a link other than the removal of a move into "Future" and the removal
 write, no `herdr` command, no message to a session and no `tasker` command. A move of an issue into "Future" is a
 metadata change. The write subagent also removes each link of the issue to an open issue in the same step, as the
 "Future" bullet of [The blocked-by links](issue-subagents.md#the-blocked-by-links) says. For that removal, the write
-subagent runs only the link-removal commands of step 7 of [the defer rule](pick-the-tickets.md#the-defer-rule). The
-other steps of the defer rule, for a task in flight, are not a write action of the write subagent. The approval of the
-move covers that removal.
+subagent runs only the link-removal commands of step 7 of
+[the defer rule](orchestrator/pick-the-tickets.md#the-defer-rule). The other steps of the defer rule, for a task in
+flight, are not a write action of the write subagent. The approval of the move covers that removal.
 
 For a link-removal request, the write subagent runs only the removal commands of the message. It adds no link, and it
 runs no read before a removal, because the message already gives the exact command with the blocker number. The blocker
@@ -1683,8 +1686,8 @@ then does not wait for the board watch job.
   stop the read. An end with no report also gives the read, because a removal can have run.
 
 The read is a normal read of the board of the scope, as the board-read bullet of
-[Pick the tickets](pick-the-tickets.md#pick-the-tickets) says. The fill rule applies after it. Each rule that stops a
-start still holds, for example the wait before a handoff. The read is not a write action.
+[Pick the tickets](orchestrator/pick-the-tickets.md#pick-the-tickets) says. The fill rule applies after it. Each rule
+that stops a start still holds, for example the wait before a handoff. The read is not a write action.
 
 A failed read follows [the failure rule](limits.md#the-failure-rule). The orchestrator starts no ticket that the read
 covers until a later read works.
@@ -1699,8 +1702,8 @@ measured a pi start of a write subagent, as the known pi limit above says. A fai
 
 The rule has these gates:
 
-- The list of the write subagent in [allowed-commands.md](allowed-commands.md) names the removal command.
-- The permission table of [permissions.md](permissions.md) does not change.
+- The list of the write subagent in [allowed-commands.md](orchestrator/allowed-commands.md) names the removal command.
+- The permission table of [permissions.md](orchestrator/permissions.md) does not change.
 - The rules of Claude Code: the ask rules of the setup docs name no `gh` command, and the tracked
   `.claude/settings.json` holds only `Bash(tasker *)`. No one read `$HOME/.claude/settings.json` for this issue. The
   classifier of auto mode decides a call that no rule matches.
@@ -1880,10 +1883,10 @@ first sentence.
 
 The report leaves out each doc rule, fact, preference or request for a new issue that a decision message already gave.
 It also leaves out each finding of a pane handoff that got the ack. The close after a pane handoff is a close of this
-section, as [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case) says. After the close request,
-the question session sends no decision message. A message can still give a word of the user about the pane or the run.
-If the user gives a new word on the question, the session tells the user to type it in the tab of the orchestrator.
-Examples of such a word are a write action, a metadata request and a request for a new issue.
+section, as [the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case) says. After the
+close request, the question session sends no decision message. A message can still give a word of the user about the
+pane or the run. If the user gives a new word on the question, the session tells the user to type it in the tab of the
+orchestrator. Examples of such a word are a write action, a metadata request and a request for a new issue.
 
 If a round fails, the question session tells the user in the pane, its rounds end, and the final report names the
 failure. If the send of a report of a round fails, the failure rule of [Session-review rounds](session-review-rounds.md)
@@ -2095,8 +2098,9 @@ The report gives no date for the words and does not say which folder the session
 ### The pane handoff
 
 The pane handoff gives the old orchestrator the talk of an open pane, so that the new orchestrator can ask the question
-again. The old orchestrator asks for it in [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case),
-before step 3 of its handoff. The pane handoff leaves the question open. It settles nothing.
+again. The old orchestrator asks for it in
+[the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case), before step 3 of its handoff.
+The pane handoff leaves the question open. It settles nothing.
 
 The old orchestrator sends the pane handoff request only when all of these hold:
 
@@ -2144,12 +2148,13 @@ settled it.
 Each write action, each metadata request and each link-removal request of the pane handoff does not run, because the
 user answered no confirm question for them. The pane handoff file marks each one "not run", with the words of the user.
 The handoff file gives each one with the mark, as
-[The handoff file of the orchestrator](handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says. The old
-orchestrator tells the user in its tab. The user can ask for each such action again. A link-removal request does not go
-to the planner of the orchestrator. A decision message that the old orchestrator accepts before the pane handoff gets
-the usual steps of [The pane owner handles a decision](#the-pane-owner-handles-a-decision), also its write subagent, for
-a settled message and for a message that does not settle the question. The wait for the write subagent and the task
-change stay in [The panes and the write subagents](handoff-orchestrator.md#the-panes-and-the-write-subagents).
+[The handoff file of the orchestrator](orchestrator/handoff-orchestrator.md#the-handoff-file-of-the-orchestrator) says.
+The old orchestrator tells the user in its tab. The user can ask for each such action again. A link-removal request does
+not go to the planner of the orchestrator. A decision message that the old orchestrator accepts before the pane handoff
+gets the usual steps of [The pane owner handles a decision](#the-pane-owner-handles-a-decision), also its write
+subagent, for a settled message and for a message that does not settle the question. The wait for the write subagent and
+the task change stay in
+[The panes and the write subagents](orchestrator/handoff-orchestrator.md#the-panes-and-the-write-subagents).
 
 Then the old orchestrator sends the close request. The rounds run, and the pane closes with no reuse. The report of the
 rounds leaves out each finding of a pane handoff that got the ack and each finding of a decision message.
@@ -2181,7 +2186,7 @@ These failures can happen:
 - The write of the pane handoff file fails. The old orchestrator tells the user. The handoff file holds the pane handoff
   itself, in place of the link.
 - A failed close other than `pane_not_found` follows
-  [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case).
+  [the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case).
 
 ### Close and continue
 
@@ -2274,20 +2279,20 @@ a [start word](#terms) for a ticket that it holds, starts its pane again, as [St
 
 While a pane is open or a [write subagent](#terms) runs, the orchestrator starts no handoff. The go of a handoff that
 arrives in a decision message waits for the close of its pane. Then the wait before the start runs, as
-[The wait before the start](handoff-orchestrator.md#the-wait-before-the-start) says. An opener subagent, a reuse
-subagent and a write subagent join that wait. The handoff starts after it, as
+[The wait before the start](orchestrator/handoff-orchestrator.md#the-wait-before-the-start) says. An opener subagent, a
+reuse subagent and a write subagent join that wait. The handoff starts after it, as
 [The suggestion of a handoff](handoff.md#the-suggestion-of-a-handoff) says. The new session of a handoff starts its own
 pane only after the old pane is gone. So two panes of one slug never run at once. The orchestrator also runs no round of
 its rounds, as [The gate of the rounds of an orchestrator](#the-gate-of-the-rounds-of-an-orchestrator) says. If either
 is due, the orchestrator tells the user in its tab. A write subagent can still run after the close of its pane. The
 close request, the close of the pane and the next pane start do not wait for a write subagent.
 
-[The stopping-point case](handoff-orchestrator.md#the-stopping-point-case) is the exception for an open pane. In that
-case, the wait of step 2 runs while a pane is open. The pane gets its pane handoff or its usual close before step 3, as
-[The pane handoff](#the-pane-handoff) says. A running write subagent still holds the start. If the close of the pane
-fails, the old orchestrator follows
-[The panes and the write subagents](handoff-orchestrator.md#the-panes-and-the-write-subagents). It tells the user and
-starts the new orchestrator only after the user says that the pane is closed.
+[The stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case) is the exception for an open
+pane. In that case, the wait of step 2 runs while a pane is open. The pane gets its pane handoff or its usual close
+before step 3, as [The pane handoff](#the-pane-handoff) says. A running write subagent still holds the start. If the
+close of the pane fails, the old orchestrator follows
+[The panes and the write subagents](orchestrator/handoff-orchestrator.md#the-panes-and-the-write-subagents). It tells
+the user and starts the new orchestrator only after the user says that the pane is closed.
 
 The reason: on 2026-11-13, the user said, as operator-docs relayed it: "File an issue to modify the process for closing
 a question. After the session review passes with no findings, clear the session instead of closing it entirely. Then
@@ -2298,10 +2303,10 @@ After a reuse, the next question gets the same pane.
 ### The gate of the rounds of an orchestrator
 
 The rounds of an orchestrator are the rounds of
-[the end of an orchestrator](pick-the-tickets.md#the-end-of-an-orchestrator). While a question pane of the orchestrator
-is open, it runs no round of its rounds. While a write subagent of the orchestrator runs, it also runs no round. The
-gate covers the first round and each later round. It wins over the start at once of the next round in step 3 of the list
-of [Session-review rounds](session-review-rounds.md).
+[the end of an orchestrator](orchestrator/pick-the-tickets.md#the-end-of-an-orchestrator). While a question pane of the
+orchestrator is open, it runs no round of its rounds. While a write subagent of the orchestrator runs, it also runs no
+round. The gate covers the first round and each later round. It wins over the start at once of the next round in step 3
+of the list of [Session-review rounds](session-review-rounds.md).
 
 Three conditions free the next round: the pane is closed, no write subagent runs, and no waiting decision waits for the
 user. After the last of these conditions starts to hold, the orchestrator runs the next round at once, in that turn,
@@ -2497,10 +2502,10 @@ If two rows match, the rows of one bullet below follow its rule:
 - The rows "A "No decision" message" and "The user closes the pane with no decision" delete no question file. The row "A
   question stops being open, as The question file says" does not apply to them.
 - A row that starts with "In the stopping-point case," holds during the handoff of the old orchestrator in
-  [the stopping-point case](handoff-orchestrator.md#the-stopping-point-case). A row that starts with "After a handoff in
-  the stopping-point case," holds for the new orchestrator after such a handoff. Each such row wins over an old row for
-  the same event, for example the rows "The pane does not show the question", "The opener subagent ends with no report"
-  and "A handoff is due while a pane is open".
+  [the stopping-point case](orchestrator/handoff-orchestrator.md#the-stopping-point-case). A row that starts with "After
+  a handoff in the stopping-point case," holds for the new orchestrator after such a handoff. Each such row wins over an
+  old row for the same event, for example the rows "The pane does not show the question", "The opener subagent ends with
+  no report" and "A handoff is due while a pane is open".
 
 ### Measured facts
 

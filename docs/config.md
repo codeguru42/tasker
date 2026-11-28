@@ -354,7 +354,8 @@ The orchestrator starts a task subagent for each ticket and for each task change
 `claude` reads the key `task`. A read of the tool schema of the Claude Code `Agent` tool gives the parameters `model`
 and `effort`. [docs/dev/codex-sessions.md](dev/codex-sessions.md) records no model parameter and no effort parameter of
 a native Codex subagent start, and no one measured one. No measure shows that a pi session can start a subagent.
-[The start of a task subagent](dev/pick-the-tickets.md#the-start-of-a-task-subagent) gives the steps of the start.
+[The start of a task subagent](dev/orchestrator/pick-the-tickets.md#the-start-of-a-task-subagent) gives the steps of the
+start.
 
 The orchestrator starts the opener subagent and the reuse subagent of a question pane, as
 [Start](dev/question-pane.md#start) and [Close and continue](dev/question-pane.md#close-and-continue) say. The keys
