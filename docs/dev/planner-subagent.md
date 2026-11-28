@@ -827,8 +827,7 @@ These known limits hold:
   the match draft, neither issue names the overlap. The result named the match, so the user saw the overlap.
 
 The join adds these limits. A joined item can be large, so one planner subagent works longer and the wait of other items
-for its paths grows. A wrong tie of a late-match request to its proposal file joins the wrong items. OD4 lapses if
-another change removes the wait for the remaining findings before this work lands.
+for its paths grows. A wrong tie of a late-match request to its proposal file joins the wrong items.
 
 ## No metadata
 
