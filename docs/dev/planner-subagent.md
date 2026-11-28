@@ -26,6 +26,7 @@ as the work needs. An issue subagent on this page is one of these subagents.
 - A kept rule is a rule of the docs that the planner subagent follows. [The kept rules](#the-kept-rules) gives them.
 - On this page, keep N is item N of The kept rules. Change N is item N of [The changed rules](#the-changed-rules). Drop
   N is item N of [The dropped rules](#the-dropped-rules).
+- An item with a match is an item that names a match. [The terms of a match](#the-terms-of-a-match) gives the terms.
 
 ## The kind of the orchestrator
 
@@ -612,6 +613,68 @@ with no change" gives this rule. That answer approves the draft, as [The count o
 so the new planner subagent starts the post with no new review. "Change it" is an answer that changes the draft, so a
 new issue-draft subagent and new reviews follow.
 
+## An item with a match
+
+An item with a match is an item of planning work that names a match. A match is an issue, a draft or a proposal file
+that the check of the pane owner or the words of the item name as one that holds the change. Without a rule, a change
+that the user wants in an existing draft can become a second issue. The user said: "I think this already has a proposal
+or draft, too" and "this should be added to the existing proposal/draft". This section puts such a change into its
+match. The reason is the same as in the cover rule below: a match is the place where the change belongs, and a second
+issue for it splits one piece of work in two.
+
+### The terms of a match
+
+- An item with a match is one of three kinds. The first is an accepted proposal or recurrence with its matches. The
+  second is an open finding of a final report with its matches. The third is the planning request of late matches that
+  [The check of the pane owner](question-pane.md#the-check-of-the-pane-owner) gives.
+- The change is the part of the item that a match can hold.
+- The match draft is a match that is a draft file. It is in the folder of the draft files that that section defines, or
+  it is a draft of the check.
+- The cover is how much of the change a match holds. It is "in full", "in part" or none.
+- A posted match is a match that is an issue on GitHub.
+- A joined item is an item that the orchestrator joined with another item, as [The proposal file](#the-proposal-file)
+  says.
+
+### The cover of a match
+
+The planner subagent judges the cover again. This judgment is open on purpose. A match can change after the check, and
+the answer of the check decides nothing. For a match that the docs bar the planner subagent from reading, for example a
+proposal file, it takes the cover of the item. For two or more matches, it judges which part of the change goes into
+which match.
+
+### The work for each cover
+
+Follow these steps in this order.
+
+1. The words of the user in the item win. If they keep the change apart, make a new draft.
+2. This step wins over each cover. Make a new draft if one of these holds. No match holds the cover. The change is not
+   one ticket. The match draft is gone, because its state says dropped or its file no longer exists, as
+   [A missing draft file](#a-missing-draft-file) gives. The match draft is a draft of a comment. The match draft is
+   outside the folder of the draft files.
+3. For full cover, make no new draft and change nothing. This is a drop with no approval of the user, as keep 4 permits.
+   A match with no draft yet follows this step too.
+4. For part cover of a match draft that waits, start an issue-draft subagent with the match draft and the change. The
+   planner subagent does not change the draft itself. The rule of one ticket is in
+   [The scope of a ticket](issue-subagents.md#the-scope-of-a-ticket). The count of reviews starts again, as
+   [The count of reviews](#the-count-of-reviews) says. The planner subagent posts nothing. A new question of the reviews
+   goes in the result.
+5. For part cover of a posted match, follow [The post of a draft](planner.md#the-post-of-a-draft). It gives the cases of
+   an open issue with no task, an issue in flight and a closed issue.
+6. For part cover of a match with no draft yet, the orchestrator joined the two items before the start, as
+   [The proposal file](#the-proposal-file) says. So the planner subagent of the joined item works on both items. If the
+   item still names such a match with part cover, the join did not happen. Then the planner subagent makes a new draft
+   and names the match in its result.
+7. A new draft names each posted match with full or part cover by its issue key and the overlap. It names no draft file
+   and no proposal file.
+
+### A failed read of a match
+
+The planner subagent can fail to read a match draft. The state of a match in the prompt can also be "not known". In both
+cases, [the failure rule](limits.md#the-failure-rule) or [the tool-block rule](tasker-commands.md#the-tool-block-rule)
+applies. The planner subagent changes no draft and makes no new draft for the whole item. A failed read is never a
+missing, dropped or waiting draft. For the bar, see
+[A failed call on a file of a draft](#a-failed-call-on-a-file-of-a-draft).
+
 ## No metadata
 
 The planner subagent changes no metadata of an issue. It moves no card and sets no priority. It adds and removes no
@@ -749,6 +812,8 @@ The planner subagent changes these rules:
    comment of A recurrence. An issue-draft subagent drafts the comment, and an issue-review subagent reviews it. An
    issue-post subagent posts it after the review passes and the user approves it. The planner subagent posts no comment
    itself.
+10. An item with a match follows [An item with a match](#an-item-with-a-match). That section wins over each kept rule
+    that makes a new draft for the change.
 
 For a planner subagent, change 9 wins over two sentences. They are in keep 1 and keep 6. Each says that a comment on an
 issue is not a draft of The review loop of a draft. For a planner subagent, these sentences mean only that a comment
