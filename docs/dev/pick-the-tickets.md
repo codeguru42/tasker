@@ -156,16 +156,19 @@ The orchestrator does all the steps of this section.
   is the value of the field `Priority` on its card, as [The project board](issues.md#the-project-board) says. The rule
   covers the tickets of the scope.
 
-  Within one repo and each priority other than `P0`, the orchestrator starts a ticket before another when it blocks at
-  least one other open issue in the scope. The ticket and the blocked issue must both belong to the scope, as
-  [The scope](../orchestrator.md#the-scope) defines it. Use the blocked issue's blocked-by links. A link counts when it
-  names the ticket's repo and issue number. One link is enough, regardless of other blockers or the number of qualifying
-  links. Count open issues outside Todo too. If both tickets block another open issue in the scope, or neither does, the
-  lower issue number comes first. The request put all eligible `P0` tickets first in their existing order, so blocker
-  preference does not apply to `P0`. Among `P0` tickets in one repo, the lower issue number comes first regardless of
-  which ticket blocks others. On 2026-11-25, the user said: “Preferring tickets that block others is fine”. Work that
-  other tickets need lands earlier, so more tickets can start sooner. This preference adds no issue or board read. Use
-  the links from the current board read, and apply the full priority rule again at each existing board read.
+  Within one repo, the orchestrator uses blocker preference within the group with `P1`, the group with no priority, and
+  the group with `P2`. A ticket comes first when it blocks at least one other open issue in the scope. The ticket and
+  the blocked issue must both belong to the scope, as [The scope](../orchestrator.md#the-scope) defines it. Use the
+  blocked issue's blocked-by links. A link counts when it names the ticket's repo and issue number. One link is enough,
+  regardless of other blockers or the number of qualifying links. Count open issues outside Todo too. If both tickets
+  block another open issue in the scope, or neither does, the lower issue number comes first. The request put all
+  eligible `P0` tickets first in their existing order, so blocker preference does not apply to `P0`. Among `P0` tickets
+  in one repo, the lower issue number comes first regardless of which ticket blocks others. On 2026-11-25, the user
+  said: “Preferring tickets that block others is fine”. Work that other tickets need lands earlier, so more tickets can
+  start sooner. This preference adds no issue or board read. For a milestone scope, use the blocked-by links from the
+  last read of open blockers in the outside-Todo find, and keep those links until that read supplies new links. A link
+  added or removed between reads takes effect at the next such read. For a set scope, use the blocked-by links from the
+  current board read. Apply the full priority rule again at each existing board read.
 
   These rules order tickets in one repo. They apply to both a milestone scope and a set scope. In a set scope, an
   issue's milestone does not change its place in the order. The tie breaker uses issue number, not creation date.
@@ -206,8 +209,10 @@ The orchestrator does all the steps of this section.
   The ticket of a parked task can come back to Todo in the scope (see [the defer rule](#the-defer-rule)). Such a ticket
   takes its place under the full priority rule. Each time the orchestrator reads the board, it applies the rule again.
 
-- Each time a ticket lands, read the board again: the open issues of the scope and the issues that block them. For a
-  milestone scope, the read stays as it is. For a set scope, run one read for each issue of the set:
+- Each time a ticket lands, read the board again: the open issues of the scope and, for a set scope, the issues that
+  block them. For a milestone scope, use the blocker links from the outside-Todo find, which runs after this board read.
+  For a set scope, the read of each issue supplies its blocker links. For a milestone scope, the read stays as it is.
+  For a set scope, run one read for each issue of the set:
   `gh issue view <number> -R <repo> --json state,projectItems,milestone,blockedBy`. Take the state from `.state`, the
   column from `.projectItems[].status.name`, and the milestone from `.milestone.title`. Take the open blockers from the
   nodes of `.blockedBy.nodes` with the state `OPEN`. The milestone is empty for an issue with no milestone. On
