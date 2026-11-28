@@ -319,7 +319,8 @@ that waits is an item that waits in the session. These files are not items that 
 - A file of a draft that still has an open question, until the answer to the last open question of the draft, or until
   an answer drops the draft. See [A settled question](#a-settled-question).
 - A late-match file, until the result of the planner subagent of its item, as [A joined item](#a-joined-item) says. This
-  holds also while a replacement of that planner subagent waits for its start.
+  holds also while a replacement of that planner subagent waits for its start. After two ends with no report, the next
+  word of the user ends this wait, as A joined item says.
 - A file whose join failed, until the next word of the user.
 
 Before the start of a planner subagent, the orchestrator writes the name of that planner subagent into its proposal
@@ -383,7 +384,9 @@ for it.
     [the failure rule](limits.md#the-failure-rule), [the tool-block rule](tasker-commands.md#the-tool-block-rule) and
     the fallback of [The orchestrator folder](limits.md#the-orchestrator-folder) apply. Then the late matches wait for a
     decision of the user. After the result, the orchestrator writes the draft path or the issue key of the result into
-    the late-match file as one more match. Then the item waits as each other item.
+    the late-match file as one more match. Then the item waits as each other item. If that planner subagent and its
+    replacement both end with no report, the queue stops, as [The proposal file](#the-proposal-file) says, and after the
+    next word of the user the late-match file is an item that waits, with the state `not known` for that match.
   - If its planner subagent already ended, the orchestrator takes the draft path or the issue key from that result in
     its session and writes it into the late-match file.
   - If the result gives two or more draft paths or issue keys, the orchestrator writes the one that holds the part of
@@ -398,8 +401,9 @@ for it.
   kept file beside its words and sources. A later planning request of late matches for the other proposal still ties to
   the joined item, as The tie says. The prompt gives the state "joined into this item" for that match, as
   [The prompt](#the-prompt) says. Before it deletes the other file, the orchestrator lists in the kept file the number
-  of each file that joined into it. These are the number of the other file and each number that the other file already
-  listed. One item then has one proposal file, as before.
+  of each file that joined into it. It copies the number of the other file and each number, pane id, question id and
+  message number that the other file already holds, also from earlier joins. One item then has one proposal file, as
+  before.
 - The count. A joined item starts one planner subagent and takes one place in
   [The count of planner subagents](#the-count-of-planner-subagents).
 - The calls. Each read, write and delete of a join is a call on the three folders.
@@ -408,7 +412,8 @@ for it.
   denial, no join happens, and both files stay. The two items then wait for a decision of the user and do not start. If
   the delete fails after a good write, the file of the other item stays, and the orchestrator tells the user the path.
   That file is not an item that waits. While the bar holds, the orchestrator joins the two items in its session and
-  writes no file.
+  writes no file. After the bar ends, the orchestrator writes the kept file and deletes the other file, as The join
+  itself says, before it starts either item.
 - The planner subagent reads no proposal file. The prompt gives the words of each joined item.
 
 These rules need no change in [limits.md](limits.md), [allowed-commands.md](allowed-commands.md) or
